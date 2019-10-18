@@ -1,35 +1,23 @@
 package org.opencb.opencga.analysis.clinical;
 
-import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.manager.clinical.ClinicalInterpretationManager;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public abstract class OpenCgaClinicalAnalysis extends OpenCgaAnalysis {
 
     protected String clinicalAnalysisId;
-
-    protected ObjectMap options;
-
     protected ClinicalInterpretationManager clinicalInterpretationManager;
-    protected CellBaseClient cellBaseClient;
-    protected AlignmentStorageManager alignmentStorageManager;
 
-    public OpenCgaClinicalAnalysis(String clinicalAnalysisId, String studyId, ObjectMap options, String opencgaHome, String sessionId) {
-        super(studyId, opencgaHome, sessionId);
+    public OpenCgaClinicalAnalysis(String clinicalAnalysisId, String studyId, Path outDir, Path openCgaHome, String sessionId) {
+        super(studyId, outDir, openCgaHome, sessionId);
 
         this.clinicalAnalysisId = clinicalAnalysisId;
-        this.options = options;
-
         this.clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager,
-                StorageEngineFactory.get(storageConfiguration), Paths.get(opencgaHome + "/analysis/resources/roleInCancer.txt"),
-                Paths.get(opencgaHome + "/analysis/resources/"));
-
-        this.cellBaseClient = new CellBaseClient(storageConfiguration.getCellbase().toClientConfiguration());
-        this.alignmentStorageManager = new AlignmentStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
+                StorageEngineFactory.get(storageConfiguration), Paths.get(openCgaHome + "/analysis/resources/roleInCancer.txt"),
+                Paths.get(openCgaHome + "/analysis/resources/"));
     }
 }

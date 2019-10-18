@@ -1,38 +1,22 @@
-/*
- * Copyright 2015-2017 OpenCB
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.opencb.opencga.analysis;
 
-import org.apache.commons.collections.CollectionUtils;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.commons.Analyst;
+import org.opencb.biodata.models.commons.Software;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.analysis.exceptions.AnalysisException;
-import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
+import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationConfiguration;
+import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
-import org.opencb.oskar.analysis.OskarAnalysis;
+import org.opencb.oskar.analysis.OskarAnalysisExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,36 +25,31 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-public abstract class OpenCgaAnalysis extends OskarAnalysis {
+public abstract class OpenCgaAnalysisExecutor extends OskarAnalysisExecutor {
+
     protected CatalogManager catalogManager;
     protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
     protected VariantStorageManager variantStorageManager;
 
-    protected Path openCgaHome;
-    protected String studyId;
-    protected String sessionId;
-
+    protected Path opencgaHome;
     protected Logger logger;
 
-    public OpenCgaAnalysis(String studyId, Path outDir, Path openCgaHome, String sessionId) {
-        super(null, outDir);
+    public OpenCgaAnalysisExecutor() {
+    }
 
-        this.studyId = studyId;
-        this.openCgaHome = openCgaHome;
-        this.sessionId = sessionId;
-
+    public OpenCgaAnalysisExecutor(ObjectMap executorParams, Path outDir) {
+        super(executorParams, outDir);
         init();
     }
 
-    void init() {
-        logger = LoggerFactory.getLogger(this.getClass().toString());
-
+    public void init() {
         try {
+            opencgaHome = Paths.get(executorParams.getString("OPENCGA_HOME", ""));
+            logger = LoggerFactory.getLogger(this.getClass().toString());
+
             loadConfiguration();
             loadStorageConfiguration();
 
@@ -80,16 +59,17 @@ public abstract class OpenCgaAnalysis extends OskarAnalysis {
             e.printStackTrace();
         }
     }
+
     /**
      * This method attempts to load general configuration from OpenCGA installation folder, if not exists then loads JAR configuration.yml.
      *
      * @throws IOException If any IO problem occurs
      */
-    public void loadConfiguration() throws IOException {
-        FileUtils.checkDirectory(openCgaHome);
+    private void loadConfiguration() throws IOException {
+        FileUtils.checkDirectory(opencgaHome);
 
         // We load configuration file either from app home folder or from the JAR
-        Path path = openCgaHome.resolve("conf").resolve("configuration.yml");
+        Path path = opencgaHome.resolve("conf").resolve("configuration.yml");
         if (Files.exists(path)) {
             logger.debug("Loading configuration from '{}'", path.toAbsolutePath());
             this.configuration = Configuration.load(new FileInputStream(path.toFile()));
@@ -105,11 +85,11 @@ public abstract class OpenCgaAnalysis extends OskarAnalysis {
      *
      * @throws IOException If any IO problem occurs
      */
-    public void loadStorageConfiguration() throws IOException {
-        FileUtils.checkDirectory(openCgaHome);
+    private void loadStorageConfiguration() throws IOException {
+        FileUtils.checkDirectory(opencgaHome);
 
         // We load configuration file either from app home folder or from the JAR
-        Path path = openCgaHome.resolve("conf").resolve("storage-configuration.yml");
+        Path path = opencgaHome.resolve("conf").resolve("storage-configuration.yml");
         if (Files.exists(path)) {
             logger.debug("Loading storage configuration from '{}'", path.toAbsolutePath());
             this.storageConfiguration = StorageConfiguration.load(new FileInputStream(path.toFile()));

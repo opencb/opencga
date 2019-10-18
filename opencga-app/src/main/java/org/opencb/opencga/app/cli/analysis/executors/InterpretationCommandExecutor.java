@@ -18,22 +18,22 @@ package org.opencb.opencga.app.cli.analysis.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.hpg.bigdata.analysis.tools.ExecutorMonitor;
 import org.opencb.hpg.bigdata.analysis.tools.Status;
-import org.opencb.opencga.analysis.clinical.interpretation.InterpretationResult;
 import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationConfiguration;
 import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationConfiguration;
 import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.app.cli.analysis.options.InterpretationCommandOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.storage.core.manager.clinical.ClinicalUtils;
+import org.opencb.oskar.analysis.result.AnalysisResult;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -85,7 +85,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         String studyStr;
         String clinicalAnalysisId;
         List<String> panelList;
-        ObjectMap teamAnalysisOptions;
+        TeamInterpretationConfiguration config = new TeamInterpretationConfiguration();
 
         if (StringUtils.isNotEmpty(options.job)) {
             Query query = new Query(JobDBAdaptor.QueryParams.UID.key(), Long.parseLong(options.job));
@@ -98,12 +98,10 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
             Map<String, String> params = jobQueryResult.first().getParams();
             clinicalAnalysisId = params.get("clinicalAnalysisId");
             panelList = Arrays.asList(StringUtils.split(params.get("panelIds"), ","));
-            teamAnalysisOptions = new ObjectMap()
-                    .append("includeLowCoverage", params.get("includeLowCoverage"))
-                    .append("maxLowCoverage", params.get("maxLowCoverage"))
-                    .append("includeNoTier", params.get("includeNoTier"));
+//            config.setIncludeLowCoverage(params.get("includeLowCoverage"));
+//            config.setMaxLowCoverage(params.get("maxLowCoverage"));
+//            config.setSkipUntieredVariants(params.get("includeNoTier"))
             studyStr = String.valueOf(jobQueryResult.first().getAttributes().get(Job.OPENCGA_STUDY));
-
         } else {
             studyStr = options.study;
             clinicalAnalysisId = options.clinicalAnalysisId;
@@ -111,10 +109,9 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
                 throw new AnalysisException("Missing panel ids");
             }
             panelList = Arrays.asList(StringUtils.split(options.panelIds, ","));
-            teamAnalysisOptions = new ObjectMap()
-                    .append("includeLowCoverage", options.includeLowCoverage)
-                    .append("maxLowCoverage", options.maxLowCoverage)
-                    .append("includeNoTier", options.includeNoTier);
+            config.setIncludeLowCoverage(options.includeLowCoverage);
+            config.setMaxLowCoverage(options.maxLowCoverage);
+            config.setSkipUntieredVariants(!options.includeNoTier);
         }
 
         // Initialize monitor
@@ -124,12 +121,11 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
             logger.info("Running ShutdownHook. Tool execution has being aborted.");
         });
 
-        Path outDirPath = Paths.get(options.outdirId);
-        String opencgaHome = Paths.get(configuration.getDataDir()).getParent().toString();
-        String assembly = ClinicalUtils.getAssembly(catalogManager, studyStr, token);
+        Path outDir = Paths.get(options.outdirId);
+        Path opencgaHome = Paths.get(configuration.getDataDir()).getParent();
 
         Runtime.getRuntime().addShutdownHook(hook);
-        monitor.start(outDirPath);
+        monitor.start(outDir);
 
         ClinicalProperty.ModeOfInheritance moi;
         try {
@@ -139,13 +135,14 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         }
 
         // Run interpretation
-        TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis(clinicalAnalysisId, studyStr, panelList, moi,
-                teamAnalysisOptions, opencgaHome, token);
+        TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis(clinicalAnalysisId, studyStr, panelList, moi, outDir,
+                opencgaHome, config, token);
 
-        InterpretationResult interpretationResult = teamAnalysis.compute();
+        AnalysisResult result = teamAnalysis.execute();
 
         // Store team analysis in DB
-        catalogManager.getInterpretationManager().create(studyStr, clinicalAnalysisId, new Interpretation(interpretationResult.getResult()),
+        org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = null;
+        catalogManager.getInterpretationManager().create(studyStr, clinicalAnalysisId, new Interpretation(interpretation),
                 QueryOptions.empty(), token);
 
         // Stop monitor
@@ -155,13 +152,13 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
 
     private void tiering() throws Exception {
         InterpretationCommandOptions.TieringCommandOptions options = interpretationCommandOptions.tieringCommandOptions;
+        TieringInterpretationConfiguration config = new TieringInterpretationConfiguration();
 
         String token = options.commonOptions.sessionId;
 
         String studyStr;
         String clinicalAnalysisId;
         List<String> panelList;
-        ObjectMap tieringAnalysisOptions;
 
         if (StringUtils.isNotEmpty(options.job)) {
             Query query = new Query(JobDBAdaptor.QueryParams.UID.key(), Long.parseLong(options.job));
@@ -174,10 +171,9 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
             Map<String, String> params = jobQueryResult.first().getParams();
             clinicalAnalysisId = params.get("clinicalAnalysisId");
             panelList = Arrays.asList(StringUtils.split(params.get("panelIds"), ","));
-            tieringAnalysisOptions = new ObjectMap()
-                    .append("includeLowCoverage", params.get("includeLowCoverage"))
-                    .append("maxLowCoverage", params.get("maxLowCoverage"))
-                    .append("includeNoTier", params.get("includeNoTier"));
+//            config.setIncludeLowCoverage(params.get("includeLowCoverage"));
+//            config.setMaxLowCoverage(params.get("maxLowCoverage"));
+//            config.setSkipUntieredVariants(params.get("includeNoTier"))
             studyStr = String.valueOf(jobQueryResult.first().getAttributes().get(Job.OPENCGA_STUDY));
 
         } else {
@@ -187,10 +183,9 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
                 throw new AnalysisException("Missing panel ids");
             }
             panelList = Arrays.asList(StringUtils.split(options.panelIds, ","));
-            tieringAnalysisOptions = new ObjectMap()
-                    .append("includeLowCoverage", options.includeLowCoverage)
-                    .append("maxLowCoverage", options.maxLowCoverage)
-                    .append("includeNoTier", options.includeNoTier);
+            config.setIncludeLowCoverage(options.includeLowCoverage);
+            config.setMaxLowCoverage(options.maxLowCoverage);
+            config.setSkipUntieredVariants(!options.includeNoTier);
         }
 
         // Initialize monitor
@@ -200,27 +195,27 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
             logger.info("Running ShutdownHook. Tool execution has being aborted.");
         });
 
-        Path outDirPath = Paths.get(options.outdirId);
-        String opencgaHome = Paths.get(configuration.getDataDir()).getParent().toString();
-        String assembly = ClinicalUtils.getAssembly(catalogManager, studyStr, token);
+        Path outDir = Paths.get(options.outdirId);
+        Path opencgaHome = Paths.get(configuration.getDataDir()).getParent();
 
         Runtime.getRuntime().addShutdownHook(hook);
-        monitor.start(outDirPath);
+        monitor.start(outDir);
 
         // Run interpretation
         TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis(clinicalAnalysisId, studyStr, panelList,
-                options.penetrance, tieringAnalysisOptions, opencgaHome, token);
+                options.penetrance, outDir, opencgaHome, config, token);
 
-        InterpretationResult interpretationResult = tieringAnalysis.compute();
+        AnalysisResult analysisResult = tieringAnalysis.execute();
 
         // Store tiering analysis in DB
+        org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = null;
         if (options.commonOptions.params.getOrDefault("skipSave", "false").equals("true")) {
             logger.info("Skip save");
             System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(interpretationResult));
+                    .writeValueAsString(interpretation));
         } else {
             catalogManager.getInterpretationManager().create(studyStr, clinicalAnalysisId,
-                    new Interpretation(interpretationResult.getResult()), QueryOptions.empty(), token);
+                    new Interpretation(interpretation), QueryOptions.empty(), token);
         }
 
         // Stop monitor

@@ -57,7 +57,6 @@ import org.opencb.opencga.storage.core.clinical.ReportedVariantIterator;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.manager.StorageManager;
-import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -71,7 +70,9 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.INCLUDE_SAMPLE;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 
 public class ClinicalInterpretationManager extends StorageManager {
 
@@ -210,18 +211,19 @@ public class ClinicalInterpretationManager extends StorageManager {
     /*                 Clinical interpretation analysis utils                   */
     /*--------------------------------------------------------------------------*/
 
-    public List<Variant> getDeNovoVariants(String clinicalAnalysisId, String studyId, Query inputQuery, String sessionId)
+    public List<Variant> getDeNovoVariants(String clinicalAnalysisId, String studyId, Query query, QueryOptions queryOptions,
+                                           String sessionId)
             throws AnalysisException, CatalogException, StorageEngineException, IOException {
         logger.debug("Getting DeNovo variants");
 
-        Query query = new Query(defaultDeNovoQuery).append(VariantQueryParam.STUDY.key(), studyId);
+        Query currentQuery = new Query(defaultDeNovoQuery).append(STUDY.key(), studyId);
 
-        if (MapUtils.isNotEmpty(inputQuery)) {
-            query.putAll(inputQuery);
+        if (MapUtils.isNotEmpty(query)) {
+            currentQuery.putAll(query);
         }
 
         // Get and check clinical analysis and proband
-        ClinicalAnalysis clinicalAnalysis = ClinicalUtils.getClinicalAnalysis(studyId, clinicalAnalysisId, catalogManager, sessionId);
+        ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis(studyId, clinicalAnalysisId, sessionId);
         Individual proband = ClinicalUtils.getProband(clinicalAnalysis);
 
         QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyId,
@@ -238,13 +240,13 @@ public class ClinicalInterpretationManager extends StorageManager {
             logger.debug("Getting precomputed DE NOVO variants");
 
             // Mendelian errors are pre-calculated
-            query.put(VariantCatalogQueryUtils.FAMILY.key(), clinicalAnalysis.getFamily().getId());
-            query.put(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key(), "DeNovo");
-            query.put(INCLUDE_SAMPLE.key(), sampleId);
+            currentQuery.put(FAMILY.key(), clinicalAnalysis.getFamily().getId());
+            currentQuery.put(FAMILY_SEGREGATION.key(), "DeNovo");
+            currentQuery.put(INCLUDE_SAMPLE.key(), sampleId);
 
-            logger.debug("Query: {}", query.safeToString());
+            logger.debug("Query: {}", currentQuery.safeToString());
 
-            variants = variantStorageManager.get(query, QueryOptions.empty(), sessionId).getResult();
+            variants = variantStorageManager.get(currentQuery, queryOptions, sessionId).getResult();
         } else {
             // Get pedigree
             Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily(), proband.getId());
@@ -252,7 +254,7 @@ public class ClinicalInterpretationManager extends StorageManager {
             // Discard members from the pedigree that do not have any samples. If we don't do this, we will always assume
             ClinicalUtils.removeMembersWithoutSamples(pedigree, clinicalAnalysis.getFamily());
 
-            // Get the map of individual - sample id and update proband information (to be able to navigate to the parents and their
+            // Get the map of <individual ID, sample ID> and update proband information (to be able to navigate to the parents and their
             // samples easily)
             Map<String, String> sampleMap = ClinicalUtils.getSampleMap(clinicalAnalysis, proband);
             Map<String, List<String>> genotypeMap = ModeOfInheritance.deNovo(pedigree);
@@ -267,7 +269,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                 logger.error("No genotypes found");
                 return null;
             }
-            query.put(VariantQueryParam.GENOTYPE.key(), StringUtils.join(genotypeList, ";"));
+            currentQuery.put(VariantQueryParam.GENOTYPE.key(), StringUtils.join(genotypeList, ";"));
             samples.add(sampleMap.get(proband.getId()));
 
             int motherSampleIdx = 1;
@@ -287,10 +289,10 @@ public class ClinicalInterpretationManager extends StorageManager {
                 fatherSampleIdx = -1;
             }
 
-            query.put(INCLUDE_SAMPLE.key(), samples);
-            cleanQuery(query);
+            currentQuery.put(INCLUDE_SAMPLE.key(), samples);
+            cleanQuery(currentQuery);
 
-            VariantDBIterator iterator = variantStorageManager.iterator(query, QueryOptions.empty(), sessionId);
+            VariantDBIterator iterator = variantStorageManager.iterator(currentQuery, queryOptions, sessionId);
             variants = ModeOfInheritance.deNovo(iterator, 0, motherSampleIdx, fatherSampleIdx);
         }
         logger.debug("DeNovo variants obtained: {}", variants.size());
@@ -298,19 +300,19 @@ public class ClinicalInterpretationManager extends StorageManager {
         return variants;
     }
 
-    public Map<String, List<Variant>> getCompoundHeterozigousVariants(String clinicalAnalysisId, String studyId, Query inputQuery,
-                                                                      String sessionId)
+    public Map<String, List<Variant>> getCompoundHeterozigousVariants(String clinicalAnalysisId, String studyId, Query query,
+                                                                      QueryOptions queryOptions, String sessionId)
             throws AnalysisException, CatalogException, StorageEngineException, IOException {
         logger.debug("Getting Compound Heterozigous variants");
 
-        Query query = new Query(defaultCompoundHeterozigousQuery).append(VariantQueryParam.STUDY.key(), studyId);
+        Query currentQuery = new Query(defaultCompoundHeterozigousQuery).append(STUDY.key(), studyId);
 
-        if (MapUtils.isNotEmpty(inputQuery)) {
-            query.putAll(inputQuery);
+        if (MapUtils.isNotEmpty(query)) {
+            currentQuery.putAll(query);
         }
 
         // Get and check clinical analysis and proband
-        ClinicalAnalysis clinicalAnalysis = ClinicalUtils.getClinicalAnalysis(studyId, clinicalAnalysisId, catalogManager, sessionId);
+        ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis(studyId, clinicalAnalysisId, sessionId);
         Individual proband = ClinicalUtils.getProband(clinicalAnalysis);
 
         // Get pedigree
@@ -350,15 +352,69 @@ public class ClinicalInterpretationManager extends StorageManager {
             return null;
         }
 
-        query.put(VariantQueryParam.GENOTYPE.key(), StringUtils.join(genotypeList, ";"));
-        cleanQuery(query);
+        currentQuery.put(VariantQueryParam.GENOTYPE.key(), StringUtils.join(genotypeList, ";"));
+        cleanQuery(currentQuery);
 
         logger.debug("CH Samples: {}", StringUtils.join(samples, ","));
         logger.debug("CH Proband idx: {}, mother idx: {}, father idx: {}", probandSampleIdx, motherSampleIdx, fatherSampleIdx);
-        logger.debug("CH Query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
-        VariantDBIterator iterator = variantStorageManager.iterator(query, QueryOptions.empty(), sessionId);
+        logger.debug("CH Query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(currentQuery));
+        VariantDBIterator iterator = variantStorageManager.iterator(currentQuery, queryOptions, sessionId);
 
         return ModeOfInheritance.compoundHeterozygous(iterator, probandSampleIdx, motherSampleIdx, fatherSampleIdx);
+    }
+
+    public ClinicalAnalysis getClinicalAnalysis(String studyId, String clinicalAnalysisId, String sessionId)
+            throws AnalysisException, CatalogException {
+        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
+                .get(studyId, clinicalAnalysisId, QueryOptions.empty(), sessionId);
+
+        if (clinicalAnalysisQueryResult.getNumResults() == 0) {
+            throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyId);
+        }
+
+        ClinicalAnalysis clinicalAnalysis = clinicalAnalysisQueryResult.first();
+
+        if (clinicalAnalysis.getProband() == null || StringUtils.isEmpty(clinicalAnalysis.getProband().getId())) {
+            throw new AnalysisException("Missing proband in clinical analysis " + clinicalAnalysisId);
+        }
+
+        return clinicalAnalysis;
+    }
+
+    public List<DiseasePanel> getDiseasePanels(Query query, String sessionId) throws AnalysisException {
+        if (!query.containsKey(STUDY)) {
+            throw new AnalysisException("Missing study in query");
+        }
+        List<DiseasePanel> diseasePanels = new ArrayList<>();
+        if (!query.containsKey(PANEL)) {
+            return diseasePanels;
+        }
+        return getDiseasePanels(query.getString(STUDY.key()), query.getAsStringList(query.getString(PANEL.key())), sessionId);
+    }
+
+    public List<DiseasePanel> getDiseasePanels(String studyId, List<String> diseasePanelIds, String sessionId)
+            throws AnalysisException {
+        List<DiseasePanel> diseasePanels = new ArrayList<>();
+        List<QueryResult<Panel>> queryResults = null;
+        try {
+            queryResults = catalogManager.getPanelManager().get(studyId, diseasePanelIds, QueryOptions.empty(),
+                    sessionId);
+        } catch (CatalogException e) {
+            throw new AnalysisException("Error accessing panel manager", e);
+        }
+
+        if (queryResults.size() != diseasePanelIds.size()) {
+            throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels queried");
+        }
+
+        for (QueryResult<Panel> queryResult : queryResults) {
+            if (queryResult.getNumResults() != 1) {
+                throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels queried");
+            }
+            diseasePanels.add(queryResult.first());
+        }
+
+        return diseasePanels;
     }
 
     public List<Variant> getSecondaryFindings(String inputSampleId, String clinicalAnalysisId, String studyId, String sessionId)
@@ -367,7 +423,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         // sampleId has preference over clinicalAnalysisId
         if (StringUtils.isEmpty(sampleId)) {
             // Throws an Exception if it cannot fetch analysis ID or proband is null
-            ClinicalAnalysis clinicalAnalysis = ClinicalUtils.getClinicalAnalysis(studyId, clinicalAnalysisId, catalogManager, sessionId);
+            ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis(studyId, clinicalAnalysisId, sessionId);
             if (CollectionUtils.isNotEmpty(clinicalAnalysis.getProband().getSamples())) {
                 for (Sample sample : clinicalAnalysis.getProband().getSamples()) {
                     if (!sample.isSomatic()) {
@@ -384,11 +440,11 @@ public class ClinicalInterpretationManager extends StorageManager {
 
         // Prepare query object
         Query query = new Query();
-        query.put(VariantQueryParam.STUDY.key(), studyId);
+        query.put(STUDY.key(), studyId);
         query.put(VariantQueryParam.SAMPLE.key(), sampleId);
 
         // Get the correct actionable variants for the assembly
-        String assembly = ClinicalUtils.getAssembly(catalogManager, studyId, sessionId);
+        String assembly = getAssembly(studyId, sessionId);
         Map<String, List<String>> actionableVariants = actionableVariantManager.getActionableVariants(assembly);
         if (actionableVariants != null) {
             Iterator<String> iterator = actionableVariants.keySet().iterator();
@@ -415,7 +471,8 @@ public class ClinicalInterpretationManager extends StorageManager {
     }
 
     public List<ReportedVariant> getSecondaryFindings(ClinicalAnalysis clinicalAnalysis,  List<String> sampleNames,
-                                                      String studyId, ReportedVariantCreator creator, String sessionId) throws Exception {
+                                                      String studyId, ReportedVariantCreator creator, String sessionId)
+            throws StorageEngineException, AnalysisException, CatalogException, IOException {
         List<ReportedVariant> secondaryFindings = null;
         if (clinicalAnalysis.getConsent() != null
                 && clinicalAnalysis.getConsent().getSecondaryFindings() == ClinicalConsent.ConsentStatus.YES) {
@@ -428,8 +485,8 @@ public class ClinicalInterpretationManager extends StorageManager {
         return secondaryFindings;
     }
 
-    public List<ReportedLowCoverage> getReportedLowCoverage(ClinicalAnalysis clinicalAnalysis, List<DiseasePanel> diseasePanels,
-                                                            String studyId, String sessionId)
+    public List<ReportedLowCoverage> getReportedLowCoverage(int maxCoverage, ClinicalAnalysis clinicalAnalysis,
+                                                            List<DiseasePanel> diseasePanels, String studyId, String sessionId)
             throws AnalysisException {
         String clinicalAnalysisId = clinicalAnalysis.getId();
 
@@ -471,7 +528,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                 for (DiseasePanel.GenePanel genePanel : diseasePanel.getGenes()) {
                     String geneName = genePanel.getId();
                     if (!lowCoverageByGeneDone.contains(geneName)) {
-                        reportedLowCoverages.addAll(getReportedLowCoverages(geneName, bamFileId, DEFAULT_COVERAGE_THRESHOLD, studyId,
+                        reportedLowCoverages.addAll(getReportedLowCoverages(geneName, bamFileId, maxCoverage, studyId,
                                 sessionId));
                         lowCoverageByGeneDone.add(geneName);
                     }
@@ -507,6 +564,32 @@ public class ClinicalInterpretationManager extends StorageManager {
         }
         // And for that exon regions, get low coverage regions
         return reportedLowCoverages;
+    }
+
+    public Analyst getAnalyst(String token) throws AnalysisException {
+        try {
+            String userId = catalogManager.getUserManager().getUserId(token);
+            QueryResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
+                    Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
+
+            return new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization());
+        } catch (CatalogException e) {
+            throw new AnalysisException(e);
+        }
+    }
+
+    public String getAssembly(String studyId, String sessionId) throws CatalogException {
+        String assembly = "";
+        QueryResult<Project> projectQueryResult;
+        projectQueryResult = catalogManager.getProjectManager().get(new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
+                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
+        if (CollectionUtils.isNotEmpty(projectQueryResult.getResult())) {
+            assembly = projectQueryResult.first().getOrganism().getAssembly();
+        }
+        if (StringUtils.isNotEmpty(assembly)) {
+            assembly = assembly.toLowerCase();
+        }
+        return assembly;
     }
 
     public Interpretation generateInterpretation(String analysisName, String clinicalAnalysisId, Query query,
@@ -720,9 +803,9 @@ public class ClinicalInterpretationManager extends StorageManager {
     private void cleanQuery(Query query) {
         if (query.containsKey(VariantQueryParam.GENOTYPE.key())) {
             query.remove(VariantQueryParam.SAMPLE.key());
-            query.remove(VariantCatalogQueryUtils.FAMILY.key());
-            query.remove(VariantCatalogQueryUtils.FAMILY_PHENOTYPE.key());
-            query.remove(VariantCatalogQueryUtils.MODE_OF_INHERITANCE.key());
+            query.remove(FAMILY.key());
+            query.remove(FAMILY_PHENOTYPE.key());
+            query.remove(MODE_OF_INHERITANCE.key());
         }
     }
 }

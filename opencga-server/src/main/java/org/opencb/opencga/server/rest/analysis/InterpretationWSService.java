@@ -756,6 +756,8 @@ public class InterpretationWSService extends AnalysisWSService {
                 panelList = Arrays.asList(panelIds.split(","));
             }
 
+            java.nio.file.Path outDir = null;
+
             Object result;
             if (save) {
                 // Queue job
@@ -768,9 +770,12 @@ public class InterpretationWSService extends AnalysisWSService {
                     return createErrorResponse(new AnalysisException("Unknown 'familySegregation' value: " + segregation));
                 }
 
+                TeamInterpretationConfiguration config = new TeamInterpretationConfiguration();
+                setInterpretationConfiguration(uriInfo.getQueryParameters(), config);
+
                 // Execute TEAM analysis
                 TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis(clinicalAnalysisId, studyStr, panelList, moi,
-                        teamAnalysisOptions, opencgaHome.toString(), sessionId);
+                        outDir, opencgaHome, config, sessionId);
                 result = teamAnalysis.execute();
             }
             return createAnalysisOkResponse(result);
@@ -796,7 +801,6 @@ public class InterpretationWSService extends AnalysisWSService {
         try {
             // Get analysis options from query
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            ObjectMap tieringAnalysisOptions = getAnalysisOptions(queryOptions);
 
             if (penetrance == null) {
                 penetrance = ClinicalProperty.Penetrance.COMPLETE;
@@ -807,15 +811,19 @@ public class InterpretationWSService extends AnalysisWSService {
                 panelList = Arrays.asList(panelIds.split(","));
             }
 
+            java.nio.file.Path outDir = null;
 
             Object result;
             if (save) {
                 // Queue job
-                result = catalogInterpretationManager.queue(studyId, "tiering", clinicalAnalysisId, panelList, tieringAnalysisOptions, sessionId);
+                result = catalogInterpretationManager.queue(studyId, "tiering", clinicalAnalysisId, panelList, null, sessionId);
             } else {
                 // Execute tiering analysis
+                TieringInterpretationConfiguration config = new TieringInterpretationConfiguration();
+                setInterpretationConfiguration(uriInfo.getQueryParameters(), config);
+
                 TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis(clinicalAnalysisId, studyId, panelList,
-                        penetrance, tieringAnalysisOptions, opencgaHome.toString(), sessionId);
+                        penetrance, outDir, opencgaHome, config, sessionId);
                 result = tieringAnalysis.execute();
             }
 
@@ -924,15 +932,17 @@ public class InterpretationWSService extends AnalysisWSService {
         try {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            Query query = VariantAnalysisWSService.getVariantQuery(queryOptions);
-            ObjectMap customAnalysisOptions = getAnalysisOptions(queryOptions);
-            customAnalysisOptions.put(ClinicalUtils.SKIP_UNTIERED_VARIANTS_PARAM, false);
+
+            java.nio.file.Path outDir = null;
+
+            CustomInterpretationConfiguration config = new CustomInterpretationConfiguration();
+            setInterpretationConfiguration(uriInfo.getQueryParameters(), config);
 
             // Execute custom analysis
-            CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis(clinicalAnalysisId, studyId, query,
-                    customAnalysisOptions, opencgaHome.toString(), sessionId);
+            CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis(clinicalAnalysisId, studyId, query, queryOptions,
+                    outDir, opencgaHome, config, sessionId);
             AnalysisResult result = customAnalysis.execute();
-            return null; //createAnalysisOkResponse(interpretationResult);
+            return createAnalysisOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -949,37 +959,21 @@ public class InterpretationWSService extends AnalysisWSService {
     public Response cancerTiering(
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyId,
             @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId) { //},
-//            @ApiParam(value = "Save interpretation in Catalog") @QueryParam("save") boolean save) {
         try {
-            // Get analysis options from query
-            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            ObjectMap options = new ObjectMap();
-
-            String param = ClinicalUtils.INCLUDE_LOW_COVERAGE_PARAM;
-            options.put(param, queryOptions.getBoolean(param, false));
-
-            param = ClinicalUtils.MAX_LOW_COVERAGE_PARAM;
-            options.put(param, queryOptions.getInt(param, ClinicalUtils.LOW_COVERAGE_DEFAULT));
-
-            String dataDir = configuration.getDataDir();
-            String opencgaHome = Paths.get(dataDir).getParent().toString();
+            java.nio.file.Path outDir = null;
 
             Object result;
-//            if (save) {
-//                // Queue job
-//                result = catalogInterpretationManager.queue(studyId, "cancerTiering", clinicalAnalysisId, panelList, tieringAnalysisOptions, sessionId);
-//            } else {
 
             // Execute cancer tiering analysis
+            CancerTieringInterpretationConfiguration config = new CancerTieringInterpretationConfiguration();
+            setInterpretationConfiguration(uriInfo.getQueryParameters(), config);
+
             List<String> variantsIdsToDiscard = null;
 
             CancerTieringInterpretationAnalysis cancerTieringInterpretationAnalysis = new CancerTieringInterpretationAnalysis(
-                    clinicalAnalysisId, studyId, variantsIdsToDiscard, options, opencgaHome, sessionId);
+                    clinicalAnalysisId, studyId, variantsIdsToDiscard, outDir, opencgaHome, config, sessionId);
 
-            result = cancerTieringInterpretationAnalysis.execute();
-//            }
-
-            return createAnalysisOkResponse(result);
+            return createAnalysisOkResponse(cancerTieringInterpretationAnalysis.execute());
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1053,5 +1047,12 @@ public class InterpretationWSService extends AnalysisWSService {
         analysisOptions.put(param, queryOptions.getBoolean(param, true));
 
         return analysisOptions;
+    }
+
+    private void setInterpretationConfiguration(MultivaluedMap<String, String> params, InterpretationAnalysisConfiguration config) {
+        config.setMaxLowCoverage(Integer.parseInt(params.getFirst(ClinicalUtils.MAX_LOW_COVERAGE_PARAM)));
+        config.setIncludeLowCoverage(Boolean.parseBoolean(params.getFirst(ClinicalUtils.MAX_LOW_COVERAGE_PARAM)));
+        config.setSkipDiagnosticVariants(Boolean.parseBoolean(params.getFirst(ClinicalUtils.MAX_LOW_COVERAGE_PARAM)));
+        config.setSkipUntieredVariants(Boolean.parseBoolean(params.getFirst(ClinicalUtils.MAX_LOW_COVERAGE_PARAM)));
     }
 }

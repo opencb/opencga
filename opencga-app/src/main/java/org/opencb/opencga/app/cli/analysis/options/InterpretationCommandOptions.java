@@ -55,7 +55,7 @@ public class InterpretationCommandOptions {
         public boolean includeLowCoverage;
 
         @Parameter(names = {"--max-low-coverage"}, description = "Max. low coverage", arity = 1)
-        public boolean maxLowCoverage;
+        public int maxLowCoverage;
 
         @Parameter(names = {"--include-no-tier"}, description = "Reported variants without tier", arity = 1)
         public boolean includeNoTier;
@@ -91,7 +91,7 @@ public class InterpretationCommandOptions {
         public boolean includeLowCoverage;
 
         @Parameter(names = {"--max-low-coverage"}, description = "Max. low coverage", arity = 1)
-        public boolean maxLowCoverage;
+        public int maxLowCoverage;
 
         @Parameter(names = {"--include-no-tier"}, description = "Reported variants without tier", arity = 1)
         public boolean includeNoTier;

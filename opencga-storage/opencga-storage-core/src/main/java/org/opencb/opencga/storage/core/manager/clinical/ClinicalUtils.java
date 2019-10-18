@@ -1,6 +1,11 @@
 package org.opencb.opencga.storage.core.manager.clinical;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
@@ -9,16 +14,22 @@ import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.Family;
+import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.Panel;
 import org.opencb.oskar.analysis.exceptions.AnalysisException;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Path;
 import java.util.*;
 
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.COMPOUND_HETEROZYGOUS;
@@ -31,24 +42,6 @@ public class ClinicalUtils {
     public static final String SKIP_UNTIERED_VARIANTS_PARAM = "skipUntieredVariants";
     public static final int LOW_COVERAGE_DEFAULT = 20;
     public static final int DEFAULT_COVERAGE_THRESHOLD = 20;
-
-    public static ClinicalAnalysis getClinicalAnalysis(String studyId, String clinicalAnalysisId, CatalogManager catalogManager,
-                                                       String sessionId) throws AnalysisException, CatalogException {
-        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
-                .get(studyId, clinicalAnalysisId, QueryOptions.empty(), sessionId);
-
-        if (clinicalAnalysisQueryResult.getNumResults() == 0) {
-            throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyId);
-        }
-
-        ClinicalAnalysis clinicalAnalysis = clinicalAnalysisQueryResult.first();
-
-        if (clinicalAnalysis.getProband() == null || StringUtils.isEmpty(clinicalAnalysis.getProband().getId())) {
-            throw new AnalysisException("Missing proband in clinical analysis " + clinicalAnalysisId);
-        }
-
-        return clinicalAnalysis;
-    }
 
     public static Individual getProband(ClinicalAnalysis clinicalAnalysis) throws AnalysisException {
         Individual proband = clinicalAnalysis.getProband();
@@ -160,27 +153,6 @@ public class ClinicalUtils {
         return diseasePanels;
     }
 
-    public static List<DiseasePanel> getDiseasePanels(String studyId, List<String> diseasePanelIds, CatalogManager catalogManager,
-                                                      String sessionId)
-            throws AnalysisException, CatalogException {
-        List<DiseasePanel> diseasePanels = new ArrayList<>();
-        List<QueryResult<Panel>> queryResults = catalogManager.getPanelManager().get(studyId, diseasePanelIds, QueryOptions.empty(),
-                sessionId);
-
-        if (queryResults.size() != diseasePanelIds.size()) {
-            throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels queried");
-        }
-
-        for (QueryResult<Panel> queryResult : queryResults) {
-            if (queryResult.getNumResults() != 1) {
-                throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels queried");
-            }
-            diseasePanels.add(queryResult.first());
-        }
-
-        return diseasePanels;
-    }
-
     public static List<DiseasePanel.VariantPanel> getDiagnosticVariants(List<DiseasePanel> diseasePanels) {
         List<DiseasePanel.VariantPanel> diagnosticVariants = new ArrayList<>();
         for (DiseasePanel diseasePanel : diseasePanels) {
@@ -191,23 +163,19 @@ public class ClinicalUtils {
         return diagnosticVariants;
     }
 
-    public static String getAssembly(CatalogManager catalogManager, String studyId, String sessionId) {
-        String assembly = "";
-        QueryResult<Project> projectQueryResult;
-        try {
-            projectQueryResult = catalogManager.getProjectManager().get(
-                    new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
-                    new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
-            if (CollectionUtils.isNotEmpty(projectQueryResult.getResult())) {
-                assembly = projectQueryResult.first().getOrganism().getAssembly();
+    public static List<String> getGeneIds(List<DiseasePanel> diseasePanels) {
+        List<String> geneIds = new ArrayList<>();
+
+        if (CollectionUtils.isNotEmpty(diseasePanels)) {
+            for (DiseasePanel diseasePanel : diseasePanels) {
+                if (diseasePanel != null && CollectionUtils.isNotEmpty(diseasePanel.getGenes())) {
+                    for (DiseasePanel.GenePanel gene : diseasePanel.getGenes()) {
+                        geneIds.add(gene.getId());
+                    }
+                }
             }
-        } catch (CatalogException e) {
-            e.printStackTrace();
         }
-        if (org.apache.commons.lang3.StringUtils.isNotEmpty(assembly)) {
-            assembly = assembly.toLowerCase();
-        }
-        return assembly;
+        return geneIds;
     }
 
     public static Map<String, String> getSampleMap(ClinicalAnalysis clinicalAnalysis, Individual proband) throws AnalysisException {
@@ -286,5 +254,37 @@ public class ClinicalUtils {
             reportedVariantMap.put(entry.getKey(), creator.create(entry.getValue(), COMPOUND_HETEROZYGOUS));
         }
         return creator.groupCHVariants(reportedVariantMap);
+    }
+
+    public static List<ReportedVariant> readReportedVariants(Path path) {
+        List<ReportedVariant> reportedVariants = new ArrayList<>();
+        if (path != null || path.toFile().exists()) {
+            try {
+                ObjectReader objReader = JacksonUtils.getDefaultObjectMapper().readerFor(ReportedVariant.class);
+                LineIterator lineIterator = FileUtils.lineIterator(path.toFile());
+                while (lineIterator.hasNext()) {
+                    reportedVariants.add(objReader.readValue(lineIterator.next()));
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return reportedVariants;
+    }
+
+    public static void writeReportedVariants(List<ReportedVariant> reportedVariants, Path path) throws AnalysisException {
+        // Write primary findings
+        try {
+            PrintWriter pw = new PrintWriter(path.toFile());
+            if (CollectionUtils.isNotEmpty(reportedVariants)) {
+                ObjectWriter objectWriter = JacksonUtils.getDefaultObjectMapper().writerFor(ReportedVariant.class);
+                for (ReportedVariant primaryFinding : reportedVariants) {
+                    pw.println(objectWriter.writeValueAsString(primaryFinding));
+                }
+            }
+            pw.close();
+        } catch (FileNotFoundException | JsonProcessingException e) {
+            throw new AnalysisException("Error writing reported variants", e);
+        }
     }
 }

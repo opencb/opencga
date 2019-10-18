@@ -16,20 +16,42 @@
 
 package org.opencb.opencga.analysis.clinical.interpretation;
 
-import org.opencb.commons.datastore.core.ObjectMap;
+import org.apache.commons.collections.CollectionUtils;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
+import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
+import org.opencb.biodata.models.commons.Analyst;
+import org.opencb.biodata.models.commons.Software;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.Interpretation;
+import org.opencb.oskar.analysis.exceptions.AnalysisException;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
-public abstract class FamilyInterpretationAnalysis extends InterpretationAnalysis {
+import static org.opencb.opencga.storage.core.manager.clinical.ClinicalUtils.readReportedVariants;
 
-    protected List<String> diseasePanelIds;
+public abstract class FamilyInterpretationAnalysis extends InterpretationAnalysis {
 
     @Deprecated
     protected final static String SEPARATOR = "__";
 
-    public FamilyInterpretationAnalysis(String clinicalAnalysisId, String studyId, List<String> diseasePanelIds, ObjectMap options,
-                                        String opencgaHome, String sessionId) {
-        super(clinicalAnalysisId, studyId, options, opencgaHome, sessionId);
-        this.diseasePanelIds = diseasePanelIds;
+//    public FamilyInterpretationAnalysis(ObjectMap executorParams, Path outDir) {
+//        super(executorParams, outDir);
+//    }
+//
+//    public FamilyInterpretationAnalysis(String clinicalAnalysisId, String studyId, Path outDir, ObjectMap executorParams, Path opencgaHome,
+//                                        String sessionId) {
+//        super(clinicalAnalysisId, studyId, outDir, executorParams, opencgaHome, sessionId);
+//    }
+
+    public FamilyInterpretationAnalysis(String clinicalAnalysisId, String studyId, Path outDir, Path openCgaHome, String sessionId) {
+        super(clinicalAnalysisId, studyId, outDir, openCgaHome, sessionId);
     }
 }

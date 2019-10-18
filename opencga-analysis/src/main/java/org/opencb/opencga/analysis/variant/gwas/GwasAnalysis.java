@@ -43,22 +43,25 @@ public class GwasAnalysis extends OpenCgaAnalysis {
 
     private String token;
 
-    public GwasAnalysis(String study, String opencgaHome, String sessionId) {
-        super(study, opencgaHome, sessionId);
+    public GwasAnalysis(String study, Path opencgaHome, String sessionId) {
+        super(study, null, opencgaHome, sessionId);
     }
 
-    public GwasAnalysis(String study, List<String> list1, List<String> list2, ObjectMap executorParams, GwasConfiguration gwasConfiguration, String token) {
-        super(study, "", token);
+    public GwasAnalysis(String study, List<String> list1, List<String> list2, ObjectMap executorParams, GwasConfiguration gwasConfiguration,
+                        String token) {
+        super(study, null, null, token);
         gwas = new Gwas(executorParams, outDir, gwasConfiguration).setSampleList1(list1).setSampleList2(list2);
     }
 
-    public GwasAnalysis(String study, String cohort1, String cohort2, ObjectMap executorParams, GwasConfiguration gwasConfiguration, String token) {
-        super(study, "", token);
+    public GwasAnalysis(String study, String cohort1, String cohort2, ObjectMap executorParams, GwasConfiguration gwasConfiguration,
+                        String token) {
+        super(study, null, null, token);
         gwas = new Gwas(executorParams, outDir, gwasConfiguration).setCohort1(cohort1).setCohort2(cohort2);
     }
 
-    public GwasAnalysis(String study, Query query1, Query query2, ObjectMap executorParams, GwasConfiguration gwasConfiguration, String token) {
-        super(study, "", token);
+    public GwasAnalysis(String study, Query query1, Query query2, ObjectMap executorParams, GwasConfiguration gwasConfiguration,
+                        String token) {
+        super(study, null, null, token);
         this.query1 = query1;
         this.query2 = query2;
         gwas = new Gwas(executorParams, outDir, gwasConfiguration);

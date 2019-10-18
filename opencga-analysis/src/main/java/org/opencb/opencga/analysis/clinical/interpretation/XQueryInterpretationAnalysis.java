@@ -16,25 +16,37 @@
 
 package org.opencb.opencga.analysis.clinical.interpretation;
 
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
 import org.opencb.bionetdb.core.exceptions.BioNetDBException;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.oskar.analysis.exceptions.AnalysisException;
 
+import java.nio.file.Path;
 import java.util.List;
 
 public class XQueryInterpretationAnalysis extends FamilyInterpretationAnalysis {
 
-    private BioNetDbManager bioNetDbManager;
-
     private final static String XQUERY_ANALYSIS_NAME = "BioNetInterpretation";
 
+    private List<String> diseasePanelIds;
+    private BioNetDbManager bioNetDbManager;
+    private BionetInterpretationConfiguration config;
+
+//    private List<DiseasePanel> diseasePanels;
+//    private ClinicalAnalysis clinicalAnalysis;
+
     public XQueryInterpretationAnalysis(String clinicalAnalysisId, String studyId, List<String> diseasePanelIds,
-                                        BioNetDBConfiguration configuration, ObjectMap options, String opencgaHome, String sessionId)
-            throws BioNetDBException {
-        super(clinicalAnalysisId, studyId, diseasePanelIds, options, opencgaHome, sessionId);
-        this.bioNetDbManager = new BioNetDbManager(configuration);
+                                      BioNetDBConfiguration bionetConfig, Path outDir, Path openCgaHome,
+                                      BionetInterpretationConfiguration config, String sessionId) throws BioNetDBException {
+        super(clinicalAnalysisId, studyId, outDir, openCgaHome, sessionId);
+
+        this.diseasePanelIds = diseasePanelIds;
+        this.bioNetDbManager = new BioNetDbManager(bionetConfig);
+        this.config = config;
     }
 
     @Override
