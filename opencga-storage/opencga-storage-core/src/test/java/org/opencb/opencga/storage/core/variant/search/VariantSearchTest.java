@@ -21,6 +21,7 @@ import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageTest;
@@ -50,10 +51,11 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
         System.out.println(smallInputUri.getPath());
 
-        List<Variant> variants = getVariants(limit);
-        List<Variant> annotatedVariants = annotatedVariants(variants);
+        StudyMetadata studyMetadata = metadataManager.createStudy("s1");
 
-        metadataManager.createStudy("s1");
+        List<Variant> variants = getVariants(limit);
+        List<Variant> annotatedVariants = annotatedVariants(variants, studyMetadata.getName());
+
 
         String collection = solr.coreName;
         variantSearchManager.createCore(collection, VariantSearchManager.CONF_SET);
@@ -237,8 +239,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
         QueryOptions queryOptions = new QueryOptions();
         //String facet = "type[SNV,TOTO]>>biotypes";
-        //String facet = "genes[CDK11A,WDR78,ENSG00000115183,TOTO]>>type[INDEL,DELETION,SNV]";
-        String facet = "genes";
+        String facet = "genes[CDK11A,WDR78,ENSG00000115183,TOTO]>>type[INDEL,DELETION,SNV]";
         queryOptions.put(QueryOptions.FACET, facet);
         FacetQueryResult facetQueryResult = variantSearchManager.facetedQuery(collection, new Query(), queryOptions);
         String s = JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facetQueryResult);
@@ -318,12 +319,17 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
     }
 
     private List<Variant> annotatedVariants(List<Variant> variants) throws IOException {
+        return annotatedVariants(variants, "");
+    }
+
+    private List<Variant> annotatedVariants(List<Variant> variants, String studyId) throws IOException {
         CellBaseClient cellBaseClient = new CellBaseClient(variantStorageEngine.getConfiguration().getCellbase().toClientConfiguration());
         QueryResponse<VariantAnnotation> queryResponse = cellBaseClient.getVariantClient().getAnnotationByVariantIds(variants.stream().map(Variant::toString).collect(Collectors.toList()), QueryOptions.empty());
 
         // Set annotations
         for (int i = 0; i < variants.size(); i++) {
             variants.get(i).setAnnotation(queryResponse.getResponse().get(i).first());
+            variants.get(i).getStudies().get(0).setStudyId(studyId);
         }
         return variants;
     }
