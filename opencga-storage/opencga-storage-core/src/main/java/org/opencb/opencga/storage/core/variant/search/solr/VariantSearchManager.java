@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.variant.search.solr;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrClient;
@@ -37,6 +38,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.run.ParallelTaskRunner;
@@ -448,6 +450,7 @@ public class VariantSearchManager {
         //   - consequenceType is replaced by soAcc (i.e., by the field name in the Solr schema)
         boolean replaceSoAcc = false;
         boolean replaceGenes = false;
+        Map<String, Set<String>> includingValuesMap = new HashMap<>();
         if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
             String facetQuery = queryOptions.getString(QueryOptions.FACET);
 
@@ -456,6 +459,13 @@ public class VariantSearchManager {
                     && (facetQuery.contains("genes;") || facetQuery.contains("genes>>") || facetQuery.endsWith("genes"))) {
                 throw new VariantSearchException("Invalid gene facet query: " + facetQuery);
             }
+
+            try {
+                includingValuesMap = new FacetQueryParser().getIncludingValuesMap(facetQuery);
+            } catch (Exception e) {
+                throw new VariantSearchException("Error parsing faceted query", e);
+            }
+
             if (!facetQuery.contains("genes[") && facetQuery.contains("genes")) {
                 // Force to query genes by prefix ENSG
                 queryOptions.put(QueryOptions.FACET, facetQuery.replace("genes", "genes[ENSG0*]"));
@@ -535,12 +545,9 @@ public class VariantSearchManager {
             for (Gene gene: geneQueryResponse.allResults()) {
                 ensemblGeneIdToGeneName.put(gene.getId(), gene.getName());
             }
-//            replaceEnsemblGeneIds(facetResult.getResults(), ensemblGeneIdToGeneName);
         }
 
-        if (replaceGenes || replaceSoAcc) {
-            facetPostProcessing(facetResult.getResults(), ensemblGeneIdToGeneName, replaceSoAcc);
-        }
+        facetPostProcessing(facetResult.getResults(), includingValuesMap, ensemblGeneIdToGeneName, replaceSoAcc);
 
         return facetResult;
     }
@@ -637,24 +644,46 @@ public class VariantSearchManager {
         return new ArrayList<>(ensemblGeneIds);
     }
 
-    private void facetPostProcessing(List<FacetQueryResult.Field> results, Map<String, String> ensemblGeneIdToGeneName,
-                                     boolean replaceSoAcc) {
+    private void facetPostProcessing(List<FacetQueryResult.Field> results, Map<String, Set<String>> includingValuesMap,
+                                     Map<String, String> ensemblGeneIdToGeneName, boolean replaceSoAcc) {
         Queue<FacetQueryResult.Field> queue = new LinkedList<>();
         for (FacetQueryResult.Field facetField: results) {
             queue.add(facetField);
         }
         while (queue.size() > 0) {
             FacetQueryResult.Field facet = queue.remove();
+            String facetName = facet.getName();
+
             boolean toSoTerm = false;
-            if (replaceSoAcc && "soAcc".equals(facet.getName())) {
+            boolean isGene = false;
+            if ("genes".equals(facetName)) {
+                isGene = true;
+            } else if (replaceSoAcc && "soAcc".equals(facetName)) {
                 facet.setName("consequenceType");
                 toSoTerm = true;
             }
-            for (FacetQueryResult.Bucket bucket: facet.getBuckets()) {
+
+            List<FacetQueryResult.Bucket> validBuckets =  new ArrayList<>();
+            Map<String, Set<String>> presentValues = new HashMap<>();
+            if (MapUtils.isNotEmpty(includingValuesMap) && CollectionUtils.isNotEmpty(includingValuesMap.get(facetName))) {
+                presentValues.put(facetName, new HashSet<>());
+            }
+
+            for (FacetQueryResult.Bucket bucket : facet.getBuckets()) {
+                // We save values for a field name with including values
+                if (presentValues.containsKey(facetName)) {
+                    presentValues.get(facetName).add(bucket.getValue());
+                }
+
                 if (toSoTerm) {
                     bucket.setValue(ConsequenceTypeMappings.accessionToTerm.get(Integer.parseInt(bucket.getValue())));
-                } else if (ensemblGeneIdToGeneName != null && bucket.getValue().startsWith("ENSG0")) {
-                    bucket.setValue(ensemblGeneIdToGeneName.getOrDefault(bucket.getValue(), bucket.getValue()));
+                } else if (isGene) {
+                    if (MapUtils.isNotEmpty(includingValuesMap) && CollectionUtils.isNotEmpty(includingValuesMap.get(facetName))
+                            && includingValuesMap.get(facetName).contains(bucket.getValue())) {
+                        validBuckets.add(bucket);
+                    } else if (ensemblGeneIdToGeneName != null && bucket.getValue().startsWith("ENSG0")) {
+                        bucket.setValue(ensemblGeneIdToGeneName.getOrDefault(bucket.getValue(), bucket.getValue()));
+                    }
                 }
 
                 // Add next fields
@@ -664,6 +693,20 @@ public class VariantSearchManager {
                     }
                 }
             }
+            // For field name 'genes', we have to overwrite the valid buckets (removing Ensembl gene and transcript IDs
+            if (CollectionUtils.isNotEmpty(validBuckets)) {
+                facet.setBuckets(validBuckets);
+            }
+            // Check for including values with count equalts to 0, then we include it
+            // We save values for a field name with including values
+            if (presentValues.containsKey(facetName)) {
+                for (String value : includingValuesMap.get(facetName)) {
+                    if (!presentValues.get(facetName).contains(value)) {
+                        facet.getBuckets().add(new FacetQueryResult.Bucket(value, 0, null));
+                    }
+                }
+            }
+
         }
     }
 
