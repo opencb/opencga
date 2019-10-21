@@ -1,7 +1,7 @@
 !define TEST_SYSTEM {slim}
 !path target/appassembler/dependencies/*.jar
-!define OPENCGA_VERSION {opencga-1.4.2-dev}
-!define TEST_HOST {qa.opencb.org}
+!define OPENCGA_VERSION {opencga}
+!define TEST_HOST {172.17.0.2:9090}
 !define VERSION {v1}
 
 !|import|
@@ -26,10 +26,10 @@
 
 !3 Login OpenCGA Root User 
 !|Table: Rest Fixture | $baseURL  |
-| setBody | {"password" : "admin_P@ssword"}|
+| setBody | {"password" : "demo"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/admin/login |200|  Content-Type: application/json ||
-|let|root|js|response.jsonbody.response[0].result[0].sessionId||
+|let|root|js|response.jsonbody.responses[0].results[0].token||
 
 !3 Create User
 !|Table: Rest Fixture  | $baseURL |
@@ -49,7 +49,7 @@ Authorization : Bearer $root-!|
 | setBody | {"password" : "user_P@ssword"}|
 | setHeader|Content-Type:application/json|
 | POST | /v1/users/$user/login |200|  Content-Type: application/json ||
-|let|sessionId|js|response.jsonbody.response[0].result[0].sessionId||
+|let|sessionId|js|response.jsonbody.responses[0].results[0].token||
 
 !|Table: Rest Fixture Config|
 |restfixture.default.headers|!-Content-Type : application/json
@@ -59,13 +59,13 @@ Authorization : Bearer $sessionId -!|
 !|Table: Rest Fixture | $baseURL |
 | setBody |{  "name": "$project",  "alias": "$project","organism" : { "scientificName": "Homo sapiens", "assembly": "GRCh37"}}|
 | POST | /v1/projects/create |200|  Content-Type: application/json ||
-|let|projectId|js|response.jsonbody.response[0].result[0].id.toString()||
+|let|projectId|js|response.jsonbody.responses[0].results[0].id.toString()||
 
 !3 Create Study  
 !|Table: Rest Fixture | $baseURL |
 | setBody |{  "name": "$study", "alias": "$study", "type": "CASE_CONTROL"}|
 | POST | /v1/studies/create?projectId=$projectId |200|  Content-Type: application/json ||
-|let|studyId|js|response.jsonbody.response[0].result[0].id||
+|let|studyId|js|response.jsonbody.responses[0].results[0].id||
 
 !3 Increment Project Release 
 !|Table: Rest Fixture | $baseURL |
@@ -75,19 +75,19 @@ Authorization : Bearer $sessionId -!|
 !|Table: Rest Fixture  | $baseURL |
 | setBody |  {"id" : "VS1","unique": false, "confidential" : "false",  "name": "$gvsName",  "description": "string",  "variables": [{ "id" : "var_int", "name": "V1", "type" : "INTEGER", "required" : true,"multiValue": false }, {"id" : "var_double", "name": "V2", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }]}|
 | POST | /v1/variableset/create?study=$study |200| Content-Type : application/json||
-|let|gVariableSetId|js|response.jsonbody.response[0].result[0].id||
+|let|gVariableSetId|js|response.jsonbody.responses[0].results[0].id||
 
 !3 Create Global Nested Variable Set 2
 !|Table: Rest Fixture  | $baseURL |
 | setBody |  { "id" : "VS2", "unique": false, "confidential" : "false",  "name": "$gvsName2",  "description": "string",  "variables": [{"id" : "outer_var", "name": "V11", "type" : "OBJECT", "required" : true,"multiValue": true , "variableSet" : [{"id" : "inner_first_var","name": "V1", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }, {"id" : "inner_second_var","name": "V2", "type" : "INTEGER", "defaultValue" : "20" , "required" : false,"multiValue": false }] }]}|
 | POST | /v1/variableset/create?study=$study |200| Content-Type : application/json||
-|let|gVariableSetId2|js|response.jsonbody.response[0].result[0].id||
+|let|gVariableSetId2|js|response.jsonbody.responses[0].results[0].id||
 
 !3 Create Global Variable Set Without Ids
 !|Table: Rest Fixture  | $baseURL |
 | setBody |  { "unique": false, "confidential" : "false",  "name": "VSNameTest",  "description": "string",  "variables": [{"name": "outer_var", "type" : "OBJECT", "required" : true,"multiValue": true , "variableSet" : [{"name": "inner_first_var_name_test", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }, {"name": "inner_second_var_name_test", "type" : "INTEGER", "defaultValue" : "20" , "required" : false,"multiValue": false }] }]}|
 | POST | /v1/variableset/create?study=$study |200| Content-Type : application/json||
-|let|dummyVSId|js|response.jsonbody.response[0].result[0].id||
+|let|dummyVSId|js|response.jsonbody.responses[0].results[0].id||
 
 #userA has Full Permissions
 !3 Create userA  
@@ -108,7 +108,7 @@ Authorization : Bearer -!|
 !3 Add User A to Admin group
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"users" : "$userA", "action" : "ADD" }|
-| POST |/v1/studies/$study/groups/admins/update|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds.length == '1'|
+| POST |/v1/studies/$study/groups/admins/update|200|  Content-Type: application/json |jsonbody.responses[0].results[0].userIds.length == '1'|
 
 !define userProjectStudy {$user@$project:$study}
 
@@ -122,5 +122,5 @@ Authorization : Bearer -!|
 | setHeaders|!- Content-Type:application/json 
 Authorization : Bearer -!|
 | POST | /v1/users/$userB/login |200|  Content-Type: application/json ||
-|let|userBSessionId|js|response.jsonbody.response[0].result[0].sessionId||
+|let|userBSessionId|js|response.jsonbody.responses[0].results[0].token||
 
