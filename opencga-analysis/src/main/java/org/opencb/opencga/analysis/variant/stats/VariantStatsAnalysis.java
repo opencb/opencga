@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Analysis(id = VariantStatsAnalysis.ID, data = Analysis.AnalysisData.VARIANT,
+@Analysis(id = VariantStatsAnalysis.ID, type = Analysis.AnalysisType.VARIANT,
         description = "Compute variant stats for any cohort and any set of variants.")
 public class VariantStatsAnalysis extends OpenCgaAnalysis {
 
@@ -105,7 +105,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
                 Cohort cohort = catalogManager.getCohortManager()
                         .get(study, cohortName, new QueryOptions(), sessionId).first();
                 samples = cohort.getSamples();
-                arm.updateResult(analysisResult -> analysisResult.getAttributes().put("cohortName", cohortName));
+                executorParams.put("cohortName", cohortName);
             } else {
                 samples = catalogManager.getSampleManager()
                         .search(study, new Query(samplesQuery), new QueryOptions(QueryOptions.INCLUDE, "id"), sessionId).getResults();
@@ -116,7 +116,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
             Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, sessionId);
             sampleNames.removeIf(s -> !indexedSamples.contains(s));
 
-            arm.updateResult(analysisResult -> analysisResult.getAttributes().put("sampleNames", sampleNames));
+            executorParams.put("sampleNames", sampleNames);
         } catch (CatalogException e) {
             throw new AnalysisException(e);
         }
@@ -130,7 +130,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
         }
         variantsQuery.putIfAbsent(VariantQueryParam.STUDY.key(), study);
 
-        arm.updateResult(r -> r.getAttributes().append("variantsQuery", variantsQuery));
+        executorParams.put("variantsQuery", variantsQuery);
 
         // check read permission
         try {
@@ -155,24 +155,18 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
 
     @Override
     protected void exec() throws AnalysisException {
+        step(() -> {
+            getAnalysisExecutor(VariantStatsAnalysisExecutor.class)
+                    .setStudy(study)
+                    .setCohort(cohortName)
+                    .setSamples(sampleNames)
+                    .setOutputFile(outputFile)
+                    .setVariantsQuery(variantsQuery)
+                    .exec();
 
-        arm.startStep("variant-stats");
-        VariantStatsAnalysisExecutor executor = getAnalysisExecutor(VariantStatsAnalysisExecutor.class);
+            addFile(outputFile, FileResult.FileType.TAB_SEPARATED);
+        });
 
-        executor.setStudy(study)
-                .setCohort(cohortName)
-                .setSamples(sampleNames)
-                .setOutputFile(outputFile)
-                .setVariantsQuery(variantsQuery);
-
-        executor.exec();
-        arm.endStep(100);
-
-        if (outputFile.toFile().exists()) {
-            arm.addFile(outputFile, FileResult.FileType.TAB_SEPARATED);
-        } else {
-            arm.addWarning("Output file not generated");
-        }
     }
 
 }

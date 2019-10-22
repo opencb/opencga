@@ -1,6 +1,5 @@
 package org.opencb.opencga.core.analysis.variant;
 
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
@@ -21,15 +20,6 @@ public abstract class GwasAnalysisExecutor extends OpenCgaAnalysisExecutor {
     private GwasConfiguration configuration;
 
     public GwasAnalysisExecutor() {
-    }
-
-    public GwasAnalysisExecutor(ObjectMap executorParams, Path outDir, GwasConfiguration configuration) {
-        this.setup(executorParams, outDir, configuration);
-    }
-
-    protected void setup(ObjectMap executorParams, Path outDir, GwasConfiguration configuration) {
-        super.setUp(executorParams, outDir);
-        this.configuration = configuration;
     }
 
     protected List<String> getHeaderColumns() {
@@ -67,7 +57,6 @@ public abstract class GwasAnalysisExecutor extends OpenCgaAnalysisExecutor {
         sb.append(", configuration=").append(configuration);
         sb.append(", executorParams=").append(executorParams);
         sb.append(", outDir=").append(outDir);
-        sb.append(", arm=").append(arm);
         sb.append('}');
         return sb.toString();
     }

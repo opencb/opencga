@@ -9,15 +9,15 @@ public class AnalysisStep {
     private String id;
     private Date start;
     private Date end;
-    private Status status;
+    private String status;
     private ObjectMap attributes;
 
     public AnalysisStep() {
         attributes = new ObjectMap();
-        status = new Status();
+        status = null;
     }
 
-    public AnalysisStep(String id, Date start, Date end, Status status, ObjectMap attributes) {
+    public AnalysisStep(String id, Date start, Date end, String status, ObjectMap attributes) {
         this.id = id;
         this.start = start;
         this.end = end;
@@ -52,11 +52,11 @@ public class AnalysisStep {
         return this;
     }
 
-    public Status getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public AnalysisStep setStatus(Status status) {
+    public AnalysisStep setStatus(String status) {
         this.status = status;
         return this;
     }

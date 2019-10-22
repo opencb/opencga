@@ -21,13 +21,13 @@ import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
-import org.opencb.opencga.core.analysis.variant.GwasAnalysisExecutor;
-import org.opencb.opencga.core.exception.AnalysisException;
-import org.opencb.opencga.core.analysis.result.FileResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.analysis.result.FileResult;
+import org.opencb.opencga.core.analysis.variant.GwasAnalysisExecutor;
 import org.opencb.opencga.core.annotations.Analysis;
-import org.opencb.opencga.core.annotations.Analysis.AnalysisData;
+import org.opencb.opencga.core.annotations.Analysis.AnalysisType;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -37,11 +37,11 @@ import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescripto
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Analysis(id = GwasAnalysis.ID, data = AnalysisData.VARIANT,
+@Analysis(id = GwasAnalysis.ID, type = AnalysisType.VARIANT,
+        steps = {"gwas", "manhattan-plot", "index"},
         description = "Run a Genome Wide Association Study between two cohorts.")
 public class GwasAnalysis extends OpenCgaAnalysis {
 
@@ -58,6 +58,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
     private List<String> controlCohortSamples;
     private String scoreName;
     private boolean index;
+    private Path outputFile;
 
     public GwasAnalysis() {
     }
@@ -233,6 +234,8 @@ public class GwasAnalysis extends OpenCgaAnalysis {
             index = true;
         }
 
+        outputFile = outDir.resolve(buildOutputFilename());
+
         executorParams.append("index", index)
                 .append("phenotype", phenotype)
                 .append("scoreName", scoreName)
@@ -240,52 +243,45 @@ public class GwasAnalysis extends OpenCgaAnalysis {
                 .append("caseCohortSamples", caseCohortSamples)
                 .append("controlCohort", controlCohort)
                 .append("controlCohortSamples", controlCohortSamples);
-        arm.updateResult(analysisResult ->
-                analysisResult.getExecutorParams().putAll(executorParams)
-        );
     }
 
     @Override
     protected void exec() throws AnalysisException {
 
-        arm.startStep("gwas");
-        GwasAnalysisExecutor gwasExecutor = getAnalysisExecutor(GwasAnalysisExecutor.class);
+        step("gwas", () -> {
+            GwasAnalysisExecutor gwasExecutor = getAnalysisExecutor(GwasAnalysisExecutor.class);
 
-        Path outputFile = outDir.resolve(buildOutputFilename());
-        gwasExecutor.setConfiguration(gwasConfiguration)
-                .setStudy(study)
-                .setSampleList1(caseCohortSamples)
-                .setSampleList2(controlCohortSamples)
-                .setOutputFile(outputFile)
-                .exec();
+            gwasExecutor.setConfiguration(gwasConfiguration)
+                    .setStudy(study)
+                    .setSampleList1(caseCohortSamples)
+                    .setSampleList2(controlCohortSamples)
+                    .setOutputFile(outputFile)
+                    .exec();
 
-        arm.endStep(70);
-
-        arm.startStep("manhattan-plot");
-        createManhattanPlot();
-        arm.endStep(100);
-
-        if (outputFile.toFile().exists()) {
-            arm.addFile(outputFile, FileResult.FileType.TAB_SEPARATED);
-        }
-
-        if (index) {
-            arm.startStep("index-score", 80f);
-
-            try {
-                Path file = outDir.resolve(Paths.get(arm.read().getOutputFiles().get(0).getPath()));
-                VariantScoreFormatDescriptor formatDescriptor = new VariantScoreFormatDescriptor(1, 16, 15);
-                variantStorageManager.loadVariantScore(study, file.toUri(), scoreName, caseCohort, controlCohort, formatDescriptor,
-                        executorParams, sessionId);
-            } catch (CatalogException | StorageEngineException e) {
-                throw new AnalysisException(e);
+            if (outputFile.toFile().exists()) {
+                addFile(outputFile, FileResult.FileType.TAB_SEPARATED);
             }
-        }
-        arm.endStep(100);
+        });
+
+        step("manhattan-plot", this::createManhattanPlot);
+
+        step("index", () -> {
+            if (index) {
+                try {
+                    VariantScoreFormatDescriptor formatDescriptor = new VariantScoreFormatDescriptor(1, 16, 15);
+                    variantStorageManager.loadVariantScore(study, outputFile.toUri(), scoreName, caseCohort, controlCohort, formatDescriptor,
+                            executorParams, sessionId);
+                } catch (CatalogException | StorageEngineException e) {
+                    throw new AnalysisException(e);
+                }
+            } else {
+                skipStep();
+            }
+        });
     }
 
-    private void createManhattanPlot() {
-
+    private void createManhattanPlot() throws AnalysisException {
+        skipStep();
     }
 
     protected String buildOutputFilename() throws AnalysisException {

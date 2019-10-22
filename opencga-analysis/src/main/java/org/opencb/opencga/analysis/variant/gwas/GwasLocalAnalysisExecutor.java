@@ -12,6 +12,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.analysis.variant.GwasAnalysisExecutor;
+import org.opencb.opencga.core.annotations.AnalysisExecutor;
 import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.analysis.variant.VariantStorageAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -25,10 +26,10 @@ import org.opencb.oskar.analysis.stats.FisherTestResult;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-@org.opencb.opencga.core.annotations.AnalysisExecutor(id = "opencga-local",
+@AnalysisExecutor(id = "opencga-local",
         analysis = GwasAnalysis.ID,
-        source = org.opencb.opencga.core.annotations.AnalysisExecutor.Source.OPENCGA,
-        framework = org.opencb.opencga.core.annotations.AnalysisExecutor.Framework.ITERATOR)
+        source = AnalysisExecutor.Source.STORAGE,
+        framework = AnalysisExecutor.Framework.LOCAL)
 public final class GwasLocalAnalysisExecutor extends GwasAnalysisExecutor implements VariantStorageAnalysisExecutor {
 
     @Override

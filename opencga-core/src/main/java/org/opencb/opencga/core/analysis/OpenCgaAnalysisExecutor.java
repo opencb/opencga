@@ -8,25 +8,14 @@ import org.opencb.opencga.core.analysis.result.AnalysisResultManager;
 
 import java.nio.file.Path;
 
-/**
- * Helper interface to be used by opencga local analysis executors.
- */
 public abstract class OpenCgaAnalysisExecutor {
 
-
+    public static final String EXECUTOR_ID = "executorId";
     protected ObjectMap executorParams;
     protected Path outDir;
-    protected AnalysisResultManager arm;
+    private AnalysisResultManager arm;
 
     protected OpenCgaAnalysisExecutor() {
-    }
-
-    protected OpenCgaAnalysisExecutor(ObjectMap executorParams, Path outDir) {
-        setUp(executorParams, outDir);
-    }
-
-    public final void init(AnalysisResultManager arm) {
-        this.arm = arm;
     }
 
     public final String getAnalysisId() {
@@ -37,7 +26,16 @@ public abstract class OpenCgaAnalysisExecutor {
         return this.getClass().getAnnotation(AnalysisExecutor.class).id();
     }
 
-    public final void setUp(ObjectMap executorParams, Path outDir) {
+    public final AnalysisExecutor.Framework getFramework() {
+        return this.getClass().getAnnotation(AnalysisExecutor.class).framework();
+    }
+
+    public final AnalysisExecutor.Source getSource() {
+        return this.getClass().getAnnotation(AnalysisExecutor.class).source();
+    }
+
+    public final void setUp(AnalysisResultManager arm, ObjectMap executorParams, Path outDir) {
+        this.arm = arm;
         this.executorParams = executorParams;
         this.outDir = outDir;
     }
@@ -54,6 +52,14 @@ public abstract class OpenCgaAnalysisExecutor {
 
     protected final String getSessionId() throws AnalysisExecutorException {
         return getExecutorParams().getString("sessionId");
+    }
+
+    protected final void addWarning(String warning) throws AnalysisException {
+        arm.addWarning(warning);
+    }
+
+    protected final void addAttribute(String key, Object value) throws AnalysisException {
+        arm.addStepAttribute(key, value);
     }
 
 }

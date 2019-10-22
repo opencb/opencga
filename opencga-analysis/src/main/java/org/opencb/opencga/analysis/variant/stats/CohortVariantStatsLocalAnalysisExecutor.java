@@ -22,8 +22,8 @@ import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import java.util.List;
 
 @AnalysisExecutor(id="opencga-local", analysis= CohortVariantStatsAnalysis.ID,
-        framework = AnalysisExecutor.Framework.ITERATOR,
-        source = AnalysisExecutor.Source.OPENCGA)
+        framework = AnalysisExecutor.Framework.LOCAL,
+        source = AnalysisExecutor.Source.STORAGE)
 public class CohortVariantStatsLocalAnalysisExecutor extends CohortVariantStatsAnalysisExecutor implements VariantStorageAnalysisExecutor {
 
     @Override

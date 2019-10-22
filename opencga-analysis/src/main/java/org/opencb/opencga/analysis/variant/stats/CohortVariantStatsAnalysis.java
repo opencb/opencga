@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
-@org.opencb.opencga.core.annotations.Analysis(id = CohortVariantStatsAnalysis.ID, data = Analysis.AnalysisData.VARIANT)
+@Analysis(id = CohortVariantStatsAnalysis.ID, type = Analysis.AnalysisType.VARIANT,
+    steps = {CohortVariantStatsAnalysis.ID, "index"}
+)
 public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
 
     public static final String ID = "cohort-variant-stats";
@@ -34,6 +36,7 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
     private boolean indexResults;
 
     private List<String> checkedSamplesList;
+    private Path outputFile;
 
     /**
      * Study of the samples.
@@ -139,7 +142,7 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
             Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, sessionId);
             allSamples.removeIf(s -> !indexedSamples.contains(s));
 
-            arm.updateResult(analysisResult -> analysisResult.getAttributes().put("sampleNames", allSamples));
+            addAttribute("sampleNames", allSamples);
         } catch (CatalogException e) {
             throw new AnalysisException(e);
         }
@@ -148,48 +151,51 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
             throw new AnalysisException("Unable to compute variant stats with cohort of size " + allSamples.size());
         }
 
+        outputFile = outDir.resolve("cohort_stats.json");
+
         checkedSamplesList = new ArrayList<>(allSamples);
         checkedSamplesList.sort(String::compareTo);
     }
 
     @Override
     protected void exec() throws AnalysisException {
-        arm.startStep("Calculate");
+        step(getId(), () -> {
+            getAnalysisExecutor(CohortVariantStatsAnalysisExecutor.class)
+                    .setStudy(study)
+                    .setOutputFile(outputFile)
+                    .setSampleNames(checkedSamplesList)
+                    .exec();
 
-        Path outputFile = outDir.resolve("cohort_stats.json");
+            addFile(outputFile, FileResult.FileType.JSON);
+        });
 
-        getAnalysisExecutor(CohortVariantStatsAnalysisExecutor.class)
-                .setStudy(study)
-                .setOutputFile(outputFile)
-                .setSampleNames(checkedSamplesList)
-                .exec();
-
-        arm.addFile(outputFile, FileResult.FileType.JSON);
-        arm.endStep(100);
-
-        if (indexResults) {
-            try {
-                Path file = outDir.resolve(arm.read().getOutputFiles().get(0).getPath());
-                VariantSetStats stats = JacksonUtils.getDefaultObjectMapper().readValue(file.toFile(), VariantSetStats.class);
-
+        step("index", () -> {
+            if (indexResults) {
                 try {
-                    catalogManager.getStudyManager().getVariableSet(study, VARIABLE_SET_ID, new QueryOptions(), sessionId);
-                } catch (CatalogException e) {
-                    // Assume variable set not found. Try to create
-                    List<Variable> variables = AvroToAnnotationConverter.convertToVariableSet(VariantSetStats.getClassSchema());
-                    catalogManager.getStudyManager()
-                            .createVariableSet(study, VARIABLE_SET_ID, VARIABLE_SET_ID, true, false, "", Collections.emptyMap(), variables,
-                                    Arrays.asList(VariableSet.AnnotableDataModels.COHORT, VariableSet.AnnotableDataModels.FILE), sessionId);
+                    VariantSetStats stats = JacksonUtils.getDefaultObjectMapper().readValue(outputFile.toFile(), VariantSetStats.class);
+
+                    try {
+                        catalogManager.getStudyManager().getVariableSet(study, VARIABLE_SET_ID, new QueryOptions(), sessionId);
+                    } catch (CatalogException e) {
+                        // Assume variable set not found. Try to create
+                        List<Variable> variables = AvroToAnnotationConverter.convertToVariableSet(VariantSetStats.getClassSchema());
+                        catalogManager.getStudyManager()
+                                .createVariableSet(study, VARIABLE_SET_ID, VARIABLE_SET_ID, true, false,
+                                        "", Collections.emptyMap(), variables,
+                                        Arrays.asList(VariableSet.AnnotableDataModels.COHORT, VariableSet.AnnotableDataModels.FILE),
+                                        sessionId);
+                    }
+
+                    AnnotationSet annotationSet = AvroToAnnotationConverter.convertToAnnotationSet(stats, VARIABLE_SET_ID);
+                    catalogManager.getCohortManager()
+                            .addAnnotationSet(study, cohortName, annotationSet, new QueryOptions(), sessionId);
+                } catch (IOException | CatalogException e) {
+                    throw new AnalysisException(e);
                 }
-
-                AnnotationSet annotationSet = AvroToAnnotationConverter.convertToAnnotationSet(stats, VARIABLE_SET_ID);
-                catalogManager.getCohortManager()
-                        .addAnnotationSet(study, cohortName, annotationSet, new QueryOptions(), sessionId);
-            } catch (IOException | CatalogException e) {
-                throw new AnalysisException(e);
+            } else {
+                skipStep();
             }
-        }
-
+        });
     }
 }
 

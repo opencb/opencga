@@ -28,6 +28,8 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
 import org.opencb.opencga.core.analysis.result.AnalysisResult;
 import org.opencb.opencga.core.analysis.result.AnalysisResultManager;
+import org.opencb.opencga.core.analysis.result.ExecutorInfo;
+import org.opencb.opencga.core.analysis.result.FileResult;
 import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.annotations.AnalysisExecutor;
 import org.opencb.opencga.core.config.Configuration;
@@ -50,9 +52,10 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
+import static org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor.EXECUTOR_ID;
+
 public abstract class OpenCgaAnalysis {
 
-    public static final String EXECUTOR_ID = "ID";
     protected CatalogManager catalogManager;
     protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
@@ -65,18 +68,13 @@ public abstract class OpenCgaAnalysis {
     protected Path outDir;
     protected List<AnalysisExecutor.Source> sourceTypes;
     protected List<AnalysisExecutor.Framework> availableFrameworks;
-    protected final Logger logger = LoggerFactory.getLogger(OpenCgaAnalysis.class);
+    protected Logger logger;
+    private final Logger privateLogger = LoggerFactory.getLogger(OpenCgaAnalysis.class);
 
-    protected AnalysisResultManager arm;
+    private AnalysisResultManager arm;
 
     public OpenCgaAnalysis() {
     }
-
-    public OpenCgaAnalysis(String opencgaHome, String sessionId) {
-        this.opencgaHome = opencgaHome;
-        this.sessionId = sessionId;
-    }
-
 
     public final OpenCgaAnalysis setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
                                        ObjectMap executorParams, Path outDir, String sessionId) {
@@ -111,25 +109,25 @@ public abstract class OpenCgaAnalysis {
     }
 
     private OpenCgaAnalysis setUp(ObjectMap executorParams, Path outDir) {
-//        logger = LoggerFactory.getLogger(this.getClass().toString());
+        logger = LoggerFactory.getLogger(this.getClass().toString());
 
         availableFrameworks = new ArrayList<>();
         sourceTypes = new ArrayList<>();
         if (storageConfiguration.getDefaultStorageEngineId().equals("mongodb")) {
-            if (getAnalysisData().equals(Analysis.AnalysisData.VARIANT)) {
+            if (getAnalysisData().equals(Analysis.AnalysisType.VARIANT)) {
                 sourceTypes.add(AnalysisExecutor.Source.MONGODB);
             }
         } else if (storageConfiguration.getDefaultStorageEngineId().equals("hadoop")) {
             availableFrameworks.add(AnalysisExecutor.Framework.MAP_REDUCE);
             // TODO: Check from configuration if spark is available
 //            availableFrameworks.add(AnalysisExecutor.Framework.SPARK);
-            if (getAnalysisData().equals(Analysis.AnalysisData.VARIANT)) {
+            if (getAnalysisData().equals(Analysis.AnalysisType.VARIANT)) {
                 sourceTypes.add(AnalysisExecutor.Source.HBASE);
             }
         }
 
-        availableFrameworks.add(AnalysisExecutor.Framework.ITERATOR);
-        sourceTypes.add(AnalysisExecutor.Source.OPENCGA);
+        availableFrameworks.add(AnalysisExecutor.Framework.LOCAL);
+        sourceTypes.add(AnalysisExecutor.Source.STORAGE);
 
         setUp(executorParams, outDir, sourceTypes, availableFrameworks);
         return this;
@@ -158,21 +156,16 @@ public abstract class OpenCgaAnalysis {
      * @throws AnalysisException on error
      */
     public final AnalysisResult execute() throws AnalysisException {
-        arm = new AnalysisResultManager(outDir);
-        arm.init(getId(), executorParams);
+        arm = new AnalysisResultManager(getId(), outDir);
+        arm.init(executorParams, getSteps());
         try {
-            execute(arm);
+            check();
+            exec();
             return arm.close();
         } catch (Exception e) {
             arm.close(e);
             throw e;
         }
-    }
-
-    public final void execute(AnalysisResultManager arm) throws AnalysisException {
-        this.arm = arm;
-        check();
-        exec();
     }
 
     /**
@@ -198,10 +191,22 @@ public abstract class OpenCgaAnalysis {
     }
 
     /**
+     * @return the analysis steps
+     */
+    public final List<String> getSteps() {
+        String[] steps = this.getClass().getAnnotation(Analysis.class).steps();
+        if (steps.length == 0) {
+            return Collections.singletonList(getId());
+        } else {
+            return Arrays.asList(steps);
+        }
+    }
+
+    /**
      * @return the analysis id
      */
-    public final Analysis.AnalysisData getAnalysisData() {
-        return this.getClass().getAnnotation(Analysis.class).data();
+    public final Analysis.AnalysisType getAnalysisData() {
+        return this.getClass().getAnnotation(Analysis.class).type();
     }
 
     public final OpenCgaAnalysis addSource(AnalysisExecutor.Source source) {
@@ -218,6 +223,53 @@ public abstract class OpenCgaAnalysis {
         }
         availableFrameworks.add(framework);
         return this;
+    }
+
+    @FunctionalInterface
+    protected interface StepRunnable {
+        void run() throws AnalysisException;
+    }
+
+    protected final void step(StepRunnable step) throws AnalysisException {
+        step(getId(), step);
+    }
+
+    protected final void step(String stepId, StepRunnable step) throws AnalysisException {
+        if (checkStep(stepId)) {
+            try {
+                step.run();
+            } catch (RuntimeException e) {
+                throw new AnalysisException("Exception from step " + stepId, e);
+            }
+        }
+    }
+
+    protected final boolean checkStep(String stepId) throws AnalysisException {
+        return arm.checkStep(stepId);
+    }
+
+    protected final void skipStep(String stepId) throws AnalysisException {
+        arm.skipStep(stepId);
+    }
+
+    protected final void skipStep() throws AnalysisException {
+        arm.skipStep();
+    }
+
+    protected final void addWarning(String warning) throws AnalysisException {
+        arm.addWarning(warning);
+    }
+
+    protected final void addAttribute(String key, Object value) throws AnalysisException {
+        arm.addAttribute(key, value);
+    }
+
+    protected final void addFile(Path file, FileResult.FileType fileType) throws AnalysisException {
+        arm.addFile(file, fileType);
+    }
+
+    protected final List<FileResult> getOutputFiles() throws AnalysisException {
+        return arm.read().getOutputFiles();
     }
 
     protected final Class<? extends OpenCgaAnalysisExecutor> getAnalysisExecutorClass(String analysisExecutorId) {
@@ -266,11 +318,11 @@ public abstract class OpenCgaAnalysis {
         } else if (matchedClasses.size() == 1) {
             return matchedClasses.get(0);
         } else {
-            logger.info("Found multiple OpenCgaAnalysisExecutor candidates.");
+            privateLogger.info("Found multiple OpenCgaAnalysisExecutor candidates.");
             for (Class<? extends T> matchedClass : matchedClasses) {
-                logger.info(" - " + matchedClass);
+                privateLogger.info(" - " + matchedClass);
             }
-            logger.info("Sort by framework and source preference.");
+            privateLogger.info("Sort by framework and source preference.");
 
             // Prefer the executor that matches better with the source
             // Prefer the executor that matches better with the framework
@@ -300,7 +352,7 @@ public abstract class OpenCgaAnalysis {
 
     protected final <T extends OpenCgaAnalysisExecutor> T getAnalysisExecutor(Class<T> clazz)
             throws AnalysisExecutorException {
-        return getAnalysisExecutor(clazz, executorParams.getString(OpenCgaAnalysis.EXECUTOR_ID), null, null);
+        return getAnalysisExecutor(clazz, executorParams.getString(EXECUTOR_ID), null, null);
     }
 
     protected final <T extends OpenCgaAnalysisExecutor> T getAnalysisExecutor(Class<T> clazz, String analysisExecutorId)
@@ -318,19 +370,19 @@ public abstract class OpenCgaAnalysis {
         }
         try {
             T t = executorClass.newInstance();
-            logger.info("Using OpenCgaAnalysisExecutor '" + t.getId() + "' : " + executorClass);
-            t.init(arm);
+            privateLogger.info("Using OpenCgaAnalysisExecutor '" + t.getId() + "' : " + executorClass);
+
+            String executorId = t.getId();
+            if (executorParams == null) {
+                executorParams = new ObjectMap();
+            }
+            executorParams.put(EXECUTOR_ID, executorId);
 
             // Update executor ID
             if (arm != null) {
-                arm.updateResult(analysisResult -> {
-                    String executorId = t.getId();
-                    analysisResult.setExecutorId(executorId);
-                    analysisResult.getExecutorParams().put(EXECUTOR_ID, executorId);
-                });
-
+                arm.setExecutorInfo(new ExecutorInfo(executorId, executorClass, executorParams, t.getSource(), t.getFramework()));
             }
-            t.setUp(executorParams, outDir);
+            t.setUp(arm, executorParams, outDir);
 
             return t;
         } catch (InstantiationException | IllegalAccessException | AnalysisException e) {

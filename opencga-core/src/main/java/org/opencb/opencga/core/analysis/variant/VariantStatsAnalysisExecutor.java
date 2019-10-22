@@ -1,6 +1,5 @@
 package org.opencb.opencga.core.analysis.variant;
 
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
 
@@ -16,15 +15,6 @@ public abstract class VariantStatsAnalysisExecutor extends OpenCgaAnalysisExecut
     private Query variantsQuery;
 
     public VariantStatsAnalysisExecutor() {
-    }
-
-    public VariantStatsAnalysisExecutor(ObjectMap executorParams, Path outDir) {
-        this(null, executorParams, outDir);
-    }
-
-    public VariantStatsAnalysisExecutor(String cohort, ObjectMap executorParams, Path outDir) {
-        setUp(executorParams, outDir);
-        this.cohort = cohort;
     }
 
     @Override

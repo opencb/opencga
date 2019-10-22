@@ -308,12 +308,12 @@ public class VariantAnalysisTest {
 
     public void checkAnalysisResult(AnalysisResult ar) {
         if (storageEngine.equals("hadoop")) {
-            Assert.assertEquals("hbase-mapreduce", ar.getExecutorId());
+            Assert.assertEquals("hbase-mapreduce", ar.getExecutor().getId());
         } else {
             if (ar.getId().equals(VariantStatsAnalysis.ID)) {
-                Assert.assertEquals("mongodb-local", ar.getExecutorId());
+                Assert.assertEquals("mongodb-local", ar.getExecutor().getId());
             } else {
-                Assert.assertEquals("opencga-local", ar.getExecutorId());
+                Assert.assertEquals("opencga-local", ar.getExecutor().getId());
             }
         }
     }

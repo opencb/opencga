@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 @AnalysisExecutor(id = "mongodb-local", analysis = "variant-stats",
-        framework = AnalysisExecutor.Framework.ITERATOR,
+        framework = AnalysisExecutor.Framework.LOCAL,
         source = AnalysisExecutor.Source.MONGODB)
 public class VariantStatsMongoDBLocalAnalysisExecutor extends VariantStatsAnalysisExecutor implements MongoDBAnalysisExecutor {
     @Override
@@ -99,8 +99,7 @@ public class VariantStatsMongoDBLocalAnalysisExecutor extends VariantStatsAnalys
 
             ptr.run();
 
-            arm.updateResult(analysisResult ->
-                    analysisResult.getAttributes().put("numVariantStats", writer.getWrittenVariants()));
+            addAttribute("numVariantStats", writer.getWrittenVariants());
         } catch (ExecutionException | IOException e) {
             throw new AnalysisExecutorException(e);
         }

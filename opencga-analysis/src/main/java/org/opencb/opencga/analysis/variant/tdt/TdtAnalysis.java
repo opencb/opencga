@@ -6,9 +6,9 @@ import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.exception.AnalysisException;
 
 
-@Analysis(id = TdtAnalysis.ID, data = Analysis.AnalysisData.VARIANT)
+@Analysis(id = TdtAnalysis.ID, type = Analysis.AnalysisType.VARIANT)
 public class TdtAnalysis extends OpenCgaAnalysis {
-    public static final String ID = "TDT";
+    public static final String ID = "tdt";
 
     private String phenotype;
 
@@ -19,11 +19,10 @@ public class TdtAnalysis extends OpenCgaAnalysis {
 
     @Override
     public void exec() throws AnalysisException {
-        TdtAnalysisExecutor tdtExecutor = getAnalysisExecutor(TdtAnalysisExecutor.class);
-
-        arm.startStep("tdt");
-        tdtExecutor.exec();
-        arm.endStep(100);
+        step(() -> {
+            getAnalysisExecutor(TdtAnalysisExecutor.class)
+                    .exec();
+        });
     }
 
 }

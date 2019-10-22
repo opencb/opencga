@@ -9,8 +9,7 @@ import java.util.List;
 public class AnalysisResult {
 
     private String id;
-    private String executorId;
-    private ObjectMap executorParams;
+    private ExecutorInfo executor;
     private Date start;
     private Date end;
     private Status status;
@@ -21,7 +20,7 @@ public class AnalysisResult {
     private ObjectMap attributes;
 
     public AnalysisResult() {
-        executorParams = new ObjectMap();
+        executor = new ExecutorInfo();
         status = new Status();
         warnings = new LinkedList<>();
         outputFiles = new LinkedList<>();
@@ -33,8 +32,7 @@ public class AnalysisResult {
     public String toString() {
         final StringBuilder sb = new StringBuilder("AnalysisResult{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", executorId='").append(executorId).append('\'');
-        sb.append(", executorParams=").append(executorParams);
+        sb.append(", executor=").append(executor);
         sb.append(", start=").append(start);
         sb.append(", end=").append(end);
         sb.append(", status=").append(status);
@@ -55,21 +53,12 @@ public class AnalysisResult {
         return this;
     }
 
-    public String getExecutorId() {
-        return executorId;
+    public ExecutorInfo getExecutor() {
+        return executor;
     }
 
-    public AnalysisResult setExecutorId(String executorId) {
-        this.executorId = executorId;
-        return this;
-    }
-
-    public ObjectMap getExecutorParams() {
-        return executorParams;
-    }
-
-    public AnalysisResult setExecutorParams(ObjectMap executorParams) {
-        this.executorParams = executorParams;
+    public AnalysisResult setExecutor(ExecutorInfo executor) {
+        this.executor = executor;
         return this;
     }
 

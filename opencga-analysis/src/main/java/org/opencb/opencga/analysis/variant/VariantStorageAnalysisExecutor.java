@@ -12,6 +12,9 @@ import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 
 import java.io.IOException;
 
+/**
+ * Helper interface to be used by opencga local analysis executors.
+ */
 public interface VariantStorageAnalysisExecutor {
 
     ObjectMap getExecutorParams();

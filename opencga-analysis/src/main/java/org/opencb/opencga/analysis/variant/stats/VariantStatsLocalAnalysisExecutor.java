@@ -32,8 +32,8 @@ import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 
 @org.opencb.opencga.core.annotations.AnalysisExecutor(id = "opencga-local", analysis = VariantStatsAnalysis.ID,
-        framework = org.opencb.opencga.core.annotations.AnalysisExecutor.Framework.ITERATOR,
-        source = org.opencb.opencga.core.annotations.AnalysisExecutor.Source.OPENCGA)
+        framework = org.opencb.opencga.core.annotations.AnalysisExecutor.Framework.LOCAL,
+        source = org.opencb.opencga.core.annotations.AnalysisExecutor.Source.STORAGE)
 public class VariantStatsLocalAnalysisExecutor extends VariantStatsAnalysisExecutor implements VariantStorageAnalysisExecutor {
 
     private final Logger logger = LoggerFactory.getLogger(VariantStatsLocalAnalysisExecutor.class);
@@ -68,8 +68,7 @@ public class VariantStatsLocalAnalysisExecutor extends VariantStatsAnalysisExecu
 
             ptr.run();
 
-            arm.updateResult(analysisResult ->
-                    analysisResult.getAttributes().put("numVariantStats", writer.getWrittenVariants()));
+            addAttribute("numVariantStats", writer.getWrittenVariants());
         } catch (ExecutionException | IOException | CatalogException | StorageEngineException e) {
             throw new AnalysisExecutorException(e);
         }

@@ -23,10 +23,6 @@ public abstract class SampleVariantStatsAnalysisExecutor extends OpenCgaAnalysis
     public SampleVariantStatsAnalysisExecutor() {
     }
 
-    public SampleVariantStatsAnalysisExecutor(ObjectMap executorParams, Path outDir) {
-        super.setUp(executorParams, outDir);
-    }
-
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleStatsExecutor{");
@@ -35,7 +31,6 @@ public abstract class SampleVariantStatsAnalysisExecutor extends OpenCgaAnalysis
         sb.append(", familyId='").append(familyId).append('\'');
         sb.append(", executorParams=").append(executorParams);
         sb.append(", outDir=").append(outDir);
-        sb.append(", arm=").append(arm);
         sb.append('}');
         return sb.toString();
     }
@@ -94,9 +89,6 @@ public abstract class SampleVariantStatsAnalysisExecutor extends OpenCgaAnalysis
             objectWriter.writeValue(outFilename.toFile(), stats);
         } catch (Exception e) {
             throw new AnalysisException("Error writing output file: " + outFilename, e);
-        }
-        if (outFilename.toFile().exists()) {
-            arm.addFile(outFilename, FileResult.FileType.JSON);
         }
     }
 }

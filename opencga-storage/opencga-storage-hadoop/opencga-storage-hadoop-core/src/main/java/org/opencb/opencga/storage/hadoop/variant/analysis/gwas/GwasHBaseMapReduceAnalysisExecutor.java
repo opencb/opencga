@@ -26,7 +26,7 @@ public class GwasHBaseMapReduceAnalysisExecutor extends GwasAnalysisExecutor imp
         List<String> samples2 = getSampleList2();
 
         if (getConfiguration().getMethod().equals(GwasConfiguration.Method.CHI_SQUARE_TEST)) {
-            arm.addWarning("Unable to calculate chi-square test.");
+            addWarning("Unable to calculate chi-square test.");
         }
 
         HadoopVariantStorageEngine engine = getHadoopVariantStorageEngine();

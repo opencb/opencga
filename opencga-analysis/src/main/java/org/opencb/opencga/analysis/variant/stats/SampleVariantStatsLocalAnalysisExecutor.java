@@ -22,8 +22,8 @@ import org.opencb.opencga.core.exception.AnalysisExecutorException;
 import java.util.List;
 
 @AnalysisExecutor(id="opencga-local", analysis= SampleVariantStatsAnalysis.ID,
-        framework = AnalysisExecutor.Framework.ITERATOR,
-        source = AnalysisExecutor.Source.OPENCGA)
+        framework = AnalysisExecutor.Framework.LOCAL,
+        source = AnalysisExecutor.Source.STORAGE)
 public class SampleVariantStatsLocalAnalysisExecutor extends SampleVariantStatsAnalysisExecutor implements VariantStorageAnalysisExecutor {
 
     @Override

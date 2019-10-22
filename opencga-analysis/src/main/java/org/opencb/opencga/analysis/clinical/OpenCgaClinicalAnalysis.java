@@ -48,7 +48,8 @@ public abstract class OpenCgaClinicalAnalysis extends OpenCgaAnalysis {
 
 
     public OpenCgaClinicalAnalysis(String clinicalAnalysisId, String studyId, ObjectMap options, String opencgaHome, String sessionId) {
-        super(opencgaHome, sessionId);
+        this.opencgaHome = opencgaHome;
+        this.sessionId = sessionId;
         this.studyId = studyId;
 
         this.clinicalAnalysisId = clinicalAnalysisId;

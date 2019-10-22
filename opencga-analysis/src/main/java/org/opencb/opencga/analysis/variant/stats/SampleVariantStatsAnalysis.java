@@ -6,13 +6,14 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
-import org.opencb.opencga.core.analysis.variant.SampleVariantStatsAnalysisExecutor;
-import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
+import org.opencb.opencga.core.analysis.result.FileResult;
+import org.opencb.opencga.core.analysis.variant.SampleVariantStatsAnalysisExecutor;
 import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -21,7 +22,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
-@org.opencb.opencga.core.annotations.Analysis(id = SampleVariantStatsAnalysis.ID, data = Analysis.AnalysisData.VARIANT,
+@org.opencb.opencga.core.annotations.Analysis(id = SampleVariantStatsAnalysis.ID, type = Analysis.AnalysisType.VARIANT,
+        steps = {SampleVariantStatsAnalysis.ID, "index"},
         description = "Compute sample variant stats for the selected list of samples.")
 public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
 
@@ -34,6 +36,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
     private String family;
     private ArrayList<String> checkedSamplesList;
     private boolean indexResults = false;
+    private Path outputFile;
 
     /**
      * Study of the samples.
@@ -113,7 +116,6 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
         } catch (CatalogException e) {
             throw new AnalysisException(e);
         }
-        arm.startStep("Check samples");
 
         try {
             if (CollectionUtils.isNotEmpty(sampleNames)) {
@@ -177,30 +179,28 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
         } catch (CatalogException | StorageEngineException e) {
             throw new AnalysisException(e);
         }
-
-        arm.endStep(5);
+        outputFile = outDir.resolve(getId() + ".json");
     }
 
     @Override
     protected void exec() throws AnalysisException {
+        step(getId(), () -> {
+            getAnalysisExecutor(SampleVariantStatsAnalysisExecutor.class)
+                    .setOutputFile(outputFile)
+                    .setStudy(study)
+                    .setSampleNames(checkedSamplesList)
+                    .exec();
 
-        arm.startStep("sample-variant-stats");
+            addFile(outputFile, FileResult.FileType.JSON);
+        });
 
-        Path outputFile = outDir.resolve(getId() + ".json");
-        SampleVariantStatsAnalysisExecutor executor = getAnalysisExecutor(SampleVariantStatsAnalysisExecutor.class)
-                .setOutputFile(outputFile)
-                .setStudy(study)
-                .setSampleNames(checkedSamplesList);
-
-        executor.exec();
-        arm.endStep(100);
-
-        if (indexResults) {
-            arm.startStep("index results", 95f);
-            indexResults(outputFile);
-        }
-
-        arm.endStep(100);
+        step("index", ()->{
+            if (indexResults) {
+                indexResults(outputFile);
+            } else {
+                skipStep();
+            }
+        });
     }
 
     private void indexResults(Path outputFile) throws AnalysisException {

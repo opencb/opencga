@@ -26,10 +26,11 @@ import java.lang.annotation.Target;
 public @interface Analysis {
 
     String id();
-    AnalysisData data();
+    AnalysisType type();
+    String[] steps() default {};
     String description() default "";
 
-    enum AnalysisData {
+    enum AnalysisType {
         VARIANT,
         CLINICAL,
         EXPRESSION,

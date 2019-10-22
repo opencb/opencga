@@ -51,15 +51,15 @@ public @interface AnalysisExecutor {
     String description() default "";
 
     enum Source {
-        VCF_FILE,
+        FILE,
         PARQUET_FILE,
         MONGODB,
         HBASE,
-        OPENCGA
+        STORAGE
     }
 
     enum Framework {
-        ITERATOR,
+        LOCAL,
         MAP_REDUCE,
         SPARK
     }

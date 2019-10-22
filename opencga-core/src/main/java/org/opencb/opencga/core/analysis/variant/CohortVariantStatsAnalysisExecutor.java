@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
 import org.opencb.opencga.core.exception.AnalysisException;
 
@@ -20,10 +19,6 @@ public abstract class CohortVariantStatsAnalysisExecutor extends OpenCgaAnalysis
     private Path outputFile;
 
     public CohortVariantStatsAnalysisExecutor() {
-    }
-
-    public CohortVariantStatsAnalysisExecutor(ObjectMap executorParams, Path outDir) {
-        this.setUp(executorParams, outDir);
     }
 
     public String getStudy() {
