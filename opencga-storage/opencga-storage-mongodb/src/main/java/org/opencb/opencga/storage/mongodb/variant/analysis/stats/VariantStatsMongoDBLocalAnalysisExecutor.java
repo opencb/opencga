@@ -12,6 +12,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
+import org.opencb.opencga.core.analysis.variant.VariantStatsAnalysisExecutor;
+import org.opencb.opencga.core.annotations.AnalysisExecutor;
+import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.AnalysisExecutorException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -22,11 +26,6 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.analysis.MongoDBAnalysisExecutor;
 import org.opencb.opencga.storage.mongodb.variant.stats.MongoDBVariantStatsCalculator;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
-import org.opencb.oskar.analysis.exceptions.AnalysisExecutorException;
-import org.opencb.oskar.analysis.variant.stats.VariantStatsAnalysis;
-import org.opencb.oskar.analysis.variant.stats.VariantStatsAnalysisExecutor;
-import org.opencb.oskar.core.annotations.AnalysisExecutor;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -37,7 +36,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-@AnalysisExecutor(id="mongodb-local", analysis= VariantStatsAnalysis.ID,
+@AnalysisExecutor(id = "mongodb-local", analysis = "variant-stats",
         framework = AnalysisExecutor.Framework.ITERATOR,
         source = AnalysisExecutor.Source.MONGODB)
 public class VariantStatsMongoDBLocalAnalysisExecutor extends VariantStatsAnalysisExecutor implements MongoDBAnalysisExecutor {

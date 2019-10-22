@@ -38,6 +38,7 @@ import org.opencb.opencga.analysis.clinical.OpenCgaClinicalAnalysis;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Panel;
@@ -45,7 +46,6 @@ import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -63,7 +63,7 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
     }
 
     @Override
-    protected void exec() throws org.opencb.oskar.analysis.exceptions.AnalysisException {
+    protected void exec() throws AnalysisException {
     }
 
     public InterpretationResult compute() throws Exception {

@@ -21,27 +21,31 @@ import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.opencga.core.analysis.variant.GwasAnalysisExecutor;
+import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.analysis.result.FileResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.annotations.Analysis;
+import org.opencb.opencga.core.annotations.Analysis.AnalysisData;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
-import org.opencb.oskar.analysis.variant.gwas.Gwas;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
-import org.opencb.oskar.core.annotations.Analysis;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Analysis(id = Gwas.ID, data = Analysis.AnalysisData.VARIANT,
+@Analysis(id = GwasAnalysis.ID, data = AnalysisData.VARIANT,
         description = "Run a Genome Wide Association Study between two cohorts.")
-public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
+public class GwasAnalysis extends OpenCgaAnalysis {
+
+    public static final String ID = "gwas";
 
     private GwasConfiguration gwasConfiguration;
     private String study;
@@ -55,7 +59,7 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
     private String scoreName;
     private boolean index;
 
-    public GwasOpenCgaAnalysis() {
+    public GwasAnalysis() {
     }
 
     /**
@@ -63,7 +67,7 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param gwasConfiguration configuration
      * @return this
      */
-    public GwasOpenCgaAnalysis setGwasConfiguration(GwasConfiguration gwasConfiguration) {
+    public GwasAnalysis setGwasConfiguration(GwasConfiguration gwasConfiguration) {
         this.gwasConfiguration = gwasConfiguration;
         return this;
     }
@@ -73,7 +77,7 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param study Study id
      * @return this
      */
-    public GwasOpenCgaAnalysis setStudy(String study) {
+    public GwasAnalysis setStudy(String study) {
         this.study = study;
         return this;
     }
@@ -87,7 +91,7 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param phenotype phenotype
      * @return this
      */
-    public GwasOpenCgaAnalysis setPhenotype(String phenotype) {
+    public GwasAnalysis setPhenotype(String phenotype) {
         this.phenotype = phenotype;
         return this;
     }
@@ -99,7 +103,7 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param caseCohortSamplesQuery sample query
      * @return this
      */
-    public GwasOpenCgaAnalysis setCaseCohortSamplesQuery(Query caseCohortSamplesQuery) {
+    public GwasAnalysis setCaseCohortSamplesQuery(Query caseCohortSamplesQuery) {
         this.caseCohortSamplesQuery = caseCohortSamplesQuery;
         return this;
     }
@@ -111,7 +115,7 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param controlCohortSamplesQuery sample query
      * @return this
      */
-    public GwasOpenCgaAnalysis setControlCohortSamplesQuery(Query controlCohortSamplesQuery) {
+    public GwasAnalysis setControlCohortSamplesQuery(Query controlCohortSamplesQuery) {
         this.controlCohortSamplesQuery = controlCohortSamplesQuery;
         return this;
     }
@@ -123,7 +127,7 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param caseCohort cohort name
      * @return this
      */
-    public GwasOpenCgaAnalysis setCaseCohort(String caseCohort) {
+    public GwasAnalysis setCaseCohort(String caseCohort) {
         this.caseCohort = caseCohort;
         return this;
     }
@@ -135,7 +139,7 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param controlCohort cohort name
      * @return this
      */
-    public GwasOpenCgaAnalysis setControlCohort(String controlCohort) {
+    public GwasAnalysis setControlCohort(String controlCohort) {
         this.controlCohort = controlCohort;
         return this;
     }
@@ -147,7 +151,7 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param scoreName score name
      * @return this
      */
-    public GwasOpenCgaAnalysis setScoreName(String scoreName) {
+    public GwasAnalysis setScoreName(String scoreName) {
         this.scoreName = scoreName;
         return this;
     }
@@ -243,13 +247,27 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
 
     @Override
     protected void exec() throws AnalysisException {
-        Gwas gwas = new Gwas()
-                .setConfiguration(gwasConfiguration)
+
+        arm.startStep("gwas");
+        GwasAnalysisExecutor gwasExecutor = getAnalysisExecutor(GwasAnalysisExecutor.class);
+
+        Path outputFile = outDir.resolve(buildOutputFilename());
+        gwasExecutor.setConfiguration(gwasConfiguration)
                 .setStudy(study)
-                .setSampleList1(controlCohortSamples)
-                .setSampleList2(caseCohortSamples);
-        gwas.setUp(executorParams, outDir, sourceTypes, availableFrameworks);
-        gwas.execute(arm);
+                .setSampleList1(caseCohortSamples)
+                .setSampleList2(controlCohortSamples)
+                .setOutputFile(outputFile)
+                .exec();
+
+        arm.endStep(70);
+
+        arm.startStep("manhattan-plot");
+        createManhattanPlot();
+        arm.endStep(100);
+
+        if (outputFile.toFile().exists()) {
+            arm.addFile(outputFile, FileResult.FileType.TAB_SEPARATED);
+        }
 
         if (index) {
             arm.startStep("index-score", 80f);
@@ -257,12 +275,28 @@ public class GwasOpenCgaAnalysis extends OpenCgaAnalysis {
             try {
                 Path file = outDir.resolve(Paths.get(arm.read().getOutputFiles().get(0).getPath()));
                 VariantScoreFormatDescriptor formatDescriptor = new VariantScoreFormatDescriptor(1, 16, 15);
-                variantStorageManager.loadVariantScore(study, file.toUri(), scoreName, caseCohort, controlCohort, formatDescriptor, executorParams, sessionId);
+                variantStorageManager.loadVariantScore(study, file.toUri(), scoreName, caseCohort, controlCohort, formatDescriptor,
+                        executorParams, sessionId);
             } catch (CatalogException | StorageEngineException e) {
                 throw new AnalysisException(e);
             }
         }
         arm.endStep(100);
+    }
+
+    private void createManhattanPlot() {
+
+    }
+
+    protected String buildOutputFilename() throws AnalysisException {
+        GwasConfiguration.Method method = gwasConfiguration.getMethod();
+        switch (method) {
+            case CHI_SQUARE_TEST:
+            case FISHER_TEST:
+                return method.label + ".tsv";
+            default:
+                throw new AnalysisException("Unknown GWAS method: " + method);
+        }
     }
 
     private List<String> getCohortSamples(String cohort, Query samplesQuery, String cohortType, boolean observedPhenotype) throws AnalysisException {

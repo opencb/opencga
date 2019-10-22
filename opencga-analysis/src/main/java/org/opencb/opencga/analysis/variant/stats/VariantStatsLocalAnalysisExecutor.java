@@ -11,18 +11,16 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.analysis.OpenCgaAnalysisExecutor;
+import org.opencb.opencga.core.analysis.variant.VariantStatsAnalysisExecutor;
+import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.AnalysisExecutorException;
+import org.opencb.opencga.analysis.variant.VariantStorageAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
-import org.opencb.oskar.analysis.exceptions.AnalysisExecutorException;
-import org.opencb.oskar.analysis.variant.stats.VariantStatsAnalysis;
-import org.opencb.oskar.analysis.variant.stats.VariantStatsAnalysisExecutor;
-import org.opencb.oskar.core.annotations.AnalysisExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,12 +31,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 
-@AnalysisExecutor(id="opencga-local", analysis= VariantStatsAnalysis.ID,
-        framework = AnalysisExecutor.Framework.ITERATOR,
-        source = AnalysisExecutor.Source.OPENCGA)
-public class VariantStatsOpenCgaAnalysisExecutor extends VariantStatsAnalysisExecutor implements OpenCgaAnalysisExecutor {
+@org.opencb.opencga.core.annotations.AnalysisExecutor(id = "opencga-local", analysis = VariantStatsAnalysis.ID,
+        framework = org.opencb.opencga.core.annotations.AnalysisExecutor.Framework.ITERATOR,
+        source = org.opencb.opencga.core.annotations.AnalysisExecutor.Source.OPENCGA)
+public class VariantStatsLocalAnalysisExecutor extends VariantStatsAnalysisExecutor implements VariantStorageAnalysisExecutor {
 
-    private final Logger logger = LoggerFactory.getLogger(VariantStatsOpenCgaAnalysisExecutor.class);
+    private final Logger logger = LoggerFactory.getLogger(VariantStatsLocalAnalysisExecutor.class);
 
     @Override
     public void exec() throws AnalysisException {

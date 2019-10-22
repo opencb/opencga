@@ -6,24 +6,26 @@ import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.opencga.core.analysis.variant.CohortVariantStatsAnalysisExecutor;
+import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.analysis.result.FileResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
+import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.VariableSet;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
-import org.opencb.oskar.analysis.variant.stats.CohortVariantStatsAnalysis;
-import org.opencb.oskar.core.annotations.Analysis;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
-@Analysis(id = CohortVariantStatsAnalysis.ID, data = Analysis.AnalysisData.VARIANT)
-public class CohortVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
+@org.opencb.opencga.core.annotations.Analysis(id = CohortVariantStatsAnalysis.ID, data = Analysis.AnalysisData.VARIANT)
+public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
 
+    public static final String ID = "cohort-variant-stats";
     public static final String VARIABLE_SET_ID = "OPENCGA_COHORT_VARIANT_STATS";
     private String study;
     private List<String> sampleNames;
@@ -38,7 +40,7 @@ public class CohortVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param study Study id
      * @return this
      */
-    public CohortVariantStatsOpenCgaAnalysis setStudy(String study) {
+    public CohortVariantStatsAnalysis setStudy(String study) {
         this.study = study;
         return this;
     }
@@ -48,7 +50,7 @@ public class CohortVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param sampleNames Sample names
      * @return this
      */
-    public CohortVariantStatsOpenCgaAnalysis setSampleNames(List<String> sampleNames) {
+    public CohortVariantStatsAnalysis setSampleNames(List<String> sampleNames) {
         this.sampleNames = sampleNames;
         return this;
     }
@@ -58,7 +60,7 @@ public class CohortVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param samplesQuery Samples query
      * @return this
      */
-    public CohortVariantStatsOpenCgaAnalysis setSamplesQuery(Query samplesQuery) {
+    public CohortVariantStatsAnalysis setSamplesQuery(Query samplesQuery) {
         this.samplesQuery = samplesQuery;
         return this;
     }
@@ -70,7 +72,7 @@ public class CohortVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param cohortName cohort name
      * @return this
      */
-    public CohortVariantStatsOpenCgaAnalysis setCohortName(String cohortName) {
+    public CohortVariantStatsAnalysis setCohortName(String cohortName) {
         this.cohortName = cohortName;
         return this;
     }
@@ -84,7 +86,7 @@ public class CohortVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param indexResults index results
      * @return boolean
      */
-    public CohortVariantStatsOpenCgaAnalysis setIndexResults(boolean indexResults) {
+    public CohortVariantStatsAnalysis setIndexResults(boolean indexResults) {
         this.indexResults = indexResults;
         return this;
     }
@@ -152,11 +154,18 @@ public class CohortVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
 
     @Override
     protected void exec() throws AnalysisException {
+        arm.startStep("Calculate");
 
-        CohortVariantStatsAnalysis analysis = new CohortVariantStatsAnalysis();
-        analysis.setUp(executorParams, outDir, sourceTypes, availableFrameworks);
-        analysis.setStudy(study).setSampleNames(checkedSamplesList);
-        analysis.execute(arm);
+        Path outputFile = outDir.resolve("cohort_stats.json");
+
+        getAnalysisExecutor(CohortVariantStatsAnalysisExecutor.class)
+                .setStudy(study)
+                .setOutputFile(outputFile)
+                .setSampleNames(checkedSamplesList)
+                .exec();
+
+        arm.addFile(outputFile, FileResult.FileType.JSON);
+        arm.endStep(100);
 
         if (indexResults) {
             try {

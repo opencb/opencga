@@ -9,23 +9,22 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.opencga.analysis.OpenCgaAnalysisExecutor;
+import org.opencb.opencga.analysis.variant.VariantStorageAnalysisExecutor;
+import org.opencb.opencga.core.analysis.variant.SampleVariantStatsAnalysisExecutor;
+import org.opencb.opencga.core.annotations.AnalysisExecutor;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
-import org.opencb.oskar.analysis.exceptions.AnalysisExecutorException;
-import org.opencb.oskar.analysis.variant.stats.SampleVariantStatsAnalysis;
-import org.opencb.oskar.analysis.variant.stats.SampleVariantStatsAnalysisExecutor;
-import org.opencb.oskar.core.annotations.AnalysisExecutor;
+import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.AnalysisExecutorException;
 
 import java.util.List;
 
 @AnalysisExecutor(id="opencga-local", analysis= SampleVariantStatsAnalysis.ID,
         framework = AnalysisExecutor.Framework.ITERATOR,
         source = AnalysisExecutor.Source.OPENCGA)
-public class SampleVariantStatsOpenCgaAnalysisExecutor extends SampleVariantStatsAnalysisExecutor implements OpenCgaAnalysisExecutor {
+public class SampleVariantStatsLocalAnalysisExecutor extends SampleVariantStatsAnalysisExecutor implements VariantStorageAnalysisExecutor {
 
     @Override
     public void exec() throws AnalysisException {

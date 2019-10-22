@@ -43,7 +43,7 @@ import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
+import org.opencb.opencga.core.exception.AnalysisException;
 
 import java.io.IOException;
 import java.util.*;
@@ -83,7 +83,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
     }
 
     @Override
-    protected void exec() throws org.opencb.oskar.analysis.exceptions.AnalysisException {
+    protected void exec() throws AnalysisException {
     }
 
     public InterpretationResult compute() throws Exception {

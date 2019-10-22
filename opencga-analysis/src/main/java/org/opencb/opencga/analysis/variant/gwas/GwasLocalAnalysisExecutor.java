@@ -11,27 +11,25 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.analysis.OpenCgaAnalysisExecutor;
+import org.opencb.opencga.core.analysis.variant.GwasAnalysisExecutor;
+import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.analysis.variant.VariantStorageAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
 import org.opencb.oskar.analysis.stats.FisherExactTest;
 import org.opencb.oskar.analysis.stats.FisherTestResult;
-import org.opencb.oskar.analysis.variant.gwas.Gwas;
-import org.opencb.oskar.analysis.variant.gwas.GwasExecutor;
-import org.opencb.oskar.core.annotations.AnalysisExecutor;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-@AnalysisExecutor(id = "opencga-local",
-        analysis = Gwas.ID,
-        source = AnalysisExecutor.Source.OPENCGA,
-        framework = AnalysisExecutor.Framework.ITERATOR)
-public final class GwasOpenCgaAnalysisExecutor extends GwasExecutor implements OpenCgaAnalysisExecutor {
+@org.opencb.opencga.core.annotations.AnalysisExecutor(id = "opencga-local",
+        analysis = GwasAnalysis.ID,
+        source = org.opencb.opencga.core.annotations.AnalysisExecutor.Source.OPENCGA,
+        framework = org.opencb.opencga.core.annotations.AnalysisExecutor.Framework.ITERATOR)
+public final class GwasLocalAnalysisExecutor extends GwasAnalysisExecutor implements VariantStorageAnalysisExecutor {
 
     @Override
     public void exec() throws AnalysisException {

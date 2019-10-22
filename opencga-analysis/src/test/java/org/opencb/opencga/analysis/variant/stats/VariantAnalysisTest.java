@@ -13,7 +13,7 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.variant.gwas.GwasOpenCgaAnalysis;
+import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -32,8 +32,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
-import org.opencb.oskar.analysis.result.AnalysisResult;
-import org.opencb.oskar.analysis.variant.stats.VariantStatsAnalysis;
+import org.opencb.opencga.core.analysis.result.AnalysisResult;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -44,7 +43,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RunWith(Parameterized.class)
-public class VariantOpenCgaAnalysisTest {
+public class VariantAnalysisTest {
 
     public static final String USER = "user";
     public static final String PASSWORD = "asdf";
@@ -62,11 +61,11 @@ public class VariantOpenCgaAnalysisTest {
                 {HadoopVariantStorageEngine.STORAGE_ENGINE_ID}};
     }
 
-    public VariantOpenCgaAnalysisTest(String storageEngine) {
-        if (!storageEngine.equals(VariantOpenCgaAnalysisTest.storageEngine)) {
+    public VariantAnalysisTest(String storageEngine) {
+        if (!storageEngine.equals(VariantAnalysisTest.storageEngine)) {
             indexed = false;
         }
-        VariantOpenCgaAnalysisTest.storageEngine = storageEngine;
+        VariantAnalysisTest.storageEngine = storageEngine;
     }
 
 
@@ -154,7 +153,7 @@ public class VariantOpenCgaAnalysisTest {
     @Test
     public void testVariantStats() throws Exception {
         ObjectMap executorParams = new ObjectMap();
-        VariantStatsOpenCgaAnalysis analysis = new VariantStatsOpenCgaAnalysis();
+        VariantStatsAnalysis analysis = new VariantStatsAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_variant_stats"));
         System.out.println("output = " + outDir.toAbsolutePath());
         analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
@@ -177,7 +176,7 @@ public class VariantOpenCgaAnalysisTest {
     @Test
     public void testVariantStatsWithFilter() throws Exception {
         ObjectMap executorParams = new ObjectMap();
-        VariantStatsOpenCgaAnalysis analysis = new VariantStatsOpenCgaAnalysis();
+        VariantStatsAnalysis analysis = new VariantStatsAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_variant_stats_chr22"));
         System.out.println("output = " + outDir.toAbsolutePath());
         analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
@@ -203,7 +202,7 @@ public class VariantOpenCgaAnalysisTest {
     public void testSampleStats() throws Exception {
 
         ObjectMap executorParams = new ObjectMap();
-        SampleVariantStatsOpenCgaAnalysis analysis = new SampleVariantStatsOpenCgaAnalysis();
+        SampleVariantStatsAnalysis analysis = new SampleVariantStatsAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_sample_stats"));
         System.out.println("output = " + outDir.toAbsolutePath());
         analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
@@ -226,7 +225,7 @@ public class VariantOpenCgaAnalysisTest {
     @Test
     public void testCohortStats() throws Exception {
         ObjectMap executorParams = new ObjectMap();
-        CohortVariantStatsOpenCgaAnalysis analysis = new CohortVariantStatsOpenCgaAnalysis();
+        CohortVariantStatsAnalysis analysis = new CohortVariantStatsAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_cohort_stats"));
         System.out.println("output = " + outDir.toAbsolutePath());
         analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
@@ -239,7 +238,7 @@ public class VariantOpenCgaAnalysisTest {
     @Test
     public void testCohortStatsIndex() throws Exception {
         ObjectMap executorParams = new ObjectMap();
-        CohortVariantStatsOpenCgaAnalysis analysis = new CohortVariantStatsOpenCgaAnalysis();
+        CohortVariantStatsAnalysis analysis = new CohortVariantStatsAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_cohort_stats_index"));
         System.out.println("output = " + outDir.toAbsolutePath());
         analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
@@ -253,7 +252,7 @@ public class VariantOpenCgaAnalysisTest {
     @Test
     public void testGwas() throws Exception {
         ObjectMap executorParams = new ObjectMap();
-        GwasOpenCgaAnalysis analysis = new GwasOpenCgaAnalysis();
+        GwasAnalysis analysis = new GwasAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_gwas"));
         System.out.println("output = " + outDir.toAbsolutePath());
         analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
@@ -267,7 +266,7 @@ public class VariantOpenCgaAnalysisTest {
     @Test
     public void testGwasByPhenotype() throws Exception {
         ObjectMap executorParams = new ObjectMap();
-        GwasOpenCgaAnalysis analysis = new GwasOpenCgaAnalysis();
+        GwasAnalysis analysis = new GwasAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_gwas_phenotype"));
         System.out.println("output = " + outDir.toAbsolutePath());
         analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
@@ -283,7 +282,7 @@ public class VariantOpenCgaAnalysisTest {
         Assume.assumeThat(storageEngine, CoreMatchers.is(CoreMatchers.not(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID)));
 
         ObjectMap executorParams = new ObjectMap();
-        GwasOpenCgaAnalysis analysis = new GwasOpenCgaAnalysis();
+        GwasAnalysis analysis = new GwasAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_gwas_index"));
         System.out.println("output = " + outDir.toAbsolutePath());
         analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);

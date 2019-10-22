@@ -1,24 +1,23 @@
 package org.opencb.opencga.storage.hadoop.variant.analysis.gwas;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.analysis.variant.GwasAnalysisExecutor;
+import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.AnalysisExecutorException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantAnalysisExecutor;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
-import org.opencb.oskar.analysis.exceptions.AnalysisExecutorException;
-import org.opencb.oskar.analysis.variant.gwas.Gwas;
+import org.opencb.opencga.core.annotations.AnalysisExecutor;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
-import org.opencb.oskar.analysis.variant.gwas.GwasExecutor;
-import org.opencb.oskar.core.annotations.AnalysisExecutor;
 
 import java.util.List;
 
-@AnalysisExecutor(id = "hbase-mapreduce", analysis = Gwas.ID,
+@AnalysisExecutor(id = "hbase-mapreduce", analysis = "gwas",
         framework = AnalysisExecutor.Framework.MAP_REDUCE,
         source = AnalysisExecutor.Source.HBASE)
-public class GwasHBaseMapReduceAnalysisExecutor extends GwasExecutor implements HadoopVariantAnalysisExecutor {
+public class GwasHBaseMapReduceAnalysisExecutor extends GwasAnalysisExecutor implements HadoopVariantAnalysisExecutor {
 
     @Override
     public void exec() throws AnalysisException {

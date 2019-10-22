@@ -3,7 +3,11 @@ package org.opencb.opencga.storage.hadoop.variant.analysis.stats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.utils.StringUtils;
+import org.opencb.opencga.core.analysis.variant.CohortVariantStatsAnalysisExecutor;
+import org.opencb.opencga.core.annotations.AnalysisExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.AnalysisExecutorException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -11,13 +15,8 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantAnalysisExecutor;
 import org.opencb.opencga.storage.hadoop.variant.stats.CohortVariantStatsDriver;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
-import org.opencb.oskar.analysis.exceptions.AnalysisExecutorException;
-import org.opencb.oskar.analysis.variant.stats.CohortVariantStatsAnalysis;
-import org.opencb.oskar.analysis.variant.stats.CohortVariantStatsAnalysisExecutor;
-import org.opencb.oskar.core.annotations.AnalysisExecutor;
 
-@AnalysisExecutor(id="hbase-mapreduce", analysis= CohortVariantStatsAnalysis.ID,
+@AnalysisExecutor(id = "hbase-mapreduce", analysis = "cohort-variant-stats",
         framework = AnalysisExecutor.Framework.MAP_REDUCE,
         source = AnalysisExecutor.Source.HBASE)
 public class CohortVariantStatsHBaseMapReduceAnalysisExecutor
