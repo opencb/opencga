@@ -1,6 +1,8 @@
 package org.opencb.opencga.storage.core.variant.search;
 
 import htsjdk.variant.vcf.VCFHeader;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Rule;
 import org.junit.Test;
@@ -13,9 +15,13 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageTest;
@@ -24,10 +30,7 @@ import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.fail;
@@ -48,10 +51,11 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
         System.out.println(smallInputUri.getPath());
 
-        List<Variant> variants = getVariants(limit);
-        List<Variant> annotatedVariants = annotatedVariants(variants);
+        StudyMetadata studyMetadata = metadataManager.createStudy("s1");
 
-        metadataManager.createStudy("s1");
+        List<Variant> variants = getVariants(limit);
+        List<Variant> annotatedVariants = annotatedVariants(variants, studyMetadata.getName());
+
 
         String collection = solr.coreName;
         variantSearchManager.createCore(collection, VariantSearchManager.CONF_SET);
@@ -212,6 +216,57 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         }
     }
 
+    @Test
+    public void testGeneFacet() throws Exception {
+        int limit = 500;
+
+        VariantStorageMetadataManager scm = variantStorageEngine.getMetadataManager();
+
+        solr.configure(variantStorageEngine);
+        VariantSearchManager variantSearchManager = variantStorageEngine.getVariantSearchManager();
+
+        System.out.println(smallInputUri.getPath());
+
+        List<Variant> variants = getVariants(limit);
+        List<Variant> annotatedVariants = annotatedVariants(variants);
+
+        metadataManager.createStudy("s1");
+
+        String collection = solr.coreName;
+        variantSearchManager.createCore(collection, VariantSearchManager.CONF_SET);
+
+        variantSearchManager.insert(collection, annotatedVariants);
+
+        QueryOptions queryOptions = new QueryOptions();
+        //String facet = "type[SNV,TOTO]>>biotypes";
+        String facet = "genes[CDK11A,WDR78,ENSG00000115183,TOTO]>>type[INDEL,DELETION,SNV]";
+        queryOptions.put(QueryOptions.FACET, facet);
+        FacetQueryResult facetQueryResult = variantSearchManager.facetedQuery(collection, new Query(), queryOptions);
+        String s = JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facetQueryResult);
+        System.out.println(s);
+        //        System.out.println(facetQueryResult.toString());
+    }
+
+    public void regex() throws Exception {
+        String facet = "genes[G1,G2]>>type[INDEL,SNV];aggr(genes);biotypes";
+        Map<String, Set<String>> includeMap = new FacetQueryParser().getIncludingValuesMap(facet);
+
+        System.out.println(facet);
+        if (MapUtils.isNotEmpty(includeMap)) {
+            for (String key : includeMap.keySet()) {
+                System.out.println("key: " + key);
+                if (includeMap.containsKey(key) && CollectionUtils.isNotEmpty(includeMap.get(key))) {
+                    for (String value : includeMap.get(key)) {
+                        System.out.println("\t" + value);
+                    }
+                }
+
+            }
+        }
+    }
+
+
+
     private Map<String, ConsequenceType> getConsequenceTypeMap (Variant variant){
         Map<String, ConsequenceType> map = new HashMap<>();
         if (variant.getAnnotation() != null && ListUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
@@ -264,12 +319,17 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
     }
 
     private List<Variant> annotatedVariants(List<Variant> variants) throws IOException {
+        return annotatedVariants(variants, "");
+    }
+
+    private List<Variant> annotatedVariants(List<Variant> variants, String studyId) throws IOException {
         CellBaseClient cellBaseClient = new CellBaseClient(variantStorageEngine.getConfiguration().getCellbase().toClientConfiguration());
         QueryResponse<VariantAnnotation> queryResponse = cellBaseClient.getVariantClient().getAnnotationByVariantIds(variants.stream().map(Variant::toString).collect(Collectors.toList()), QueryOptions.empty());
 
         // Set annotations
         for (int i = 0; i < variants.size(); i++) {
             variants.get(i).setAnnotation(queryResponse.getResponse().get(i).first());
+            variants.get(i).getStudies().get(0).setStudyId(studyId);
         }
         return variants;
     }
