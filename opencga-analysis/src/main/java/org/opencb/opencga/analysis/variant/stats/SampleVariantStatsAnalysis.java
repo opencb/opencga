@@ -183,13 +183,13 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
     }
 
     @Override
-    protected void exec() throws AnalysisException {
+    protected void run() throws AnalysisException {
         step(getId(), () -> {
             getAnalysisExecutor(SampleVariantStatsAnalysisExecutor.class)
                     .setOutputFile(outputFile)
                     .setStudy(study)
                     .setSampleNames(checkedSamplesList)
-                    .exec();
+                    .execute();
 
             addFile(outputFile, FileResult.FileType.JSON);
         });

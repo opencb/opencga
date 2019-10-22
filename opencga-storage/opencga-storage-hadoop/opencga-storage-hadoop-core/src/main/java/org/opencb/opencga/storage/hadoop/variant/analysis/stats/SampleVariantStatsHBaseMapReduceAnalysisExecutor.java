@@ -21,7 +21,7 @@ public class SampleVariantStatsHBaseMapReduceAnalysisExecutor
         extends SampleVariantStatsAnalysisExecutor implements HadoopVariantAnalysisExecutor {
 
     @Override
-    public void exec() throws AnalysisException {
+    public void run() throws AnalysisException {
         String study = getStudy();
         List<String> sampleNames = getSampleNames();
 

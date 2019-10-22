@@ -246,7 +246,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
     }
 
     @Override
-    protected void exec() throws AnalysisException {
+    protected void run() throws AnalysisException {
 
         step("gwas", () -> {
             GwasAnalysisExecutor gwasExecutor = getAnalysisExecutor(GwasAnalysisExecutor.class);
@@ -256,7 +256,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
                     .setSampleList1(caseCohortSamples)
                     .setSampleList2(controlCohortSamples)
                     .setOutputFile(outputFile)
-                    .exec();
+                    .execute();
 
             if (outputFile.toFile().exists()) {
                 addFile(outputFile, FileResult.FileType.TAB_SEPARATED);

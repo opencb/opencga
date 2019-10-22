@@ -18,10 +18,10 @@ public class TdtAnalysis extends OpenCgaAnalysis {
     }
 
     @Override
-    public void exec() throws AnalysisException {
+    public void run() throws AnalysisException {
         step(() -> {
             getAnalysisExecutor(TdtAnalysisExecutor.class)
-                    .exec();
+                    .execute();
         });
     }
 

@@ -154,7 +154,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
     }
 
     @Override
-    protected void exec() throws AnalysisException {
+    protected void run() throws AnalysisException {
         step(() -> {
             getAnalysisExecutor(VariantStatsAnalysisExecutor.class)
                     .setStudy(study)
@@ -162,7 +162,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
                     .setSamples(sampleNames)
                     .setOutputFile(outputFile)
                     .setVariantsQuery(variantsQuery)
-                    .exec();
+                    .execute();
 
             addFile(outputFile, FileResult.FileType.TAB_SEPARATED);
         });

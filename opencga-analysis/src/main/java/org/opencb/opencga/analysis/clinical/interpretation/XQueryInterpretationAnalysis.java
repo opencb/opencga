@@ -38,7 +38,7 @@ public class XQueryInterpretationAnalysis extends FamilyInterpretationAnalysis {
     }
 
     @Override
-    protected void exec() throws AnalysisException {
+    protected void run() throws AnalysisException {
 
     }
 

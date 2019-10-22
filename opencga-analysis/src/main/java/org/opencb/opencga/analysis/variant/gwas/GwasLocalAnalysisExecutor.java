@@ -33,7 +33,7 @@ import java.util.concurrent.ExecutionException;
 public final class GwasLocalAnalysisExecutor extends GwasAnalysisExecutor implements VariantStorageAnalysisExecutor {
 
     @Override
-    public void exec() throws AnalysisException {
+    public void run() throws AnalysisException {
         List<String> sampleList1 = getSampleList1();
         List<String> sampleList2 = getSampleList2();
         List<String> allSamples = new ArrayList<>();

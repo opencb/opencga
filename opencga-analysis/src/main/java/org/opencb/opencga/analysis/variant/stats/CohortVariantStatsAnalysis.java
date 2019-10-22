@@ -158,13 +158,13 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
     }
 
     @Override
-    protected void exec() throws AnalysisException {
+    protected void run() throws AnalysisException {
         step(getId(), () -> {
             getAnalysisExecutor(CohortVariantStatsAnalysisExecutor.class)
                     .setStudy(study)
                     .setOutputFile(outputFile)
                     .setSampleNames(checkedSamplesList)
-                    .exec();
+                    .execute();
 
             addFile(outputFile, FileResult.FileType.JSON);
         });

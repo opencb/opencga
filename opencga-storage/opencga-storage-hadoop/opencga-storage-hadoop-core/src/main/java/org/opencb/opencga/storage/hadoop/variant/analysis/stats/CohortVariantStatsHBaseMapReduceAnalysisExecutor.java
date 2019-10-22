@@ -23,7 +23,7 @@ public class CohortVariantStatsHBaseMapReduceAnalysisExecutor
         extends CohortVariantStatsAnalysisExecutor implements HadoopVariantAnalysisExecutor {
 
     @Override
-    public void exec() throws AnalysisException {
+    public void run() throws AnalysisException {
 
         HadoopVariantStorageEngine engine = getHadoopVariantStorageEngine();
 

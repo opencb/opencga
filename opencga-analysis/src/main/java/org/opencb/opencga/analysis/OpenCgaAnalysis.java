@@ -155,12 +155,12 @@ public abstract class OpenCgaAnalysis {
      * @return AnalysisResult
      * @throws AnalysisException on error
      */
-    public final AnalysisResult execute() throws AnalysisException {
+    public final AnalysisResult start() throws AnalysisException {
         arm = new AnalysisResultManager(getId(), outDir);
         arm.init(executorParams, getSteps());
         try {
             check();
-            exec();
+            run();
             return arm.close();
         } catch (Exception e) {
             arm.close(e);
@@ -170,7 +170,7 @@ public abstract class OpenCgaAnalysis {
 
     /**
      * Check that the given parameters are correct.
-     * This method will be called before the {@link #exec()}.
+     * This method will be called before the {@link #run()}.
      *
      * @throws AnalysisException if the parameters are not correct
      */
@@ -181,7 +181,7 @@ public abstract class OpenCgaAnalysis {
      * Method to be implemented by subclasses with the actual execution of the analysis.
      * @throws AnalysisException on error
      */
-    protected abstract void exec() throws AnalysisException;
+    protected abstract void run() throws AnalysisException;
 
     /**
      * @return the analysis id

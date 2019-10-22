@@ -40,7 +40,11 @@ public abstract class OpenCgaAnalysisExecutor {
         this.outDir = outDir;
     }
 
-    public abstract void exec() throws AnalysisException;
+    public final void execute() throws AnalysisException {
+        run();
+    }
+
+    protected abstract void run() throws AnalysisException;
 
     public final ObjectMap getExecutorParams() {
         return executorParams;

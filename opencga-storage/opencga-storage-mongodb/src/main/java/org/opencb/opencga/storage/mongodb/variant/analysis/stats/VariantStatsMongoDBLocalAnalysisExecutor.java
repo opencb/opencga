@@ -41,7 +41,7 @@ import java.util.concurrent.ExecutionException;
         source = AnalysisExecutor.Source.MONGODB)
 public class VariantStatsMongoDBLocalAnalysisExecutor extends VariantStatsAnalysisExecutor implements MongoDBAnalysisExecutor {
     @Override
-    public void exec() throws AnalysisException {
+    public void run() throws AnalysisException {
         MongoDBVariantStorageEngine engine = getMongoDBVariantStorageEngine();
 
         Query query = new Query(getVariantsQuery())

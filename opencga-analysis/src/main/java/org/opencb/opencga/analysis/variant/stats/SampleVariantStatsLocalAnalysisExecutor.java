@@ -27,7 +27,7 @@ import java.util.List;
 public class SampleVariantStatsLocalAnalysisExecutor extends SampleVariantStatsAnalysisExecutor implements VariantStorageAnalysisExecutor {
 
     @Override
-    public void exec() throws AnalysisException {
+    public void run() throws AnalysisException {
 
         VariantStorageManager variantStorageManager = getVariantStorageManager();
 

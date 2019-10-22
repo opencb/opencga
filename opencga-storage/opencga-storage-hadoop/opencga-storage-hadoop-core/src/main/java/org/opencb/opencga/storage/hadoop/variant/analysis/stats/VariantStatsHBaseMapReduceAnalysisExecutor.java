@@ -20,7 +20,7 @@ import org.opencb.opencga.core.annotations.AnalysisExecutor;
 public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnalysisExecutor implements HadoopVariantAnalysisExecutor {
 
     @Override
-    public void exec() throws AnalysisException {
+    public void run() throws AnalysisException {
         HadoopVariantStorageEngine engine = getHadoopVariantStorageEngine();
 
         VariantHadoopDBAdaptor dbAdaptor;

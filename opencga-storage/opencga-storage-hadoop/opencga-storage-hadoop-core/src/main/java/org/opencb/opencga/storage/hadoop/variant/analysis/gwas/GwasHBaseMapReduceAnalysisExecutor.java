@@ -20,7 +20,7 @@ import java.util.List;
 public class GwasHBaseMapReduceAnalysisExecutor extends GwasAnalysisExecutor implements HadoopVariantAnalysisExecutor {
 
     @Override
-    public void exec() throws AnalysisException {
+    public void run() throws AnalysisException {
         String study = getStudy();
         List<String> samples1 = getSampleList1();
         List<String> samples2 = getSampleList2();

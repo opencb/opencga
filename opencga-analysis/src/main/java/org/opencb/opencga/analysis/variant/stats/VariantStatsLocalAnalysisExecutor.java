@@ -39,7 +39,7 @@ public class VariantStatsLocalAnalysisExecutor extends VariantStatsAnalysisExecu
     private final Logger logger = LoggerFactory.getLogger(VariantStatsLocalAnalysisExecutor.class);
 
     @Override
-    public void exec() throws AnalysisException {
+    public void run() throws AnalysisException {
 
         VariantStorageManager manager = getVariantStorageManager();
         Query query = new Query(getVariantsQuery())

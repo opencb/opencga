@@ -63,7 +63,7 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
     }
 
     @Override
-    protected void exec() throws AnalysisException {
+    protected void run() throws AnalysisException {
     }
 
     public InterpretationResult compute() throws Exception {

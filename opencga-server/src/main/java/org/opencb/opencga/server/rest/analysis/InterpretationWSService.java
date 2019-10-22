@@ -797,7 +797,7 @@ public class InterpretationWSService extends AnalysisWSService {
                 // Execute TEAM analysis
                 TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis(clinicalAnalysisId, studyStr, panelList, moi,
                         teamAnalysisOptions, opencgaHome.toString(), token);
-                result = teamAnalysis.execute();
+                result = teamAnalysis.start();
             }
             return createAnalysisOkResponse(result);
         } catch (Exception e) {
@@ -842,7 +842,7 @@ public class InterpretationWSService extends AnalysisWSService {
                 // Execute tiering analysis
                 TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis(clinicalAnalysisId, studyId, panelList,
                         penetrance, tieringAnalysisOptions, opencgaHome.toString(), token);
-                result = tieringAnalysis.execute();
+                result = tieringAnalysis.start();
             }
 
             return createAnalysisOkResponse(result);
@@ -1002,7 +1002,7 @@ public class InterpretationWSService extends AnalysisWSService {
             CancerTieringInterpretationAnalysis cancerTieringInterpretationAnalysis = new CancerTieringInterpretationAnalysis(
                     clinicalAnalysisId, studyId, variantsIdsToDiscard, options, opencgaHome, token);
 
-            result = cancerTieringInterpretationAnalysis.execute();
+            result = cancerTieringInterpretationAnalysis.start();
 //            }
 
             return createAnalysisOkResponse(result);

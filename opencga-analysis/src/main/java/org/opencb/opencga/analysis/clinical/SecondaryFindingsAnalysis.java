@@ -44,7 +44,7 @@ public class SecondaryFindingsAnalysis extends OpenCgaClinicalAnalysis {
     }
 
     @Override
-    protected void exec() throws AnalysisException {
+    protected void run() throws AnalysisException {
     }
 
     public AnalysisResult<List<Variant>> compute() throws Exception {

@@ -160,7 +160,7 @@ public class VariantAnalysisTest {
         List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
         analysis.setStudy(STUDY)
                 .setSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(1,3)));
-        AnalysisResult ar = analysis.execute();
+        AnalysisResult ar = analysis.start();
         checkAnalysisResult(ar);
 
         MutableInt count = new MutableInt();
@@ -185,7 +185,7 @@ public class VariantAnalysisTest {
         analysis.setStudy(STUDY)
                 .setSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(1, 3)))
                 .setVariantsQuery(variantsQuery);
-        AnalysisResult ar = analysis.execute();
+        AnalysisResult ar = analysis.start();
         checkAnalysisResult(ar);
 
         MutableInt count = new MutableInt();
@@ -210,7 +210,7 @@ public class VariantAnalysisTest {
         analysis.setSampleNames(samples)
                 .setStudy(STUDY)
                 .setIndexResults(true);
-        checkAnalysisResult(analysis.execute());
+        checkAnalysisResult(analysis.start());
 
         for (String sample : samples) {
             AnnotationSet annotationSet = catalogManager.getSampleManager().get(STUDY, sample, null, sessionId).first().getAnnotationSets().get(0);
@@ -232,7 +232,7 @@ public class VariantAnalysisTest {
         List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
         analysis.setStudy(STUDY)
                 .setSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(0, 3)));
-        checkAnalysisResult(analysis.execute());
+        checkAnalysisResult(analysis.start());
     }
 
     @Test
@@ -246,7 +246,7 @@ public class VariantAnalysisTest {
         analysis.setStudy(STUDY)
                 .setCohortName(StudyEntry.DEFAULT_COHORT)
                 .setIndexResults(true);
-        checkAnalysisResult(analysis.execute());
+        checkAnalysisResult(analysis.start());
     }
 
     @Test
@@ -260,7 +260,7 @@ public class VariantAnalysisTest {
         analysis.setStudy(STUDY)
                 .setCaseCohortSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(0, 2)))
                 .setControlCohortSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(2, 4)));
-        checkAnalysisResult(analysis.execute());
+        checkAnalysisResult(analysis.start());
     }
 
     @Test
@@ -273,7 +273,7 @@ public class VariantAnalysisTest {
 
         analysis.setStudy(STUDY)
                 .setPhenotype(PHENOTYPE_NAME);
-        checkAnalysisResult(analysis.execute());
+        checkAnalysisResult(analysis.start());
     }
 
     @Test
@@ -294,7 +294,7 @@ public class VariantAnalysisTest {
                 .setCaseCohort("CASE")
                 .setControlCohort("CONTROL")
                 .setScoreName("GwasScore");
-        checkAnalysisResult(analysis.execute());
+        checkAnalysisResult(analysis.start());
 
         List<VariantScoreMetadata> scores = variantStorageManager.listVariantScores(STUDY, sessionId);
         System.out.println("scores.get(0) = " + JacksonUtils.getDefaultObjectMapper().writeValueAsString(scores));
