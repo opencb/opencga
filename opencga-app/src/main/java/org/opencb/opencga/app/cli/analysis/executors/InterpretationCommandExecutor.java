@@ -33,7 +33,7 @@ import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
+import org.opencb.opencga.core.exception.AnalysisException;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

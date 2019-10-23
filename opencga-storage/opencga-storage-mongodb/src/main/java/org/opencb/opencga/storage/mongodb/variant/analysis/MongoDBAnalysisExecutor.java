@@ -2,9 +2,9 @@ package org.opencb.opencga.storage.mongodb.variant.analysis;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.exception.AnalysisExecutorException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
-import org.opencb.oskar.analysis.exceptions.AnalysisExecutorException;
 
 /**
  * Helper interface to be used by opencga mongodb analysis executors.

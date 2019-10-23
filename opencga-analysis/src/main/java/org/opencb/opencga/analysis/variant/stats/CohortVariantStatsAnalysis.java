@@ -6,24 +6,28 @@ import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.opencga.core.analysis.variant.CohortVariantStatsAnalysisExecutor;
+import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.analysis.result.FileResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
+import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.VariableSet;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
-import org.opencb.oskar.analysis.variant.stats.CohortVariantStatsAnalysis;
-import org.opencb.oskar.core.annotations.Analysis;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
-@Analysis(id = CohortVariantStatsAnalysis.ID, data = Analysis.AnalysisData.VARIANT)
-public class CohortVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
+@Analysis(id = CohortVariantStatsAnalysis.ID, type = Analysis.AnalysisType.VARIANT,
+    steps = {CohortVariantStatsAnalysis.ID, "index"}
+)
+public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
 
+    public static final String ID = "cohort-variant-stats";
     public static final String VARIABLE_SET_ID = "OPENCGA_COHORT_VARIANT_STATS";
     private String study;
     private List<String> sampleNames;
@@ -32,13 +36,14 @@ public class CohortVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
     private boolean indexResults;
 
     private List<String> checkedSamplesList;
+    private Path outputFile;
 
     /**
      * Study of the samples.
      * @param study Study id
      * @return this
      */
-    public CohortVariantStatsOpenCgaAnalysis setStudy(String study) {
+    public CohortVariantStatsAnalysis setStudy(String study) {
         this.study = study;
         return this;
     }
@@ -48,7 +53,7 @@ public class CohortVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param sampleNames Sample names
      * @return this
      */
-    public CohortVariantStatsOpenCgaAnalysis setSampleNames(List<String> sampleNames) {
+    public CohortVariantStatsAnalysis setSampleNames(List<String> sampleNames) {
         this.sampleNames = sampleNames;
         return this;
     }
@@ -58,7 +63,7 @@ public class CohortVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param samplesQuery Samples query
      * @return this
      */
-    public CohortVariantStatsOpenCgaAnalysis setSamplesQuery(Query samplesQuery) {
+    public CohortVariantStatsAnalysis setSamplesQuery(Query samplesQuery) {
         this.samplesQuery = samplesQuery;
         return this;
     }
@@ -70,7 +75,7 @@ public class CohortVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param cohortName cohort name
      * @return this
      */
-    public CohortVariantStatsOpenCgaAnalysis setCohortName(String cohortName) {
+    public CohortVariantStatsAnalysis setCohortName(String cohortName) {
         this.cohortName = cohortName;
         return this;
     }
@@ -84,7 +89,7 @@ public class CohortVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param indexResults index results
      * @return boolean
      */
-    public CohortVariantStatsOpenCgaAnalysis setIndexResults(boolean indexResults) {
+    public CohortVariantStatsAnalysis setIndexResults(boolean indexResults) {
         this.indexResults = indexResults;
         return this;
     }
@@ -137,7 +142,7 @@ public class CohortVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
             Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, sessionId);
             allSamples.removeIf(s -> !indexedSamples.contains(s));
 
-            arm.updateResult(analysisResult -> analysisResult.getAttributes().put("sampleNames", allSamples));
+            addAttribute("sampleNames", allSamples);
         } catch (CatalogException e) {
             throw new AnalysisException(e);
         }
@@ -146,41 +151,51 @@ public class CohortVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
             throw new AnalysisException("Unable to compute variant stats with cohort of size " + allSamples.size());
         }
 
+        outputFile = outDir.resolve("cohort_stats.json");
+
         checkedSamplesList = new ArrayList<>(allSamples);
         checkedSamplesList.sort(String::compareTo);
     }
 
     @Override
-    protected void exec() throws AnalysisException {
+    protected void run() throws AnalysisException {
+        step(getId(), () -> {
+            getAnalysisExecutor(CohortVariantStatsAnalysisExecutor.class)
+                    .setStudy(study)
+                    .setOutputFile(outputFile)
+                    .setSampleNames(checkedSamplesList)
+                    .execute();
 
-        CohortVariantStatsAnalysis analysis = new CohortVariantStatsAnalysis();
-        analysis.setUp(executorParams, outDir, sourceTypes, availableFrameworks);
-        analysis.setStudy(study).setSampleNames(checkedSamplesList);
-        analysis.execute(arm);
+            addFile(outputFile, FileResult.FileType.JSON);
+        });
 
-        if (indexResults) {
-            try {
-                Path file = outDir.resolve(arm.read().getOutputFiles().get(0).getPath());
-                VariantSetStats stats = JacksonUtils.getDefaultObjectMapper().readValue(file.toFile(), VariantSetStats.class);
-
+        step("index", () -> {
+            if (indexResults) {
                 try {
-                    catalogManager.getStudyManager().getVariableSet(study, VARIABLE_SET_ID, new QueryOptions(), sessionId);
-                } catch (CatalogException e) {
-                    // Assume variable set not found. Try to create
-                    List<Variable> variables = AvroToAnnotationConverter.convertToVariableSet(VariantSetStats.getClassSchema());
-                    catalogManager.getStudyManager()
-                            .createVariableSet(study, VARIABLE_SET_ID, VARIABLE_SET_ID, true, false, "", Collections.emptyMap(), variables,
-                                    Arrays.asList(VariableSet.AnnotableDataModels.COHORT, VariableSet.AnnotableDataModels.FILE), sessionId);
+                    VariantSetStats stats = JacksonUtils.getDefaultObjectMapper().readValue(outputFile.toFile(), VariantSetStats.class);
+
+                    try {
+                        catalogManager.getStudyManager().getVariableSet(study, VARIABLE_SET_ID, new QueryOptions(), sessionId);
+                    } catch (CatalogException e) {
+                        // Assume variable set not found. Try to create
+                        List<Variable> variables = AvroToAnnotationConverter.convertToVariableSet(VariantSetStats.getClassSchema());
+                        catalogManager.getStudyManager()
+                                .createVariableSet(study, VARIABLE_SET_ID, VARIABLE_SET_ID, true, false,
+                                        "", Collections.emptyMap(), variables,
+                                        Arrays.asList(VariableSet.AnnotableDataModels.COHORT, VariableSet.AnnotableDataModels.FILE),
+                                        sessionId);
+                    }
+
+                    AnnotationSet annotationSet = AvroToAnnotationConverter.convertToAnnotationSet(stats, VARIABLE_SET_ID);
+                    catalogManager.getCohortManager()
+                            .addAnnotationSet(study, cohortName, annotationSet, new QueryOptions(), sessionId);
+                } catch (IOException | CatalogException e) {
+                    throw new AnalysisException(e);
                 }
-
-                AnnotationSet annotationSet = AvroToAnnotationConverter.convertToAnnotationSet(stats, VARIABLE_SET_ID);
-                catalogManager.getCohortManager()
-                        .addAnnotationSet(study, cohortName, annotationSet, new QueryOptions(), sessionId);
-            } catch (IOException | CatalogException e) {
-                throw new AnalysisException(e);
+            } else {
+                skipStep();
             }
-        }
-
+        });
     }
 }
 

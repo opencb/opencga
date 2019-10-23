@@ -23,7 +23,7 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
+import org.opencb.opencga.core.exception.AnalysisException;
 
 import java.nio.file.Paths;
 import java.util.*;
@@ -48,7 +48,8 @@ public abstract class OpenCgaClinicalAnalysis extends OpenCgaAnalysis {
 
 
     public OpenCgaClinicalAnalysis(String clinicalAnalysisId, String studyId, ObjectMap options, String opencgaHome, String sessionId) {
-        super(opencgaHome, sessionId);
+        this.opencgaHome = opencgaHome;
+        this.sessionId = sessionId;
         this.studyId = studyId;
 
         this.clinicalAnalysisId = clinicalAnalysisId;
