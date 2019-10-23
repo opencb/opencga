@@ -55,8 +55,8 @@ public class AnnotationCommandOptions {
         @Parameter(names = {"--variable-set-id"}, description = "Variable set id", required = true, arity = 1)
         public String variableSetId;
 
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name", required = true, arity = 1)
-        public String annotationSetName;
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set id", required = true, arity = 1)
+        public String annotationSetId;
 
         @Parameter(names = {"--annotations"}, description = "Json file containing the annotations", required = true, arity = 1)
         public String annotations;
@@ -98,29 +98,27 @@ public class AnnotationCommandOptions {
     @Parameters(commandNames = {"annotation-sets-update"}, commandDescription = "Update the value of some annotations")
     public class AnnotationSetsUpdateCommandOptions extends BaseCommandOptions {
 
-        public String annotationSetName;
+        public String annotationSetId;
 
         @Parameter(names = {"--annotation-set-name"}, description = DEPRECATED + "Use --annotation-set", arity = 1)
-        public void setAnnotationSetName(String value) {
-            this.annotationSetName = value;
+        public void setAnnotationSetId(String value) {
+            this.annotationSetId = value;
         }
 
-        @Parameter(names = {"--annotation-set"}, description = "Annotation set name", required = true, arity = 1)
+        @Parameter(names = {"--annotation-set"}, description = "Annotation set id", required = true, arity = 1)
         public void setAnnotationSet(String annotationSetName) {
-            this.annotationSetName = annotationSetName;
+            this.annotationSetId = annotationSetName;
         }
 
-        @Parameter(names = {"--annotations"}, description = "Json containing the map of annotations when the action is ADD, SET or "
-                + "REPLACE, a json with only the key 'remove' containing the comma separated variables to be removed as a value when the "
-                + "action is REMOVE or a json with only the key 'reset' containing the comma separated variables that will be set to the "
-                + "default value when the action is RESET", required = true, arity = 1)
+        @Parameter(names = {"--annotations"}, description = "Json containing the map of annotations to be updated", required = true,
+                arity = 1)
         public String annotations;
 
-        @Parameter(names = {"--action"}, description = "Action to be performed: ADD to add new annotations; REPLACE to replace the value "
-                + "of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE "
-                + "to remove some annotations; RESET to set some annotations to the default value configured in the corresponding "
-                + "variables of the VariableSet if any.", arity = 1)
-        public ParamUtils.CompleteUpdateAction action;
+//        @Parameter(names = {"--action"}, description = "Action to be performed: ADD to add new annotations; REPLACE to replace the value "
+//                + "of an already existing annotation; SET to set the new list of annotations removing any possible old annotations; REMOVE "
+//                + "to remove some annotations; RESET to set some annotations to the default value configured in the corresponding "
+//                + "variables of the VariableSet if any.", arity = 1)
+//        public ParamUtils.CompleteUpdateAction action;
     }
 
     public AnnotationSetsCreateCommandOptions getCreateCommandOptions() {
