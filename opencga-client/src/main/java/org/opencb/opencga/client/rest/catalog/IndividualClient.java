@@ -48,10 +48,10 @@ public class IndividualClient extends AnnotationClient<Individual> {
         return execute(INDIVIDUALS_URL, "groupBy", params, GET, ObjectMap.class);
     }
 
-    public DataResponse<DataResult> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
+    public DataResponse<FacetField> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
         ObjectMap params = new ObjectMap(query);
         params.putAll(queryOptions);
         params.put("study", study);
-        return execute(INDIVIDUALS_URL, "stats", params, GET, DataResult.class);
+        return execute(INDIVIDUALS_URL, "stats", params, GET, FacetField.class);
     }
 }
