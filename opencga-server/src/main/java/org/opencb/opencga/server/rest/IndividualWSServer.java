@@ -23,11 +23,7 @@ import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.pedigree.Multiples;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.IndividualManager;
@@ -44,6 +40,7 @@ import org.opencb.opencga.server.WebServiceException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
@@ -713,7 +710,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             queryOptions.put(QueryOptions.FACET, facet);
 
-            FacetQueryResult queryResult = catalogManager.getIndividualManager().facet(studyStr, query, queryOptions, defaultStats, token);
+            DataResult<FacetField> queryResult = catalogManager.getIndividualManager().facet(studyStr, query, queryOptions, defaultStats,
+                    token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -757,7 +755,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             queryOptions.put(QueryOptions.FACET, facet);
 
-            FacetQueryResult queryResult = catalogManager.getIndividualManager().facet(studyStr, query, queryOptions, defaultStats, token);
+            DataResult<FacetField> queryResult = catalogManager.getIndividualManager().facet(studyStr, query, queryOptions, defaultStats,
+                    token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

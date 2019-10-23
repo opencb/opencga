@@ -19,12 +19,8 @@ package org.opencb.opencga.catalog.managers;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.commons.datastore.core.Event;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
-import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -1203,7 +1199,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         return individualDataResult.getResults().stream().map(Individual::getUid).collect(Collectors.toList());
     }
 
-    public FacetQueryResult facet(String studyId, Query query, QueryOptions options, boolean defaultStats, String token)
+    public DataResult<FacetField> facet(String studyId, Query query, QueryOptions options, boolean defaultStats, String token)
             throws CatalogException, IOException {
         String userId = userManager.getUserId(token);
         // We need to add variableSets and groups to avoid additional queries as it will be used in the catalogSolrManager
@@ -1228,8 +1224,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             AnnotationUtils.fixQueryAnnotationSearch(study, userId, query, authorizationManager);
 
             CatalogSolrManager catalogSolrManager = new CatalogSolrManager(catalogManager);
-            FacetQueryResult result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION, query, options,
-                    userId);
+            DataResult<FacetField> result = catalogSolrManager.facetedQuery(study, CatalogSolrManager.SAMPLE_SOLR_COLLECTION, query,
+                    options, userId);
 
             auditManager.auditFacet(userId, AuditRecord.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));

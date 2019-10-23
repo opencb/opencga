@@ -24,11 +24,7 @@ import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Job;
@@ -46,6 +42,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
@@ -55,8 +52,8 @@ import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.manager.CatalogUtils.parseSampleAnnotationQuery;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 
 /**
  * Created by imedina on 17/08/16.
@@ -801,7 +798,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             queryOptions.put(QueryOptions.FACET, fields);
             Query query = getVariantQuery(queryOptions);
 
-            FacetQueryResult queryResult = variantManager.facet(query, queryOptions, token);
+            DataResult<FacetField> queryResult = variantManager.facet(query, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

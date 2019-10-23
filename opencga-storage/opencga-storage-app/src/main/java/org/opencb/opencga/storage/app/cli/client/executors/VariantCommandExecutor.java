@@ -32,11 +32,7 @@ import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.variant.converters.avro.VariantAvroToVariantContextConverter;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -783,7 +779,7 @@ public class VariantCommandExecutor extends CommandExecutor {
                     queryOptions.put(QueryOptions.SKIP, 0);
                     // TODO: move this to the function mentioned in the previous TODO
                     queryOptions.put(QueryOptions.FACET, searchOptions.facet);
-                    FacetQueryResult facetedQueryResult = variantSearchManager.facetedQuery(dbName, query, queryOptions);
+                    DataResult<FacetField> facetedQueryResult = variantSearchManager.facetedQuery(dbName, query, queryOptions);
                     if (facetedQueryResult.getResults() != null && CollectionUtils.isNotEmpty(facetedQueryResult.getResults())) {
                         System.out.println("Faceted fields (" + facetedQueryResult.getResults().size() + "):");
                         facetedQueryResult.getResults().forEach(f -> System.out.println(f.toString()));
