@@ -304,7 +304,7 @@ public abstract class OpenCgaAnalysis {
             if (annotation != null) {
                 if (annotation.analysis().equals(analysisId)) {
                     if (StringUtils.isEmpty(analysisExecutorId) || analysisExecutorId.equals(annotation.id())) {
-                        if (sourceTypes == null || sourceTypes.contains(annotation.source())) {
+                        if (CollectionUtils.isEmpty(sourceTypes) || sourceTypes.contains(annotation.source())) {
                             if (CollectionUtils.isEmpty(availableFrameworks) || availableFrameworks.contains(annotation.framework())) {
                                 matchedClasses.add(aClass);
                             }
