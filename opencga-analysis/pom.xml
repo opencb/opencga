@@ -36,10 +36,6 @@
             <artifactId>opencga-storage-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.opencb.oskar</groupId>
-            <artifactId>oskar-analysis</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.opencb.hpg-bigdata</groupId>
             <artifactId>hpg-bigdata-analysis</artifactId>
         </dependency>
@@ -117,8 +113,6 @@
         <dependency>
             <groupId>org.opencb.commons</groupId>
             <artifactId>commons-datastore-core</artifactId>
-            <version>${java-common-libs.version}</version>
-            <scope>compile</scope>
         </dependency>
     </dependencies>
 

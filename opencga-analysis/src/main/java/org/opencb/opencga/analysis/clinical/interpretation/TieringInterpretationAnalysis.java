@@ -47,7 +47,7 @@ import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
+import org.opencb.opencga.core.exception.AnalysisException;
 
 import java.io.IOException;
 import java.util.*;
@@ -100,7 +100,7 @@ public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis 
     }
 
     @Override
-    protected void exec() throws org.opencb.oskar.analysis.exceptions.AnalysisException {
+    protected void run() throws AnalysisException {
     }
 
     public InterpretationResult compute() throws Exception {

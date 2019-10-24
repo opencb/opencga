@@ -72,10 +72,20 @@ public abstract class CatalogClient<T> extends AbstractParentClient {
         return execute(category, "search", myQuery, GET, clazz);
     }
 
-    public DataResponse<T> update(String id, @Nullable String study, ObjectMap params) throws IOException {
+    public DataResponse<T> update(String id, @Nullable String study, ObjectMap bodyParams) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
-        String json = mapper.writeValueAsString(params);
+        String json = mapper.writeValueAsString(bodyParams);
         ObjectMap p = new ObjectMap("body", json);
+        p.putIfNotNull("study", study);
+        logger.debug("Json in update client: " + json);
+        return execute(category, id, "update", p, POST, clazz);
+    }
+
+    public DataResponse<T> update(String id, @Nullable String study, ObjectMap queryParams, ObjectMap bodyParams) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        String json = mapper.writeValueAsString(bodyParams);
+        ObjectMap p = new ObjectMap("body", json);
+        p.putAll(queryParams);
         p.putIfNotNull("study", study);
         logger.debug("Json in update client: " + json);
         return execute(category, id, "update", p, POST, clazz);

@@ -28,11 +28,7 @@ import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.ProgressLogger;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
@@ -1111,9 +1107,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param options        Query modifiers, accepted values are: facet fields and facet ranges
      * @return               A FacetedQueryResult with the result of the query
      */
-    public FacetQueryResult facet(Query query, QueryOptions options) {
+    public DataResult<FacetField> facet(Query query, QueryOptions options) {
         try {
-            return new VariantAggregationExecutor(getVariantSearchManager(), dbName, this, getMetadataManager()).facet(query, options);
+            return new VariantAggregationExecutor(getVariantSearchManager(), dbName, this, getMetadataManager())
+                    .facet(query, options);
         } catch (StorageEngineException e) {
             throw VariantQueryException.internalException(e);
         }

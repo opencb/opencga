@@ -27,7 +27,7 @@ import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
+import org.opencb.opencga.core.exception.AnalysisException;
 
 import java.util.*;
 
@@ -44,7 +44,7 @@ public class SecondaryFindingsAnalysis extends OpenCgaClinicalAnalysis {
     }
 
     @Override
-    protected void exec() throws org.opencb.oskar.analysis.exceptions.AnalysisException {
+    protected void run() throws AnalysisException {
     }
 
     public AnalysisResult<List<Variant>> compute() throws Exception {
