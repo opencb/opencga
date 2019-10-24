@@ -14,14 +14,14 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='pyopencga',
-    version='1.4.0',
+    version='1.4.2',
     description='A REST client for OpenCGA REST web services',
     long_description=long_description,
     long_description_content_type='text/x-rst',
     url='https://github.com/opencb/opencga/tree/develop/opencga-client/src/main/python/pyOpenCGA',
     packages=['pyopencga', 'pyopencga.rest_clients'],
     license='Apache Software License',
-    author='David Gomez-Peregrina, Pablo Marín-García',
+    author='David Gomez-Peregrina, Pablo Marin-Garcia',
     author_email='david.gomez@mgviz.org, pmarin@kanteron.com',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
