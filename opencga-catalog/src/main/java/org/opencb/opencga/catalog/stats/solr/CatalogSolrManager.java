@@ -136,7 +136,7 @@ public class CatalogSolrManager {
     }
 
     public <T> void insertCatalogCollection(DBIterator<T> iterator, ComplexTypeConverter converter,
-                                            String collectionName) throws IOException, CatalogException {
+                                            String collectionName) throws CatalogException {
 
         int count = 0;
         List<T> records = new ArrayList<>(insertBatchSize);
@@ -156,7 +156,7 @@ public class CatalogSolrManager {
     }
 
     public <T, M> void insertCatalogCollection(List<T> records, ComplexTypeConverter converter,
-                                               String collectionName) throws IOException, CatalogException {
+                                               String collectionName) throws CatalogException {
         List<M> solrModels = new ArrayList<>();
 
         for (T record : records) {
@@ -169,7 +169,7 @@ public class CatalogSolrManager {
             if (updateResponse.getStatus() == 0) {
                 solrManager.getSolrClient().commit(DATABASE_PREFIX + collectionName);
             }
-        } catch (SolrServerException e) {
+        } catch (IOException | SolrServerException e) {
             throw new CatalogException(e.getMessage(), e);
         }
     }
