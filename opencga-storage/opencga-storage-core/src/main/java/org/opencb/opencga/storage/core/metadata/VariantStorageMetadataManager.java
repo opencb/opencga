@@ -751,6 +751,22 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return getResourcePair(sampleObj, skipNegated, defaultStudy, this::sampleExists, this::getSampleId, "sample");
     }
 
+    public List<Integer> getSampleIds(int studyId, String samplesStr) {
+        List<String> samples = Arrays.asList(samplesStr.split(","));
+        return getSampleIds(studyId, samples);
+    }
+
+    public List<Integer> getSampleIds(int studyId, List<String> samples) {
+        List<Integer> sampleIds = new ArrayList<>(samples.size());
+        for (String sample : samples) {
+            Integer sampleId = getSampleId(studyId, sample);
+            if (sampleId == null) {
+                throw VariantQueryException.sampleNotFound(sample, getStudyName(studyId));
+            }
+        }
+        return sampleIds;
+    }
+
     public Integer getSampleId(int studyId, Object sampleObj) {
         return getSampleId(studyId, sampleObj, false);
     }

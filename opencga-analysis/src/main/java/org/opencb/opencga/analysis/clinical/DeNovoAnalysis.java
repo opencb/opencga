@@ -24,7 +24,7 @@ import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
+import org.opencb.opencga.core.exception.AnalysisException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,7 +64,7 @@ public class DeNovoAnalysis extends OpenCgaClinicalAnalysis {
     }
 
     @Override
-    protected void exec() throws org.opencb.oskar.analysis.exceptions.AnalysisException {
+    protected void run() throws AnalysisException {
     }
 
     public AnalysisResult<List<Variant>> compute() throws Exception {

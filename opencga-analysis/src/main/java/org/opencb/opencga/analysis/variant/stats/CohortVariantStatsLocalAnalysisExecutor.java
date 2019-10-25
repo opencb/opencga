@@ -1,34 +1,34 @@
 package org.opencb.opencga.analysis.variant.stats;
 
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
-import org.opencb.biodata.tools.variant.stats.SampleVariantStatsCalculator;
+import org.opencb.biodata.models.variant.stats.VariantSetStats;
+import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.opencga.analysis.OpenCgaAnalysisExecutor;
+import org.opencb.opencga.core.analysis.variant.CohortVariantStatsAnalysisExecutor;
+import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.AnalysisExecutorException;
+import org.opencb.opencga.analysis.variant.VariantStorageAnalysisExecutor;
+import org.opencb.opencga.core.annotations.AnalysisExecutor;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
-import org.opencb.oskar.analysis.exceptions.AnalysisExecutorException;
-import org.opencb.oskar.analysis.variant.stats.SampleVariantStatsAnalysis;
-import org.opencb.oskar.analysis.variant.stats.SampleVariantStatsAnalysisExecutor;
-import org.opencb.oskar.core.annotations.AnalysisExecutor;
 
 import java.util.List;
 
-@AnalysisExecutor(id="opencga-local", analysis= SampleVariantStatsAnalysis.ID,
-        framework = AnalysisExecutor.Framework.ITERATOR,
-        source = AnalysisExecutor.Source.OPENCGA)
-public class SampleVariantStatsOpenCgaAnalysisExecutor extends SampleVariantStatsAnalysisExecutor implements OpenCgaAnalysisExecutor {
+@AnalysisExecutor(id="opencga-local", analysis= CohortVariantStatsAnalysis.ID,
+        framework = AnalysisExecutor.Framework.LOCAL,
+        source = AnalysisExecutor.Source.STORAGE)
+public class CohortVariantStatsLocalAnalysisExecutor extends CohortVariantStatsAnalysisExecutor implements VariantStorageAnalysisExecutor {
 
     @Override
-    public void exec() throws AnalysisException {
+    public void run() throws AnalysisException {
+
 
         VariantStorageManager variantStorageManager = getVariantStorageManager();
 
@@ -36,12 +36,12 @@ public class SampleVariantStatsOpenCgaAnalysisExecutor extends SampleVariantStat
 
         Query query = new Query()
                 .append(VariantQueryParam.STUDY.key(), getStudy())
-                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleNames);
+                .append(VariantQueryParam.SAMPLE.key(), sampleNames);
 
-        List<SampleVariantStats> stats;
+        VariantSetStats stats;
         try {
             DataResult<VariantMetadata> metadata = variantStorageManager.getMetadata(query, new QueryOptions(), getSessionId());
-            SampleVariantStatsCalculator calculator = new SampleVariantStatsCalculator(metadata.first().getStudies().get(0));
+            VariantSetStatsCalculator calculator = new VariantSetStatsCalculator(metadata.first().getStudies().get(0));
 
             ProgressLogger progressLogger = new ProgressLogger("Variants processed:");
             VariantDBIterator iterator = variantStorageManager.iterator(query, new QueryOptions(), getSessionId());
@@ -59,11 +59,12 @@ public class SampleVariantStatsOpenCgaAnalysisExecutor extends SampleVariantStat
 
             ptr.run();
 
-            stats = calculator.getSampleVariantStats();
+            stats = calculator.getStats();
         } catch (Exception e) {
             throw new AnalysisExecutorException(e);
         }
 
-        writeStatsToFile(stats);
+        writeStatsToFile(stats.getImpl());
     }
+
 }

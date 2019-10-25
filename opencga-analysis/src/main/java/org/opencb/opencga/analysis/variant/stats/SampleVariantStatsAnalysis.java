@@ -9,21 +9,25 @@ import org.opencb.opencga.analysis.OpenCgaAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
+import org.opencb.opencga.core.analysis.result.FileResult;
+import org.opencb.opencga.core.analysis.variant.SampleVariantStatsAnalysisExecutor;
+import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
-import org.opencb.oskar.analysis.variant.stats.SampleVariantStatsAnalysis;
-import org.opencb.oskar.core.annotations.Analysis;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 
-@Analysis(id = SampleVariantStatsAnalysis.ID, data = Analysis.AnalysisData.VARIANT,
+@org.opencb.opencga.core.annotations.Analysis(id = SampleVariantStatsAnalysis.ID, type = Analysis.AnalysisType.VARIANT,
+        steps = {SampleVariantStatsAnalysis.ID, "index"},
         description = "Compute sample variant stats for the selected list of samples.")
-public class SampleVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
+public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
 
+    public static final String ID = "sample-variant-stats";
     public static final String VARIABLE_SET_ID = "OPENCGA_SAMPLE_VARIANT_STATS";
     private String study;
     private Query samplesQuery;
@@ -32,13 +36,14 @@ public class SampleVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
     private String family;
     private ArrayList<String> checkedSamplesList;
     private boolean indexResults = false;
+    private Path outputFile;
 
     /**
      * Study of the samples.
      * @param study Study id
      * @return this
      */
-    public SampleVariantStatsOpenCgaAnalysis setStudy(String study) {
+    public SampleVariantStatsAnalysis setStudy(String study) {
         this.study = study;
         return this;
     }
@@ -48,7 +53,7 @@ public class SampleVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param sampleNames Sample names
      * @return this
      */
-    public SampleVariantStatsOpenCgaAnalysis setSampleNames(List<String> sampleNames) {
+    public SampleVariantStatsAnalysis setSampleNames(List<String> sampleNames) {
         this.sampleNames = sampleNames;
         return this;
     }
@@ -58,7 +63,7 @@ public class SampleVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param samplesQuery Samples query
      * @return this
      */
-    public SampleVariantStatsOpenCgaAnalysis setSamplesQuery(Query samplesQuery) {
+    public SampleVariantStatsAnalysis setSamplesQuery(Query samplesQuery) {
         this.samplesQuery = samplesQuery;
         return this;
     }
@@ -68,7 +73,7 @@ public class SampleVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param individualId individual
      * @return this
      */
-    public SampleVariantStatsOpenCgaAnalysis setIndividual(String individualId) {
+    public SampleVariantStatsAnalysis setIndividual(String individualId) {
         this.individual = individualId;
         return this;
     }
@@ -78,7 +83,7 @@ public class SampleVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param family family
      * @return this
      */
-    public SampleVariantStatsOpenCgaAnalysis setFamily(String family) {
+    public SampleVariantStatsAnalysis setFamily(String family) {
         this.family = family;
         return this;
     }
@@ -91,7 +96,7 @@ public class SampleVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param indexResults index results
      * @return boolean
      */
-    public SampleVariantStatsOpenCgaAnalysis setIndexResults(boolean indexResults) {
+    public SampleVariantStatsAnalysis setIndexResults(boolean indexResults) {
         this.indexResults = indexResults;
         return this;
     }
@@ -111,7 +116,6 @@ public class SampleVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
         } catch (CatalogException e) {
             throw new AnalysisException(e);
         }
-        arm.startStep("Check samples");
 
         try {
             if (CollectionUtils.isNotEmpty(sampleNames)) {
@@ -175,32 +179,36 @@ public class SampleVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
         } catch (CatalogException | StorageEngineException e) {
             throw new AnalysisException(e);
         }
-
-        arm.endStep(5);
+        outputFile = outDir.resolve(getId() + ".json");
     }
 
     @Override
-    protected void exec() throws AnalysisException {
-        SampleVariantStatsAnalysis oskarAnalysis = new SampleVariantStatsAnalysis()
-                .setStudy(study)
-                .setSampleNames(checkedSamplesList);
-        oskarAnalysis.setUp(executorParams, outDir, sourceTypes, availableFrameworks);
-        oskarAnalysis.execute(arm);
+    protected void run() throws AnalysisException {
+        step(getId(), () -> {
+            getAnalysisExecutor(SampleVariantStatsAnalysisExecutor.class)
+                    .setOutputFile(outputFile)
+                    .setStudy(study)
+                    .setSampleNames(checkedSamplesList)
+                    .execute();
 
-        if (indexResults) {
-            arm.startStep("index results", 95f);
-            indexResults(oskarAnalysis);
-        }
+            addFile(outputFile, FileResult.FileType.JSON);
+        });
 
-        arm.endStep(100);
+        step("index", ()->{
+            if (indexResults) {
+                indexResults(outputFile);
+            } else {
+                skipStep();
+            }
+        });
     }
 
-    private void indexResults(SampleVariantStatsAnalysis oskarAnalysis) throws AnalysisException {
+    private void indexResults(Path outputFile) throws AnalysisException {
         List<SampleVariantStats> stats = new ArrayList<>(checkedSamplesList.size());
         try {
             JacksonUtils.getDefaultObjectMapper()
                     .readerFor(SampleVariantStats.class)
-                    .<SampleVariantStats>readValues(oskarAnalysis.getOutputFile().toFile())
+                    .<SampleVariantStats>readValues(outputFile.toFile())
                     .forEachRemaining(stats::add);
 
             try {
@@ -222,4 +230,5 @@ public class SampleVariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
             throw new AnalysisException(e);
         }
     }
+
 }

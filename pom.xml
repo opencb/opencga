@@ -248,6 +248,17 @@
                 </exclusions>
             </dependency>
             <dependency>
+                <groupId>org.opencb.commons</groupId>
+                <artifactId>commons-datastore-core</artifactId>
+                <version>${java-common-libs.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>slf4j-simple</artifactId>
+                        <groupId>org.slf4j</groupId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
                 <groupId>org.opencb.cellbase</groupId>
                 <artifactId>cellbase-client</artifactId>
                 <version>${cellbase.version}</version>

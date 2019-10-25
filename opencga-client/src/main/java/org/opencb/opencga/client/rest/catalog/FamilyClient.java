@@ -16,11 +16,7 @@
 
 package org.opencb.opencga.client.rest.catalog;
 
-import org.opencb.commons.datastore.core.DataResponse;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.Family;
 
@@ -52,11 +48,11 @@ public class FamilyClient extends AnnotationClient<Family> {
         return execute(FAMILY_URL, "groupBy", params, GET, ObjectMap.class);
     }
 
-    public DataResponse<FacetQueryResult> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
+    public DataResponse<FacetField> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
         ObjectMap params = new ObjectMap(query);
         params.putAll(queryOptions);
         params.put("study", study);
-        return execute(FAMILY_URL, "stats", params, GET, FacetQueryResult.class);
+        return execute(FAMILY_URL, "stats", params, GET, FacetField.class);
     }
 
 }

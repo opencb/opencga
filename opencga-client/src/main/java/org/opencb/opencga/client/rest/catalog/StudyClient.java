@@ -118,9 +118,9 @@ public class StudyClient extends CatalogClient<Study> {
         return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);
     }
 
-    public DataResponse<Study> update(String studyId, String study, ObjectMap params) throws IOException {
+    public DataResponse<Study> update(String studyId, String study, ObjectMap bodyParams) throws IOException {
         ObjectMapper mapper = JacksonUtils.getUpdateObjectMapper();
-        String json = mapper.writeValueAsString(params);
+        String json = mapper.writeValueAsString(bodyParams);
         ObjectMap p = new ObjectMap("body", json);
         return execute(STUDY_URL, studyId, "update", p, POST, Study.class);
     }

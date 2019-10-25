@@ -28,11 +28,7 @@ import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.tools.variant.converters.ga4gh.Ga4ghVariantConverter;
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.AvroGa4GhVariantFactory;
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.ProtoGa4GhVariantFactory;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -902,13 +898,13 @@ public class VariantStorageManager extends StorageManager {
     //   Facet methods      //
     // ---------------------//
 
-    public FacetQueryResult facet(Query query, QueryOptions queryOptions, String sessionId)
+    public DataResult<FacetField> facet(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
         return secure(query, queryOptions, sessionId, Enums.Action.FACET, engine -> {
             addDefaultLimit(queryOptions, engine.getOptions());
             logger.debug("getFacets {}, {}", query, queryOptions);
-            FacetQueryResult result = engine.facet(query, queryOptions);
-            logger.debug("getFacets in {}ms", result.getDbTime());
+            DataResult<FacetField> result = engine.facet(query, queryOptions);
+            logger.debug("getFacets in {}ms", result.getTime());
             return result;
         });
     }

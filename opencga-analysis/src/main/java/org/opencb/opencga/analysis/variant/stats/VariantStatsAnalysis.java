@@ -5,29 +5,34 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.analysis.variant.VariantStatsAnalysisExecutor;
+import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
-import org.opencb.oskar.analysis.variant.stats.VariantStatsAnalysis;
-import org.opencb.oskar.core.annotations.Analysis;
+import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.analysis.result.FileResult;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Analysis(id = VariantStatsAnalysis.ID, data = Analysis.AnalysisData.VARIANT,
+@Analysis(id = VariantStatsAnalysis.ID, type = Analysis.AnalysisType.VARIANT,
         description = "Compute variant stats for any cohort and any set of variants.")
-public class VariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
+public class VariantStatsAnalysis extends OpenCgaAnalysis {
+
+    public final static String ID = "variant-stats";
 
     private String study;
     private String cohortName;
     private Query samplesQuery;
     private Query variantsQuery;
+    private Path outputFile;
     private List<String> sampleNames;
 
-    public VariantStatsOpenCgaAnalysis() {
+    public VariantStatsAnalysis() {
     }
 
     /**
@@ -35,7 +40,7 @@ public class VariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param study Study id
      * @return this
      */
-    public VariantStatsOpenCgaAnalysis setStudy(String study) {
+    public VariantStatsAnalysis setStudy(String study) {
         this.study = study;
         return this;
     }
@@ -47,7 +52,7 @@ public class VariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param samplesQuery sample query
      * @return this
      */
-    public VariantStatsOpenCgaAnalysis setSamplesQuery(Query samplesQuery) {
+    public VariantStatsAnalysis setSamplesQuery(Query samplesQuery) {
         this.samplesQuery = samplesQuery;
         return this;
     }
@@ -62,7 +67,7 @@ public class VariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param cohortName cohort name
      * @return this
      */
-    public VariantStatsOpenCgaAnalysis setCohortName(String cohortName) {
+    public VariantStatsAnalysis setCohortName(String cohortName) {
         this.cohortName = cohortName;
         return this;
     }
@@ -72,7 +77,7 @@ public class VariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
      * @param variantsQuery variants query.
      * @return this
      */
-    public VariantStatsOpenCgaAnalysis setVariantsQuery(Query variantsQuery) {
+    public VariantStatsAnalysis setVariantsQuery(Query variantsQuery) {
         this.variantsQuery = variantsQuery;
         return this;
     }
@@ -100,7 +105,7 @@ public class VariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
                 Cohort cohort = catalogManager.getCohortManager()
                         .get(study, cohortName, new QueryOptions(), sessionId).first();
                 samples = cohort.getSamples();
-                arm.updateResult(analysisResult -> analysisResult.getAttributes().put("cohortName", cohortName));
+                executorParams.put("cohortName", cohortName);
             } else {
                 samples = catalogManager.getSampleManager()
                         .search(study, new Query(samplesQuery), new QueryOptions(QueryOptions.INCLUDE, "id"), sessionId).getResults();
@@ -111,7 +116,7 @@ public class VariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
             Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, sessionId);
             sampleNames.removeIf(s -> !indexedSamples.contains(s));
 
-            arm.updateResult(analysisResult -> analysisResult.getAttributes().put("sampleNames", sampleNames));
+            executorParams.put("sampleNames", sampleNames);
         } catch (CatalogException e) {
             throw new AnalysisException(e);
         }
@@ -125,7 +130,7 @@ public class VariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
         }
         variantsQuery.putIfAbsent(VariantQueryParam.STUDY.key(), study);
 
-        arm.updateResult(r -> r.getAttributes().append("variantsQuery", variantsQuery));
+        executorParams.put("variantsQuery", variantsQuery);
 
         // check read permission
         try {
@@ -140,18 +145,28 @@ public class VariantStatsOpenCgaAnalysis extends OpenCgaAnalysis {
             throw new AnalysisException(e);
         }
 
+        if (StringUtils.isEmpty(cohortName)) {
+            outputFile = outDir.resolve("variant_stats.tsv");
+        } else {
+            outputFile = outDir.resolve("variant_stats_" + cohortName + ".tsv");
+        }
+
     }
 
     @Override
-    protected void exec() throws AnalysisException {
-        VariantStatsAnalysis analysis = new VariantStatsAnalysis(executorParams, outDir);
-        analysis.setUp(executorParams, outDir, sourceTypes, availableFrameworks);
-        analysis.setVariantsQuery(variantsQuery)
-                .setStudy(study)
-                .setCohort(cohortName)
-                .setSamples(sampleNames);
+    protected void run() throws AnalysisException {
+        step(() -> {
+            getAnalysisExecutor(VariantStatsAnalysisExecutor.class)
+                    .setStudy(study)
+                    .setCohort(cohortName)
+                    .setSamples(sampleNames)
+                    .setOutputFile(outputFile)
+                    .setVariantsQuery(variantsQuery)
+                    .execute();
 
-        analysis.execute(arm);
+            addFile(outputFile, FileResult.FileType.TAB_SEPARATED);
+        });
+
     }
 
 }

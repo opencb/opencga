@@ -18,8 +18,6 @@ package org.opencb.opencga.analysis.clinical.interpretation;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
@@ -50,7 +48,7 @@ public abstract class InterpretationAnalysis extends OpenCgaClinicalAnalysis {
 
 
 
-    protected List<ReportedVariant> getSecondaryFindings(ClinicalAnalysis clinicalAnalysis,  List<String> sampleNames,
+    protected List<ReportedVariant> getSecondaryFindings(ClinicalAnalysis clinicalAnalysis, List<String> sampleNames,
                                                          ReportedVariantCreator creator) throws Exception {
         List<ReportedVariant> secondaryFindings = null;
         if (clinicalAnalysis.getConsent() != null

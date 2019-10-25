@@ -73,7 +73,14 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     }
 
     protected String getParam(String key, String defaultValue) {
-        return getConf().get(key, getConf().get("--" + key, defaultValue));
+        String value = getConf().get(key);
+        if (StringUtils.isEmpty(value)) {
+            value = getConf().get("--" + key);
+        }
+        if (StringUtils.isEmpty(value)) {
+            value = defaultValue;
+        }
+        return value;
     }
 
     protected int getFixedSizeArgs() {
@@ -191,7 +198,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     }
 
     protected Path getLocalOutput(Path outdir) throws IOException {
-        return getLocalOutput(outdir, null);
+        return getLocalOutput(outdir, () -> null);
     }
 
     protected Path getLocalOutput(Path outdir, Supplier<String> nameGenerator) throws IOException {
@@ -202,10 +209,11 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         FileSystem localFs = localOutput.getFileSystem(getConf());
         if (localFs.exists(localOutput)) {
             if (localFs.isDirectory(localOutput)) {
-                if (nameGenerator == null) {
+                String name = nameGenerator.get();
+                if (StringUtils.isEmpty(name)) {
                     throw new IllegalArgumentException("Local output '" + localOutput + "' is a directory");
                 }
-                localOutput = new Path(localOutput, nameGenerator.get());
+                localOutput = new Path(localOutput, name);
             } else {
                 throw new IllegalArgumentException("File '" + localOutput + "' already exists!");
             }
