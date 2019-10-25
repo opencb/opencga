@@ -151,7 +151,7 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
             throw new AnalysisException("Unable to compute variant stats with cohort of size " + allSamples.size());
         }
 
-        outputFile = outDir.resolve("cohort_stats.json");
+        outputFile = getOutDir().resolve("cohort_stats.json");
 
         checkedSamplesList = new ArrayList<>(allSamples);
         checkedSamplesList.sort(String::compareTo);

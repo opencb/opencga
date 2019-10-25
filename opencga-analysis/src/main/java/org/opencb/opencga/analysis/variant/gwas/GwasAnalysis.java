@@ -234,7 +234,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
             index = true;
         }
 
-        outputFile = outDir.resolve(buildOutputFilename());
+        outputFile = getOutDir().resolve(buildOutputFilename());
 
         executorParams.append("index", index)
                 .append("phenotype", phenotype)

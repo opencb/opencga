@@ -179,7 +179,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
         } catch (CatalogException | StorageEngineException e) {
             throw new AnalysisException(e);
         }
-        outputFile = outDir.resolve(getId() + ".json");
+        outputFile = getOutDir().resolve(getId() + ".json");
     }
 
     @Override

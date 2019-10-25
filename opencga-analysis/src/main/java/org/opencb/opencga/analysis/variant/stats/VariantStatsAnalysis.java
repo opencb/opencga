@@ -146,9 +146,9 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
         }
 
         if (StringUtils.isEmpty(cohortName)) {
-            outputFile = outDir.resolve("variant_stats.tsv");
+            outputFile = getOutDir().resolve("variant_stats.tsv");
         } else {
-            outputFile = outDir.resolve("variant_stats_" + cohortName + ".tsv");
+            outputFile = getOutDir().resolve("variant_stats_" + cohortName + ".tsv");
         }
 
     }

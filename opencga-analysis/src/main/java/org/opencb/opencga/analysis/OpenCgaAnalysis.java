@@ -17,6 +17,8 @@
 package org.opencb.opencga.analysis;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.commons.datastore.core.DataResult;
@@ -49,6 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -65,15 +68,22 @@ public abstract class OpenCgaAnalysis {
     protected String sessionId;
 
     protected ObjectMap executorParams;
-    protected Path outDir;
     protected List<AnalysisExecutor.Source> sourceTypes;
     protected List<AnalysisExecutor.Framework> availableFrameworks;
     protected Logger logger;
+    private Path outDir;
+    private Path scratchDir;
     private final Logger privateLogger = LoggerFactory.getLogger(OpenCgaAnalysis.class);
 
     private AnalysisResultManager arm;
 
     public OpenCgaAnalysis() {
+    }
+
+    public final OpenCgaAnalysis setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
+                                       ObjectMap executorParams, Path outDir, String sessionId) {
+        VariantStorageManager manager = new VariantStorageManager(catalogManager, engineFactory);
+        return setUp(opencgaHome, catalogManager, manager, executorParams, outDir, sessionId);
     }
 
     public final OpenCgaAnalysis setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
@@ -158,11 +168,26 @@ public abstract class OpenCgaAnalysis {
     public final AnalysisResult start() throws AnalysisException {
         arm = new AnalysisResultManager(getId(), outDir);
         arm.init(executorParams, getSteps());
+        if (scratchDir == null) {
+            Path baseScratchDir = this.outDir; // TODO: Read from configuration
+            try {
+                scratchDir = Files.createDirectory(baseScratchDir.resolve(getId() + RandomStringUtils.random(10)));
+            } catch (IOException e) {
+                throw new AnalysisException(e);
+            }
+        }
         try {
             check();
             run();
+            try {
+                FileUtils.deleteDirectory(scratchDir.toFile());
+            } catch (IOException e) {
+                String warningMessage = "Error deleting scratch folder " + scratchDir + " : " + e.getMessage();
+                logger.warn(warningMessage, e);
+                arm.addWarning(warningMessage);
+            }
             return arm.close();
-        } catch (Exception e) {
+        } catch (RuntimeException | AnalysisException e) {
             arm.close(e);
             throw e;
         }
@@ -207,6 +232,20 @@ public abstract class OpenCgaAnalysis {
      */
     public final Analysis.AnalysisType getAnalysisData() {
         return this.getClass().getAnnotation(Analysis.class).type();
+    }
+
+    /**
+     * @return Output directory of the job.
+     */
+    public final Path getOutDir() {
+        return outDir;
+    }
+
+    /**
+     * @return Temporary scratch directory. Files generated in this folder will be deleted.
+     */
+    public final Path getScratchDir() {
+        return scratchDir;
     }
 
     public final OpenCgaAnalysis addSource(AnalysisExecutor.Source source) {
