@@ -33,11 +33,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.ProgressLogger;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
@@ -442,7 +438,7 @@ public class VariantSearchManager {
      * @throws VariantSearchException VariantSearchException
      * @throws IOException IOException
      */
-    public FacetQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
+    public DataResult<FacetField> facetedQuery(String collection, Query query, QueryOptions queryOptions)
             throws VariantSearchException, IOException {
         // Pre-processing
         //   - As "genes" contains, for each gene: gene names, Ensembl gene ID and all its Ensembl transcript IDs,
@@ -529,7 +525,7 @@ public class VariantSearchManager {
         }
         SolrCollection solrCollection = solrManager.getCollection(collection);
 
-        FacetQueryResult facetResult;
+        DataResult<FacetField> facetResult;
         try {
             facetResult = solrCollection.facet(solrQuery, null, postprocessing);
         } catch (SolrServerException e) {
@@ -621,20 +617,20 @@ public class VariantSearchManager {
         }
     }
 
-    private List<String> getEnsemblGeneIds(List<FacetQueryResult.Field> results) {
+    private List<String> getEnsemblGeneIds(List<FacetField> results) {
         Set<String> ensemblGeneIds = new HashSet<>();
-        Queue<FacetQueryResult.Field> queue = new LinkedList<>();
-        for (FacetQueryResult.Field facetField: results) {
+        Queue<FacetField> queue = new LinkedList<>();
+        for (FacetField facetField: results) {
             queue.add(facetField);
         }
         while (queue.size() > 0) {
-            FacetQueryResult.Field facet = queue.remove();
-            for (FacetQueryResult.Bucket bucket: facet.getBuckets()) {
+            FacetField facet = queue.remove();
+            for (FacetField.Bucket bucket: facet.getBuckets()) {
                 if (bucket.getValue().startsWith("ENSG0")) {
                     ensemblGeneIds.add(bucket.getValue());
                 }
-                if (ListUtils.isNotEmpty(bucket.getFields())) {
-                    for (FacetQueryResult.Field facetField: bucket.getFields()) {
+                if (ListUtils.isNotEmpty(bucket.getFacetFields())) {
+                    for (FacetField facetField: bucket.getFacetFields()) {
                         queue.add(facetField);
                     }
                 }
@@ -644,14 +640,14 @@ public class VariantSearchManager {
         return new ArrayList<>(ensemblGeneIds);
     }
 
-    private void facetPostProcessing(List<FacetQueryResult.Field> results, Map<String, Set<String>> includingValuesMap,
+    private void facetPostProcessing(List<FacetField> results, Map<String, Set<String>> includingValuesMap,
                                      Map<String, String> ensemblGeneIdToGeneName, boolean replaceSoAcc) {
-        Queue<FacetQueryResult.Field> queue = new LinkedList<>();
-        for (FacetQueryResult.Field facetField: results) {
+        Queue<FacetField> queue = new LinkedList<>();
+        for (FacetField facetField: results) {
             queue.add(facetField);
         }
         while (queue.size() > 0) {
-            FacetQueryResult.Field facet = queue.remove();
+            FacetField facet = queue.remove();
             String facetName = facet.getName();
 
             boolean toSoTerm = false;
@@ -663,13 +659,13 @@ public class VariantSearchManager {
                 toSoTerm = true;
             }
 
-            List<FacetQueryResult.Bucket> validBuckets =  new ArrayList<>();
+            List<FacetField.Bucket> validBuckets =  new ArrayList<>();
             Map<String, Set<String>> presentValues = new HashMap<>();
             if (MapUtils.isNotEmpty(includingValuesMap) && CollectionUtils.isNotEmpty(includingValuesMap.get(facetName))) {
                 presentValues.put(facetName, new HashSet<>());
             }
 
-            for (FacetQueryResult.Bucket bucket : facet.getBuckets()) {
+            for (FacetField.Bucket bucket : facet.getBuckets()) {
                 // We save values for a field name with including values
                 if (presentValues.containsKey(facetName)) {
                     presentValues.get(facetName).add(bucket.getValue());
@@ -687,8 +683,8 @@ public class VariantSearchManager {
                 }
 
                 // Add next fields
-                if (ListUtils.isNotEmpty(bucket.getFields())) {
-                    for (FacetQueryResult.Field facetField: bucket.getFields()) {
+                if (ListUtils.isNotEmpty(bucket.getFacetFields())) {
+                    for (FacetField facetField: bucket.getFacetFields()) {
                         queue.add(facetField);
                     }
                 }
@@ -702,7 +698,7 @@ public class VariantSearchManager {
             if (presentValues.containsKey(facetName)) {
                 for (String value : includingValuesMap.get(facetName)) {
                     if (!presentValues.get(facetName).contains(value)) {
-                        facet.getBuckets().add(new FacetQueryResult.Bucket(value, 0, null));
+                        facet.getBuckets().add(new FacetField.Bucket(value, 0, null));
                     }
                 }
             }

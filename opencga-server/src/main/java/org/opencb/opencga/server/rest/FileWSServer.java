@@ -23,7 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.datastore.core.result.FacetQueryResult;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -48,9 +47,9 @@ import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.*;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -1244,7 +1243,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
             queryOptions.put(QueryOptions.FACET, facet);
 
-            FacetQueryResult queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, defaultStats, token);
+            DataResult<FacetField> queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, defaultStats, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1284,7 +1283,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
             queryOptions.put(QueryOptions.FACET, facet);
 
-            FacetQueryResult queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, defaultStats, token);
+            DataResult<FacetField> queryResult = catalogManager.getFileManager().facet(studyStr, query, queryOptions, defaultStats, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

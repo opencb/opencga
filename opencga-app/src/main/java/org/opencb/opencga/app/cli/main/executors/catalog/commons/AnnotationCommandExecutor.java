@@ -38,9 +38,8 @@ public class AnnotationCommandExecutor<T> {
 
         ObjectMapper mapper = new ObjectMapper();
         ObjectMap obj = mapper.readValue(new File(createCommandOptions.annotations), ObjectMap.class);
-        obj.putIfNotNull("study", createCommandOptions.study);
-        return client.createAnnotationSet(createCommandOptions.id, createCommandOptions.variableSetId,
-                createCommandOptions.annotationSetName, obj);
+        return client.createAnnotationSet(createCommandOptions.study, createCommandOptions.id, createCommandOptions.variableSetId,
+                createCommandOptions.annotationSetId, obj);
     }
 
     @Deprecated
@@ -80,9 +79,11 @@ public class AnnotationCommandExecutor<T> {
 
         ObjectMapper mapper = new ObjectMapper();
         ObjectMap obj = mapper.readValue(new File(updateCommandOptions.annotations), ObjectMap.class);
-        obj.putIfNotNull("action", updateCommandOptions.action);
-        obj.putIfNotNull("study", updateCommandOptions.study);
 
-        return client.updateAnnotationSet(updateCommandOptions.id, updateCommandOptions.annotationSetName, obj);
+        ObjectMap queryParams = new ObjectMap();
+//        queryParams.putIfNotNull("action", updateCommandOptions.action);
+
+        return client.updateAnnotationSet(updateCommandOptions.study, updateCommandOptions.id, updateCommandOptions.annotationSetId,
+                queryParams, obj);
     }
 }
