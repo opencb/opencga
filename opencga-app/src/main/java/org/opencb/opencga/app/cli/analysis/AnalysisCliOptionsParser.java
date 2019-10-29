@@ -21,6 +21,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.commons.utils.CommandLineUtils;
+import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
@@ -108,6 +109,7 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand("ibs", variantCommandOptions.ibsVariantCommandOptions);
         variantSubCommands.addCommand("samples", variantCommandOptions.samplesFilterCommandOptions);
         variantSubCommands.addCommand("histogram", variantCommandOptions.histogramCommandOptions);
+        variantSubCommands.addCommand(GwasAnalysis.ID, variantCommandOptions.gwasCommandOptions);
 
         alignmentCommandOptions = new AlignmentCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("alignment", alignmentCommandOptions);

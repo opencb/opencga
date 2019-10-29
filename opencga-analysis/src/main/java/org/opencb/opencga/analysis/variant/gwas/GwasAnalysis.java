@@ -41,12 +41,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Analysis(id = GwasAnalysis.ID, type = AnalysisType.VARIANT,
-        description = "Run a Genome Wide Association Study between two cohorts.")
+        description = GwasAnalysis.DESCRIPTION)
 public class GwasAnalysis extends OpenCgaAnalysis {
 
     public static final String ID = "gwas";
+    public static final String DESCRIPTION = "Run a Genome Wide Association Study between two cohorts.";
 
-    private GwasConfiguration gwasConfiguration;
+    private GwasConfiguration gwasConfiguration = new GwasConfiguration();
     private String study;
     private String phenotype;
     private String caseCohort;
@@ -69,6 +70,16 @@ public class GwasAnalysis extends OpenCgaAnalysis {
      */
     public GwasAnalysis setGwasConfiguration(GwasConfiguration gwasConfiguration) {
         this.gwasConfiguration = gwasConfiguration;
+        return this;
+    }
+
+    public GwasAnalysis setGwasMethod(GwasConfiguration.Method method) {
+        this.gwasConfiguration.setMethod(method);
+        return this;
+    }
+
+    public GwasAnalysis setFisherMode(GwasConfiguration.FisherMode fisherMode) {
+        this.gwasConfiguration.setFisherMode(fisherMode);
         return this;
     }
 

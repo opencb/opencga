@@ -33,7 +33,9 @@ import org.opencb.opencga.analysis.old.AnalysisExecutionException;
 import org.opencb.opencga.analysis.old.execution.plugins.PluginExecutor;
 import org.opencb.opencga.analysis.old.execution.plugins.hist.VariantHistogramAnalysis;
 import org.opencb.opencga.analysis.old.execution.plugins.ibs.IbsAnalysis;
+import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.File;
@@ -60,6 +62,7 @@ import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsMan
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
@@ -167,6 +170,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 break;
             case "histogram":
                 histogram();
+                break;
+            case GwasAnalysis.ID:
+                gwas();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -670,5 +676,34 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         String userId1 = catalogManager.getUserManager().getUserId(sessionId);
         new PluginExecutor(catalogManager, sessionId)
                 .execute(VariantHistogramAnalysis.class, "default", catalogManager.getStudyManager().resolveId(cliOptions.study, userId1).getUid(), params);
+    }
+
+    private void gwas() throws Exception {
+        VariantCommandOptions.GwasCommandOptions cliOptions = variantCommandOptions.gwasCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        Query caseCohortSamplesQuery = new Query();
+        if (StringUtils.isNotEmpty(cliOptions.caseSamplesAnnotation)) {
+            caseCohortSamplesQuery.append(SampleDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+            caseCohortSamplesQuery.append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.caseSamplesAnnotation);
+        }
+        Query controlCohortSamplesQuery = new Query();
+        if (StringUtils.isNotEmpty(cliOptions.controlSamplesAnnotation)) {
+            caseCohortSamplesQuery.append(SampleDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+            caseCohortSamplesQuery.append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.controlSamplesAnnotation);
+        }
+        new GwasAnalysis()
+                .setStudy(cliOptions.study)
+                .setPhenotype(cliOptions.phenotype)
+                .setScoreName(cliOptions.scoreName)
+                .setFisherMode(cliOptions.fisherMode)
+                .setGwasMethod(cliOptions.method)
+                .setControlCohort(cliOptions.controlCohort)
+                .setCaseCohort(cliOptions.caseCohort)
+                .setCaseCohortSamplesQuery(caseCohortSamplesQuery)
+                .setControlCohortSamplesQuery(controlCohortSamplesQuery)
+                .setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId)
+                .start();
     }
 }

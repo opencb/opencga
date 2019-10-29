@@ -16,23 +16,25 @@
 
 package org.opencb.opencga.app.cli.analysis.options;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.Parameters;
-import com.beust.jcommander.ParametersDelegate;
+import com.beust.jcommander.*;
 import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
+import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
+import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND_DESCRIPTION;
@@ -86,6 +88,9 @@ public class VariantCommandOptions {
     public final VariantSamplesFilterCommandOptions samplesFilterCommandOptions;
     public final VariantHistogramCommandOptions histogramCommandOptions;
 
+    // Analysis
+    public final GwasCommandOptions gwasCommandOptions;
+
     public final JCommander jCommander;
     public final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
     public final DataModelOptions commonDataModelOptions;
@@ -121,6 +126,7 @@ public class VariantCommandOptions {
         this.ibsVariantCommandOptions = new VariantIbsCommandOptions();
         this.samplesFilterCommandOptions = new VariantSamplesFilterCommandOptions();
         this.histogramCommandOptions = new VariantHistogramCommandOptions();
+        this.gwasCommandOptions = new GwasCommandOptions();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
@@ -942,6 +948,50 @@ public class VariantCommandOptions {
         public Integer interval = 1000;
 
         @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = GwasAnalysis.ID, commandDescription = GwasAnalysis.DESCRIPTION)
+    public class GwasCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
+        public String study;
+
+        @Parameter(names = {"--phenotype"}, description = "Use this phenotype to divide all the samples from the study. "
+                + "Samples with the phenotype will be used as Case Cohort. Rest will be used as Control Cohort. "
+                + "This parameter can not be mixed with other parameters to define the cohorts.")
+        public String phenotype;
+
+        @Parameter(names = {"--index-score"}, description = "Name to be used to index que score in the variant storage. "
+                + "Must be unique in the study. If provided, the control/case cohorts must be registered in catalog.")
+        public String scoreName;
+
+        @Parameter(names = {"--method"}, description = "Either Fisher Test or ChiSquare")
+        public GwasConfiguration.Method method = GwasConfiguration.Method.FISHER_TEST;
+
+        @Parameter(names = {"--fisher-mode"}, description = "Fisher Test mode.")
+        public GwasConfiguration.FisherMode fisherMode = GwasConfiguration.FisherMode.TWO_SIDED;
+
+        @Parameter(names = {"--case-cohort"}, description = "Cohort from catalog to be used as case cohort.")
+        public String caseCohort;
+
+        @Parameter(names = {"--case-samples-annotation"}, description = "Samples annotation query selecting samples of the case cohort. "
+                + "This parameter is an alternative to --case-cohort . Example: age>30;gender=FEMALE. "
+                + "For more information, please visit " + SampleCommandOptions.SearchCommandOptions.ANNOTATION_DOC_URL)
+        public String caseSamplesAnnotation;
+
+        @Parameter(names = {"--control-cohort"}, description = "Cohort from catalog to be used as control cohort.")
+        public String controlCohort;
+
+        @Parameter(names = {"--control-samples-annotation"}, description = "Samples query selecting samples of the control cohort. "
+                + "This parameter is an alternative to --control-cohort . Example: age>30;gender=FEMALE. "
+                + "For more information, please visit " + SampleCommandOptions.SearchCommandOptions.ANNOTATION_DOC_URL)
+        public String controlSamplesAnnotation;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = true)
         public String outdir;
     }
 }
