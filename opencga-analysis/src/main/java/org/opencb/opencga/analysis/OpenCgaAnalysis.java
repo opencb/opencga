@@ -67,6 +67,7 @@ public abstract class OpenCgaAnalysis {
     protected String opencgaHome;
     protected String sessionId;
 
+    protected ObjectMap params;
     protected ObjectMap executorParams;
     protected List<AnalysisExecutor.Source> sourceTypes;
     protected List<AnalysisExecutor.Framework> availableFrameworks;
@@ -81,28 +82,32 @@ public abstract class OpenCgaAnalysis {
     }
 
     public final OpenCgaAnalysis setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
-                                       ObjectMap executorParams, Path outDir, String sessionId) {
+                                       ObjectMap params, Path outDir, String sessionId) {
         VariantStorageManager manager = new VariantStorageManager(catalogManager, engineFactory);
-        return setUp(opencgaHome, catalogManager, manager, executorParams, outDir, sessionId);
+        return setUp(opencgaHome, catalogManager, manager, params, outDir, sessionId);
     }
 
     public final OpenCgaAnalysis setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
-                                       ObjectMap executorParams, Path outDir, String sessionId) {
+                                       ObjectMap params, Path outDir, String sessionId) {
         this.opencgaHome = opencgaHome;
         this.catalogManager = catalogManager;
         this.configuration = catalogManager.getConfiguration();
         this.variantStorageManager = variantStorageManager;
         this.storageConfiguration = variantStorageManager.getStorageConfiguration();
         this.sessionId = sessionId;
+        this.params = params;
+        this.executorParams = new ObjectMap();
+        this.outDir = outDir;
 
-        return setUp(executorParams, outDir);
+        return setUpFrameworksAndSource();
     }
 
-    public final OpenCgaAnalysis setUp(String opencgaHome, ObjectMap executorParams, Path outDir, String sessionId)
+    public final OpenCgaAnalysis setUp(String opencgaHome, ObjectMap params, Path outDir, String sessionId)
             throws AnalysisException {
         this.opencgaHome = opencgaHome;
         this.sessionId = sessionId;
-        this.executorParams = executorParams;
+        this.params = params;
+        this.executorParams = new ObjectMap();
         this.outDir = outDir;
 
         try {
@@ -115,10 +120,10 @@ public abstract class OpenCgaAnalysis {
             throw new AnalysisException(e);
         }
 
-        return setUp(executorParams, outDir);
+        return setUpFrameworksAndSource();
     }
 
-    private OpenCgaAnalysis setUp(ObjectMap executorParams, Path outDir) {
+    private OpenCgaAnalysis setUpFrameworksAndSource() {
         logger = LoggerFactory.getLogger(this.getClass().toString());
 
         availableFrameworks = new ArrayList<>();
@@ -138,25 +143,7 @@ public abstract class OpenCgaAnalysis {
 
         availableFrameworks.add(AnalysisExecutor.Framework.LOCAL);
         sourceTypes.add(AnalysisExecutor.Source.STORAGE);
-
-        setUp(executorParams, outDir, sourceTypes, availableFrameworks);
         return this;
-    }
-
-    /**
-     * Setup the analysis providing the parameters required for the execution.
-     * @param executorParams        Params to be provided to the Executor
-     * @param outDir                Output directory
-     * @param inputDataSourceTypes  Input data source types
-     * @param availableFrameworks   Available frameworks in this environment
-     */
-    private final void setUp(ObjectMap executorParams, Path outDir,
-                             List<AnalysisExecutor.Source> inputDataSourceTypes,
-                             List<AnalysisExecutor.Framework> availableFrameworks) {
-        this.executorParams = executorParams;
-        this.outDir = outDir;
-        this.sourceTypes = inputDataSourceTypes;
-        this.availableFrameworks = availableFrameworks == null ? null : new ArrayList<>(availableFrameworks);
     }
 
     /**
@@ -167,17 +154,19 @@ public abstract class OpenCgaAnalysis {
      */
     public final AnalysisResult start() throws AnalysisException {
         arm = new AnalysisResultManager(getId(), outDir);
-        arm.init(executorParams, getSteps());
-        if (scratchDir == null) {
-            Path baseScratchDir = this.outDir; // TODO: Read from configuration
-            try {
-                scratchDir = Files.createDirectory(baseScratchDir.resolve(getId() + RandomStringUtils.random(10)));
-            } catch (IOException e) {
-                throw new AnalysisException(e);
-            }
-        }
+        arm.init(params, executorParams);
         try {
+            if (scratchDir == null) {
+                Path baseScratchDir = this.outDir; // TODO: Read from configuration
+                try {
+                    scratchDir = Files.createDirectory(baseScratchDir.resolve(getId() + RandomStringUtils.random(10)));
+                } catch (IOException e) {
+                    throw new AnalysisException(e);
+                }
+            }
             check();
+            arm.setParams(params); // params may be modified after check method
+            arm.setSteps(getSteps());
             run();
             try {
                 FileUtils.deleteDirectory(scratchDir.toFile());
@@ -218,13 +207,10 @@ public abstract class OpenCgaAnalysis {
     /**
      * @return the analysis steps
      */
-    public final List<String> getSteps() {
-        String[] steps = this.getClass().getAnnotation(Analysis.class).steps();
-        if (steps.length == 0) {
-            return Collections.singletonList(getId());
-        } else {
-            return Arrays.asList(steps);
-        }
+    public List<String> getSteps() {
+        List<String> steps = new ArrayList<>();
+        steps.add(getId());
+        return steps;
     }
 
     /**
@@ -287,16 +273,16 @@ public abstract class OpenCgaAnalysis {
         return arm.checkStep(stepId);
     }
 
-    protected final void skipStep(String stepId) throws AnalysisException {
-        arm.skipStep(stepId);
-    }
-
-    protected final void skipStep() throws AnalysisException {
-        arm.skipStep();
+    protected final void errorStep() throws AnalysisException {
+        arm.errorStep();
     }
 
     protected final void addWarning(String warning) throws AnalysisException {
         arm.addWarning(warning);
+    }
+
+    protected final void addError(Exception e) throws AnalysisException {
+        arm.addError(e);
     }
 
     protected final void addAttribute(String key, Object value) throws AnalysisException {

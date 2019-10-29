@@ -27,7 +27,6 @@ public @interface Analysis {
 
     String id();
     AnalysisType type();
-    String[] steps() default {};
     String description() default "";
 
     enum AnalysisType {

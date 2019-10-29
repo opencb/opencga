@@ -1,5 +1,6 @@
 package org.opencb.opencga.core.analysis.result;
 
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.Date;
@@ -13,16 +14,17 @@ public class AnalysisResult {
     private Date start;
     private Date end;
     private Status status;
-    private List<String> warnings;
     private List<FileResult> outputFiles;
     private List<AnalysisStep> steps;
+    private List<Event> events;
 
+    private ObjectMap params;
     private ObjectMap attributes;
 
     public AnalysisResult() {
         executor = new ExecutorInfo();
         status = new Status();
-        warnings = new LinkedList<>();
+        events = new LinkedList<>();
         outputFiles = new LinkedList<>();
         steps = new LinkedList<>();
         attributes = new ObjectMap();
@@ -36,9 +38,10 @@ public class AnalysisResult {
         sb.append(", start=").append(start);
         sb.append(", end=").append(end);
         sb.append(", status=").append(status);
-        sb.append(", warnings=").append(warnings);
         sb.append(", outputFiles=").append(outputFiles);
         sb.append(", steps=").append(steps);
+        sb.append(", events=").append(events);
+        sb.append(", params=").append(params);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -89,12 +92,12 @@ public class AnalysisResult {
         return this;
     }
 
-    public List<String> getWarnings() {
-        return warnings;
+    public List<Event> getEvents() {
+        return events;
     }
 
-    public AnalysisResult setWarnings(List<String> warnings) {
-        this.warnings = warnings;
+    public AnalysisResult setEvents(List<Event> events) {
+        this.events = events;
         return this;
     }
 
@@ -113,6 +116,15 @@ public class AnalysisResult {
 
     public AnalysisResult setSteps(List<AnalysisStep> steps) {
         this.steps = steps;
+        return this;
+    }
+
+    public ObjectMap getParams() {
+        return params;
+    }
+
+    public AnalysisResult setParams(ObjectMap params) {
+        this.params = params;
         return this;
     }
 

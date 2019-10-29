@@ -9,7 +9,7 @@ public class AnalysisStep {
     private String id;
     private Date start;
     private Date end;
-    private String status;
+    private Status.Type status;
     private ObjectMap attributes;
 
     public AnalysisStep() {
@@ -17,7 +17,7 @@ public class AnalysisStep {
         status = null;
     }
 
-    public AnalysisStep(String id, Date start, Date end, String status, ObjectMap attributes) {
+    public AnalysisStep(String id, Date start, Date end, Status.Type status, ObjectMap attributes) {
         this.id = id;
         this.start = start;
         this.end = end;
@@ -52,11 +52,11 @@ public class AnalysisStep {
         return this;
     }
 
-    public String getStatus() {
+    public Status.Type getStatus() {
         return status;
     }
 
-    public AnalysisStep setStatus(String status) {
+    public AnalysisStep setStatus(Status.Type status) {
         this.status = status;
         return this;
     }

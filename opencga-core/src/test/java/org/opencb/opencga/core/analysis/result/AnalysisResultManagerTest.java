@@ -33,7 +33,8 @@ public class AnalysisResultManagerTest {
     @Before
     public void setUp() throws Exception {
         arm = new AnalysisResultManager("myTest", rootDir);
-        arm.init(new ObjectMap(), Arrays.asList("step1", "step2"));
+        arm.init(new ObjectMap(), new ObjectMap());
+        arm.setSteps(Arrays.asList("step1", "step2"));
     }
 
     @After

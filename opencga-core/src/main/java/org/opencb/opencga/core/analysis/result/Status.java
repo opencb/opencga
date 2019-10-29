@@ -4,49 +4,47 @@ import java.util.Date;
 
 public class Status {
 
-    /**
-     * NONE status: The job or step has not started yet.
-     */
-    public static final String NONE = "NONE";
+    enum Type {
+        /**
+         * PENDING status: The job or step has not started yet.
+         */
+         PENDING,
 
-    /**
-     * SKIP status: The job or step has been skipped.
-     */
-    public static final String SKIP = "SKIP";
+        /**
+         * RUNNING status: The job or step is running.
+         */
+         RUNNING,
 
-    /**
-     * RUNNING status: The job or step is running.
-     */
-    public static final String RUNNING = "RUNNING";
+        /**
+         * DONE status: The job or step has finished the execution, but the output is still not ready.
+         */
+         DONE,
 
-    /**
-     * DONE status: The job or step has finished the execution, but the output is still not ready.
-     */
-    public static final String DONE = "DONE";
-    /**
-     * ERROR status: The job or step finished with an error.
-     */
-    public static final String ERROR = "ERROR";
+        /**
+         * ERROR status: The job or step finished with an error.
+         */
+         ERROR
+    }
 
-    private String id;
+    private Type name;
     private String step;
     private Date date;
 
     public Status() {
     }
 
-    public Status(String id, String step, Date date) {
-        this.id = id;
+    public Status(Type name, String step, Date date) {
+        this.name = name;
         this.step = step;
         this.date = date;
     }
 
-    public String getId() {
-        return id;
+    public Type getName() {
+        return name;
     }
 
-    public Status setId(String id) {
-        this.id = id;
+    public Status setName(Type name) {
+        this.name = name;
         return this;
     }
 

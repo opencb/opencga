@@ -22,9 +22,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
-@Analysis(id = CohortVariantStatsAnalysis.ID, type = Analysis.AnalysisType.VARIANT,
-    steps = {CohortVariantStatsAnalysis.ID, "index"}
-)
+@Analysis(id = CohortVariantStatsAnalysis.ID, type = Analysis.AnalysisType.VARIANT)
 public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
 
     public static final String ID = "cohort-variant-stats";
@@ -158,6 +156,15 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
     }
 
     @Override
+    public List<String> getSteps() {
+        List<String> steps = super.getSteps();
+        if (indexResults) {
+            steps.add("index");
+        }
+        return steps;
+    }
+
+    @Override
     protected void run() throws AnalysisException {
         step(getId(), () -> {
             getAnalysisExecutor(CohortVariantStatsAnalysisExecutor.class)
@@ -169,8 +176,8 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
             addFile(outputFile, FileResult.FileType.JSON);
         });
 
-        step("index", () -> {
-            if (indexResults) {
+        if (indexResults) {
+            step("index", () -> {
                 try {
                     VariantSetStats stats = JacksonUtils.getDefaultObjectMapper().readValue(outputFile.toFile(), VariantSetStats.class);
 
@@ -192,10 +199,8 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
                 } catch (IOException | CatalogException e) {
                     throw new AnalysisException(e);
                 }
-            } else {
-                skipStep();
-            }
-        });
+            });
+        }
     }
 }
 

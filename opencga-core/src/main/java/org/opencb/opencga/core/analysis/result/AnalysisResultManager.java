@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
 import org.opencb.opencga.core.exception.AnalysisException;
@@ -42,7 +43,7 @@ public class AnalysisResultManager {
         closed = false;
     }
 
-    public synchronized AnalysisResultManager init(ObjectMap executorParams, List<String> steps) throws AnalysisException {
+    public synchronized AnalysisResultManager init(ObjectMap params, ObjectMap executorParams) throws AnalysisException {
         if (initialized) {
             throw new AnalysisException("AnalysisResultManager already initialized!");
         }
@@ -67,21 +68,27 @@ public class AnalysisResultManager {
         Date now = now();
         AnalysisResult analysisResult = new AnalysisResult()
                 .setId(analysisId)
+                .setParams(params)
                 .setExecutor(new ExecutorInfo()
                         .setId(executorParams.getString(OpenCgaAnalysisExecutor.EXECUTOR_ID))
                         .setParams(executorParams))
                 .setStart(now);
         analysisResult.getStatus()
                 .setDate(now)
-                .setId(Status.RUNNING);
-
-        analysisResult.setSteps(new ArrayList<>(steps.size()));
-        for (String step : steps) {
-            analysisResult.getSteps().add(new AnalysisStep(step, null, null, Status.NONE, new ObjectMap()));
-        }
+                .setName(Status.Type.RUNNING);
 
         write(analysisResult);
         return this;
+    }
+
+    public void setSteps(List<String> steps) throws AnalysisException {
+        updateResult(analysisResult -> {
+            analysisResult.setSteps(new ArrayList<>(steps.size()));
+            for (String step : steps) {
+                analysisResult.getSteps().add(new AnalysisStep(step, null, null, Status.Type.PENDING, new ObjectMap()));
+            }
+            return null;
+        });
     }
 
     public synchronized AnalysisResult close() throws AnalysisException {
@@ -109,19 +116,19 @@ public class AnalysisResultManager {
             step = getStep(analysisResult, analysisResult.getStatus().getStep());
         }
 
-        String finalStatus;
+        Status.Type finalStatus;
         if (exception == null) {
-            finalStatus = Status.DONE;
+            finalStatus = Status.Type.DONE;
         } else {
-            analysisResult.getWarnings().add(exception.getMessage());
-            finalStatus = Status.ERROR;
+            addError(exception, analysisResult);
+            finalStatus = Status.Type.ERROR;
         }
 
         analysisResult.getStatus()
                 .setStep(null)
-                .setId(finalStatus);
+                .setName(finalStatus);
 
-        if (step.getStatus().equals(Status.RUNNING)) {
+        if (step.getStatus().equals(Status.Type.RUNNING)) {
             step.setStatus(finalStatus);
             step.setEnd(now);
         }
@@ -135,7 +142,15 @@ public class AnalysisResultManager {
     }
 
     public void addWarning(String warningMessage) throws AnalysisException {
-        updateResult(analysisResult -> analysisResult.getWarnings().add(warningMessage));
+        updateResult(analysisResult -> analysisResult.getEvents().add(new Event(Event.Type.WARNING, warningMessage)));
+    }
+
+    public void addError(Exception exception) throws AnalysisException {
+        updateResult(analysisResult -> addError(exception, analysisResult));
+    }
+
+    private boolean addError(Exception exception, AnalysisResult analysisResult) {
+        return analysisResult.getEvents().add(new Event(Event.Type.ERROR, exception.getMessage()));
     }
 
     public void addAttribute(String key, Object value) throws AnalysisException {
@@ -171,16 +186,9 @@ public class AnalysisResultManager {
         updateResult(analysisResult -> analysisResult.getOutputFiles().add(new FileResult(finalFileStr, fileType)));
     }
 
-    public void skipStep(String stepId) throws AnalysisException {
-        updateResult(analysisResult -> getStep(analysisResult, stepId).setStatus(Status.SKIP).setEnd(now()));
-    }
-
-    public void skipStep() throws AnalysisException {
-        updateResult(analysisResult -> getStep(analysisResult, analysisResult.getStatus().getStep()).setStatus(Status.SKIP).setEnd(now()));
-    }
-
-    public void errorStep(String stepId) throws AnalysisException {
-        updateResult(analysisResult -> getStep(analysisResult, stepId).setStatus(Status.ERROR).setEnd(now()));
+    public void errorStep() throws AnalysisException {
+        updateResult(analysisResult -> getStep(analysisResult, analysisResult.getStatus().getStep())
+                .setStatus(Status.Type.ERROR).setEnd(now()));
     }
 
     public boolean checkStep(String stepId) throws AnalysisException {
@@ -190,18 +198,18 @@ public class AnalysisResultManager {
                 // End previous step
 
                 AnalysisStep step = getStep(analysisResult, analysisResult.getStatus().getStep());
-                if (step.getStatus().equals(Status.RUNNING)) {
-                    step.setStatus(Status.DONE);
+                if (step.getStatus().equals(Status.Type.RUNNING)) {
+                    step.setStatus(Status.Type.DONE);
                     step.setEnd(now());
                 }
             }
 
             analysisResult.getStatus().setStep(stepId);
             AnalysisStep step = getStep(analysisResult, stepId);
-            if (step.getStatus().equals(Status.DONE)) {
+            if (step.getStatus().equals(Status.Type.DONE)) {
                 return false;
             } else {
-                step.setStatus(Status.RUNNING);
+                step.setStatus(Status.Type.RUNNING);
                 step.setStart(now());
                 return true;
             }
@@ -218,6 +226,10 @@ public class AnalysisResultManager {
         List<String> steps = analysisResult.getSteps().stream().map(AnalysisStep::getId).collect(Collectors.toList());
 
         throw new AnalysisException("Step '" + stepId + "' not found. Available steps: " + steps);
+    }
+
+    public void setParams(ObjectMap params) throws AnalysisException {
+        updateResult(analysisResult -> analysisResult.setParams(params));
     }
 
     @FunctionalInterface

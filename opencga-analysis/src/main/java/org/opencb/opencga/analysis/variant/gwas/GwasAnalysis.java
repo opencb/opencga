@@ -41,7 +41,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Analysis(id = GwasAnalysis.ID, type = AnalysisType.VARIANT,
-        steps = {"gwas", "manhattan-plot", "index"},
         description = "Run a Genome Wide Association Study between two cohorts.")
 public class GwasAnalysis extends OpenCgaAnalysis {
 
@@ -246,6 +245,15 @@ public class GwasAnalysis extends OpenCgaAnalysis {
     }
 
     @Override
+    public List<String> getSteps() {
+        List<String> steps = super.getSteps();
+        if (index) {
+            steps.add("index");
+        }
+        return steps;
+    }
+
+    @Override
     protected void run() throws AnalysisException {
 
         step("gwas", () -> {
@@ -263,10 +271,10 @@ public class GwasAnalysis extends OpenCgaAnalysis {
             }
         });
 
-        step("manhattan-plot", this::createManhattanPlot);
+//        step("manhattan-plot", this::createManhattanPlot);
 
-        step("index", () -> {
-            if (index) {
+        if (index) {
+            step("index", () -> {
                 try {
                     VariantScoreFormatDescriptor formatDescriptor = new VariantScoreFormatDescriptor(1, 16, 15);
                     variantStorageManager.loadVariantScore(study, outputFile.toUri(), scoreName, caseCohort, controlCohort, formatDescriptor,
@@ -274,14 +282,11 @@ public class GwasAnalysis extends OpenCgaAnalysis {
                 } catch (CatalogException | StorageEngineException e) {
                     throw new AnalysisException(e);
                 }
-            } else {
-                skipStep();
-            }
-        });
+            });
+        }
     }
 
     private void createManhattanPlot() throws AnalysisException {
-        skipStep();
     }
 
     protected String buildOutputFilename() throws AnalysisException {
