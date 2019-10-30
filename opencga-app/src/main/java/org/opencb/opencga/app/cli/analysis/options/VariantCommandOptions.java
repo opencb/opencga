@@ -16,12 +16,17 @@
 
 package org.opencb.opencga.app.cli.analysis.options;
 
-import com.beust.jcommander.*;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
+import com.beust.jcommander.ParametersDelegate;
 import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
+import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
@@ -32,14 +37,14 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexRemoveCommandOptions.SECONDARY_INDEX_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
@@ -90,6 +95,8 @@ public class VariantCommandOptions {
 
     // Analysis
     public final GwasCommandOptions gwasCommandOptions;
+    public final SampleVariantStatsCommandOptions sampleVariantStatsCommandOptions;
+    public final CohortVariantStatsCommandOptions cohortVariantStatsCommandOptions;
 
     public final JCommander jCommander;
     public final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -127,6 +134,8 @@ public class VariantCommandOptions {
         this.samplesFilterCommandOptions = new VariantSamplesFilterCommandOptions();
         this.histogramCommandOptions = new VariantHistogramCommandOptions();
         this.gwasCommandOptions = new GwasCommandOptions();
+        this.sampleVariantStatsCommandOptions = new SampleVariantStatsCommandOptions();
+        this.cohortVariantStatsCommandOptions = new CohortVariantStatsCommandOptions();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
@@ -990,6 +999,64 @@ public class VariantCommandOptions {
                 + "This parameter is an alternative to --control-cohort . Example: age>30;gender=FEMALE. "
                 + "For more information, please visit " + SampleCommandOptions.SearchCommandOptions.ANNOTATION_DOC_URL)
         public String controlSamplesAnnotation;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = true)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = SAMPLE_VARIANT_STATS_COMMAND, commandDescription = SampleVariantStatsAnalysis.DESCRIPTION)
+    public class SampleVariantStatsCommandOptions {
+        public static final String SAMPLE_VARIANT_STATS_COMMAND = "sample-stats";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
+        public String study;
+
+        @Parameter(names = {"--samples"}, description = "List of samples.")
+        public String samples;
+
+        @Parameter(names = {"--family"}, description = "Select samples form the individuals of this family..")
+        public String family;
+
+        @Parameter(names = {"--samples-annotation"}, description = "Samples query selecting samples of the control cohort."
+                + " Example: age>30;gender=FEMALE."
+                + " For more information, please visit " + SampleCommandOptions.SearchCommandOptions.ANNOTATION_DOC_URL)
+        public String samplesAnnotation;
+
+        @Parameter(names = {"--index-stats"}, description = "Index results in catalog."
+                + "Create an AnnotationSet for the VariableSet " + SampleVariantStatsAnalysis.VARIABLE_SET_ID)
+        public boolean index;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = true)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = COHORT_VARIANT_STATS_COMMAND, commandDescription = CohortVariantStatsAnalysis.DESCRIPTION)
+    public class CohortVariantStatsCommandOptions {
+        public static final String COHORT_VARIANT_STATS_COMMAND = "cohort-stats";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
+        public String study;
+
+        @Parameter(names = {"--cohort"}, description = "Cohort name.")
+        public String cohort;
+
+        @Parameter(names = {"--samples"}, description = "List of samples.")
+        public String samples;
+
+        @Parameter(names = {"--samples-annotation"}, description = "Samples query selecting samples of the control cohort."
+                + " Example: age>30;gender=FEMALE."
+                + " For more information, please visit " + SampleCommandOptions.SearchCommandOptions.ANNOTATION_DOC_URL)
+        public String samplesAnnotation;
+
+        @Parameter(names = {"--index-stats"}, description = "Index results in catalog. Requires a cohort."
+                + "Create an AnnotationSet for the VariableSet " + CohortVariantStatsAnalysis.VARIABLE_SET_ID)
+        public boolean index;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = true)
         public String outdir;
