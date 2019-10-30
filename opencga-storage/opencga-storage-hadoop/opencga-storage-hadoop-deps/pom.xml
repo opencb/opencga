@@ -93,7 +93,7 @@
         <metrics-core.version>2.2.0</metrics-core.version>
         <disruptor.version>3.3.0</disruptor.version>
         <commons-math.version>2.2</commons-math.version>
-        <netty.version>4.0.23.Final</netty.version>
+        <netty.version>4.1.42.Final</netty.version>
         <jamon-runtime.version>2.4.1</jamon-runtime.version>
         <codehaus.jackson.version>1.9.13</codehaus.jackson.version>
         <mortbay.jetty.version>6.1.26</mortbay.jetty.version>
