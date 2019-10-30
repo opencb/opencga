@@ -1916,11 +1916,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Test
     public void testGetAllVariants_clinicalSignificance() {
         for (ClinicalSignificance clinicalSignificance : ClinicalSignificance.values()) {
-            if (ClinicalSignificance.uncertain_significance.equals(clinicalSignificance)) {
-                continue;
-            }
             Query query = new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificance);
             queryResult = query(query, new QueryOptions());
+            System.out.println(clinicalSignificance + " --> " + queryResult.getNumResults());
             assertThat(queryResult, everyResult(allVariants, hasAnnotation(with("clinicalSignificance",
                     va -> va == null || va.getTraitAssociation() == null
                             ? Collections.emptyList()

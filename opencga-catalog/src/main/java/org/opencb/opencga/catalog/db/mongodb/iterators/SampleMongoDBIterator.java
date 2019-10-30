@@ -36,6 +36,11 @@ public class SampleMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
     private static final int BUFFER_SIZE = 100;
 
     public SampleMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, AnnotableConverter<? extends Annotable> converter,
+                                 Function<Document, Document> filter, IndividualMongoDBAdaptor individualDBAdaptor, QueryOptions options) {
+        this(mongoCursor, clientSession, converter, filter, individualDBAdaptor, 0, null, options);
+    }
+
+    public SampleMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, AnnotableConverter<? extends Annotable> converter,
                                  Function<Document, Document> filter, IndividualMongoDBAdaptor individualDBAdaptor,
                                  long studyUid, String user, QueryOptions options) {
         super(mongoCursor, clientSession, converter, filter, options);
@@ -84,6 +89,10 @@ public class SampleMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
         while (mongoCursor.hasNext() && counter < BUFFER_SIZE) {
             Document sampleDocument = (Document) mongoCursor.next();
 
+            if (user != null && studyUid <= 0) {
+                studyUid = sampleDocument.getLong(PRIVATE_STUDY_UID);
+            }
+
             sampleListBuffer.add(sampleDocument);
             counter++;
 
@@ -97,13 +106,11 @@ public class SampleMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
         if (!sampleUidMap.isEmpty()) {
             // Obtain all the related individuals
             Query query = new Query(IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUidMap.keySet());
-            if (studyUid > 0) {
-                query.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-            }
             List<Document> individualList;
             try {
                 if (user != null) {
-                    individualList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions, user).getResults();
+                    individualList = individualDBAdaptor.nativeGet(clientSession, studyUid, query, individualQueryOptions, user)
+                            .getResults();
                 } else {
                     individualList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions).getResults();
                 }

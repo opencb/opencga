@@ -278,7 +278,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public OpenCGAResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission) throws CatalogDBException {
+    public OpenCGAResult<Long> count(long studyUid, Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+            throws CatalogDBException {
         throw new NotImplementedException("Count not implemented for users");
     }
 
@@ -316,7 +317,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public OpenCGAResult<User> get(Query query, QueryOptions options, String user) throws CatalogDBException {
+    public OpenCGAResult<User> get(long studyUid, Query query, QueryOptions options, String user) throws CatalogDBException {
         throw new NotImplementedException("Get not implemented for user");
     }
 
@@ -347,7 +348,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public OpenCGAResult nativeGet(Query query, QueryOptions options, String user)
+    public OpenCGAResult nativeGet(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         throw new NotImplementedException("Get not implemented for user");
     }
@@ -539,13 +540,13 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public DBIterator<User> iterator(Query query, QueryOptions options, String user)
+    public DBIterator<User> iterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }
 
     @Override
-    public DBIterator nativeIterator(Query query, QueryOptions options, String user)
+    public DBIterator nativeIterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }
@@ -569,13 +570,13 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public OpenCGAResult groupBy(Query query, String field, QueryOptions options, String user)
+    public OpenCGAResult groupBy(long studyUid, Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }
 
     @Override
-    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    public OpenCGAResult groupBy(long studyUid, Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }

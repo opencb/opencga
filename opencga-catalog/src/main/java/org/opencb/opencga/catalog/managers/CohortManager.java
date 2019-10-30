@@ -105,7 +105,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
 
-        OpenCGAResult<Cohort> cohortDataResult = cohortDBAdaptor.get(queryCopy, queryOptions, user);
+        OpenCGAResult<Cohort> cohortDataResult = cohortDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (cohortDataResult.getNumResults() == 0) {
             cohortDataResult = cohortDBAdaptor.get(queryCopy, queryOptions);
             if (cohortDataResult.getNumResults() == 0) {
@@ -152,7 +152,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        OpenCGAResult<Cohort> cohortDataResult = cohortDBAdaptor.get(queryCopy, queryOptions, user);
+        OpenCGAResult<Cohort> cohortDataResult = cohortDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
 
         if (ignoreException || cohortDataResult.getNumResults() == uniqueList.size()) {
             return keepOriginalOrder(uniqueList, cohortStringFunction, cohortDataResult, ignoreException, false);
@@ -290,7 +290,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         fixQueryObject(study, query, userId);
 
         Query myQuery = new Query(query).append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        return cohortDBAdaptor.iterator(myQuery, options, userId);
+        return cohortDBAdaptor.iterator(study.getUid(), myQuery, options, userId);
     }
 
     @Override
@@ -314,7 +314,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             fixQueryObject(study, query, userId);
 
             query.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Cohort> queryResult = cohortDBAdaptor.get(query, options, userId);
+            OpenCGAResult<Cohort> queryResult = cohortDBAdaptor.get(study.getUid(), query, options, userId);
 
             auditManager.auditSearch(userId, AuditRecord.Resource.COHORT, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -365,7 +365,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             fixQueryObject(study, query, userId);
 
             query.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Long> queryResultAux = cohortDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
+            OpenCGAResult<Long> queryResultAux = cohortDBAdaptor.count(study.getUid(), query, userId,
+                    StudyAclEntry.StudyPermissions.VIEW_COHORTS);
 
             auditManager.auditCount(userId, AuditRecord.Resource.COHORT, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -484,7 +485,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             fixQueryObject(study, finalQuery, userId);
             finalQuery.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = cohortDBAdaptor.iterator(finalQuery, INCLUDE_COHORT_IDS, userId);
+            iterator = cohortDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_COHORT_IDS, userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
@@ -752,7 +753,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             fixQueryObject(study, finalQuery, userId);
             finalQuery.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = cohortDBAdaptor.iterator(finalQuery, INCLUDE_COHORT_STATUS, userId);
+            iterator = cohortDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_COHORT_STATUS, userId);
         } catch (CatalogException e) {
             auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.COHORT, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -871,7 +872,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         // Add study id to the query
         query.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        OpenCGAResult queryResult = cohortDBAdaptor.groupBy(query, fields, options, userId);
+        OpenCGAResult queryResult = cohortDBAdaptor.groupBy(study.getUid(), query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }

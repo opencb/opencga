@@ -936,6 +936,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
             // Set variant traits: ClinVar, Cosmic, HPO, ...
             if (variantAnnotation.getVariantTraitAssociation() != null) {
+                // FIXME: We are storing raw ClinicalSignificance values
+                //   We should use the enum {@link org.opencb.biodata.models.variant.avro.ClinicalSignificance}
+                //   variantAnnotation.getTraitAssociation().get(*).getVariantClassification().getClinicalSignificance()
                 if (variantAnnotation.getVariantTraitAssociation().getClinvar() != null) {
                     variantAnnotation.getVariantTraitAssociation().getClinvar()
                             .forEach(cv -> {

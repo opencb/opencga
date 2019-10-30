@@ -50,7 +50,7 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String PRIVATE_PROJECT_UID = PRIVATE_PROJECT + '.' + PRIVATE_UID;
     static final String PRIVATE_PROJECT_UUID = PRIVATE_PROJECT + '.' + PRIVATE_UUID;
     static final String PRIVATE_OWNER_ID = "_ownerId";
-    static final String PRIVATE_STUDY_UID = "studyUid";
+    public static final String PRIVATE_STUDY_UID = "studyUid";
     private static final String VERSION = "version";
 
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";
@@ -534,13 +534,13 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
         dbCollection.insert(clientSession, document, QueryOptions.empty());
     }
 
-    protected Document getStudyDocument(ClientSession clientSession, Query query) throws CatalogDBException {
+    protected Document getStudyDocument(ClientSession clientSession, long studyUid) throws CatalogDBException {
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(PRIVATE_STUDY_UID));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), studyUid);
         DataResult<Document> dataResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(clientSession, studyQuery,
                 QueryOptions.empty());
         if (dataResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(PRIVATE_STUDY_UID) + " not found");
+            throw new CatalogDBException("Study " + studyUid + " not found");
         }
         return dataResult.first();
     }
