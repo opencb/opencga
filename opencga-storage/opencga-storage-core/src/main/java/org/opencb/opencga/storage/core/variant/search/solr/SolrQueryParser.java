@@ -335,11 +335,20 @@ public class SolrQueryParser {
         // clinical significance
         key = ANNOT_CLINICAL_SIGNIFICANCE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
+//            filterList.add(parseCategoryTermValue("traits", query.getString(key), "cs\\:", true));
             String[] clinSig = query.getString(key).split("[,;]");
             StringBuilder sb = new StringBuilder();
-            sb.append("(").append("traits:*cs\\:").append(clinSig[0]).append("*");
-            for (int i = 1; i < clinSig.length; i++) {
-                sb.append(" OR ").append("traits:*cs\\:").append(clinSig[i]).append("*");
+            sb.append("(");
+            for (int i = 0; i < clinSig.length; i++) {
+                if (i > 0) {
+                    sb.append(" OR ");
+                }
+                // FIXME:
+                //   We are storing raw ClinicalSignificance values
+                //   We should use the enum {@link org.opencb.biodata.models.variant.avro.ClinicalSignificance}
+                //   Replace "_" with " " works to search by "Likely benign" instead of "likely_benign"
+                String value = clinSig[i].replace("_", " ");
+                sb.append("traits:\"*cs\\:").append(value).append("*\"");
             }
             sb.append(")");
             filterList.add(sb.toString());
@@ -781,37 +790,37 @@ public class SolrQueryParser {
     public String parseCategoryTermValue(String name, String val, String valuePrefix, boolean partialSearch) {
         StringBuilder filter = new StringBuilder();
         if (StringUtils.isNotEmpty(val)) {
-            String negation  = "";
+            String negation;
             String value = val.replace("\"", "");
 
             QueryOperation queryOperation = parseOrAndFilter(name, val);
             String logicalComparator = queryOperation == QueryOperation.OR ? " OR " : " AND ";
             String wildcard = partialSearch ? "*" : "";
 
-            String[] values = value.split("[,;]");
+            String[] values = splitValue(value, queryOperation).toArray(new String[0]);
             if (values.length == 1) {
                 negation = "";
-                if (value.startsWith("!")) {
+                if (isNegated(value)) {
                     negation = "-";
-                    value = value.substring(1);
+                    value = removeNegation(value);
                 }
                 filter.append(negation).append(name).append(":\"").append(valuePrefix).append(wildcard).append(value)
                         .append(wildcard).append("\"");
             } else {
                 filter.append("(");
                 negation = "";
-                if (values[0].startsWith("!")) {
+                if (isNegated(values[0])) {
                     negation = "-";
-                    values[0] = values[0].substring(1);
+                    values[0] = removeNegation(values[0]);
                 }
                 filter.append(negation).append(name).append(":\"").append(valuePrefix).append(wildcard)
                         .append(values[0]).append(wildcard).append("\"");
                 for (int i = 1; i < values.length; i++) {
                     filter.append(logicalComparator);
                     negation = "";
-                    if (values[i].startsWith("!")) {
+                    if (isNegated(values[i])) {
                         negation = "-";
-                        values[i] = values[i].substring(1);
+                        values[i] = removeNegation(values[i]);
                     }
                     filter.append(negation).append(name).append(":\"").append(valuePrefix).append(wildcard)
                             .append(values[i]).append(wildcard).append("\"");
