@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -141,19 +140,23 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
      */
     public QueryResult<AnnotationSet> updateAnnotationSet(String id, @Nullable String studyStr, String annotationSetName,
                                                           Map<String, Object> newAnnotations, String sessionId) throws CatalogException {
-        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, null, newAnnotations, Collections.emptyMap());
-        ObjectMap parameters;
-        ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
+//        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, null, newAnnotations, Collections.emptyMap());
+//        ObjectMap parameters;
+//        ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
+//
+//        try {
+//            parameters = new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet));
+//            parameters = new ObjectMap(ANNOTATION_SETS, Arrays.asList(parameters));
+//        } catch (JsonProcessingException e) {
+//            logger.error("Error parsing AnnotationSet {} to ObjectMap: {}", annotationSet, e.getMessage(), e);
+//            throw new CatalogException("Error parsing AnnotationSet to ObjectMap");
+//        }
 
-        try {
-            parameters = new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet));
-            parameters = new ObjectMap(ANNOTATION_SETS, Arrays.asList(parameters));
-        } catch (JsonProcessingException e) {
-            logger.error("Error parsing AnnotationSet {} to ObjectMap: {}", annotationSet, e.getMessage(), e);
-            throw new CatalogException("Error parsing AnnotationSet to ObjectMap");
-        }
+        ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATIONS, new AnnotationSet(annotationSetName, "", newAnnotations));
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS,
+                ParamUtils.CompleteUpdateAction.ADD));
 
-        QueryResult<R> update = update(studyStr, id, parameters, QueryOptions.empty(), sessionId);
+        QueryResult<R> update = update(studyStr, id, params, options, sessionId);
         if (update.getNumResults() == 0) {
             return new QueryResult<>("Update annotation set", update.getDbTime(), 0, 0, update.getWarningMsg(), update.getErrorMsg(),
                     Collections.emptyList());
@@ -161,7 +164,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
             String userId = catalogManager.getUserManager().getUserId(sessionId);
             Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationSetName);
+            options = new QueryOptions(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationSetName);
             QueryResult<Annotable> queryResult = (QueryResult<Annotable>) internalGet(study.getUid(), id, options, userId);
             return new QueryResult<>("Update annotation set", update.getDbTime(), queryResult.first().getAnnotationSets().size(),
                     queryResult.first().getAnnotationSets().size(), queryResult.getWarningMsg(), queryResult.getErrorMsg(),
