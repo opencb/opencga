@@ -1,4 +1,7 @@
-from pyopencga.rest_clients._parent_rest_clients import _ParentBasicCRUDClient 
+import getpass
+
+from pyopencga.rest_clients._parent_rest_clients import _ParentBasicCRUDClient
+
 
 class Users(_ParentBasicCRUDClient):
     """
@@ -10,7 +13,7 @@ class Users(_ParentBasicCRUDClient):
         super(Users, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
 
 
-    def login(self, user, pwd, **options):
+    def login(self, user, pwd=None, **options):
         """
         This is the method for login
         URL: /{apiVersion}/users/{user}/login
@@ -18,7 +21,10 @@ class Users(_ParentBasicCRUDClient):
         :param user: user id
         :param pwd: user password 
         """
-        
+
+        if pwd is None:
+            pwd = getpass.getpass()
+
         data = dict(password=pwd)
 
         return self._post('login', data=data, query_id=user, **options)

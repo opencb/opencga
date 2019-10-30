@@ -313,6 +313,10 @@ public class File extends Annotable {
 
             RelatedFile that = (RelatedFile) o;
 
+            if (file == null || that.file == null) {
+                return false;
+            }
+
             return new EqualsBuilder()
                     .append(file.getId(), that.file.getId())
                     .append(relation, that.relation)

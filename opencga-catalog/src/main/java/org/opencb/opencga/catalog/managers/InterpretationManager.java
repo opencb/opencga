@@ -81,7 +81,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 //                InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS.key(),
 //                InterpretationDBAdaptor.QueryParams.UID.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key(),
 //                InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.STATUS.key()));
-        OpenCGAResult<Interpretation> interpretationDataResult = interpretationDBAdaptor.get(queryCopy, queryOptions, user);
+        OpenCGAResult<Interpretation> interpretationDataResult = interpretationDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (interpretationDataResult.getNumResults() == 0) {
             interpretationDataResult = interpretationDBAdaptor.get(queryCopy, queryOptions);
             if (interpretationDataResult.getNumResults() == 0) {
@@ -139,7 +139,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        OpenCGAResult<Interpretation> interpretationDataResult = interpretationDBAdaptor.get(queryCopy, queryOptions, user);
+        OpenCGAResult<Interpretation> interpretationDataResult = interpretationDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
 
         if (interpretationDataResult.getNumResults() != uniqueList.size() && !ignoreException) {
             throw CatalogException.notFound("interpretations",
@@ -292,7 +292,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         DBIterator<Interpretation> iterator;
         try {
             finalQuery.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            iterator = interpretationDBAdaptor.iterator(finalQuery, INCLUDE_INTERPRETATION_IDS, userId);
+            iterator = interpretationDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_INTERPRETATION_IDS, userId);
         } catch (CatalogException e) {
             auditManager.auditUpdate(operationId, userId, Enums.Resource.INTERPRETATION, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -480,7 +480,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         query.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        OpenCGAResult<Interpretation> queryResult = interpretationDBAdaptor.get(query, options, userId);
+        OpenCGAResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), query, options, userId);
 
         List<Interpretation> results = new ArrayList<>(queryResult.getResults().size());
         for (Interpretation interpretation : queryResult.getResults()) {

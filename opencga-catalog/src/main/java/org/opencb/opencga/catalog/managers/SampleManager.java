@@ -103,7 +103,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 //               SampleDBAdaptor.QueryParams.UUID.key(), SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key(),
 //               SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
 //                SampleDBAdaptor.QueryParams.STATUS.key()));
-        OpenCGAResult<Sample> sampleDataResult = sampleDBAdaptor.get(queryCopy, queryOptions, user);
+        OpenCGAResult<Sample> sampleDataResult = sampleDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (sampleDataResult.getNumResults() == 0) {
             sampleDataResult = sampleDBAdaptor.get(queryCopy, queryOptions);
             if (sampleDataResult.getNumResults() == 0) {
@@ -151,7 +151,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        OpenCGAResult<Sample> sampleDataResult = sampleDBAdaptor.get(queryCopy, queryOptions, user);
+        OpenCGAResult<Sample> sampleDataResult = sampleDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
 
         if (ignoreException || sampleDataResult.getNumResults() >= uniqueList.size()) {
             return keepOriginalOrder(uniqueList, sampleStringFunction, sampleDataResult, ignoreException,
@@ -253,7 +253,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        return sampleDBAdaptor.iterator(query, options, userId);
+        return sampleDBAdaptor.iterator(study.getUid(), query, options, userId);
     }
 
     @Override
@@ -278,7 +278,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             AnnotationUtils.fixQueryOptionAnnotation(options);
 
             query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Sample> queryResult = sampleDBAdaptor.get(query, options, userId);
+            OpenCGAResult<Sample> queryResult = sampleDBAdaptor.get(study.getUid(), query, options, userId);
 
             auditManager.auditSearch(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -321,7 +321,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             fixQueryObject(study, query, userId);
 
             query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Long> queryResultAux = sampleDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
+            OpenCGAResult<Long> queryResultAux = sampleDBAdaptor.count(study.getUid(), query, userId,
+                    StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
 
             auditManager.auditCount(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -458,7 +459,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             fixQueryObject(study, finalQuery, userId);
             finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = sampleDBAdaptor.iterator(finalQuery, INCLUDE_SAMPLE_IDS, userId);
+            iterator = sampleDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_SAMPLE_IDS, userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
@@ -675,7 +676,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
             finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = sampleDBAdaptor.iterator(finalQuery, INCLUDE_SAMPLE_IDS, userId);
+            iterator = sampleDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_SAMPLE_IDS, userId);
         } catch (CatalogException e) {
             auditManager.auditUpdate(operationId, userId, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -935,7 +936,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
         }
 
-        OpenCGAResult queryResult = sampleDBAdaptor.groupBy(query, fields, options, userId);
+        OpenCGAResult queryResult = sampleDBAdaptor.groupBy(study.getUid(), query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }
@@ -1237,6 +1238,5 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throw e;
         }
     }
-
 
 }

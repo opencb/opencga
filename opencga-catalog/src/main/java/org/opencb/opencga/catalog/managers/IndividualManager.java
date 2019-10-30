@@ -121,7 +121,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             queryCopy.put(IndividualDBAdaptor.QueryParams.ID.key(), entry);
         }
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
-        OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(queryCopy, queryOptions, user);
+        OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (individualDataResult.getNumResults() == 0) {
             individualDataResult = individualDBAdaptor.get(queryCopy, queryOptions);
             if (individualDataResult.getNumResults() == 0) {
@@ -168,7 +168,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(queryCopy, queryOptions, user);
+        OpenCGAResult<Individual> individualDataResult = individualDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
 
         if (ignoreException || individualDataResult.getNumResults() >= uniqueList.size()) {
             return keepOriginalOrder(uniqueList, individualStringFunction, individualDataResult, ignoreException,
@@ -360,7 +360,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
         query.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        return individualDBAdaptor.iterator(query, options, userId);
+        return individualDBAdaptor.iterator(study.getUid(), query, options, userId);
     }
 
     @Override
@@ -387,7 +387,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
             finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            OpenCGAResult<Individual> queryResult = individualDBAdaptor.get(finalQuery, options, userId);
+            OpenCGAResult<Individual> queryResult = individualDBAdaptor.get(study.getUid(), finalQuery, options, userId);
             auditManager.auditSearch(userId, Enums.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -418,7 +418,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             AnnotationUtils.fixQueryAnnotationSearch(study, finalQuery);
 
             finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Long> queryResultAux = individualDBAdaptor.count(finalQuery, userId,
+            OpenCGAResult<Long> queryResultAux = individualDBAdaptor.count(study.getUid(), finalQuery, userId,
                     StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
 
             auditManager.auditCount(userId, Enums.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
@@ -536,7 +536,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = individualDBAdaptor.iterator(finalQuery, INCLUDE_INDIVIDUAL_IDS, userId);
+            iterator = individualDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_INDIVIDUAL_IDS, userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
@@ -704,7 +704,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
             finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = individualDBAdaptor.iterator(finalQuery, INCLUDE_INDIVIDUAL_IDS, userId);
+            iterator = individualDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_INDIVIDUAL_IDS, userId);
         } catch (CatalogException e) {
             auditManager.auditUpdate(operationId, userId, Enums.Resource.INDIVIDUAL, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -1035,7 +1035,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         // Add study id to the query
         finalQuery.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        OpenCGAResult queryResult = individualDBAdaptor.groupBy(finalQuery, fields, options, userId);
+        OpenCGAResult queryResult = individualDBAdaptor.groupBy(study.getUid(), finalQuery, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }

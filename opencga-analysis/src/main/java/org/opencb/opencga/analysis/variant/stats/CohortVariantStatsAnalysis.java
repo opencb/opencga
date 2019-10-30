@@ -22,9 +22,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
-@Analysis(id = CohortVariantStatsAnalysis.ID, type = Analysis.AnalysisType.VARIANT,
-    steps = {CohortVariantStatsAnalysis.ID, "index"}
-)
+@Analysis(id = CohortVariantStatsAnalysis.ID, type = Analysis.AnalysisType.VARIANT)
 public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
 
     public static final String ID = "cohort-variant-stats";
@@ -151,10 +149,19 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
             throw new AnalysisException("Unable to compute variant stats with cohort of size " + allSamples.size());
         }
 
-        outputFile = outDir.resolve("cohort_stats.json");
+        outputFile = getOutDir().resolve("cohort_stats.json");
 
         checkedSamplesList = new ArrayList<>(allSamples);
         checkedSamplesList.sort(String::compareTo);
+    }
+
+    @Override
+    public List<String> getSteps() {
+        List<String> steps = super.getSteps();
+        if (indexResults) {
+            steps.add("index");
+        }
+        return steps;
     }
 
     @Override
@@ -169,8 +176,8 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
             addFile(outputFile, FileResult.FileType.JSON);
         });
 
-        step("index", () -> {
-            if (indexResults) {
+        if (indexResults) {
+            step("index", () -> {
                 try {
                     VariantSetStats stats = JacksonUtils.getDefaultObjectMapper().readValue(outputFile.toFile(), VariantSetStats.class);
 
@@ -192,10 +199,8 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
                 } catch (IOException | CatalogException e) {
                     throw new AnalysisException(e);
                 }
-            } else {
-                skipStep();
-            }
-        });
+            });
+        }
     }
 }
 

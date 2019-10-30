@@ -37,6 +37,12 @@ public class FileMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
 
     public FileMongoDBIterator(MongoCursor mongoCursor, AnnotableConverter<? extends Annotable> converter,
                                Function<Document, Document> filter, FileDBAdaptor fileMongoDBAdaptor, SampleDBAdaptor sampleMongoDBAdaptor,
+                               QueryOptions options) {
+        this(mongoCursor, converter, filter, fileMongoDBAdaptor, sampleMongoDBAdaptor, 0, null, options);
+    }
+
+    public FileMongoDBIterator(MongoCursor mongoCursor, AnnotableConverter<? extends Annotable> converter,
+                               Function<Document, Document> filter, FileDBAdaptor fileMongoDBAdaptor, SampleDBAdaptor sampleMongoDBAdaptor,
                                long studyUid, String user, QueryOptions options) {
         super(mongoCursor, converter, filter, options);
 
@@ -103,6 +109,10 @@ public class FileMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
         while (mongoCursor.hasNext() && counter < BUFFER_SIZE) {
             Document fileDocument = (Document) mongoCursor.next();
 
+            if (user != null && studyUid <= 0) {
+                studyUid = fileDocument.getLong(PRIVATE_STUDY_UID);
+            }
+
             fileListBuffer.add(fileDocument);
             counter++;
 
@@ -115,7 +125,7 @@ public class FileMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
                 }
             }
 
-            String fileId = String.valueOf(fileDocument.getLong(FileDBAdaptor.QueryParams.UID.key()));
+            String fileUid = String.valueOf(fileDocument.getLong(FileDBAdaptor.QueryParams.UID.key()));
             // Extract all the related files
             Object relatedFiles = fileDocument.get(FileDBAdaptor.QueryParams.RELATED_FILES.key());
             if (relatedFiles != null && !options.getBoolean(NATIVE_QUERY)) {
@@ -124,7 +134,7 @@ public class FileMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
                     for (Document relatedFile : relatedFileList) {
                         long relatedFileUid = ((Document) relatedFile.get("file")).getLong(FileDBAdaptor.QueryParams.UID.key());
                         relatedFileSet.add(relatedFileUid);
-                        relatedFileMap.put(fileId + "-" + relatedFileUid, relatedFile.getString("relation"));
+                        relatedFileMap.put(fileUid + "-" + relatedFileUid, relatedFile.getString("relation"));
                     }
                 }
             }
@@ -132,13 +142,11 @@ public class FileMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
 
         if (!sampleSet.isEmpty()) {
             // Obtain all those samples
-            Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(SampleDBAdaptor.QueryParams.UID.key(), new ArrayList<>(sampleSet));
+            Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), new ArrayList<>(sampleSet));
             List<Document> sampleList;
             try {
                 if (user != null) {
-                    sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions, user).getResults();
+                    sampleList = sampleDBAdaptor.nativeGet(studyUid, query, sampleQueryOptions, user).getResults();
                 } else {
                     sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions).getResults();
                 }
@@ -173,16 +181,14 @@ public class FileMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
 
         if (!relatedFileSet.isEmpty()) {
             // Obtain all those files
-            Query query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(FileDBAdaptor.QueryParams.UID.key(), new ArrayList<>(relatedFileSet));
+            Query query = new Query(FileDBAdaptor.QueryParams.UID.key(), new ArrayList<>(relatedFileSet));
             QueryOptions fileQueryOptions = new QueryOptions(FileManager.INCLUDE_FILE_URI_PATH);
             fileQueryOptions.put(NATIVE_QUERY, true);
 
             List<Document> fileList;
             try {
                 if (user != null) {
-                    fileList = fileDBAdaptor.nativeGet(query, fileQueryOptions, user).getResults();
+                    fileList = fileDBAdaptor.nativeGet(studyUid, query, fileQueryOptions, user).getResults();
                 } else {
                     fileList = fileDBAdaptor.nativeGet(query, fileQueryOptions).getResults();
                 }
@@ -212,7 +218,7 @@ public class FileMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
                             String auxFileId = fileId + "-" + relatedFileUid;
                             String relation = relatedFileMap.get(auxFileId);
                             tmpFileList.add(new Document()
-                                    .append("file", fileMap.get(relatedFileUid))
+                                    .append("file", fileMap.getOrDefault(relatedFileUid, f))
                                     .append("relation", relation));
                         });
                     }

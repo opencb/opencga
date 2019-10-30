@@ -556,7 +556,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
 
     @Override
-    public OpenCGAResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+    public OpenCGAResult<Long> count(long studyUid, Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
             throws CatalogDBException, CatalogAuthorizationException {
         Query finalQuery = new Query(query);
 
@@ -742,12 +742,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult<Sample> get(Query query, QueryOptions options, String user)
+    public OpenCGAResult<Sample> get(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Sample> documentList = new ArrayList<>();
         OpenCGAResult<Sample> queryResult;
-        try (DBIterator<Sample> dbIterator = iterator(query, options, user)) {
+        try (DBIterator<Sample> dbIterator = iterator(studyUid, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
@@ -760,8 +760,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            OpenCGAResult<Long> count = count(query, user, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
-            queryResult.setNumTotalResults(count.first());
+            OpenCGAResult<Long> count = count(studyUid, query, user, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
+            queryResult.setNumMatches(count.first());
         }
         return queryResult;
     }
@@ -822,17 +822,17 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult nativeGet(Query query, QueryOptions options, String user)
+    public OpenCGAResult nativeGet(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        return nativeGet(null, query, options, user);
+        return nativeGet(null, studyUid, query, options, user);
     }
 
-    public OpenCGAResult nativeGet(ClientSession clientSession, Query query, QueryOptions options, String user)
+    public OpenCGAResult nativeGet(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
         OpenCGAResult<Document> queryResult;
-        try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options, user)) {
+        try (DBIterator<Document> dbIterator = nativeIterator(clientSession, studyUid, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
@@ -858,8 +858,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
     DBIterator<Sample> iterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, options);
-        return new SampleMongoDBIterator<>(mongoCursor, clientSession, sampleConverter, null, individualDBAdaptor,
-                query.getLong(PRIVATE_STUDY_UID), null, options);
+        return new SampleMongoDBIterator<>(mongoCursor, clientSession, sampleConverter, null, individualDBAdaptor, options);
     }
 
     @Override
@@ -871,40 +870,38 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
         MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
-        return new SampleMongoDBIterator(mongoCursor, clientSession, null, null, individualDBAdaptor, query.getLong(PRIVATE_STUDY_UID),
-                null, options);
+        return new SampleMongoDBIterator(mongoCursor, clientSession, null, null, individualDBAdaptor, options);
     }
 
     @Override
-    public DBIterator<Sample> iterator(Query query, QueryOptions options, String user)
+    public DBIterator<Sample> iterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        Document studyDocument = getStudyDocument(query);
+        Document studyDocument = getStudyDocument(null, studyUid);
         MongoCursor<Document> mongoCursor = getMongoCursor(null, query, options, studyDocument, user);
         Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
-        return new SampleMongoDBIterator<>(mongoCursor, null, sampleConverter, iteratorFilter, individualDBAdaptor,
-                query.getLong(PRIVATE_STUDY_UID), user, options);
+        return new SampleMongoDBIterator<>(mongoCursor, null, sampleConverter, iteratorFilter, individualDBAdaptor, studyUid, user,
+                options);
     }
 
     @Override
-    public DBIterator nativeIterator(Query query, QueryOptions options, String user)
+    public DBIterator nativeIterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        return nativeIterator(null, query, options, user);
+        return nativeIterator(null, studyUid, query, options, user);
     }
 
-    DBIterator nativeIterator(ClientSession clientSession, Query query, QueryOptions options, String user)
+    DBIterator nativeIterator(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        Document studyDocument = getStudyDocument(clientSession, query);
+        Document studyDocument = getStudyDocument(clientSession, studyUid);
         MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, studyDocument, user);
         Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
-        return new SampleMongoDBIterator<>(mongoCursor, clientSession, null, iteratorFilter, individualDBAdaptor,
-                query.getLong(PRIVATE_STUDY_UID), user, options);
+        return new SampleMongoDBIterator<>(mongoCursor, clientSession, null, iteratorFilter, individualDBAdaptor, studyUid, user, options);
     }
 
     private MongoCursor<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
@@ -944,7 +941,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 individualDataResult = individualDBAdaptor.get(clientSession, getIndividualQueryFields(finalQuery),
                         new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key()));
             } else {
-                individualDataResult = individualDBAdaptor.get(clientSession, getIndividualQueryFields(finalQuery),
+                individualDataResult = individualDBAdaptor.get(clientSession, studyDocument.getLong(PRIVATE_UID),
+                        getIndividualQueryFields(finalQuery),
                         new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key()), user);
             }
             finalQuery = getSampleQueryFields(finalQuery);
@@ -1006,16 +1004,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return retQuery;
     }
 
-    private Document getStudyDocument(Query query) throws CatalogDBException {
-        // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
-        OpenCGAResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
-        if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
-        }
-        return queryResult.first();
-    }
-
     @Override
     public OpenCGAResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
@@ -1035,9 +1023,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult groupBy(Query query, String field, QueryOptions options, String user)
+    public OpenCGAResult groupBy(long studyUid, Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        Document studyDocument = getStudyDocument(query);
+        Document studyDocument = getStudyDocument(null, studyUid);
         Document queryForAuthorisedEntries;
         if (containsAnnotationQuery(query)) {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
@@ -1053,9 +1041,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    public OpenCGAResult groupBy(long studyUid, Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        Document studyDocument = getStudyDocument(query);
+        Document studyDocument = getStudyDocument(null, studyUid);
         Document queryForAuthorisedEntries;
         if (containsAnnotationQuery(query)) {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,

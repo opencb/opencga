@@ -124,7 +124,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public OpenCGAResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+    public OpenCGAResult<Long> count(long studyUid, Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
             throws CatalogDBException {
         return count(query);
     }
@@ -163,7 +163,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public OpenCGAResult<Interpretation> get(Query query, QueryOptions options, String user)
+    public OpenCGAResult<Interpretation> get(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return get(query, options);
     }
@@ -193,7 +193,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public OpenCGAResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException {
+    public OpenCGAResult nativeGet(long studyUid, Query query, QueryOptions options, String user) throws CatalogDBException {
         return nativeGet(query, options);
     }
 
@@ -380,13 +380,13 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public DBIterator<Interpretation> iterator(Query query, QueryOptions options, String user)
+    public DBIterator<Interpretation> iterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException {
         return iterator(query, options);
     }
 
     @Override
-    public DBIterator nativeIterator(Query query, QueryOptions options, String user)
+    public DBIterator nativeIterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException {
         return nativeIterator(query, options);
     }
@@ -421,13 +421,13 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public OpenCGAResult groupBy(Query query, String field, QueryOptions options, String user)
+    public OpenCGAResult groupBy(long studyUid, Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }
 
     @Override
-    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    public OpenCGAResult groupBy(long studyUid, Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }

@@ -110,7 +110,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 //               FamilyDBAdaptor.QueryParams.UUID.key(), FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key(),
 //               FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(), FamilyDBAdaptor.QueryParams.VERSION.key(),
 //                FamilyDBAdaptor.QueryParams.STATUS.key()));
-        OpenCGAResult<Family> familyDataResult = familyDBAdaptor.get(queryCopy, options, user);
+        OpenCGAResult<Family> familyDataResult = familyDBAdaptor.get(studyUid, queryCopy, options, user);
         if (familyDataResult.getNumResults() == 0) {
             familyDataResult = familyDBAdaptor.get(queryCopy, options);
             if (familyDataResult.getNumResults() == 0) {
@@ -157,7 +157,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        OpenCGAResult<Family> familyDataResult = familyDBAdaptor.get(queryCopy, queryOptions, user);
+        OpenCGAResult<Family> familyDataResult = familyDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
 
         if (ignoreException || familyDataResult.getNumResults() >= uniqueList.size()) {
             return keepOriginalOrder(uniqueList, familyStringFunction, familyDataResult, ignoreException,
@@ -276,7 +276,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            OpenCGAResult<Family> queryResult = familyDBAdaptor.get(finalQuery, options, userId);
+            OpenCGAResult<Family> queryResult = familyDBAdaptor.get(study.getUid(), finalQuery, options, userId);
             auditManager.auditSearch(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -352,7 +352,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             fixQueryObject(study, finalQuery, token);
 
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Long> queryResultAux = familyDBAdaptor.count(finalQuery, userId, StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
+            OpenCGAResult<Long> queryResultAux = familyDBAdaptor.count(study.getUid(), finalQuery, userId,
+                    StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
 
             auditManager.auditCount(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -471,7 +472,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             fixQueryObject(study, finalQuery, token);
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = familyDBAdaptor.iterator(finalQuery, INCLUDE_FAMILY_IDS, userId);
+            iterator = familyDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_FAMILY_IDS, userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
@@ -542,7 +543,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // Add study id to the query
         finalQuery.put(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        OpenCGAResult queryResult = familyDBAdaptor.groupBy(finalQuery, fields, options, userId);
+        OpenCGAResult queryResult = familyDBAdaptor.groupBy(study.getUid(), finalQuery, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }
@@ -648,7 +649,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = familyDBAdaptor.iterator(finalQuery, INCLUDE_FAMILY_IDS, userId);
+            iterator = familyDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_FAMILY_IDS, userId);
         } catch (CatalogException e) {
             auditManager.auditUpdate(operationId, userId, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

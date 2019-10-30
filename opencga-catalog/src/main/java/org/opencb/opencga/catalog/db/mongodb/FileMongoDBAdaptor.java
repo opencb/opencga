@@ -620,7 +620,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public OpenCGAResult<Long> count(final Query query, final String user, final StudyAclEntry.StudyPermissions studyPermissions)
+    public OpenCGAResult<Long> count(long studyUid, final Query query, final String user,
+                                     final StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
         filterOutDeleted(query);
 
@@ -628,10 +629,10 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 ? StudyAclEntry.StudyPermissions.VIEW_FILES : studyPermissions);
 
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), studyUid);
         OpenCGAResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
+            throw new CatalogDBException("Study " + studyUid + " not found");
         }
 
         // Get the document query needed to check the permissions as well
@@ -687,12 +688,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public OpenCGAResult<File> get(Query query, QueryOptions options, String user)
+    public OpenCGAResult<File> get(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<File> documentList = new ArrayList<>();
         OpenCGAResult<File> queryResult;
-        try (DBIterator<File> dbIterator = iterator(query, options, user)) {
+        try (DBIterator<File> dbIterator = iterator(studyUid, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
@@ -705,8 +706,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            OpenCGAResult<Long> count = count(query, user, StudyAclEntry.StudyPermissions.VIEW_FILES);
-            queryResult.setNumTotalResults(count.first());
+            OpenCGAResult<Long> count = count(studyUid, query, user, StudyAclEntry.StudyPermissions.VIEW_FILES);
+            queryResult.setNumMatches(count.first());
         }
         return queryResult;
     }
@@ -736,12 +737,12 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public OpenCGAResult nativeGet(Query query, QueryOptions options, String user)
+    public OpenCGAResult nativeGet(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
         OpenCGAResult<Document> queryResult;
-        try (DBIterator<Document> dbIterator = nativeIterator(query, options, user)) {
+        try (DBIterator<Document> dbIterator = nativeIterator(studyUid, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
@@ -763,8 +764,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     @Override
     public DBIterator<File> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new FileMongoDBIterator<>(mongoCursor, fileConverter, null, this,
-                dbAdaptorFactory.getCatalogSampleDBAdaptor(), query.getLong(PRIVATE_STUDY_UID), null, options);
+        return new FileMongoDBIterator<>(mongoCursor, fileConverter, null, this, dbAdaptorFactory.getCatalogSampleDBAdaptor(), options);
     }
 
     @Override
@@ -773,14 +773,13 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new FileMongoDBIterator<>(mongoCursor, null, null, this,
-                dbAdaptorFactory.getCatalogSampleDBAdaptor(), query.getLong(PRIVATE_STUDY_UID), null, queryOptions);
+        return new FileMongoDBIterator<>(mongoCursor, null, null, this, dbAdaptorFactory.getCatalogSampleDBAdaptor(), queryOptions);
     }
 
     @Override
-    public DBIterator<File> iterator(Query query, QueryOptions options, String user)
+    public DBIterator<File> iterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        Document studyDocument = getStudyDocument(query);
+        Document studyDocument = getStudyDocument(null, studyUid);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
 
         Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
@@ -788,16 +787,16 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
 
         return new FileMongoDBIterator<>(mongoCursor, fileConverter, iteratorFilter, this,
-                dbAdaptorFactory.getCatalogSampleDBAdaptor(), query.getLong(PRIVATE_STUDY_UID), user, options);
+                dbAdaptorFactory.getCatalogSampleDBAdaptor(), studyUid, user, options);
     }
 
     @Override
-    public DBIterator nativeIterator(Query query, QueryOptions options, String user)
+    public DBIterator nativeIterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        Document studyDocument = getStudyDocument(query);
+        Document studyDocument = getStudyDocument(null, studyUid);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, studyDocument, user);
 
         Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
@@ -805,7 +804,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
 
         return new FileMongoDBIterator<>(mongoCursor, null, iteratorFilter, this,
-                dbAdaptorFactory.getCatalogSampleDBAdaptor(), query.getLong(PRIVATE_STUDY_UID), user, options);
+                dbAdaptorFactory.getCatalogSampleDBAdaptor(), studyUid, user, options);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
@@ -854,16 +853,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         }
     }
 
-    private Document getStudyDocument(Query query) throws CatalogDBException {
-        // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
-        OpenCGAResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
-        if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
-        }
-        return queryResult.first();
-    }
-
     @Override
     public OpenCGAResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
         filterOutDeleted(query);
@@ -886,9 +875,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    public OpenCGAResult groupBy(long studyUid, Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        Document studyDocument = getStudyDocument(query);
+        Document studyDocument = getStudyDocument(null, studyUid);
         Document queryForAuthorisedEntries;
         if (containsAnnotationQuery(query)) {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
@@ -904,9 +893,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     }
 
     @Override
-    public OpenCGAResult groupBy(Query query, String field, QueryOptions options, String user)
+    public OpenCGAResult groupBy(long studyUid, Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        Document studyDocument = getStudyDocument(query);
+        Document studyDocument = getStudyDocument(null, studyUid);
         Document queryForAuthorisedEntries;
         if (containsAnnotationQuery(query)) {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,

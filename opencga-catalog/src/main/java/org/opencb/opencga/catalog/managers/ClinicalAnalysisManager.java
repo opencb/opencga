@@ -101,7 +101,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 //                ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(),
 //                ClinicalAnalysisDBAdaptor.QueryParams.RELEASE.key(), ClinicalAnalysisDBAdaptor.QueryParams.ID.key(),
 //                ClinicalAnalysisDBAdaptor.QueryParams.STATUS.key()));
-        OpenCGAResult<ClinicalAnalysis> analysisDataResult = clinicalDBAdaptor.get(queryCopy, queryOptions, user);
+        OpenCGAResult<ClinicalAnalysis> analysisDataResult = clinicalDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (analysisDataResult.getNumResults() == 0) {
             analysisDataResult = clinicalDBAdaptor.get(queryCopy, queryOptions);
             if (analysisDataResult.getNumResults() == 0) {
@@ -151,7 +151,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        OpenCGAResult<ClinicalAnalysis> analysisDataResult = clinicalDBAdaptor.get(queryCopy, queryOptions, user);
+        OpenCGAResult<ClinicalAnalysis> analysisDataResult = clinicalDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
 
         if (ignoreException || analysisDataResult.getNumResults() == uniqueList.size()) {
             return keepOriginalOrder(uniqueList, clinicalStringFunction, analysisDataResult, ignoreException, false);
@@ -179,7 +179,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        return clinicalDBAdaptor.iterator(query, options, userId);
+        return clinicalDBAdaptor.iterator(study.getUid(), query, options, userId);
     }
 
     @Override
@@ -467,8 +467,8 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                         .append(IndividualDBAdaptor.QueryParams.UID.key(), finalFamily.getMembers().stream()
                                 .map(Individual::getUid).collect(Collectors.toList()))
                         .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-                OpenCGAResult<Individual> individuals =
-                        individualDBAdaptor.get(query, QueryOptions.empty(), catalogManager.getUserManager().getUserId(sessionId));
+                OpenCGAResult<Individual> individuals = individualDBAdaptor.get(study.getUid(), query, QueryOptions.empty(),
+                        catalogManager.getUserManager().getUserId(sessionId));
                 finalFamily.setMembers(individuals.getResults());
             }
         }
@@ -559,7 +559,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         try {
             fixQueryObject(study, query, userId);
             query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            iterator = clinicalDBAdaptor.iterator(query, INCLUDE_CLINICAL_IDS, userId);
+            iterator = clinicalDBAdaptor.iterator(study.getUid(), query, INCLUDE_CLINICAL_IDS, userId);
         } catch (CatalogException e) {
             auditManager.auditUpdate(operationId, userId, Enums.Resource.CLINICAL_ANALYSIS, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -846,8 +846,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         fixQueryObject(study, query, userId);
         query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        OpenCGAResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(query, options, userId);
-
+        OpenCGAResult<ClinicalAnalysis> queryResult = clinicalDBAdaptor.get(study.getUid(), query, options, userId);
         return queryResult;
     }
 
@@ -889,7 +888,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             fixQueryObject(study, query, userId);
 
             query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Long> queryResultAux = clinicalDBAdaptor.count(query, userId,
+            OpenCGAResult<Long> queryResultAux = clinicalDBAdaptor.count(study.getUid(), query, userId,
                     StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS);
 
             auditManager.auditCount(userId, Enums.Resource.CLINICAL_ANALYSIS, study.getId(), study.getUuid(), auditParams,
@@ -937,8 +936,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         // Add study id to the query
         query.put(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        OpenCGAResult queryResult = clinicalDBAdaptor.groupBy(query, fields, options, userId);
-
+        OpenCGAResult queryResult = clinicalDBAdaptor.groupBy(study.getUid(), query, fields, options, userId);
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }
 
