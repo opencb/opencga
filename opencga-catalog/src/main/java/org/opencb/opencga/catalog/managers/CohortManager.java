@@ -100,7 +100,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
 
-        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(queryCopy, queryOptions, user);
+        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (cohortQueryResult.getNumResults() == 0) {
             cohortQueryResult = cohortDBAdaptor.get(queryCopy, queryOptions);
             if (cohortQueryResult.getNumResults() == 0) {
@@ -147,7 +147,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(queryCopy, queryOptions, user);
+        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
 
         if (silent || cohortQueryResult.getNumResults() == uniqueList.size()) {
             return keepOriginalOrder(uniqueList, cohortStringFunction, cohortQueryResult, silent, false);
@@ -236,7 +236,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         query.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, options, userId);
+        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(study.getUid(), query, options, userId);
 
         if (cohortQueryResult.getNumResults() == 0 && query.containsKey(CohortDBAdaptor.QueryParams.UID.key())) {
             List<Long> idList = query.getAsLongList(CohortDBAdaptor.QueryParams.UID.key());
@@ -287,7 +287,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         fixQueryObject(study, query, userId);
 
         Query myQuery = new Query(query).append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        return cohortDBAdaptor.iterator(myQuery, options, userId);
+        return cohortDBAdaptor.iterator(study.getUid(), myQuery, options, userId);
     }
 
     @Override
@@ -305,7 +305,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         fixQueryObject(study, query, userId);
 
         query.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        QueryResult<Cohort> queryResult = cohortDBAdaptor.get(query, options, userId);
+        QueryResult<Cohort> queryResult = cohortDBAdaptor.get(study.getUid(), query, options, userId);
 //        authorizationManager.filterCohorts(userId, studyId, queryResultAux.getResult());
 
         return queryResult;
@@ -345,7 +345,8 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         fixQueryObject(study, query, userId);
 
         query.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        QueryResult<Long> queryResultAux = cohortDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
+        QueryResult<Long> queryResultAux = cohortDBAdaptor.count(study.getUid(), query, userId,
+                StudyAclEntry.StudyPermissions.VIEW_COHORTS);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
     }
@@ -374,7 +375,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             fixQueryObject(study, finalQuery, userId);
             finalQuery.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = cohortDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
+            iterator = cohortDBAdaptor.iterator(study.getUid(), finalQuery, QueryOptions.empty(), userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
@@ -621,7 +622,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         // Add study id to the query
         query.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        QueryResult queryResult = cohortDBAdaptor.groupBy(query, fields, options, userId);
+        QueryResult queryResult = cohortDBAdaptor.groupBy(study.getUid(), query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }

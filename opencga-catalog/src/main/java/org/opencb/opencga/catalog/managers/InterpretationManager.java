@@ -75,7 +75,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 //                InterpretationDBAdaptor.QueryParams.UUID.key(), InterpretationDBAdaptor.QueryParams.CLINICAL_ANALYSIS.key(),
 //                InterpretationDBAdaptor.QueryParams.UID.key(), InterpretationDBAdaptor.QueryParams.STUDY_UID.key(),
 //                InterpretationDBAdaptor.QueryParams.ID.key(), InterpretationDBAdaptor.QueryParams.STATUS.key()));
-        QueryResult<Interpretation> interpretationQueryResult = interpretationDBAdaptor.get(queryCopy, queryOptions, user);
+        QueryResult<Interpretation> interpretationQueryResult = interpretationDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (interpretationQueryResult.getNumResults() == 0) {
             interpretationQueryResult = interpretationDBAdaptor.get(queryCopy, queryOptions);
             if (interpretationQueryResult.getNumResults() == 0) {
@@ -133,7 +133,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<Interpretation> interpretationQueryResult = interpretationDBAdaptor.get(queryCopy, queryOptions, user);
+        QueryResult<Interpretation> interpretationQueryResult = interpretationDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
 
         if (interpretationQueryResult.getNumResults() != uniqueList.size() && !silent) {
             throw CatalogException.notFound("interpretations",
@@ -291,7 +291,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         query.append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        QueryResult<Interpretation> queryResult = interpretationDBAdaptor.get(query, options, userId);
+        QueryResult<Interpretation> queryResult = interpretationDBAdaptor.get(study.getUid(), query, options, userId);
 
         List<Interpretation> results = new ArrayList<>(queryResult.getResult().size());
         for (Interpretation interpretation : queryResult.getResult()) {

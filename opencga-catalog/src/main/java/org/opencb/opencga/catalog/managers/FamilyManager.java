@@ -111,7 +111,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 //               FamilyDBAdaptor.QueryParams.UUID.key(), FamilyDBAdaptor.QueryParams.UID.key(), FamilyDBAdaptor.QueryParams.STUDY_UID.key(),
 //               FamilyDBAdaptor.QueryParams.ID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(), FamilyDBAdaptor.QueryParams.VERSION.key(),
 //                FamilyDBAdaptor.QueryParams.STATUS.key()));
-        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(queryCopy, options, user);
+        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(studyUid, queryCopy, options, user);
         if (familyQueryResult.getNumResults() == 0) {
             familyQueryResult = familyDBAdaptor.get(queryCopy, options);
             if (familyQueryResult.getNumResults() == 0) {
@@ -158,7 +158,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(queryCopy, queryOptions, user);
+        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
 
         if (silent || familyQueryResult.getNumResults() >= uniqueList.size()) {
             return keepOriginalOrder(uniqueList, familyStringFunction, familyQueryResult, silent,
@@ -245,7 +245,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         query.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(query, options, userId);
+        QueryResult<Family> familyQueryResult = familyDBAdaptor.get(study.getUid(), query, options, userId);
 
         if (familyQueryResult.getNumResults() == 0 && query.containsKey(FamilyDBAdaptor.QueryParams.UID.key())) {
             List<Long> idList = query.getAsLongList(FamilyDBAdaptor.QueryParams.UID.key());
@@ -275,7 +275,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        QueryResult<Family> queryResult = familyDBAdaptor.get(finalQuery, options, userId);
+        QueryResult<Family> queryResult = familyDBAdaptor.get(study.getUid(), finalQuery, options, userId);
 //        addMemberInformation(queryResult, study.getUid(), sessionId);
 
         return queryResult;
@@ -341,7 +341,8 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         fixQueryObject(study, finalQuery, sessionId);
 
         finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        QueryResult<Long> queryResultAux = familyDBAdaptor.count(finalQuery, userId, StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
+        QueryResult<Long> queryResultAux = familyDBAdaptor.count(study.getUid(), finalQuery, userId,
+                StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
     }
@@ -371,7 +372,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             fixQueryObject(study, finalQuery, sessionId);
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = familyDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
+            iterator = familyDBAdaptor.iterator(study.getUid(), finalQuery, QueryOptions.empty(), userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
@@ -462,7 +463,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // Add study id to the query
         finalQuery.put(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        QueryResult queryResult = familyDBAdaptor.groupBy(finalQuery, fields, options, userId);
+        QueryResult queryResult = familyDBAdaptor.groupBy(study.getUid(), finalQuery, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }

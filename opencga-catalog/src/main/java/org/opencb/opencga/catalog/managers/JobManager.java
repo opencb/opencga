@@ -99,7 +99,7 @@ public class JobManager extends ResourceManager<Job> {
 //        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
 //                JobDBAdaptor.QueryParams.UUID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.STUDY_UID.key(),
 //                JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.STATUS.key()));
-        QueryResult<Job> jobQueryResult = jobDBAdaptor.get(queryCopy, options, user);
+        QueryResult<Job> jobQueryResult = jobDBAdaptor.get(studyUid, queryCopy, options, user);
         if (jobQueryResult.getNumResults() == 0) {
             jobQueryResult = jobDBAdaptor.get(queryCopy, options);
             if (jobQueryResult.getNumResults() == 0) {
@@ -146,7 +146,7 @@ public class JobManager extends ResourceManager<Job> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<Job> jobQueryResult = jobDBAdaptor.get(queryCopy, options, user);
+        QueryResult<Job> jobQueryResult = jobDBAdaptor.get(studyUid, queryCopy, options, user);
         if (silent || jobQueryResult.getNumResults() == uniqueList.size()) {
             return keepOriginalOrder(uniqueList, jobStringFunction, jobQueryResult, silent, false);
         }
@@ -307,7 +307,7 @@ public class JobManager extends ResourceManager<Job> {
 
         fixQueryObject(study, query, userId);
 
-        QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, options, userId);
+        QueryResult<Job> jobQueryResult = jobDBAdaptor.get(study.getUid(), query, options, userId);
 
         if (jobQueryResult.getNumResults() == 0 && query.containsKey(JobDBAdaptor.QueryParams.UID.key())) {
             List<Long> idList = query.getAsLongList(JobDBAdaptor.QueryParams.UID.key());
@@ -361,7 +361,7 @@ public class JobManager extends ResourceManager<Job> {
 
         fixQueryObject(study, query, userId);
 
-        return jobDBAdaptor.iterator(query, options, userId);
+        return jobDBAdaptor.iterator(study.getUid(), query, options, userId);
     }
 
     @Override
@@ -374,7 +374,7 @@ public class JobManager extends ResourceManager<Job> {
         fixQueryObject(study, query, userId);
 
         query.append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        QueryResult<Long> queryResultAux = jobDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
+        QueryResult<Long> queryResultAux = jobDBAdaptor.count(study.getUid(), query, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
     }
@@ -401,7 +401,7 @@ public class JobManager extends ResourceManager<Job> {
             fixQueryObject(study, query, userId);
             finalQuery.append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = jobDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
+            iterator = jobDBAdaptor.iterator(study.getUid(), finalQuery, QueryOptions.empty(), userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
@@ -560,7 +560,7 @@ public class JobManager extends ResourceManager<Job> {
         // Add study id to the query
         query.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        QueryResult queryResult = jobDBAdaptor.groupBy(query, fields, options, userId);
+        QueryResult queryResult = jobDBAdaptor.groupBy(study.getUid(), query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }

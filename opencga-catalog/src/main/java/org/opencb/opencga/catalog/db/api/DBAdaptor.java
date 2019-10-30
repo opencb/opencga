@@ -51,7 +51,7 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     QueryResult<Long> count(Query query) throws CatalogDBException;
 
-    QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+    QueryResult<Long> count(long studyUid, Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
             throws CatalogDBException, CatalogAuthorizationException;
 
     default QueryResult distinct(String field) throws CatalogDBException {
@@ -70,7 +70,8 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     QueryResult<T> get(Query query, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<T> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
+    QueryResult<T> get(long studyUid, Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException;
 
     default List<QueryResult<T>> get(List<Query> queries, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(queries);
@@ -83,7 +84,8 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException;
 
-    QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
+    QueryResult nativeGet(long studyUid, Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException;
 
     default List<QueryResult> nativeGet(List<Query> queries, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(queries);
@@ -146,13 +148,11 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException;
 
-    DBIterator<T> iterator(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
+    DBIterator<T> iterator(long studyUid, Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException;
 
-    default DBIterator nativeIterator(String user) throws CatalogDBException, CatalogAuthorizationException {
-        return nativeIterator(new Query(), new QueryOptions(), user);
-    }
-
-    DBIterator nativeIterator(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
+    DBIterator nativeIterator(long studyUid, Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException;
 
 //    QueryResult<T> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
 
@@ -162,10 +162,10 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException;
 
-    QueryResult groupBy(Query query, String field, QueryOptions options, String user)
+    QueryResult groupBy(long studyUid, Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException;
 
-    QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    QueryResult groupBy(long studyUid, Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException;
 
 

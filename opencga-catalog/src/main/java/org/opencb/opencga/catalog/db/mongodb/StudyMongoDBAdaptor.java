@@ -54,6 +54,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.api.DBAdaptor.FORCE;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.checkCanViewStudy;
 import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBUtils.checkStudyPermission;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
@@ -1097,7 +1098,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 study.setFiles(dbAdaptorFactory.getCatalogFileDBAdaptor().getAllInStudy(studyId, options).getResult());
             } else {
                 Query query = new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-                study.setFiles(dbAdaptorFactory.getCatalogFileDBAdaptor().get(query, options, user).getResult());
+                study.setFiles(dbAdaptorFactory.getCatalogFileDBAdaptor().get(studyId, query, options, user).getResult());
             }
         }
         if (options.getBoolean("includeJobs")) {
@@ -1105,7 +1106,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 study.setJobs(dbAdaptorFactory.getCatalogJobDBAdaptor().getAllInStudy(studyId, options).getResult());
             } else {
                 Query query = new Query(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-                study.setJobs(dbAdaptorFactory.getCatalogJobDBAdaptor().get(query, options, user).getResult());
+                study.setJobs(dbAdaptorFactory.getCatalogJobDBAdaptor().get(studyId, query, options, user).getResult());
             }
         }
         if (options.getBoolean("includeSamples")) {
@@ -1113,7 +1114,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllInStudy(studyId, options).getResult());
             } else {
                 Query query = new Query(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-                study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options, user).getResult());
+                study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().get(studyId, query, options, user).getResult());
             }
         }
         if (options.getBoolean("includeIndividuals")) {
@@ -1121,7 +1122,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             if (StringUtils.isEmpty(user)) {
                 study.setIndividuals(dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(query, options).getResult());
             } else {
-                study.setIndividuals(dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(query, options, user).getResult());
+                study.setIndividuals(dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(studyId, query, options, user).getResult());
             }
         }
     }

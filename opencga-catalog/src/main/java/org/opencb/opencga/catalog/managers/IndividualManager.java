@@ -125,7 +125,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 //                IndividualDBAdaptor.QueryParams.STATUS.key(), IndividualDBAdaptor.QueryParams.FATHER.key(),
 //                IndividualDBAdaptor.QueryParams.MOTHER.key(), IndividualDBAdaptor.QueryParams.MULTIPLES.key(),
 //                IndividualDBAdaptor.QueryParams.SEX.key()));
-        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(queryCopy, queryOptions, user);
+        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (individualQueryResult.getNumResults() == 0) {
             individualQueryResult = individualDBAdaptor.get(queryCopy, queryOptions);
             if (individualQueryResult.getNumResults() == 0) {
@@ -172,7 +172,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(queryCopy, queryOptions, user);
+        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
 
         if (silent || individualQueryResult.getNumResults() >= uniqueList.size()) {
             return keepOriginalOrder(uniqueList, individualStringFunction, individualQueryResult, silent,
@@ -360,7 +360,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         query.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options, userId);
+        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(study.getUid(), query, options, userId);
 
         if (individualQueryResult.getNumResults() == 0 && query.containsKey(IndividualDBAdaptor.QueryParams.UID.key())) {
             List<Long> idList = query.getAsLongList(IndividualDBAdaptor.QueryParams.UID.key());
@@ -386,7 +386,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
         query.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        return individualDBAdaptor.iterator(query, options, userId);
+        return individualDBAdaptor.iterator(study.getUid(), query, options, userId);
     }
 
     @Override
@@ -412,7 +412,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
         finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        QueryResult<Individual> queryResult = individualDBAdaptor.get(finalQuery, options, userId);
+        QueryResult<Individual> queryResult = individualDBAdaptor.get(study.getUid(), finalQuery, options, userId);
 //        authorizationManager.filterIndividuals(userId, studyId, queryResultAux.getResult());
 
         return queryResult;
@@ -439,7 +439,8 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
 
         finalQuery.append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        QueryResult<Long> queryResultAux = individualDBAdaptor.count(finalQuery, userId, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
+        QueryResult<Long> queryResultAux = individualDBAdaptor.count(study.getUid(), finalQuery, userId,
+                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
     }
@@ -471,7 +472,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = individualDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
+            iterator = individualDBAdaptor.iterator(study.getUid(), finalQuery, QueryOptions.empty(), userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
@@ -861,7 +862,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         // Add study id to the query
         finalQuery.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        QueryResult queryResult = individualDBAdaptor.groupBy(finalQuery, fields, options, userId);
+        QueryResult queryResult = individualDBAdaptor.groupBy(study.getUid(), finalQuery, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }

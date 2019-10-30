@@ -89,7 +89,7 @@ public class PanelManager extends ResourceManager<Panel> {
         } else {
             queryCopy.put(PanelDBAdaptor.QueryParams.ID.key(), entry);
         }
-        QueryResult<Panel> panelQueryResult = panelDBAdaptor.get(queryCopy, queryOptions, user);
+        QueryResult<Panel> panelQueryResult = panelDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (panelQueryResult.getNumResults() == 0) {
             panelQueryResult = panelDBAdaptor.get(queryCopy, queryOptions);
             if (panelQueryResult.getNumResults() == 0) {
@@ -136,7 +136,7 @@ public class PanelManager extends ResourceManager<Panel> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<Panel> panelQueryResult = panelDBAdaptor.get(queryCopy, queryOptions, user);
+        QueryResult<Panel> panelQueryResult = panelDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (silent || panelQueryResult.getNumResults() >= uniqueList.size()) {
             return keepOriginalOrder(uniqueList, panelStringFunction, panelQueryResult, silent,
                     queryCopy.getBoolean(Constants.ALL_VERSIONS));
@@ -617,7 +617,7 @@ public class PanelManager extends ResourceManager<Panel> {
         } else {
             Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
             query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            return panelDBAdaptor.iterator(query, options, userId);
+            return panelDBAdaptor.iterator(study.getUid(), query, options, userId);
         }
     }
 
@@ -637,7 +637,7 @@ public class PanelManager extends ResourceManager<Panel> {
             query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
             // Here permissions will be checked
-            return panelDBAdaptor.get(query, options, userId);
+            return panelDBAdaptor.get(studyUid, query, options, userId);
         }
     }
 
@@ -657,7 +657,7 @@ public class PanelManager extends ResourceManager<Panel> {
             query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
             // Here view permissions will be checked
-            queryResultAux = panelDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_PANELS);
+            queryResultAux = panelDBAdaptor.count(studyUid, query, userId, StudyAclEntry.StudyPermissions.VIEW_PANELS);
         }
 
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
@@ -685,7 +685,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = panelDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
+            iterator = panelDBAdaptor.iterator(study.getUid(), finalQuery, QueryOptions.empty(), userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
@@ -787,7 +787,7 @@ public class PanelManager extends ResourceManager<Panel> {
         // Add study id to the query
         query.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        QueryResult queryResult = sampleDBAdaptor.groupBy(query, fields, options, userId);
+        QueryResult queryResult = sampleDBAdaptor.groupBy(study.getUid(), query, fields, options, userId);
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 

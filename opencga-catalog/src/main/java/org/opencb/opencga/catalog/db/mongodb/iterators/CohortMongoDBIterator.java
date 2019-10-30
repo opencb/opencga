@@ -34,6 +34,11 @@ public class CohortMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
     private static final int BUFFER_SIZE = 100;
 
     public CohortMongoDBIterator(MongoCursor mongoCursor, AnnotableConverter<? extends Annotable> converter,
+                                 Function<Document, Document> filter, SampleDBAdaptor sampleMongoDBAdaptor, QueryOptions options) {
+        this(mongoCursor, converter, filter, sampleMongoDBAdaptor, 0, null, options);
+    }
+
+    public CohortMongoDBIterator(MongoCursor mongoCursor, AnnotableConverter<? extends Annotable> converter,
                                      Function<Document, Document> filter, SampleDBAdaptor sampleMongoDBAdaptor,
                                  long studyUid, String user, QueryOptions options) {
         super(mongoCursor, converter, filter, options);
@@ -97,6 +102,10 @@ public class CohortMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
         while (mongoCursor.hasNext() && counter < BUFFER_SIZE) {
             Document cohortDocument = (Document) mongoCursor.next();
 
+            if (user != null && studyUid <= 0) {
+                studyUid = cohortDocument.getLong(PRIVATE_STUDY_UID);
+            }
+
             cohortListBuffer.add(cohortDocument);
             counter++;
 
@@ -112,13 +121,11 @@ public class CohortMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
 
         if (!sampleSet.isEmpty()) {
             // Obtain all those samples
-            Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(SampleDBAdaptor.QueryParams.UID.key(), new ArrayList<>(sampleSet));
+            Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), new ArrayList<>(sampleSet));
             List<Document> sampleList;
             try {
                 if (user != null) {
-                    sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions, user).getResult();
+                    sampleList = sampleDBAdaptor.nativeGet(studyUid, query, sampleQueryOptions, user).getResult();
                 } else {
                     sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions).getResult();
                 }

@@ -106,7 +106,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 //               SampleDBAdaptor.QueryParams.UUID.key(), SampleDBAdaptor.QueryParams.UID.key(), SampleDBAdaptor.QueryParams.STUDY_UID.key(),
 //               SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
 //                SampleDBAdaptor.QueryParams.STATUS.key()));
-        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(queryCopy, queryOptions, user);
+        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (sampleQueryResult.getNumResults() == 0) {
             sampleQueryResult = sampleDBAdaptor.get(queryCopy, queryOptions);
             if (sampleQueryResult.getNumResults() == 0) {
@@ -154,7 +154,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(queryCopy, queryOptions, user);
+        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
 
         if (silent || sampleQueryResult.getNumResults() >= uniqueList.size()) {
             return keepOriginalOrder(uniqueList, sampleStringFunction, sampleQueryResult, silent,
@@ -300,7 +300,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
         query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, options, userId);
+        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(study.getUid(), query, options, userId);
 
         if (sampleQueryResult.getNumResults() == 0 && query.containsKey(SampleDBAdaptor.QueryParams.UID.key())) {
             List<Long> sampleIds = query.getAsLongList(SampleDBAdaptor.QueryParams.UID.key());
@@ -321,7 +321,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        return sampleDBAdaptor.iterator(query, options, userId);
+        return sampleDBAdaptor.iterator(study.getUid(), query, options, userId);
     }
 
     @Override
@@ -340,7 +340,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         fixQueryObject(study, query, userId);
 
         query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        QueryResult<Sample> queryResult = sampleDBAdaptor.get(query, options, userId);
+        QueryResult<Sample> queryResult = sampleDBAdaptor.get(study.getUid(), query, options, userId);
         return queryResult;
     }
 
@@ -369,7 +369,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         fixQueryObject(study, query, userId);
 
         query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        QueryResult<Long> queryResultAux = sampleDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
+        QueryResult<Long> queryResultAux = sampleDBAdaptor.count(study.getUid(), query, userId,
+                StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
     }
@@ -412,7 +413,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             fixQueryObject(study, finalQuery, userId);
             finalQuery.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = sampleDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
+            iterator = sampleDBAdaptor.iterator(study.getUid(), finalQuery, QueryOptions.empty(), userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
@@ -908,7 +909,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL.key());
         }
 
-        QueryResult queryResult = sampleDBAdaptor.groupBy(query, fields, options, userId);
+        QueryResult queryResult = sampleDBAdaptor.groupBy(study.getUid(), query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
@@ -1216,6 +1217,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
     }
 
     public DBIterator<Sample> indexSolr(Query query) throws CatalogException {
-        return sampleDBAdaptor.iterator(query, null, null);
+        return sampleDBAdaptor.iterator(query, null);
     }
 }

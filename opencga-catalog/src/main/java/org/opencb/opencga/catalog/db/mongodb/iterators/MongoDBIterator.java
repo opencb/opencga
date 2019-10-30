@@ -22,6 +22,7 @@ import org.bson.Document;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,6 +38,8 @@ public class MongoDBIterator<E> implements DBIterator<E> {
     protected MongoCursor mongoCursor;
     protected GenericDocumentComplexConverter<E> converter;
     protected Function<Document, Document> filter;
+
+    protected static final String PRIVATE_STUDY_UID = MongoDBAdaptor.PRIVATE_STUDY_ID;
 
     private static final String SEPARATOR = "__";
 

@@ -35,6 +35,11 @@ public class FamilyMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
 
     private static final int BUFFER_SIZE = 100;
 
+    public FamilyMongoDBIterator(MongoCursor mongoCursor, AnnotableConverter<? extends Annotable> converter,
+                                 Function<Document, Document> filter, IndividualDBAdaptor individualDBAdaptor, QueryOptions options) {
+        this(mongoCursor, converter, filter, individualDBAdaptor, 0, null, options);
+    }
+
 
     public FamilyMongoDBIterator(MongoCursor mongoCursor, AnnotableConverter<? extends Annotable> converter,
                                  Function<Document, Document> filter, IndividualDBAdaptor individualDBAdaptor,
@@ -85,6 +90,10 @@ public class FamilyMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
         while (mongoCursor.hasNext() && counter < BUFFER_SIZE) {
             Document familyDocument = (Document) mongoCursor.next();
 
+            if (user != null && studyUid <= 0) {
+                studyUid = familyDocument.getLong(PRIVATE_STUDY_UID);
+            }
+
             familyListBuffer.add(familyDocument);
             counter++;
 
@@ -115,13 +124,12 @@ public class FamilyMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             });
 
             Query query = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                     .append(IndividualDBAdaptor.QueryParams.UID.key(), uidList)
                     .append(IndividualDBAdaptor.QueryParams.VERSION.key(), versionList);
             List<Document> memberList;
             try {
                 if (user != null) {
-                    memberList = individualDBAdaptor.nativeGet(query, individualQueryOptions, user).getResult();
+                    memberList = individualDBAdaptor.nativeGet(studyUid, query, individualQueryOptions, user).getResult();
                 } else {
                     memberList = individualDBAdaptor.nativeGet(query, individualQueryOptions).getResult();
                 }

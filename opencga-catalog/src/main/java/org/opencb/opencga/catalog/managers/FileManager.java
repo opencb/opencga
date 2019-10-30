@@ -152,7 +152,7 @@ public class FileManager extends AnnotationSetManager<File> {
         Query queryCopy = query == null ? new Query() : new Query(query);
         queryCopy.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(queryParam.key(), fileName);
-        QueryResult<File> pathQueryResult = fileDBAdaptor.get(queryCopy, queryOptions, user);
+        QueryResult<File> pathQueryResult = fileDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (pathQueryResult.getNumResults() > 1) {
             throw new CatalogException("Error: More than one file id found based on " + fileName);
         } else if (pathQueryResult.getNumResults() == 1) {
@@ -166,7 +166,7 @@ public class FileManager extends AnnotationSetManager<File> {
             queryCopy = query == null ? new Query() : new Query(query);
             queryCopy.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                     .append(FileDBAdaptor.QueryParams.NAME.key(), fileName);
-            QueryResult<File> nameQueryResult = fileDBAdaptor.get(queryCopy, queryOptions, user);
+            QueryResult<File> nameQueryResult = fileDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
             if (nameQueryResult.getNumResults() > 1) {
                 throw new CatalogException("Error: More than one file id found based on " + fileName);
             } else if (nameQueryResult.getNumResults() == 1) {
@@ -238,7 +238,7 @@ public class FileManager extends AnnotationSetManager<File> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        QueryResult<File> fileQueryResult = fileDBAdaptor.get(queryCopy, queryOptions, user);
+        QueryResult<File> fileQueryResult = fileDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (fileQueryResult.getNumResults() != correctedFileList.size() && idQueryParam == FileDBAdaptor.QueryParams.PATH
                 && canBeSearchedAsName) {
             // We also search by name
@@ -249,7 +249,7 @@ public class FileManager extends AnnotationSetManager<File> {
             // Ensure the field by which we are querying for will be kept in the results
             queryOptions = keepFieldInQueryOptions(queryOptions, FileDBAdaptor.QueryParams.NAME.key());
 
-            QueryResult<File> nameQueryResult = fileDBAdaptor.get(queryCopy, queryOptions, user);
+            QueryResult<File> nameQueryResult = fileDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
             if (nameQueryResult.getNumResults() > fileQueryResult.getNumResults()) {
                 fileQueryResult = nameQueryResult;
                 fileStringFunction = File::getName;
@@ -559,7 +559,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 Query query = new Query()
                         .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                         .append(FileDBAdaptor.QueryParams.PATH.key(), path);
-                fileQueryResult = fileDBAdaptor.get(query, options, userId);
+                fileQueryResult = fileDBAdaptor.get(study.getUid(), query, options, userId);
                 fileQueryResult.setWarningMsg("Folder was already created");
                 break;
             case FILE_EXISTS:
@@ -939,7 +939,7 @@ public class FileManager extends AnnotationSetManager<File> {
         AnnotationUtils.fixQueryAnnotationSearch(study, query);
         fixQueryObject(study, query, userId);
 
-        QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options, userId);
+        QueryResult<File> fileQueryResult = fileDBAdaptor.get(study.getUid(), query, options, userId);
 
         if (fileQueryResult.getNumResults() == 0 && query.containsKey(FileDBAdaptor.QueryParams.UID.key())) {
             List<Long> idList = query.getAsLongList(FileDBAdaptor.QueryParams.UID.key());
@@ -1046,7 +1046,7 @@ public class FileManager extends AnnotationSetManager<File> {
         fixQueryObject(study, query, userId);
         query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        return fileDBAdaptor.iterator(query, options, userId);
+        return fileDBAdaptor.iterator(study.getUid(), query, options, userId);
     }
 
     @Override
@@ -1060,7 +1060,7 @@ public class FileManager extends AnnotationSetManager<File> {
         fixQueryObject(study, query, userId);
         query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        QueryResult<File> queryResult = fileDBAdaptor.get(query, options, userId);
+        QueryResult<File> queryResult = fileDBAdaptor.get(study.getUid(), query, options, userId);
 
         return queryResult;
     }
@@ -1095,7 +1095,7 @@ public class FileManager extends AnnotationSetManager<File> {
         fixQueryObject(study, query, userId);
 
         query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        QueryResult<Long> queryResultAux = fileDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
+        QueryResult<Long> queryResultAux = fileDBAdaptor.count(study.getUid(), query, userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
         return new QueryResult<>("count", queryResultAux.getDbTime(), 0, queryResultAux.first(), queryResultAux.getWarningMsg(),
                 queryResultAux.getErrorMsg(), Collections.emptyList());
     }
@@ -1133,7 +1133,7 @@ public class FileManager extends AnnotationSetManager<File> {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
 
-            fileIterator = fileDBAdaptor.iterator(finalQuery, QueryOptions.empty(), userId);
+            fileIterator = fileDBAdaptor.iterator(study.getUid(), finalQuery, QueryOptions.empty(), userId);
 
         } catch (CatalogException e) {
             logger.error("Delete file: {}", e.getMessage(), e);
@@ -1284,7 +1284,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append(FileDBAdaptor.QueryParams.UID.key(), fileUid)
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Constants.ALL_STATUS);
-        return fileDBAdaptor.get(query, new QueryOptions(), userId);
+        return fileDBAdaptor.get(studyUid, query, new QueryOptions(), userId);
     }
 
     /**
@@ -1887,7 +1887,7 @@ public class FileManager extends AnnotationSetManager<File> {
         query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         // We do not need to check for permissions when we show the count of files
-        QueryResult queryResult = fileDBAdaptor.groupBy(query, fields, options, userId);
+        QueryResult queryResult = fileDBAdaptor.groupBy(study.getUid(), query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
