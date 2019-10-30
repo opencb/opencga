@@ -1117,7 +1117,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 study.setFiles(dbAdaptorFactory.getCatalogFileDBAdaptor().getAllInStudy(studyId, options).getResults());
             } else {
                 Query query = new Query(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-                study.setFiles(dbAdaptorFactory.getCatalogFileDBAdaptor().get(query, options, user).getResults());
+                study.setFiles(dbAdaptorFactory.getCatalogFileDBAdaptor().get(studyId, query, options, user).getResults());
             }
         }
         if (options.getBoolean("includeJobs")) {
@@ -1125,7 +1125,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 study.setJobs(dbAdaptorFactory.getCatalogJobDBAdaptor().getAllInStudy(studyId, options).getResults());
             } else {
                 Query query = new Query(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-                study.setJobs(dbAdaptorFactory.getCatalogJobDBAdaptor().get(query, options, user).getResults());
+                study.setJobs(dbAdaptorFactory.getCatalogJobDBAdaptor().get(studyId, query, options, user).getResults());
             }
         }
         if (options.getBoolean("includeSamples")) {
@@ -1133,7 +1133,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().getAllInStudy(studyId, options).getResults());
             } else {
                 Query query = new Query(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-                study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().get(query, options, user).getResults());
+                study.setSamples(dbAdaptorFactory.getCatalogSampleDBAdaptor().get(studyId, query, options, user).getResults());
             }
         }
         if (options.getBoolean("includeIndividuals")) {
@@ -1141,7 +1141,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             if (StringUtils.isEmpty(user)) {
                 study.setIndividuals(dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(query, options).getResults());
             } else {
-                study.setIndividuals(dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(query, options, user).getResults());
+                study.setIndividuals(dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(studyId, query, options, user).getResults());
             }
         }
     }

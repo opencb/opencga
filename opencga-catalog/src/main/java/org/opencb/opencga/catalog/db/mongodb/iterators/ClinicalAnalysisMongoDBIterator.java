@@ -39,6 +39,11 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
     private static final String VERSION = FamilyDBAdaptor.QueryParams.VERSION.key();
 
     public ClinicalAnalysisMongoDBIterator(MongoCursor mongoCursor, GenericDocumentComplexConverter<E> converter,
+                                           DBAdaptorFactory dbAdaptorFactory, QueryOptions options) {
+        this(mongoCursor, converter, dbAdaptorFactory, 0, null, options);
+    }
+
+    public ClinicalAnalysisMongoDBIterator(MongoCursor mongoCursor, GenericDocumentComplexConverter<E> converter,
                                            DBAdaptorFactory dbAdaptorFactory, long studyUid, String user, QueryOptions options) {
         super(mongoCursor, converter);
 
@@ -88,6 +93,10 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
         while (mongoCursor.hasNext() && counter < BUFFER_SIZE) {
             Document clinicalDocument = (Document) mongoCursor.next();
 
+            if (user != null && studyUid <= 0) {
+                studyUid = clinicalDocument.getLong(PRIVATE_STUDY_UID);
+            }
+
             clinicalAnalysisListBuffer.add(clinicalDocument);
             counter++;
 
@@ -105,13 +114,11 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
         Map<String, Document> interpretationMap = new HashMap<>();
         if (!interpretationSet.isEmpty()) {
             // Obtain all those interpretations
-            Query query = new Query()
-                    .append(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(InterpretationDBAdaptor.QueryParams.UID.key(), interpretationSet);
+            Query query = new Query(InterpretationDBAdaptor.QueryParams.UID.key(), interpretationSet);
             List<Document> interpretationList;
             try {
                 if (user != null) {
-                    interpretationList = interpretationDBAdaptor.nativeGet(query, interpretationQueryOptions, user).getResults();
+                    interpretationList = interpretationDBAdaptor.nativeGet(studyUid, query, interpretationQueryOptions, user).getResults();
                 } else {
                     interpretationList = interpretationDBAdaptor.nativeGet(query, interpretationQueryOptions).getResults();
                 }
