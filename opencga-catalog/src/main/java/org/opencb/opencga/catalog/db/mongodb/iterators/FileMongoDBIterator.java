@@ -212,7 +212,7 @@ public class FileMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
                             String auxFileId = fileId + "-" + relatedFileUid;
                             String relation = relatedFileMap.get(auxFileId);
                             tmpFileList.add(new Document()
-                                    .append("file", fileMap.get(relatedFileUid))
+                                    .append("file", fileMap.getOrDefault(relatedFileUid, f))
                                     .append("relation", relation));
                         });
                     }

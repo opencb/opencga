@@ -22,8 +22,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
-@org.opencb.opencga.core.annotations.Analysis(id = SampleVariantStatsAnalysis.ID, type = Analysis.AnalysisType.VARIANT,
-        steps = {SampleVariantStatsAnalysis.ID, "index"},
+@Analysis(id = SampleVariantStatsAnalysis.ID, type = Analysis.AnalysisType.VARIANT,
         description = "Compute sample variant stats for the selected list of samples.")
 public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
 
@@ -179,7 +178,16 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
         } catch (CatalogException | StorageEngineException e) {
             throw new AnalysisException(e);
         }
-        outputFile = outDir.resolve(getId() + ".json");
+        outputFile = getOutDir().resolve(getId() + ".json");
+    }
+
+    @Override
+    public List<String> getSteps() {
+        List<String> steps = super.getSteps();
+        if (indexResults) {
+            steps.add("index");
+        }
+        return steps;
     }
 
     @Override
@@ -194,13 +202,9 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
             addFile(outputFile, FileResult.FileType.JSON);
         });
 
-        step("index", ()->{
-            if (indexResults) {
-                indexResults(outputFile);
-            } else {
-                skipStep();
-            }
-        });
+        if (indexResults) {
+            step("index", () -> indexResults(outputFile));
+        }
     }
 
     private void indexResults(Path outputFile) throws AnalysisException {

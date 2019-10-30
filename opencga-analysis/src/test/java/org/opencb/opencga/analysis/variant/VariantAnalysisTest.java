@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.variant.stats;
+package org.opencb.opencga.analysis.variant;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -14,6 +14,9 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
+import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
