@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.hpg.bigdata.analysis.tools.ExecutorMonitor;
 import org.opencb.hpg.bigdata.analysis.tools.Status;
+import org.opencb.opencga.analysis.storage.AlignmentStorageManager;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
@@ -101,8 +102,8 @@ public class AlignmentCommandExecutor extends AnalysisCommandExecutor {
         monitor.start(outDirPath);
 
         // Run index
-        org.opencb.opencga.storage.core.manager.AlignmentStorageManager alignmentStorageManager =
-                new org.opencb.opencga.storage.core.manager.AlignmentStorageManager(catalogManager, storageEngineFactory);
+        AlignmentStorageManager alignmentStorageManager =
+                new AlignmentStorageManager(catalogManager, storageEngineFactory);
         alignmentStorageManager.index(cliOptions.study, cliOptions.fileId, outDirPath, params, sessionId);
 
         // Stop monitor

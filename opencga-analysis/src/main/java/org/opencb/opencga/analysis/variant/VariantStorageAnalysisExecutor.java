@@ -8,7 +8,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
 
 import java.io.IOException;
 

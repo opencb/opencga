@@ -41,7 +41,7 @@ import org.opencb.opencga.core.models.DataStore;
 import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;

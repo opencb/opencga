@@ -43,10 +43,10 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
-import org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation;
+import org.opencb.opencga.analysis.storage.variant.VariantCatalogQueryUtils;
+import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.storage.variant.operations.StorageOperation;
+import org.opencb.opencga.analysis.storage.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -82,8 +82,8 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
-import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.LOAD;
-import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.TRANSFORM;
+import static org.opencb.opencga.analysis.storage.variant.operations.VariantFileIndexerStorageOperation.LOAD;
+import static org.opencb.opencga.analysis.storage.variant.operations.VariantFileIndexerStorageOperation.TRANSFORM;
 
 /**
  * Created by imedina on 02/03/15.

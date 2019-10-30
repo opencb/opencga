@@ -8,8 +8,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.manager.StorageManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -34,7 +34,7 @@ public class VariantAnnotatorTest {
 
     @Before
     public void setUp() throws Exception {
-        storageConfiguration = StorageConfiguration.load(StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml"), "yml");
+        storageConfiguration = StorageConfiguration.load(StorageEngine.class.getClassLoader().getResourceAsStream("storage-configuration.yml"), "yml");
         projectMetadata = new ProjectMetadata("hsapiens", "grch38", 1);
     }
 

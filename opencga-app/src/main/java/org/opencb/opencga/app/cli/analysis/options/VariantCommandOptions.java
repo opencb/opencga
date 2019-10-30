@@ -61,7 +61,7 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.*;
+import static org.opencb.opencga.analysis.storage.variant.VariantCatalogQueryUtils.*;
 
 /**
  * Created by pfurio on 23/11/16.

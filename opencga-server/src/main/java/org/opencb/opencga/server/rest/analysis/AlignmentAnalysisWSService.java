@@ -41,7 +41,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
-import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
+import org.opencb.opencga.analysis.storage.AlignmentStorageManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

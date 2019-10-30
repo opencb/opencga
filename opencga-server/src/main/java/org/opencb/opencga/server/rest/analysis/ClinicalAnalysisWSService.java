@@ -17,26 +17,15 @@
 package org.opencb.opencga.server.rest.analysis;
 
 import io.swagger.annotations.*;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.storage.core.clinical.ClinicalVariantException;
-import org.opencb.opencga.storage.core.manager.clinical.ClinicalInterpretationManager;
-import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
+import org.opencb.opencga.analysis.storage.clinical.ClinicalInterpretationManager;
+import org.opencb.opencga.analysis.storage.variant.VariantCatalogQueryUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.List;
-
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.core.clinical.ReportedVariantQueryParam.*;
 
 @Path("/{apiVersion}/analysis/xx")
 @Produces(MediaType.APPLICATION_JSON)

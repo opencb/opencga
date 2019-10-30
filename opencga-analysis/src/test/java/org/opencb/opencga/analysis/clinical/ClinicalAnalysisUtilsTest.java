@@ -12,7 +12,7 @@ import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;

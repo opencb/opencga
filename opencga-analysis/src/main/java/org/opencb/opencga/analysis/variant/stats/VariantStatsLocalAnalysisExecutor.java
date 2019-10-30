@@ -17,7 +17,7 @@ import org.opencb.opencga.core.exception.AnalysisExecutorException;
 import org.opencb.opencga.analysis.variant.VariantStorageAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;

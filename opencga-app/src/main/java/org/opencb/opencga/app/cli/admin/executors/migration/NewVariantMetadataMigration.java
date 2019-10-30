@@ -38,7 +38,7 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
-import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
+import org.opencb.opencga.analysis.storage.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.metadata.VariantSourceToVariantFileMetadataConverter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;

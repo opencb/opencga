@@ -44,7 +44,7 @@ import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
+import org.opencb.opencga.analysis.storage.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.util.*;

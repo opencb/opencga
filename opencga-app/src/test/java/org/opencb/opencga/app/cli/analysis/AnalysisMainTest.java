@@ -28,7 +28,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.storage.core.manager.OpenCGATestExternalResource;
+import org.opencb.opencga.analysis.storage.OpenCGATestExternalResource;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
