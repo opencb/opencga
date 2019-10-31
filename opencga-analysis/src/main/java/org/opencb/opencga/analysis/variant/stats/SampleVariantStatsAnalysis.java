@@ -22,12 +22,12 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
-@Analysis(id = SampleVariantStatsAnalysis.ID, type = Analysis.AnalysisType.VARIANT,
-        description = "Compute sample variant stats for the selected list of samples.")
+@Analysis(id = SampleVariantStatsAnalysis.ID, type = Analysis.AnalysisType.VARIANT, description = SampleVariantStatsAnalysis.DESCRIPTION)
 public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
 
     public static final String ID = "sample-variant-stats";
-    public static final String VARIABLE_SET_ID = "OPENCGA_SAMPLE_VARIANT_STATS";
+    public static final String DESCRIPTION = "Compute sample variant stats for the selected list of samples.";
+    public static final String VARIABLE_SET_ID = "SAMPLE_VARIANT_STATS";
     private String study;
     private Query samplesQuery;
     private List<String> sampleNames;

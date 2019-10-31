@@ -160,6 +160,7 @@ public class SampleCommandOptions {
     @Parameters(commandNames = {"search"}, commandDescription = "Search samples")
     public class SearchCommandOptions extends StudyOption {
 
+        public static final String ANNOTATION_DOC_URL = "http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0";
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
@@ -185,7 +186,7 @@ public class SampleCommandOptions {
         public Boolean somatic;
 
         @Parameter(names = {"--annotation"}, description = "Annotation filters. Example: age>30;gender=FEMALE. For more information, " +
-                "please visit http://docs.opencb.org/display/opencga/AnnotationSets+1.4.0", arity = 1)
+                "please visit " + ANNOTATION_DOC_URL, arity = 1)
         public String annotation;
 
         @Parameter(names = {"--flatten-annotations"}, description = "Flag indicating whether nested annotations should be returned flattened",

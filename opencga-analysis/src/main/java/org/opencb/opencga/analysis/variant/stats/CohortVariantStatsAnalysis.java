@@ -6,13 +6,13 @@ import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
-import org.opencb.opencga.core.analysis.variant.CohortVariantStatsAnalysisExecutor;
-import org.opencb.opencga.core.exception.AnalysisException;
-import org.opencb.opencga.core.analysis.result.FileResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
+import org.opencb.opencga.core.analysis.result.FileResult;
+import org.opencb.opencga.core.analysis.variant.CohortVariantStatsAnalysisExecutor;
 import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Variable;
@@ -26,7 +26,8 @@ import java.util.*;
 public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
 
     public static final String ID = "cohort-variant-stats";
-    public static final String VARIABLE_SET_ID = "OPENCGA_COHORT_VARIANT_STATS";
+    public static final String DESCRIPTION = "Compute cohort variant stats for the selected list of samples.";
+    public static final String VARIABLE_SET_ID = "COHORT_VARIANT_STATS";
     private String study;
     private List<String> sampleNames;
     private Query samplesQuery;
