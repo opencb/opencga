@@ -83,6 +83,11 @@
             <artifactId>adal4j</artifactId>
             <version>1.6.3</version>
         </dependency>
+         <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-client</artifactId>
+             <version>4.3.0</version>
+        </dependency>
         <dependency>
             <groupId>com.microsoft.graph</groupId>
             <artifactId>microsoft-graph</artifactId>

@@ -41,6 +41,9 @@ public class ExecutorFactory {
             case "azure":
                 this.executor = new AzureBatchExecutor(configuration);
                 break;
+            case "k8s":
+                this.executor = new K8SExecutor(configuration);
+                break;
             default:
                 throw new UnsupportedOperationException("nonsoupported execution mode { " + mode
                         + " }, accepted modes are : local, sge, azure");

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.config;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -29,21 +30,32 @@ public class Execution {
     private int maxConcurrentIndexJobs;
     private Map<String, String> toolsPerQueue;
     private Map<String, String> options;
+    private String k8sMasterNode;
+    private String imageName;
+    private String namespace;
+    private String cpu;
+    private String memory;
+    private List<K8SVolumesMount> k8SVolumesMount;
 
     public Execution() {
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Execution{");
-        sb.append("mode='").append(mode).append('\'');
-        sb.append(", defaultQueue='").append(defaultQueue).append('\'');
-        sb.append(", availableQueues='").append(availableQueues).append('\'');
-        sb.append(", maxConcurrentIndexJobs=").append(maxConcurrentIndexJobs);
-        sb.append(", toolsPerQueue=").append(toolsPerQueue);
-        sb.append(", options=").append(options);
-        sb.append('}');
-        return sb.toString();
+        return "Execution{" +
+                "mode='" + mode + '\'' +
+                ", defaultQueue='" + defaultQueue + '\'' +
+                ", availableQueues='" + availableQueues + '\'' +
+                ", maxConcurrentIndexJobs=" + maxConcurrentIndexJobs +
+                ", toolsPerQueue=" + toolsPerQueue +
+                ", options=" + options +
+                ", k8sMasterNode='" + k8sMasterNode + '\'' +
+                ", imageName='" + imageName + '\'' +
+                ", namespace='" + namespace + '\'' +
+                ", cpu='" + cpu + '\'' +
+                ", memory='" + memory + '\'' +
+                ", k8SVolumesMount=" + k8SVolumesMount +
+                '}';
     }
 
     public String getMode() {
@@ -97,6 +109,57 @@ public class Execution {
 
     public Execution setOptions(Map<String, String> options) {
         this.options = options;
+        return this;
+    }
+
+    public String getK8sMasterNode() {
+        return k8sMasterNode;
+    }
+
+    public void setK8sMasterNode(String k8sMasterNode) {
+        this.k8sMasterNode = k8sMasterNode;
+    }
+
+    public String getImageName() {
+        return imageName;
+    }
+
+    public void setImageName(String imageName) {
+        this.imageName = imageName;
+    }
+
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
+    }
+
+
+    public List<K8SVolumesMount> getK8SVolumesMount() {
+        return k8SVolumesMount;
+    }
+
+    public void setK8SVolumesMount(List<K8SVolumesMount> k8SVolumesMount) {
+        this.k8SVolumesMount = k8SVolumesMount;
+    }
+
+    public String getCpu() {
+        return cpu;
+    }
+
+    public Execution setCpu(String cpu) {
+        this.cpu = cpu;
+        return this;
+    }
+
+    public String getMemory() {
+        return memory;
+    }
+
+    public Execution setMemory(String memory) {
+        this.memory = memory;
         return this;
     }
 }

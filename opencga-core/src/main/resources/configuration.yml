@@ -91,6 +91,16 @@ execution:
   defaultQueue: ""
   availableQueues: ""
   toolsPerQueue: {}
+  k8sMasterNode: "https://192.168.99.100:8443/"
+  imageName: "opencb/opencga-next:1.4.X"
+  cpu: "1"
+  memory: "2048Mi"
+  namespace: "default"
+  k8SVolumesMount :
+  - name : "conf"
+    mountPath : "/opt/opencga/conf"
+  - name: "opencga-shared"
+    mountPath: "/opt/opencga/sessions"
   options:
 # Azure Batch Service configuration example
 #    batchAccount : "batchAccount"
