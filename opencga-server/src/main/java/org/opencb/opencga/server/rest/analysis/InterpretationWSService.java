@@ -2,8 +2,10 @@ package org.opencb.opencga.server.rest.analysis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.annotations.*;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.commons.Analyst;
@@ -24,6 +26,7 @@ import org.opencb.opencga.catalog.models.update.InterpretationUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.analysis.result.AnalysisResult;
+import org.opencb.opencga.core.analysis.result.FileResult;
 import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
@@ -38,6 +41,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -790,7 +794,7 @@ public class InterpretationWSService extends AnalysisWSService {
                 panelList = Arrays.asList(panelIds.split(","));
             }
 
-            java.nio.file.Path outDir = null;
+            java.nio.file.Path outDir = getOutDir(TeamInterpretationAnalysis.ID);
 
             Object result;
             if (save) {
@@ -815,7 +819,7 @@ public class InterpretationWSService extends AnalysisWSService {
                         .setDiseasePanelIds(panelList)
                         .setMoi(moi)
                         .setConfig(config);
-                result = teamAnalysis.start();
+                result = readInterpretation(teamAnalysis.start(), outDir);
             }
             return createAnalysisOkResponse(result);
         } catch (Exception e) {
@@ -850,7 +854,7 @@ public class InterpretationWSService extends AnalysisWSService {
                 panelList = Arrays.asList(panelIds.split(","));
             }
 
-            java.nio.file.Path outDir = null;
+            java.nio.file.Path outDir = getOutDir(TieringInterpretationAnalysis.ID);
 
             Object result;
             if (save) {
@@ -868,7 +872,7 @@ public class InterpretationWSService extends AnalysisWSService {
                         .setDiseasePanelIds(panelList)
                         .setPenetrance(penetrance)
                         .setConfig(config);
-                result = tieringAnalysis.start();
+                result = readInterpretation(tieringAnalysis.start(), outDir);
             }
 
             return createAnalysisOkResponse(result);
@@ -977,7 +981,7 @@ public class InterpretationWSService extends AnalysisWSService {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
 
-            java.nio.file.Path outDir = null;
+            java.nio.file.Path outDir = getOutDir(CustomInterpretationAnalysis.ID);
 
             CustomInterpretationConfiguration config = new CustomInterpretationConfiguration();
             setInterpretationConfiguration(uriInfo.getQueryParameters(), config);
@@ -991,7 +995,7 @@ public class InterpretationWSService extends AnalysisWSService {
                     .setQueryOptions(queryOptions)
                     .setConfig(config);
             AnalysisResult result = customAnalysis.start();
-            return createAnalysisOkResponse(result);
+            return createAnalysisOkResponse(readInterpretation(result, outDir));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1009,7 +1013,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyId,
             @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId) { //},
         try {
-            java.nio.file.Path outDir = null;
+            java.nio.file.Path outDir = getOutDir(CancerTieringInterpretationAnalysis.ID);
 
             // Execute cancer tiering analysis
             CancerTieringInterpretationConfiguration config = new CancerTieringInterpretationConfiguration();
@@ -1024,7 +1028,7 @@ public class InterpretationWSService extends AnalysisWSService {
                     .setVariantIdsToDiscard(variantsIdsToDiscard)
                     .setConfig(config);
             AnalysisResult result = cancerAnalysis.start();
-            return createAnalysisOkResponse(result);
+            return createAnalysisOkResponse(readInterpretation(result, outDir));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1104,5 +1108,24 @@ public class InterpretationWSService extends AnalysisWSService {
         config.setIncludeLowCoverage(Boolean.parseBoolean(params.getFirst(ClinicalUtils.MAX_LOW_COVERAGE_PARAM)));
         config.setSkipDiagnosticVariants(Boolean.parseBoolean(params.getFirst(ClinicalUtils.MAX_LOW_COVERAGE_PARAM)));
         config.setSkipUntieredVariants(Boolean.parseBoolean(params.getFirst(ClinicalUtils.MAX_LOW_COVERAGE_PARAM)));
+    }
+
+    private java.nio.file.Path getOutDir(String name) throws IOException {
+        // TODO: set outDir = scratchDir (by reading Configuration)
+        return Files.createDirectory(Paths.get(configuration.getTempJobsDir()).resolve(name + RandomStringUtils.random(10)));
+    }
+
+    private org.opencb.biodata.models.clinical.interpretation.Interpretation readInterpretation(AnalysisResult result,
+                                                                                                java.nio.file.Path outDir)
+            throws AnalysisException {
+        java.io.File file = new java.io.File(outDir + "/" + InterpretationAnalysis.INTERPRETATION_FILENAME);
+        if (file.exists()) {
+            return ClinicalUtils.readInterpretation(file.toPath());
+        }
+        String msg = "Interpretation file not found for " + result.getId() + " analysis";
+        if (CollectionUtils.isNotEmpty(result.getEvents())) {
+            msg += (": " + StringUtils.join(result.getEvents(), ". "));
+        }
+        throw new AnalysisException(msg);
     }
 }

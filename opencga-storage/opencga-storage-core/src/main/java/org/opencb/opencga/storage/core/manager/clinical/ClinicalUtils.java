@@ -8,6 +8,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.clinical.pedigree.Member;
@@ -250,7 +251,7 @@ public class ClinicalUtils {
         return creator.groupCHVariants(reportedVariantMap);
     }
 
-    public static List<ReportedVariant> readReportedVariants(Path path) {
+    public static List<ReportedVariant> readReportedVariants(Path path) throws AnalysisException {
         List<ReportedVariant> reportedVariants = new ArrayList<>();
         if (path != null || path.toFile().exists()) {
             try {
@@ -260,7 +261,7 @@ public class ClinicalUtils {
                     reportedVariants.add(objReader.readValue(lineIterator.next()));
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new AnalysisException("Error reading reported variants from file: " + path, e);
             }
         }
         return reportedVariants;
@@ -278,7 +279,19 @@ public class ClinicalUtils {
             }
             pw.close();
         } catch (FileNotFoundException | JsonProcessingException e) {
-            throw new AnalysisException("Error writing reported variants", e);
+            throw new AnalysisException("Error writing reported variants to file: " + path, e);
         }
+    }
+
+    public static Interpretation readInterpretation(Path path) throws AnalysisException {
+        if (path != null || path.toFile().exists()) {
+            try {
+                ObjectReader objReader = JacksonUtils.getDefaultObjectMapper().readerFor(Interpretation.class);
+                return objReader.readValue(path.toFile());
+            } catch (IOException e) {
+                throw new AnalysisException("Error reading interpretation from file: " + path, e);
+            }
+        }
+        return null;
     }
 }
