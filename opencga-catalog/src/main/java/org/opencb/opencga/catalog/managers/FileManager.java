@@ -156,7 +156,7 @@ public class FileManager extends AnnotationSetManager<File> {
         Query queryCopy = query == null ? new Query() : new Query(query);
         queryCopy.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(queryParam.key(), fileName);
-        OpenCGAResult<File> pathDataResult = fileDBAdaptor.get(queryCopy, queryOptions, user);
+        OpenCGAResult<File> pathDataResult = fileDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (pathDataResult.getNumResults() > 1) {
             throw new CatalogException("Error: More than one file id found based on " + fileName);
         } else if (pathDataResult.getNumResults() == 1) {
@@ -170,7 +170,7 @@ public class FileManager extends AnnotationSetManager<File> {
             queryCopy = query == null ? new Query() : new Query(query);
             queryCopy.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                     .append(FileDBAdaptor.QueryParams.NAME.key(), fileName);
-            OpenCGAResult<File> nameDataResult = fileDBAdaptor.get(queryCopy, queryOptions, user);
+            OpenCGAResult<File> nameDataResult = fileDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
             if (nameDataResult.getNumResults() > 1) {
                 throw new CatalogException("Error: More than one file id found based on " + fileName);
             } else if (nameDataResult.getNumResults() == 1) {
@@ -242,7 +242,7 @@ public class FileManager extends AnnotationSetManager<File> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        OpenCGAResult<File> fileDataResult = fileDBAdaptor.get(queryCopy, queryOptions, user);
+        OpenCGAResult<File> fileDataResult = fileDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (fileDataResult.getNumResults() != correctedFileList.size() && idQueryParam == FileDBAdaptor.QueryParams.PATH
                 && canBeSearchedAsName) {
             // We also search by name
@@ -253,7 +253,7 @@ public class FileManager extends AnnotationSetManager<File> {
             // Ensure the field by which we are querying for will be kept in the results
             queryOptions = keepFieldInQueryOptions(queryOptions, FileDBAdaptor.QueryParams.NAME.key());
 
-            OpenCGAResult<File> nameDataResult = fileDBAdaptor.get(queryCopy, queryOptions, user);
+            OpenCGAResult<File> nameDataResult = fileDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
             if (nameDataResult.getNumResults() > fileDataResult.getNumResults()) {
                 fileDataResult = nameDataResult;
                 fileStringFunction = File::getName;
@@ -559,7 +559,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 Query query = new Query()
                         .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                         .append(FileDBAdaptor.QueryParams.PATH.key(), path);
-                fileDataResult = fileDBAdaptor.get(query, options, userId);
+                fileDataResult = fileDBAdaptor.get(study.getUid(), query, options, userId);
                 fileDataResult.getEvents().add(new Event(Event.Type.WARNING, path, "Folder already existed"));
                 break;
             case FILE_EXISTS:
@@ -1094,7 +1094,7 @@ public class FileManager extends AnnotationSetManager<File> {
         fixQueryObject(study, query, userId);
         query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        return fileDBAdaptor.iterator(query, options, userId);
+        return fileDBAdaptor.iterator(study.getUid(), query, options, userId);
     }
 
     @Override
@@ -1119,7 +1119,7 @@ public class FileManager extends AnnotationSetManager<File> {
             fixQueryObject(study, finalQuery, userId);
             finalQuery.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            OpenCGAResult<File> queryResult = fileDBAdaptor.get(finalQuery, options, userId);
+            OpenCGAResult<File> queryResult = fileDBAdaptor.get(study.getUid(), finalQuery, options, userId);
             auditManager.auditSearch(userId, AuditRecord.Resource.FILE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -1169,7 +1169,8 @@ public class FileManager extends AnnotationSetManager<File> {
             fixQueryObject(study, query, userId);
 
             query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Long> queryResultAux = fileDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
+            OpenCGAResult<Long> queryResultAux = fileDBAdaptor.count(study.getUid(), query, userId,
+                    StudyAclEntry.StudyPermissions.VIEW_FILES);
 
             auditManager.auditCount(userId, AuditRecord.Resource.FILE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1300,7 +1301,7 @@ public class FileManager extends AnnotationSetManager<File> {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
 
-            fileIterator = fileDBAdaptor.iterator(finalQuery, INCLUDE_FILE_IDS, userId);
+            fileIterator = fileDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_FILE_IDS, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(operationUuid, userId, AuditRecord.Resource.FILE, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1439,7 +1440,7 @@ public class FileManager extends AnnotationSetManager<File> {
             Query query = new Query()
                     .append(FileDBAdaptor.QueryParams.UID.key(), file.getUid())
                     .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<File> result = fileDBAdaptor.get(query, new QueryOptions(), userId);
+            OpenCGAResult<File> result = fileDBAdaptor.get(study.getUid(), query, new QueryOptions(), userId);
             auditManager.audit(userId, AuditRecord.Action.UNLINK, AuditRecord.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -1768,7 +1769,7 @@ public class FileManager extends AnnotationSetManager<File> {
             fixQueryObject(study, finalQuery, userId);
             finalQuery.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = fileDBAdaptor.iterator(finalQuery, EXCLUDE_FILE_ATTRIBUTES, userId);
+            iterator = fileDBAdaptor.iterator(study.getUid(), finalQuery, EXCLUDE_FILE_ATTRIBUTES, userId);
         } catch (CatalogException e) {
             auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.FILE, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -2326,7 +2327,7 @@ public class FileManager extends AnnotationSetManager<File> {
         query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         // We do not need to check for permissions when we show the count of files
-        OpenCGAResult queryResult = fileDBAdaptor.groupBy(query, fields, options, userId);
+        OpenCGAResult queryResult = fileDBAdaptor.groupBy(study.getUid(), query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }

@@ -40,6 +40,11 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
     private static final int BUFFER_SIZE = 100;
 
     public IndividualMongoDBIterator(MongoCursor mongoCursor, AnnotableConverter<? extends Annotable> converter,
+                                     Function<Document, Document> filter, MongoDBAdaptorFactory dbAdaptorFactory, QueryOptions options) {
+        this(mongoCursor, converter, filter, dbAdaptorFactory, 0, null, options);
+    }
+
+    public IndividualMongoDBIterator(MongoCursor mongoCursor, AnnotableConverter<? extends Annotable> converter,
                                      Function<Document, Document> filter, MongoDBAdaptorFactory dbAdaptorFactory,
                                      long studyUid, String user, QueryOptions options) {
         super(mongoCursor, converter, filter, options);
@@ -90,6 +95,10 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
         while (mongoCursor.hasNext() && counter < BUFFER_SIZE) {
             Document individualDocument = (Document) mongoCursor.next();
 
+            if (user != null && studyUid <= 0) {
+                studyUid = individualDocument.getLong(PRIVATE_STUDY_UID);
+            }
+
             individualListBuffer.add(individualDocument);
             counter++;
 
@@ -120,9 +129,7 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
         if (!individualMap.isEmpty()) {
             // Obtain the parents
 
-            Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(SampleDBAdaptor.QueryParams.UID.key(), individualMap.keySet());
+            Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), individualMap.keySet());
             QueryOptions queryOptions = new QueryOptions()
                     .append(NATIVE_QUERY, true)
                     .append(QueryOptions.INCLUDE, Arrays.asList(
@@ -132,7 +139,7 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             try {
                 DataResult<Document> individualDataResult;
                 if (user != null) {
-                    individualDataResult = individualDBAdaptor.nativeGet(query, queryOptions, user);
+                    individualDataResult = individualDBAdaptor.nativeGet(studyUid, query, queryOptions, user);
                 } else {
                     individualDataResult = individualDBAdaptor.nativeGet(query, queryOptions);
                 }
@@ -165,13 +172,12 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             });
 
             Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                     .append(SampleDBAdaptor.QueryParams.UID.key(), uidList)
                     .append(SampleDBAdaptor.QueryParams.VERSION.key(), versionList);
             List<Document> sampleList;
             try {
                 if (user != null) {
-                    sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions, user).getResults();
+                    sampleList = sampleDBAdaptor.nativeGet(studyUid, query, sampleQueryOptions, user).getResults();
                 } else {
                     sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions).getResults();
                 }

@@ -36,6 +36,11 @@ public class CohortMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
     private static final int BUFFER_SIZE = 100;
 
     public CohortMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, AnnotableConverter<? extends Annotable> converter,
+                                 Function<Document, Document> filter, SampleMongoDBAdaptor sampleMongoDBAdaptor,  QueryOptions options) {
+        this(mongoCursor, clientSession, converter, filter, sampleMongoDBAdaptor, 0, null, options);
+    }
+
+    public CohortMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, AnnotableConverter<? extends Annotable> converter,
                                  Function<Document, Document> filter, SampleMongoDBAdaptor sampleMongoDBAdaptor, long studyUid, String user,
                                  QueryOptions options) {
         super(mongoCursor, clientSession, converter, filter, options);
@@ -99,6 +104,10 @@ public class CohortMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
         while (mongoCursor.hasNext() && counter < BUFFER_SIZE) {
             Document cohortDocument = (Document) mongoCursor.next();
 
+            if (user != null && studyUid <= 0) {
+                studyUid = cohortDocument.getLong(PRIVATE_STUDY_UID);
+            }
+
             cohortListBuffer.add(cohortDocument);
             counter++;
 
@@ -114,13 +123,11 @@ public class CohortMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
 
         if (!sampleSet.isEmpty()) {
             // Obtain all those samples
-            Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                    .append(SampleDBAdaptor.QueryParams.UID.key(), new ArrayList<>(sampleSet));
+            Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), new ArrayList<>(sampleSet));
             List<Document> sampleList;
             try {
                 if (user != null) {
-                    sampleList = sampleDBAdaptor.nativeGet(clientSession, query, sampleQueryOptions, user).getResults();
+                    sampleList = sampleDBAdaptor.nativeGet(clientSession, studyUid, query, sampleQueryOptions, user).getResults();
                 } else {
                     sampleList = sampleDBAdaptor.nativeGet(clientSession, query, sampleQueryOptions).getResults();
                 }

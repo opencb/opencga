@@ -94,7 +94,7 @@ public class PanelManager extends ResourceManager<Panel> {
         } else {
             queryCopy.put(PanelDBAdaptor.QueryParams.ID.key(), entry);
         }
-        OpenCGAResult<Panel> panelDataResult = panelDBAdaptor.get(queryCopy, queryOptions, user);
+        OpenCGAResult<Panel> panelDataResult = panelDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (panelDataResult.getNumResults() == 0) {
             panelDataResult = panelDBAdaptor.get(queryCopy, queryOptions);
             if (panelDataResult.getNumResults() == 0) {
@@ -141,7 +141,7 @@ public class PanelManager extends ResourceManager<Panel> {
         // Ensure the field by which we are querying for will be kept in the results
         queryOptions = keepFieldInQueryOptions(queryOptions, idQueryParam.key());
 
-        OpenCGAResult<Panel> panelDataResult = panelDBAdaptor.get(queryCopy, queryOptions, user);
+        OpenCGAResult<Panel> panelDataResult = panelDBAdaptor.get(studyUid, queryCopy, queryOptions, user);
         if (ignoreException || panelDataResult.getNumResults() >= uniqueList.size()) {
             return keepOriginalOrder(uniqueList, panelStringFunction, panelDataResult, ignoreException,
                     queryCopy.getBoolean(Constants.ALL_VERSIONS));
@@ -643,7 +643,7 @@ public class PanelManager extends ResourceManager<Panel> {
         DBIterator<Panel> iterator;
         try {
             finalQuery.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            iterator = panelDBAdaptor.iterator(finalQuery, INCLUDE_PANEL_IDS, userId);
+            iterator = panelDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_PANEL_IDS, userId);
         } catch (CatalogException e) {
             auditManager.auditUpdate(operationId, userId, AuditRecord.Resource.PANEL, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -835,7 +835,7 @@ public class PanelManager extends ResourceManager<Panel> {
         } else {
             Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
             query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            return panelDBAdaptor.iterator(query, options, userId);
+            return panelDBAdaptor.iterator(study.getUid(), query, options, userId);
         }
     }
 
@@ -870,7 +870,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
                 // Here permissions will be checked
-                result = panelDBAdaptor.get(query, options, userId);
+                result = panelDBAdaptor.get(study.getUid(), query, options, userId);
             }
 
             auditManager.auditSearch(userId, AuditRecord.Resource.PANEL, study.getId(), study.getUuid(), auditParams,
@@ -911,7 +911,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
                 // Here view permissions will be checked
-                queryResultAux = panelDBAdaptor.count(query, userId, StudyAclEntry.StudyPermissions.VIEW_PANELS);
+                queryResultAux = panelDBAdaptor.count(study.getUid(), query, userId, StudyAclEntry.StudyPermissions.VIEW_PANELS);
             }
 
             auditManager.auditCount(userId, AuditRecord.Resource.PANEL, study.getId(), study.getUuid(), auditParams,
@@ -1031,7 +1031,7 @@ public class PanelManager extends ResourceManager<Panel> {
         try {
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            iterator = panelDBAdaptor.iterator(finalQuery, INCLUDE_PANEL_IDS, userId);
+            iterator = panelDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_PANEL_IDS, userId);
 
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
@@ -1112,7 +1112,7 @@ public class PanelManager extends ResourceManager<Panel> {
         // Add study id to the query
         query.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        OpenCGAResult queryResult = sampleDBAdaptor.groupBy(query, fields, options, userId);
+        OpenCGAResult queryResult = sampleDBAdaptor.groupBy(study.getUid(), query, fields, options, userId);
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }
 
