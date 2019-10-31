@@ -705,8 +705,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                     .append(SampleDBAdaptor.QueryParams.STUDY.key(), cliOptions.study)
                     .append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.controlSamplesAnnotation);
         }
-        new GwasAnalysis()
-                .setStudy(cliOptions.study)
+        GwasAnalysis gwasAnalysis = new GwasAnalysis();
+        gwasAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+        gwasAnalysis.setStudy(cliOptions.study)
                 .setPhenotype(cliOptions.phenotype)
                 .setScoreName(cliOptions.scoreName)
                 .setFisherMode(cliOptions.fisherMode)
@@ -715,7 +716,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 .setCaseCohort(cliOptions.caseCohort)
                 .setCaseCohortSamplesQuery(caseCohortSamplesQuery)
                 .setControlCohortSamplesQuery(controlCohortSamplesQuery)
-                .setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId)
                 .start();
     }
 
@@ -738,13 +738,13 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             query.append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.samplesAnnotation);
         }
 
-        new SampleVariantStatsAnalysis()
-                .setStudy(cliOptions.study)
+        SampleVariantStatsAnalysis sampleVariantStatsAnalysis = new SampleVariantStatsAnalysis();
+        sampleVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+        sampleVariantStatsAnalysis.setStudy(cliOptions.study)
                 .setIndexResults(cliOptions.index)
                 .setFamily(cliOptions.family)
                 .setSamplesQuery(query)
                 .setSampleNames(sampleNames)
-                .setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId)
                 .start();
     }
 
@@ -768,13 +768,13 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             sampleNames = null;
         }
 
-        new CohortVariantStatsAnalysis()
-                .setStudy(cliOptions.study)
+        CohortVariantStatsAnalysis cohortVariantStatsAnalysis = new CohortVariantStatsAnalysis();
+        cohortVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+        cohortVariantStatsAnalysis.setStudy(cliOptions.study)
                 .setCohortName(cliOptions.cohort)
                 .setIndexResults(cliOptions.index)
                 .setSamplesQuery(query)
                 .setSampleNames(sampleNames)
-                .setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId)
                 .start();
     }
 }
