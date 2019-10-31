@@ -22,10 +22,10 @@ import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -33,7 +33,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.Cohort;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.FileIndex;
+import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -88,8 +91,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         variantManager.index(studyId, getFile(2).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(1500, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
-        checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().get(studyId,
-                new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), catalogManager,
+        checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), catalogManager,
                 dbName, sessionId);
         assertNotNull(catalogManager.getFileManager().get(studyId, getFile(2).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
@@ -104,8 +106,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         assertEquals(2504, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
         assertNotNull(catalogManager.getFileManager().get(studyId, getFile(4).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
-        checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().get(studyId,
-                new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), catalogManager,
+        checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), catalogManager,
                 dbName, sessionId);
     }
 
@@ -171,12 +172,11 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         indexFile(inputFile, queryOptions, outputId);
         Study study = catalogManager.getFileManager().getStudy(inputFile, sessionId);
 
-        WriteResult result = catalogManager.getFileManager().delete(
-                study.getFqn(),
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("index status");
+        catalogManager.getFileManager().delete(study.getFqn(),
                 new Query(FileDBAdaptor.QueryParams.PATH.key(), inputFile.getPath()) , null, sessionId);
-        assertEquals(0, result.getNumModified());
-        assertTrue(result.getFailed().get(0).getMessage().contains("index status"));
-    }
+        }
 
     @Test
     public void testDeleteSampleFromIndexedFile() throws Exception {
@@ -186,9 +186,9 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         File inputFile = getFile(0);
         indexFile(inputFile, queryOptions, outputId);
         Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), inputFile.getSamples().get(100).getId());
-        WriteResult delete = catalogManager.getSampleManager().delete(studyFqn, query, null, sessionId);
-        assertEquals(1, delete.getNumMatches());
-        assertTrue(delete.getFailed().get(0).getMessage().contains("Sample associated to the files"));
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Sample associated to the files");
+        DataResult delete = catalogManager.getSampleManager().delete(studyFqn, query, null, sessionId);
     }
 
     @Test
@@ -198,7 +198,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         File file = getFile(0);
         Path pathParent = Paths.get(file.getPath()).getParent();
 
-        File parent = catalogManager.getFileManager().get(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), pathParent.toString() + "/"), null, sessionId).first();
+        File parent = catalogManager.getFileManager().search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), pathParent.toString() + "/"), null, sessionId).first();
         indexFiles(singletonList(parent), singletonList(file), queryOptions, outputId);
     }
 
@@ -246,10 +246,9 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         File transformedFile = transformFile(getFile(0), queryOptions);
         loadFile(transformedFile, queryOptions, outputId);
 
-        WriteResult result = catalogManager.getCohortManager().delete(studyFqn, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"),
-                null, sessionId);
-        assertEquals(0, result.getNumModified());
-        assertTrue(result.getFailed().get(0).getMessage().contains("ALL cannot be deleted"));
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("ALL cannot be deleted");
+        catalogManager.getCohortManager().delete(studyFqn, new Query(CohortDBAdaptor.QueryParams.ID.key(), "ALL"), null, sessionId);
     }
 
     @Test

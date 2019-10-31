@@ -24,10 +24,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.*;
@@ -218,7 +218,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     @Deprecated
-    public final QueryResult<StudyConfiguration> getStudyConfiguration(Object study, QueryOptions options) {
+    public final DataResult<StudyConfiguration> getStudyConfiguration(Object study, QueryOptions options) {
         if (study instanceof Number) {
             return studyDBAdaptor.getStudyConfiguration(((Number) study).intValue(), null, options);
         } else {
@@ -264,7 +264,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     @Deprecated
-    public final QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
+    public final DataResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         long timeStamp = System.currentTimeMillis();
         logger.debug("Timestamp : {} -> {}", studyConfiguration.getTimeStamp(), timeStamp);
         studyConfiguration.setTimeStamp(timeStamp);
@@ -442,6 +442,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return getVariantScoreMetadata(studyId, scoreId);
     }
 
+    public void removeVariantScoreMetadata(VariantScoreMetadata scoreMetadata) throws StorageEngineException {
+        updateStudyMetadata(scoreMetadata.getStudyId(), studyMetadata -> {
+            studyMetadata.getVariantScores().removeIf(s -> s.getId() == scoreMetadata.getId());
+            return studyMetadata;
+        });
+    }
+
     public <E extends Exception> ProjectMetadata updateProjectMetadata(UpdateFunction<ProjectMetadata, E> function)
             throws StorageEngineException, E {
         Objects.requireNonNull(function);
@@ -503,11 +510,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
 
-    public QueryResult<Long> countVariantFileMetadata(Query query) {
+    public DataResult<Long> countVariantFileMetadata(Query query) {
         return fileDBAdaptor.count(query);
     }
 
-    public QueryResult<VariantFileMetadata> getVariantFileMetadata(int studyId, int fileId, QueryOptions options)
+    public DataResult<VariantFileMetadata> getVariantFileMetadata(int studyId, int fileId, QueryOptions options)
             throws StorageEngineException {
         return fileDBAdaptor.getVariantFileMetadata(studyId, fileId, options);
     }
@@ -744,6 +751,22 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return getResourcePair(sampleObj, skipNegated, defaultStudy, this::sampleExists, this::getSampleId, "sample");
     }
 
+    public List<Integer> getSampleIds(int studyId, String samplesStr) {
+        List<String> samples = Arrays.asList(samplesStr.split(","));
+        return getSampleIds(studyId, samples);
+    }
+
+    public List<Integer> getSampleIds(int studyId, List<String> samples) {
+        List<Integer> sampleIds = new ArrayList<>(samples.size());
+        for (String sample : samples) {
+            Integer sampleId = getSampleId(studyId, sample);
+            if (sampleId == null) {
+                throw VariantQueryException.sampleNotFound(sample, getStudyName(studyId));
+            }
+        }
+        return sampleIds;
+    }
+
     public Integer getSampleId(int studyId, Object sampleObj) {
         return getSampleId(studyId, sampleObj, false);
     }
@@ -852,7 +875,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public void removeCohort(int studyId, Object cohort) {
-
+        Integer cohortId = getCohortId(studyId, cohort);
+        if (cohortId == null) {
+            throw VariantQueryException.cohortNotFound(cohort.toString(), studyId, this);
+        }
+        cohortDBAdaptor.removeCohort(studyId, cohortId);
     }
 
     public Integer getCohortId(int studyId, String cohortName) {
@@ -1419,8 +1446,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return fileId;
     }
 
-    public Map<String, Integer> registerCohort(String study, String cohortName, Collection<String> samples) throws StorageEngineException {
-        return registerCohorts(study, Collections.singletonMap(cohortName, samples));
+    public Integer registerCohort(String study, String cohortName, Collection<String> samples) throws StorageEngineException {
+        return registerCohorts(study, Collections.singletonMap(cohortName, samples)).get(cohortName);
     }
 
     public Map<String, Integer> registerCohorts(String study, Map<String, ? extends Collection<String>> cohorts)

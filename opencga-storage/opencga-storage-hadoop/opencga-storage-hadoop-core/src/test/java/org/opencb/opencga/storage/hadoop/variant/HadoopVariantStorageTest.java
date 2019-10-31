@@ -334,6 +334,15 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
     @Override
     default HadoopVariantStorageEngine getVariantStorageEngine() throws Exception {
+        return getHadoopVariantStorageEngine(getOtherStorageConfigurationOptions());
+    }
+
+
+    static HadoopVariantStorageEngine getHadoopVariantStorageEngine() throws Exception {
+        return getHadoopVariantStorageEngine(new ObjectMap());
+    }
+
+    static HadoopVariantStorageEngine getHadoopVariantStorageEngine(Map<String, ?> otherStorageConfigurationOptions) throws Exception {
         synchronized (manager) {
             if (manager.get() == null) {
                 manager.set(new HadoopVariantStorageEngine());
@@ -348,10 +357,10 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         storageConfiguration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)
                 .getVariant()
                 .getOptions()
-                .putAll(getOtherStorageConfigurationOptions());
+                .putAll(otherStorageConfigurationOptions);
 
         manager.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID, VariantStorageBaseTest.DB_NAME);
-        manager.mrExecutor = getMrExecutor();
+        manager.mrExecutor = new TestMRExecutor(configuration.get());
         manager.conf = conf;
         return manager;
     }
@@ -491,7 +500,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 Configuration conf = new Configuration(false);
                 HBaseConfiguration.merge(conf, configuration);
 
-                System.out.println("Executing " + clazz.getSimpleName() + ": " + args);
+                System.out.println("Executing " + clazz.getSimpleName() + ": " + Arrays.toString(args));
                 Method method = clazz.getMethod("privateMain", String[].class, Configuration.class);
                 Object o = method.invoke(clazz.newInstance(), args, conf);
                 System.out.println("Finish execution " + clazz.getSimpleName());

@@ -16,10 +16,10 @@
 
 package org.opencb.opencga.catalog.monitor.daemons;
 
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -111,9 +111,9 @@ public class IndexDaemon extends MonitorParentDaemon {
             RUNNING JOBS
              */
                 try {
-                    QueryResult<Job> runningJobs = jobDBAdaptor.get(RUNNING_JOBS_QUERY, QUERY_OPTIONS);
+                    DataResult<Job> runningJobs = jobDBAdaptor.get(RUNNING_JOBS_QUERY, QUERY_OPTIONS);
                     logger.debug("Checking running jobs. {} running jobs found", runningJobs.getNumResults());
-                    for (Job job : runningJobs.getResult()) {
+                    for (Job job : runningJobs.getResults()) {
                         checkRunningJob(job);
                     }
                 } catch (CatalogException e) {
@@ -124,9 +124,9 @@ public class IndexDaemon extends MonitorParentDaemon {
             QUEUED JOBS
              */
                 try {
-                    QueryResult<Job> queuedJobs = jobDBAdaptor.get(QUEUED_JOBS_QUERY, QUERY_OPTIONS);
+                    DataResult<Job> queuedJobs = jobDBAdaptor.get(QUEUED_JOBS_QUERY, QUERY_OPTIONS);
                     logger.debug("Checking queued jobs. {} queued jobs found", queuedJobs.getNumResults());
-                    for (Job job : queuedJobs.getResult()) {
+                    for (Job job : queuedJobs.getResults()) {
                         checkQueuedJob(job, tempJobFolder, catalogIOManager);
                     }
                 } catch (CatalogException e) {
@@ -137,7 +137,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             PREPARED JOBS
              */
                 try {
-                    QueryResult<Job> preparedJobs = jobDBAdaptor.get(PREPARED_JOBS_QUERY, QUERY_OPTIONS_LIMIT_1);
+                    DataResult<Job> preparedJobs = jobDBAdaptor.get(PREPARED_JOBS_QUERY, QUERY_OPTIONS_LIMIT_1);
                     if (preparedJobs != null && preparedJobs.getNumResults() > 0) {
                         if (!(batchExecutor instanceof LocalExecutor) || getRunningOrQueuedJobs() < maxConcurrentIndexJobs) {
                             queuePreparedIndex(preparedJobs.first());
@@ -330,12 +330,12 @@ public class IndexDaemon extends MonitorParentDaemon {
             job.getResourceManagerAttributes().put(BatchExecutor.OUTDIR, path.toString());
             updateObjectMap.put(JobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key(), job.getResourceManagerAttributes());
 
-            QueryResult<Job> update = jobDBAdaptor.update(job.getUid(), updateObjectMap, QueryOptions.empty());
-            if (update.getNumResults() == 1) {
-                job = update.first();
-                executeJob(job, userSessionId);
+            DataResult update = jobDBAdaptor.update(job.getUid(), updateObjectMap, QueryOptions.empty());
+            if (update.getNumUpdated() == 1) {
+                DataResult<Job> queryResult = jobDBAdaptor.get(job.getUid(), QueryOptions.empty());
+                executeJob(queryResult.first(), userSessionId);
             } else {
-                logger.error("Could not update nor run job {}" + job.getUid());
+                logger.error("Could not update nor run job {}", job.getUid());
             }
         } catch (CatalogException e) {
             logger.error("Could not update job {}.", job.getUid(), e);

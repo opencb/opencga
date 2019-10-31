@@ -702,11 +702,11 @@ public class SolrQueryParserTest {
 
         Query query = new Query();
         //query.put(STUDIES.key(), study);
-        query.put(SCORE.key(), studyName + ":score2>=3.2");
+        query.put(SCORE.key(), studyName + ":score2>=3.2;" + studyName + ":score3:pvalue<0.02");
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=score__platinum__score2:[3.2+TO+*]", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=score__platinum__score2:[3.2+TO+*]&fq=pvalue__platinum__score3:{-100.0+TO+0.02}", solrQuery.toString());
     }
 
     @Test
@@ -715,11 +715,11 @@ public class SolrQueryParserTest {
 
         Query query = new Query();
         //query.put(STUDIES.key(), study);
-        query.put(SCORE.key(), "score2>=3.2");
+        query.put(SCORE.key(), "score>=3.2,score2:pvalue<0.001");
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=score__platinum__score2:[3.2+TO+*]", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=score__platinum__score2:[3.2+TO+*]+OR+pvalue__platinum__score2:{-100.0+TO+0.001}", solrQuery.toString());
     }
 
     private void display(Query query, QueryOptions queryOptions, SolrQuery solrQuery) {

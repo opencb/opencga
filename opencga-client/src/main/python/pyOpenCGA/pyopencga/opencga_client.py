@@ -111,9 +111,9 @@ class OpenCGAClient(object):
         def login_handler(refresh=False):
             self.user_id = user
             if refresh:
-                self.session_id = Users(self.configuration, session_id=self.session_id).refresh_token(user=user).result()['token']
+                self.session_id = Users(self.configuration, session_id=self.session_id).refresh_token(user=user).result(0)['token']
             else:
-                self.session_id = Users(self.configuration).login(user=user, pwd=pwd).result()['token']
+                self.session_id = Users(self.configuration).login(user=user, pwd=pwd).result(0)['token']
 
             for client in self.clients:
                 client.session_id = self.session_id  # renew the client's session id

@@ -1,9 +1,9 @@
 package org.opencb.opencga.storage.core.metadata.adaptors;
 
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
@@ -20,9 +20,9 @@ public interface ProjectMetadataAdaptor extends AutoCloseable {
 
     void unLockProject(long lockId) throws StorageEngineException;
 
-    QueryResult<ProjectMetadata> getProjectMetadata();
+    DataResult<ProjectMetadata> getProjectMetadata();
 
-    QueryResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters);
+    DataResult updateProjectMetadata(ProjectMetadata projectMetadata, boolean updateCounters);
 
     @Override
     default void close() throws IOException {

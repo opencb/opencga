@@ -105,6 +105,9 @@ public class IOConnectorProvider implements IOConnector {
     }
 
     public IOConnector get(URI uri) throws IOException {
+        if (uri == null) {
+            return null;
+        }
         for (IOConnector ioConnector : ioConnectors) {
             if (ioConnector.isValid(uri)) {
                 return ioConnector;

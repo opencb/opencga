@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.hadoop.variant.analysis.gwas;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -228,9 +227,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
             }
         }
         if (localOutput != null) {
-            FileSystem fileSystem = outdir.getFileSystem(getConf());
-            fileSystem.delete(outdir, true);
-            fileSystem.cancelDeleteOnExit(outdir);
+            deleteTemporaryFile(outdir);
         }
     }
 
@@ -275,9 +272,9 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
                 FisherTestResult fisherTestResult = new FisherExactTest().fisherTest(a, b, c, d);
 
                 VariantAnnotation variantAnnotation = result.getVariantAnnotation();
-                String id;
+                String id = null;
                 Set<String> genes = Collections.emptySet();
-                if (variantAnnotation != null && !StringUtils.isEmpty(variantAnnotation.getId())) {
+                if (variantAnnotation != null) {
                     id = variantAnnotation.getId();
                     genes = new HashSet<>();
                     if (variantAnnotation.getConsequenceTypes() != null) {
@@ -287,7 +284,8 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
                             }
                         }
                     }
-                } else {
+                }
+                if (StringUtils.isEmpty(id)) {
                     id = variant.toString();
                 }
                 if (genes.isEmpty()) {

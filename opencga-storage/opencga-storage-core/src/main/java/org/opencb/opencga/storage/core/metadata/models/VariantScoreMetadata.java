@@ -47,8 +47,16 @@ public class VariantScoreMetadata extends StudyResourceMetadata<VariantScoreMeta
         return getStatus("index");
     }
 
+    public TaskMetadata.Status getRemoveStatus() {
+        return getStatus("remove");
+    }
+
     public VariantScoreMetadata setIndexStatus(TaskMetadata.Status indexStatus) {
         return setStatus("index", indexStatus);
+    }
+
+    public VariantScoreMetadata setRemoveStatus(TaskMetadata.Status indexStatus) {
+        return setStatus("remove", indexStatus);
     }
 
 }

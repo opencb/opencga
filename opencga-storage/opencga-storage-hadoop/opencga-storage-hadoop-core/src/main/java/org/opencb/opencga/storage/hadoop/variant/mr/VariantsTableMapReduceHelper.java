@@ -102,10 +102,14 @@ public class VariantsTableMapReduceHelper implements AutoCloseable {
 
     public StudyMetadata getStudyMetadata() {
         if (studyMetadata == null) {
-            studyMetadata = metadataManager.getStudyMetadata(helper.getStudyId()); // Variant meta
+            studyMetadata = metadataManager.getStudyMetadata(getStudyId()); // Variant meta
         }
 
         return studyMetadata;
+    }
+
+    public int getStudyId() {
+        return helper.getStudyId();
     }
 
     public VariantStorageMetadataManager getMetadataManager() {

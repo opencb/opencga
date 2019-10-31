@@ -4,29 +4,21 @@ import org.apache.commons.collections.CollectionUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.ReportedEvent;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
-import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationConfiguration;
-import org.opencb.opencga.analysis.clinical.interpretation.FamilyInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.interpretation.InterpretationResult;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
+import org.opencb.opencga.core.analysis.result.AnalysisResult;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
-import org.opencb.oskar.analysis.result.AnalysisResult;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoDBVariantStorageTest {
 
@@ -56,9 +48,13 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
         //query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
 
         CustomInterpretationConfiguration config = new CustomInterpretationConfiguration();
-        CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis(clinicalTest.clinicalAnalysis.getId(), clinicalTest.studyFqn, null,
-                QueryOptions.empty(), outDir, catalogManagerResource.getOpencgaHome(), config, clinicalTest.token);
-        AnalysisResult result = customAnalysis.execute();
+        CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis();
+        customAnalysis.setUp(catalogManagerResource.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
+        customAnalysis.setStudyId(clinicalTest.studyFqn)
+                .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
+                .setConfig(config);
+
+        AnalysisResult result = customAnalysis.start();
         System.out.println(result);
 //        ClinicalAnalysisUtilsTest.displayReportedVariants(execute.getResult().getPrimaryFindings(), "Primary findings:");
 //        ClinicalAnalysisUtilsTest.displayReportedVariants(execute.getResult().getSecondaryFindings(), "Secondary findings:");
@@ -84,9 +80,15 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
         query.put(VariantQueryParam.SAMPLE.key(), samples);
 
         CustomInterpretationConfiguration config = new CustomInterpretationConfiguration();
-        CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis(clinicalTest.clinicalAnalysis.getId(), clinicalTest.studyFqn, query,
-                QueryOptions.empty(), outDir, catalogManagerResource.getOpencgaHome(), config, clinicalTest.token);
-        AnalysisResult result = customAnalysis.execute();
+        CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis();
+        customAnalysis.setUp(catalogManagerResource.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
+        customAnalysis.setStudyId(clinicalTest.studyFqn)
+                .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
+                .setQuery(query)
+                .setConfig(config);
+
+        AnalysisResult result = customAnalysis.start();
+
         System.out.println(result);
 //        ClinicalAnalysisUtilsTest.displayReportedVariants(execute.getResult().getPrimaryFindings(), "Primary findings:");
 //        ClinicalAnalysisUtilsTest.displayReportedVariants(execute.getResult().getSecondaryFindings(), "Secondary findings:");

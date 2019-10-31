@@ -20,6 +20,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -27,11 +28,7 @@ import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.tools.variant.converters.ga4gh.Ga4ghVariantConverter;
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.AvroGa4GhVariantFactory;
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.ProtoGa4GhVariantFactory;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.DBIterator;
@@ -53,6 +50,7 @@ import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
@@ -299,13 +297,13 @@ public class VariantStorageManager extends StorageManager {
         variantStorageEngine.deleteAnnotation(annotationName, params);
     }
 
-    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options, String sessionId)
+    public DataResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options, String sessionId)
             throws StorageEngineException, CatalogException, IOException {
         QueryOptions finalOptions = VariantQueryUtils.validateAnnotationQueryOptions(options);
         return secure(query, finalOptions, sessionId, (engine) -> engine.getAnnotation(name, query, finalOptions));
     }
 
-    public QueryResult<ProjectMetadata.VariantAnnotationMetadata> getAnnotationMetadata(String name, String project, String sessionId)
+    public DataResult<ProjectMetadata.VariantAnnotationMetadata> getAnnotationMetadata(String name, String project, String sessionId)
             throws StorageEngineException, CatalogException, IOException {
         Query query = new Query(VariantCatalogQueryUtils.PROJECT.key(), project);
         return secure(query, empty(), sessionId, (engine) -> engine.getAnnotationMetadata(name));
@@ -320,6 +318,15 @@ public class VariantStorageManager extends StorageManager {
 
     public void deleteStats(List<String> cohorts, String studyId, String sessionId) {
         throw new UnsupportedOperationException();
+    }
+
+    public List<VariantScoreMetadata> listVariantScores(String study, String sessionId) throws CatalogException, StorageEngineException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        String studyFqn = catalogManager.getStudyManager().resolveId(study, userId).getFqn();
+        DataStore dataStore = getDataStore(studyFqn, sessionId);
+        VariantStorageEngine engine = getVariantStorageEngine(dataStore);
+
+        return engine.getMetadataManager().getStudyMetadata(studyFqn).getVariantScores();
     }
 
     public void loadVariantScore(String study, URI scoreFile, String scoreName, String cohort1, String cohort2,
@@ -344,6 +351,18 @@ public class VariantStorageManager extends StorageManager {
         }
 
         engine.loadVariantScore(scoreFile, study, scoreName, cohort1, cohort2, descriptor, options);
+    }
+
+    public void removeVariantScore(String study, String scoreName, ObjectMap options, String sessionId)
+            throws CatalogException, StorageEngineException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        String studyFqn = catalogManager.getStudyManager().resolveId(study, userId).getFqn();
+
+        DataStore dataStore = getDataStore(studyFqn, sessionId);
+        VariantStorageEngine engine = getVariantStorageEngine(dataStore);
+
+
+        engine.removeVariantScore(study, scoreName, options);
     }
 
     public void sampleIndex(String studyStr, List<String> samples, ObjectMap config, String sessionId)
@@ -449,10 +468,10 @@ public class VariantStorageManager extends StorageManager {
 
     public VariantQueryResult<Variant> get(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        return secure(query, queryOptions, sessionId, "get variants", engine -> {
+        return secure(query, queryOptions, sessionId, AuditRecord.Action.SEARCH, engine -> {
             logger.debug("getVariants {}, {}", query, queryOptions);
             VariantQueryResult<Variant> result = engine.get(query, queryOptions);
-            logger.debug("gotVariants {}, {}, in {}ms", result.getNumResults(), result.getNumTotalResults(), result.getDbTime());
+            logger.debug("gotVariants {}, {}, in {}ms", result.getNumResults(), result.getNumTotalResults(), result.getTime());
             return result;
         });
     }
@@ -466,20 +485,18 @@ public class VariantStorageManager extends StorageManager {
             return (VariantQueryResult<T>) result;
         } else if (clazz == org.ga4gh.models.Variant.class) {
             Ga4ghVariantConverter<org.ga4gh.models.Variant> converter = new Ga4ghVariantConverter<>(new AvroGa4GhVariantFactory());
-            variants = (List<T>) converter.apply(result.getResult());
+            variants = (List<T>) converter.apply(result.getResults());
         } else if (clazz == ga4gh.Variants.Variant.class) {
             Ga4ghVariantConverter<ga4gh.Variants.Variant> converter = new Ga4ghVariantConverter<>(new ProtoGa4GhVariantFactory());
-            variants = (List<T>) converter.apply(result.getResult());
+            variants = (List<T>) converter.apply(result.getResults());
         } else {
             throw new IllegalArgumentException("Unknown variant format " + clazz);
         }
         return new VariantQueryResult<>(
-                result.getId(),
-                result.getDbTime(),
+                result.getTime(),
                 result.getNumResults(),
-                result.getNumTotalResults(),
-                result.getWarningMsg(),
-                result.getErrorMsg(),
+                result.getNumMatches(),
+                result.getEvents(),
                 variants,
                 result.getSamples(),
                 result.getSource(),
@@ -488,38 +505,38 @@ public class VariantStorageManager extends StorageManager {
 
     }
 
-    public QueryResult<VariantMetadata> getMetadata(Query query, QueryOptions queryOptions, String sessionId)
+    public DataResult<VariantMetadata> getMetadata(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
         return secure(query, queryOptions, sessionId, engine -> {
             StopWatch watch = StopWatch.createStarted();
             VariantMetadataFactory metadataFactory = new CatalogVariantMetadataFactory(catalogManager, engine.getDBAdaptor(), sessionId);
             VariantMetadata metadata = metadataFactory.makeVariantMetadata(query, queryOptions);
-            return new QueryResult<>("getMetadata", ((int) watch.getTime()), 1, 1, "", "", Collections.singletonList(metadata));
+            return new DataResult<>(((int) watch.getTime()), Collections.emptyList(), 1, Collections.singletonList(metadata), 1);
         });
     }
 
     //TODO: GroupByFieldEnum
-    public QueryResult groupBy(String field, Query query, QueryOptions queryOptions, String sessionId)
+    public DataResult groupBy(String field, Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        return (QueryResult) secure(query, queryOptions, sessionId, engine -> engine.groupBy(query, field, queryOptions));
+        return (DataResult) secure(query, queryOptions, sessionId, engine -> engine.groupBy(query, field, queryOptions));
     }
 
-    public QueryResult rank(Query query, String field, int limit, boolean asc, String sessionId)
+    public DataResult rank(Query query, String field, int limit, boolean asc, String sessionId)
             throws StorageEngineException, CatalogException, IOException {
         int limitMax = 30;
         int limitDefault = 10;
-        return (QueryResult) secure(query, null, sessionId,
+        return (DataResult) secure(query, null, sessionId,
                 engine -> engine.rank(query, field, (limit > 0) ? Math.min(limit, limitMax) : limitDefault, asc));
     }
 
-    public QueryResult<Long> count(Query query, String sessionId) throws CatalogException, StorageEngineException, IOException {
+    public DataResult<Long> count(Query query, String sessionId) throws CatalogException, StorageEngineException, IOException {
         return secure(query, new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES), sessionId,
                 engine -> engine.count(query));
     }
 
-    public QueryResult distinct(Query query, String field, String sessionId)
+    public DataResult distinct(Query query, String field, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
-        return (QueryResult) secure(query, new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES), sessionId,
+        return (DataResult) secure(query, new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES), sessionId,
                 engine -> engine.distinct(query, field));
     }
 
@@ -529,9 +546,9 @@ public class VariantStorageManager extends StorageManager {
                 engine -> engine.getPhased(variant.toString(), study, sample, options, 5000));
     }
 
-    public QueryResult getFrequency(Query query, int interval, String sessionId)
+    public DataResult getFrequency(Query query, int interval, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
-        return (QueryResult) secure(query, null, sessionId, engine -> {
+        return (DataResult) secure(query, null, sessionId, engine -> {
             String[] regions = getRegions(query);
             if (regions.length != 1) {
                 throw new IllegalArgumentException("Unable to calculate histogram with " + regions.length + " regions.");
@@ -576,14 +593,14 @@ public class VariantStorageManager extends StorageManager {
         return get(intersectQuery, queryOptions, sessionId);
     }
 
-    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions inputOptions, String sessionId)
+    public DataResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions inputOptions, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
         Query query = new Query(VariantQueryParam.STUDY.key(), study);
         QueryOptions options = inputOptions == null ? new QueryOptions() : new QueryOptions(inputOptions);
         options.remove(QueryOptions.INCLUDE);
         options.remove(QueryOptions.EXCLUDE);
         options.remove(VariantField.SUMMARY);
-        return secure(query, options, sessionId, "sampleData", engine -> {
+        return secure(query, options, sessionId, AuditRecord.Action.SAMPLE_DATA, engine -> {
             String studyFqn = query.getString(STUDY.key());
             options.putAll(query);
             return engine.getSampleData(variant, studyFqn, options);
@@ -609,15 +626,23 @@ public class VariantStorageManager extends StorageManager {
         });
     }
 
-    private DataStore getDataStore(String study, String sessionId) throws CatalogException {
+    public DataStore getDataStore(String study, String sessionId) throws CatalogException {
         return StorageOperation.getDataStore(catalogManager, study, File.Bioformat.VARIANT, sessionId);
     }
 
-    private DataStore getDataStoreByProjectId(String project, String sessionId) throws CatalogException {
+    public DataStore getDataStoreByProjectId(String project, String sessionId) throws CatalogException {
         return StorageOperation.getDataStoreByProjectId(catalogManager, project, File.Bioformat.VARIANT, sessionId);
     }
 
-    protected VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws CatalogException, StorageEngineException {
+    protected VariantStorageEngine getVariantStorageEngine(Query query, String sessionId) throws CatalogException, StorageEngineException {
+        String study = catalogUtils.getAnyStudy(query, sessionId);
+
+        catalogUtils.parseQuery(query, sessionId);
+        DataStore dataStore = getDataStore(study, sessionId);
+        return getVariantStorageEngine(dataStore);
+    }
+
+    protected VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {
         try {
             return storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
@@ -652,6 +677,23 @@ public class VariantStorageManager extends StorageManager {
         return true;
     }
 
+    public void checkQueryPermissions(Query query, QueryOptions queryOptions, String sessionId)
+            throws CatalogException, StorageEngineException {
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(query, sessionId);
+        checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), sessionId);
+    }
+
+    public Set<String> getIndexedSamples(String study, String sessionId) throws CatalogException {
+        return catalogManager
+                .getCohortManager()
+                .get(study, StudyEntry.DEFAULT_COHORT, new QueryOptions(), sessionId)
+                .first()
+                .getSamples()
+                .stream()
+                .map(Sample::getId)
+                .collect(Collectors.toSet());
+    }
+
     // Permission related methods
 
     private interface VariantReadOperation<R> {
@@ -659,19 +701,14 @@ public class VariantStorageManager extends StorageManager {
     }
 
     private <R> R secure(Query query, QueryOptions queryOptions, String sessionId, VariantReadOperation<R> supplier)
-            throws CatalogException, StorageEngineException, IOException {
-        String study = catalogUtils.getAnyStudy(query, sessionId);
-
-        catalogUtils.parseQuery(query, sessionId);
-        DataStore dataStore = getDataStore(study, sessionId);
-        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
-
+            throws CatalogException, StorageEngineException {
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(query, sessionId);
         checkSamplesPermissions(query, queryOptions, variantStorageEngine.getMetadataManager(), sessionId);
         return supplier.apply(variantStorageEngine);
     }
 
-    private <R> R secure(Query query, QueryOptions queryOptions, String sessionId, String auditAction,
-                                             VariantReadOperation<R> supplier)
+    private <R> R secure(Query query, QueryOptions queryOptions, String sessionId, AuditRecord.Action auditAction,
+                         VariantReadOperation<R> supplier)
             throws CatalogException, StorageEngineException, IOException {
         ObjectMap auditAttributes = new ObjectMap()
                 .append("query", new Query(query))
@@ -706,9 +743,9 @@ public class VariantStorageManager extends StorageManager {
             auditAttributes.append("storageTimeMillis", storageStopWatch == null
                     ? -1
                     : storageStopWatch.getTime(TimeUnit.MILLISECONDS));
-            if (result instanceof QueryResult) {
-                auditAttributes.append("dbTime", ((QueryResult) result).getDbTime());
-                auditAttributes.append("numResults", ((QueryResult) result).getResult().size());
+            if (result instanceof DataResult) {
+                auditAttributes.append("dbTime", ((DataResult) result).getTime());
+                auditAttributes.append("numResults", ((DataResult) result).getResults().size());
             }
             auditAttributes.append("totalTimeMillis", totalStopWatch.getTime(TimeUnit.MILLISECONDS));
             auditAttributes.append("error", result == null);
@@ -721,12 +758,8 @@ public class VariantStorageManager extends StorageManager {
             logger.debug("storageTimeMillis = " + auditAttributes.getInt("storageTimeMillis"));
             logger.debug("dbTime = " + auditAttributes.getInt("dbTime"));
             logger.debug("totalTimeMillis = " + auditAttributes.getInt("totalTimeMillis"));
-            catalogManager.getAuditManager().recordAction(
-                    AuditRecord.Resource.variant,
-                    AuditRecord.Action.view,
-                    AuditRecord.Magnitude.low,
-                    dbName,
-                    userId, null, null, auditAction, auditAttributes);
+            catalogManager.getAuditManager().audit(userId, auditAction, AuditRecord.Resource.VARIANT, "", "", "", "", new ObjectMap(),
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), auditAttributes);
         }
     }
 
@@ -754,13 +787,13 @@ public class VariantStorageManager extends StorageManager {
             for (Map.Entry<String, List<String>> entry : samplesToReturn.entrySet()) {
                 String studyId = entry.getKey();
                 if (!entry.getValue().isEmpty()) {
-                    List<QueryResult<Sample>> samplesQueryResult = catalogManager.getSampleManager().get(studyId, entry.getValue(),
+                    DataResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(studyId, entry.getValue(),
                             new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), sessionId);
-                    if (samplesQueryResult.size() != entry.getValue().size()) {
+                    if (samplesQueryResult.getNumResults() != entry.getValue().size()) {
                         throw new CatalogAuthorizationException("Permission denied. User "
                                 + catalogManager.getUserManager().getUserId(sessionId) + " can't read all the requested samples");
                     }
-                    samplesMap.put(studyId, samplesQueryResult.stream().map(QueryResult::first).collect(Collectors.toList()));
+                    samplesMap.put(studyId, samplesQueryResult.getResults());
                 } else {
                     samplesMap.put(studyId, Collections.emptyList());
                 }
@@ -772,7 +805,7 @@ public class VariantStorageManager extends StorageManager {
                     .map(mm::getStudyName)
                     .collect(Collectors.toList());
             List<Study> studies = catalogManager.getStudyManager().get(includeStudies,
-                    new QueryOptions(INCLUDE, FQN.key()), false, sessionId).stream().map(QueryResult::first).collect(Collectors.toList());
+                    new QueryOptions(INCLUDE, FQN.key()), false, sessionId).getResults();
             if (!returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
                 for (String returnedStudy : includeStudies) {
                     samplesMap.put(returnedStudy, Collections.emptyList());
@@ -780,13 +813,12 @@ public class VariantStorageManager extends StorageManager {
             } else {
                 List<String> includeSamples = new LinkedList<>();
                 for (Study study : studies) {
-                    QueryResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(study.getFqn(),
-                            new Query(), new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()).append("lazy", true),
-                            sessionId);
-                    samplesQueryResult.getResult().sort(Comparator.comparing(Sample::getId));
-                    samplesMap.put(study.getFqn(), samplesQueryResult.getResult());
+                    DataResult<Sample> samplesQueryResult = catalogManager.getSampleManager().search(study.getFqn(), new Query(),
+                                    new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()).append("lazy", true), sessionId);
+                    samplesQueryResult.getResults().sort(Comparator.comparing(Sample::getId));
+                    samplesMap.put(study.getFqn(), samplesQueryResult.getResults());
                     int studyId = mm.getStudyId(study.getFqn());
-                    for (Iterator<Sample> iterator = samplesQueryResult.getResult().iterator(); iterator.hasNext();) {
+                    for (Iterator<Sample> iterator = samplesQueryResult.getResults().iterator(); iterator.hasNext();) {
                         Sample sample = iterator.next();
                         if (mm.getSampleId(studyId, sample.getId(), true) != null) {
                             includeSamples.add(sample.getId());
@@ -865,13 +897,13 @@ public class VariantStorageManager extends StorageManager {
     //   Facet methods      //
     // ---------------------//
 
-    public FacetQueryResult facet(Query query, QueryOptions queryOptions, String sessionId)
+    public DataResult<FacetField> facet(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        return secure(query, queryOptions, sessionId, "facet", engine -> {
+        return secure(query, queryOptions, sessionId, AuditRecord.Action.FACET, engine -> {
             addDefaultLimit(queryOptions, engine.getOptions());
             logger.debug("getFacets {}, {}", query, queryOptions);
-            FacetQueryResult result = engine.facet(query, queryOptions);
-            logger.debug("getFacets in {}ms", result.getDbTime());
+            DataResult<FacetField> result = engine.facet(query, queryOptions);
+            logger.debug("getFacets in {}ms", result.getTime());
             return result;
         });
     }

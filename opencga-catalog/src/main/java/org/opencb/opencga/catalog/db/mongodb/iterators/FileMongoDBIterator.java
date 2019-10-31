@@ -138,9 +138,9 @@ public class FileMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             List<Document> sampleList;
             try {
                 if (user != null) {
-                    sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions, user).getResult();
+                    sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions, user).getResults();
                 } else {
-                    sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions).getResult();
+                    sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions).getResults();
                 }
             } catch (CatalogDBException | CatalogAuthorizationException e) {
                 logger.warn("Could not obtain the samples associated to the files: {}", e.getMessage(), e);
@@ -182,9 +182,9 @@ public class FileMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             List<Document> fileList;
             try {
                 if (user != null) {
-                    fileList = fileDBAdaptor.nativeGet(query, fileQueryOptions, user).getResult();
+                    fileList = fileDBAdaptor.nativeGet(query, fileQueryOptions, user).getResults();
                 } else {
-                    fileList = fileDBAdaptor.nativeGet(query, fileQueryOptions).getResult();
+                    fileList = fileDBAdaptor.nativeGet(query, fileQueryOptions).getResults();
                 }
             } catch (CatalogDBException | CatalogAuthorizationException e) {
                 logger.warn("Could not obtain the list of related files: {}", e.getMessage(), e);
@@ -212,7 +212,7 @@ public class FileMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
                             String auxFileId = fileId + "-" + relatedFileUid;
                             String relation = relatedFileMap.get(auxFileId);
                             tmpFileList.add(new Document()
-                                    .append("file", fileMap.get(relatedFileUid))
+                                    .append("file", fileMap.getOrDefault(relatedFileUid, f))
                                     .append("relation", relation));
                         });
                     }

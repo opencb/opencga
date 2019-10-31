@@ -22,10 +22,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.opencb.commons.datastore.core.ComplexTypeConverter;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.solr.SolrCollection;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.commons.utils.CollectionUtils;
@@ -186,7 +183,7 @@ public class CatalogSolrManager {
      * @throws CatalogException CatalogException
      */
     @Deprecated
-    public FacetQueryResult facetedQuery(String collection, Query query, QueryOptions queryOptions)
+    public DataResult<FacetField> facetedQuery(String collection, Query query, QueryOptions queryOptions)
             throws IOException, CatalogException {
         CatalogSolrQueryParser catalogSolrQueryParser = new CatalogSolrQueryParser();
         SolrQuery solrQuery = catalogSolrQueryParser.parse(query, queryOptions, null);
@@ -211,7 +208,7 @@ public class CatalogSolrManager {
      * @throws IOException   IOException
      * @throws CatalogException CatalogException
      */
-    public FacetQueryResult facetedQuery(Study study, String collection, Query query, QueryOptions queryOptions, String userId)
+    public DataResult<FacetField> facetedQuery(Study study, String collection, Query query, QueryOptions queryOptions, String userId)
             throws IOException, CatalogException {
         StopWatch stopWatch = StopWatch.createStarted();
 

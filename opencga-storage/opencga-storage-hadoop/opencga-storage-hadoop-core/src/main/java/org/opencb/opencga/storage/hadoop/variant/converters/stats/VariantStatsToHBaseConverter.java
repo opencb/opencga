@@ -68,6 +68,9 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
         Put put = new Put(row);
         for (Map.Entry<String, VariantStats> entry : variantStatsWrapper.getCohortStats().entrySet()) {
             Integer cohortId = cohortIds.get(entry.getKey());
+            if (cohortId == null) {
+                continue;
+            }
             Column mafColumn = VariantPhoenixHelper.getStatsMafColumn(studyId, cohortId);
             Column mgfColumn = VariantPhoenixHelper.getStatsMgfColumn(studyId, cohortId);
             Column cohortColumn = VariantPhoenixHelper.getStatsFreqColumn(studyId, cohortId);

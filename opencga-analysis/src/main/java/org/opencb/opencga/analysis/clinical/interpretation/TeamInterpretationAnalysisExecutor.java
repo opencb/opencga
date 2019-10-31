@@ -2,18 +2,18 @@ package org.opencb.opencga.analysis.clinical.interpretation;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.biodata.models.clinical.interpretation.*;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
-import org.opencb.biodata.models.commons.Software;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.TeamReportedVariantCreator;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.OpenCgaAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
+import org.opencb.opencga.core.annotations.AnalysisExecutor;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -21,14 +21,10 @@ import org.opencb.opencga.storage.core.manager.clinical.ClinicalInterpretationMa
 import org.opencb.opencga.storage.core.manager.clinical.ClinicalUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
-import org.opencb.oskar.core.annotations.AnalysisExecutor;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -37,18 +33,17 @@ import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.DE_NOVO;
 import static org.opencb.biodata.tools.pedigree.ModeOfInheritance.lof;
 import static org.opencb.biodata.tools.pedigree.ModeOfInheritance.proteinCoding;
+import static org.opencb.opencga.analysis.clinical.interpretation.InterpretationAnalysis.PRIMARY_FINDINGS_FILENAME;
+import static org.opencb.opencga.analysis.clinical.interpretation.InterpretationAnalysis.SECONDARY_FINDINGS_FILENAME;
 
-@AnalysisExecutor(id = "TeamInterpretation", analysis = "TeamInterpretation", source = AnalysisExecutor.Source.MONGODB,
-        framework = AnalysisExecutor.Framework.ITERATOR)
-public class TeamInterpretationAnalysisExecutor  extends OpenCgaAnalysisExecutor {
+@AnalysisExecutor(id = "opencga-local",
+        analysis = TeamInterpretationAnalysis.ID,
+        source = AnalysisExecutor.Source.STORAGE,
+        framework = AnalysisExecutor.Framework.LOCAL)
+public class TeamInterpretationAnalysisExecutor extends OpenCgaAnalysisExecutor implements ClinicalInterpretationAnalysisExecutor {
 
-    public final static String ID = "TieringInterpretationAnalysis";
-
-    public final static String SESSION_ID = "SESSION_ID";
-    public final static String CLINICAL_INTERPRETATION_MANAGER = "CLINICAL_INTERPRETATION_MANAGER";
-
-    private String clinicalAnalysisId;
     private String studyId;
+    private String clinicalAnalysisId;
     private List<DiseasePanel> diseasePanels;
     private ClinicalProperty.ModeOfInheritance moi;
     private TeamInterpretationConfiguration config;
@@ -56,28 +51,11 @@ public class TeamInterpretationAnalysisExecutor  extends OpenCgaAnalysisExecutor
     private String sessionId;
     private ClinicalInterpretationManager clinicalInterpretationManager;
 
-    public void setup(String clinicalAnalysisId, String studyId, List<DiseasePanel> diseasePanels, ClinicalProperty.ModeOfInheritance moi,
-                      Path outDir, ObjectMap executorParams, TeamInterpretationConfiguration config) throws AnalysisException {
-        super.setup(executorParams, outDir);
-        this.clinicalAnalysisId = clinicalAnalysisId;
-        this.studyId = studyId;
-        this.diseasePanels = diseasePanels;
-        this.moi = moi;
-        this.config = config;
-
-        // Sanity check
-        sessionId = executorParams.getString(SESSION_ID, "");
-        if (StringUtils.isEmpty(sessionId)) {
-            throw new AnalysisException("Missing executor parameter: " + SESSION_ID);
-        }
-        clinicalInterpretationManager = (ClinicalInterpretationManager) executorParams.getOrDefault(CLINICAL_INTERPRETATION_MANAGER, null);
-        if (clinicalInterpretationManager == null) {
-            throw new AnalysisException("Missing executor parameter: " + CLINICAL_INTERPRETATION_MANAGER);
-        }
-    }
-
     @Override
-    public void exec() throws AnalysisException {
+    public void run() throws AnalysisException {
+        sessionId = getSessionId();
+        clinicalInterpretationManager = getClinicalInterpretationManager();
+
         // Get assembly
         String assembly;
         try {
@@ -147,7 +125,7 @@ public class TeamInterpretationAnalysisExecutor  extends OpenCgaAnalysisExecutor
 
             // VUS filter
             //
-            //   Pop. frequncy:
+            //   Pop. frequency:
             //     1kG_phase3:EUR<0.01
             //     1kG_phase3:IBS<0.01
             //     EXAC/gnomAD < 0.01 (ALL ??, GNOMAD_GENOMES and/or GNOMAD_EXOMES ??)
@@ -194,10 +172,10 @@ public class TeamInterpretationAnalysisExecutor  extends OpenCgaAnalysisExecutor
         }
 
         // Write primary findings
-        ClinicalUtils.writeReportedVariants(primaryFindings, Paths.get(outDir + "/primary-findings.json"));
+        ClinicalUtils.writeReportedVariants(primaryFindings, Paths.get(outDir + "/" + PRIMARY_FINDINGS_FILENAME));
 
         // Step 3: secondary findings, if clinical consent is TRUE
-        List<ReportedVariant> secondaryFindings = null;
+        List<ReportedVariant> secondaryFindings;
         try {
             secondaryFindings = clinicalInterpretationManager.getSecondaryFindings(clinicalAnalysis, sampleList, studyId,
                     creator, sessionId);
@@ -206,7 +184,7 @@ public class TeamInterpretationAnalysisExecutor  extends OpenCgaAnalysisExecutor
         }
 
         // Write primary findings
-        ClinicalUtils.writeReportedVariants(secondaryFindings, Paths.get(outDir + "/secondary-findings.json"));
+        ClinicalUtils.writeReportedVariants(secondaryFindings, Paths.get(outDir + "/" + SECONDARY_FINDINGS_FILENAME));
     }
 
     private List<ReportedVariant> getReportedVariants(Query query, QueryOptions queryOptions, TeamReportedVariantCreator creator)
@@ -223,8 +201,54 @@ public class TeamInterpretationAnalysisExecutor  extends OpenCgaAnalysisExecutor
                 reportedVariants = ClinicalUtils.getCompoundHeterozygousReportedVariants(chVariants, creator);
             }
         } else {
-            reportedVariants = creator.create(variantStorageManager.get(query, queryOptions, sessionId).getResult());
+            reportedVariants = creator.create(clinicalInterpretationManager.getVariantStorageManager().get(query, queryOptions, sessionId)
+                    .getResults());
         }
         return reportedVariants;
+    }
+
+    public String getClinicalAnalysisId() {
+        return clinicalAnalysisId;
+    }
+
+    public TeamInterpretationAnalysisExecutor setClinicalAnalysisId(String clinicalAnalysisId) {
+        this.clinicalAnalysisId = clinicalAnalysisId;
+        return this;
+    }
+
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public TeamInterpretationAnalysisExecutor setStudyId(String studyId) {
+        this.studyId = studyId;
+        return this;
+    }
+
+    public List<DiseasePanel> getDiseasePanels() {
+        return diseasePanels;
+    }
+
+    public TeamInterpretationAnalysisExecutor setDiseasePanels(List<DiseasePanel> diseasePanels) {
+        this.diseasePanels = diseasePanels;
+        return this;
+    }
+
+    public ClinicalProperty.ModeOfInheritance getMoi() {
+        return moi;
+    }
+
+    public TeamInterpretationAnalysisExecutor setMoi(ClinicalProperty.ModeOfInheritance moi) {
+        this.moi = moi;
+        return this;
+    }
+
+    public TeamInterpretationConfiguration getConfig() {
+        return config;
+    }
+
+    public TeamInterpretationAnalysisExecutor setConfig(TeamInterpretationConfiguration config) {
+        this.config = config;
+        return this;
     }
 }

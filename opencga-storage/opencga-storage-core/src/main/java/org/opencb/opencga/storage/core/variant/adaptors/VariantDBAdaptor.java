@@ -20,9 +20,9 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -49,10 +49,10 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param variants  List of variants in OpenCB data model to be inserted
      * @param studyName Name or alias of the study
      * @param options   Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
-     * @return A QueryResult with the number of inserted variants
+     * @return A DataResult with the number of inserted variants
      */
     @Deprecated
-    default QueryResult insert(List<Variant> variants, String studyName, QueryOptions options) {
+    default DataResult insert(List<Variant> variants, String studyName, QueryOptions options) {
         throw new UnsupportedOperationException();
     }
 
@@ -64,10 +64,10 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param variants Iterator with variants to filter
      * @param query    Query to be executed in the database to filter variants
      * @param options  Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
-     * @return A QueryResult with the result of the query
+     * @return A DataResult with the result of the query
      */
     default VariantQueryResult<Variant> get(Iterator<?> variants, Query query, QueryOptions options) {
-        QueryResult<Variant> queryResult = iterator(variants, query, options).toQueryResult();
+        DataResult<Variant> queryResult = iterator(variants, query, options).toDataResult();
         return addSamplesMetadataIfRequested(queryResult, query, options, getMetadataManager());
     }
 
@@ -77,7 +77,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      *
      * @param query   Query to be executed in the database to filter variants
      * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
-     * @return A QueryResult with the result of the query
+     * @return A DataResult with the result of the query
      */
     VariantQueryResult<Variant> get(Query query, QueryOptions options);
 
@@ -87,7 +87,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      *
      * @param queries List of queries to be executed in the database to filter variants
      * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count.
-     * @return A list of QueryResult with the result of the queries
+     * @return A list of DataResult with the result of the queries
      */
     List<VariantQueryResult<Variant>> get(List<Query> queries, QueryOptions options);
 
@@ -99,28 +99,28 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param sampleName Sample name
      * @param options Other options
      * @param windowsSize Windows size for searching the phased variants.
-     * @return A QueryResult with the result of the query
+     * @return A DataResult with the result of the query
      */
     VariantQueryResult<Variant> getPhased(String variant, String studyName, String sampleName, QueryOptions options, int windowsSize);
 
-    QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options);
+    DataResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options);
 
     /**
      * Performs a distinct operation of the given field over the returned results.
      *
      * @param query Query to be executed in the database to filter variants
-     * @return A QueryResult with the all the distinct values
+     * @return A DataResult with the all the distinct values
      */
-    QueryResult<Long> count(Query query);
+    DataResult<Long> count(Query query);
 
     /**
      * Performs a distinct operation of the given field over the returned results.
      *
      * @param query Query to be executed in the database to filter variants
      * @param field Field to be distinct, it must be a valid QueryParams id
-     * @return A QueryResult with the all the distinct values
+     * @return A DataResult with the all the distinct values
      */
-    QueryResult distinct(Query query, String field);
+    DataResult distinct(Query query, String field);
 
     /**
      * This methods calculates the number of variants at different equally-sized genome chunks. This can be renderer
@@ -131,7 +131,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param regionIntervalSize Size of the interval window, by default it is adjusted to return 200 chunks
      * @return Frequencies of queried variants
      */
-    QueryResult getFrequency(Query query, Region region, int regionIntervalSize);
+    DataResult getFrequency(Query query, Region region, int regionIntervalSize);
 
     /**
      * This method ranks different entities with the most or the least number of variants. These entities
@@ -141,13 +141,13 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param field      The entity to rank
      * @param numResults The max number of results to return
      * @param asc        Whether we want the top or the bottom part of the rank
-     * @return A QueryResult with a list of the entities and the number of elements
+     * @return A DataResult with a list of the entities and the number of elements
      */
-    QueryResult rank(Query query, String field, int numResults, boolean asc);
+    DataResult rank(Query query, String field, int numResults, boolean asc);
 
-    QueryResult groupBy(Query query, String field, QueryOptions options);
+    DataResult groupBy(Query query, String field, QueryOptions options);
 
-    QueryResult groupBy(Query query, List<String> fields, QueryOptions options);
+    DataResult groupBy(Query query, List<String> fields, QueryOptions options);
 
     default List<Integer> getReturnedStudies(Query query, QueryOptions options) {
         return VariantQueryUtils.getIncludeStudies(query, options, getMetadataManager());
@@ -163,12 +163,12 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
         return VariantQueryUtils.getIncludeSamples(query, options, getMetadataManager());
     }
 
-    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions);
+    DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp, QueryOptions queryOptions);
 
-    QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata, long timestamp,
+    DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata, long timestamp,
                             QueryOptions options);
 
-    QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, long timestamp, QueryOptions queryOptions);
+    DataResult updateAnnotations(List<VariantAnnotation> variantAnnotations, long timestamp, QueryOptions queryOptions);
 
     /**
      * Update custom annotation for all the variants with in a given region.
@@ -180,7 +180,7 @@ public interface VariantDBAdaptor extends VariantIterable, AutoCloseable {
      * @param options     Other options
      * @return            Result of the insertion
      */
-    QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp, QueryOptions options);
+    DataResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp, QueryOptions options);
 
     VariantStorageMetadataManager getMetadataManager();
 

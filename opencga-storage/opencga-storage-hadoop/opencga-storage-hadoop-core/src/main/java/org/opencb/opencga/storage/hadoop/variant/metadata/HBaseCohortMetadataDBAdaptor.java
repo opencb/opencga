@@ -42,6 +42,13 @@ public class HBaseCohortMetadataDBAdaptor extends AbstractHBaseDBAdaptor impleme
     }
 
     @Override
+    public void removeCohort(int studyId, int cohortId) {
+        CohortMetadata cohort = getCohortMetadata(studyId, cohortId, null);
+        deleteRow(getCohortNameIndexRowKey(studyId, cohort.getName()));
+        deleteRow(getCohortMetadataRowKey(studyId, cohort.getId()));
+    }
+
+    @Override
     public Locked lock(int studyId, int id, long lockDuration, long timeout) throws StorageEngineException {
         return lock(getCohortMetadataRowKey(studyId, id), lockDuration, timeout);
     }

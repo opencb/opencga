@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -67,9 +67,9 @@ public class ProjectManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
-        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
-        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.Type.FULL, null, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
+        catalogManager.getUserManager().create("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
+        catalogManager.getUserManager().create("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, Account.Type.FULL, null);
 
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
         sessionIdUser2 = catalogManager.getUserManager().login("user2", PASSWORD);
@@ -90,8 +90,8 @@ public class ProjectManagerTest extends GenericTest {
 
     @Test
     public void getOwnProjectNoStudies() throws CatalogException {
-        QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(project3, null, sessionIdUser3);
-        assertEquals(1, projectQueryResult.getNumResults());
+        DataResult<Project> projectDataResult = catalogManager.getProjectManager().get(project3, null, sessionIdUser3);
+        assertEquals(1, projectDataResult.getNumResults());
     }
 
     @Test
@@ -108,7 +108,7 @@ public class ProjectManagerTest extends GenericTest {
         catalogManager.getStudyManager().updateGroup(s2, "@members", new GroupParams("user", GroupParams.Action.ADD),
                 sessionIdUser2);
 
-        QueryResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
+        DataResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(1, queryResult.getNumResults());
         assertEquals(1, queryResult.first().getStudies().size());
         assertEquals("s2", queryResult.first().getStudies().get(0).getId());
@@ -128,7 +128,7 @@ public class ProjectManagerTest extends GenericTest {
 
         queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(2, queryResult.getNumResults());
-        for (Project project : queryResult.getResult()) {
+        for (Project project : queryResult.getResults()) {
             if (project.getId().equals(project2)) {
                 assertEquals(2, project.getStudies().size());
             } else {
@@ -149,24 +149,26 @@ public class ProjectManagerTest extends GenericTest {
 
         ObjectMap objectMap = new ObjectMap();
         objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), 55);
-        QueryResult<Project> update = catalogManager.getProjectManager().update(pr.getId(), objectMap, null, sessionIdUser);
-
+        DataResult<Project> update = catalogManager.getProjectManager().update(pr.getId(), objectMap, null, sessionIdUser);
         assertEquals(1, update.getNumResults());
-        assertEquals("Homo sapiens", update.first().getOrganism().getScientificName());
-        assertEquals("", update.first().getOrganism().getCommonName());
-        assertEquals("GRCh38", update.first().getOrganism().getAssembly());
-        assertEquals(55, update.first().getOrganism().getTaxonomyCode());
+        DataResult<Project> queryResult = catalogManager.getProjectManager().get(pr.getId(), null, sessionIdUser);
+
+        assertEquals("Homo sapiens", queryResult.first().getOrganism().getScientificName());
+        assertEquals("", queryResult.first().getOrganism().getCommonName());
+        assertEquals("GRCh38", queryResult.first().getOrganism().getAssembly());
+        assertEquals(55, queryResult.first().getOrganism().getTaxonomyCode());
 
         objectMap = new ObjectMap();
         objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), "common");
 
         update = catalogManager.getProjectManager().update(pr.getId(), objectMap, null, sessionIdUser);
-
         assertEquals(1, update.getNumResults());
-        assertEquals("Homo sapiens", update.first().getOrganism().getScientificName());
-        assertEquals("common", update.first().getOrganism().getCommonName());
-        assertEquals("GRCh38", update.first().getOrganism().getAssembly());
-        assertEquals(55, update.first().getOrganism().getTaxonomyCode());
+        queryResult = catalogManager.getProjectManager().get(pr.getId(), null, sessionIdUser);
+
+        assertEquals("Homo sapiens", queryResult.first().getOrganism().getScientificName());
+        assertEquals("common", queryResult.first().getOrganism().getCommonName());
+        assertEquals("GRCh38", queryResult.first().getOrganism().getAssembly());
+        assertEquals(55, queryResult.first().getOrganism().getTaxonomyCode());
 
         objectMap = new ObjectMap();
         objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), "assembly");

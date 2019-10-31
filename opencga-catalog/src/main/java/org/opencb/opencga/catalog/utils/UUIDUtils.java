@@ -24,6 +24,7 @@ public class UUIDUtils {
     public static final Pattern UUID_PATTERN = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-00[0-9a-f]{2}-[0-9a-f]{4}-[0-9a-f]{12}");
 
     public enum Entity {
+        AUDIT(0),
         PROJECT(1),
         STUDY(2),
         FILE(3),

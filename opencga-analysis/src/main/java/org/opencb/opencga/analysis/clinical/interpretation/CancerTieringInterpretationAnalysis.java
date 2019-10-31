@@ -17,64 +17,36 @@
 package org.opencb.opencga.analysis.clinical.interpretation;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.annotations.Analysis;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
-import org.opencb.oskar.core.annotations.Analysis;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
-import java.nio.file.Path;
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.List;
 
-
-@Analysis(id = CancerTieringInterpretationAnalysis.ID, data = Analysis.AnalysisData.CLINICAL)
+@Analysis(id = CancerTieringInterpretationAnalysis.ID, type = Analysis.AnalysisType.CLINICAL)
 public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis {
 
-    public final static String ID = "TieringInterpretationAnalysis";
+    public final static String ID = "cancer-tiering-interpretation";
 
-    private ClinicalAnalysis clinicalAnalysis;
+    private String studyId;
+    private String clinicalAnalysisId;
     private List<String> variantIdsToDiscard;
     private CancerTieringInterpretationConfiguration config;
 
-    public CancerTieringInterpretationAnalysis(String clinicalAnalysisId, String studyId, List<String> variantIdsToDiscard, Path outDir,
-                                               Path openCgaHome, CancerTieringInterpretationConfiguration config, String sessionId) {
-        super(clinicalAnalysisId, studyId, outDir, openCgaHome, sessionId);
-
-        this.variantIdsToDiscard = variantIdsToDiscard;
-        this.config = config;
-    }
-
-    @Override
-    protected void exec() throws org.opencb.oskar.analysis.exceptions.AnalysisException {
-        check();
-
-        // Set executor parameters
-        updateExecutorParams();
-
-        // Get executor
-        CancerTieringInterpretationAnalysisExecutor executor = new CancerTieringInterpretationAnalysisExecutor();
-        executor.setup(clinicalAnalysisId, studyId, variantIdsToDiscard, outDir, executorParams, config);
-
-        arm.startStep("get-primary/secondary-findings");
-        executor.exec();
-        arm.endStep(90.0F);
-
-        arm.startStep("save-interpretation");
-        saveResult(ID, new ArrayList<>(), clinicalAnalysis, new Query(), config.isIncludeLowCoverage(), config.getMaxLowCoverage());
-        arm.endStep(100.0F);
-    }
+    private ClinicalAnalysis clinicalAnalysis;
 
     protected void check() throws AnalysisException {
+        super.check();
+
         // Check study
         if (StringUtils.isEmpty(studyId)) {
             // Missing study
             throw new AnalysisException("Missing study ID");
         }
-
 
         // Check clinical analysis
         if (StringUtils.isEmpty(clinicalAnalysisId)) {
@@ -82,7 +54,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         }
 
         // Get clinical analysis to ckeck proband sample ID, family ID
-        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
+        OpenCGAResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),
                     sessionId);
@@ -95,15 +67,60 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         }
 
         clinicalAnalysis = clinicalAnalysisQueryResult.first();
+
+        // Update executor params with OpenCGA home and session ID
+        setUpStorageEngineExecutor(studyId);
     }
 
-    private void updateExecutorParams() {
-        executorParams = new ObjectMap();
+    @Override
+    protected void run() throws AnalysisException {
+        check();
 
-        // Session ID
-        executorParams.put(CancerTieringInterpretationAnalysisExecutor.SESSION_ID, sessionId);
+        step(() -> {
+            new CancerTieringInterpretationAnalysisExecutor()
+                    .setStudyId(studyId)
+                    .setClinicalAnalysisId(clinicalAnalysisId)
+                    .setVariantIdsToDiscard(variantIdsToDiscard)
+                    .setConfig(config)
+                    .execute();
 
-        // Clinical interpretation manager
-        executorParams.put(CancerTieringInterpretationAnalysisExecutor.CLINICAL_INTERPRETATION_MANAGER, clinicalInterpretationManager);
+                saveInterpretation(studyId, clinicalAnalysis, null, null, config);
+        });
+    }
+
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public CancerTieringInterpretationAnalysis setStudyId(String studyId) {
+        this.studyId = studyId;
+        return this;
+    }
+
+    public String getClinicalAnalysisId() {
+        return clinicalAnalysisId;
+    }
+
+    public CancerTieringInterpretationAnalysis setClinicalAnalysisId(String clinicalAnalysisId) {
+        this.clinicalAnalysisId = clinicalAnalysisId;
+        return this;
+    }
+
+    public List<String> getVariantIdsToDiscard() {
+        return variantIdsToDiscard;
+    }
+
+    public CancerTieringInterpretationAnalysis setVariantIdsToDiscard(List<String> variantIdsToDiscard) {
+        this.variantIdsToDiscard = variantIdsToDiscard;
+        return this;
+    }
+
+    public CancerTieringInterpretationConfiguration getConfig() {
+        return config;
+    }
+
+    public CancerTieringInterpretationAnalysis setConfig(CancerTieringInterpretationConfiguration config) {
+        this.config = config;
+        return this;
     }
 }

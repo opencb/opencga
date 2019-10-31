@@ -23,14 +23,15 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.models.update.CohortUpdateParams;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -69,15 +70,16 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         File file = opencga.createFile(studyId, "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 
         for (int i = 0; i < coh.length; i++) {
-            Cohort cohort = catalogManager.getCohortManager().create(studyId, "coh" + i, Study.Type.CONTROL_SET, "", file.getSamples().subList(file.getSamples()
-                    .size() / coh.length * i, file.getSamples().size() / coh.length * (i + 1)), null, null, sessionId).first();
+            Cohort cohort = catalogManager.getCohortManager().create(studyId, "coh" + i, Study.Type.CONTROL_SET, "",
+                    file.getSamples().subList(file.getSamples().size() / coh.length * i, file.getSamples().size() / coh.length * (i + 1)),
+                    null, null, sessionId).first();
             coh[i] = cohort.getId();
         }
         QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false);
         queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, outputId);
         variantManager.index(studyId, file.getId(), createTmpOutdir(file), queryOptions, sessionId);
 
-        all = catalogManager.getCohortManager().get(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(),
+        all = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(),
                 DEFAULT_COHORT), new QueryOptions(), sessionId).first().getId();
     }
 
@@ -115,12 +117,12 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         List<Cohort> queryResults = new ArrayList<>();
         Properties tagmap = new Properties();
         tagmap.load(new FileInputStream(tagmapPath));
-        Map<String, Cohort> cohorts = catalogManager.getCohortManager().get(studyId, new Query(), null, sessionId)
-                .getResult().stream().collect(Collectors.toMap(Cohort::getId, c->c));
+        Map<String, Cohort> cohorts = catalogManager.getCohortManager().search(studyId, new Query(), null, sessionId)
+                .getResults().stream().collect(Collectors.toMap(Cohort::getId, c->c));
         Set<String> catalogCohorts = cohorts.keySet();
         for (String cohortName : VariantAggregatedStatsCalculator.getCohorts(tagmap)) {
             if (!catalogCohorts.contains(cohortName)) {
-                QueryResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, new Cohort()
+                DataResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, new Cohort()
                         .setId(cohortName)
                         .setName(cohortName)
                         .setSamples(Collections.emptyList())
@@ -243,14 +245,16 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         cohorts.put("coh0", catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first());
         checkCalculatedStats(cohorts);
 
-        catalogManager.getCohortManager().update(studyId, coh[0], new ObjectMap("description", "NewDescription"), new QueryOptions(), sessionId);
+        catalogManager.getCohortManager().update(studyId, coh[0],
+                new CohortUpdateParams().setDescription("NewDescription"), new QueryOptions(), sessionId);
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getStatus().getName());
 
         List<String> newCohort = catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getSamples().stream()
                 .map(Sample::getId)
                 .skip(10).limit(100)
                 .collect(Collectors.toList());
-        catalogManager.getCohortManager().update(studyId, coh[0], new ObjectMap("samples", newCohort), new QueryOptions(), sessionId);
+        catalogManager.getCohortManager().update(studyId, coh[0], new CohortUpdateParams().setSamples(newCohort),
+                new QueryOptions(), sessionId);
         assertEquals(Cohort.CohortStatus.INVALID, catalogManager.getCohortManager().get(studyId, coh[0], null, sessionId).first().getStatus().getName());
 
         calculateStats(coh[0]);
@@ -336,7 +340,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
     public void calculateAggregatedStats(QueryOptions options) throws Exception {
 //        coh0 = catalogManager.createCohort(studyId, "ALL", Cohort.Type.COLLECTION, "", file.getSampleIds(), null, sessionId).first().getId();
 
-        String cohId = catalogManager.getCohortManager().get(studyId, (Query) null, null, sessionId).first().getId();
+        String cohId = catalogManager.getCohortManager().search(studyId, (Query) null, null, sessionId).first().getId();
 
         calculateStats(cohId, options);
 
@@ -354,7 +358,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         QueryOptions options = new QueryOptions(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
         calculateStats(options, cohortIds);
 
-        List<Cohort> cohorts = catalogManager.getCohortManager().get(studyId, (Query) null, null, sessionId).getResult();
+        List<Cohort> cohorts = catalogManager.getCohortManager().search(studyId, (Query) null, null, sessionId).getResults();
         Set<String> cohortNames = cohorts
                 .stream()
                 .map(Cohort::getId)
@@ -375,7 +379,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         QueryOptions options = new QueryOptions(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
         calculateStats(options, Arrays.asList("AFR", "ALL", "AMR", "EAS", "FIN", "NFE", "OTH", "SAS"));
 
-        List<Cohort> cohorts = catalogManager.getCohortManager().get(studyId, (Query) null, null, sessionId).getResult();
+        List<Cohort> cohorts = catalogManager.getCohortManager().search(studyId, (Query) null, null, sessionId).getResults();
         Set<String> cohortNames = cohorts
                 .stream()
                 .map(Cohort::getId)
@@ -430,7 +434,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         QueryOptions options = new QueryOptions(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
         calculateStats(options);
 
-        List<Cohort> cohorts = catalogManager.getCohortManager().get(studyId, (Query) null, null, sessionId).getResult();
+        List<Cohort> cohorts = catalogManager.getCohortManager().search(studyId, (Query) null, null, sessionId).getResults();
         Set<String> cohortNames = cohorts
                 .stream()
                 .map(Cohort::getId)

@@ -20,146 +20,149 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.audit.AuditRecord.Resource;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.results.OpenCGAResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 /**
  * Created on 18/08/15.
- * <p>
- * Create the AuditRecord from simple params
- * Select which actions will be recorded
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface AuditManager {
+public class AuditManager {
 
-    /**
-     * Records a login attempt.
-     *
-     * @param userId      User who performs the creation
-     * @param success     Boolean indicating if the login was successful.
-     * @throws CatalogException CatalogException
-     */
-    default void recordLogin(String userId, boolean success) throws CatalogException {
-        if (success) {
-            recordAction(Resource.user, AuditRecord.Action.login, AuditRecord.Magnitude.low, userId, userId, null, null,
-                    "User successfully logged in", null);
-        } else {
-            recordAction(Resource.user, AuditRecord.Action.login, AuditRecord.Magnitude.high, userId, userId, null, null,
-                    "Wrong user or password", null);
+    protected static Logger logger = LoggerFactory.getLogger(AuditManager.class);
+
+    private final CatalogManager catalogManager;
+    private final AuthorizationManager authorizationManager;
+    private final AuditDBAdaptor auditDBAdaptor;
+
+    public AuditManager(AuthorizationManager authorizationManager, CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory,
+                        Configuration configuration) {
+        this.catalogManager = catalogManager;
+        this.authorizationManager = authorizationManager;
+        this.auditDBAdaptor = catalogDBAdaptorFactory.getCatalogAuditDbAdaptor();
+    }
+
+    public void audit(AuditRecord auditRecord) throws CatalogException {
+        auditDBAdaptor.insertAuditRecord(auditRecord);
+    }
+
+    public void audit(List<AuditRecord> auditRecordList) throws CatalogException {
+        for (AuditRecord auditRecord : auditRecordList) {
+            auditDBAdaptor.insertAuditRecord(auditRecord);
         }
     }
 
-
-    /**
-     * Records an object creation over the Catalog Database.
-     *
-     * @param resource    Resource type
-     * @param id          Resource id (either String or Integer)
-     * @param userId      User who performs the creation
-     * @param object      Created object
-     * @param description Optional description
-     * @param attributes  Optional attributes
-     * @throws CatalogException CatalogException
-     */
-    default void recordCreation(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
-            throws CatalogException {
-        recordAction(resource, AuditRecord.Action.create, AuditRecord.Magnitude.low, id, userId, null, object, description, attributes);
+    public void auditCreate(String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid, String studyId,
+                            String studyUuid, ObjectMap params, AuditRecord.Status status) {
+        audit(userId, AuditRecord.Action.CREATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    /**
-     * Record an atomic change over the Catalog Database.
-     *
-     * @param resource    Resource type
-     * @param id          Resource id (either String or Integer)
-     * @param userId      User who performs the update
-     * @param update      Update params
-     * @param description Optional description
-     * @param attributes  Optional attributes
-     * @throws CatalogException CatalogException
-     */
-    default void recordUpdate(Resource resource, Object id, String userId, ObjectMap update, String description, ObjectMap attributes)
-            throws CatalogException {
-        recordAction(resource, AuditRecord.Action.update, AuditRecord.Magnitude.medium, id, userId, null, update, description, attributes);
+    public void auditCreate(String userId, AuditRecord.Action action, AuditRecord.Resource resource, String resourceId, String resourceUuid,
+                            String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
+        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        audit(operationUuid, userId, action, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    /**
-     * Records a permanent deletion over the Catalog Database.
-     *
-     * @param resource    Resource type
-     * @param id          Resource id (either String or Integer)
-     * @param userId      User who performs the deletion
-     * @param object      Deleted object
-     * @param description Optional description
-     * @param attributes  Optional attributes
-     * @throws CatalogException CatalogException
-     */
-    default void recordDeletion(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
-            throws CatalogException {
-        recordAction(resource, AuditRecord.Action.delete, AuditRecord.Magnitude.high, id, userId, object, null, description, attributes);
+    public void auditUpdate(String operationId, String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid,
+                            String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
+        audit(operationId, userId, AuditRecord.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
+                new ObjectMap());
     }
 
-    /**
-     * Records a deletion (change of state) over the Catalog Database.
-     *
-     * @param resource    Resource type
-     * @param id          Resource id (either String or Integer)
-     * @param userId      User who performs the deletion
-     * @param before      Previous object state
-     * @param after       Posterior object state
-     * @param description Optional description
-     * @param attributes  Optional attributes
-     * @throws CatalogException CatalogException
-     */
-    default void recordDeletion(Resource resource, Object id, String userId, Object before,  Object after, String description,
-                                ObjectMap attributes) throws CatalogException {
-        recordAction(resource, AuditRecord.Action.delete, AuditRecord.Magnitude.high, id, userId, before, after, description, attributes);
+    public void auditUpdate(String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid, String studyId,
+                            String studyUuid, ObjectMap params, AuditRecord.Status status) {
+        audit(userId, AuditRecord.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    /**
-     * Records a restore over the Catalog Database.
-     *
-     * @param resource    Resource type
-     * @param id          Resource id (either String or Integer)
-     * @param userId      User who performs the deletion
-     * @param before      Previous object state
-     * @param after       Posterior object state
-     * @param description Optional description
-     * @param attributes  Optional attributes
-     * @throws CatalogException CatalogException
-     */
-    default void recordRestore(Resource resource, Object id, String userId, Object before,  Object after, String description,
-                                ObjectMap attributes) throws CatalogException {
-        if (before instanceof String && StringUtils.isNotEmpty((String) before)) {
-            before = new ObjectMap("status", before);
+    public void auditDelete(String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid, String studyId,
+                            String studyUuid, ObjectMap params, AuditRecord.Status status) {
+        audit(userId, AuditRecord.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
+    }
+
+    public void auditDelete(String operationId, String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid,
+                            String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
+        audit(operationId, userId, AuditRecord.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
+                new ObjectMap());
+    }
+
+    public void auditUser(String userId, AuditRecord.Action action, String resourceId, AuditRecord.Status status) {
+        audit(userId, action, AuditRecord.Resource.USER, resourceId, "", "", "", new ObjectMap(), status, new ObjectMap());
+    }
+
+    public void auditUser(String userId, AuditRecord.Action action, String resourceId, ObjectMap params, AuditRecord.Status status) {
+        audit(userId, action, AuditRecord.Resource.USER, resourceId, "", "", "", params, status, new ObjectMap());
+    }
+
+    public void auditInfo(String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid, String studyId,
+                          String studyUuid, ObjectMap params, AuditRecord.Status status) {
+        audit(userId, AuditRecord.Action.INFO, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
+    }
+
+    public void auditInfo(String operationId, String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid,
+                          String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
+        audit(operationId, userId, AuditRecord.Action.INFO, resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
+                new ObjectMap());
+    }
+
+    public void auditSearch(String userId, AuditRecord.Resource resource, String studyId, String studyUuid, ObjectMap params,
+                            AuditRecord.Status status) {
+        audit(userId, AuditRecord.Action.SEARCH, resource, "", "", studyId, studyUuid, params, status, new ObjectMap());
+    }
+
+    public void auditCount(String userId, AuditRecord.Resource resource, String studyId, String studyUuid, ObjectMap params,
+                           AuditRecord.Status status) {
+        audit(userId, AuditRecord.Action.COUNT, resource, "", "", studyId, studyUuid, params, status, new ObjectMap());
+    }
+
+    public void auditFacet(String userId, AuditRecord.Resource resource, String studyId, String studyUuid, ObjectMap params,
+                           AuditRecord.Status status) {
+        audit(userId, AuditRecord.Action.FACET, resource, "", "", studyUuid, studyId, params, status, new ObjectMap());
+    }
+
+    public void audit(String userId, AuditRecord.Action action, AuditRecord.Resource resource, String resourceId, String resourceUuid,
+                      String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
+        audit(userId, action, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
+    }
+
+    public void audit(String userId, AuditRecord.Action action, AuditRecord.Resource resource, String resourceId, String resourceUuid,
+                      String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status, ObjectMap attributes) {
+        audit(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT), userId, action, resource, resourceId, resourceUuid, studyId, studyUuid,
+                params, status, attributes);
+    }
+
+    public void audit(String operationId, String userId, AuditRecord.Action action, AuditRecord.Resource resource, String resourceId,
+                      String resourceUuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status,
+                      ObjectMap attributes) {
+        String apiVersion = GitRepositoryState.get().getBuildVersion();
+        Date date = TimeUtils.getDate();
+
+        String auditId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        AuditRecord auditRecord = new AuditRecord(auditId, operationId, userId, apiVersion, action, resource, resourceId, resourceUuid,
+                studyId, studyUuid, params, status, date, attributes);
+        try {
+            auditDBAdaptor.insertAuditRecord(auditRecord);
+        } catch (CatalogDBException e) {
+            logger.error("Could not audit '{}' -> Error: {}", auditRecord, e.getMessage(), e);
         }
-        if (after instanceof String && StringUtils.isNotEmpty((String) after)) {
-            after = new ObjectMap("status", after);
-        }
-        recordAction(resource, AuditRecord.Action.restore, AuditRecord.Magnitude.high, id, userId, before, after, description, attributes);
     }
-
-    /**
-     * Records an object creation over the Catalog Database.
-     *
-     * @param resource    Resource type
-     * @param action      Executed action
-     * @param importance  Importance of the document being audited (high, medium or low)
-     * @param id          Resource id (either String or Integer)
-     * @param userId      User who performs the action
-     * @param before      Optional Previous object state
-     * @param after       Optional Posterior object state
-     * @param description Optional description
-     * @param attributes  Optional attributes
-     * @throws CatalogException CatalogException
-     */
-    void recordAction(Resource resource, AuditRecord.Action action, AuditRecord.Magnitude importance, Object id, String userId,
-                             Object before, Object after, String description, ObjectMap attributes)
-            throws CatalogException;
 
     /**
      * Groups the matching entries by some fields.
@@ -168,26 +171,21 @@ public interface AuditManager {
      * @param fields    A field or a comma separated list of fields by which the results will be grouped in.
      * @param options   QueryOptions object.
      * @param sessionId Session id of the user logged in.
-     * @return A QueryResult object containing the results of the query grouped by the fields.
+     * @return A OpenCGAResult object containing the results of the query grouped by the fields.
      * @throws CatalogException CatalogException
      */
-    default QueryResult groupBy(Query query, String fields, QueryOptions options, String sessionId) throws CatalogException {
+    public OpenCGAResult groupBy(Query query, String fields, QueryOptions options, String sessionId) throws CatalogException {
         if (StringUtils.isEmpty(fields)) {
             throw new CatalogException("Empty fields parameter.");
         }
         return groupBy(query, Arrays.asList(fields.split(",")), options, sessionId);
     }
 
-    /**
-     * Groups the matching entries by some fields.
-     *
-     * @param query     Query object.
-     * @param options   QueryOptions object.
-     * @param fields    A field or a comma separated list of fields by which the results will be grouped in.
-     * @param sessionId Session id of the user logged in.
-     * @return A QueryResult object containing the results of the query grouped by the fields.
-     * @throws CatalogException CatalogException
-     */
-    QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException;
-
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String token) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        if (authorizationManager.checkIsAdmin(userId)) {
+            return auditDBAdaptor.groupBy(query, fields, options);
+        }
+        throw new CatalogAuthorizationException("Only root of OpenCGA can query the audit database");
+    }
 }

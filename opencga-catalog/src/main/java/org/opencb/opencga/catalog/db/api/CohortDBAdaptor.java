@@ -19,14 +19,12 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +54,8 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
 
         SAMPLES("samples", TEXT_ARRAY, ""),
         SAMPLE_UIDS("samples.uid", INTEGER, ""),
+
+        DELETED("deleted", BOOLEAN, ""),
 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
 //        VARIABLE_NAME("variableName", TEXT, ""),
@@ -115,40 +115,6 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         }
     }
 
-    enum UpdateParams {
-        ID(QueryParams.ID.key()),
-        @Deprecated
-        NAME(QueryParams.NAME.key()),
-        CREATION_DATE(QueryParams.CREATION_DATE.key()),
-        DESCRIPTION(QueryParams.DESCRIPTION.key()),
-        SAMPLES(QueryParams.SAMPLES.key()),
-        ATTRIBUTES(QueryParams.ATTRIBUTES.key()),
-        ANNOTATION_SETS(QueryParams.ANNOTATION_SETS.key()),
-        ANNOTATIONS(AnnotationSetManager.ANNOTATIONS);
-
-        private static Map<String, UpdateParams> map;
-        static {
-            map = new HashMap<>();
-            for (UpdateParams params : UpdateParams.values()) {
-                map.put(params.key(), params);
-            }
-        }
-
-        private final String key;
-
-        UpdateParams(String key) {
-            this.key = key;
-        }
-
-        public String key() {
-            return key;
-        }
-
-        public static UpdateParams getParam(String key) {
-            return map.get(key);
-        }
-    }
-
     default boolean exists(long cohortId) throws CatalogDBException {
         return count(new Query(QueryParams.UID.key(), cohortId)).first() > 0;
     }
@@ -163,19 +129,13 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         }
     }
 
-    void nativeInsert(Map<String, Object> cohort, String userId) throws CatalogDBException;
+    OpenCGAResult nativeInsert(Map<String, Object> cohort, String userId) throws CatalogDBException;
 
-    default QueryResult<Cohort> insert(long studyId, Cohort cohort, QueryOptions options) throws CatalogDBException {
-        cohort.setAnnotationSets(Collections.emptyList());
-        return insert(studyId, cohort, Collections.emptyList(), options);
-    }
+    OpenCGAResult insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Cohort> insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException;
+    OpenCGAResult<Cohort> get(long cohortId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Cohort> get(long cohortId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Cohort> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Cohort> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long cohortId) throws CatalogDBException;
 
@@ -185,8 +145,9 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
      *
      * @param studyId study id containing the entries affected.
      * @param permissionRuleId permission rule id to be unmarked.
+     * @return OpenCGAResult object.
      * @throws CatalogException if there is any database error.
      */
-    void unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
+    OpenCGAResult unmarkPermissionRule(long studyId, String permissionRuleId) throws CatalogException;
 
 }

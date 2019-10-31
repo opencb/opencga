@@ -3,10 +3,10 @@ package org.opencb.opencga.storage.core.variant.search;
 import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -56,12 +56,12 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
     }
 
     @Override
-    public QueryResult<Long> count(Query query) {
+    public DataResult<Long> count(Query query) {
         try {
             StopWatch watch = StopWatch.createStarted();
             long count = searchManager.count(dbName, query);
             int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
-            return new QueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count));
+            return new DataResult<>(time, Collections.emptyList(), 1, Collections.singletonList(count), 1);
         } catch (IOException | VariantSearchException e) {
             throw new VariantQueryException("Error querying Solr", e);
         }
@@ -171,7 +171,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
 
                 VariantQueryResult<VariantSearchModel> nativeResult = searchManager
                         .nativeQuery(dbName, searchEngineQuery, queryOptions);
-                List<String> variantIds = nativeResult.getResult().stream().map(VariantSearchModel::getId).collect(Collectors.toList());
+                List<String> variantIds = nativeResult.getResults().stream().map(VariantSearchModel::getId).collect(Collectors.toList());
                 // Adjust numSamples if the results from SearchManager is smaller than numSamples
                 // If this happens, the count is not approximated
                 if (variantIds.size() < sampling) {
@@ -199,7 +199,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
             throw new VariantQueryException("Error querying Solr", e);
         }
         int time = (int) watch.getTime(TimeUnit.MILLISECONDS);
-        return new VariantQueryResult<>("count", time, 1, 1, "", "", Collections.singletonList(count), null,
+        return new VariantQueryResult<>(time, 1, 1, Collections.emptyList(), Collections.singletonList(count), null,
                 SEARCH_ENGINE_ID + '+' + getStorageEngineId(), approxCount, approxCount ? sampling : null, null);
     }
 
@@ -277,9 +277,9 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
             if (limit < 10000) {
                 VariantQueryResult<VariantSearchModel> nativeResult = searchManager.nativeQuery(dbName, query, queryOptions);
                 if (numTotalResults != null) {
-                    numTotalResults.set(nativeResult.getNumTotalResults());
+                    numTotalResults.set(nativeResult.getNumMatches());
                 }
-                variantsIterator = nativeResult.getResult()
+                variantsIterator = nativeResult.getResults()
                         .stream()
                         .map(VariantSearchModel::getId)
                         .iterator();

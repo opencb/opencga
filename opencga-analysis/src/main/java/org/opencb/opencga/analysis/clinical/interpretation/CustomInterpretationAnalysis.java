@@ -18,66 +18,38 @@ package org.opencb.opencga.analysis.clinical.interpretation;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.annotations.Analysis;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
-import org.opencb.oskar.core.annotations.Analysis;
 
-import java.nio.file.Path;
 import java.util.List;
 
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.FAMILY;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.FAMILY_DISORDER;
 
-@Analysis(id = CustomInterpretationAnalysis.ID, data = Analysis.AnalysisData.CLINICAL)
-public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
+@Analysis(id = CustomInterpretationAnalysis.ID, type = Analysis.AnalysisType.CLINICAL)
+public class CustomInterpretationAnalysis extends InterpretationAnalysis {
 
-    public final static String ID = "CustomInterpretationAnalysis";
+    public final static String ID = "custom-interpretation";
 
+    private String studyId;
+    private String clinicalAnalysisId;
     private Query query;
     private QueryOptions queryOptions;
     private CustomInterpretationConfiguration config;
 
     private ClinicalAnalysis clinicalAnalysis;
-
-    public CustomInterpretationAnalysis(String clinicalAnalysisId, String studyId, Query query, QueryOptions queryOptions, Path outDir,
-                                        Path openCgaHome, CustomInterpretationConfiguration config, String sessionId) {
-        super(clinicalAnalysisId, studyId, outDir, openCgaHome, sessionId);
-
-        this.query = query;
-        this.queryOptions = queryOptions;
-        this.config = config;
-    }
-
+    private List<DiseasePanel> diseasePanels;
 
     @Override
-    protected void exec() throws AnalysisException {
-        check();
-
-        // Set executor parameters
-        updateExecutorParams();
-
-        // Get executor
-        CustomInterpretationAnalysisExecutor executor = new CustomInterpretationAnalysisExecutor();
-        executor.setup(clinicalAnalysisId, query, queryOptions, outDir, executorParams, config);
-
-        arm.startStep("get-primary/secondary-findings");
-        executor.exec();
-        arm.endStep(90.0F);
-
-        arm.startStep("save-interpretation");
-        List<DiseasePanel> diseasePanels = clinicalInterpretationManager.getDiseasePanels(query, sessionId);
-        saveResult(ID, diseasePanels, clinicalAnalysis,query, config.isIncludeLowCoverage(), config.getMaxLowCoverage());
-        arm.endStep(100.0F);
-    }
-
     protected void check() throws AnalysisException {
+        super.check();
+
         // Check study
         if (StringUtils.isNotEmpty(studyId)) {
             if (query.containsKey(VariantQueryParam.STUDY.key()) && !studyId.equals(query.get(VariantQueryParam.STUDY.key()))) {
@@ -92,14 +64,13 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
             throw new AnalysisException("Missing study ID");
         }
 
-
         // Check clinical analysis
         if (StringUtils.isEmpty(clinicalAnalysisId)) {
             throw new AnalysisException("Missing clinical analysis ID");
         }
 
         // Get clinical analysis to ckeck proband sample ID, family ID
-        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
+        OpenCGAResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),
                     sessionId);
@@ -111,7 +82,6 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
         }
 
         clinicalAnalysis = clinicalAnalysisQueryResult.first();
-        query.put(VariantCatalogQueryUtils.CLINICAL_ANALYSIS.key(), clinicalAnalysisId);
 
         // Proband ID
         if (clinicalAnalysis.getProband() != null && StringUtils.isNotEmpty(clinicalAnalysis.getProband().getId())) {
@@ -149,15 +119,71 @@ public class CustomInterpretationAnalysis extends FamilyInterpretationAnalysis {
                 query.put(FAMILY_DISORDER.key(), disorderId);
             }
         }
+
+        // Check disease panels
+        diseasePanels = clinicalInterpretationManager.getDiseasePanels(query, sessionId);
+
+        // Update executor params with OpenCGA home and session ID
+        setUpStorageEngineExecutor(studyId);
     }
 
-    private void updateExecutorParams() {
-        executorParams = new ObjectMap();
+    @Override
+    protected void run() throws AnalysisException {
 
-        // Session ID
-        executorParams.put(CustomInterpretationAnalysisExecutor.SESSION_ID, sessionId);
+        step(() -> {
+            new CustomInterpretationAnalysisExecutor()
+                    .setClinicalAnalysisId(clinicalAnalysisId)
+                    .setQuery(query)
+                    .setQueryOptions(queryOptions)
+                    .setConfig(config)
+                    .execute();
 
-        // Clinical interpretation manager
-        executorParams.put(CustomInterpretationAnalysisExecutor.CLINICAL_INTERPRETATION_MANAGER, clinicalInterpretationManager);
+            saveInterpretation(studyId, clinicalAnalysis, diseasePanels, query, config);
+        });
+    }
+
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public CustomInterpretationAnalysis setStudyId(String studyId) {
+        this.studyId = studyId;
+        return this;
+    }
+
+    public String getClinicalAnalysisId() {
+        return clinicalAnalysisId;
+    }
+
+    public CustomInterpretationAnalysis setClinicalAnalysisId(String clinicalAnalysisId) {
+        this.clinicalAnalysisId = clinicalAnalysisId;
+        return this;
+    }
+
+    public Query getQuery() {
+        return query;
+    }
+
+    public CustomInterpretationAnalysis setQuery(Query query) {
+        this.query = query;
+        return this;
+    }
+
+    public QueryOptions getQueryOptions() {
+        return queryOptions;
+    }
+
+    public CustomInterpretationAnalysis setQueryOptions(QueryOptions queryOptions) {
+        this.queryOptions = queryOptions;
+        return this;
+    }
+
+    public CustomInterpretationConfiguration getConfig() {
+        return config;
+    }
+
+    public CustomInterpretationAnalysis setConfig(CustomInterpretationConfiguration config) {
+        this.config = config;
+        return this;
     }
 }

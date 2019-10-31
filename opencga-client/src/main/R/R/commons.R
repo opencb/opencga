@@ -124,8 +124,8 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
                                                           "Accept"="application/json",
                                                           "Authorisation"="Bearer")), body="{}")
             content <- httr::content(resp, as="text", encoding = "utf-8")
-            if (length(jsonlite::fromJSON(content)$response$result[[1]]$token) > 0){
-                token <- jsonlite::fromJSON(content)$response$result[[1]]$token
+            if (length(jsonlite::fromJSON(content)$responses$results[[1]]$token) > 0){
+                token <- jsonlite::fromJSON(content)$responses$results[[1]]$token
                 loginInfo <- unlist(strsplit(x=token, split="\\."))[2]
                 loginInfojson <- jsonlite::fromJSON(rawToChar(base64enc::base64decode(what=loginInfo)))
                 expirationTime <- as.POSIXct(loginInfojson$exp, origin="1970-01-01")
@@ -149,11 +149,11 @@ fetchOpenCGA <- function(object=object, category=NULL, categoryId=NULL,
         skip <- skip+real_batch_size
         res_list <- parseResponse(resp=response$resp, content=response$content)
         num_results <- res_list$num_results
-        tmp_result <- res_list$result
+        tmp_result <- res_list$results
         # There are responses such as AnalysisResults that only return 1 result, not an array of results.
-        if (is.data.frame((jsonlite::fromJSON(res_list$result))[[1]])) {
+        if (is.data.frame((jsonlite::fromJSON(res_list$results))[[1]])) {
             # For those cases, we will simulate an array of results
-            tmp_result <- paste0("[", res_list$result, "]")
+            tmp_result <- paste0("[", res_list$results, "]")
         }
         
         result <- as.character(tmp_result)
@@ -304,9 +304,9 @@ parseResponse <- function(resp, content){
         }
     }
 
-    ares <- lapply(js, function(x)x$response$result)
+    ares <- lapply(js, function(x)x$responses$results)
     ares <- jsonlite::toJSON(ares)
-    nums <- lapply(js, function(x)x$response$numResults)
+    nums <- lapply(js, function(x)x$responses$numResults)
 
     # if (class(ares[[1]][[1]])=="data.frame"){
     #     ds <- lapply(ares, function(x)jsonlite::rbind_pages(x))

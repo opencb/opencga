@@ -36,10 +36,6 @@
             <artifactId>opencga-storage-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.opencb.oskar</groupId>
-            <artifactId>oskar-analysis</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.opencb.hpg-bigdata</groupId>
             <artifactId>hpg-bigdata-analysis</artifactId>
         </dependency>
@@ -81,8 +77,42 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-hadoop-core</artifactId>
+            <version>${opencga.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-hadoop-core</artifactId>
+            <version>${opencga.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-hadoop-deps-hdp2.6</artifactId>
+            <version>${opencga.version}</version>
+            <classifier>shaded</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-hadoop-deps-hdp2.6</artifactId>
+            <version>${opencga.version}</version>
+            <classifier>tests</classifier>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-datastore-core</artifactId>
         </dependency>
     </dependencies>
 

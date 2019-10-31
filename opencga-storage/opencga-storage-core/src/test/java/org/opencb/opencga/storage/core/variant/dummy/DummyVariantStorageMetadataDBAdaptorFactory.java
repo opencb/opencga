@@ -9,6 +9,16 @@ import java.nio.file.Path;
  */
 public class DummyVariantStorageMetadataDBAdaptorFactory implements VariantStorageMetadataDBAdaptorFactory {
 
+    public DummyVariantStorageMetadataDBAdaptorFactory() {
+        this(false);
+    }
+
+    public DummyVariantStorageMetadataDBAdaptorFactory(boolean clear) {
+        if (clear) {
+            clear();
+        }
+    }
+
     @Override
     public FileMetadataDBAdaptor buildFileMetadataDBAdaptor() {
         return new DummyFileMetadataDBAdaptor();

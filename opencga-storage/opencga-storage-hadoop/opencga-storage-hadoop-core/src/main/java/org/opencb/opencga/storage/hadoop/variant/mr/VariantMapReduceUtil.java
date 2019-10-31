@@ -15,6 +15,7 @@ import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -130,6 +131,43 @@ public class VariantMapReduceUtil {
 
     }
 
+    public static void initVariantMapperJob(Job job, Class<? extends VariantMapper> mapperClass, String variantTable,
+                                               VariantStorageMetadataManager metadataManager, Query query, QueryOptions queryOptions,
+                                               boolean skipSampleIndex) throws IOException {
+        GenomeHelper helper = new GenomeHelper(job.getConfiguration());
+        query = new VariantQueryParser(null, metadataManager).preProcessQuery(query, queryOptions);
+
+        setQuery(job, query);
+        setQueryOptions(job, queryOptions);
+        if (VariantHBaseQueryParser.isSupportedQuery(query)) {
+            LOGGER.info("Init MapReduce job reading from HBase");
+            boolean useSampleIndex = !skipSampleIndex
+                    && SampleIndexQueryParser.validSampleIndexQuery(query);
+            if (useSampleIndex) {
+                // Remove extra fields from the query
+                SampleIndexQueryParser.parseSampleIndexQuery(query, metadataManager);
+
+                LOGGER.info("Use sample index to read from HBase");
+            }
+
+            VariantHBaseQueryParser parser = new VariantHBaseQueryParser(helper, metadataManager);
+            List<Scan> scans = parser.parseQueryMultiRegion(query, queryOptions);
+            configureMapReduceScans(scans, job.getConfiguration());
+
+            initVariantMapperJobFromHBase(job, variantTable, scans, mapperClass, useSampleIndex);
+
+            int i = 0;
+            for (Scan scan : scans) {
+                LOGGER.info("[" + ++i + "]Scan: " + scan.toString());
+            }
+        } else {
+            LOGGER.info("Init MapReduce job reading from Phoenix");
+            String sql = new VariantSqlQueryParser(helper, variantTable, metadataManager)
+                    .parse(query, queryOptions).getSql();
+
+            initVariantMapperJobFromPhoenix(job, variantTable, sql, mapperClass);
+        }
+    }
 
     public static void initVariantMapperJobFromHBase(Job job, String variantTableName, Scan scan,
                                                      Class<? extends VariantMapper> variantMapperClass)
@@ -199,6 +237,9 @@ public class VariantMapReduceUtil {
                                                boolean skipSampleIndex) throws IOException {
         GenomeHelper helper = new GenomeHelper(job.getConfiguration());
         query = new VariantQueryParser(null, metadataManager).preProcessQuery(query, queryOptions);
+
+        setQuery(job, query);
+        setQueryOptions(job, queryOptions);
         if (VariantHBaseQueryParser.isSupportedQuery(query)) {
             LOGGER.info("Init MapReduce job reading from HBase");
             boolean useSampleIndex = !skipSampleIndex
@@ -226,6 +267,23 @@ public class VariantMapReduceUtil {
                     .parse(query, queryOptions).getSql();
 
             initVariantRowMapperJobFromPhoenix(job, variantTable, sql, mapperClass);
+        }
+    }
+
+    public static void setQueryOptions(Job job, QueryOptions queryOptions) {
+        setObjectMap(job, queryOptions);
+    }
+
+    public static void setQuery(Job job, Query query) {
+        setObjectMap(job, query);
+    }
+
+    public static void setObjectMap(Job job, ObjectMap objectMap) {
+        for (String key : objectMap.keySet()) {
+            String value = objectMap.getString(key);
+            if (value != null) {
+                job.getConfiguration().set(key, value);
+            }
         }
     }
 

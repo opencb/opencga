@@ -35,11 +35,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -48,7 +44,9 @@ import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.clinical.ClinicalVariantEngine;
@@ -63,7 +61,6 @@ import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -140,11 +137,11 @@ public class ClinicalInterpretationManager extends StorageManager {
     public void testConnection() throws StorageEngineException {
     }
 
-    public QueryResult<ReportedVariant> index(String token) throws IOException, ClinicalVariantException {
+    public DataResult<ReportedVariant> index(String token) throws IOException, ClinicalVariantException {
         return null;
     }
 
-    public QueryResult<ReportedVariant> index(String study, String token) throws IOException, ClinicalVariantException, CatalogException {
+    public DataResult<ReportedVariant> index(String study, String token) throws IOException, ClinicalVariantException, CatalogException {
         DBIterator<ClinicalAnalysis> clinicalAnalysisDBIterator =
                 clinicalAnalysisManager.iterator(study, new Query(), QueryOptions.empty(), token);
 
@@ -159,7 +156,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         return null;
     }
 
-    public QueryResult<ReportedVariant> query(Query query, QueryOptions options, String token)
+    public DataResult<ReportedVariant> query(Query query, QueryOptions options, String token)
             throws IOException, ClinicalVariantException, CatalogException {
         // Check permissions
         query = checkQueryPermissions(query, token);
@@ -167,7 +164,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         return clinicalVariantEngine.query(query, options, "");
     }
 
-//    public QueryResult<Interpretation> interpretationQuery(Query query, QueryOptions options, String token)
+//    public DataResult<Interpretation> interpretationQuery(Query query, QueryOptions options, String token)
 //            throws IOException, ClinicalVariantException, CatalogException {
 //        // Check permissions
 //        query = checkQueryPermissions(query, token);
@@ -175,7 +172,7 @@ public class ClinicalInterpretationManager extends StorageManager {
 //        return clinicalVariantEngine.interpretationQuery(query, options, "");
 //    }
 
-    public FacetQueryResult facet(Query query, QueryOptions queryOptions, String token)
+    public DataResult<FacetField> facet(Query query, QueryOptions queryOptions, String token)
             throws IOException, ClinicalVariantException, CatalogException {
         // Check permissions
         query = checkQueryPermissions(query, token);
@@ -226,7 +223,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis(studyId, clinicalAnalysisId, sessionId);
         Individual proband = ClinicalUtils.getProband(clinicalAnalysis);
 
-        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyId,
+        OpenCGAResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyId,
                 new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), sessionId);
         if (studyQueryResult.getNumResults() == 0) {
             throw new AnalysisException("Study " + studyId + " not found");
@@ -246,7 +243,7 @@ public class ClinicalInterpretationManager extends StorageManager {
 
             logger.debug("Query: {}", currentQuery.safeToString());
 
-            variants = variantStorageManager.get(currentQuery, queryOptions, sessionId).getResult();
+            variants = variantStorageManager.get(currentQuery, queryOptions, sessionId).getResults();
         } else {
             // Get pedigree
             Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily(), proband.getId());
@@ -365,7 +362,7 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     public ClinicalAnalysis getClinicalAnalysis(String studyId, String clinicalAnalysisId, String sessionId)
             throws AnalysisException, CatalogException {
-        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
+        OpenCGAResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
                 .get(studyId, clinicalAnalysisId, QueryOptions.empty(), sessionId);
 
         if (clinicalAnalysisQueryResult.getNumResults() == 0) {
@@ -395,7 +392,7 @@ public class ClinicalInterpretationManager extends StorageManager {
     public List<DiseasePanel> getDiseasePanels(String studyId, List<String> diseasePanelIds, String sessionId)
             throws AnalysisException {
         List<DiseasePanel> diseasePanels = new ArrayList<>();
-        List<QueryResult<Panel>> queryResults = null;
+        OpenCGAResult<Panel> queryResults = null;
         try {
             queryResults = catalogManager.getPanelManager().get(studyId, diseasePanelIds, QueryOptions.empty(),
                     sessionId);
@@ -403,15 +400,12 @@ public class ClinicalInterpretationManager extends StorageManager {
             throw new AnalysisException("Error accessing panel manager", e);
         }
 
-        if (queryResults.size() != diseasePanelIds.size()) {
+        if (queryResults.getNumResults() != diseasePanelIds.size()) {
             throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels queried");
         }
 
-        for (QueryResult<Panel> queryResult : queryResults) {
-            if (queryResult.getNumResults() != 1) {
-                throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels queried");
-            }
-            diseasePanels.add(queryResult.first());
+        for (Panel panel : queryResults.getResults()) {
+            diseasePanels.add(panel);
         }
 
         return diseasePanels;
@@ -455,7 +449,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                 if (variantIds.size() >= 1000) {
                     query.put(VariantQueryParam.ID.key(), variantIds);
                     VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
-                    variants.addAll(result.getResult());
+                    variants.addAll(result.getResults());
                     variantIds.clear();
                 }
             }
@@ -463,7 +457,7 @@ public class ClinicalInterpretationManager extends StorageManager {
             if (variantIds.size() > 0) {
                 query.put(VariantQueryParam.ID.key(), variantIds);
                 VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
-                variants.addAll(result.getResult());
+                variants.addAll(result.getResults());
             }
         }
 
@@ -507,12 +501,12 @@ public class ClinicalInterpretationManager extends StorageManager {
         Set<String> lowCoverageByGeneDone = new HashSet<>();
 
         // Look for the bam file of the proband
-        QueryResult<File> fileQueryResult;
+        OpenCGAResult<File> fileQueryResult;
         try {
-            fileQueryResult = catalogManager.getFileManager().get(studyId, new Query()
+            fileQueryResult = catalogManager.getFileManager().get(studyId, null, new Query()
                             .append(FileDBAdaptor.QueryParams.SAMPLES.key(), probandId)
                             .append(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM),
-                    new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key()), sessionId);
+                    new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key()), false, sessionId);
         } catch (CatalogException e) {
             throw new AnalysisException(e.getMessage(), e);
         }
@@ -550,7 +544,7 @@ public class ClinicalInterpretationManager extends StorageManager {
             for (Transcript transcript: geneQueryResponse.getResponse().get(0).first().getTranscripts()) {
                 for (Exon exon: transcript.getExons()) {
                     regionCoverages = alignmentStorageManager.getLowCoverageRegions(studyId, bamFileId,
-                            new Region(exon.getChromosome(), exon.getStart(), exon.getEnd()), maxCoverage, sessionId).getResult();
+                            new Region(exon.getChromosome(), exon.getStart(), exon.getEnd()), maxCoverage, sessionId).getResults();
                     for (RegionCoverage regionCoverage: regionCoverages) {
                         ReportedLowCoverage reportedLowCoverage = new ReportedLowCoverage(regionCoverage)
                                 .setGeneName(geneName)
@@ -569,7 +563,7 @@ public class ClinicalInterpretationManager extends StorageManager {
     public Analyst getAnalyst(String token) throws AnalysisException {
         try {
             String userId = catalogManager.getUserManager().getUserId(token);
-            QueryResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
+            OpenCGAResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
                     Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), token);
 
             return new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization());
@@ -580,10 +574,10 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     public String getAssembly(String studyId, String sessionId) throws CatalogException {
         String assembly = "";
-        QueryResult<Project> projectQueryResult;
+        OpenCGAResult<Project> projectQueryResult;
         projectQueryResult = catalogManager.getProjectManager().get(new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId),
                 new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
-        if (CollectionUtils.isNotEmpty(projectQueryResult.getResult())) {
+        if (CollectionUtils.isNotEmpty(projectQueryResult.getResults())) {
             assembly = projectQueryResult.first().getOrganism().getAssembly();
         }
         if (StringUtils.isNotEmpty(assembly)) {
@@ -598,7 +592,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                                                  String sessionId)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        QueryResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
+        OpenCGAResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ORGANIZATION.key())), sessionId);
 
         // Create Interpretation
@@ -662,6 +656,10 @@ public class ClinicalInterpretationManager extends StorageManager {
         return actionableVariantManager;
     }
 
+    public VariantStorageManager getVariantStorageManager() {
+        return variantStorageManager;
+    }
+
     /*--------------------------------------------------------------------------*/
     /*                    P R I V A T E     M E T H O D S                       */
     /*--------------------------------------------------------------------------*/
@@ -698,10 +696,10 @@ public class ClinicalInterpretationManager extends StorageManager {
         if (isCaseProvided(query)) {
             if (studyIds.size() == 1) {
                 // This checks that the user has permission to the clinical analysis, family, sample or individual
-                QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
-                        .get(studyIds.get(0), query, QueryOptions.empty(), token);
+                DataResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
+                        .search(studyIds.get(0), query, QueryOptions.empty(), token);
 
-                if (clinicalAnalysisQueryResult.getResult().isEmpty()) {
+                if (clinicalAnalysisQueryResult.getResults().isEmpty()) {
                     throw new ClinicalVariantException("Either the ID does not exist or the user does not have permissions to view it");
                 } else {
                     if (!query.containsKey(ClinicalVariantEngine.QueryParams.CLINICAL_ANALYSIS_ID.key())) {
@@ -709,7 +707,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                         query.remove(ClinicalVariantEngine.QueryParams.SAMPLE.key());
                         query.remove(ClinicalVariantEngine.QueryParams.SUBJECT.key());
                         String clinicalAnalysisList = StringUtils.join(
-                                clinicalAnalysisQueryResult.getResult().stream().map(ClinicalAnalysis::getId).collect(Collectors.toList()),
+                                clinicalAnalysisQueryResult.getResults().stream().map(ClinicalAnalysis::getId).collect(Collectors.toList()),
                                 ",");
                         query.put("clinicalAnalysisId", clinicalAnalysisList);
                     }
@@ -728,16 +726,16 @@ public class ClinicalInterpretationManager extends StorageManager {
             // There must be one single owner for all the studies, we do nt allow to query multiple databases
             if (users.size() == 1) {
                 Query studyQuery = new Query(StudyDBAdaptor.QueryParams.ID.key(), StringUtils.join(studyIds, ","));
-                QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyQuery, QueryOptions.empty(), token);
+                DataResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyQuery, QueryOptions.empty(), token);
 
                 // If the user is the owner we do not have to check anything else
                 List<String> studyAliases = new ArrayList<>(studyIds.size());
                 if (users.contains(userId)) {
-                    for (Study study : studyQueryResult.getResult()) {
+                    for (Study study : studyQueryResult.getResults()) {
                         studyAliases.add(study.getAlias());
                     }
                 } else {
-                    for (Study study : studyQueryResult.getResult()) {
+                    for (Study study : studyQueryResult.getResults()) {
                         for (Group group : study.getGroups()) {
                             if (group.getName().equalsIgnoreCase("admins") && group.getUserIds().contains(userId)) {
                                 studyAliases.add(study.getAlias());
@@ -767,10 +765,10 @@ public class ClinicalInterpretationManager extends StorageManager {
 
         // This checks that the user has permission to this interpretation
         Query query = new Query(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS_ID.key(), interpretationId);
-        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
-                .get(studyId, query, QueryOptions.empty(), token);
+        DataResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
+                .search(studyId, query, QueryOptions.empty(), token);
 
-        if (clinicalAnalysisQueryResult.getResult().isEmpty()) {
+        if (clinicalAnalysisQueryResult.getResults().isEmpty()) {
             throw new ClinicalVariantException("Either the interpretation ID (" + interpretationId + ") does not exist or the user does"
                     + " not have access permissions");
         }

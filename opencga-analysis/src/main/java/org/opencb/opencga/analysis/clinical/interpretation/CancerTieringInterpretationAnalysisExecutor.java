@@ -11,44 +11,39 @@ import org.opencb.biodata.models.variant.avro.ClinVar;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.OpenCgaAnalysisExecutor;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.annotations.AnalysisExecutor;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.storage.core.manager.clinical.ClinicalUtils;
+import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
-import org.opencb.oskar.core.annotations.AnalysisExecutor;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.biodata.formats.variant.clinvar.v24jaxb.ReviewStatusType.*;
 import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.*;
 
-@AnalysisExecutor(id = "CancerTieringInterpretation", analysis = "CancerTieringInterpretation", source = AnalysisExecutor.Source.MONGODB,
-        framework = AnalysisExecutor.Framework.ITERATOR)
-public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecutor {
+@AnalysisExecutor(id = "opencga-local",
+        analysis = CancerTieringInterpretationAnalysis.ID,
+        source = AnalysisExecutor.Source.STORAGE,
+        framework = AnalysisExecutor.Framework.LOCAL)
+public class CancerTieringInterpretationAnalysisExecutor extends org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor implements ClinicalInterpretationAnalysisExecutor {
 
-    public final static String ID = "CancerTieringInterpretationAnalysis";
-
-    public final static String SESSION_ID = "SESSION_ID";
-    public final static String CLINICAL_INTERPRETATION_MANAGER = "CLINICAL_INTERPRETATION_MANAGER";
-
-    private String clinicalAnalysisId;
     private String studyId;
+    private String clinicalAnalysisId;
     private List<String> variantIdsToDiscard;
     private CancerTieringInterpretationConfiguration config;
 
@@ -74,27 +69,27 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaAnalysis
 
     private static final List<String> pertinentFindingRNA = new ArrayList(Arrays.asList("ENSG00000269900", "ENSG00000270141"));
 
-    public void setup(String clinicalAnalysisId, String studyId, List<String> variandIdsToDiscard, Path outDir, ObjectMap executorParams,
-                      CancerTieringInterpretationConfiguration config) throws AnalysisException {
-        super.setup(executorParams, outDir);
-        this.clinicalAnalysisId = clinicalAnalysisId;
-        this.studyId = studyId;
-        this.variantIdsToDiscard = variandIdsToDiscard;
-        this.config = config;
-
-        // Sanity check
-        sessionId = executorParams.getString(SESSION_ID, "");
-        if (StringUtils.isEmpty(sessionId)) {
-            throw new AnalysisException("Missing executor parameter: " + SESSION_ID);
-        }
-        clinicalInterpretationManager = (ClinicalInterpretationManager) executorParams.getOrDefault(CLINICAL_INTERPRETATION_MANAGER, null);
-        if (clinicalInterpretationManager == null) {
-            throw new AnalysisException("Missing executor parameter: " + CLINICAL_INTERPRETATION_MANAGER);
-        }
-    }
+//    public void setup(String clinicalAnalysisId, String studyId, List<String> variandIdsToDiscard, Path outDir, ObjectMap executorParams,
+//                      CancerTieringInterpretationConfiguration config) throws AnalysisException {
+//        super.setup(executorParams, outDir);
+//        this.clinicalAnalysisId = clinicalAnalysisId;
+//        this.studyId = studyId;
+//        this.variantIdsToDiscard = variandIdsToDiscard;
+//        this.config = config;
+//
+//        // Sanity check
+//        sessionId = executorParams.getString(SESSION_ID, "");
+//        if (StringUtils.isEmpty(sessionId)) {
+//            throw new AnalysisException("Missing executor parameter: " + SESSION_ID);
+//        }
+//        clinicalInterpretationManager = (ClinicalInterpretationManager) executorParams.getOrDefault(CLINICAL_INTERPRETATION_MANAGER, null);
+//        if (clinicalInterpretationManager == null) {
+//            throw new AnalysisException("Missing executor parameter: " + CLINICAL_INTERPRETATION_MANAGER);
+//        }
+//    }
 
     @Override
-    public void exec() throws AnalysisException {
+    public void run() throws AnalysisException {
         // Get clinical analysis
         ClinicalAnalysis clinicalAnalysis = null;
         try {
@@ -210,12 +205,13 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaAnalysis
         query.put(VariantQueryParam.GENOTYPE.key(), gt.toString());
 
         // Execute query
-        VariantQueryResult<Variant> variantVariantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
+        VariantQueryResult<Variant> variantVariantQueryResult = clinicalInterpretationManager.getVariantStorageManager()
+                .get(query, QueryOptions.empty(), sessionId);
 
-        if (CollectionUtils.isNotEmpty(variantVariantQueryResult.getResult())) {
+        if (CollectionUtils.isNotEmpty(variantVariantQueryResult.getResults())) {
             Map<String, ClinicalProperty.RoleInCancer> roleInCancer = clinicalInterpretationManager.getRoleInCancerManager()
                     .getRoleInCancer();
-            for (Variant variant : variantVariantQueryResult.getResult()) {
+            for (Variant variant : variantVariantQueryResult.getResults()) {
                 if (variant.getAnnotation() != null && CollectionUtils.isNotEmpty(variant.getAnnotation().getConsequenceTypes())) {
                     List<ReportedEvent> reportedEvents = new ArrayList<>();
                     for (ConsequenceType ct : variant.getAnnotation().getConsequenceTypes()) {
@@ -281,12 +277,13 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaAnalysis
         query.put(VariantQueryParam.GENE.key(), geneIds);
 
         // Execute query
-        VariantQueryResult<Variant> variantVariantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
+        VariantQueryResult<Variant> variantVariantQueryResult = clinicalInterpretationManager.getVariantStorageManager()
+                .get(query, QueryOptions.empty(), sessionId);
 
         // Discard variants if:
         //    1) it is present in the black list
         //    2) or its allelic depth (AD) is 1,0
-        List<Variant> variants = filterVariants(variantVariantQueryResult.getResult(), germlineSamples);
+        List<Variant> variants = filterVariants(variantVariantQueryResult.getResults(), germlineSamples);
 
         // Create reported variants if necessary
         Set<String> reportedVariantIdSet = new HashSet<>();
@@ -349,12 +346,12 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaAnalysis
         query.put(VariantQueryParam.STATS_MAF.key(), "ALL<0.02");
 
         // Execute query
-        variantVariantQueryResult = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
+        variantVariantQueryResult = clinicalInterpretationManager.getVariantStorageManager().get(query, QueryOptions.empty(), sessionId);
 
         // Discard variants if:
         //    1) it is present in the black list
         //    2) or its allelic depth (AD) is 1,0
-        variants = filterVariants(variantVariantQueryResult.getResult(), germlineSamples);
+        variants = filterVariants(variantVariantQueryResult.getResults(), germlineSamples);
 
         for (Variant variant : variants) {
             // Discard variant already reported
@@ -576,9 +573,13 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaAnalysis
     }
 
     private void addPanels(Query query, List<DiseasePanel> panels) throws CatalogException {
-        QueryResult<Panel> panelQueryResult = catalogManager.getPanelManager().get(studyId, query, QueryOptions.empty(), sessionId);
-        for (Panel panel : panelQueryResult.getResult()) {
-            panels.add(panel);
+        if (query.containsKey(VariantCatalogQueryUtils.PANEL)) {
+            List<String> panelsIds = query.getAsStringList(VariantCatalogQueryUtils.PANEL.key());
+            OpenCGAResult<Panel> panelQueryResult = clinicalInterpretationManager.getCatalogManager().getPanelManager().get(studyId,
+                    panelsIds, QueryOptions.empty(), sessionId);
+            for (Panel panel : panelQueryResult.getResults()) {
+                panels.add(panel);
+            }
         }
     }
 
@@ -630,5 +631,41 @@ public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaAnalysis
             return variant.getAnnotation().getVariantTraitAssociation().getClinvar();
         }
         return null;
+    }
+
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public CancerTieringInterpretationAnalysisExecutor setStudyId(String studyId) {
+        this.studyId = studyId;
+        return this;
+    }
+
+    public String getClinicalAnalysisId() {
+        return clinicalAnalysisId;
+    }
+
+    public CancerTieringInterpretationAnalysisExecutor setClinicalAnalysisId(String clinicalAnalysisId) {
+        this.clinicalAnalysisId = clinicalAnalysisId;
+        return this;
+    }
+
+    public List<String> getVariantIdsToDiscard() {
+        return variantIdsToDiscard;
+    }
+
+    public CancerTieringInterpretationAnalysisExecutor setVariantIdsToDiscard(List<String> variantIdsToDiscard) {
+        this.variantIdsToDiscard = variantIdsToDiscard;
+        return this;
+    }
+
+    public CancerTieringInterpretationConfiguration getConfig() {
+        return config;
+    }
+
+    public CancerTieringInterpretationAnalysisExecutor setConfig(CancerTieringInterpretationConfiguration config) {
+        this.config = config;
+        return this;
     }
 }

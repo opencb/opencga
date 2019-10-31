@@ -17,8 +17,8 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -57,7 +57,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
     }
 
     @Override
-    protected QueryResult<VariantSampleData> getSampleData(String variantStr, String study, QueryOptions options,
+    protected DataResult<VariantSampleData> getSampleData(String variantStr, String study, QueryOptions options,
                                                            List<String> includeSamples,
                                                            boolean studyWithGts, Set<String> genotypes,
                                                            boolean merge, int sampleLimit) {
@@ -245,8 +245,8 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
             Map<String, FileEntry> files = studyEntry.getFiles().stream().collect(Collectors.toMap(FileEntry::getFileId, f -> f));
 
             VariantSampleData variantSampleData = new VariantSampleData(variantStr, study, sampleData, files, stats);
-            return new QueryResult<>("", (int) stopWatch.getTime(TimeUnit.MILLISECONDS), 1, 1, null, null,
-                    Collections.singletonList(variantSampleData));
+            return new DataResult<>((int) stopWatch.getTime(TimeUnit.MILLISECONDS), Collections.emptyList(), 1,
+                    Collections.singletonList(variantSampleData), 1);
 
         } catch (IOException e) {
             throw VariantQueryException.internalException(e);

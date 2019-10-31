@@ -30,8 +30,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -242,8 +242,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         VariantDBIterator iterator = iterator(query, options);
         iterator.forEachRemaining(variants::add);
         long numTotalResults;
-        String warn = "";
-        String error = "";
 
         if (options == null) {
             numTotalResults = variants.size();
@@ -260,8 +258,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        VariantQueryResult<Variant> result = new VariantQueryResult<>("getVariants", ((int) iterator.getTimeFetching()), variants.size(),
-                numTotalResults, warn, error, variants, null, HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
+        VariantQueryResult<Variant> result = new VariantQueryResult<>(((int) iterator.getTimeFetching()), variants.size(),
+                numTotalResults, null, variants, null, HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
         return addSamplesMetadataIfRequested(result, query, options, getMetadataManager());
     }
 
@@ -281,15 +279,15 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options) {
+    public DataResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options) {
         StopWatch stopWatch = StopWatch.createStarted();
         Iterator<VariantAnnotation> variantAnnotationIterator = annotationIterator(name, query, options);
 
         List<VariantAnnotation> annotations = new ArrayList<>();
         variantAnnotationIterator.forEachRemaining(annotations::add);
 
-        return new QueryResult<>("getAnnotation", ((int) stopWatch.getTime(TimeUnit.MILLISECONDS)), annotations.size(), -1,
-                "", "", annotations);
+        return new DataResult<>(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)), Collections.emptyList(), annotations.size(), annotations,
+                -1);
     }
 
     public Iterator<VariantAnnotation> annotationIterator(String name, Query query, QueryOptions options) {
@@ -336,7 +334,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult<Long> count(Query query) {
+    public DataResult<Long> count(Query query) {
         if (query == null) {
             query = new Query();
         }
@@ -347,15 +345,15 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
              ResultSet resultSet = statement.executeQuery(sql)) { // Cleans up Statement and RS
             resultSet.next();
             long count = resultSet.getLong(1);
-            return new QueryResult<>("count", ((int) (System.currentTimeMillis() - startTime)),
-                    1, 1, "", "", Collections.singletonList(count));
+            return new DataResult<>(((int) (System.currentTimeMillis() - startTime)), Collections.emptyList(),
+                    1, Collections.singletonList(count), 1);
         } catch (SQLException e) {
             throw VariantQueryException.internalException(e);
         }
     }
 
     @Override
-    public QueryResult distinct(Query query, String field) {
+    public DataResult distinct(Query query, String field) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException();
     }
@@ -529,25 +527,25 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult getFrequency(Query query, Region region, int regionIntervalSize) {
+    public DataResult getFrequency(Query query, Region region, int regionIntervalSize) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public QueryResult rank(Query query, String field, int numResults, boolean asc) {
+    public DataResult rank(Query query, String field, int numResults, boolean asc) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options) {
+    public DataResult groupBy(Query query, String field, QueryOptions options) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
+    public DataResult groupBy(Query query, List<String> fields, QueryOptions options) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException();
     }
@@ -574,7 +572,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
      */
     @Override
     @Deprecated
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp,
+    public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, long timestamp,
                                    QueryOptions queryOptions) {
         throw new UnsupportedOperationException("Unimplemented method");
     }
@@ -584,7 +582,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
      */
     @Override
     @Deprecated
-    public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata,
+    public DataResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyMetadata studyMetadata,
                                    long timestamp, QueryOptions options) {
         throw new UnsupportedOperationException("Unimplemented method");
     }
@@ -600,7 +598,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     @Deprecated
-    public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations,
+    public DataResult updateAnnotations(List<VariantAnnotation> variantAnnotations,
                                          long timestamp, QueryOptions queryOptions) {
 
         long start = System.currentTimeMillis();
@@ -621,11 +619,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         } catch (SQLException | ClassNotFoundException | IOException e) {
             throw new RuntimeException(e);
         }
-        return new QueryResult("Update annotations", (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
+        return new DataResult((int) (System.currentTimeMillis() - start), Collections.emptyList(), 0, variantAnnotations.size(), 0, 0);
     }
 
     @Override
-    public QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp,
+    public DataResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, long timeStamp,
                                                QueryOptions options) {
         throw new UnsupportedOperationException();
     }

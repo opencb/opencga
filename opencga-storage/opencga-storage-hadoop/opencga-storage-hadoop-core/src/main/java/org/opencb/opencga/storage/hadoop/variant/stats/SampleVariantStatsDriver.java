@@ -1,24 +1,13 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
-import org.apache.avro.io.BinaryDecoder;
-import org.apache.avro.io.BinaryEncoder;
-import org.apache.avro.io.DecoderFactory;
-import org.apache.avro.io.EncoderFactory;
-import org.apache.avro.specific.SpecificDatumReader;
-import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
-import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
@@ -36,16 +25,19 @@ import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.hadoop.utils.AvroWritable;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.VariantTableAggregationDriver;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantRowMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -53,11 +45,10 @@ import java.util.stream.IntStream;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.STUDY_ID;
 
-public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
+public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     public static final String SAMPLES = "samples";
-    public static final String OUTPUT = "output";
 //    public static final String STATS_PARTIAL_RESULTS = "stats.partial-results";
     //    public static final boolean STATS_PARTIAL_RESULTS_DEFAULT = true;
     private static final String TRIOS = "trios";
@@ -65,8 +56,6 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
     private static final String STATS_OPERATION_NAME = "sample_stats";
     private List<Integer> sampleIds;
     private String trios;
-    private Path outdir;
-    private Path localOutput;
 
     @Override
     protected Map<String, String> getParams() {
@@ -81,17 +70,14 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
     protected void parseAndValidateParameters() throws IOException {
         super.parseAndValidateParameters();
 
-        String study = getParam(VariantStorageEngine.Options.STUDY.key());
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
         int studyId = getStudyId();
-        if (studyId < 0) {
-            throw new IllegalArgumentException("Missing study");
-        }
+
         String samplesStr = getParam(SAMPLES);
         if (StringUtils.isEmpty(samplesStr)) {
             throw new IllegalArgumentException("Missing samples");
         }
 
-        VariantStorageMetadataManager metadataManager = getMetadataManager();
         List<String> samples = Arrays.asList(samplesStr.split(","));
         StringBuilder trios = new StringBuilder();
         Set<Integer> includeSample = new LinkedHashSet<>();
@@ -108,7 +94,7 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
             for (String sample : samples) {
                 Integer sampleId = metadataManager.getSampleId(studyId, sample);
                 if (sampleId == null) {
-                    throw VariantQueryException.sampleNotFound(sample, study);
+                    throw VariantQueryException.sampleNotFound(sample, metadataManager.getStudyName(studyId));
                 }
                 addTrio(trios, includeSample, metadataManager.getSampleMetadata(studyId, sampleId));
             }
@@ -118,20 +104,6 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
             throw new IllegalArgumentException("Nothing to do!");
         }
         this.trios = trios.toString();
-
-
-        String outdirStr = getParam(OUTPUT);
-        if (StringUtils.isNotEmpty(outdirStr)) {
-            outdir = new Path(outdirStr);
-
-            if (isLocal(outdir)) {
-                localOutput = getLocalOutput(outdir, () -> "sample_variant_stats."
-                        + (samples.size() < 10 ? "." + String.join("_", samples) : "")
-                        + TimeUtils.getTime() + ".json");
-                outdir = getTempOutdir("opencga_sample_variant_stats_");
-                outdir.getFileSystem(getConf()).deleteOnExit(outdir);
-            }
-        }
 
     }
 
@@ -178,54 +150,71 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
     }
 
     @Override
-    protected Class<?> getMapperClass() {
+    protected Query getQuery() {
+        return new Query()
+                .append(VariantQueryParam.STUDY.key(), getStudyId())
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
+    }
+
+    @Override
+    protected QueryOptions getQueryOptions() {
+        return new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_STATS);
+    }
+
+    @Override
+    protected Class<? extends VariantRowMapper> getMapperClass() {
         return SampleVariantStatsMapper.class;
     }
 
     @Override
+    protected Class<?> getMapOutputKeyClass() {
+        return IntWritable.class;
+    }
+
+    @Override
+    protected Class<?> getMapOutputValueClass() {
+        return SampleVariantStatsWritable.class;
+    }
+
+    @Override
+    protected Class<? extends Reducer> getCombinerClass() {
+        return SampleVariantStatsCombiner.class;
+    }
+
+    @Override
+    protected Class<? extends Reducer> getReducerClass() {
+        return SampleVariantStatsReducer.class;
+    }
+
+    @Override
+    protected Class<?> getOutputKeyClass() {
+        return NullWritable.class;
+    }
+
+    @Override
+    protected Class<?> getOutputValueClass() {
+        return Text.class;
+    }
+
+    @Override
+    protected int getNumReduceTasks() {
+        return Math.min(sampleIds.size(), 10);
+    }
+
+    @Override
+    protected String generateOutputFileName() {
+        return "sample_variant_stats." + TimeUtils.getTime() + ".json";
+    }
+
+    @Override
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
-        VariantStorageMetadataManager metadataManager = getMetadataManager();
-
-        boolean skipSampleIndex = true;
-        Query query = new Query()
-                .append(VariantQueryParam.STUDY.key(), getStudyId())
-                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleIds);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_STATS);
-        VariantMapReduceUtil.initVariantRowMapperJob(job, SampleVariantStatsMapper.class,
-                variantTable, metadataManager, query, queryOptions, skipSampleIndex);
-
+        super.setupJob(job, archiveTable, variantTable);
         job.getConfiguration().set(SAMPLES, sampleIds.stream().map(Objects::toString).collect(Collectors.joining(",")));
         job.getConfiguration().setInt(STUDY_ID, getStudyId());
         job.getConfiguration().set(TRIOS, trios);
-
-        job.setReducerClass(SampleVariantStatsReducer.class);
-        job.setCombinerClass(SampleVariantStatsCombiner.class);
-
-        job.setMapOutputKeyClass(IntWritable.class);
-        job.setMapOutputValueClass(SampleVariantStatsWritable.class);
-
-        job.setOutputKeyClass(NullWritable.class);
-        job.setOutputValueClass(Text.class);
-
-        if (outdir == null) {
-            job.setOutputFormatClass(NullOutputFormat.class);
-        } else {
-            job.setOutputFormatClass(TextOutputFormat.class);
-            TextOutputFormat.setOutputPath(job, outdir);
+        if (outdir != null) {
             job.getConfiguration().setBoolean(WRITE_TO_DISK, true);
-            if (localOutput == null) {
-                LOGGER.info("Output directory : " + outdir);
-            } else {
-                LOGGER.info("Temporary output directory : " + outdir);
-                LOGGER.info("Local output file : " + localOutput);
-            }
         }
-
-        int numReduceTasks = Math.min(sampleIds.size(), 10);
-        LOGGER.info("Using " + numReduceTasks + " reduce tasks");
-        job.setNumReduceTasks(numReduceTasks);
-        VariantMapReduceUtil.setNoneTimestamp(job);
-
         return job;
     }
 
@@ -234,43 +223,17 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
         return STATS_OPERATION_NAME;
     }
 
-    @Override
-    protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
-        super.postExecution(succeed);
-        if (succeed) {
-            if (localOutput != null) {
-                concatMrOutputToLocal(outdir, localOutput);
-            }
-        }
-        if (localOutput != null) {
-            FileSystem fileSystem = outdir.getFileSystem(getConf());
-            fileSystem.delete(outdir, true);
-            fileSystem.cancelDeleteOnExit(outdir);
-        }
-    }
-
-    public static class SampleVariantStatsWritable implements Writable {
+    public static class SampleVariantStatsWritable extends AvroWritable<SampleVariantStats> {
         private int sampleId;
         private int ti;
         private int tv;
         private int qualCount;
         private double qualSum;
         private double qualSumSq;
-        private SampleVariantStats sampleStats;
-
-        private static SpecificDatumWriter<SampleVariantStats> writer = new SpecificDatumWriter<>(SampleVariantStats.class);
-        private static SpecificDatumReader<SampleVariantStats> reader = new SpecificDatumReader<>(SampleVariantStats.class);
-        private final BinaryEncoder binaryEncoder;
-        private final BinaryDecoder binaryDecoder;
-        private final DataInputAsInputStream is;
-        private final DataOutputAsOutputStream os;
 
 
         public SampleVariantStatsWritable() {
-            os = new DataOutputAsOutputStream(null);
-            is = new DataInputAsInputStream(null);
-            binaryEncoder = EncoderFactory.get().directBinaryEncoder(os, null);
-            binaryDecoder = DecoderFactory.get().directBinaryDecoder(is, null);
+            super(SampleVariantStats.class);
         }
 
         public SampleVariantStatsWritable(int sampleId) {
@@ -287,7 +250,7 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
             this.qualCount = qualCount;
             this.qualSum = qualSum;
             this.qualSumSq = qualSumSq;
-            this.sampleStats = sampleStats;
+            this.value = sampleStats;
         }
 
         @Override
@@ -298,8 +261,7 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
             out.writeInt(qualCount);
             out.writeDouble(qualSum);
             out.writeDouble(qualSumSq);
-            os.setOut(out); // Replace the DataOutput used by the encoder
-            writer.write(sampleStats, binaryEncoder);
+            writeAvro(out);
         }
 
         @Override
@@ -310,15 +272,14 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
             qualCount = in.readInt();
             qualSum = in.readDouble();
             qualSumSq = in.readDouble();
-            is.setIn(in); // Replace the DataInput used by the decoder
-            sampleStats = reader.read(sampleStats, binaryDecoder);
+            readAvro(in);
         }
 
         public void merge(SampleVariantStatsWritable other) {
-            if (sampleStats == null) {
-                sampleStats = SampleVariantStats.newBuilder(other.sampleStats).build();
+            if (value == null) {
+                value = SampleVariantStats.newBuilder(other.value).build();
             } else {
-                SampleVariantStatsCalculator.merge(sampleStats, other.sampleStats);
+                SampleVariantStatsCalculator.merge(value, other.value);
             }
 
             this.ti += other.ti;
@@ -328,63 +289,6 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
             this.qualSumSq += other.qualSumSq;
         }
 
-        private static class DataOutputAsOutputStream extends OutputStream {
-            private DataOutput out;
-
-            DataOutputAsOutputStream(DataOutput out) {
-                this.out = out;
-            }
-
-            public DataOutputAsOutputStream setOut(DataOutput out) {
-                this.out = out;
-                return this;
-            }
-
-            @Override
-            public void write(int b) throws IOException {
-                out.write(b);
-            }
-
-            @Override
-            public void write(byte[] b) throws IOException {
-                out.write(b);
-            }
-
-            @Override
-            public void write(byte[] b, int off, int len) throws IOException {
-                out.write(b, off, len);
-            }
-        }
-
-        private static class DataInputAsInputStream extends InputStream {
-            private DataInput in;
-
-            DataInputAsInputStream(DataInput in) {
-                this.in = in;
-            }
-
-            public DataInputAsInputStream setIn(DataInput in) {
-                this.in = in;
-                return this;
-            }
-
-            @Override
-            public int read() throws IOException {
-                return ((int) in.readByte());
-            }
-
-            @Override
-            public int read(byte[] b) throws IOException {
-                in.readFully(b);
-                return b.length;
-            }
-
-            @Override
-            public int read(byte[] b, int off, int len) throws IOException {
-                in.readFully(b, off, len);
-                return len;
-            }
-        }
     }
 
     public static class DistributedSampleVariantStatsCalculator extends SampleVariantStatsCalculator {
@@ -397,9 +301,9 @@ public class SampleVariantStatsDriver extends AbstractVariantsTableDriver {
         }
 
         public DistributedSampleVariantStatsCalculator(SampleVariantStatsWritable statsWritable) {
-            super(null, Collections.singletonList(statsWritable.sampleStats.getId()));
+            super(null, Collections.singletonList(statsWritable.getValue().getId()));
 
-            statsList = Collections.singletonList(statsWritable.sampleStats);
+            statsList = Collections.singletonList(statsWritable.getValue());
             ti = new int[]{statsWritable.ti};
             tv = new int[]{statsWritable.tv};
             qualCount = new int[]{statsWritable.qualCount};

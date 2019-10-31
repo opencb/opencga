@@ -112,4 +112,8 @@ public class VariantStatsWrapper {
         this.sv = sv;
         return this;
     }
+
+    public Variant toVariant() {
+        return new Variant(chromosome, start, end, reference, alternate).setSv(sv);
+    }
 }

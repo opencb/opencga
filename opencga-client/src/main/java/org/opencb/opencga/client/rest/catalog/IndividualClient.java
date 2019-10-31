@@ -16,21 +16,16 @@
 
 package org.opencb.opencga.client.rest.catalog;
 
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
 
 import java.io.IOException;
 
 /**
  * Created by imedina on 24/05/16.
  */
-public class IndividualClient extends AnnotationClient<Individual, IndividualAclEntry> {
+public class IndividualClient extends AnnotationClient<Individual> {
 
     private static final String INDIVIDUALS_URL = "individuals";
 
@@ -39,25 +34,24 @@ public class IndividualClient extends AnnotationClient<Individual, IndividualAcl
 
         this.category = INDIVIDUALS_URL;
         this.clazz = Individual.class;
-        this.aclClass = IndividualAclEntry.class;
     }
 
-    public QueryResponse<Individual> create(String studyId, ObjectMap bodyParams) throws IOException {
+    public DataResponse<Individual> create(String studyId, ObjectMap bodyParams) throws IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull(STUDY, studyId);
         params.putIfNotNull("body", bodyParams);
         return execute(INDIVIDUALS_URL, "create", params, POST, Individual.class);
     }
 
-    public QueryResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
+    public DataResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
         params = addParamsToObjectMap(params, "study", studyId, "fields", fields);
         return execute(INDIVIDUALS_URL, "groupBy", params, GET, ObjectMap.class);
     }
 
-    public QueryResponse<FacetQueryResult> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
+    public DataResponse<FacetField> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
         ObjectMap params = new ObjectMap(query);
         params.putAll(queryOptions);
         params.put("study", study);
-        return execute(INDIVIDUALS_URL, "stats", params, GET, FacetQueryResult.class);
+        return execute(INDIVIDUALS_URL, "stats", params, GET, FacetField.class);
     }
 }

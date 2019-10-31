@@ -19,67 +19,41 @@ package org.opencb.opencga.analysis.clinical.interpretation;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.annotations.Analysis;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
-import java.nio.file.Path;
 import java.util.List;
 
-import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance;
+@Analysis(id = TeamInterpretationAnalysis.ID, type = Analysis.AnalysisType.CLINICAL)
+public class TeamInterpretationAnalysis extends InterpretationAnalysis {
 
-public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
+    public final static String ID = "team-interpretation";
 
-
-    public final static String ID = "TeamInterpretationAnalysis";
-
-    private ClinicalAnalysis clinicalAnalysis;
+    private String studyId;
+    private String clinicalAnalysisId;
     private List<String> diseasePanelIds;
-    private ModeOfInheritance moi;
+    private ClinicalProperty.ModeOfInheritance moi;
     private TeamInterpretationConfiguration config;
 
+    private ClinicalAnalysis clinicalAnalysis;
     private List<DiseasePanel> diseasePanels;
 
-    public TeamInterpretationAnalysis(String clinicalAnalysisId, String studyId, List<String> diseasePanelIds, ClinicalProperty.ModeOfInheritance moi,
-                                         Path outDir, Path openCgaHome, TeamInterpretationConfiguration config, String sessionId) {
-        super(clinicalAnalysisId, studyId, outDir, openCgaHome, sessionId);
-
-        this.diseasePanelIds = diseasePanelIds;
-        this.moi = moi;
-        this.config = config;
-    }
-
     @Override
-    protected void exec() throws AnalysisException {
-        check();
-
-        diseasePanels = clinicalInterpretationManager.getDiseasePanels(studyId, diseasePanelIds, sessionId);
-
-        // Set executor parameters
-        updateExecutorParams();
-
-        // Get executor
-        TeamInterpretationAnalysisExecutor executor = new TeamInterpretationAnalysisExecutor();
-        executor.setup(clinicalAnalysisId, studyId, diseasePanels, moi, outDir, executorParams, config);
-
-        arm.startStep("get-primary/secondary-findings");
-        executor.exec();
-        arm.endStep(90.0F);
-
-        arm.startStep("save-interpretation");
-        saveResult(ID, diseasePanels, clinicalAnalysis, new Query(), config.isIncludeLowCoverage(), config.getMaxLowCoverage());
-        arm.endStep(100.0F);
-    }
-
     protected void check() throws AnalysisException {
+        super.check();
+
         // Check study
         if (StringUtils.isEmpty(studyId)) {
-            // Missing study
-            throw new AnalysisException("Missing study ID");
+            throw new AnalysisException("Missing study");
+        }
+        try {
+            catalogManager.getStudyManager().get(studyId, null, sessionId).first().getFqn();
+        } catch (CatalogException e) {
+            throw new AnalysisException(e);
         }
 
         // Check clinical analysis
@@ -88,7 +62,7 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
         }
 
         // Get clinical analysis to ckeck proband sample ID, family ID
-        QueryResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
+        OpenCGAResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),
                     sessionId);
@@ -99,17 +73,73 @@ public class TeamInterpretationAnalysis extends FamilyInterpretationAnalysis {
         if (clinicalAnalysisQueryResult.getNumResults() != 1) {
             throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyId);
         }
-
         clinicalAnalysis = clinicalAnalysisQueryResult.first();
+
+        // Check disease panels
+        diseasePanels = clinicalInterpretationManager.getDiseasePanels(studyId, diseasePanelIds, sessionId);
+
+        // Update executor params with OpenCGA home and session ID
+        setUpStorageEngineExecutor(studyId);
     }
 
-    private void updateExecutorParams() {
-        executorParams = new ObjectMap();
+    @Override
+    protected void run() throws AnalysisException {
 
-        // Session ID
-        executorParams.put(CustomInterpretationAnalysisExecutor.SESSION_ID, sessionId);
+        step(() -> {
+            new TeamInterpretationAnalysisExecutor()
+                    .setStudyId(studyId)
+                    .setClinicalAnalysisId(clinicalAnalysisId)
+                    .setDiseasePanels(diseasePanels)
+                    .setMoi(moi)
+                    .setConfig(config)
+                    .execute();
 
-        // Clinical interpretation manager
-        executorParams.put(CustomInterpretationAnalysisExecutor.CLINICAL_INTERPRETATION_MANAGER, clinicalInterpretationManager);
+            saveInterpretation(studyId, clinicalAnalysis, diseasePanels, null, config);
+        });
+    }
+
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public TeamInterpretationAnalysis setStudyId(String studyId) {
+        this.studyId = studyId;
+        return this;
+    }
+
+    public String getClinicalAnalysisId() {
+        return clinicalAnalysisId;
+    }
+
+    public TeamInterpretationAnalysis setClinicalAnalysisId(String clinicalAnalysisId) {
+        this.clinicalAnalysisId = clinicalAnalysisId;
+        return this;
+    }
+
+    public List<String> getDiseasePanelIds() {
+        return diseasePanelIds;
+    }
+
+    public TeamInterpretationAnalysis setDiseasePanelIds(List<String> diseasePanelIds) {
+        this.diseasePanelIds = diseasePanelIds;
+        return this;
+    }
+
+    public ClinicalProperty.ModeOfInheritance getMoi() {
+        return moi;
+    }
+
+    public TeamInterpretationAnalysis setMoi(ClinicalProperty.ModeOfInheritance moi) {
+        this.moi = moi;
+        return this;
+    }
+
+    public TeamInterpretationConfiguration getConfig() {
+        return config;
+    }
+
+    public TeamInterpretationAnalysis setConfig(TeamInterpretationConfiguration config) {
+        this.config = config;
+        return this;
     }
 }

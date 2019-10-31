@@ -193,15 +193,15 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         studyConfiguration2.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
 
         assertEqualsResult(new MongoDBVariantWriteResult(3, 0, 0, 0, 0, 0), loadFile1());
-        allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResult();
+        allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResults();
         assertEquals(3, allVariants.size());
 
         assertEqualsResult(new MongoDBVariantWriteResult(1, 1, 0, 0, 0, 0), loadFile2());
-        allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResult();
+        allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResults();
         assertEquals(4, allVariants.size());
 
         assertEqualsResult(new MongoDBVariantWriteResult(1, 2, 1, 0, 0, 0), loadFile3());
-        allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResult();
+        allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResults();
         assertEquals(5, allVariants.size());
 
         checkLoadedVariants(allVariants);
@@ -217,7 +217,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         studyConfiguration2.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
 
         assertEqualsResult(new MongoDBVariantWriteResult(3, 0, 0, 0, 0, 0), loadFile1());
-        allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResult();
+        allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResults();
         assertEquals(3, allVariants.size());
 
         MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
@@ -225,7 +225,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         writeResult.merge(stageVariants(studyConfiguration2, createFile3Variants(), fileId3));
         writeResult = mergeVariants(studyConfiguration2, Arrays.asList(fileId2, fileId3), writeResult, Collections.emptyList());
         assertEqualsResult(new MongoDBVariantWriteResult(2, 2, 0, 0, 0, 0), writeResult);
-        allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResult();
+        allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResults();
         assertEquals(5, allVariants.size());
 
         checkLoadedVariants(allVariants);
@@ -251,17 +251,17 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
 
             MongoDBVariantWriteResult writeResult2 = loadFile1(chr, i++, Collections.singletonList(chr));
             assertEqualsResult(new MongoDBVariantWriteResult(3, 0, 0, 0, 0, 0), writeResult2);
-            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResult();
+            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResults();
             assertEquals(3, allVariants.size());
 
             MongoDBVariantWriteResult writeResult1 = loadFile2(chr, i++, Collections.singletonList(chr));
             assertEqualsResult(new MongoDBVariantWriteResult(1, 1, 0, 0, 0, 0), writeResult1);
-            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResult();
+            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResults();
             assertEquals(4, allVariants.size());
 
             MongoDBVariantWriteResult writeResult = loadFile3(chr, i++, Collections.singletonList(chr));
             assertEqualsResult(new MongoDBVariantWriteResult(1, 2, 1, 0, 0, 0), writeResult);
-            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResult();
+            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResults();
             assertEquals(5, allVariants.size());
 
             checkLoadedVariants(allVariants);
@@ -290,11 +290,11 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
             Query query = getQuery(chr);
 
             assertEqualsResult(new MongoDBVariantWriteResult(2, 0, 0, 0, 0, 0), loadFile2(chr, mapFileIds.get(chr)[1], Collections.singletonList(chr)));
-            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResult();
+            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResults();
             assertEquals(2, allVariants.size());
 
             assertEqualsResult(new MongoDBVariantWriteResult(2, 1, 1, 0, 0, 0), loadFile3(chr, mapFileIds.get(chr)[2], Collections.singletonList(chr)));
-            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResult();
+            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResults();
             assertEquals(4, allVariants.size());
 
         }
@@ -303,14 +303,14 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
             Query query = getQuery(chr);
 
             assertEqualsResult(new MongoDBVariantWriteResult(1, 2, 0, 0, 0, 0), loadFile1(chr, mapFileIds.get(chr)[0], Collections.singletonList(chr)));
-            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResult();
+            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResults();
             assertEquals(5, allVariants.size());
 
         }
 
         for (String chr : chromosomes) {
             Query query = getQuery(chr);
-            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResult();
+            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResults();
             checkLoadedVariants(allVariants, mapFileIds.get(chr));
         }
     }
@@ -339,7 +339,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
             Query query = getQuery(chr);
 
             assertEqualsResult(new MongoDBVariantWriteResult(3, 0, 0, 0, 0, 0), loadFile1(chr, mapFileIds.get(chr)[0], Collections.singletonList(chr)));
-            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResult();
+            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResults();
             assertEquals(3, allVariants.size());
 
         }
@@ -348,17 +348,17 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
             Query query = getQuery(chr);
 
             assertEqualsResult(new MongoDBVariantWriteResult(1, 1, 0, 0, 0, 0), loadFile2(chr, mapFileIds.get(chr)[1], Collections.singletonList(chr)));
-            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResult();
+            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResults();
             assertEquals(4, allVariants.size());
 
             assertEqualsResult(new MongoDBVariantWriteResult(1, 2, 1, 0, 0, 0), loadFile3(chr, mapFileIds.get(chr)[2], Collections.singletonList(chr)));
-            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResult();
+            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResults();
             assertEquals(5, allVariants.size());
         }
 
         for (String chr : chromosomes) {
             Query query = getQuery(chr);
-            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResult();
+            allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResults();
             checkLoadedVariants(allVariants, mapFileIds.get(chr));
         }
     }

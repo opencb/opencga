@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.storage.core.benchmark;
 
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.slf4j.LoggerFactory;
@@ -99,7 +99,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
                 switch (queryType[0]) {
                     case "count":
                         executeThreads(queryType[0], () -> variantDBAdaptor.count(new Query()));
-                        System.out.println("VariantBenchmarkRunner.query" + variantDBAdaptor.count(new Query()).getResult());
+                        System.out.println("VariantBenchmarkRunner.query" + variantDBAdaptor.count(new Query()).getResults());
 //                        executionTime = count();
                         break;
                     case "distinct":
@@ -160,7 +160,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 
         int totalTime = 0;
         for (Future<T> queryResultFuture : futureList) {
-            totalTime += ((QueryResult) queryResultFuture.get()).getDbTime();
+            totalTime += ((DataResult) queryResultFuture.get()).getTime();
 //            System.out.println("queryResultFuture.get().getDbTime() = " + queryResultFuture.get().getDbTime());
 //            System.out.println("queryResultFuture.get().getResult().size() = " + queryResultFuture.get().getResult().get(0));
         }

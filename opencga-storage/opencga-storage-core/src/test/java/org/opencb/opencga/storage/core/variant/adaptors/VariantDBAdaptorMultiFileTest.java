@@ -7,10 +7,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.result.FacetQueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -29,9 +26,9 @@ import java.util.List;
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
+import static org.opencb.biodata.models.variant.StudyEntry.*;
 import static org.opencb.biodata.models.variant.StudyEntry.FILTER;
 import static org.opencb.biodata.models.variant.StudyEntry.QUAL;
-import static org.opencb.biodata.models.variant.StudyEntry.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
@@ -139,7 +136,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
     @Test
     public void testRelease() throws Exception {
-        List<Variant> variants = query(new Query(), new QueryOptions()).getResult();
+        List<Variant> variants = query(new Query(), new QueryOptions()).getResults();
         for (Variant variant : variants) {
             Integer minFileId = variant.getStudies().stream()
                     .flatMap(s -> s.getFiles().stream())
@@ -171,7 +168,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                 .append(VariantQueryParam.INCLUDE_FILE.key(), file12877);
         queryResult = query(query, options);
         assertEquals(dbAdaptor.count(null).first().intValue(), queryResult.getNumResults());
-        for (Variant variant : queryResult.getResult()) {
+        for (Variant variant : queryResult.getResults()) {
             assertTrue(variant.getStudies().size() <= 1);
             StudyEntry s_1 = variant.getStudy(study1);
             if (s_1 != null) {
@@ -1059,7 +1056,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     public void testFacet() throws IOException, StorageEngineException {
         Query query = new Query(STUDY.key(), study1).append(SAMPLE.key(), sampleNA12877);
 
-        FacetQueryResult facet = variantStorageEngine.facet(query, new QueryOptions(QueryOptions.FACET, "chromDensity[1:10109-17539]"));
+        DataResult<FacetField> facet = variantStorageEngine.facet(query, new QueryOptions(QueryOptions.FACET, "chromDensity[1:10109-17539]"));
         assertEquals(variantStorageEngine.count(new Query(query).append(REGION.key(), "1:10109-17539")).first().longValue(), facet.getNumMatches());
 //        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(facet));
 

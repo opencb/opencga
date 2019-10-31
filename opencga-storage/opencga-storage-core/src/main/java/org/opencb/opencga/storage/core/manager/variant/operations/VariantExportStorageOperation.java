@@ -34,8 +34,8 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogVariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantMetadataImporter;
@@ -238,8 +238,8 @@ public class VariantExportStorageOperation extends StorageOperation {
                 String source = inputUri.resolve(".").relativize(inputUri).getPath();
                 String description = "Sample data imported from " + source;
                 for (Map.Entry<String, Integer> entry : studyConfiguration.getSampleIds().entrySet()) {
-                    Sample sample = catalogManager.getSampleManager().create(studyStr, entry.getKey(), source, description,
-                            null, false, null, new HashMap<>(), Collections.emptyMap(), QueryOptions.empty(), sessionId).first();
+                    Sample sample = catalogManager.getSampleManager().create(studyStr,
+                            new Sample(entry.getKey(), source, null, description, 1), QueryOptions.empty(), sessionId).first();
                     samplesMap.put(sample.getId(), (int) sample.getUid());
                     samplesIdMap.put(entry.getValue(), (int) sample.getUid());
                 }
@@ -300,7 +300,7 @@ public class VariantExportStorageOperation extends StorageOperation {
                             .collect(Collectors.toList());
 
                     File file = new File(fileName, File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, fileName,
-                            "File imported from " + source, null, 0, 0);
+                            null, "File imported from " + source, null, 0, 0);
                     file.setIndex(new FileIndex("", "", new FileIndex.IndexStatus(Status.READY, ""), -1, Collections.emptyMap()));
                     file.setSamples(samples);
 

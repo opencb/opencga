@@ -14,17 +14,12 @@ import org.opencb.biodata.models.clinical.pedigree.Member;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Panel;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -123,35 +118,34 @@ public class ClinicalUtils {
         return sampleList;
     }
 
-    public static List<DiseasePanel> getDiseasePanelsFromIds(List<String> diseasePanelIds, String studyId, CatalogManager catalogManager,
-                                                             String sessionId) throws AnalysisException {
-        List<DiseasePanel> diseasePanels = new ArrayList<>();
-        if (diseasePanelIds != null && !diseasePanelIds.isEmpty()) {
-            List<QueryResult<Panel>> queryResults;
-            try {
-                queryResults = catalogManager.getPanelManager()
-                        .get(studyId, diseasePanelIds, QueryOptions.empty(), sessionId);
-            } catch (CatalogException e) {
-                throw new AnalysisException(e.getMessage(), e);
-            }
-
-            if (queryResults.size() != diseasePanelIds.size()) {
-                throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels queried");
-            }
-
-            for (QueryResult<Panel> queryResult : queryResults) {
-                if (queryResult.getNumResults() != 1) {
-                    throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels "
-                            + "queried");
-                }
-                diseasePanels.add(queryResult.first());
-            }
-        } else {
-            throw new AnalysisException("Missing disease panels");
-        }
-
-        return diseasePanels;
-    }
+//    public static List<DiseasePanel> getDiseasePanelsFromIds(List<String> diseasePanelIds, String studyId, CatalogManager catalogManager,
+//                                                             String sessionId) throws AnalysisException {
+//        List<DiseasePanel> diseasePanels = new ArrayList<>();
+//        if (CollectionUtils.isEmpty(diseasePanelIds)) {
+//            throw new AnalysisException("Missing disease panels");
+//        }
+//
+//        OpenCGAResult<Panel> queryResults;
+//        try {
+//            queryResults = catalogManager.getPanelManager().get(studyId, diseasePanelIds, QueryOptions.empty(), sessionId);
+//        } catch (CatalogException e) {
+//            throw new AnalysisException(e.getMessage(), e);
+//        }
+//
+//        if (queryResults.getNumResults() != diseasePanelIds.size()) {
+//            throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels queried");
+//        }
+//
+//        for (Panel queryResult : queryResults.getResults()) {
+//            if (queryResult.getNumResults() != 1) {
+//                throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels "
+//                        + "queried");
+//            }
+//            diseasePanels.add(queryResult.first());
+//        }
+//
+//        return diseasePanels;
+//    }
 
     public static List<DiseasePanel.VariantPanel> getDiagnosticVariants(List<DiseasePanel> diseasePanels) {
         List<DiseasePanel.VariantPanel> diagnosticVariants = new ArrayList<>();
@@ -245,7 +239,7 @@ public class ClinicalUtils {
     }
 
     public static List<ReportedVariant> getCompoundHeterozygousReportedVariants(Map<String, List<Variant>> chVariantMap,
-                                                                         ReportedVariantCreator creator)
+                                                                                ReportedVariantCreator creator)
             throws InterpretationAnalysisException {
         // Compound heterozygous management
         // Create transcript - reported variant map from transcript - variant

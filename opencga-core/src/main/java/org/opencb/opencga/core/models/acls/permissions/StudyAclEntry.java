@@ -60,7 +60,6 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
     private static final int JOB = 3;
     private static final int COHORT = 4;
     private static final int INDIVIDUAL = 5;
-    private static final int DATASET = 6;
     private static final int DISEASE_PANEL = 7;
     private static final int FAMILY = 8;
     private static final int CLINICAL_ANALYSIS = 9;
@@ -116,11 +115,6 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         WRITE_COHORT_ANNOTATIONS(CohortAclEntry.CohortPermissions.WRITE_ANNOTATIONS.name(), COHORT),
         VIEW_COHORT_ANNOTATIONS(CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name(), COHORT),
         DELETE_COHORT_ANNOTATIONS(CohortAclEntry.CohortPermissions.DELETE_ANNOTATIONS.name(), COHORT),
-
-        // DATASETS
-        VIEW_DATASETS(DatasetAclEntry.DatasetPermissions.VIEW.name(), DATASET),
-        WRITE_DATASETS(DatasetAclEntry.DatasetPermissions.UPDATE.name(), DATASET),
-        DELETE_DATASETS(DatasetAclEntry.DatasetPermissions.DELETE.name(), DATASET),
 
         // DISEASE PANELS
         VIEW_PANELS(PanelAclEntry.PanelPermissions.VIEW.name(), DISEASE_PANEL),
@@ -182,13 +176,6 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         public FamilyAclEntry.FamilyPermissions getFamilyPermission() {
             if (this.type == FAMILY) {
                 return FamilyAclEntry.FamilyPermissions.valueOf(this.permission);
-            }
-            return null;
-        }
-
-        public DatasetAclEntry.DatasetPermissions getDatasetPermission() {
-            if (this.type == DATASET) {
-                return DatasetAclEntry.DatasetPermissions.valueOf(this.permission);
             }
             return null;
         }

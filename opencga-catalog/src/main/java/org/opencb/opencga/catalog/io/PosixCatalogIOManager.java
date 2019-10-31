@@ -18,10 +18,10 @@ package org.opencb.opencga.catalog.io;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,15 +98,33 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    protected void checkDirectoryUri(URI uri, boolean writable) throws CatalogIOException {
+    public void checkDirectoryUri(URI uri, boolean writable) throws CatalogIOException {
         if (uri == null) {
             throw new CatalogIOException("URI is null");
         } else {
             Path path = Paths.get(uri.getPath());
-            if (!Files.exists(path) || !Files.isDirectory(path)) {
-                throw new CatalogIOException("Path '" + uri.toString() + "' is null, it does not exist or it's not a directory");
+            if (!Files.exists(path)) {
+                throw new CatalogIOException("Path '" + uri.toString() + "' does not exist");
+            }
+            if (!Files.isDirectory(path)) {
+                throw new CatalogIOException("Path '" + uri.toString() + "' is not a directory");
             }
             if (writable && !Files.isWritable(path)) {
+                throw new CatalogIOException("Path '" + uri.toString() + "' is not writable");
+            }
+        }
+    }
+
+    @Override
+    public void checkWritableUri(URI uri) throws CatalogIOException {
+        if (uri == null) {
+            throw new CatalogIOException("URI is null");
+        } else {
+            Path path = Paths.get(uri.getPath());
+            if (!Files.exists(path)) {
+                throw new CatalogIOException("Path '" + uri.toString() + "' does not exist");
+            }
+            if (!Files.isWritable(path)) {
                 throw new CatalogIOException("Path '" + uri.toString() + "' is not writable");
             }
         }

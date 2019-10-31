@@ -39,11 +39,12 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
     private VariantStatsToHBaseConverter converter;
     private Map<String, HBaseVariantStatsCalculator> calculators;
     private final Logger logger = LoggerFactory.getLogger(VariantStatsFromResultMapper.class);
-    private Collection<Integer> cohorts;
+    private Map<String, Integer> cohortIds;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         helper = new VariantTableHelper(context.getConfiguration());
+        Collection<Integer> cohorts;
         try (VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(
                 new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
             studyMetadata = metadataManager.getStudyMetadata(helper.getStudyId());
@@ -55,7 +56,7 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
     //        Properties tagmap = getAggregationMappingProperties(context.getConfiguration());
     //        calculator.setAggregationType(studyConfiguration.getAggregation(), tagmap);
             cohorts = VariantStatsMapper.getCohorts(context.getConfiguration());
-            Map<String, Integer> cohortIds = new HashMap<>(cohorts.size());
+            cohortIds = new HashMap<>(cohorts.size());
             samples = new HashMap<>(cohorts.size());
             cohorts.forEach(cohortId -> {
                 CohortMetadata cohort = metadataManager.getCohortMetadata(studyMetadata.getId(), cohortId);

@@ -402,7 +402,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
 
     private void checkQueryGenotypes(VariantHadoopDBAdaptor dbAdaptor) {
         StudyMetadata sc = dbAdaptor.getMetadataManager().getStudyMetadata(STUDY_NAME);
-        List<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions()).getResult();
+        List<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions()).getResults();
 
         for (String sample : metadataManager.getIndexedSamplesMap(sc.getId()).keySet()) {
             VariantQueryResult<Variant> queryResult = dbAdaptor.get(new Query(VariantQueryParam.SAMPLE.key(), sample)
@@ -434,7 +434,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
                             VariantQueryResult<Variant> result = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), variants)
                                     .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId), null);
                             Set<String> expected = variants.stream().map(Variant::toString).collect(Collectors.toSet());
-                            Set<String> actual = result.getResult().stream().map(Variant::toString).collect(Collectors.toSet());
+                            Set<String> actual = result.getResults().stream().map(Variant::toString).collect(Collectors.toSet());
                             if (!expected.equals(actual)) {
                                 HashSet<String> extra = new HashSet<>(actual);
                                 extra.removeAll(expected);
@@ -444,14 +444,14 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
                                 System.out.println("extra = " + extra);
                             }
                             assertEquals(message, variants.size(), result.getNumResults());
-                            for (Variant variant : result.getResult()) {
+                            for (Variant variant : result.getResults()) {
                                 assertEquals(message, gt, variant.getStudies().get(0).getSampleData(0).get(0));
                             }
                         }
                     }
 
                     int countFromVariants = 0;
-                    for (Variant variant : dbAdaptor.get(new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId), null).getResult()) {
+                    for (Variant variant : dbAdaptor.get(new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId), null).getResults()) {
                         String gt = variant.getStudies().get(0).getSampleData(0).get(0);
                         if (!gt.equals(GenotypeClass.UNKNOWN_GENOTYPE) && SampleIndexDBLoader.validGenotype(gt)) {
                             countFromVariants++;

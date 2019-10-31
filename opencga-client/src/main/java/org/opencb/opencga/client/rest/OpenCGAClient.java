@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.client.rest;
 
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.analysis.AlignmentClient;
@@ -149,7 +149,7 @@ public class OpenCGAClient {
      */
     public String login(String user, String password) throws ClientException {
         UserClient userClient = getUserClient();
-        QueryResponse<ObjectMap> login = userClient.login(user, password);
+        DataResponse<ObjectMap> login = userClient.login(user, password);
         String sessionId;
         if (login.allResultsSize() == 1) {
             sessionId = login.firstResult().getString("token");
@@ -170,7 +170,7 @@ public class OpenCGAClient {
      */
     public String refresh() throws ClientException {
         UserClient userClient = getUserClient();
-        QueryResponse<ObjectMap> refresh = userClient.refresh();
+        DataResponse<ObjectMap> refresh = userClient.refresh();
         String sessionId;
         if (refresh.allResultsSize() == 1) {
             sessionId = refresh.firstResult().getString("token");

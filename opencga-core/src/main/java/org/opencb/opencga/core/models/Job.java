@@ -110,20 +110,20 @@ public class Job extends PrivateStudyUid {
 
     public Job(String name, String toolId, String execution, Type type, String description, Map<String, String> params,
                Map<String, Object> attributes) {
-        this(-1, null, name, "", toolId, type, TimeUtils.getTime(), description, -1, -1, execution, "", "", false, new JobStatus(), -1,
+        this(-1, name, name, "", toolId, type, TimeUtils.getTime(), description, -1, -1, execution, "", "", false, new JobStatus(), -1,
                 null, null, null, null, params, -1, attributes, null);
     }
 
     public Job(String name, String userId, String executable, Type type, List<File> input, List<File> output, File outDir,
                Map<String, String> params, int release) {
-        this(-1, null, name, userId, "", type, TimeUtils.getTime(), "", -1, -1, "", executable, "", false,
+        this(-1, name, name, userId, "", type, TimeUtils.getTime(), "", -1, -1, "", executable, "", false,
                 new JobStatus(JobStatus.PREPARED), -1, outDir, input, output, null, params, release, null, null);
     }
 
     public Job(String name, String userId, String toolName, String description, String commandLine, File outDir, List<File> input,
                int release) {
         // FIXME: Modify this to take into account both toolName and executable for RC2
-        this(-1, null, name, userId, toolName, Type.ANALYSIS, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, null, null,
+        this(-1, name, name, userId, toolName, Type.ANALYSIS, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, null, null,
                 commandLine, false, new JobStatus(JobStatus.PREPARED), 0, outDir, input, null, null, null, release, null, null);
 
 

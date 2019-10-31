@@ -19,10 +19,10 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AnnotationCommandExecutor;
@@ -33,7 +33,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -47,8 +46,8 @@ import java.util.Map;
 public class IndividualCommandExecutor extends OpencgaCommandExecutor {
 
     private IndividualCommandOptions individualsCommandOptions;
-    private AclCommandExecutor<Individual, IndividualAclEntry> aclCommandExecutor;
-    private AnnotationCommandExecutor<Individual, IndividualAclEntry> annotationCommandExecutor;
+    private AclCommandExecutor<Individual> aclCommandExecutor;
+    private AnnotationCommandExecutor<Individual> annotationCommandExecutor;
 
     public IndividualCommandExecutor(IndividualCommandOptions individualsCommandOptions) {
         super(individualsCommandOptions.commonCommandOptions);
@@ -63,7 +62,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing individuals command line");
 
         String subCommandString = getParsedSubCommand(individualsCommandOptions.jCommander);
-        QueryResponse queryResponse = null;
+        DataResponse queryResponse = null;
         switch (subCommandString) {
             case "create":
                 queryResponse = create();
@@ -123,7 +122,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
-    private QueryResponse<Individual> create() throws CatalogException, IOException {
+    private DataResponse<Individual> create() throws CatalogException, IOException {
         logger.debug("Creating individual");
 
         IndividualCommandOptions.CreateCommandOptions commandOptions = individualsCommandOptions.createCommandOptions;
@@ -177,7 +176,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getIndividualClient().create(resolveStudy(commandOptions.study), params);
     }
 
-    private QueryResponse<Individual> info() throws CatalogException, IOException {
+    private DataResponse<Individual> info() throws CatalogException, IOException {
         logger.debug("Getting individual information");
 
         ObjectMap params = new ObjectMap();
@@ -188,7 +187,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getIndividualClient().get(individualsCommandOptions.infoCommandOptions.individual, params);
     }
 
-    private QueryResponse<Individual> search() throws CatalogException, IOException {
+    private DataResponse<Individual> search() throws CatalogException, IOException {
         logger.debug("Searching individuals");
 
         Query query = new Query();
@@ -231,7 +230,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-    private QueryResponse<Individual> update() throws CatalogException, IOException {
+    private DataResponse<Individual> update() throws CatalogException, IOException {
         logger.debug("Updating individual information");
 
         ObjectMap params = new ObjectMap();
@@ -270,14 +269,14 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                 resolveStudy(individualsCommandOptions.updateCommandOptions.study), params);
     }
 
-    private QueryResponse<Individual> delete() throws CatalogException, IOException {
+    private DataResponse<Individual> delete() throws CatalogException, IOException {
         logger.debug("Deleting individual information");
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(individualsCommandOptions.deleteCommandOptions.study));
         return openCGAClient.getIndividualClient().delete(individualsCommandOptions.deleteCommandOptions.individual, params);
     }
 
-    private QueryResponse<ObjectMap> groupBy() throws CatalogException, IOException {
+    private DataResponse<ObjectMap> groupBy() throws CatalogException, IOException {
         logger.debug("Group by individuals");
 
         ObjectMap params = new ObjectMap();
@@ -314,7 +313,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                 individualsCommandOptions.groupByCommandOptions.study, individualsCommandOptions.groupByCommandOptions.fields, params);
     }
 
-    private QueryResponse<Sample> getSamples() throws CatalogException, IOException {
+    private DataResponse<Sample> getSamples() throws CatalogException, IOException {
         logger.debug("Getting samples of individual(s)");
 
         Query query = new Query();
@@ -328,7 +327,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getSampleClient().search(query, options);
     }
 
-    private QueryResponse<IndividualAclEntry> updateAcl() throws IOException, CatalogException {
+    private DataResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
         IndividualCommandOptions.IndividualAclCommandOptions.AclsUpdateCommandOptions commandOptions =
                 individualsCommandOptions.aclsUpdateCommandOptions;
 
@@ -345,7 +344,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getIndividualClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
     }
 
-    private QueryResponse stats() throws IOException {
+    private DataResponse stats() throws IOException {
         logger.debug("Individual stats");
 
         IndividualCommandOptions.StatsCommandOptions commandOptions = individualsCommandOptions.statsCommandOptions;

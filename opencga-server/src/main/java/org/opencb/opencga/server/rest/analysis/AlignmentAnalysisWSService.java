@@ -29,13 +29,12 @@ import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
-import org.opencb.biodata.tools.feature.BigWigManager;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.GeneClient;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -93,7 +92,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
         try {
             List<String> idList = getIdList(fileIdStr);
-            QueryResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "BAM", params, sessionId);
+            DataResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "BAM", params, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -143,13 +142,13 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
             if (StringUtils.isNotEmpty(regions)) {
                 String[] regionList = regions.split(",");
-                List<QueryResult<ReadAlignment>> queryResultList = new ArrayList<>(regionList.length);
+                DataResult<ReadAlignment> dataResult = DataResult.empty();
                 for (String region : regionList) {
                     query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
-                    QueryResult<ReadAlignment> queryResult = alignmentStorageManager.query(studyStr, fileIdStr, query, queryOptions, sessionId);
-                    queryResultList.add(queryResult);
+                    DataResult<ReadAlignment> queryResult = alignmentStorageManager.query(studyStr, fileIdStr, query, queryOptions, token);
+                    dataResult.append(queryResult);
                 }
-                return createOkResponse(queryResultList);
+                return createOkResponse(dataResult);
             } else {
                 return createErrorResponse("query", "Missing region, no region provided");
             }
@@ -161,15 +160,16 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @GET
     @Path("/coverage")
     @ApiOperation(value = "Fetch the coverage of an alignment file", position = 15, response = RegionCoverage.class)
-    public Response getCoverage(@ApiParam(value = "File ID or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
-                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
-                                @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
-                                @ApiParam(value = "Comma separated list of genes") @QueryParam("gene") String geneStr,
-                                @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("500") @QueryParam("geneOffset") int geneOffset,
-                                @ApiParam(value = "Only exons") @QueryParam("onlyExons") @DefaultValue("false") Boolean onlyExons,
-                                @ApiParam(value = "Exon offset (to extend the exon region at up and downstream") @DefaultValue("50") @QueryParam("exonOffset") int exonOffset,
-                                @ApiParam(value = "Range of coverage values to be reported. Minimum and maximum values are separated by '-', e.g.: 20-40 (for coverage values greater or equal to 20 and less or equal to 40). A single value means to report coverage values greater or equal to that value.") @QueryParam("threshold") String threshold,
-                                @ApiParam(value = "Window size (if a threshold is provided, window size must be 1)") @DefaultValue("1") @QueryParam("windowSize") int windowSize) {
+    public Response getCoverage(
+            @ApiParam(value = "File ID or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
+            @ApiParam(value = "Comma separated list of genes") @QueryParam("gene") String geneStr,
+            @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("500") @QueryParam("geneOffset") int geneOffset,
+            @ApiParam(value = "Only exons") @QueryParam("onlyExons") @DefaultValue("false") Boolean onlyExons,
+            @ApiParam(value = "Exon offset (to extend the exon region at up and downstream") @DefaultValue("50") @QueryParam("exonOffset") int exonOffset,
+            @ApiParam(value = "Range of coverage values to be reported. Minimum and maximum values are separated by '-', e.g.: 20-40 (for coverage values greater or equal to 20 and less or equal to 40). A single value means to report coverage values greater or equal to that value.") @QueryParam("threshold") String threshold,
+            @ApiParam(value = "Window size (if a threshold is provided, window size must be 1)") @DefaultValue("1") @QueryParam("windowSize") int windowSize) {
         try {
             ParamUtils.checkIsSingleID(fileIdStr);
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
@@ -187,12 +187,12 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             }
 
             if (CollectionUtils.isNotEmpty(regionList)) {
-                List<QueryResult<RegionCoverage>> queryResultList = new ArrayList<>(regionList.size());
+                DataResult<RegionCoverage> dataResult = DataResult.empty();
                 if (StringUtils.isEmpty(threshold)) {
                     for (Region region : regionList) {
-                        QueryResult<RegionCoverage> coverage = alignmentStorageManager.coverage(studyStr, fileIdStr, region, windowSize, sessionId);
-                        if (coverage.getResult().size() > 0) {
-                            queryResultList.add(coverage);
+                        DataResult<RegionCoverage> coverage = alignmentStorageManager.coverage(studyStr, fileIdStr, region, windowSize, token);
+                        if (coverage.getResults().size() > 0) {
+                            dataResult.append(coverage);
                         }
                     }
                 } else {
@@ -226,15 +226,15 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                     }
 
                     for (Region region : regionList) {
-                        QueryResult<RegionCoverage> coverage = alignmentStorageManager.coverage(studyStr, fileIdStr, region, minCoverage,
-                                maxCoverage, sessionId);
-                        if (coverage.getResult().size() > 0) {
-                            queryResultList.add(coverage);
+                        DataResult<RegionCoverage> coverage = alignmentStorageManager.coverage(studyStr, fileIdStr, region, minCoverage,
+                                maxCoverage, token);
+                        if (coverage.getResults().size() > 0) {
+                            dataResult.append(coverage);
                         }
                     }
                 }
 
-                return createOkResponse(queryResultList);
+                return createOkResponse(dataResult);
             } else {
                 return createErrorResponse("coverage", "Missing region, no region provides");
             }
@@ -274,32 +274,32 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
             if (CollectionUtils.isNotEmpty(regionList)) {
                 // Getting total counts for file #1: somatic file
-                QueryResult<Long> somaticResult = alignmentStorageManager.getTotalCounts(studyStr, somaticFileIdStr, sessionId);
-                if (CollectionUtils.isEmpty(somaticResult.getResult()) || somaticResult.getResult().get(0) == 0) {
+                DataResult<Long> somaticResult = alignmentStorageManager.getTotalCounts(studyStr, somaticFileIdStr, token);
+                if (CollectionUtils.isEmpty(somaticResult.getResults()) || somaticResult.getResults().get(0) == 0) {
                     return createErrorResponse("log2CoverageRatio", "Impossible get total counts for file " + somaticFileIdStr);
                 }
-                long somaticTotalCounts = somaticResult.getResult().get(0);
+                long somaticTotalCounts = somaticResult.getResults().get(0);
 
                 // Getting total counts for file #2: germline file
-                QueryResult<Long> germlineResult = alignmentStorageManager.getTotalCounts(studyStr, germlineFileIdStr, sessionId);
-                if (CollectionUtils.isEmpty(germlineResult.getResult()) || germlineResult.getResult().get(0) == 0) {
+                DataResult<Long> germlineResult = alignmentStorageManager.getTotalCounts(studyStr, germlineFileIdStr, token);
+                if (CollectionUtils.isEmpty(germlineResult.getResults()) || germlineResult.getResults().get(0) == 0) {
                     return createErrorResponse("log2CoverageRatio", "Impossible get total counts for file " + germlineFileIdStr);
                 }
-                long germlineTotalCounts = germlineResult.getResult().get(0);
+                long germlineTotalCounts = germlineResult.getResults().get(0);
 
                 // Compute log2 coverage ratio for each region given
-                List<QueryResult<RegionCoverage>> queryResultList = new ArrayList<>(regionList.size());
+                DataResult<RegionCoverage> dataResult = DataResult.empty();
                 for (Region region : regionList) {
-                    QueryResult<RegionCoverage> somaticCoverage = alignmentStorageManager.coverage(studyStr, somaticFileIdStr, region, windowSize, sessionId);
-                    QueryResult<RegionCoverage> germlineCoverage = alignmentStorageManager.coverage(studyStr, germlineFileIdStr, region, windowSize, sessionId);
-                    if (somaticCoverage.getResult().size() == 1 && germlineCoverage.getResult().size() == 1) {
+                    DataResult<RegionCoverage> somaticCoverage = alignmentStorageManager.coverage(studyStr, somaticFileIdStr, region, windowSize, token);
+                    DataResult<RegionCoverage> germlineCoverage = alignmentStorageManager.coverage(studyStr, germlineFileIdStr, region, windowSize, token);
+                    if (somaticCoverage.getResults().size() == 1 && germlineCoverage.getResults().size() == 1) {
                         try {
                             StopWatch watch = StopWatch.createStarted();
-                            RegionCoverage coverage = BamUtils.log2CoverageRatio(somaticCoverage.getResult().get(0), somaticTotalCounts,
-                                    germlineCoverage.getResult().get(0), germlineTotalCounts);
-                            int dbTime = somaticResult.getDbTime() + somaticCoverage.getDbTime()
-                                    + germlineResult.getDbTime() + germlineCoverage.getDbTime() + ((int) watch.getTime());
-                            queryResultList.add(new QueryResult<>(region.toString(), dbTime, 1, 1, null, null, Collections.singletonList(coverage)));
+                            RegionCoverage coverage = BamUtils.log2CoverageRatio(somaticCoverage.getResults().get(0), somaticTotalCounts,
+                                    germlineCoverage.getResults().get(0), germlineTotalCounts);
+                            int dbTime = somaticResult.getTime() + somaticCoverage.getTime()
+                                    + germlineResult.getTime() + germlineCoverage.getTime() + ((int) watch.getTime());
+                            dataResult.append(new DataResult<>(dbTime, Collections.emptyList(), 1, Collections.singletonList(coverage), 1));
                         } catch (AlignmentCoverageException e) {
                             logger.error("log2CoverageRatio: " + e.getMessage() + ": somatic file = " + somaticFileIdStr + ", germline file = " + germlineFileIdStr + ", region = " + region.toString());
                         }
@@ -307,7 +307,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                         logger.error("log2CoverageRatio: something wrong happened: somatic file = " + somaticFileIdStr + ", germline file = " + germlineFileIdStr + ", region = " + region.toString());
                     }
                 }
-                return createOkResponse(queryResultList);
+                return createOkResponse(dataResult);
             } else {
                 return createErrorResponse("log2CoverageRatio", "Missing region, no region provides");
             }
@@ -345,11 +345,11 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
             if (CollectionUtils.isNotEmpty(regionList)) {
                 // Compute low coverage regions from the given input regions
-                List<QueryResult<RegionCoverage>> queryResultList = new ArrayList<>(regionList.size());
+                DataResult<RegionCoverage> dataResult = DataResult.empty();
                 for (Region region : regionList) {
-                    queryResultList.add(alignmentStorageManager.getLowCoverageRegions(studyStr, fileIdStr, region, minCoverage, sessionId));
+                    dataResult.append(alignmentStorageManager.getLowCoverageRegions(studyStr, fileIdStr, region, minCoverage, token));
                 }
-                return createOkResponse(queryResultList);
+                return createOkResponse(dataResult);
             } else {
                 return createErrorResponse("lowCoveredRegions", "Missing regions or genes");
             }
@@ -385,14 +385,14 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
             if (StringUtils.isNotEmpty(region)) {
                 String[] regionList = region.split(",");
-                List<QueryResult<AlignmentGlobalStats>> queryResultList = new ArrayList<>(regionList.length);
+                DataResult<AlignmentGlobalStats> dataResult = DataResult.empty();
                 for (String regionAux : regionList) {
                     query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), regionAux);
-                    queryResultList.add(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, sessionId));
+                    dataResult.append(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, token));
                 }
-                return createOkResponse(queryResultList);
+                return createOkResponse(dataResult);
             } else {
-                return createOkResponse(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, sessionId));
+                return createOkResponse(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, token));
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -416,9 +416,9 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         }
 
         // Get species and assembly from catalog
-        QueryResult<Project> projectQueryResult = catalogManager.getProjectManager().get(
+        DataResult<Project> projectQueryResult = catalogManager.getProjectManager().get(
                 new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyStr),
-                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), sessionId);
+                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), token);
         if (projectQueryResult.getNumResults() != 1) {
             throw new CatalogException("Error getting species and assembly from catalog when computing coverage");
         }

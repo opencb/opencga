@@ -19,8 +19,8 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.Tool;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.models.Tool;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -52,9 +52,9 @@ public class ToolWSServer extends OpenCGAWSServer {
                          @ApiParam(value = "execution", required = false)  @DefaultValue("") @QueryParam("execution") String execution) {
 //        String[] toolIds = toolId.split(",");
 //        try {
-//            List<QueryResult> results = new LinkedList<>();
+//            List<DataResult> results = new LinkedList<>();
 //            for (String id : toolIds) {
-//                QueryResult<Tool> toolResult = catalogManager.getJobManager().getTool(catalogManager.getJobManager().getToolId(id), sessionId);
+//                DataResult<Tool> toolResult = catalogManager.getJobManager().getTool(catalogManager.getJobManager().getToolId(id), sessionId);
 //                Tool tool = toolResult.getResult().get(0);
 //                ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
 //                tool.setManifest(toolManager.getManifest());
@@ -84,7 +84,7 @@ public class ToolWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
 //        try {
 //            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
-//            QueryResult<Tool> toolResult = catalogManager.getJobManager().getTools(query, queryOptions, sessionId);
+//            DataResult<Tool> toolResult = catalogManager.getJobManager().getTools(query, queryOptions, sessionId);
 //            for (Tool tool : toolResult.getResult()) {
 //                ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), "");
 //                tool.setManifest(toolManager.getManifest());

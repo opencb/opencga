@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.catalog.monitor.executors.old;
 
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
+import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,11 +53,11 @@ public interface ExecutorManager {
         execute(catalogManager, job, sessionId, job.getResourceManagerAttributes().getOrDefault("executor", defaultJobExecutor).toString());
     }
 
-    static QueryResult<Job> execute(CatalogManager catalogManager, Job job, String sessionId, String jobExecutor)
+    static DataResult<Job> execute(CatalogManager catalogManager, Job job, String sessionId, String jobExecutor)
             throws ExecutionException, CatalogException, IOException {
         LOGGER.debug("Execute, job: {}", job);
 
-        final QueryResult<Job> result;
+        final DataResult<Job> result;
         switch (jobExecutor.toUpperCase()) {
             case "SGE":
                 LOGGER.debug("Execute, running by SgeManager");
@@ -89,21 +89,21 @@ public interface ExecutorManager {
     }
 
     @Deprecated
-    QueryResult<Job> run(Job job) throws Exception;
+    DataResult<Job> run(Job job) throws Exception;
 
     default String status(Job job) throws Exception {
         return job.getStatus().getName();
     }
 
-    default QueryResult<Job> stop(Job job) throws Exception {
+    default DataResult<Job> stop(Job job) throws Exception {
         throw new UnsupportedOperationException();
     }
 
-    default QueryResult<Job> resume(Job job) throws Exception {
+    default DataResult<Job> resume(Job job) throws Exception {
         throw new UnsupportedOperationException();
     }
 
-    default QueryResult<Job> kill(Job job) throws Exception {
+    default DataResult<Job> kill(Job job) throws Exception {
         throw new UnsupportedOperationException();
     }
 

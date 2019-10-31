@@ -72,9 +72,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
     }
 
     @Override
-    protected void before() throws Throwable {
-        super.before();
-
+    public void before() throws Exception {
         catalogManagerExternalResource.before();
 
 //        if (storageHadoop) {
@@ -99,7 +97,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
     }
 
     @Override
-    protected void after() {
+    public void after() {
         super.after();
 
         catalogManagerExternalResource.after();
@@ -214,6 +212,10 @@ public class OpenCGATestExternalResource extends ExternalResource {
     }
 
     public String createTmpOutdir(String studyId, String suffix, String sessionId) throws CatalogException, IOException {
+        return createTmpOutdir(suffix);
+    }
+
+    public String createTmpOutdir(String suffix) throws IOException {
         String date = "I_tmp_" + new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss.SSS").format(new Date()) + suffix;
         Path tmpOutDir = opencgaHome.resolve("jobs").resolve(date);
         Files.createDirectory(tmpOutDir);

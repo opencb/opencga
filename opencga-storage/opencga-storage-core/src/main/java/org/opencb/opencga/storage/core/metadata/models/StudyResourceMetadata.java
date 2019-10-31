@@ -1,5 +1,7 @@
 package org.opencb.opencga.storage.core.metadata.models;
 
+import org.opencb.commons.datastore.core.ObjectMap;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,10 +18,12 @@ public abstract class StudyResourceMetadata<T extends StudyResourceMetadata> {
 
     private Map<String, TaskMetadata.Status> status = new HashMap<>();
 
-    public StudyResourceMetadata() {
+    private ObjectMap attributes;
+
+    StudyResourceMetadata() {
     }
 
-    public StudyResourceMetadata(int studyId, int id, String name) {
+    StudyResourceMetadata(int studyId, int id, String name) {
         this.studyId = studyId;
         this.id = id;
         this.name = name;
@@ -31,7 +35,7 @@ public abstract class StudyResourceMetadata<T extends StudyResourceMetadata> {
 
     public T setStudyId(int studyId) {
         this.studyId = studyId;
-        return (T) this;
+        return getThis();
     }
 
     public int getId() {
@@ -40,7 +44,7 @@ public abstract class StudyResourceMetadata<T extends StudyResourceMetadata> {
 
     public T setId(int id) {
         this.id = id;
-        return (T) this;
+        return getThis();
     }
 
     public String getName() {
@@ -49,7 +53,7 @@ public abstract class StudyResourceMetadata<T extends StudyResourceMetadata> {
 
     public T setName(String name) {
         this.name = name;
-        return (T) this;
+        return getThis();
     }
 
     public Map<String, TaskMetadata.Status> getStatus() {
@@ -62,7 +66,7 @@ public abstract class StudyResourceMetadata<T extends StudyResourceMetadata> {
 
     public T setStatus(String statusName, TaskMetadata.Status status) {
         getStatus().put(statusName, status);
-        return (T) this;
+        return getThis();
     }
 
     public boolean isReady(String statusName) {
@@ -75,7 +79,23 @@ public abstract class StudyResourceMetadata<T extends StudyResourceMetadata> {
 
     public T setStatus(Map<String, TaskMetadata.Status> status) {
         this.status = status;
-        return (T) this;
+        return getThis();
     }
 
+    public ObjectMap getAttributes() {
+        if (attributes == null) {
+            attributes = new ObjectMap();
+        }
+        return attributes;
+    }
+
+    public T setAttributes(ObjectMap attributes) {
+        this.attributes = attributes;
+        return getThis();
+    }
+
+    @SuppressWarnings("unchecked")
+    public T getThis() {
+        return (T) this;
+    }
 }

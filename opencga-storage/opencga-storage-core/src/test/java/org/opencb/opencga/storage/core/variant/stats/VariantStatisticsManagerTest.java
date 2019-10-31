@@ -56,12 +56,11 @@ import static org.junit.Assert.assertTrue;
 public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTest {
 
     public static final String VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
-    private StudyMetadata studyMetadata;
-    private VariantDBAdaptor dbAdaptor;
+    protected StudyMetadata studyMetadata;
+    protected VariantDBAdaptor dbAdaptor;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
-    private VariantStorageMetadataManager metadataManager;
 
     @BeforeClass
     public static void beforeClass() throws IOException {
@@ -80,7 +79,6 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         runDefaultETL(inputUri, getVariantStorageEngine(), studyMetadata,
                 new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false));
         dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-        metadataManager = dbAdaptor.getMetadataManager();
     }
 
     @Test

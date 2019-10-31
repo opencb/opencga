@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -28,14 +27,15 @@ import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.pedigree.Multiples;
-import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.update.FamilyUpdateParams;
+import org.opencb.opencga.catalog.models.update.IndividualUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.Family;
@@ -75,7 +75,7 @@ public class FamilyManagerTest extends GenericTest {
     }
 
     public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
@@ -90,15 +90,15 @@ public class FamilyManagerTest extends GenericTest {
 
     @Test
     public void createFamily() throws CatalogException {
-        QueryResult<Family> familyQueryResult = createDummyFamily("Martinez-Martinez");
+        DataResult<Family> familyDataResult = createDummyFamily("Martinez-Martinez", true);
 
-        assertEquals(1, familyQueryResult.getNumResults());
-        assertEquals(5, familyQueryResult.first().getMembers().size());
-        assertEquals(2, familyQueryResult.first().getPhenotypes().size());
+        assertEquals(1, familyDataResult.getNumResults());
+        assertEquals(5, familyDataResult.first().getMembers().size());
+        assertEquals(2, familyDataResult.first().getPhenotypes().size());
 
         boolean motherIdUpdated = false;
         boolean fatherIdUpdated = false;
-        for (Individual relatives : familyQueryResult.first().getMembers()) {
+        for (Individual relatives : familyDataResult.first().getMembers()) {
             if (relatives.getMother().getUid() > 0) {
                 motherIdUpdated = true;
             }
@@ -111,15 +111,15 @@ public class FamilyManagerTest extends GenericTest {
         assertTrue("Father id not associated to any children", fatherIdUpdated);
 
         // Create family again with individuals already created
-        familyQueryResult = createDummyFamily("Other-Family-Name");
+        familyDataResult = createDummyFamily("Other-Family-Name", false);
 
-        assertEquals(1, familyQueryResult.getNumResults());
-        assertEquals(5, familyQueryResult.first().getMembers().size());
-        assertEquals(2, familyQueryResult.first().getPhenotypes().size());
+        assertEquals(1, familyDataResult.getNumResults());
+        assertEquals(5, familyDataResult.first().getMembers().size());
+        assertEquals(2, familyDataResult.first().getPhenotypes().size());
 
         motherIdUpdated = false;
         fatherIdUpdated = false;
-        for (Individual relatives : familyQueryResult.first().getMembers()) {
+        for (Individual relatives : familyDataResult.first().getMembers()) {
             if (relatives.getMother().getUid() > 0) {
                 motherIdUpdated = true;
             }
@@ -134,9 +134,9 @@ public class FamilyManagerTest extends GenericTest {
 
     @Test
     public void getFamilyWithOnlyAllowedMembers() throws CatalogException, IOException {
-        createDummyFamily("Martinez-Martinez");
+        createDummyFamily("Martinez-Martinez", true);
 
-        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.GUEST, null, null);
+        catalogManager.getUserManager().create("user2", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.GUEST, null);
         String token = catalogManager.getUserManager().login("user2", PASSWORD);
 
         try {
@@ -147,51 +147,51 @@ public class FamilyManagerTest extends GenericTest {
 
         familyManager.updateAcl(STUDY, Collections.singletonList("Martinez-Martinez"), "user2", new AclParams("VIEW", AclParams.Action.SET),
                 sessionIdUser);
-        QueryResult<Family> familyQueryResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
-        assertEquals(1, familyQueryResult.getNumResults());
-        assertEquals(0, familyQueryResult.first().getMembers().size());
+        DataResult<Family> familyDataResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
+        assertEquals(1, familyDataResult.getNumResults());
+        assertEquals(0, familyDataResult.first().getMembers().size());
 
         catalogManager.getIndividualManager().updateAcl(STUDY, Collections.singletonList("child2"), "user2",
                 new Individual.IndividualAclParams("VIEW", AclParams.Action.SET, "", false), sessionIdUser);
-        familyQueryResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
-        assertEquals(1, familyQueryResult.getNumResults());
-        assertEquals(1, familyQueryResult.first().getMembers().size());
-        assertEquals("child2", familyQueryResult.first().getMembers().get(0).getId());
+        familyDataResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
+        assertEquals(1, familyDataResult.getNumResults());
+        assertEquals(1, familyDataResult.first().getMembers().size());
+        assertEquals("child2", familyDataResult.first().getMembers().get(0).getId());
 
         catalogManager.getIndividualManager().updateAcl(STUDY, Collections.singletonList("child3"), "user2",
                 new Individual.IndividualAclParams("VIEW", AclParams.Action.SET, "", false), sessionIdUser);
-        familyQueryResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
-        assertEquals(1, familyQueryResult.getNumResults());
-        assertEquals(2, familyQueryResult.first().getMembers().size());
-        assertEquals("child2", familyQueryResult.first().getMembers().get(0).getId());
-        assertEquals("child3", familyQueryResult.first().getMembers().get(1).getId());
+        familyDataResult = familyManager.get(STUDY, "Martinez-Martinez", QueryOptions.empty(), token);
+        assertEquals(1, familyDataResult.getNumResults());
+        assertEquals(2, familyDataResult.first().getMembers().size());
+        assertEquals("child2", familyDataResult.first().getMembers().get(0).getId());
+        assertEquals("child3", familyDataResult.first().getMembers().get(1).getId());
 
-        familyQueryResult = familyManager.get(STUDY, "Martinez-Martinez",
+        familyDataResult = familyManager.get(STUDY, "Martinez-Martinez",
                 new QueryOptions(QueryOptions.EXCLUDE, FamilyDBAdaptor.QueryParams.MEMBERS.key()), token);
-        assertEquals(1, familyQueryResult.getNumResults());
-        assertEquals(null, familyQueryResult.first().getMembers());
+        assertEquals(1, familyDataResult.getNumResults());
+        assertEquals(null, familyDataResult.first().getMembers());
 
-        familyQueryResult = familyManager.get(STUDY, "Martinez-Martinez",
+        familyDataResult = familyManager.get(STUDY, "Martinez-Martinez",
                 new QueryOptions(QueryOptions.INCLUDE, FamilyDBAdaptor.QueryParams.MEMBERS.key() + "."
                         + IndividualDBAdaptor.QueryParams.NAME.key()),
                 token);
-        assertEquals(1, familyQueryResult.getNumResults());
-        assertEquals(null, familyQueryResult.first().getName());
-        assertEquals(2, familyQueryResult.first().getMembers().size());
-        assertEquals(null, familyQueryResult.first().getMembers().get(0).getId());
-        assertEquals(null, familyQueryResult.first().getMembers().get(1).getId());
-        assertEquals("child2", familyQueryResult.first().getMembers().get(0).getName());
-        assertEquals("child3", familyQueryResult.first().getMembers().get(1).getName());
+        assertEquals(1, familyDataResult.getNumResults());
+        assertEquals(null, familyDataResult.first().getName());
+        assertEquals(2, familyDataResult.first().getMembers().size());
+        assertEquals(null, familyDataResult.first().getMembers().get(0).getId());
+        assertEquals(null, familyDataResult.first().getMembers().get(1).getId());
+        assertEquals("child2", familyDataResult.first().getMembers().get(0).getName());
+        assertEquals("child3", familyDataResult.first().getMembers().get(1).getName());
     }
 
 
     @Test
     public void includeMemberIdOnly() throws CatalogException {
-        createDummyFamily("family");
+        createDummyFamily("family", true);
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FamilyDBAdaptor.QueryParams.MEMBERS.key() + "."
                 + IndividualDBAdaptor.QueryParams.ID.key());
-        QueryResult<Family> family = familyManager.get(STUDY, "family", options, sessionIdUser);
+        DataResult<Family> family = familyManager.get(STUDY, "family", options, sessionIdUser);
 
         for (Individual individual : family.first().getMembers()) {
             assertTrue(StringUtils.isNotEmpty(individual.getId()));
@@ -200,35 +200,43 @@ public class FamilyManagerTest extends GenericTest {
         }
     }
 
-    private QueryResult<Family> createDummyFamily(String familyName) throws CatalogException {
+    /*
+    *
+    *  private DataResult<Family> createDummyFamily(String familyName) throws CatalogException {
+        String fatherStr = org.opencb.commons.utils.StringUtils.randomString(5);
+        String motherStr = org.opencb.commons.utils.StringUtils.randomString(5);
+        String child1 = org.opencb.commons.utils.StringUtils.randomString(5);
+        String child2 = org.opencb.commons.utils.StringUtils.randomString(5);
+        String child3 = org.opencb.commons.utils.StringUtils.randomString(5);
+
         Phenotype phenotype1 = new Phenotype("dis1", "Phenotype 1", "HPO");
         Phenotype phenotype2 = new Phenotype("dis2", "Phenotype 2", "HPO");
 
-        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
-        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
+        Individual father = new Individual().setId(fatherStr).setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
+        Individual mother = new Individual().setId(motherStr).setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
 
         // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
         // ingesting references to exactly the same object and this test would not work exactly the same way.
-        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
-        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
+        Individual relFather = new Individual().setId(fatherStr).setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
+        Individual relMother = new Individual().setId(motherStr).setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
 
-        Individual relChild1 = new Individual().setId("child1")
+        Individual relChild1 = new Individual().setId(child1)
                 .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT"), new Phenotype("dis2", "dis2", "OT")))
                 .setFather(father)
                 .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
+                .setMultiples(new Multiples("multiples", Arrays.asList(child2, child3)))
                 .setParentalConsanguinity(true);
-        Individual relChild2 = new Individual().setId("child2")
+        Individual relChild2 = new Individual().setId(child2)
                 .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
+                .setMultiples(new Multiples("multiples", Arrays.asList(child1, child3)))
                 .setParentalConsanguinity(true);
-        Individual relChild3 = new Individual().setId("child3")
+        Individual relChild3 = new Individual().setId(child3)
                 .setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")))
                 .setFather(father)
                 .setMother(mother)
-                .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child2")))
+                .setMultiples(new Multiples("multiples", Arrays.asList(child1, child2)))
                 .setParentalConsanguinity(true);
 
         Family family = new Family(familyName, familyName, Arrays.asList(phenotype1, phenotype2), null,
@@ -237,24 +245,70 @@ public class FamilyManagerTest extends GenericTest {
 
         return familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
     }
+    * */
+
+    private DataResult<Family> createDummyFamily(String familyName, boolean createMissingMembers) throws CatalogException {
+        Phenotype phenotype1 = new Phenotype("dis1", "Phenotype 1", "HPO");
+        Phenotype phenotype2 = new Phenotype("dis2", "Phenotype 2", "HPO");
+
+        Individual father = new Individual().setId("father").setPhenotypes(Arrays.asList(phenotype1));
+        Individual mother = new Individual().setId("mother").setPhenotypes(Arrays.asList(phenotype2));
+
+        // We create a new father and mother with the same information to mimic the behaviour of the webservices. Otherwise, we would be
+        // ingesting references to exactly the same object and this test would not work exactly the same way.
+        Individual relFather = new Individual().setId("father").setPhenotypes(Arrays.asList(phenotype1));
+        Individual relMother = new Individual().setId("mother").setPhenotypes(Arrays.asList(phenotype2));
+
+        Individual relChild1 = new Individual().setId("child1")
+                .setPhenotypes(Arrays.asList(phenotype1, phenotype2))
+                .setFather(father)
+                .setMother(mother)
+                .setMultiples(new Multiples("multiples", Arrays.asList("child2", "child3")))
+                .setParentalConsanguinity(true);
+        Individual relChild2 = new Individual().setId("child2")
+                .setPhenotypes(Arrays.asList(phenotype1))
+                .setFather(father)
+                .setMother(mother)
+                .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child3")))
+                .setParentalConsanguinity(true);
+        Individual relChild3 = new Individual().setId("child3")
+                .setPhenotypes(Arrays.asList(phenotype1))
+                .setFather(father)
+                .setMother(mother)
+                .setMultiples(new Multiples("multiples", Arrays.asList("child1", "child2")))
+                .setParentalConsanguinity(true);
+
+        List<Individual> members = null;
+        List<String> memberIds = null;
+        if (createMissingMembers) {
+            members = Arrays.asList(relChild1, relChild2, relChild3, relFather, relMother);
+        } else {
+            memberIds = Arrays.asList("father", "mother", "child1", "child2", "child3");
+        }
+
+        Family family = new Family(familyName, familyName, null, null, members, "", 5,
+                Collections.emptyList(), Collections.emptyMap());
+
+        return familyManager.create(STUDY, family, memberIds, QueryOptions.empty(), sessionIdUser);
+    }
 
     @Test
     public void updateFamilyDisordersWhenIndividualDisorderIsUpdated() throws CatalogException {
-        QueryResult<Family> family = createDummyFamily("family");
+        DataResult<Family> family = createDummyFamily("family", true);
         assertEquals(0, family.first().getDisorders().size());
 
         List<Disorder> disorderList = Arrays.asList(new Disorder().setId("disorder"));
-        ObjectMap params = new ObjectMap(IndividualDBAdaptor.UpdateParams.DISORDERS.key(), disorderList);
+        IndividualUpdateParams params = new IndividualUpdateParams().setDisorders(disorderList);
 
         catalogManager.getIndividualManager().update(STUDY, "child1", params, new QueryOptions(), sessionIdUser);
-        QueryResult<Individual> child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
+        DataResult<Individual> child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
         assertEquals(1, child1.first().getDisorders().size());
 
         family = catalogManager.getFamilyManager().get(STUDY, "family", QueryOptions.empty(), sessionIdUser);
         assertEquals(1, family.first().getDisorders().size());
 
         disorderList = Collections.emptyList();
-        params = new ObjectMap(IndividualDBAdaptor.UpdateParams.DISORDERS.key(), disorderList);
+        params.setDisorders(disorderList);
         catalogManager.getIndividualManager().update(STUDY, "child1", params, new QueryOptions(), sessionIdUser);
         child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
         assertEquals(0, child1.first().getDisorders().size());
@@ -264,9 +318,10 @@ public class FamilyManagerTest extends GenericTest {
 
         // Now we will update increasing the version. No changes should be produced in the family
         disorderList = Arrays.asList(new Disorder().setId("disorder"));
-        params = new ObjectMap(IndividualDBAdaptor.UpdateParams.DISORDERS.key(), disorderList);
+        params.setDisorders(disorderList);
 
-        catalogManager.getIndividualManager().update(STUDY, "child1", params, new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
+        catalogManager.getIndividualManager().update(STUDY, "child1", params,
+                new QueryOptions(Constants.INCREMENT_VERSION, true), sessionIdUser);
         child1 = catalogManager.getIndividualManager().get(STUDY, "child1", QueryOptions.empty(), sessionIdUser);
         assertEquals(1, child1.first().getDisorders().size());
         assertEquals(2, child1.first().getVersion());
@@ -365,9 +420,9 @@ public class FamilyManagerTest extends GenericTest {
                 .setMembers(Arrays.asList(new Individual().setId("proband").setSex(IndividualProperty.Sex.MALE),
                         new Individual().setFather(new Individual().setId("proband")).setId("child")
                                 .setSex(IndividualProperty.Sex.FEMALE)));
-        QueryResult<Family> familyQueryResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+        DataResult<Family> familyDataResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
 
-        assertEquals(2, familyQueryResult.first().getMembers().size());
+        assertEquals(2, familyDataResult.first().getMembers().size());
     }
 
     @Test
@@ -461,20 +516,20 @@ public class FamilyManagerTest extends GenericTest {
                 Arrays.asList(relFather, relMother, relChild1, relChild2, relChild1), "", -1, Collections.emptyList(), Collections.emptyMap
                 ());
 
-        QueryResult<Family> familyQueryResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
-        assertEquals(4, familyQueryResult.first().getMembers().size());
+        DataResult<Family> familyDataResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+        assertEquals(4, familyDataResult.first().getMembers().size());
     }
 
     @Test
     public void createEmptyFamily() throws CatalogException {
         Family family = new Family("xxx", "xxx", null, null, null, "", -1, Collections.emptyList(), Collections.emptyMap());
-        QueryResult<Family> familyQueryResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
-        assertEquals(1, familyQueryResult.getNumResults());
+        DataResult<Family> familyDataResult = familyManager.create(STUDY, family, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, familyDataResult.getNumResults());
     }
 
 //    @Test
 //    public void updateFamilyMembers() throws CatalogException, JsonProcessingException {
-//        QueryResult<Family> originalFamily = createDummyFamily();
+//        DataResult<Family> originalFamily = createDummyFamily();
 //
 //        Individual father = new Individual().setName("father").setPhenotypes(Arrays.asList(new Phenotype("dis1", "dis1", "OT")));
 //        Individual mother = new Individual().setName("mother2").setPhenotypes(Arrays.asList(new Phenotype("dis2", "dis2", "OT")));
@@ -497,7 +552,7 @@ public class FamilyManagerTest extends GenericTest {
 //        ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(family));
 //        params = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), params.get(FamilyDBAdaptor.QueryParams.MEMBERS.key()));
 //
-//        QueryResult<Family> updatedFamily = familyManager.update(STUDY, originalFamily.first().getName(), params, QueryOptions.empty(),
+//        DataResult<Family> updatedFamily = familyManager.update(STUDY, originalFamily.first().getName(), params, QueryOptions.empty(),
 //                sessionIdUser);
 //
 //        assertEquals(3, updatedFamily.first().getMembers().size());
@@ -522,7 +577,7 @@ public class FamilyManagerTest extends GenericTest {
 
     @Test
     public void updateFamilyMissingMember() throws CatalogException, JsonProcessingException {
-        QueryResult<Family> originalFamily = createDummyFamily("Martinez-Martinez");
+        DataResult<Family> originalFamily = createDummyFamily("Martinez-Martinez", true);
 
         Individual father = new Individual().setId("father");
         Individual mother = new Individual().setId("mother2");
@@ -537,41 +592,32 @@ public class FamilyManagerTest extends GenericTest {
                 .setMother(mother)
                 .setParentalConsanguinity(true);
 
-
-        Family family = new Family();
-        family.setMembers(Arrays.asList(relChild1, relFather));
-        ObjectMapper jsonObjectMapper = catalogManagerResource.generateNewObjectMapper();
-
-        ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(family));
-        params = new ObjectMap(FamilyDBAdaptor.QueryParams.MEMBERS.key(), params.get(FamilyDBAdaptor.QueryParams.MEMBERS.key()));
+        FamilyUpdateParams updateParams = new FamilyUpdateParams().setMembers(Arrays.asList("child3", "father"));
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not present in the members list");
-        familyManager.update(STUDY, originalFamily.first().getName(), params, QueryOptions.empty(), sessionIdUser);
+        familyManager.update(STUDY, originalFamily.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
     }
 
     @Test
     public void updateFamilyPhenotype() throws JsonProcessingException, CatalogException {
-        QueryResult<Family> originalFamily = createDummyFamily("Martinez-Martinez");
+        DataResult<Family> originalFamily = createDummyFamily("Martinez-Martinez", true);
 
         Phenotype phenotype1 = new Phenotype("dis1", "New name", "New source");
         Phenotype phenotype2 = new Phenotype("dis2", "New name", "New source");
         Phenotype phenotype3 = new Phenotype("dis3", "New name", "New source");
 
-        Family family = new Family();
-        family.setPhenotypes(Arrays.asList(phenotype1, phenotype2, phenotype3));
-        ObjectMapper jsonObjectMapper = catalogManagerResource.generateNewObjectMapper();
+        FamilyUpdateParams updateParams = new FamilyUpdateParams().setPhenotypes(Arrays.asList(phenotype1, phenotype2, phenotype3));
 
-        ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(family));
-        params = new ObjectMap(FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), params.get(FamilyDBAdaptor.QueryParams.PHENOTYPES.key()));
+        DataResult<Family> updatedFamily = familyManager.update(STUDY, originalFamily.first().getId(),
+                updateParams, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, updatedFamily.getNumUpdated());
 
-        QueryResult<Family> updatedFamily = familyManager.update(STUDY, originalFamily.first().getName(), params, QueryOptions.empty(),
-                sessionIdUser);
-
-        assertEquals(3, updatedFamily.first().getPhenotypes().size());
+        Family family = familyManager.get(STUDY, originalFamily.first().getId(), QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(3, family.getPhenotypes().size());
 
         // Only one id should be the same as in originalFamilyIds (father id)
-        for (Phenotype phenotype : updatedFamily.first().getPhenotypes()) {
+        for (Phenotype phenotype : family.getPhenotypes()) {
             assertEquals("New name", phenotype.getName());
             assertEquals("New source", phenotype.getSource());
         }
@@ -579,20 +625,15 @@ public class FamilyManagerTest extends GenericTest {
 
     @Test
     public void updateFamilyMissingPhenotype() throws JsonProcessingException, CatalogException {
-        QueryResult<Family> originalFamily = createDummyFamily("Martinez-Martinez");
+        DataResult<Family> originalFamily = createDummyFamily("Martinez-Martinez", true);
 
         Phenotype phenotype1 = new Phenotype("dis1", "New name", "New source");
 
-        Family family = new Family();
-        family.setPhenotypes(Arrays.asList(phenotype1));
-        ObjectMapper jsonObjectMapper = catalogManagerResource.generateNewObjectMapper();
-
-        ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(family));
-        params = new ObjectMap(FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), params.get(FamilyDBAdaptor.QueryParams.PHENOTYPES.key()));
+        FamilyUpdateParams updateParams = new FamilyUpdateParams().setPhenotypes(Collections.singletonList(phenotype1));
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not present in any member of the family");
-        familyManager.update(STUDY, originalFamily.first().getName(), params, QueryOptions.empty(), sessionIdUser);
+        familyManager.update(STUDY, originalFamily.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
     }
 
 }

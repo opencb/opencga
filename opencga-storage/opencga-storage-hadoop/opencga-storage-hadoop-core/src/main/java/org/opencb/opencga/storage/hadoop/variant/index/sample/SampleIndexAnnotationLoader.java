@@ -74,7 +74,7 @@ public class SampleIndexAnnotationLoader {
             throws IOException, StorageEngineException {
         mrExecutor.run(SampleIndexAnnotationLoaderDriver.class, SampleIndexAnnotationLoaderDriver.buildArgs(
                 tableNameGenerator.getArchiveTableName(studyId),
-                tableNameGenerator.getVariantTableName(), studyId, samples, options), options, "Update sample annotatin batch");
+                tableNameGenerator.getVariantTableName(), studyId, samples, options), options, "Update sample annotation batch");
     }
 
 

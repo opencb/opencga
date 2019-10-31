@@ -19,10 +19,10 @@ package org.opencb.opencga.storage.core.metadata.adaptors;
 import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.Locked;
@@ -79,11 +79,11 @@ public interface FileMetadataDBAdaptor extends AutoCloseable {
 
     default void removeIndexedFiles(int studyId, Collection<Integer> fileIds) {};
 
-    default QueryResult<Long> count() {
+    default DataResult<Long> count() {
         return count(new Query());
     }
 
-    QueryResult<Long> count(Query query);
+    DataResult<Long> count(Query query);
 
     default void updateVariantFileMetadata(Number studyId, VariantFileMetadata metadata) throws StorageEngineException {
         updateVariantFileMetadata(studyId.toString(), metadata);
@@ -91,7 +91,7 @@ public interface FileMetadataDBAdaptor extends AutoCloseable {
 
     void updateVariantFileMetadata(String studyId, VariantFileMetadata metadata) throws StorageEngineException;
 
-    default QueryResult<VariantFileMetadata> getVariantFileMetadata(int studyId, int fileId, QueryOptions options)
+    default DataResult<VariantFileMetadata> getVariantFileMetadata(int studyId, int fileId, QueryOptions options)
             throws StorageEngineException {
         StopWatch stopWatch = StopWatch.createStarted();
         Iterator<VariantFileMetadata> iterator;
@@ -104,20 +104,21 @@ public interface FileMetadataDBAdaptor extends AutoCloseable {
         }
         VariantFileMetadata metadata = Iterators.getOnlyElement(iterator, null);
         if (metadata != null) {
-            return new QueryResult<>("", ((int) stopWatch.getTime(TimeUnit.MILLISECONDS)), 1, 1, null, null,
-                    Collections.singletonList(metadata));
+            return new DataResult<>(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)), Collections.emptyList(), 1,
+                    Collections.singletonList(metadata), 1);
         } else {
-            return new QueryResult<>("", ((int) stopWatch.getTime(TimeUnit.MILLISECONDS)), 0, 0, null, null, Collections.emptyList());
+            return new DataResult<>(((int) stopWatch.getTime(TimeUnit.MILLISECONDS)), Collections.emptyList(), 0, Collections.emptyList(),
+                    0);
         }
     }
 
     Iterator<VariantFileMetadata> iterator(Query query, QueryOptions options) throws IOException;
 
-//    QueryResult<String> getSamplesBySource(String fileId, QueryOptions options);
+//    DataResult<String> getSamplesBySource(String fileId, QueryOptions options);
 
-//    QueryResult<String> getSamplesBySources(List<String> fileIds, QueryOptions options);
+//    DataResult<String> getSamplesBySources(List<String> fileIds, QueryOptions options);
 
-//    QueryResult updateStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions queryOptions);
+//    DataResult updateStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions queryOptions);
 
     void removeVariantFileMetadata(int study, int file) throws IOException;
 

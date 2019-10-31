@@ -103,6 +103,11 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
+    public void removeVariantScore(String study, String scoreName, ObjectMap options) throws StorageEngineException {
+        throw new UnsupportedOperationException("Unable to remove VariantScore in " + getStorageEngineId());
+    }
+
+    @Override
     public VariantStorageMetadataManager getMetadataManager() throws StorageEngineException {
         return new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
     }

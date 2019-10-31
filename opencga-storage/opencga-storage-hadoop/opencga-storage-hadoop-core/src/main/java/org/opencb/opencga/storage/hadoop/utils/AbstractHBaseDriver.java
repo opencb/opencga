@@ -20,7 +20,7 @@ import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -73,7 +73,14 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     }
 
     protected String getParam(String key, String defaultValue) {
-        return getConf().get(key, getConf().get("--" + key, defaultValue));
+        String value = getConf().get(key);
+        if (StringUtils.isEmpty(value)) {
+            value = getConf().get("--" + key);
+        }
+        if (StringUtils.isEmpty(value)) {
+            value = defaultValue;
+        }
+        return value;
     }
 
     protected int getFixedSizeArgs() {
@@ -191,7 +198,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     }
 
     protected Path getLocalOutput(Path outdir) throws IOException {
-        return getLocalOutput(outdir, null);
+        return getLocalOutput(outdir, () -> null);
     }
 
     protected Path getLocalOutput(Path outdir, Supplier<String> nameGenerator) throws IOException {
@@ -202,10 +209,11 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         FileSystem localFs = localOutput.getFileSystem(getConf());
         if (localFs.exists(localOutput)) {
             if (localFs.isDirectory(localOutput)) {
-                if (nameGenerator == null) {
+                String name = nameGenerator.get();
+                if (StringUtils.isEmpty(name)) {
                     throw new IllegalArgumentException("Local output '" + localOutput + "' is a directory");
                 }
-                localOutput = new Path(localOutput, nameGenerator.get());
+                localOutput = new Path(localOutput, name);
             } else {
                 throw new IllegalArgumentException("File '" + localOutput + "' already exists!");
             }
@@ -217,15 +225,36 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         return localOutput;
     }
 
+    protected void deleteTemporaryFile(Path outdir) throws IOException {
+        LOGGER.info("Delete temporary file " + outdir);
+        FileSystem fileSystem = outdir.getFileSystem(getConf());
+        fileSystem.delete(outdir, true);
+        fileSystem.cancelDeleteOnExit(outdir);
+    }
+
     /**
      * Concatenate all generated files from a MapReduce job into one single local file.
-     * TODO: Allow copy output to any IOConnector
+     *
      * @param mrOutdir      MapReduce output directory
      * @param localOutput   Local file
      * @throws IOException  on IOException
      * @return              List of copied files from HDFS
      */
     protected List<Path> concatMrOutputToLocal(Path mrOutdir, Path localOutput) throws IOException {
+        return concatMrOutputToLocal(mrOutdir, localOutput, true);
+    }
+
+    /**
+     * Concatenate all generated files from a MapReduce job into one single local file.
+     *
+     * @param mrOutdir      MapReduce output directory
+     * @param localOutput   Local file
+     * @param removeExtraHeaders Remove header lines starting with "#" from all files but the first
+     * @throws IOException  on IOException
+     * @return              List of copied files from HDFS
+     */
+    protected List<Path> concatMrOutputToLocal(Path mrOutdir, Path localOutput, boolean removeExtraHeaders) throws IOException {
+        // TODO: Allow copy output to any IOConnector
         FileSystem fileSystem = mrOutdir.getFileSystem(getConf());
         RemoteIterator<LocatedFileStatus> it = fileSystem.listFiles(mrOutdir, false);
         List<Path> paths = new ArrayList<>();
@@ -247,8 +276,22 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
         } else {
             LOGGER.info("Concat and copy to local " + paths + " files from " + mrOutdir + " to " + localOutput);
             try (FSDataOutputStream os = localOutput.getFileSystem(getConf()).create(localOutput)) {
-                for (Path path : paths) {
-                    try (FSDataInputStream is = fileSystem.open(path)) {
+                for (int i = 0; i < paths.size(); i++) {
+                    Path path = paths.get(i);
+                    try (FSDataInputStream fsIs = fileSystem.open(path)) {
+                        DataInputStream is;
+                        if (removeExtraHeaders && i != 0) {
+                            is = new DataInputStream(new BufferedInputStream(fsIs));
+                            String line;
+                            do {
+                                is.mark(10000);
+                                line = is.readLine();
+                            } while (line != null && line.startsWith("#"));
+                            is.reset();
+                        } else {
+                            is = fsIs;
+                        }
+
                         IOUtils.copyBytes(is, os, getConf(), false);
                     }
                 }

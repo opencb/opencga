@@ -22,8 +22,8 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.managers.AnnotationSetManager;
+import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
+import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.VariableSet;
@@ -64,28 +64,16 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
                 new Variable("other", "", "", Variable.VariableType.TEXT, "unknown", false, false, null, 0, null, null, null, null)),
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionId);
 
-        catalogManager.getSampleManager().update(studyId, "NA19600", new ObjectMap()
-                        .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
-                                .append(AnnotationSetManager.ID, "as1")
-                                .append(AnnotationSetManager.VARIABLE_SET_ID, "vs1")
-                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("name", "NA19600").append("age", 30)))
-                        ),
+        catalogManager.getSampleManager().update(studyId, "NA19600", new SampleUpdateParams()
+                .setAnnotationSets(Collections.singletonList(new AnnotationSet("as1", "vs1",
+                                new ObjectMap("name", "NA19600").append("age", 30)))), QueryOptions.empty(), sessionId);
+        catalogManager.getSampleManager().update(studyId, "NA19660", new SampleUpdateParams()
+                .setAnnotationSets(Collections.singletonList(new AnnotationSet("as1", "vs1",
+                                new ObjectMap("name", "NA19660").append("age", 35).append("other", "unknown")))),
                 QueryOptions.empty(), sessionId);
-        catalogManager.getSampleManager().update(studyId, "NA19660", new ObjectMap()
-                        .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
-                                .append(AnnotationSetManager.ID, "as1")
-                                .append(AnnotationSetManager.VARIABLE_SET_ID, "vs1")
-                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("name", "NA19660").append("age", 35)
-                                        .append("other", "unknown")))
-                        ),
-                QueryOptions.empty(), sessionId);
-        catalogManager.getSampleManager().update(studyId, "NA19660", new ObjectMap()
-                        .append(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(), Collections.singletonList(new ObjectMap()
-                                .append(AnnotationSetManager.ID, "as2")
-                                .append(AnnotationSetManager.VARIABLE_SET_ID, "vs1")
-                                .append(AnnotationSetManager.ANNOTATIONS, new ObjectMap("name", "NA19660").append("age", 35)
-                                        .append("other", "asdf")))
-                        ),
+        catalogManager.getSampleManager().update(studyId, "NA19660", new SampleUpdateParams()
+                .setAnnotationSets(Collections.singletonList(new AnnotationSet("as2", "vs1",
+                                new ObjectMap("name", "NA19660").append("age", 35).append("other", "asdf")))),
                 QueryOptions.empty(), sessionId);
     }
 
@@ -107,7 +95,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
         String export = Paths.get(opencga.createTmpOutdir(studyId, "_EXPORT_", sessionId)).resolve("export.avro").toString();
 
-        List<Sample> samples = catalogManager.getSampleManager().get(studyId, new Query(), new QueryOptions(), sessionId).getResult();
+        List<Sample> samples = catalogManager.getSampleManager().search(studyId, new Query(), new QueryOptions(), sessionId).getResults();
         List<String> someSamples = samples.stream().limit(samples.size() / 2).map(Sample::getId).collect(Collectors.toList());
         Query query = new Query(VariantQueryParam.INCLUDE_STUDY.key(), studyId)
                 .append(VariantQueryParam.INCLUDE_SAMPLE.key(), someSamples);

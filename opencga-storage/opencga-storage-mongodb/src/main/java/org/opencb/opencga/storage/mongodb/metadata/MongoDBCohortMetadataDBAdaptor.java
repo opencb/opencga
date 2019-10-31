@@ -40,4 +40,9 @@ public class MongoDBCohortMetadataDBAdaptor extends AbstractMongoDBAdaptor<Cohor
     public Iterator<CohortMetadata> cohortIterator(int studyId) {
         return iterator(buildQuery(studyId), null);
     }
+
+    @Override
+    public void removeCohort(int studyId, int cohortId) {
+        throw new UnsupportedOperationException("remove cohort");
+    }
 }

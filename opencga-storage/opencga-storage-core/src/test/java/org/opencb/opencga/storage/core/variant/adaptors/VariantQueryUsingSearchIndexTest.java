@@ -3,9 +3,9 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import com.google.common.base.Throwables;
 import org.junit.ClassRule;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -71,7 +71,7 @@ public abstract class VariantQueryUsingSearchIndexTest extends VariantDBAdaptorT
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options) {
+    public DataResult groupBy(Query query, String field, QueryOptions options) {
         try {
             return variantStorageEngine.groupBy(query, field, options);
         } catch (Exception e) {
@@ -80,7 +80,7 @@ public abstract class VariantQueryUsingSearchIndexTest extends VariantDBAdaptorT
     }
 
     @Override
-    public QueryResult rank(int limit, Query query, String field, boolean asc) {
+    public DataResult rank(int limit, Query query, String field, boolean asc) {
         try {
             return variantStorageEngine.rank(query, field, limit, asc);
         } catch (Exception e) {

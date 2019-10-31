@@ -18,10 +18,10 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.JobCommandOptions;
@@ -30,7 +30,6 @@ import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.models.acls.permissions.JobAclEntry;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -42,7 +41,7 @@ import java.util.List;
 public class JobCommandExecutor extends OpencgaCommandExecutor {
 
     private JobCommandOptions jobsCommandOptions;
-    private AclCommandExecutor<Job, JobAclEntry> aclCommandExecutor;
+    private AclCommandExecutor<Job> aclCommandExecutor;
 
     public JobCommandExecutor(JobCommandOptions jobsCommandOptions) {
         super(jobsCommandOptions.commonCommandOptions);
@@ -56,7 +55,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing jobs command line");
 
         String subCommandString = getParsedSubCommand(jobsCommandOptions.jCommander);
-        QueryResponse queryResponse = null;
+        DataResponse queryResponse = null;
         switch (subCommandString) {
             case "create":
                 queryResponse = create();
@@ -90,7 +89,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
-    private QueryResponse<Job> create() throws ClientException, IOException {
+    private DataResponse<Job> create() throws ClientException, IOException {
         logger.debug("Creating a new job");
 
         String studyId = resolveStudy(jobsCommandOptions.createCommandOptions.study);
@@ -126,7 +125,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getJobClient().create(studyId, params);
     }
 
-    private QueryResponse<Job> info() throws CatalogException, IOException {
+    private DataResponse<Job> info() throws CatalogException, IOException {
         logger.debug("Getting job information");
 
         ObjectMap params = new ObjectMap();
@@ -136,7 +135,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getJobClient().get(jobsCommandOptions.infoCommandOptions.job, params);
     }
 
-    private QueryResponse<Job> search() throws CatalogException, IOException {
+    private DataResponse<Job> search() throws CatalogException, IOException {
         logger.debug("Searching job");
 
         Query query = new Query();
@@ -163,14 +162,14 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         }
     }
 
-    private QueryResponse<Job> visit() throws CatalogException, IOException {
+    private DataResponse<Job> visit() throws CatalogException, IOException {
         logger.debug("Visiting a job");
         Query query = new Query();
         query.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(jobsCommandOptions.visitCommandOptions.study));
         return openCGAClient.getJobClient().visit(jobsCommandOptions.visitCommandOptions.job, query);
     }
 
-    private QueryResponse<Job> delete() throws CatalogException, IOException {
+    private DataResponse<Job> delete() throws CatalogException, IOException {
         logger.debug("Deleting job");
 
         ObjectMap params = new ObjectMap();
@@ -179,7 +178,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getJobClient().delete(jobsCommandOptions.deleteCommandOptions.job, params);
     }
 
-    private QueryResponse<Job> groupBy() throws CatalogException, IOException {
+    private DataResponse<Job> groupBy() throws CatalogException, IOException {
         logger.debug("Group by job");
 
         ObjectMap params = new ObjectMap();
@@ -198,7 +197,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-    private QueryResponse<JobAclEntry> updateAcl() throws IOException, CatalogException {
+    private DataResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
         AclCommandOptions.AclsUpdateCommandOptions commandOptions = jobsCommandOptions.aclsUpdateCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();

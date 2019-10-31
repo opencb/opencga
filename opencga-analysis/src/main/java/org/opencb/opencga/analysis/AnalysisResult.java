@@ -18,6 +18,7 @@ package org.opencb.opencga.analysis;
 
 import java.util.Map;
 
+@Deprecated
 public class AnalysisResult<T> {
 
     protected T result;

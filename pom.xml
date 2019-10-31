@@ -208,6 +208,10 @@
                         <artifactId>protobuf-lite</artifactId>
                     </exclusion>
                     <exclusion>
+                        <groupId>com.google.protobuf</groupId>
+                        <artifactId>protobuf-java</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>org.mortbay.jetty</groupId>
                         <artifactId>servlet-api</artifactId>
                     </exclusion>
@@ -223,6 +227,10 @@
                         <artifactId>avro-ipc</artifactId>
                     </exclusion>
                     <exclusion>
+                        <groupId>com.google.protobuf</groupId>
+                        <artifactId>protobuf-java</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>org.slf4j</groupId>
                         <artifactId>slf4j-simple</artifactId>
                     </exclusion>
@@ -231,6 +239,17 @@
             <dependency>
                 <groupId>org.opencb.commons</groupId>
                 <artifactId>commons-lib</artifactId>
+                <version>${java-common-libs.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>slf4j-simple</artifactId>
+                        <groupId>org.slf4j</groupId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.commons</groupId>
+                <artifactId>commons-datastore-core</artifactId>
                 <version>${java-common-libs.version}</version>
                 <exclusions>
                     <exclusion>
@@ -396,6 +415,12 @@
                 <groupId>org.opencb.bionetdb</groupId>
                 <artifactId>bionetdb-core</artifactId>
                 <version>${bionet.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.opencb.commons</groupId>
+                        <artifactId>commons-datastore-core</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <!-- General dependencies -->
@@ -488,6 +513,16 @@
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-webapp</artifactId>
                 <version>${jetty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>${protobuf}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java-util</artifactId>
+                <version>${protobuf}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.avro</groupId>

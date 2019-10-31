@@ -16,21 +16,16 @@
 
 package org.opencb.opencga.analysis.clinical.interpretation;
 
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.bionetdb.core.BioNetDbManager;
-import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
-import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
+import org.opencb.opencga.core.annotations.Analysis;
+import org.opencb.opencga.core.exception.AnalysisException;
 
-import java.nio.file.Path;
 import java.util.List;
 
-public class XQueryInterpretationAnalysis extends FamilyInterpretationAnalysis {
+@Analysis(id = XQueryInterpretationAnalysis.ID, type = Analysis.AnalysisType.CLINICAL)
+public class XQueryInterpretationAnalysis extends InterpretationAnalysis {
 
-    private final static String XQUERY_ANALYSIS_NAME = "BioNetInterpretation";
+    public final static String ID = "bionet-interpretation";
 
     private List<String> diseasePanelIds;
     private BioNetDbManager bioNetDbManager;
@@ -39,18 +34,8 @@ public class XQueryInterpretationAnalysis extends FamilyInterpretationAnalysis {
 //    private List<DiseasePanel> diseasePanels;
 //    private ClinicalAnalysis clinicalAnalysis;
 
-    public XQueryInterpretationAnalysis(String clinicalAnalysisId, String studyId, List<String> diseasePanelIds,
-                                      BioNetDBConfiguration bionetConfig, Path outDir, Path openCgaHome,
-                                      BionetInterpretationConfiguration config, String sessionId) throws BioNetDBException {
-        super(clinicalAnalysisId, studyId, outDir, openCgaHome, sessionId);
-
-        this.diseasePanelIds = diseasePanelIds;
-        this.bioNetDbManager = new BioNetDbManager(bionetConfig);
-        this.config = config;
-    }
-
     @Override
-    protected void exec() throws AnalysisException {
+    protected void run() throws AnalysisException {
 
     }
 

@@ -19,5 +19,7 @@ public interface CohortMetadataDBAdaptor {
 
     Iterator<CohortMetadata> cohortIterator(int studyId);
 
+    void removeCohort(int studyId, int cohortId);
+
     Locked lock(int studyId, int id, long lockDuration, long timeout) throws StorageEngineException;
 }

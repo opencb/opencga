@@ -19,12 +19,12 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import org.bson.Document;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.core.models.Cohort;
-import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.VariableSet;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Created by pfurio on 3/22/16.
@@ -42,22 +42,28 @@ public class CohortConverter extends AnnotableConverter<Cohort> {
 
         document.put("uid", object.getUid());
         document.put("studyUid", object.getStudyUid());
-        document.put("samples", convertSamplesToDocument(object.getSamples()));
+
+        validateSamplesToUpdate(document);
         return document;
     }
 
-    public List<Document> convertSamplesToDocument(List<Sample> sampleList) {
-        if (sampleList == null || sampleList.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<Document> samples = new ArrayList<>(sampleList.size());
-        for (Sample sample : sampleList) {
-            long sampleId = sample != null ? (sample.getUid() == 0 ? -1L : sample.getUid()) : -1L;
-            if (sampleId > 0) {
-                samples.add(new Document("uid", sampleId));
+    public void validateSamplesToUpdate(Document document) {
+        List<Document> samples = (List) document.get("samples");
+        if (samples != null) {
+            // We make sure we don't store duplicates
+            Set<Long> sampleSet = new HashSet<>();
+            for (Document sample : samples) {
+                long id = sample.getInteger("uid").longValue();
+                if (id > 0) {
+                    sampleSet.add(id);
+                }
             }
+
+            document.put("samples",
+                    sampleSet.stream()
+                            .map(sample -> new Document("uid", sample))
+                            .collect(Collectors.toList()));
         }
-        return samples;
     }
 
 }

@@ -17,11 +17,11 @@
 package org.opencb.opencga.app.cli.main.executors.catalog.commons;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
-import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.client.rest.catalog.AnnotationClient;
+import org.opencb.opencga.core.models.AnnotationSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,23 +29,22 @@ import java.io.IOException;
 /**
  * Created by pfurio on 28/07/16.
  */
-public class AnnotationCommandExecutor<T,U> {
+public class AnnotationCommandExecutor<T> {
 
     @Deprecated
-    public QueryResponse<AnnotationSet> createAnnotationSet(
-            AnnotationCommandOptions.AnnotationSetsCreateCommandOptions createCommandOptions, AnnotationClient<T,U> client)
+    public DataResponse<AnnotationSet> createAnnotationSet(
+            AnnotationCommandOptions.AnnotationSetsCreateCommandOptions createCommandOptions, AnnotationClient<T> client)
             throws IOException {
 
         ObjectMapper mapper = new ObjectMapper();
         ObjectMap obj = mapper.readValue(new File(createCommandOptions.annotations), ObjectMap.class);
-        obj.putIfNotNull("study", createCommandOptions.study);
-        return client.createAnnotationSet(createCommandOptions.id, createCommandOptions.variableSetId,
-                createCommandOptions.annotationSetName, obj);
+        return client.createAnnotationSet(createCommandOptions.study, createCommandOptions.id, createCommandOptions.variableSetId,
+                createCommandOptions.annotationSetId, obj);
     }
 
     @Deprecated
-    public QueryResponse<AnnotationSet> getAnnotationSet(AnnotationCommandOptions.AnnotationSetsInfoCommandOptions infoCommandOptions,
-                                     AnnotationClient<T,U> client) throws IOException {
+    public DataResponse<AnnotationSet> getAnnotationSet(AnnotationCommandOptions.AnnotationSetsInfoCommandOptions infoCommandOptions,
+                                     AnnotationClient<T> client) throws IOException {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("study", infoCommandOptions.study);
@@ -54,8 +53,8 @@ public class AnnotationCommandExecutor<T,U> {
     }
 
     @Deprecated
-    public QueryResponse<AnnotationSet> searchAnnotationSets(
-            AnnotationCommandOptions.AnnotationSetsSearchCommandOptions searchCommandOptions, AnnotationClient<T,U> client)
+    public DataResponse<AnnotationSet> searchAnnotationSets(
+            AnnotationCommandOptions.AnnotationSetsSearchCommandOptions searchCommandOptions, AnnotationClient<T> client)
             throws IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("variableSet", searchCommandOptions.variableSetId);
@@ -65,8 +64,8 @@ public class AnnotationCommandExecutor<T,U> {
     }
 
     @Deprecated
-    public QueryResponse<AnnotationSet> deleteAnnotationSet(
-            AnnotationCommandOptions.AnnotationSetsDeleteCommandOptions deleteCommandOptions, AnnotationClient<T,U> client)
+    public DataResponse<AnnotationSet> deleteAnnotationSet(
+            AnnotationCommandOptions.AnnotationSetsDeleteCommandOptions deleteCommandOptions, AnnotationClient<T> client)
             throws IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("annotations", deleteCommandOptions.annotations);
@@ -74,15 +73,17 @@ public class AnnotationCommandExecutor<T,U> {
         return client.deleteAnnotationSet(deleteCommandOptions.id, deleteCommandOptions.annotationSetName, params);
     }
 
-    public QueryResponse<AnnotationSet> updateAnnotationSet(
-            AnnotationCommandOptions.AnnotationSetsUpdateCommandOptions updateCommandOptions, AnnotationClient<T,U> client)
+    public DataResponse<AnnotationSet> updateAnnotationSet(
+            AnnotationCommandOptions.AnnotationSetsUpdateCommandOptions updateCommandOptions, AnnotationClient<T> client)
             throws IOException {
 
         ObjectMapper mapper = new ObjectMapper();
         ObjectMap obj = mapper.readValue(new File(updateCommandOptions.annotations), ObjectMap.class);
-        obj.putIfNotNull("action", updateCommandOptions.action);
-        obj.putIfNotNull("study", updateCommandOptions.study);
 
-        return client.updateAnnotationSet(updateCommandOptions.id, updateCommandOptions.annotationSetName, obj);
+        ObjectMap queryParams = new ObjectMap();
+//        queryParams.putIfNotNull("action", updateCommandOptions.action);
+
+        return client.updateAnnotationSet(updateCommandOptions.study, updateCommandOptions.id, updateCommandOptions.annotationSetId,
+                queryParams, obj);
     }
 }

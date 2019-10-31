@@ -12,13 +12,14 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.TieringReportedVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.OpenCgaAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
+import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
+import org.opencb.opencga.core.annotations.AnalysisExecutor;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -26,11 +27,8 @@ import org.opencb.opencga.storage.core.manager.clinical.ClinicalInterpretationMa
 import org.opencb.opencga.storage.core.manager.clinical.ClinicalUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.oskar.analysis.exceptions.AnalysisException;
-import org.opencb.oskar.core.annotations.AnalysisExecutor;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
@@ -38,17 +36,16 @@ import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.*;
 
-@AnalysisExecutor(id = "TieringInterpretation", analysis = "TieringInterpretation", source = AnalysisExecutor.Source.MONGODB,
-        framework = AnalysisExecutor.Framework.ITERATOR)
-public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecutor {
+@AnalysisExecutor(id = "opencga-local",
+        analysis = TieringInterpretationAnalysisExecutor.ID,
+        source = AnalysisExecutor.Source.STORAGE,
+        framework = AnalysisExecutor.Framework.LOCAL)
+public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecutor implements ClinicalInterpretationAnalysisExecutor {
 
-    public final static String ID = "TieringInterpretationAnalysis";
+    public final static String ID = "tiering-interpretation";
 
-    public final static String SESSION_ID = "SESSION_ID";
-    public final static String CLINICAL_INTERPRETATION_MANAGER = "CLINICAL_INTERPRETATION_MANAGER";
-
-    private String clinicalAnalysisId;
     private String studyId;
+    private String clinicalAnalysisId;
     private List<DiseasePanel> diseasePanels;
     private ClinicalProperty.Penetrance penetrance;
     private TieringInterpretationConfiguration config;
@@ -88,28 +85,31 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecut
                 .append(VariantQueryParam.REGION.key(), "M,Mt,mt,m,MT");
     }
 
-    public void setup(String clinicalAnalysisId, String studyId, List<DiseasePanel> diseasePanels, ClinicalProperty.Penetrance penetrance, Path outDir, ObjectMap executorParams,
-                      TieringInterpretationConfiguration config) throws AnalysisException {
-        super.setup(executorParams, outDir);
-        this.clinicalAnalysisId = clinicalAnalysisId;
-        this.studyId = studyId;
-        this.diseasePanels = diseasePanels;
-        this.penetrance = penetrance;
-        this.config = config;
-
-        // Sanity check
-        sessionId = executorParams.getString(SESSION_ID, "");
-        if (StringUtils.isEmpty(sessionId)) {
-            throw new AnalysisException("Missing executor parameter: " + SESSION_ID);
-        }
-        clinicalInterpretationManager = (ClinicalInterpretationManager) executorParams.getOrDefault(CLINICAL_INTERPRETATION_MANAGER, null);
-        if (clinicalInterpretationManager == null) {
-            throw new AnalysisException("Missing executor parameter: " + CLINICAL_INTERPRETATION_MANAGER);
-        }
-    }
+//    public void setup(String clinicalAnalysisId, String studyId, List<DiseasePanel> diseasePanels, ClinicalProperty.Penetrance penetrance, Path outDir, ObjectMap executorParams,
+//                      TieringInterpretationConfiguration config) throws AnalysisException {
+//        super.setup(executorParams, outDir);
+//        this.clinicalAnalysisId = clinicalAnalysisId;
+//        this.studyId = studyId;
+//        this.diseasePanels = diseasePanels;
+//        this.penetrance = penetrance;
+//        this.config = config;
+//
+//        // Sanity check
+//        sessionId = executorParams.getString(SESSION_ID, "");
+//        if (StringUtils.isEmpty(sessionId)) {
+//            throw new AnalysisException("Missing executor parameter: " + SESSION_ID);
+//        }
+//        clinicalInterpretationManager = (ClinicalInterpretationManager) executorParams.getOrDefault(CLINICAL_INTERPRETATION_MANAGER, null);
+//        if (clinicalInterpretationManager == null) {
+//            throw new AnalysisException("Missing executor parameter: " + CLINICAL_INTERPRETATION_MANAGER);
+//        }
+//    }
 
     @Override
-    public void exec() throws AnalysisException {
+    public void run() throws AnalysisException {
+        sessionId = getSessionId();
+        clinicalInterpretationManager = getClinicalInterpretationManager();
+
         // Get assembly
         String assembly;
         try {
@@ -178,9 +178,6 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecut
         Map<String, List<ClinicalProperty.ModeOfInheritance>> variantMoIMap = new HashMap<>();
 
         for (Map.Entry<ClinicalProperty.ModeOfInheritance, List<Variant>> entry : resultMap.entrySet()) {
-            logger.debug("MOI: {}; variant size: {}; variant ids: {}", entry.getKey(), entry.getValue().size(),
-                    entry.getValue().stream().map(Variant::toString).collect(Collectors.joining(",")));
-
             for (Variant variant : entry.getValue()) {
                 if (!variantMoIMap.containsKey(variant.getId())) {
                     variantMoIMap.put(variant.getId(), new ArrayList<>());
@@ -233,8 +230,6 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecut
             throw new AnalysisException("Error retrieving secondary findings variants", e);
         }
 
-        logger.debug("Reported variant size: {}", primaryFindings.size());
-
         // Write primary findings
         ClinicalUtils.writeReportedVariants(secondaryFindings, Paths.get(outDir + "/secondary-findings.json"));
     }
@@ -254,7 +249,6 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecut
                     studyId, query, QueryOptions.empty(), sessionId);
             resultMap.putAll(chVariants);
         } catch (Exception e) {
-            logger.error("{}", e.getMessage(), e);
             return false;
         }
 
@@ -268,7 +262,6 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecut
                     QueryOptions.empty(), sessionId);
             resultMap.put(DE_NOVO, deNovoVariants);
         } catch (Exception e) {
-            logger.error("{}", e.getMessage(), e);
             return false;
         }
 
@@ -294,7 +287,6 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecut
         }
 
         if (regions.isEmpty()) {
-            logger.debug("Panel doesn't have any regions. Skipping region query.");
             return true;
         }
 
@@ -306,12 +298,10 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecut
                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.")
                 .append(VariantQueryParam.SAMPLE.key(), samples);
 
-        logger.debug("Region query: {}", query.safeToString());
-
         try {
-            result.addAll(variantStorageManager.get(query, QueryOptions.empty(), sessionId).getResult());
+            result.addAll(clinicalInterpretationManager.getVariantStorageManager().get(query, QueryOptions.empty(), sessionId)
+                    .getResults());
         } catch (Exception e) {
-            logger.error("{}", e.getMessage(), e);
             return false;
         }
 
@@ -352,7 +342,6 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecut
                 filterOutHealthyGenotypes(genotypes);
                 break;
             default:
-                logger.error("Mode of inheritance not yet supported: {}", moi);
                 return false;
         }
         query.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
@@ -361,16 +350,14 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecut
                 .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
 
         if (ModeOfInheritance.isEmptyMapOfGenotypes(genotypes)) {
-            logger.warn("Map of genotypes is empty for {}", moi);
             return false;
         }
         addGenotypeFilter(genotypes, sampleMap, query);
 
-        logger.debug("MoI: {}; Query: {}", moi, query.safeToString());
         try {
-            resultMap.put(moi, variantStorageManager.get(query, QueryOptions.empty(), sessionId).getResult());
+            resultMap.put(moi, clinicalInterpretationManager.getVariantStorageManager().get(query, QueryOptions.empty(), sessionId)
+                    .getResults());
         } catch (CatalogException | StorageEngineException | IOException e) {
-            logger.error(e.getMessage(), e);
             return false;
         }
         return true;
@@ -404,6 +391,50 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecut
         if (StringUtils.isNotEmpty(genotypeString)) {
             query.put(VariantQueryParam.GENOTYPE.key(), genotypeString);
         }
-        logger.debug("Query: {}", query.toJson());
+    }
+
+    public String getStudyId() {
+        return studyId;
+    }
+
+    public TieringInterpretationAnalysisExecutor setStudyId(String studyId) {
+        this.studyId = studyId;
+        return this;
+    }
+
+    public String getClinicalAnalysisId() {
+        return clinicalAnalysisId;
+    }
+
+    public TieringInterpretationAnalysisExecutor setClinicalAnalysisId(String clinicalAnalysisId) {
+        this.clinicalAnalysisId = clinicalAnalysisId;
+        return this;
+    }
+
+    public List<DiseasePanel> getDiseasePanels() {
+        return diseasePanels;
+    }
+
+    public TieringInterpretationAnalysisExecutor setDiseasePanels(List<DiseasePanel> diseasePanels) {
+        this.diseasePanels = diseasePanels;
+        return this;
+    }
+
+    public ClinicalProperty.Penetrance getPenetrance() {
+        return penetrance;
+    }
+
+    public TieringInterpretationAnalysisExecutor setPenetrance(ClinicalProperty.Penetrance penetrance) {
+        this.penetrance = penetrance;
+        return this;
+    }
+
+    public TieringInterpretationConfiguration getConfig() {
+        return config;
+    }
+
+    public TieringInterpretationAnalysisExecutor setConfig(TieringInterpretationConfiguration config) {
+        this.config = config;
+        return this;
     }
 }

@@ -25,10 +25,10 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.old.AnalysisExecutionException;
 import org.opencb.opencga.analysis.old.execution.plugins.PluginExecutor;
 import org.opencb.opencga.analysis.old.execution.plugins.hist.VariantHistogramAnalysis;
@@ -65,6 +65,7 @@ import java.util.*;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantScoreRemoveCommandOptions.SCORE_REMOVE_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexRemoveCommandOptions.SECONDARY_INDEX_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
@@ -130,6 +131,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 break;
             case SCORE_INDEX_COMMAND:
                 scoreLoad();
+                break;
+            case SCORE_REMOVE_COMMAND:
+                scoreRemove();
                 break;
             case SAMPLE_INDEX_COMMAND:
                 sampleIndex();
@@ -232,16 +236,16 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         if (cliOptions.numericOptions.count) {
-            QueryResult<Long> result = variantManager.count(query, sessionId);
-            System.out.println("Num. results\t" + result.getResult().get(0));
+            DataResult<Long> result = variantManager.count(query, sessionId);
+            System.out.println("Num. results\t" + result.getResults().get(0));
         } else if (StringUtils.isNotEmpty(cliOptions.genericVariantQueryOptions.groupBy)) {
             ObjectMapper objectMapper = new ObjectMapper();
-            QueryResult groupBy = variantManager.groupBy(cliOptions.genericVariantQueryOptions.groupBy, query, queryOptions, sessionId);
+            DataResult groupBy = variantManager.groupBy(cliOptions.genericVariantQueryOptions.groupBy, query, queryOptions, sessionId);
             System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(groupBy));
         } else if (StringUtils.isNotEmpty(cliOptions.genericVariantQueryOptions.rank)) {
             ObjectMapper objectMapper = new ObjectMapper();
 
-            QueryResult rank = variantManager.rank(query, cliOptions.genericVariantQueryOptions.rank, 10, true, sessionId);
+            DataResult rank = variantManager.rank(query, cliOptions.genericVariantQueryOptions.rank, 10, true, sessionId);
             System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));
         } else {
             if (cliOptions.genericVariantQueryOptions.annotations != null) {
@@ -429,6 +433,19 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 cliOptions.cohort1, cliOptions.cohort2, descriptor, options, sessionId);
     }
 
+    private void scoreRemove() throws CatalogException, StorageEngineException {
+        VariantCommandOptions.VariantScoreRemoveCommandOptions cliOptions = variantCommandOptions.variantScoreRemoveCommandOptions;
+
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+
+        QueryOptions options = new QueryOptions()
+                .append(VariantStorageEngine.Options.RESUME.key(), cliOptions.resume)
+                .append(VariantStorageEngine.Options.FORCE.key(), cliOptions.force);
+        options.putAll(cliOptions.commonOptions.params);
+
+        variantManager.removeVariantScore(cliOptions.study, cliOptions.scoreName, options, sessionId);
+    }
+
     private void sampleIndex()
             throws CatalogException, ClassNotFoundException, StorageEngineException, InstantiationException, IllegalAccessException {
         VariantCommandOptions.SampleIndexCommandOptions cliOptions = variantCommandOptions.sampleIndexCommandOptions;
@@ -520,7 +537,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         query.put(VariantQueryParam.REGION.key(), cliOptions.region);
         query.put(VariantQueryParam.ID.key(), cliOptions.id);
 
-        QueryResult<VariantAnnotation> queryResult = variantManager.getAnnotation(cliOptions.annotationId, query, options, sessionId);
+        DataResult<VariantAnnotation> queryResult = variantManager.getAnnotation(cliOptions.annotationId, query, options, sessionId);
 
         // WRITE
         ObjectMapper objectMapper = new ObjectMapper();
@@ -529,7 +546,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         ObjectWriter writer = objectMapper.writer();
 //        ObjectWriter writer = objectMapper.writerWithDefaultPrettyPrinter();
         SequenceWriter sequenceWriter = writer.writeValues(System.out);
-        for (VariantAnnotation annotation : queryResult.getResult()) {
+        for (VariantAnnotation annotation : queryResult.getResults()) {
             sequenceWriter.write(annotation);
             sequenceWriter.flush();
 //            writer.writeValue(System.out, annotation);
@@ -541,7 +558,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantCommandOptions.AnnotationMetadataCommandOptions cliOptions = variantCommandOptions.annotationMetadataCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
-        QueryResult<ProjectMetadata.VariantAnnotationMetadata> result =
+        DataResult<ProjectMetadata.VariantAnnotationMetadata> result =
                 variantManager.getAnnotationMetadata(cliOptions.annotationId, cliOptions.project, sessionId);
 
         // WRITE
@@ -551,7 +568,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         ObjectWriter writer = objectMapper.writer();
 //        ObjectWriter writer = objectMapper.writerWithDefaultPrettyPrinter();
         SequenceWriter sequenceWriter = writer.writeValues(System.out);
-        for (ProjectMetadata.VariantAnnotationMetadata metadata : result.getResult()) {
+        for (ProjectMetadata.VariantAnnotationMetadata metadata : result.getResults()) {
             sequenceWriter.write(metadata);
             sequenceWriter.flush();
 //            writer.writeValue(System.out, annotation);

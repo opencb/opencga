@@ -15,53 +15,57 @@ _CALL_BATCH_SIZE = 2000
 _NUM_THREADS_DEFAULT = 4
 
 
-class QueryResponse:
+class DataResponse:
     def __init__(self, response):
-        self.time = response.get('time')
         self.apiVersion = response.get('apiVersion')
-        self.queryOptions = response.get('queryOptions')
-        self.warning = response.get('warning')
+        self.time = response.get('time')
+        self.warnings = response.get('warnings')
         self.error = response.get('error')
-        self.response = response.get('response')
+        self.params = response.get('params')
+        self.responses = response.get('responses')
 
+        # TODO: Remove deprecated response in future release
+        self.response = response.get('responses')
+
+    # TODO: Remove deprecated method in future release
     def first(self):
-        return self.response[0]
+        return self.responses[0]
 
-    def result(self, position=None):
+    def result(self, result_pos=None, response_pos=0):
         """
-        Return the first result of the QueryResult in the position 'position'.
-        If no position is passed, it will return the one from the first
-        QueryResult
+        Return the result 'result_pos' of the response 'response_pos'.
+        If no 'response_pos' is passed, it will return the corresponding result from the first response.
         """
-        pos = 0
-        if position is not None:
-            pos = position
-        if isinstance(self.response[pos]['result'], list):
-            return self.response[pos]['result'][0]
-        else:
-            # This is a special scenario that only happens in AnalysisResults
-            # where result is not array
-            return self.response[pos]['result']
+        if result_pos is None:
+            raise Exception('Missing mandatory field result_pos')
+        return self.responses[response_pos]['results'][result_pos]
 
-    def results(self):
+    def results(self, response_pos=0):
         """
-        Iterates over all the results of all the QueryResults
+        Return the list of results of the response_pos response.
         """
-        for query_result in self.response:
-            if isinstance(query_result['result'], list):
-                for result in query_result['result']:
-                    yield result
-            else:
-                # This is a special scenario that only happens in AnalysisResults
-                # where result is not array
-                yield query_result['result']
+        return self.responses[response_pos]
+
+    def responses(self):
+        """
+        Return the list of responses
+        """
+        return self.responses
+
+    def response(self, response_pos=None):
+        """
+        Return the response_pos response.
+        """
+        if response_pos is None:
+            raise Exception('Missing mandatory field response_pos')
+        return self.responses[response_pos]
 
     def num_total_results(self):
         """
         Return the total number of results taking into account the whole list of QueryResults
         """
         num_results = 0
-        for query_result in self.response:
+        for query_result in self.responses:
             num_results += query_result['numResults']
         return num_results
 
@@ -213,17 +217,17 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
         # Concatenating results
         else:
             if query_id is not None:
-                for index, res in enumerate(response['response']):
+                for index, res in enumerate(response['responses']):
                     id_index = current_id_indexes[index]
-                    final_response[id_index]['result'] += res['result']
+                    final_response[id_index]['results'] += res['results']
             else:
-                final_response['response'][0]['result'] += response['response'][0]['result']
+                final_response['responses'][0]['results'] += response['responses'][0]['results']
 
         if query_id is not None:
             # Checking which ids are completely retrieved
             next_id_list = []
             next_id_indexes = []
-            for index, res in enumerate(response['response']):
+            for index, res in enumerate(response['responses']):
                 if res['numResults'] == call_limit:
                     next_id_list.append(current_id_list[index])
                     next_id_indexes.append(current_id_indexes[index])
@@ -232,7 +236,7 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
                 call = False
         else:
             # Ending REST calling when there are no more results to retrieve
-            if response['response'][0]['numResults'] != call_limit:
+            if response['responses'][0]['numResults'] != call_limit:
                 call = False
 
         # Skipping the first 'limit' results to retrieve the next ones

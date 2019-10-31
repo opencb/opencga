@@ -260,6 +260,55 @@ public class FileUtils {
                 File.FileStatus.READY), sessionId);
     }
 
+    /**
+     * Upload file to a created entry file in Catalog.
+     *
+     * @param sourceUri         File URI to be moved into Catalog workspace.
+     * @param targetUri         File URI where the sourceURI file will be moved to.
+     * @param overwrite         Overwrite target file.
+     * @param calculateChecksum Boolean indicating whether to check the checksum during the operation.
+     * @return Checksum of file if calculateChecksum flag is activated, null otherwise.
+     * @throws CatalogException CatalogException
+     */
+    public String move(URI sourceUri, URI targetUri, boolean overwrite, boolean calculateChecksum) throws CatalogException {
+        //If the source is equals to the target, calculate checksum (if needed) and exit
+        if (sourceUri.equals(targetUri)) {
+            if (calculateChecksum) {
+                return catalogManager.getCatalogIOManagerFactory().get(sourceUri.getScheme()).calculateChecksum(sourceUri);
+            } else {
+                return null;
+            }
+        }
+
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(sourceUri.getScheme());
+
+        //Check if there is any file in target
+        if (!overwrite && ioManager.exists(targetUri)) {
+            throw new CatalogIOException("A file already exists in " + targetUri);
+        }
+
+        String sourceChecksum = null;
+        if (calculateChecksum) {
+            sourceChecksum = ioManager.calculateChecksum(sourceUri);
+        }
+
+        try {
+            ioManager.moveFile(sourceUri, targetUri);
+            if (calculateChecksum) {
+                String targetChecksum = ioManager.calculateChecksum(targetUri);
+
+                if (!sourceChecksum.equals(targetChecksum)) {
+                    throw new CatalogIOException("Checksum does not match between " + sourceUri + " and " + targetUri
+                            + " after moving the file");
+                }
+            }
+        } catch (IOException e) {
+            throw new CatalogIOException("Error moving file from " + sourceUri + " to " + targetUri);
+        }
+
+        return sourceChecksum;
+    }
+
 
     @Deprecated
     /**
@@ -384,8 +433,8 @@ public class FileUtils {
 
             //Search if there is any existing file in the folder with the path to use.
             Query pathsQuery = new Query(FileDBAdaptor.QueryParams.PATH.key(), new LinkedList<>(uriPathMap.values()));
-            List<File> existingFiles = catalogManager.getFileManager().get(study.getFqn(), pathsQuery, new QueryOptions(),
-                    sessionId).getResult();
+            List<File> existingFiles = catalogManager.getFileManager()
+                    .search(study.getFqn(), pathsQuery, new QueryOptions(), sessionId).getResults();
             if (!relink) {
                 if (existingFiles.size() != 0) {
                     for (File f : existingFiles) {
@@ -411,7 +460,7 @@ public class FileUtils {
                 //only related to the main folder creation.
                 if (!pathFileMap.containsKey(entry.getValue())) {
                     File newFile = catalogManager.getFileManager().create(study.getFqn(), File.Type.FILE, null, null,
-                            relativePath, null, "", null, 0, -1, null, (long) -1, null, null, true, null, null, sessionId).first();
+                            relativePath, "", null, 0, null, (long) -1, null, null, true, null, null, sessionId).first();
                     upload(uri, newFile, null, sessionId, false, false, false, calculateChecksum);
                 }
             }
@@ -446,8 +495,8 @@ public class FileUtils {
         if (file.getType().equals(File.Type.DIRECTORY)) {
             Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "~" + file.getPath() + "..*")
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.DELETED);
-            List<File> files = catalogManager.getFileManager().get(String.valueOf(studyId), query, new QueryOptions(), sessionId)
-                    .getResult();
+            List<File> files = catalogManager.getFileManager().search(String.valueOf(studyId), query, new QueryOptions(), sessionId)
+                    .getResults();
             for (File f : files) {
                 if (!f.getStatus().getName().equals(File.FileStatus.TRASHED)) {
                     throw new CatalogIOException("Only deleted files can be physically deleted");
@@ -479,7 +528,8 @@ public class FileUtils {
         }
 
         Study study = catalogManager.getFileManager().getStudy(file, sessionId);
-        catalogManager.getFileManager().setStatus(study.getFqn(), file.getPath(), File.FileStatus.TRASHED, null, sessionId);
+        ObjectMap params = new ObjectMap(FileDBAdaptor.UpdateParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
+        catalogManager.getFileManager().update(study.getFqn(), file.getPath(), params, null, sessionId);
     }
 
     /**
@@ -510,23 +560,16 @@ public class FileUtils {
                     logger.warn("File { id:" + file.getPath() + ", path:\"" + file.getPath() + "\" } lost tracking from file " + fileUri);
                     if (!file.getStatus().getName().equals(File.FileStatus.MISSING)) {
                         logger.info("Set status to " + File.FileStatus.MISSING);
-                        catalogManager.getFileManager().setStatus(studyStr, file.getPath(), File.FileStatus.MISSING, null, sessionId);
+                        ObjectMap params = new ObjectMap(FileDBAdaptor.UpdateParams.STATUS_NAME.key(), File.FileStatus.MISSING);
+                        catalogManager.getFileManager().update(studyStr, file.getPath(), params, null, sessionId);
                         modifiedFile = catalogManager.getFileManager().get(studyStr, file.getPath(), null, sessionId).first();
                     }
                 } else if (file.getStatus().getName().equals(File.FileStatus.MISSING)) {
                     logger.info("File { path:\"" + file.getPath() + "\" } recover tracking from file " + fileUri);
                     logger.info("Set status to " + File.FileStatus.READY);
                     ObjectMap params = getModifiedFileAttributes(file, fileUri, calculateChecksum);
-                    if (params.get(FileDBAdaptor.QueryParams.SIZE.key()) != null) {
-                        catalogManager.getFileManager()
-                                .setDiskUsage(studyStr, file.getPath(), params.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
-                        params.remove(FileDBAdaptor.QueryParams.SIZE.key());
-                    }
-                    if (!params.isEmpty()) {
-                        catalogManager.getFileManager().update(studyStr, file.getPath(), params, QueryOptions.empty(), sessionId);
-                    }
-                    // Update status
-                    catalogManager.getFileManager().setStatus(studyStr, file.getPath(), File.FileStatus.READY, null, sessionId);
+                    params.put(FileDBAdaptor.UpdateParams.STATUS_NAME.key(), File.FileStatus.READY);
+                    catalogManager.getFileManager().update(studyStr, file.getPath(), params, QueryOptions.empty(), sessionId);
                     modifiedFile = catalogManager.getFileManager().get(studyStr, file.getPath(), null, sessionId).first();
                 }
                 break;
@@ -589,29 +632,7 @@ public class FileUtils {
 
         //Update file
         if (!parameters.isEmpty()) {    //If there is something to update
-//            if (parameters.get(FileDBAdaptor.QueryParams.ATTRIBUTES.key()) != null) {
-//                ObjectMap attributes = new ObjectMap(FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
-//                        parameters.get(FileDBAdaptor.QueryParams.ATTRIBUTES.key()));
-//                catalogManager.getFileManager().update(study.getFqn(), file.getPath(), attributes, new QueryOptions(), sessionId);
-//            }
-            if (parameters.get(FileDBAdaptor.QueryParams.STATUS_NAME.key()) != null) {
-                catalogManager.getFileManager()
-                        .setStatus(study.getFqn(), file.getPath(), parameters.getString(FileDBAdaptor.QueryParams.STATUS_NAME.key()),
-                                null, sessionId);
-                parameters.remove(FileDBAdaptor.QueryParams.STATUS_NAME.key());
-            }
-            if (parameters.get(FileDBAdaptor.QueryParams.SIZE.key()) != null) {
-                catalogManager.getFileManager()
-                        .setDiskUsage(study.getFqn(), file.getPath(), parameters.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
-                parameters.remove(FileDBAdaptor.QueryParams.SIZE.key());
-            }
-            if (!parameters.isEmpty()) {
-                catalogManager.getFileManager().update(study.getFqn(), file.getPath(), parameters, QueryOptions.empty(), sessionId);
-            }
-//            if (parameters.get(FileDBAdaptor.QueryParams.URI.key()) != null) {
-//                catalogManager.getFileManager()
-//                        .setUri(study.getFqn(), file.getPath(), parameters.getString(FileDBAdaptor.QueryParams.URI.key()), sessionId);
-//            }
+            catalogManager.getFileManager().update(study.getFqn(), file.getPath(), parameters, QueryOptions.empty(), sessionId);
         }
     }
 

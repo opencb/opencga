@@ -86,9 +86,9 @@ public class File extends Annotable {
     public File() {
     }
 
-    public File(String name, Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status, long size,
-                int release) {
-        this(name, type, format, bioformat, null, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description, status,
+    public File(String name, Type type, Format format, Bioformat bioformat, String path, URI uri, String description, FileStatus status,
+                long size, int release) {
+        this(name, type, format, bioformat, uri, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description, status,
                 false, size, null, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(),
                 new FileIndex(), release, Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
     }
@@ -177,9 +177,7 @@ public class File extends Annotable {
 
     public enum Type {
         FILE,
-        DIRECTORY,
-        @Deprecated
-        FOLDER
+        DIRECTORY
     }
 
     public enum Compression {
@@ -314,6 +312,10 @@ public class File extends Annotable {
             if (o == null || getClass() != o.getClass()) return false;
 
             RelatedFile that = (RelatedFile) o;
+
+            if (file == null || that.file == null) {
+                return false;
+            }
 
             return new EqualsBuilder()
                     .append(file.getId(), that.file.getId())

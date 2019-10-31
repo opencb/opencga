@@ -20,13 +20,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationProvider;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -343,7 +343,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public QueryResult resetPassword(String userId) throws CatalogException {
+    public OpenCGAResult resetPassword(String userId) throws CatalogException {
         throw new UnsupportedOperationException();
     }
 

@@ -16,10 +16,14 @@
 
 package org.opencb.opencga.catalog.db;
 
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Event;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,40 +40,40 @@ public abstract class AbstractDBAdaptor {
         return System.currentTimeMillis();
     }
 
-    protected <T> QueryResult<T> endQuery(String queryId, long startTime, List<T> result) throws CatalogDBException {
-        return endQuery(queryId, startTime, result, null, null);
+    protected <T> OpenCGAResult<T> endQuery(long startTime, List<T> result) {
+        return endQuery(startTime, result, new ArrayList<>());
     }
 
-    protected <T> QueryResult<T> endQuery(String queryId, long startTime) throws CatalogDBException {
-        return endQuery(queryId, startTime, Collections.<T>emptyList(), null, null);
+    protected <T> OpenCGAResult<T> endQuery(long startTime) {
+        return endQuery(startTime, Collections.emptyList(), new ArrayList<>());
     }
 
-    protected <T> QueryResult<T> endQuery(String queryId, long startTime, QueryResult<T> result) throws CatalogDBException {
-        result.setId(queryId);
-        result.setDbTime((int) (System.currentTimeMillis() - startTime));
-        logger.trace("CatalogQuery: {}, dbTime: {}, numResults: {}, numTotalResults: {}", result.getId(), result.getDbTime(),
-                result.getNumResults(), result.getNumTotalResults());
-        if (result.getErrorMsg() != null && !result.getErrorMsg().isEmpty()) {
-            throw new CatalogDBException(result.getErrorMsg());
+    protected <T> OpenCGAResult<T> endQuery(long startTime, DataResult<T> result) {
+        result.setTime((int) (System.currentTimeMillis() - startTime));
+        logger.trace("DbTime: {}, numResults: {}, numMatches: {}", result.getTime(), result.getNumResults(), result.getNumMatches());
+        return new OpenCGAResult<>(result);
+    }
+
+    protected <T> OpenCGAResult<T> endQuery(long startTime, List<T> results, List<Event> events) {
+        long end = System.currentTimeMillis();
+        if (results == null) {
+            results = new LinkedList<>();
         }
+        int numResults = results.size();
+        OpenCGAResult<T> result = new OpenCGAResult<>((int) (end - startTime), events, numResults, results, numResults, new ObjectMap());
+        logger.trace("DbTime: {}, numResults: {}, numMatches: {}", result.getTime(), result.getNumResults(), result.getNumMatches());
         return result;
     }
 
-    protected <T> QueryResult<T> endQuery(String queryId, long startTime, List<T> result, String errorMessage, String warnMessage)
-            throws CatalogDBException {
+    protected <T> OpenCGAResult<T> endWrite(long startTime, long numMatches, long numUpdated, List<Event> events) {
         long end = System.currentTimeMillis();
-        if (result == null) {
-            result = new LinkedList<>();
-        }
-        int numResults = result.size();
-        QueryResult<T> queryResult = new QueryResult<>(queryId, (int) (end - startTime), numResults, numResults,
-                warnMessage, errorMessage, result);
-        logger.trace("CatalogQuery: {}, dbTime: {}, numResults: {}, numTotalResults: {}", queryResult.getId(), queryResult.getDbTime(),
-                queryResult.getNumResults(), queryResult.getNumTotalResults());
-        if (errorMessage != null && !errorMessage.isEmpty()) {
-            throw new CatalogDBException(queryResult.getErrorMsg());
-        }
-        return queryResult;
+        return new OpenCGAResult<>((int) (end - startTime), events, numMatches, 0, numUpdated, 0, new ObjectMap());
+    }
+
+    protected <T> OpenCGAResult<T> endWrite(long startTime, long numMatches, long numInserted, long numUpdated, long numDeleted,
+                                         List<Event> events) {
+        long end = System.currentTimeMillis();
+        return new OpenCGAResult<>((int) (end - startTime), events, numMatches, numInserted, numUpdated, numDeleted, new ObjectMap());
     }
 
     protected void checkParameter(Object param, String name) throws CatalogDBException {

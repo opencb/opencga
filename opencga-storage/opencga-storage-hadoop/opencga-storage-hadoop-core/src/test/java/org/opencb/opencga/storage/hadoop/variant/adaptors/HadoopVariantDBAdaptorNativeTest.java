@@ -9,9 +9,9 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 
 import static org.junit.Assume.assumeTrue;
@@ -42,7 +42,7 @@ public class HadoopVariantDBAdaptorNativeTest extends HadoopVariantDBAdaptorTest
 
     @Override
     public Long count(Query query) {
-        return (long) query(query, null).getResult().size();
+        return (long) query(query, null).getResults().size();
     }
 
     @Override
