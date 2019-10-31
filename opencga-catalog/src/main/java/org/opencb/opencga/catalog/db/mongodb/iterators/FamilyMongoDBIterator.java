@@ -37,6 +37,11 @@ public class FamilyMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
 
     private static final int BUFFER_SIZE = 100;
 
+    public FamilyMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, AnnotableConverter<? extends Annotable> converter,
+                                 Function<Document, Document> filter, IndividualMongoDBAdaptor individualDBAdaptor, QueryOptions options) {
+        this(mongoCursor, clientSession, converter, filter, individualDBAdaptor, 0, null, options);
+    }
+
 
     public FamilyMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, AnnotableConverter<? extends Annotable> converter,
                                  Function<Document, Document> filter, IndividualMongoDBAdaptor individualDBAdaptor,
@@ -87,6 +92,10 @@ public class FamilyMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
         while (mongoCursor.hasNext() && counter < BUFFER_SIZE) {
             Document familyDocument = (Document) mongoCursor.next();
 
+            if (user != null && studyUid <= 0) {
+                studyUid = familyDocument.getLong(PRIVATE_STUDY_UID);
+            }
+
             familyListBuffer.add(familyDocument);
             counter++;
 
@@ -117,13 +126,12 @@ public class FamilyMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             });
 
             Query query = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                     .append(IndividualDBAdaptor.QueryParams.UID.key(), uidList)
                     .append(IndividualDBAdaptor.QueryParams.VERSION.key(), versionList);
             List<Document> memberList;
             try {
                 if (user != null) {
-                    memberList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions, user).getResults();
+                    memberList = individualDBAdaptor.nativeGet(clientSession, studyUid, query, individualQueryOptions, user).getResults();
                 } else {
                     memberList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions).getResults();
                 }

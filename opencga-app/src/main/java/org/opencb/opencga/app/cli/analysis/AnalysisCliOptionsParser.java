@@ -21,18 +21,20 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.commons.utils.CommandLineUtils;
+import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.analysis.options.InterpretationCommandOptions;
 import org.opencb.opencga.app.cli.analysis.options.ToolsCommandOptions;
-import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.List;
 
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantScoreRemoveCommandOptions.SCORE_REMOVE_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
@@ -108,6 +110,9 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand("ibs", variantCommandOptions.ibsVariantCommandOptions);
         variantSubCommands.addCommand("samples", variantCommandOptions.samplesFilterCommandOptions);
         variantSubCommands.addCommand("histogram", variantCommandOptions.histogramCommandOptions);
+        variantSubCommands.addCommand(GwasAnalysis.ID, variantCommandOptions.gwasCommandOptions);
+        variantSubCommands.addCommand(SAMPLE_VARIANT_STATS_COMMAND, variantCommandOptions.sampleVariantStatsCommandOptions);
+        variantSubCommands.addCommand(COHORT_VARIANT_STATS_COMMAND, variantCommandOptions.cohortVariantStatsCommandOptions);
 
         alignmentCommandOptions = new AlignmentCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("alignment", alignmentCommandOptions);

@@ -33,7 +33,11 @@ import org.opencb.opencga.analysis.old.AnalysisExecutionException;
 import org.opencb.opencga.analysis.old.execution.plugins.PluginExecutor;
 import org.opencb.opencga.analysis.old.execution.plugins.hist.VariantHistogramAnalysis;
 import org.opencb.opencga.analysis.old.execution.plugins.ibs.IbsAnalysis;
+import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
+import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.File;
@@ -60,10 +64,13 @@ import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsMan
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.*;
 
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantScoreRemoveCommandOptions.SCORE_REMOVE_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
@@ -167,6 +174,15 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 break;
             case "histogram":
                 histogram();
+                break;
+            case GwasAnalysis.ID:
+                gwas();
+                break;
+            case SAMPLE_VARIANT_STATS_COMMAND:
+                sampleStats();
+                break;
+            case COHORT_VARIANT_STATS_COMMAND:
+                cohortStats();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -670,5 +686,95 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         String userId1 = catalogManager.getUserManager().getUserId(sessionId);
         new PluginExecutor(catalogManager, sessionId)
                 .execute(VariantHistogramAnalysis.class, "default", catalogManager.getStudyManager().resolveId(cliOptions.study, userId1).getUid(), params);
+    }
+
+    private void gwas() throws Exception {
+        VariantCommandOptions.GwasCommandOptions cliOptions = variantCommandOptions.gwasCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        Query caseCohortSamplesQuery = null;
+        if (StringUtils.isNotEmpty(cliOptions.caseSamplesAnnotation)) {
+            caseCohortSamplesQuery = new Query()
+                    .append(SampleDBAdaptor.QueryParams.STUDY.key(), cliOptions.study)
+                    .append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.caseSamplesAnnotation);
+        }
+        Query controlCohortSamplesQuery = null;
+        if (StringUtils.isNotEmpty(cliOptions.controlSamplesAnnotation)) {
+            controlCohortSamplesQuery = new Query()
+                    .append(SampleDBAdaptor.QueryParams.STUDY.key(), cliOptions.study)
+                    .append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.controlSamplesAnnotation);
+        }
+        new GwasAnalysis()
+                .setStudy(cliOptions.study)
+                .setPhenotype(cliOptions.phenotype)
+                .setScoreName(cliOptions.scoreName)
+                .setFisherMode(cliOptions.fisherMode)
+                .setGwasMethod(cliOptions.method)
+                .setControlCohort(cliOptions.controlCohort)
+                .setCaseCohort(cliOptions.caseCohort)
+                .setCaseCohortSamplesQuery(caseCohortSamplesQuery)
+                .setControlCohortSamplesQuery(controlCohortSamplesQuery)
+                .setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId)
+                .start();
+    }
+
+    private void sampleStats() throws Exception {
+        VariantCommandOptions.SampleVariantStatsCommandOptions cliOptions = variantCommandOptions.sampleVariantStatsCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        List<String> sampleNames;
+        if (StringUtils.isNotBlank(cliOptions.samples)) {
+            sampleNames = Arrays.asList(cliOptions.samples.split(","));
+        } else {
+            sampleNames = null;
+        }
+
+        Query query = null;
+        if (StringUtils.isNotEmpty(cliOptions.samplesAnnotation)) {
+            query = new Query();
+            query.append(SampleDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+            query.append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.samplesAnnotation);
+        }
+
+        new SampleVariantStatsAnalysis()
+                .setStudy(cliOptions.study)
+                .setIndexResults(cliOptions.index)
+                .setFamily(cliOptions.family)
+                .setSamplesQuery(query)
+                .setSampleNames(sampleNames)
+                .setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId)
+                .start();
+    }
+
+    private void cohortStats() throws Exception {
+        VariantCommandOptions.CohortVariantStatsCommandOptions cliOptions = variantCommandOptions.cohortVariantStatsCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+
+        Query query = null;
+        if (StringUtils.isNotEmpty(cliOptions.samplesAnnotation)) {
+            query = new Query();
+            query.append(SampleDBAdaptor.QueryParams.STUDY.key(), cliOptions.study);
+            query.append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.samplesAnnotation);
+        }
+
+        List<String> sampleNames;
+        if (StringUtils.isNotBlank(cliOptions.samples)) {
+            sampleNames = Arrays.asList(cliOptions.samples.split(","));
+        } else {
+            sampleNames = null;
+        }
+
+        new CohortVariantStatsAnalysis()
+                .setStudy(cliOptions.study)
+                .setCohortName(cliOptions.cohort)
+                .setIndexResults(cliOptions.index)
+                .setSamplesQuery(query)
+                .setSampleNames(sampleNames)
+                .setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId)
+                .start();
     }
 }
