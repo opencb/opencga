@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.clinical.interpretation;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
@@ -26,6 +27,7 @@ import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
+import java.util.Collection;
 import java.util.List;
 
 @Analysis(id = TeamInterpretationAnalysis.ID, type = Analysis.AnalysisType.CLINICAL)
@@ -66,8 +68,7 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),
                     sessionId);
-        } catch (
-                CatalogException e) {
+        } catch (CatalogException e) {
             throw new AnalysisException(e);
         }
         if (clinicalAnalysisQueryResult.getNumResults() != 1) {
@@ -76,7 +77,14 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
         clinicalAnalysis = clinicalAnalysisQueryResult.first();
 
         // Check disease panels
+        if (CollectionUtils.isEmpty(diseasePanelIds)) {
+            throw new AnalysisException("Missing disease panels for TEAM interpretation analysis");
+        }
         diseasePanels = clinicalInterpretationManager.getDiseasePanels(studyId, diseasePanelIds, sessionId);
+        if (CollectionUtils.isEmpty(diseasePanels)) {
+            throw new AnalysisException("Disease panels not found for TEAM interpretation analysis: "
+                    + StringUtils.join(diseasePanelIds, ","));
+        }
 
         // Update executor params with OpenCGA home and session ID
         setUpStorageEngineExecutor(studyId);
@@ -86,8 +94,10 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
     protected void run() throws AnalysisException {
 
         step(() -> {
-            new TeamInterpretationAnalysisExecutor()
-                    .setStudyId(studyId)
+            TeamInterpretationAnalysisExecutor executor = new TeamInterpretationAnalysisExecutor();
+            setUpAnalysisExecutor(executor);
+
+            executor.setStudyId(studyId)
                     .setClinicalAnalysisId(clinicalAnalysisId)
                     .setDiseasePanels(diseasePanels)
                     .setMoi(moi)

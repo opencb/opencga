@@ -164,9 +164,9 @@ public abstract class OpenCgaAnalysis {
                     throw new AnalysisException(e);
                 }
             }
+            arm.setSteps(getSteps());
             check();
             arm.setParams(params); // params may be modified after check method
-            arm.setSteps(getSteps());
             run();
             try {
                 FileUtils.deleteDirectory(scratchDir.toFile());
@@ -415,7 +415,23 @@ public abstract class OpenCgaAnalysis {
         }
     }
 
-    protected final void setUpStorageEngineExecutor(String study) throws AnalysisException {
+    protected final <T extends OpenCgaAnalysisExecutor> T setUpAnalysisExecutor(T t) throws AnalysisException {
+        String executorId = t.getId();
+        if (executorParams == null) {
+            executorParams = new ObjectMap();
+        }
+        executorParams.put(EXECUTOR_ID, executorId);
+
+        // Update executor ID
+        if (arm != null) {
+            arm.setExecutorInfo(new ExecutorInfo(executorId, t.getClass(), executorParams, t.getSource(), t.getFramework()));
+        }
+        t.setUp(arm, executorParams, outDir);
+
+        return t;
+    }
+
+            protected final void setUpStorageEngineExecutor(String study) throws AnalysisException {
         executorParams.put("opencgaHome", opencgaHome);
         executorParams.put("sessionId", sessionId);
         try {

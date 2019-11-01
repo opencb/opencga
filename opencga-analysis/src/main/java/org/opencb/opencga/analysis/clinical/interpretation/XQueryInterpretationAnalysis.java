@@ -36,10 +36,7 @@ public class XQueryInterpretationAnalysis extends InterpretationAnalysis {
 
     @Override
     protected void run() throws AnalysisException {
-
-    }
-
-    public InterpretationResult compute() throws Exception {
+        throw new AnalysisException("Not yet implemented!");
 /*
         StopWatch watcher = StopWatch.createStarted();
         // Sanity check
@@ -151,20 +148,7 @@ public class XQueryInterpretationAnalysis extends InterpretationAnalysis {
 //        if (ListUtils.isNotEmpty(reportedLowCoverages)) {
 //            interpretation.setReportedLowCoverages(reportedLowCoverages);
 //        }
-
-        // Return interpretation result
-        return new InterpretationResult(
-                interpretation,
-                Math.toIntExact(watcher.getTime()),
-                new HashMap<>(),
-                (int) dbTime,
-                numResults,
-                numResults,
-                "", // warning message
-                ""); // error message
-                */
-
-        throw new UnsupportedOperationException("XQuery not yet supported");
+*/
     }
 
 /*

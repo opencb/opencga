@@ -50,6 +50,14 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
     protected void check() throws AnalysisException {
         super.check();
 
+        // Sanity check
+        if (query == null) {
+            query = new Query();
+        }
+        if (queryOptions == null) {
+            queryOptions = QueryOptions.empty();
+        }
+
         // Check study
         if (StringUtils.isNotEmpty(studyId)) {
             if (query.containsKey(VariantQueryParam.STUDY.key()) && !studyId.equals(query.get(VariantQueryParam.STUDY.key()))) {
@@ -85,13 +93,13 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
 
         // Proband ID
         if (clinicalAnalysis.getProband() != null && StringUtils.isNotEmpty(clinicalAnalysis.getProband().getId())) {
-            String probandSampleId = clinicalAnalysis.getProband().getId();
+            String probandSampleId = clinicalAnalysis.getProband().getSamples().get(0).getId();
             if (query.containsKey(VariantQueryParam.SAMPLE.key()) && !probandSampleId.equals(query.get(VariantQueryParam.SAMPLE.key()))) {
                 // Query contains a different sample than clinical analysis
                 throw new AnalysisException("Mismatch sample: query (" + query.getString(VariantQueryParam.SAMPLE.key())
                         + ") and clinical analysis (" + probandSampleId + ")");
-            } else {
-                query.put(VariantQueryParam.SAMPLE.key(), probandSampleId);
+//            } else {
+//                query.put(VariantQueryParam.SAMPLE.key(), probandSampleId);
             }
         }
 
@@ -102,8 +110,8 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
                 // Query contains a different family than clinical analysis
                 throw new AnalysisException("Mismatch family: query (" + query.getString(FAMILY.key()) + ") and clinical analysis ("
                         + familyId + ")");
-            } else {
-                query.put(FAMILY.key(), familyId);
+//            } else {
+//                query.put(FAMILY.key(), familyId);
             }
         }
 
@@ -115,8 +123,8 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
                 // Query contains a different disorder than clinical analysis
                 throw new AnalysisException("Mismatch disorder: query (" + query.getString(FAMILY_DISORDER.key())
                         + ") and clinical analysis (" + disorderId + ")");
-            } else {
-                query.put(FAMILY_DISORDER.key(), disorderId);
+//            } else {
+//                query.put(FAMILY_DISORDER.key(), disorderId);
             }
         }
 
@@ -131,8 +139,10 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
     protected void run() throws AnalysisException {
 
         step(() -> {
-            new CustomInterpretationAnalysisExecutor()
-                    .setClinicalAnalysisId(clinicalAnalysisId)
+            CustomInterpretationAnalysisExecutor executor = new CustomInterpretationAnalysisExecutor();
+            setUpAnalysisExecutor(executor);
+
+            executor.setClinicalAnalysisId(clinicalAnalysisId)
                     .setQuery(query)
                     .setQueryOptions(queryOptions)
                     .setConfig(config)

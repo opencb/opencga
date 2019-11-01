@@ -1,31 +1,37 @@
 package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.interpretation.Interpretation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationConfiguration;
+import org.opencb.opencga.analysis.clinical.interpretation.*;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.analysis.result.AnalysisResult;
-import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.storage.core.manager.OpenCGATestExternalResource;
+import org.opencb.opencga.storage.core.manager.clinical.ClinicalUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
+import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.file.Paths;
 
-public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoDBVariantStorageTest {
+import static org.junit.Assert.fail;
+
+public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest implements MongoDBVariantStorageTest {
 
 
     private AbstractClinicalManagerTest clinicalTest;
 
     Path outDir;
+
+    @ClassRule
+    public static OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
 
     @Rule
     public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
@@ -34,7 +40,7 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
     public void setUp() throws Exception {
         clearDB("opencga_test_user_1000G");
         clinicalTest = ClinicalAnalysisUtilsTest.getClinicalTest(catalogManagerResource, getVariantStorageEngine());
-        outDir = null;
+        outDir = Paths.get(opencga.createTmpOutdir("_custom_analysis"));
     }
 
     @Test
@@ -44,8 +50,8 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
 //            System.out.println("variant = " + variant.toStringSimple());// + ", ALL:maf = " + variant.getStudies().get(0).getStats("ALL").getMaf());
 //        }
 
-//            Query query = new Query();
-        //query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
+        Query query = new Query();
+        query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
 
         CustomInterpretationConfiguration config = new CustomInterpretationConfiguration();
         CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis();
@@ -56,8 +62,8 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
 
         AnalysisResult result = customAnalysis.start();
         System.out.println(result);
-//        ClinicalAnalysisUtilsTest.displayReportedVariants(execute.getResult().getPrimaryFindings(), "Primary findings:");
-//        ClinicalAnalysisUtilsTest.displayReportedVariants(execute.getResult().getSecondaryFindings(), "Secondary findings:");
+
+        checkInterpretation(18, result);
     }
 
     @Test
@@ -71,13 +77,14 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
 //        options.put(param, false);
 
         Query query = new Query();
-        List<String> samples = new ArrayList();
-        for (Individual member : clinicalTest.clinicalAnalysis.getFamily().getMembers()) {
-            if (CollectionUtils.isNotEmpty(member.getSamples())) {
-                samples.add(member.getSamples().get(0).getId());
-            }
-        }
-        query.put(VariantQueryParam.SAMPLE.key(), samples);
+//        List<String> samples = new ArrayList();
+//        for (Individual member : clinicalTest.clinicalAnalysis.getFamily().getMembers()) {
+//            if (CollectionUtils.isNotEmpty(member.getSamples())) {
+//                samples.add(member.getSamples().get(0).getId());
+//            }
+//        }
+//        query.put(VariantQueryParam.SAMPLE.key(), samples);
+        query.put(VariantQueryParam.SAMPLE.key(), "s3");
 
         CustomInterpretationConfiguration config = new CustomInterpretationConfiguration();
         CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis();
@@ -90,7 +97,65 @@ public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoD
         AnalysisResult result = customAnalysis.start();
 
         System.out.println(result);
-//        ClinicalAnalysisUtilsTest.displayReportedVariants(execute.getResult().getPrimaryFindings(), "Primary findings:");
-//        ClinicalAnalysisUtilsTest.displayReportedVariants(execute.getResult().getSecondaryFindings(), "Secondary findings:");
+
+        checkInterpretation(12, result);
+    }
+
+    @Test
+    public void tieringAnalysis() throws Exception {
+        TieringInterpretationConfiguration config = new TieringInterpretationConfiguration();
+        TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis();
+        tieringAnalysis.setUp(catalogManagerResource.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
+        tieringAnalysis.setStudyId(clinicalTest.studyFqn)
+                .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
+                .setPenetrance(ClinicalProperty.Penetrance.COMPLETE)
+                .setConfig(config);
+
+        AnalysisResult result = tieringAnalysis.start();
+
+        System.out.println(result);
+
+        checkInterpretation(0, result);
+    }
+
+    @Test
+    public void teamAnalysis() {
+        try {
+            TeamInterpretationConfiguration config = new TeamInterpretationConfiguration();
+            TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis();
+            teamAnalysis.setUp(catalogManagerResource.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
+            teamAnalysis.setStudyId(clinicalTest.studyFqn)
+                    .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
+                    .setConfig(config);
+
+            teamAnalysis.start();
+
+            fail();
+        } catch (AnalysisException e) {
+            Assert.assertEquals(e.getMessage(), "Missing disease panels for TEAM interpretation analysis");
+        }
+    }
+
+    private void checkInterpretation(int expected, AnalysisResult result) throws AnalysisException {
+        System.out.println("out dir (to absolute path) = " + outDir.toAbsolutePath());
+
+        String msg = "Success";
+        Interpretation interpretation = null;
+        java.io.File file = new File(outDir + "/" + InterpretationAnalysis.INTERPRETATION_FILENAME);
+        if (file.exists()) {
+            interpretation = ClinicalUtils.readInterpretation(file.toPath());
+        } else {
+            msg = "Interpretation file not found for " + result.getId() + " analysis";
+            if (CollectionUtils.isNotEmpty(result.getEvents())) {
+                msg += (": " + org.apache.commons.lang3.StringUtils.join(result.getEvents(), ". "));
+            }
+        }
+        System.out.println("Reading interpretation:\n" + msg);
+        if (interpretation != null) {
+            System.out.println("Interpreation ID: " + interpretation.getId());
+            System.out.println("# primary findings: " + interpretation.getPrimaryFindings().size());
+        }
+        Assert.assertEquals(expected, interpretation.getPrimaryFindings().size());
+
     }
 }

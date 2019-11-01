@@ -129,7 +129,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         this.roleInCancerManager = new RoleInCancerManager(roleInCancerPath);
         this.actionableVariantManager = new ActionableVariantManager(actionableVariantPath);
 
-        this.init();
+//        this.init();
     }
 
 
@@ -379,11 +379,11 @@ public class ClinicalInterpretationManager extends StorageManager {
     }
 
     public List<DiseasePanel> getDiseasePanels(Query query, String sessionId) throws AnalysisException {
-        if (!query.containsKey(STUDY)) {
+        if (!query.containsKey(STUDY.key())) {
             throw new AnalysisException("Missing study in query");
         }
         List<DiseasePanel> diseasePanels = new ArrayList<>();
-        if (!query.containsKey(PANEL)) {
+        if (!query.containsKey(PANEL.key())) {
             return diseasePanels;
         }
         return getDiseasePanels(query.getString(STUDY.key()), query.getAsStringList(query.getString(PANEL.key())), sessionId);
@@ -392,22 +392,23 @@ public class ClinicalInterpretationManager extends StorageManager {
     public List<DiseasePanel> getDiseasePanels(String studyId, List<String> diseasePanelIds, String sessionId)
             throws AnalysisException {
         List<DiseasePanel> diseasePanels = new ArrayList<>();
-        OpenCGAResult<Panel> queryResults = null;
-        try {
-            queryResults = catalogManager.getPanelManager().get(studyId, diseasePanelIds, QueryOptions.empty(),
-                    sessionId);
-        } catch (CatalogException e) {
-            throw new AnalysisException("Error accessing panel manager", e);
-        }
+        if (CollectionUtils.isNotEmpty(diseasePanelIds)) {
+            OpenCGAResult<Panel> queryResults;
+            try {
+                queryResults = catalogManager.getPanelManager().get(studyId, diseasePanelIds, QueryOptions.empty(),
+                        sessionId);
+            } catch (CatalogException e) {
+                throw new AnalysisException("Error accessing panel manager", e);
+            }
 
-        if (queryResults.getNumResults() != diseasePanelIds.size()) {
-            throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels queried");
-        }
+            if (queryResults.getNumResults() != diseasePanelIds.size()) {
+                throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels queried");
+            }
 
-        for (Panel panel : queryResults.getResults()) {
-            diseasePanels.add(panel);
+            for (Panel panel : queryResults.getResults()) {
+                diseasePanels.add(panel);
+            }
         }
-
         return diseasePanels;
     }
 

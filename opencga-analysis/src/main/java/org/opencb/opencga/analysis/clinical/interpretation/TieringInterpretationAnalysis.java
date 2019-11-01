@@ -42,15 +42,6 @@ public class TieringInterpretationAnalysis extends InterpretationAnalysis {
     private ClinicalAnalysis clinicalAnalysis;
     private List<DiseasePanel> diseasePanels;
 
-//    public TieringInterpretationAnalysis(String clinicalAnalysisId, String studyId, List<String> diseasePanelIds, ClinicalProperty.Penetrance penetrance,
-//                                         Path outDir, Path openCgaHome, TieringInterpretationConfiguration config, String sessionId) {
-//        super(clinicalAnalysisId, studyId, outDir, openCgaHome, sessionId);
-//
-//        this.diseasePanelIds = diseasePanelIds;
-//        this.penetrance = penetrance;
-//        this.config = config;
-//    }
-
     @Override
     protected void check() throws AnalysisException {
         super.check();
@@ -93,8 +84,10 @@ public class TieringInterpretationAnalysis extends InterpretationAnalysis {
         check();
 
         step(() -> {
-            new TieringInterpretationAnalysisExecutor()
-                    .setStudyId(studyId)
+            TieringInterpretationAnalysisExecutor executor = new TieringInterpretationAnalysisExecutor();
+            setUpAnalysisExecutor(executor);
+
+            executor.setStudyId(studyId)
                     .setClinicalAnalysisId(clinicalAnalysisId)
                     .setDiseasePanels(diseasePanels)
                     .setPenetrance(penetrance)

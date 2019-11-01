@@ -30,9 +30,10 @@ import java.util.Map;
 
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.valueOf;
 import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.FAMILY_DISORDER;
+import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.FAMILY_SEGREGATION;
 
 @AnalysisExecutor(id = "opencga-local",
-        analysis = TeamInterpretationAnalysis.ID,
+        analysis = CustomInterpretationAnalysis.ID,
         source = AnalysisExecutor.Source.STORAGE,
         framework = AnalysisExecutor.Framework.LOCAL)
 public class CustomInterpretationAnalysisExecutor extends OpenCgaAnalysisExecutor implements ClinicalInterpretationAnalysisExecutor {
@@ -63,7 +64,10 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaAnalysisExecuto
         studyId = query.getString(VariantQueryParam.STUDY.key());
         reportedVariantCreator = createReportedVariantCreator();
 
-        ClinicalProperty.ModeOfInheritance moi = valueOf(VariantCatalogQueryUtils.FAMILY_SEGREGATION.key());
+        ClinicalProperty.ModeOfInheritance moi = ClinicalProperty.ModeOfInheritance.UNKNOWN;
+        if (query.containsKey(FAMILY_SEGREGATION.key())) {
+            moi = ClinicalProperty.ModeOfInheritance.valueOf(query.getString(FAMILY_SEGREGATION.key()));
+        }
         try {
             switch (moi) {
                 case DE_NOVO:
@@ -88,7 +92,8 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaAnalysisExecuto
         }
 
         // Write primary findings
-        ClinicalUtils.writeReportedVariants(reportedVariants, Paths.get(outDir + "/primary-findings.json"));
+        ClinicalUtils.writeReportedVariants(reportedVariants, Paths.get(outDir + "/"
+                + InterpretationAnalysis.PRIMARY_FINDINGS_FILENAME));
 
         // Get secondary findings
         try {
@@ -100,12 +105,13 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaAnalysisExecuto
         reportedVariants = reportedVariantCreator.create(variants);
 
         // Write secondary findings
-        ClinicalUtils.writeReportedVariants(reportedVariants, Paths.get(outDir + "/secondary-findings.json"));
+        ClinicalUtils.writeReportedVariants(reportedVariants, Paths.get(outDir + "/"
+                + InterpretationAnalysis.SECONDARY_FINDINGS_FILENAME));
     }
 
     private DefaultReportedVariantCreator createReportedVariantCreator() throws AnalysisException {
         // Reported variant creator
-        ClinicalProperty.ModeOfInheritance moi = ClinicalProperty.ModeOfInheritance.valueOf(query.getString(FAMILY_DISORDER.key(),
+        ClinicalProperty.ModeOfInheritance moi = ClinicalProperty.ModeOfInheritance.valueOf(query.getString(FAMILY_SEGREGATION.key(),
                 ClinicalProperty.ModeOfInheritance.UNKNOWN.name()));
         String assembly;
         try {

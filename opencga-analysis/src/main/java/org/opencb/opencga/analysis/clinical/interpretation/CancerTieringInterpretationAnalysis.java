@@ -24,7 +24,6 @@ import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
-import java.io.IOException;
 import java.util.List;
 
 @Analysis(id = CancerTieringInterpretationAnalysis.ID, type = Analysis.AnalysisType.CLINICAL)
@@ -58,8 +57,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),
                     sessionId);
-        } catch (
-                CatalogException e) {
+        } catch (CatalogException e) {
             throw new AnalysisException(e);
         }
         if (clinicalAnalysisQueryResult.getNumResults() != 1) {
@@ -77,8 +75,10 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         check();
 
         step(() -> {
-            new CancerTieringInterpretationAnalysisExecutor()
-                    .setStudyId(studyId)
+            CancerTieringInterpretationAnalysisExecutor executor = new CancerTieringInterpretationAnalysisExecutor();
+            setUpAnalysisExecutor(executor);
+
+            executor.setStudyId(studyId)
                     .setClinicalAnalysisId(clinicalAnalysisId)
                     .setVariantIdsToDiscard(variantIdsToDiscard)
                     .setConfig(config)

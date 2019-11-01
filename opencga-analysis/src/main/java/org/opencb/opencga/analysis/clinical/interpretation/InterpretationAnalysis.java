@@ -50,9 +50,9 @@ import static org.opencb.opencga.storage.core.manager.clinical.ClinicalUtils.*;
 
 public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
 
-    public static String PRIMARY_FINDINGS_FILENAME = "primary_findings.json";
-    public static String SECONDARY_FINDINGS_FILENAME = "secondary_findings.json";
-    public static String INTERPRETATION_FILENAME = "interpretatiion.json";
+    public static String PRIMARY_FINDINGS_FILENAME = "primary-findings.json";
+    public static String SECONDARY_FINDINGS_FILENAME = "secondary-findings.json";
+    public static String INTERPRETATION_FILENAME = "interpretation.json";
 
     protected ClinicalInterpretationManager clinicalInterpretationManager;
 
@@ -81,8 +81,10 @@ public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
                     diseasePanels, studyId, sessionId));
         }
 
-        List<ReportedVariant> primaryFindings = readReportedVariants(Paths.get(getOutDir().toString() + PRIMARY_FINDINGS_FILENAME));
-        List<ReportedVariant> secondaryFindings = readReportedVariants(Paths.get(getOutDir().toString() + SECONDARY_FINDINGS_FILENAME));
+        List<ReportedVariant> primaryFindings = readReportedVariants(Paths.get(getOutDir().toString() + "/"
+                + PRIMARY_FINDINGS_FILENAME));
+        List<ReportedVariant> secondaryFindings = readReportedVariants(Paths.get(getOutDir().toString() + "/"
+                + SECONDARY_FINDINGS_FILENAME));
 
         Interpretation interpretation = new Interpretation()
                 .setId(getId() + "__" + TimeUtils.getTimeMillis())
@@ -96,14 +98,14 @@ public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
                 .setFilters(query)
                 .setSoftware(software);
 
-        Path path = Paths.get(getOutDir().toString() + INTERPRETATION_FILENAME);
+        Path path = Paths.get(getOutDir().toAbsolutePath() + "/" + INTERPRETATION_FILENAME);
         try {
             JacksonUtils.getDefaultObjectMapper().writer().writeValue(path.toFile(), interpretation);
+            addFile(path, FileResult.FileType.JSON);
         } catch (IOException e) {
             throw new AnalysisException(e);
         }
 
-        addFile(path, FileResult.FileType.JSON);
     }
 
     public static ClinicalInterpretationManager getClinicalInterpretationManager(String opencgaHome) throws AnalysisException {
