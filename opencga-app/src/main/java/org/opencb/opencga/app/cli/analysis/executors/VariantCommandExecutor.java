@@ -367,7 +367,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         variantManager.removeSearchIndexSamples(cliOptions.study, Arrays.asList(cliOptions.sample.split(",")), queryOptions, sessionId);
     }
 
-    private void stats() throws CatalogException, IOException, StorageEngineException, URISyntaxException {
+    private void stats() throws AnalysisException {
         VariantCommandOptions.VariantStatsCommandOptions cliOptions = variantCommandOptions.statsVariantCommandOptions;
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);

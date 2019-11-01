@@ -162,10 +162,19 @@ public abstract class OpenCgaAnalysis {
         arm = new AnalysisResultManager(getId(), outDir);
         arm.init(params, executorParams);
         Thread hook = new Thread(() -> {
+            Exception exception = null;
+            try {
+                onShutdown();
+            } catch (Exception e) {
+                exception = e;
+            }
             if (!arm.isClosed()) {
                 privateLogger.error("Unexpected system shutdown!");
                 try {
-                    arm.close(new RuntimeException("Unexpected system shutdown"));
+                    if (exception == null) {
+                        exception = new RuntimeException("Unexpected system shutdown");
+                    }
+                    arm.close(exception);
                 } catch (AnalysisException e) {
                     privateLogger.error("Error closing AnalysisResult", e);
                 }
@@ -223,6 +232,12 @@ public abstract class OpenCgaAnalysis {
      * @throws Exception on error
      */
     protected abstract void run() throws Exception;
+
+    /**
+     * Method to be called by the Runtime shutdownHook in case of an unexpected system shutdown.
+     */
+    protected void onShutdown() {
+    }
 
     /**
      * @return the analysis id

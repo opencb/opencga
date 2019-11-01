@@ -22,18 +22,21 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.analysis.OpenCgaAnalysis;
 import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.storage.variant.metadata.CatalogStorageMetadataSynchronizer;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
@@ -42,8 +45,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -55,129 +56,123 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Optio
 /**
  * Created by jacobo on 06/03/15.
  */
-public class VariantStatsStorageOperation extends StorageOperation {
+@Analysis(id = VariantStatsAnalysis.ID, type = Analysis.AnalysisType.VARIANT)
+public class VariantStatsStorageOperation extends OpenCgaAnalysis {
 
-    public VariantStatsStorageOperation(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
-        super(catalogManager, StorageEngineFactory.get(storageConfiguration), LoggerFactory.getLogger(VariantStatsStorageOperation.class));
+    private List<String> cohorts;
+    private String studyFqn;
+
+    private boolean overwriteStats;
+    private boolean updateStats;
+    private boolean resume;
+    private URI outdirUri;
+    private List<String> cohortIds;
+
+
+    public VariantStatsStorageOperation setCohorts(List<String> cohorts) {
+        this.cohorts = cohorts;
+        return this;
     }
 
-    public void calculateStats(String studyStr, List<String> cohorts, String outdirStr, QueryOptions options, String sessionId)
-            throws CatalogException, IOException, URISyntaxException, StorageEngineException {
-        boolean overwriteStats = options.getBoolean(Options.OVERWRITE_STATS.key(), false);
-        boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
-        boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue());
+    public VariantStatsStorageOperation setStudyId(String studyId) {
+        this.studyFqn = studyId;
+        return this;
+    }
+
+    @Override
+    protected void check() throws Exception {
+        super.check();
+
+        overwriteStats = params.getBoolean(Options.OVERWRITE_STATS.key(), false);
+        updateStats = params.getBoolean(Options.UPDATE_STATS.key(), false);
+        resume = params.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue());
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-        String studyFqn = study.getFqn();
+        Study study = catalogManager.getStudyManager().resolveId(studyFqn, userId);
+        studyFqn = study.getFqn();
 
 
-        // Outdir must be empty
-        URI outdirUri = UriUtils.createDirectoryUri(outdirStr);
-        final Path outdir = Paths.get(outdirUri);
-        outdirMustBeEmpty(outdir, options);
+        // Do not save intermediate files
+        outdirUri = getScratchDir().toUri();
+    }
 
-        Aggregation aggregation = getAggregation(studyFqn, options, sessionId);
+    @Override
+    protected void run() throws Exception {
+
+        Aggregation aggregation = getAggregation(catalogManager, studyFqn, params, sessionId);
 
         DataStore dataStore = VariantStorageManager.getDataStore(catalogManager, studyFqn, File.Bioformat.VARIANT, sessionId);
-        StudyMetadata studyMetadata = synchronizeCatalogStudyFromStorage(dataStore, studyFqn, sessionId);
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
+        CatalogStorageMetadataSynchronizer synchronizer = new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager());
 
-        List<String> cohortIds = checkCohorts(study, aggregation, cohorts, options, sessionId);
+        synchronizer.synchronizeCatalogStudyFromStorage(studyFqn, sessionId);
+
+        cohortIds = checkCohorts(studyFqn, aggregation, cohorts, sessionId);
         Map<String, List<String>> cohortsMap = checkCanCalculateCohorts(studyFqn, cohortIds, updateStats, resume, sessionId);
 
 
-        String region = options.getString(VariantQueryParam.REGION.key());
-        String outputFileName = buildOutputFileName(cohortIds, options, region);
+        String outputFileName = buildOutputFileName(cohortIds, params.getString(VariantQueryParam.REGION.key()));
 
-        String catalogOutDirId = getCatalogOutdirId(studyFqn, options, sessionId);
-
-        QueryOptions calculateStatsOptions = new QueryOptions(options)
+        QueryOptions calculateStatsOptions = new QueryOptions(params)
 //                .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
 //                .append(VariantStorageEngine.Options.LOAD_THREADS.key(), 6)
                 .append(Options.AGGREGATED_TYPE.key(), aggregation)
                 .append(Options.OVERWRITE_STATS.key(), overwriteStats)
                 .append(Options.UPDATE_STATS.key(), updateStats)
                 .append(Options.RESUME.key(), resume);
-        calculateStatsOptions.putIfNotEmpty(VariantQueryParam.REGION.key(), region);
 
         // if the study is aggregated and a mapping file is provided, pass it to storage
         // and create in catalog the cohorts described in the mapping file
-        String aggregationMappingFile = options.getString(Options.AGGREGATION_MAPPING_PROPERTIES.key());
+        String aggregationMappingFile = params.getString(Options.AGGREGATION_MAPPING_PROPERTIES.key());
         if (AggregationUtils.isAggregated(aggregation) && StringUtils.isNotEmpty(aggregationMappingFile)) {
             Properties mappingFile = readAggregationMappingFile(aggregationMappingFile);
             calculateStatsOptions.append(Options.AGGREGATION_MAPPING_PROPERTIES.key(), mappingFile);
         }
 
-
-        Thread hook = buildHook(studyFqn, cohortIds, sessionId, outdir);
-        writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
-        Runtime.getRuntime().addShutdownHook(hook);
         // Up to this point, catalog has not been modified
         try {
             // Modify cohort status to "CALCULATING"
             updateCohorts(studyFqn, cohortIds, sessionId, Cohort.CohortStatus.CALCULATING, "Start calculating stats");
 
             calculateStatsOptions.put(DefaultVariantStatisticsManager.OUTPUT, outdirUri.resolve(outputFileName));
-            VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
             variantStorageEngine.getOptions().putAll(calculateStatsOptions);
-            variantStorageEngine.calculateStats(studyMetadata.getName(), cohortsMap, calculateStatsOptions);
+            variantStorageEngine.calculateStats(studyFqn, cohortsMap, calculateStatsOptions);
 
-//            DefaultVariantStatisticsManager variantStatisticsManager = new DefaultVariantStatisticsManager(dbAdaptor);
-//
-//            VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(dataStore.getDbName());
-//            Map<String, Integer> cohortNameIdMap = new HashMap<>(cohortIds.size());
-//            Map<String, Set<String>> cohortSamplesMap = new HashMap<>(cohortIds.size());
-//            for (Map.Entry<Long, Cohort> entry : cohortsMap.entrySet()) {
-//                cohortNameIdMap.put(entry.getValue().getName(), entry.getKey().intValue());
-//                cohortSamplesMap.put(entry.getValue().getName(), entry.getValue().getSamples()
-//                        .stream()
-//                        .map(sampleId -> {
-//                            return studyConfiguration.getSampleIds().inverse().get(sampleId.intValue());
-//                        })
-//                        .collect(Collectors.toSet()));
-//            }
-//            URI stats = variantStatisticsManager.createStats(dbAdaptor, outdirUri.resolve(outputFileName), cohortSamplesMap,
-//                    cohortNameIdMap, studyConfiguration, calculateStatsOptions);
-//
-//            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job still running. Statistics created."));
-//            variantStatisticsManager.loadStats(dbAdaptor, stats, studyConfiguration, options);
-
-            if (catalogOutDirId != null) {
-                copyResults(Paths.get(outdirUri), studyStr, catalogOutDirId, sessionId);
-            }
-
-            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.DONE, "Job completed"));
             // Modify cohort status to "READY"
             updateCohorts(studyFqn, cohortIds, sessionId, Cohort.CohortStatus.READY, "");
+
+            variantStorageEngine.close();
         } catch (Exception e) {
             // Error!
             logger.error("Error executing stats. Set cohorts status to " + Cohort.CohortStatus.INVALID, e);
-            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job with error : " + e.getMessage()));
             // Modify to "INVALID"
             updateCohorts(studyFqn, cohortIds, sessionId, Cohort.CohortStatus.INVALID, "Error calculating stats: " + e.getMessage());
             throw new StorageEngineException("Error calculating statistics.", e);
-        } finally {
-            // Remove hook
-            Runtime.getRuntime().removeShutdownHook(hook);
         }
-
     }
 
-
-    protected Thread buildHook(String studyFqn, List<String> cohortIds, String sessionId, Path outdir) {
-        return buildHook(outdir, () -> {
-            try {
-                updateCohorts(studyFqn, cohortIds, sessionId, Cohort.CohortStatus.INVALID, "");
-            } catch (CatalogException e) {
-                logger.error("Error updating cohorts " + cohortIds + " to status " + Cohort.CohortStatus.INVALID, e);
-            }
-        });
+    @Override
+    protected void onShutdown() {
+        try {
+            updateCohorts(studyFqn, cohortIds, sessionId, Cohort.CohortStatus.INVALID, "");
+        } catch (CatalogException e) {
+            logger.error("Error updating cohorts " + cohortIds + " to status " + Cohort.CohortStatus.INVALID, e);
+        }
     }
 
-    protected String buildOutputFileName(List<String> cohortIds, QueryOptions options, String region) {
+    private VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {
+        try {
+            return StorageEngineFactory.get(variantStorageManager.getStorageConfiguration())
+                    .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+            throw new StorageEngineException("Unable to create StorageEngine", e);
+        }
+    }
+
+    protected String buildOutputFileName(List<String> cohortIds, String region) {
         final String outputFileName;
-        if (isNotEmpty(options.getString(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME))) {
-            outputFileName = options.getString(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME);
+        if (isNotEmpty(params.getString(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME))) {
+            outputFileName = params.getString(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME);
         } else {
             StringBuilder outputFileNameBuilder;
             outputFileNameBuilder = new StringBuilder("stats_");
@@ -198,22 +193,20 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
     /**
      * Must provide a list of cohorts or a aggregation_mapping_properties file.
-     * @param study   Study
+     * @param studyId   Study
      * @param aggregation Aggregation type for this study. {@link #getAggregation}
      * @param cohorts   List of cohorts
-     * @param options   Options, where the aggregation mapping properties file will be
      * @param sessionId User's sessionId
      * @return          Checked list of cohorts
      * @throws CatalogException if an error on Catalog
      * @throws IOException if an IO error reading the aggregation map file (if any)
      */
-    protected List<String> checkCohorts(Study study, Aggregation aggregation, List<String> cohorts, QueryOptions options, String sessionId)
+    protected List<String> checkCohorts(String studyId, Aggregation aggregation, List<String> cohorts, String sessionId)
             throws CatalogException, IOException {
         List<String> cohortIds;
-        String studyId = study.getFqn();
 
         // Check aggregation mapping properties
-        String tagMap = options.getString(Options.AGGREGATION_MAPPING_PROPERTIES.key());
+        String tagMap = params.getString(Options.AGGREGATION_MAPPING_PROPERTIES.key());
         List<String> cohortsByAggregationMapFile = Collections.emptyList();
         if (!isBlank(tagMap)) {
             if (!AggregationUtils.isAggregated(aggregation)) {
@@ -238,7 +231,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         } else {
             cohortIds = new ArrayList<>(cohorts.size());
             for (String cohort : cohorts) {
-                String cohortId = catalogManager.getCohortManager().get(study.getFqn(), cohort,
+                String cohortId = catalogManager.getCohortManager().get(studyId, cohort,
                         new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.ID.key()), sessionId).first().getId();
                 cohortIds.add(cohortId);
             }
@@ -355,6 +348,56 @@ public class VariantStatsStorageOperation extends StorageOperation {
         for (String cohortId : cohortIds) {
             catalogManager.getCohortManager().setStatus(studyId, cohortId, status, message, sessionId);
         }
+    }
+
+    /**
+     * If the study is aggregated and a mapping file is provided, pass it to
+     * and create in catalog the cohorts described in the mapping file.
+     *
+     * If the study aggregation was not defined, updateStudy with the provided aggregation type
+     *
+     * @param catalogManager CatalogManager
+     * @param studyId   StudyId where calculate stats
+     * @param options   Options
+     * @param sessionId Users sessionId
+     * @return          Effective study aggregation type
+     * @throws CatalogException if something is wrong with catalog
+     */
+    public static Aggregation getAggregation(CatalogManager catalogManager, String studyId, ObjectMap options, String sessionId)
+            throws CatalogException {
+        QueryOptions include = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ATTRIBUTES.key());
+        Study study = catalogManager.getStudyManager().get(studyId, include, sessionId).first();
+        Aggregation argsAggregation = options.get(Options.AGGREGATED_TYPE.key(), Aggregation.class, Aggregation.NONE);
+        Object studyAggregationObj = study.getAttributes().get(Options.AGGREGATED_TYPE.key());
+        Aggregation studyAggregation = null;
+        if (studyAggregationObj != null) {
+            studyAggregation = AggregationUtils.valueOf(studyAggregationObj.toString());
+        }
+
+        final Aggregation aggregation;
+        if (AggregationUtils.isAggregated(argsAggregation)) {
+            if (studyAggregation != null && !studyAggregation.equals(argsAggregation)) {
+                // FIXME: Throw an exception?
+                LoggerFactory.getLogger(StorageOperation.class)
+                        .warn("Calculating statistics with aggregation " + argsAggregation + " instead of " + studyAggregation);
+            }
+            aggregation = argsAggregation;
+            // If studyAggregation is not define, update study aggregation
+            if (studyAggregation == null) {
+                //update study aggregation
+                Map<String, Aggregation> attributes = Collections.singletonMap(Options.AGGREGATED_TYPE.key(),
+                        argsAggregation);
+                ObjectMap parameters = new ObjectMap("attributes", attributes);
+                catalogManager.getStudyManager().update(studyId, parameters, null, sessionId);
+            }
+        } else {
+            if (studyAggregation == null) {
+                aggregation = Aggregation.NONE;
+            } else {
+                aggregation = studyAggregation;
+            }
+        }
+        return aggregation;
     }
 
     static CatalogException differentCohortsThanMappingFile() throws CatalogException {

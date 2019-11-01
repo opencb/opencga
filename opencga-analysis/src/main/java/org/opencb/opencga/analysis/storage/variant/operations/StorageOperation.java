@@ -18,21 +18,20 @@ package org.opencb.opencga.analysis.storage.variant.operations;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.variant.metadata.Aggregation;
-import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.analysis.storage.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.monitor.executors.BatchExecutor;
 import org.opencb.opencga.catalog.utils.FileScanner;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.DataStore;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.analysis.storage.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -41,9 +40,7 @@ import org.slf4j.Logger;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
 
 import static org.opencb.opencga.catalog.monitor.executors.BatchExecutor.*;
@@ -53,6 +50,7 @@ import static org.opencb.opencga.catalog.monitor.executors.BatchExecutor.*;
  */
 public abstract class StorageOperation {
 
+    @Deprecated
     public static final String CATALOG_PATH = "catalogPath";
 
     protected final CatalogManager catalogManager;
@@ -176,10 +174,12 @@ public abstract class StorageOperation {
         return files;
     }
 
+    @Deprecated
     public Job.JobStatus readJobStatus(Path outdir) throws IOException {
         return objectMapper.readerFor(Job.JobStatus.class).readValue(outdir.resolve(JOB_STATUS_FILE).toFile());
     }
 
+    @Deprecated
     public void writeJobStatus(Path outdir, Job.JobStatus jobStatus) throws IOException {
         objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), jobStatus);
     }
@@ -192,53 +192,6 @@ public abstract class StorageOperation {
         }
     }
 
-
-    /**
-     * If the study is aggregated and a mapping file is provided, pass it to
-     * and create in catalog the cohorts described in the mapping file.
-     *
-     * If the study aggregation was not defined, updateStudy with the provided aggregation type
-     *
-     * @param studyId   StudyId where calculate stats
-     * @param options   Options
-     * @param sessionId Users sessionId
-     * @return          Effective study aggregation type
-     * @throws CatalogException if something is wrong with catalog
-     */
-    public Aggregation getAggregation(String studyId, QueryOptions options, String sessionId) throws CatalogException {
-        QueryOptions include = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ATTRIBUTES.key());
-        Study study = catalogManager.getStudyManager().get(studyId, include, sessionId).first();
-        Aggregation argsAggregation = options.get(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), Aggregation.class, Aggregation.NONE);
-        Object studyAggregationObj = study.getAttributes().get(VariantStorageEngine.Options.AGGREGATED_TYPE.key());
-        Aggregation studyAggregation = null;
-        if (studyAggregationObj != null) {
-            studyAggregation = AggregationUtils.valueOf(studyAggregationObj.toString());
-        }
-
-        final Aggregation aggregation;
-        if (AggregationUtils.isAggregated(argsAggregation)) {
-            if (studyAggregation != null && !studyAggregation.equals(argsAggregation)) {
-                // FIXME: Throw an exception?
-                logger.warn("Calculating statistics with aggregation " + argsAggregation + " instead of " + studyAggregation);
-            }
-            aggregation = argsAggregation;
-            // If studyAggregation is not define, update study aggregation
-            if (studyAggregation == null) {
-                //update study aggregation
-                Map<String, Aggregation> attributes = Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(),
-                        argsAggregation);
-                ObjectMap parameters = new ObjectMap("attributes", attributes);
-                catalogManager.getStudyManager().update(studyId, parameters, null, sessionId);
-            }
-        } else {
-            if (studyAggregation == null) {
-                aggregation = Aggregation.NONE;
-            } else {
-                aggregation = studyAggregation;
-            }
-        }
-        return aggregation;
-    }
 
     public static boolean isVcfFormat(File file) {
         File.Format format = file.getFormat();

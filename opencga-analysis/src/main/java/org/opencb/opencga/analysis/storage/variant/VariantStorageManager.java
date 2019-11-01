@@ -316,10 +316,12 @@ public class VariantStorageManager extends StorageManager {
     }
 
     public void stats(String study, List<String> cohorts, String outDir, ObjectMap config, String sessionId)
-            throws CatalogException, StorageEngineException, IOException, URISyntaxException {
-        VariantStatsStorageOperation statsOperation = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
-
-        statsOperation.calculateStats(study, cohorts, outDir, new QueryOptions(config), sessionId);
+            throws AnalysisException {
+        new VariantStatsStorageOperation()
+                .setStudyId(study)
+                .setCohorts(cohorts)
+                .setUp(null, catalogManager, this, config, Paths.get(outDir), sessionId)
+                .start();
     }
 
     public void deleteStats(List<String> cohorts, String studyId, String sessionId) {
