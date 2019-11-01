@@ -148,7 +148,7 @@ public class AnalysisResultManager {
                 .setStep(null)
                 .setName(finalStatus);
 
-        if (step.getStatus().equals(Status.Type.RUNNING)) {
+        if (Status.Type.RUNNING.equals(step.getStatus())) {
             step.setStatus(finalStatus);
             step.setEnd(now);
         }

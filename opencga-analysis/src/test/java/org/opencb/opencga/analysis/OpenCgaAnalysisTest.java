@@ -1,6 +1,7 @@
 package org.opencb.opencga.analysis;
 
 import org.junit.Test;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
 import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.annotations.AnalysisExecutor;
@@ -14,13 +15,19 @@ import static org.junit.Assert.assertEquals;
 
 public class OpenCgaAnalysisTest {
     @AnalysisExecutor(id="test-executor", analysis = "test-analysis", framework = AnalysisExecutor.Framework.LOCAL, source= AnalysisExecutor.Source.FILE)
-    public static class MyExecutor1 extends OpenCgaAnalysisExecutor { @Override public void run() { } }
+    public static final class MyExecutor1 extends OpenCgaAnalysisExecutor { @Override public void run() { } }
 
     @AnalysisExecutor(id="test-executor-mr", analysis = "test-analysis", framework = AnalysisExecutor.Framework.MAP_REDUCE, source= AnalysisExecutor.Source.HBASE)
-    public static class MyExecutor2 extends OpenCgaAnalysisExecutor { @Override public void run() { } }
+    public static final class MyExecutor2 extends OpenCgaAnalysisExecutor { @Override public void run() { } }
 
     @Analysis(id = "test-analysis", type = Analysis.AnalysisType.VARIANT)
     public static class MyAnalysis extends OpenCgaAnalysis {
+
+        public MyAnalysis() {
+            params = new ObjectMap();
+            executorParams = new ObjectMap();
+        }
+
         @Override
         public void run() {
         }
@@ -28,14 +35,16 @@ public class OpenCgaAnalysisTest {
         public void set(List<AnalysisExecutor.Source> sources, List<AnalysisExecutor.Framework> frameworks) {
             this.sourceTypes = sources;
             this.availableFrameworks = frameworks;
+            params.remove(OpenCgaAnalysisExecutor.EXECUTOR_ID);
+            executorParams.remove(OpenCgaAnalysisExecutor.EXECUTOR_ID);
         }
 
     }
-
-
     @Test
     public void testGetExecutorClass() throws AnalysisExecutorException {
         MyAnalysis analysis = new MyAnalysis();
+
+        assertEquals(MyExecutor2.class, analysis.getAnalysisExecutorClass(MyExecutor2.class, "test-executor-mr"));
 
         assertEquals("test-analysis", analysis.getId());
         assertEquals(MyExecutor1.class, analysis.getAnalysisExecutorClass("test-executor"));
