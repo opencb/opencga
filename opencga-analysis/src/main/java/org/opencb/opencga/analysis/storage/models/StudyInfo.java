@@ -30,6 +30,7 @@ import java.util.Map;
 /**
  * Created by pfurio on 24/11/16.
  */
+@Deprecated
 public class StudyInfo {
 
     private String sessionId;

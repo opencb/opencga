@@ -21,6 +21,8 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.storage.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -94,7 +96,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
                 alias = project.getId();
                 organism = project.getOrganism();
                 currentRelease = project.getCurrentRelease();
-                dataStore = getDataStoreByProjectId(catalogManager, projectStr, File.Bioformat.VARIANT, sessionId);
+                dataStore = VariantStorageManager.getDataStoreByProjectId(catalogManager, projectStr, File.Bioformat.VARIANT, sessionId);
                 studyIds = Collections.emptyList();
             } else {
                 StudyInfo info = studyInfos.get(0);
@@ -161,7 +163,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
 //            StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyId, dataStore);
             VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
 
-            updateProjectMetadata(variantStorageEngine.getMetadataManager(), organism, currentRelease);
+            CatalogStorageMetadataSynchronizer.updateProjectMetadata(variantStorageEngine.getMetadataManager(), organism, currentRelease);
 
             variantStorageEngine.annotate(annotationQuery, annotationOptions);
 

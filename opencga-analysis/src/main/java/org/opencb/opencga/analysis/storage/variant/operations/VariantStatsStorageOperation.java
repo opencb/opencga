@@ -24,6 +24,7 @@ import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -78,7 +79,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
         Aggregation aggregation = getAggregation(studyFqn, options, sessionId);
 
-        DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyFqn, File.Bioformat.VARIANT, sessionId);
+        DataStore dataStore = VariantStorageManager.getDataStore(catalogManager, studyFqn, File.Bioformat.VARIANT, sessionId);
         StudyMetadata studyMetadata = synchronizeCatalogStudyFromStorage(dataStore, studyFqn, sessionId);
 
         List<String> cohortIds = checkCohorts(study, aggregation, cohorts, options, sessionId);

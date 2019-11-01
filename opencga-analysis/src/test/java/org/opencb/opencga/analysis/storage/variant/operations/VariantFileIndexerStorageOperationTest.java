@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileIndex;
@@ -134,7 +135,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         try {
             variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
             fail("Expected StoragePipelineException exception");
-        } catch (StoragePipelineException e) {
+        } catch (Exception e) {
             assertEquals(0, getDefaultCohort(studyId).getSamples().size());
             assertEquals(Cohort.CohortStatus.NONE, getDefaultCohort(studyId).getStatus().getName());
             assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getIndex().getStatus().getName());
@@ -273,7 +274,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
         try {
             indexFiles(files, queryOptions, outputId);
-        } catch (StoragePipelineException exception) {
+        } catch (AnalysisException e) {
+            StoragePipelineException exception = (StoragePipelineException) e.getCause();
             assertEquals(files.size(), exception.getResults().size());
 
             assertTrue(exception.getResults().get(0).isTransformExecuted());
@@ -329,10 +331,11 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         queryOptions.put(DummyVariantStoragePipeline.VARIANTS_LOAD_FAIL, files.get(1).getName() + ".variants.avro.gz");
         List<String> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
         try {
-            String outdir = opencga.createTmpOutdir(studyId, "_INDEX_", sessionId);
+            String outdir = opencga.createTmpOutdir(studyId, "_INDEX", sessionId);
             variantManager.index(studyId, fileIds, outdir, queryOptions, sessionId);
             fail();
-        } catch (StoragePipelineException exception) {
+        } catch (AnalysisException e) {
+            StoragePipelineException exception = (StoragePipelineException) e.getCause();
             assertEquals(files.size(), exception.getResults().size());
 
             for (int i = 0; i < files.size(); i++) {
@@ -359,7 +362,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         try {
             indexFiles(files, queryOptions, outputId);
             fail();
-        } catch (StoragePipelineException exception) {
+        } catch (AnalysisException e) {
+            StoragePipelineException exception = (StoragePipelineException) e.getCause();
             assertEquals(files.size(), exception.getResults().size());
 
             for (int i = 0; i < files.size(); i++) {

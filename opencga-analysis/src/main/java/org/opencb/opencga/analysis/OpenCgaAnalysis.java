@@ -99,6 +99,7 @@ public abstract class OpenCgaAnalysis {
         this.params = params == null ? new ObjectMap() : new ObjectMap(params);
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
+        this.params.put("outDir", outDir.toAbsolutePath().toString());
 
         return setUpFrameworksAndSource();
     }
@@ -107,9 +108,10 @@ public abstract class OpenCgaAnalysis {
             throws AnalysisException {
         this.opencgaHome = opencgaHome;
         this.sessionId = sessionId;
-        this.params = params;
+        this.params = params == null ? new ObjectMap() : new ObjectMap(params);
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
+        this.params.put("outDir", outDir.toAbsolutePath().toString());
 
         try {
             loadConfiguration();

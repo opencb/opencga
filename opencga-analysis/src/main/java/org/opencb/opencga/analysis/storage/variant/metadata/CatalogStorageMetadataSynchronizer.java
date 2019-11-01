@@ -26,19 +26,16 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.update.CohortUpdateParams;
-import org.opencb.opencga.core.models.Cohort;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.FileIndex;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.FileIndex.IndexStatus;
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
-import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
-import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.metadata.models.*;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,8 +77,62 @@ public class CatalogStorageMetadataSynchronizer {
         this.metadataManager = metadataManager;
     }
 
+    public static void updateProjectMetadata(CatalogManager catalog, VariantStorageMetadataManager scm, String project, String sessionId)
+            throws CatalogException, StorageEngineException {
+        final Project p = catalog.getProjectManager().get(project,
+                new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        ProjectDBAdaptor.QueryParams.ORGANISM.key(), ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key())),
+                sessionId)
+                .first();
+
+        updateProjectMetadata(scm, p.getOrganism(), p.getCurrentRelease());
+    }
+
+    public static void updateProjectMetadata(VariantStorageMetadataManager scm, Project.Organism organism, int release)
+            throws CatalogException, StorageEngineException {
+        String scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(organism.getScientificName());
+
+        scm.updateProjectMetadata(projectMetadata -> {
+            if (projectMetadata == null) {
+                projectMetadata = new ProjectMetadata();
+            }
+            projectMetadata.setSpecies(scientificName);
+            projectMetadata.setAssembly(organism.getAssembly());
+            projectMetadata.setRelease(release);
+            return projectMetadata;
+        });
+    }
+
     public StudyMetadata getStudyMetadata(String study) throws CatalogException {
         return metadataManager.getStudyMetadata(study);
+    }
+
+    /**
+     * Updates catalog metadata from storage metadata.
+     *
+     * @param study                 StudyMetadata
+     * @param files                 Files to update
+     * @param sessionId             User session id
+     * @return if there were modifications in catalog
+     * @throws CatalogException     if there is an error with catalog
+     */
+    public boolean synchronizeCatalogFilesFromStorage(String study, List<File> files, String sessionId, QueryOptions fileQueryOptions)
+            throws CatalogException, StorageEngineException {
+
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
+        boolean modified = false;
+        if (studyMetadata != null) {
+            // Update Catalog file and cohort status.
+            modified = synchronizeCatalogFilesFromStorage(studyMetadata, files, sessionId);
+            if (modified) {
+                // Files updated. Reload files from catalog
+                for (int i = 0; i < files.size(); i++) {
+                    File file = files.get(i);
+                    files.set(i, catalogManager.getFileManager().get(study, file.getId(), fileQueryOptions, sessionId).first());
+                }
+            }
+        }
+        return modified;
     }
 
     /**
@@ -102,6 +153,17 @@ public class CatalogStorageMetadataSynchronizer {
         }
 
         return synchronizeFiles(study, files, sessionId);
+    }
+
+    public boolean synchronizeCatalogStudyFromStorage(String study, String sessionId)
+            throws CatalogException {
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
+        if (studyMetadata != null) {
+            // Update Catalog file and cohort status.
+            return synchronizeCatalogStudyFromStorage(studyMetadata, sessionId);
+        } else {
+            return false;
+        }
     }
 
     /**

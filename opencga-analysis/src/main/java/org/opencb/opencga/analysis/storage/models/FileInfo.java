@@ -23,6 +23,7 @@ import java.nio.file.Path;
 /**
  * Created by pfurio on 24/11/16.
  */
+@Deprecated
 public class FileInfo {
 
     private String name;

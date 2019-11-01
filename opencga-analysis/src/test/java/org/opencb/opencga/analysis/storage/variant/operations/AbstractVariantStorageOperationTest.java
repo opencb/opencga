@@ -26,12 +26,17 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.analysis.storage.OpenCGATestExternalResource;
+import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
+import org.opencb.opencga.catalog.utils.FileScanner;
+import org.opencb.opencga.core.analysis.result.AnalysisResultManager;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -40,7 +45,6 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.analysis.storage.OpenCGATestExternalResource;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
@@ -51,11 +55,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.hasItems;
@@ -65,6 +70,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.analysis.storage.variant.operations.StatsVariantStorageTest.checkCalculatedStats;
+import static org.opencb.opencga.catalog.monitor.executors.BatchExecutor.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_NAME;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
@@ -210,19 +216,20 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     }
 
 
-    protected File transformFile(File inputFile, QueryOptions queryOptions) throws CatalogException, IOException, StorageEngineException, URISyntaxException {
+    protected File transformFile(File inputFile, QueryOptions queryOptions) throws CatalogException, IOException, AnalysisException {
         return transformFile(inputFile, queryOptions, "data/index/");
     }
 
-    protected File transformFile(File inputFile, QueryOptions queryOptions, String path) throws CatalogException, IOException, StorageEngineException, URISyntaxException {
+    protected File transformFile(File inputFile, QueryOptions queryOptions, String outputId) throws CatalogException, IOException, AnalysisException {
 
         try {
-            catalogManager.getFileManager().createFolder(studyFqn, path, null, true, null, null, sessionId);
+            catalogManager.getFileManager().createFolder(studyFqn, outputId, null, true, null, null, sessionId);
         } catch (CatalogException ignore) {}
 
         queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, true);
         queryOptions.append(VariantFileIndexerStorageOperation.LOAD, false);
-        queryOptions.append(StorageOperation.CATALOG_PATH, path);
+//        queryOptions.append(StorageOperation.CATALOG_PATH, path);
+        queryOptions.append("saveIntermediateFiles", true);
         boolean calculateStats = queryOptions.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
 
         Study study = catalogManager.getFileManager().getStudy(inputFile, sessionId);
@@ -230,8 +237,12 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
         //Default cohort should not be modified
         Cohort defaultCohort = getDefaultCohort(studyId);
-        String outdir = opencga.createTmpOutdir(studyId, "_TRANSFORM_", sessionId);
-        variantManager.index(studyId, inputFile.getId(), outdir, queryOptions, sessionId);
+        String tmpOutdir = opencga.createTmpOutdir(studyId, "_TRANSFORM_", sessionId);
+        try {
+            variantManager.index(studyId, inputFile.getId(), tmpOutdir, queryOptions, sessionId);
+        } finally {
+            copyResults(Paths.get(tmpOutdir), studyId, outputId, sessionId);
+        }
         inputFile = catalogManager.getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
         assertEquals(FileIndex.IndexStatus.TRANSFORMED, inputFile.getIndex().getStatus().getName());
         assertNotNull(inputFile.getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
@@ -245,11 +256,13 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         }
 
         //Get transformed file
-        Query searchQuery = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), path)
+        Query searchQuery = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), outputId)
                 .append(FileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".variants.(json|avro)");
 
         File transformedFile = catalogManager.getFileManager().search(studyId, searchQuery, new QueryOptions(), sessionId).first();
+        inputFile = catalogManager.getFileManager().get(studyId, inputFile.getId(), null, sessionId).first();
 
+        System.out.println("transformedFile = " + transformedFile);
         List<File.RelatedFile> relatedFiles = transformedFile.getRelatedFiles().stream()
                 .filter(relatedFile -> relatedFile.getRelation().equals(File.RelatedFile.Relation.PRODUCED_FROM))
                 .collect(Collectors.toList());
@@ -272,7 +285,8 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     protected List<StoragePipelineResult> loadFiles(List<File> files, List<File> expectedLoadedFiles, QueryOptions queryOptions, String outputId) throws Exception {
         queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, false);
         queryOptions.append(VariantFileIndexerStorageOperation.LOAD, true);
-        queryOptions.append(StorageOperation.CATALOG_PATH, outputId);
+//        queryOptions.append(StorageOperation.CATALOG_PATH, outputId);
+        queryOptions.append("saveIntermediateFiles", true);
         boolean calculateStats = queryOptions.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
 
         String studyId = catalogManager.getFileManager().getStudy(files.get(0), sessionId).getId();
@@ -311,13 +325,19 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         boolean calculateStats = queryOptions.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
 
         String studyId = catalogManager.getFileManager().getStudy(files.get(0), sessionId).getId();
-        queryOptions.append(StorageOperation.CATALOG_PATH, outputId);
+//        queryOptions.append(StorageOperation.CATALOG_PATH, outputId);
+        queryOptions.append("saveIntermediateFiles", true);
 
 
-        String outdir = opencga.createTmpOutdir(studyId, "_INDEX_", sessionId);
+        String tmpOutdir = opencga.createTmpOutdir(studyId, "_INDEX", sessionId);
         List<String> fileIds = files.stream().map(File::getPath).collect(Collectors.toList());
 
-        List<StoragePipelineResult> etlResults = variantManager.index(studyId, fileIds, outdir, queryOptions, sessionId);
+        List<StoragePipelineResult> etlResults;
+        try {
+            etlResults = variantManager.index(studyId, fileIds, tmpOutdir, queryOptions, sessionId);
+        } finally {
+            copyResults(Paths.get(tmpOutdir), studyId, outputId, sessionId);
+        }
 
         assertEquals(expectedLoadedFiles.size(), etlResults.size());
         checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);
@@ -334,6 +354,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
             assertEquals(Cohort.CohortStatus.READY, defaultCohort.getStatus().getName());
             checkCalculatedStats(studyId, Collections.singletonMap(DEFAULT_COHORT, defaultCohort), catalogManager, dbName, sessionId);
         }
+
 
         // Check transformed file relations
         for (File inputFile : expectedLoadedFiles) {
@@ -353,6 +374,49 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
 
         return etlResults;
+    }
+
+
+    /**
+     * Copy job results in Catalog.
+     * Mock daemon
+     */
+    protected List<File> copyResults(Path tmpOutdirPath, String study, String catalogPathOutDir, String sessionId)
+            throws CatalogException, IOException {
+        File outDir = catalogManager.getFileManager().get(study, catalogPathOutDir, new QueryOptions(), sessionId).first();
+
+        FileScanner fileScanner = new FileScanner(catalogManager);
+//        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutdirPath.toUri());
+
+        List<File> files;
+        try {
+            logger.info("Scanning files from {} to move to {}", tmpOutdirPath, outDir.getUri());
+            // Avoid copy the job.status file!
+            Predicate<URI> fileStatusFilter = uri -> !uri.getPath().endsWith(JOB_STATUS_FILE)
+                    && !uri.getPath().endsWith(AnalysisResultManager.FILE_EXTENSION)
+                    && !uri.getPath().endsWith(OUT_LOG_EXTENSION)
+                    && !uri.getPath().endsWith(ERR_LOG_EXTENSION);
+            files = fileScanner.scan(outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, false, true, fileStatusFilter,
+                    sessionId);
+            System.out.println("files = " + files);
+
+            // TODO: Check whether we want to store the logs as well. At this point, we are also storing them.
+            // Do not execute checksum for log files! They may not be closed yet
+            fileStatusFilter = uri -> uri.getPath().endsWith(OUT_LOG_EXTENSION) || uri.getPath().endsWith(ERR_LOG_EXTENSION);
+            files.addAll(fileScanner.scan(outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, false, false,
+                    fileStatusFilter, sessionId));
+            System.out.println("files2 = " + files);
+
+        } catch (IOException e) {
+            logger.warn("IOException when scanning temporal directory. Error: {}", e.getMessage());
+            throw e;
+        } catch (CatalogException e) {
+            logger.warn("CatalogException when scanning temporal directory. Error: {}", e.getMessage());
+            throw e;
+        }
+        catalogManager.getFileManager().matchUpVariantFiles(study, files, sessionId);
+
+        return files;
     }
 
     protected void checkEtlResults(String studyId, List<StoragePipelineResult> etlResults, String expectedStatus) throws CatalogException {
@@ -375,7 +439,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     protected DummyVariantStorageEngine mockVariantStorageManager() {
         DummyVariantStorageEngine vsm = spy(new DummyVariantStorageEngine());
         vsm.setConfiguration(opencga.getStorageConfiguration(), DummyVariantStorageEngine.STORAGE_ENGINE_ID,
-                StorageOperation.buildDatabaseName(catalogManager.getConfiguration().getDatabasePrefix(), userId, projectAlias));
+                VariantStorageManager.buildDatabaseName(catalogManager.getConfiguration().getDatabasePrefix(), userId, projectAlias));
         StorageEngineFactory.get(opencga.getStorageConfiguration()).registerVariantStorageEngine(vsm);
         vsm.setConfiguration(opencga.getStorageConfiguration(), DummyVariantStorageEngine.STORAGE_ENGINE_ID, DB_NAME);
         StorageEngineFactory.get(opencga.getStorageConfiguration()).registerVariantStorageEngine(vsm);

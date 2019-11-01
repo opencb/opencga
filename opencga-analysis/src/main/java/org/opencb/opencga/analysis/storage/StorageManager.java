@@ -42,7 +42,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.opencb.opencga.analysis.storage.variant.operations.StorageOperation.getDataStore;
+import static org.opencb.opencga.analysis.storage.variant.VariantStorageManager.getDataStore;
 
 
 public abstract class StorageManager {
@@ -93,6 +93,7 @@ public abstract class StorageManager {
         return getStudyInfo(studyIdStr, Collections.singletonList(fileIdStr), sessionId);
     }
 
+    @Deprecated
     protected StudyInfo getStudyInfo(@Nullable String studyIdStr, List<String> fileIdStrs, String sessionId)
             throws CatalogException {
         StudyInfo studyInfo = new StudyInfo().setSessionId(sessionId);

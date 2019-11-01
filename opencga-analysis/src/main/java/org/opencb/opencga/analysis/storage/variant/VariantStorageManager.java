@@ -30,12 +30,15 @@ import org.opencb.biodata.tools.variant.converters.ga4gh.factories.AvroGa4GhVari
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.ProtoGa4GhVariantFactory;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.solr.SolrManager;
+import org.opencb.opencga.analysis.storage.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -64,6 +67,7 @@ import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -173,17 +177,19 @@ public class VariantStorageManager extends StorageManager {
     // --------------------------//
 
     public List<StoragePipelineResult> index(String study, String fileId, String outDir, ObjectMap config, String sessionId)
-            throws CatalogException, StorageEngineException, IOException, URISyntaxException {
+            throws AnalysisException {
         return index(study, Arrays.asList(fileId.split(",")), outDir, config, sessionId);
     }
 
     public List<StoragePipelineResult> index(String study, List<String> files, String outDir, ObjectMap config, String sessionId)
-            throws CatalogException, StorageEngineException, IOException, URISyntaxException {
-        VariantFileIndexerStorageOperation indexOperation = new VariantFileIndexerStorageOperation(catalogManager, storageConfiguration);
+            throws AnalysisException {
+        VariantFileIndexerStorageOperation operation = new VariantFileIndexerStorageOperation();
+        operation.setStudyId(study)
+                .setFiles(files)
+                .setUp(null, catalogManager, this, config, Paths.get(outDir), sessionId)
+                .start();
 
-        QueryOptions options = new QueryOptions(config);
-        StudyInfo studyInfo = getStudyInfo(study, files, sessionId);
-        return indexOperation.index(studyInfo, outDir, options, sessionId);
+        return operation.getStoragePipelineResults();
     }
 
     public void searchIndexSamples(String study, List<String> samples, QueryOptions queryOptions, String sessionId)
@@ -279,7 +285,7 @@ public class VariantStorageManager extends StorageManager {
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
 
-        StorageOperation.updateProjectMetadata(catalogManager, variantStorageEngine.getMetadataManager(), project, sessionId);
+        CatalogStorageMetadataSynchronizer.updateProjectMetadata(catalogManager, variantStorageEngine.getMetadataManager(), project, sessionId);
 
         variantStorageEngine.saveAnnotation(annotationName, params);
     }
@@ -292,7 +298,7 @@ public class VariantStorageManager extends StorageManager {
         VariantStorageEngine variantStorageEngine =
                 storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
 
-        StorageOperation.updateProjectMetadata(catalogManager, variantStorageEngine.getMetadataManager(), project, sessionId);
+        CatalogStorageMetadataSynchronizer.updateProjectMetadata(catalogManager, variantStorageEngine.getMetadataManager(), project, sessionId);
 
         variantStorageEngine.deleteAnnotation(annotationName, params);
     }
@@ -627,11 +633,11 @@ public class VariantStorageManager extends StorageManager {
     }
 
     public DataStore getDataStore(String study, String sessionId) throws CatalogException {
-        return StorageOperation.getDataStore(catalogManager, study, File.Bioformat.VARIANT, sessionId);
+        return getDataStore(catalogManager, study, File.Bioformat.VARIANT, sessionId);
     }
 
     public DataStore getDataStoreByProjectId(String project, String sessionId) throws CatalogException {
-        return StorageOperation.getDataStoreByProjectId(catalogManager, project, File.Bioformat.VARIANT, sessionId);
+        return getDataStoreByProjectId(catalogManager, project, File.Bioformat.VARIANT, sessionId);
     }
 
     protected VariantStorageEngine getVariantStorageEngine(Query query, String sessionId) throws CatalogException, StorageEngineException {
@@ -956,4 +962,66 @@ public class VariantStorageManager extends StorageManager {
         }
         return responses;
     }
+
+    public static DataStore getDataStore(CatalogManager catalogManager, String studyStr, File.Bioformat bioformat, String sessionId)
+            throws CatalogException {
+        Study study = catalogManager.getStudyManager().get(studyStr, new QueryOptions(), sessionId).first();
+        return getDataStore(catalogManager, study, bioformat, sessionId);
+    }
+
+    private static DataStore getDataStore(CatalogManager catalogManager, Study study, File.Bioformat bioformat, String sessionId)
+            throws CatalogException {
+        DataStore dataStore;
+        if (study.getDataStores() != null && study.getDataStores().containsKey(bioformat)) {
+            dataStore = study.getDataStores().get(bioformat);
+        } else {
+            String projectId = catalogManager.getStudyManager().getProjectFqn(study.getFqn());
+            dataStore = getDataStoreByProjectId(catalogManager, projectId, bioformat, sessionId);
+        }
+        return dataStore;
+    }
+
+    public static DataStore getDataStoreByProjectId(CatalogManager catalogManager, String projectStr, File.Bioformat bioformat,
+                                                    String sessionId)
+            throws CatalogException {
+        DataStore dataStore;
+        QueryOptions queryOptions = new QueryOptions(INCLUDE,
+                Arrays.asList(ProjectDBAdaptor.QueryParams.ID.key(), ProjectDBAdaptor.QueryParams.DATASTORES.key()));
+        Project project = catalogManager.getProjectManager().get(projectStr, queryOptions, sessionId).first();
+        if (project.getDataStores() != null && project.getDataStores().containsKey(bioformat)) {
+            dataStore = project.getDataStores().get(bioformat);
+        } else { //get default datastore
+            //Must use the UserByStudyId instead of the file owner.
+            String userId = catalogManager.getProjectManager().getOwner(project.getUid());
+            // Replace possible dots at the userId. Usually a special character in almost all databases. See #532
+            userId = userId.replace('.', '_');
+
+            String databasePrefix = catalogManager.getConfiguration().getDatabasePrefix();
+
+            String dbName = buildDatabaseName(databasePrefix, userId, project.getId());
+            dataStore = new DataStore(StorageEngineFactory.get().getDefaultStorageEngineId(), dbName);
+        }
+        return dataStore;
+    }
+
+    public static String buildDatabaseName(String databasePrefix, String userId, String alias) {
+        String prefix;
+        if (StringUtils.isNotEmpty(databasePrefix)) {
+            prefix = databasePrefix;
+            if (!prefix.endsWith("_")) {
+                prefix += "_";
+            }
+        } else {
+            prefix = "opencga_";
+        }
+        // Project alias contains the userId:
+        // userId@projectAlias
+        int idx = alias.indexOf('@');
+        if (idx >= 0) {
+            alias = alias.substring(idx + 1);
+        }
+
+        return prefix + userId + '_' + alias;
+    }
+
 }

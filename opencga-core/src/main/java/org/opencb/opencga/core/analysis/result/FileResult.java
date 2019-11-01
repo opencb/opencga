@@ -4,6 +4,7 @@ public class FileResult {
     public enum FileType {
         IMAGE,
         JSON,
+        AVRO,
         TAB_SEPARATED // First line starts with # and contains the header
     }
 
