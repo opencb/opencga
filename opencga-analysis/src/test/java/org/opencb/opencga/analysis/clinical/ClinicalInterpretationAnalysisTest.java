@@ -18,6 +18,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -30,6 +31,7 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
 
     Path outDir;
 
+
     @ClassRule
     public static OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
 
@@ -40,16 +42,55 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
     public void setUp() throws Exception {
         clearDB("opencga_test_user_1000G");
         clinicalTest = ClinicalAnalysisUtilsTest.getClinicalTest(catalogManagerResource, getVariantStorageEngine());
-        outDir = Paths.get(opencga.createTmpOutdir("_custom_analysis"));
+    }
+
+    @Test
+    public void tieringAnalysis() throws Exception {
+        outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis"));
+
+        TieringInterpretationConfiguration config = new TieringInterpretationConfiguration();
+        TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis();
+        tieringAnalysis.setUp(catalogManagerResource.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
+        tieringAnalysis.setStudyId(clinicalTest.studyFqn)
+                .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
+                .setPenetrance(ClinicalProperty.Penetrance.COMPLETE)
+                .setConfig(config);
+
+        AnalysisResult result = tieringAnalysis.start();
+
+        System.out.println(result);
+
+        checkInterpretation(0, result);
+    }
+
+    @Test
+    public void teamAnalysis() throws IOException {
+        outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis"));
+
+        try {
+            TeamInterpretationConfiguration config = new TeamInterpretationConfiguration();
+            TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis();
+            teamAnalysis.setUp(catalogManagerResource.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
+            teamAnalysis.setStudyId(clinicalTest.studyFqn)
+                    .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
+                    .setConfig(config);
+
+            teamAnalysis.start();
+
+            fail();
+        } catch (AnalysisException e) {
+            Assert.assertEquals(e.getMessage(), "Missing disease panels for TEAM interpretation analysis");
+        }
     }
 
     @Test
     public void customAnalysisFromClinicalAnalysisTest() throws Exception {
+        outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis"));
+
         //http://re-prod-opencgahadoop-tomcat-01.gel.zone:8080/opencga-test/webservices/rest/v1/analysis/clinical/interpretation/tools/custom?study=100k_genomes_grch38_germline%3ARD38&sid=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJpbWVkaW5hIiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU1MjY1NTYyNCwiZXhwIjoxNTUyNjU3NDI0fQ.6VO2mI_MJn3fejtdqdNi5W8uFa3rVXM2501QzN--Th8&sample=LP3000468-DNA_G06%3BLP3000473-DNA_C10%3BLP3000469-DNA_F03&summary=false&exclude=annotation.geneExpression&approximateCount=false&skipCount=true&useSearchIndex=auto&unknownGenotype=0%2F0&limit=10&skip=0
 //        for (Variant variant : variantStorageManager.iterable(clinicalTest.token)) {
 //            System.out.println("variant = " + variant.toStringSimple());// + ", ALL:maf = " + variant.getStudies().get(0).getStats("ALL").getMaf());
 //        }
-
         Query query = new Query();
         query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "missense_variant");
 
@@ -68,6 +109,8 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
 
     @Test
     public void customAnalysisFromSamplesTest() throws Exception {
+        outDir = Paths.get(opencga.createTmpOutdir("_interpretation_analysis"));
+
         //http://re-prod-opencgahadoop-tomcat-01.gel.zone:8080/opencga-test/webservices/rest/v1/analysis/clinical/interpretation/tools/custom?study=100k_genomes_grch38_germline%3ARD38&sid=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJpbWVkaW5hIiwiYXVkIjoiT3BlbkNHQSB1c2VycyIsImlhdCI6MTU1MjY1NTYyNCwiZXhwIjoxNTUyNjU3NDI0fQ.6VO2mI_MJn3fejtdqdNi5W8uFa3rVXM2501QzN--Th8&sample=LP3000468-DNA_G06%3BLP3000473-DNA_C10%3BLP3000469-DNA_F03&summary=false&exclude=annotation.geneExpression&approximateCount=false&skipCount=true&useSearchIndex=auto&unknownGenotype=0%2F0&limit=10&skip=0
 //        for (Variant variant : variantStorageManager.iterable(clinicalTest.token)) {
 //            System.out.println("variant = " + variant.toStringSimple());// + ", ALL:maf = " + variant.getStudies().get(0).getStats("ALL").getMaf());
@@ -99,41 +142,6 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
         System.out.println(result);
 
         checkInterpretation(12, result);
-    }
-
-    @Test
-    public void tieringAnalysis() throws Exception {
-        TieringInterpretationConfiguration config = new TieringInterpretationConfiguration();
-        TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis();
-        tieringAnalysis.setUp(catalogManagerResource.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
-        tieringAnalysis.setStudyId(clinicalTest.studyFqn)
-                .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
-                .setPenetrance(ClinicalProperty.Penetrance.COMPLETE)
-                .setConfig(config);
-
-        AnalysisResult result = tieringAnalysis.start();
-
-        System.out.println(result);
-
-        checkInterpretation(0, result);
-    }
-
-    @Test
-    public void teamAnalysis() {
-        try {
-            TeamInterpretationConfiguration config = new TeamInterpretationConfiguration();
-            TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis();
-            teamAnalysis.setUp(catalogManagerResource.getOpencgaHome().toString(), new ObjectMap(), outDir, clinicalTest.token);
-            teamAnalysis.setStudyId(clinicalTest.studyFqn)
-                    .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
-                    .setConfig(config);
-
-            teamAnalysis.start();
-
-            fail();
-        } catch (AnalysisException e) {
-            Assert.assertEquals(e.getMessage(), "Missing disease panels for TEAM interpretation analysis");
-        }
     }
 
     private void checkInterpretation(int expected, AnalysisResult result) throws AnalysisException {

@@ -82,10 +82,8 @@ public class TieringInterpretationAnalysis extends InterpretationAnalysis {
     @Override
     protected void run() throws AnalysisException {
         step(() -> {
-            TieringInterpretationAnalysisExecutor executor = new TieringInterpretationAnalysisExecutor();
-            setUpAnalysisExecutor(executor);
-
-            executor.setStudyId(studyId)
+            getAnalysisExecutor(TieringInterpretationAnalysisExecutor.class)
+                    .setStudyId(studyId)
                     .setClinicalAnalysisId(clinicalAnalysisId)
                     .setDiseasePanels(diseasePanels)
                     .setPenetrance(penetrance)

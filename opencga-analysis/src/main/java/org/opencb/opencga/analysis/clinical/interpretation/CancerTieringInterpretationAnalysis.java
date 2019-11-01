@@ -73,16 +73,14 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
     @Override
     protected void run() throws AnalysisException {
         step(() -> {
-            CancerTieringInterpretationAnalysisExecutor executor = new CancerTieringInterpretationAnalysisExecutor();
-            setUpAnalysisExecutor(executor);
-
-            executor.setStudyId(studyId)
+            getAnalysisExecutor(CancerTieringInterpretationAnalysisExecutor.class)
+                    .setStudyId(studyId)
                     .setClinicalAnalysisId(clinicalAnalysisId)
                     .setVariantIdsToDiscard(variantIdsToDiscard)
                     .setConfig(config)
                     .execute();
 
-                saveInterpretation(studyId, clinicalAnalysis, null, null, config);
+            saveInterpretation(studyId, clinicalAnalysis, null, null, config);
         });
     }
 

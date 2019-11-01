@@ -21,6 +21,7 @@ import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.analysis.variant.GwasAnalysisExecutor;
 import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
@@ -138,10 +139,8 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
     @Override
     protected void run() throws AnalysisException {
         step(() -> {
-            CustomInterpretationAnalysisExecutor executor = new CustomInterpretationAnalysisExecutor();
-            setUpAnalysisExecutor(executor);
-
-            executor.setClinicalAnalysisId(clinicalAnalysisId)
+            getAnalysisExecutor(CustomInterpretationAnalysisExecutor.class)
+                    .setClinicalAnalysisId(clinicalAnalysisId)
                     .setQuery(query)
                     .setQueryOptions(queryOptions)
                     .setConfig(config)

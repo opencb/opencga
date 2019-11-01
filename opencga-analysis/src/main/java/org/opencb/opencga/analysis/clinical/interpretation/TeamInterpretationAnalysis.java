@@ -93,10 +93,8 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
     @Override
     protected void run() throws AnalysisException {
         step(() -> {
-            TeamInterpretationAnalysisExecutor executor = new TeamInterpretationAnalysisExecutor();
-            setUpAnalysisExecutor(executor);
-
-            executor.setStudyId(studyId)
+            getAnalysisExecutor(TeamInterpretationAnalysisExecutor.class)
+                    .setStudyId(studyId)
                     .setClinicalAnalysisId(clinicalAnalysisId)
                     .setDiseasePanels(diseasePanels)
                     .setMoi(moi)

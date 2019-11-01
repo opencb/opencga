@@ -83,13 +83,13 @@ public abstract class OpenCgaAnalysis {
     }
 
     public void setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
-                                       ObjectMap params, Path outDir, String sessionId) {
+                      ObjectMap params, Path outDir, String sessionId) {
         VariantStorageManager manager = new VariantStorageManager(catalogManager, engineFactory);
         setUp(opencgaHome, catalogManager, manager, params, outDir, sessionId);
     }
 
     public void setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
-                                       ObjectMap params, Path outDir, String sessionId) {
+                      ObjectMap params, Path outDir, String sessionId) {
         this.opencgaHome = opencgaHome;
         this.catalogManager = catalogManager;
         this.configuration = catalogManager.getConfiguration();
@@ -447,23 +447,7 @@ public abstract class OpenCgaAnalysis {
         }
     }
 
-    protected final <T extends OpenCgaAnalysisExecutor> T setUpAnalysisExecutor(T t) throws AnalysisException {
-        String executorId = t.getId();
-        if (executorParams == null) {
-            executorParams = new ObjectMap();
-        }
-        executorParams.put(EXECUTOR_ID, executorId);
-
-        // Update executor ID
-        if (arm != null) {
-            arm.setExecutorInfo(new ExecutorInfo(executorId, t.getClass(), executorParams, t.getSource(), t.getFramework()));
-        }
-        t.setUp(arm, executorParams, outDir);
-
-        return t;
-    }
-
-            protected final void setUpStorageEngineExecutor(String study) throws AnalysisException {
+    protected final void setUpStorageEngineExecutor(String study) throws AnalysisException {
         executorParams.put("opencgaHome", opencgaHome);
         executorParams.put("sessionId", sessionId);
         try {
