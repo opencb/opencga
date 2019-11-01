@@ -84,6 +84,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         }
 
         Map<String, String> params = new LinkedHashMap<>();
+        params.put("file", fileIdStr);
         addParamIfTrue(params, "transform", transform);
         addParamIfTrue(params, "load", load);
         addParamIfNotNull(params, "outdir", outDirStr);
@@ -91,8 +92,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         logger.info("ObjectMap: {}", params);
 
         try {
-            List<String> idList = getIdList(fileIdStr);
-            DataResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "BAM", params, token);
+            DataResult queryResult = catalogManager.getJobManager().register(studyStr, "alignment", "index", params, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

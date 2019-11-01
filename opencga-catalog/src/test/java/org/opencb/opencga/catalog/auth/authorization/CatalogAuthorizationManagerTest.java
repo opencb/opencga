@@ -867,7 +867,6 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void getAllJobs() throws CatalogException {
         Job job = new Job()
                 .setId("job1")
-                .setToolId("toolId")
                 .setOutDir(new File().setPath(data_d1_d2));
         long job1 = catalogManager.getJobManager().create(studyFqn, job, null, ownerSessionId).first().getUid();
 

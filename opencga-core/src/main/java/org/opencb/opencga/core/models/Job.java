@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.analysis.result.AnalysisResult;
 
-import java.util.*;
-
-import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -28,147 +28,93 @@ import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
 public class Job extends PrivateStudyUid {
 
     private String id;
-    private String name;
     private String uuid;
-
-    /**
-     * Id of the user that created the job.
-     */
-    private String userId;
-
-    private String toolId;
-
-    private Type type;
-    /**
-     * Job creation date.
-     */
-    private String creationDate;
-    private String modificationDate;
+    private String name;
     private String description;
 
-    /**
-     * Start time in milliseconds.
-     */
-    private long startTime;
-
-    /**
-     * End time in milliseconds.
-     */
-    private long endTime;
-    private String execution;
-    @Deprecated
-    private String executable;
+    private String userId;
     private String commandLine;
-    private boolean visited;
+
+    private Map<String, String> params;
+
+    private String creationDate;
+    private String modificationDate;
+
     private JobStatus status;
-    private long size;
+
     private File outDir;
+    private File tmpDir;
     private List<File> input;    // input files to this job
     private List<File> output;   // output files of this job
     private List<String> tags;
 
-    private File stdOutput;
-    private File stdError;
+    private AnalysisResult result;
 
-    private Map<String, String> params;
-    private Map<String, Object> resourceManagerAttributes;
+    private File log;
+    private File errorLog;
 
     private int release;
     private Map<String, Object> attributes;
 
-
-    /* Attributes known keys */
-    @Deprecated
-    public static final String TYPE = "type";
-    public static final String INDEXED_FILE_ID = "indexedFileId";
-
-    public static final String OPENCGA_OUTPUT_DIR = "OPENCGA_OUTPUT_DIR";
-    public static final String OPENCGA_TMP_DIR = "OPENCGA_TMP_DIR";
+    public static final String OPENCGA_COMMAND = "OPENCGA_COMMAND";
+    public static final String OPENCGA_SUBCOMMAND = "OPENCGA_SUBCOMMAND";
     public static final String OPENCGA_STUDY = "OPENCGA_STUDY";
-
-    /* ResourceManagerAttributes known keys */
-    public static final String JOB_SCHEDULER_NAME = "jobSchedulerName";
-    /* Errors */
-    public static final Map<String, String> ERROR_DESCRIPTIONS;
-    public static final String ERRNO_NONE = null;
-    public static final String ERRNO_NO_QUEUE = "ERRNO_NO_QUEUE";
-    public static final String ERRNO_FINISH_ERROR = "ERRNO_FINISH_ERROR";
-    public static final String ERRNO_ABORTED = "ERRNO_ABORTED";
-
-    static {
-        HashMap<String, String> map = new HashMap<>();
-        map.put(ERRNO_NONE, null);
-        map.put(ERRNO_NO_QUEUE, "Unable to queue job");
-        map.put(ERRNO_FINISH_ERROR, "Job finished with exit value != 0");
-        map.put(ERRNO_ABORTED, "Job aborted");
-        ERROR_DESCRIPTIONS = Collections.unmodifiableMap(map);
-    }
-
+    public static final String OPENCGA_PARENTS = "OPENCGA_PARENTS";
+//    public static final String OPENCGA_TMP_DIR = "OPENCGA_TMP_DIR";
+//
+//    /* ResourceManagerAttributes known keys */
+//    public static final String JOB_SCHEDULER_NAME = "jobSchedulerName";
+//    /* Errors */
+//    public static final Map<String, String> ERROR_DESCRIPTIONS;
+//    public static final String ERRNO_NONE = null;
+//    public static final String ERRNO_NO_QUEUE = "ERRNO_NO_QUEUE";
+//    public static final String ERRNO_FINISH_ERROR = "ERRNO_FINISH_ERROR";
+//    public static final String ERRNO_ABORTED = "ERRNO_ABORTED";
+//
+//    static {
+//        HashMap<String, String> map = new HashMap<>();
+//        map.put(ERRNO_NONE, null);
+//        map.put(ERRNO_NO_QUEUE, "Unable to queue job");
+//        map.put(ERRNO_FINISH_ERROR, "Job finished with exit value != 0");
+//        map.put(ERRNO_ABORTED, "Job aborted");
+//        ERROR_DESCRIPTIONS = Collections.unmodifiableMap(map);
+//    }
 
     public Job() {
     }
 
-    public Job(String name, String toolId, String execution, Type type, String description, Map<String, String> params,
+    public Job(String id, String uuid, String name, String description, String userId, String commandLine, Map<String, String> params,
+               String creationDate, String modificationDate, JobStatus status, File outDir, File tmpDir, List<File> input,
+               List<File> output, List<String> tags, AnalysisResult result, File log, File errorLog, int release,
                Map<String, Object> attributes) {
-        this(-1, name, name, "", toolId, type, TimeUtils.getTime(), description, -1, -1, execution, "", "", false, new JobStatus(), -1,
-                null, null, null, null, params, -1, attributes, null);
-    }
-
-    public Job(String name, String userId, String executable, Type type, List<File> input, List<File> output, File outDir,
-               Map<String, String> params, int release) {
-        this(-1, name, name, userId, "", type, TimeUtils.getTime(), "", -1, -1, "", executable, "", false,
-                new JobStatus(JobStatus.PREPARED), -1, outDir, input, output, null, params, release, null, null);
-    }
-
-    public Job(String name, String userId, String toolName, String description, String commandLine, File outDir, List<File> input,
-               int release) {
-        // FIXME: Modify this to take into account both toolName and executable for RC2
-        this(-1, name, name, userId, toolName, Type.ANALYSIS, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, null, null,
-                commandLine, false, new JobStatus(JobStatus.PREPARED), 0, outDir, input, null, null, null, release, null, null);
-
-
-    }
-
-    public Job(long uid, String id, String name, String userId, String toolId, Type type, String creationDate, String description,
-               long startTime, long endTime, String execution, String executable, String commandLine, boolean visited, JobStatus status,
-               long size, File outDir, List<File> input, List<File> output, List<String> tags, Map<String, String> params, int release,
-               Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
-        super(uid);
         this.id = id;
+        this.uuid = uuid;
         this.name = name;
-        this.userId = userId;
-        this.toolId = toolId;
-        this.type = type;
-        this.creationDate = creationDate;
         this.description = description;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.execution = execution != null ? execution : "";
-        this.executable = executable != null ? executable : "";
+        this.userId = userId;
         this.commandLine = commandLine;
-        this.visited = visited;
-        this.status = status;
-        this.size = size;
-        this.outDir = outDir;
-        this.input = defaultObject(input, ArrayList::new);
-        this.output = defaultObject(output, ArrayList::new);
-        this.tags = defaultObject(tags, ArrayList::new);
         this.params = params;
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
+        this.status = status;
+        this.outDir = outDir;
+        this.tmpDir = tmpDir;
+        this.input = input;
+        this.output = output;
+        this.tags = tags;
+        this.result = result;
+        this.log = log;
+        this.errorLog = errorLog;
         this.release = release;
-        this.attributes = defaultObject(attributes, HashMap::new);
-        this.resourceManagerAttributes = defaultObject(resourceManagerAttributes, HashMap::new);
-        this.params = defaultObject(params, HashMap::new);
-        this.release = release;
-        this.resourceManagerAttributes.putIfAbsent(Job.JOB_SCHEDULER_NAME, "");
-//        this.attributes.putIfAbsent(Job.TYPE, Type.ANALYSIS);
+        this.attributes = attributes;
     }
 
     public static class JobStatus extends Status {
 
         /**
-         * PREPARED status means that the job is ready to be put into the queue.
+         * PENDING status means that the job is ready to be put into the queue.
          */
-        public static final String PREPARED = "PREPARED";
+        public static final String PENDING = "PENDING";
         /**
          * QUEUED status means that the job is waiting on the queue to have an available slot for execution.
          */
@@ -178,7 +124,7 @@ public class Job extends PrivateStudyUid {
          */
         public static final String RUNNING = "RUNNING";
         /**
-         * DONE status means that the job has finished the execution, but the output is still not ready.
+         * DONE status means that the job has finished the execution and everything finished successfully.
          */
         public static final String DONE = "DONE";
         /**
@@ -189,8 +135,22 @@ public class Job extends PrivateStudyUid {
          * UNKNOWN status means that the job status could not be obtained.
          */
         public static final String UNKNOWN = "UNKNOWN";
+        /**
+         * ABORTED status means that the job was aborted and could not be executed.
+         */
+        public static final String ABORTED = "ABORTED";
+        /**
+         * REGISTERING status means that the job status could not be obtained.
+         */
+        public static final String REGISTERING = "REGISTERING";
+        /**
+         * UNREGISTERED status means that the job status could not be obtained.
+         */
+        public static final String UNREGISTERED = "UNREGISTERED";
 
-        public static final List<String> STATUS_LIST = Arrays.asList(READY, DELETED, PREPARED, QUEUED, RUNNING, DONE, ERROR, UNKNOWN);
+
+        public static final List<String> STATUS_LIST = Arrays.asList(PENDING, QUEUED, RUNNING, DONE, ERROR, UNKNOWN, REGISTERING,
+                UNREGISTERED, ABORTED, DELETED);
 
         public JobStatus(String status, String message) {
             if (isValid(status)) {
@@ -205,59 +165,52 @@ public class Job extends PrivateStudyUid {
         }
 
         public JobStatus() {
-            this(PREPARED, "");
+            this(PENDING, "");
         }
+
 
         public static boolean isValid(String status) {
             if (Status.isValid(status)) {
                 return true;
             }
-            if (status != null && (status.equals(PREPARED) || status.equals(QUEUED) || status.equals(RUNNING) || status.equals(DONE)
-                    || status.equals(ERROR) || status.equals(UNKNOWN))) {
+            if (status != null && STATUS_LIST.contains(status)) {
                 return true;
             }
             return false;
         }
-
-    }
-
-    public enum Type {
-        INDEX,
-        ANALYSIS
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Job{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", description='").append(description).append('\'');
         sb.append(", userId='").append(userId).append('\'');
-        sb.append(", toolId='").append(toolId).append('\'');
-        sb.append(", type=").append(type);
+        sb.append(", commandLine='").append(commandLine).append('\'');
+        sb.append(", params=").append(params);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
-        sb.append(", description='").append(description).append('\'');
-        sb.append(", startTime=").append(startTime);
-        sb.append(", endTime=").append(endTime);
-        sb.append(", execution='").append(execution).append('\'');
-        sb.append(", executable='").append(executable).append('\'');
-        sb.append(", commandLine='").append(commandLine).append('\'');
-        sb.append(", visited=").append(visited);
         sb.append(", status=").append(status);
-        sb.append(", size=").append(size);
         sb.append(", outDir=").append(outDir);
+        sb.append(", tmpDir=").append(tmpDir);
         sb.append(", input=").append(input);
         sb.append(", output=").append(output);
         sb.append(", tags=").append(tags);
-        sb.append(", stdOutput=").append(stdOutput);
-        sb.append(", stdError=").append(stdError);
-        sb.append(", params=").append(params);
-        sb.append(", resourceManagerAttributes=").append(resourceManagerAttributes);
+        sb.append(", result=").append(result);
+        sb.append(", log=").append(log);
+        sb.append(", errorLog=").append(errorLog);
         sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
+    }
+
+    @Override
+    public Job setStudyUid(long studyUid) {
+        super.setStudyUid(studyUid);
+        return this;
     }
 
     @Override
@@ -267,26 +220,23 @@ public class Job extends PrivateStudyUid {
     }
 
     @Override
-    public Job setStudyUid(long studyUid) {
-        super.setStudyUid(studyUid);
+    public String getId() {
+        return id;
+    }
+
+    @Override
+    public Job setId(String id) {
+        this.id = id;
         return this;
     }
 
+    @Override
     public String getUuid() {
         return uuid;
     }
 
     public Job setUuid(String uuid) {
         this.uuid = uuid;
-        return this;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public Job setId(String id) {
-        this.id = id;
         return this;
     }
 
@@ -299,6 +249,15 @@ public class Job extends PrivateStudyUid {
         return this;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public Job setDescription(String description) {
+        this.description = description;
+        return this;
+    }
+
     public String getUserId() {
         return userId;
     }
@@ -308,21 +267,21 @@ public class Job extends PrivateStudyUid {
         return this;
     }
 
-    public Type getType() {
-        return type;
+    public String getCommandLine() {
+        return commandLine;
     }
 
-    public Job setType(Type type) {
-        this.type = type;
+    public Job setCommandLine(String commandLine) {
+        this.commandLine = commandLine;
         return this;
     }
 
-    public String getExecutable() {
-        return executable;
+    public Map<String, String> getParams() {
+        return params;
     }
 
-    public Job setExecutable(String executable) {
-        this.executable = executable;
+    public Job setParams(Map<String, String> params) {
+        this.params = params;
         return this;
     }
 
@@ -344,60 +303,6 @@ public class Job extends PrivateStudyUid {
         return this;
     }
 
-    public String getDescription() {
-        return description;
-    }
-
-    public Job setDescription(String description) {
-        this.description = description;
-        return this;
-    }
-
-    public long getStartTime() {
-        return startTime;
-    }
-
-    public Job setStartTime(long startTime) {
-        this.startTime = startTime;
-        return this;
-    }
-
-    public long getEndTime() {
-        return endTime;
-    }
-
-    public Job setEndTime(long endTime) {
-        this.endTime = endTime;
-        return this;
-    }
-
-    public String getExecution() {
-        return execution;
-    }
-
-    public Job setExecution(String execution) {
-        this.execution = execution;
-        return this;
-    }
-
-    public String getCommandLine() {
-        return commandLine;
-    }
-
-    public Job setCommandLine(String commandLine) {
-        this.commandLine = commandLine;
-        return this;
-    }
-
-    public boolean isVisited() {
-        return visited;
-    }
-
-    public Job setVisited(boolean visited) {
-        this.visited = visited;
-        return this;
-    }
-
     public JobStatus getStatus() {
         return status;
     }
@@ -407,21 +312,21 @@ public class Job extends PrivateStudyUid {
         return this;
     }
 
-    public long getSize() {
-        return size;
-    }
-
-    public Job setSize(long size) {
-        this.size = size;
-        return this;
-    }
-
     public File getOutDir() {
         return outDir;
     }
 
     public Job setOutDir(File outDir) {
         this.outDir = outDir;
+        return this;
+    }
+
+    public File getTmpDir() {
+        return tmpDir;
+    }
+
+    public Job setTmpDir(File tmpDir) {
+        this.tmpDir = tmpDir;
         return this;
     }
 
@@ -452,30 +357,30 @@ public class Job extends PrivateStudyUid {
         return this;
     }
 
-    public Map<String, String> getParams() {
-        return params;
+    public AnalysisResult getResult() {
+        return result;
     }
 
-    public Job setParams(Map<String, String> params) {
-        this.params = params;
+    public Job setResult(AnalysisResult result) {
+        this.result = result;
         return this;
     }
 
-    public File getStdOutput() {
-        return stdOutput;
+    public File getLog() {
+        return log;
     }
 
-    public Job setStdOutput(File stdOutput) {
-        this.stdOutput = stdOutput;
+    public Job setLog(File log) {
+        this.log = log;
         return this;
     }
 
-    public File getStdError() {
-        return stdError;
+    public File getErrorLog() {
+        return errorLog;
     }
 
-    public Job setStdError(File stdError) {
-        this.stdError = stdError;
+    public Job setErrorLog(File errorLog) {
+        this.errorLog = errorLog;
         return this;
     }
 
@@ -496,23 +401,4 @@ public class Job extends PrivateStudyUid {
         this.attributes = attributes;
         return this;
     }
-
-    public Map<String, Object> getResourceManagerAttributes() {
-        return resourceManagerAttributes;
-    }
-
-    public Job setResourceManagerAttributes(Map<String, Object> resourceManagerAttributes) {
-        this.resourceManagerAttributes = resourceManagerAttributes;
-        return this;
-    }
-
-    public String getToolId() {
-        return toolId;
-    }
-
-    public Job setToolId(String toolId) {
-        this.toolId = toolId;
-        return this;
-    }
-
 }

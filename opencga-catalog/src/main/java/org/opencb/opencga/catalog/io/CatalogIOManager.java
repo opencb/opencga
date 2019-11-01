@@ -153,7 +153,7 @@ public abstract class CatalogIOManager {
 
     public abstract void copyFile(URI source, URI target) throws IOException, CatalogIOException;
 
-    public abstract void moveFile(URI source, URI target) throws IOException, CatalogIOException;
+    public abstract void moveFile(URI source, URI target) throws CatalogIOException;
 
 
     public URI getUsersUri() throws CatalogIOException {

@@ -38,7 +38,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.JobAclEntry;
@@ -369,36 +368,50 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     private Document getValidatedUpdateParams(ObjectMap parameters) throws CatalogDBException {
         Document jobParameters = new Document();
 
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.USER_ID.key(), QueryParams.TOOL_NAME.key(),
-                QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(), QueryParams.OUTPUT_ERROR.key(),
-                QueryParams.COMMAND_LINE.key(), QueryParams.ERROR.key(), QueryParams.ERROR_DESCRIPTION.key(),
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.USER_ID.key(), QueryParams.DESCRIPTION.key(),
+                QueryParams.COMMAND_LINE.key(),
         };
         filterStringParams(parameters, jobParameters, acceptedParams);
+
+        String[] acceptedStringListParams = {QueryParams.TAGS.key()};
+        filterStringListParams(parameters, jobParameters, acceptedStringListParams);
 
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
             jobParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             jobParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
-        if (parameters.containsKey(QueryParams.STATUS.key()) && parameters.get(QueryParams.STATUS.key()) instanceof Job.JobStatus) {
-            jobParameters.put(QueryParams.STATUS.key(), getMongoDBDocument(parameters.get(QueryParams.STATUS.key()), "Job.JobStatus"));
+        if (parameters.containsKey(QueryParams.STATUS.key())) {
+            if (parameters.get(QueryParams.STATUS.key()) instanceof Job.JobStatus) {
+                jobParameters.put(QueryParams.STATUS.key(), getMongoDBDocument(parameters.get(QueryParams.STATUS.key()), "Job.JobStatus"));
+            } else {
+                jobParameters.put(QueryParams.STATUS.key(), parameters.get(QueryParams.STATUS.key()));
+            }
         }
 
-        String[] acceptedBooleanParams = {QueryParams.VISITED.key(), };
-        filterBooleanParams(parameters, jobParameters, acceptedBooleanParams);
-
-        String[] acceptedLongParams = {QueryParams.START_TIME.key(), QueryParams.END_TIME.key(), QueryParams.SIZE.key(),
-                QueryParams.OUT_DIR_UID.key(), };
-        filterLongParams(parameters, jobParameters, acceptedLongParams);
-
         if (parameters.containsKey(QueryParams.INPUT.key())) {
-            List<File> fileList = parameters.getAsList(QueryParams.INPUT.key(), File.class);
+            List<Object> fileList = parameters.getList(QueryParams.INPUT.key());
             jobParameters.put(QueryParams.INPUT.key(), jobConverter.convertFilesToDocument(fileList));
         }
         if (parameters.containsKey(QueryParams.OUTPUT.key())) {
-            List<File> fileList = parameters.getAsList(QueryParams.OUTPUT.key(), File.class);
+            List<Object> fileList = parameters.getList(QueryParams.OUTPUT.key());
             jobParameters.put(QueryParams.OUTPUT.key(), jobConverter.convertFilesToDocument(fileList));
         }
+        if (parameters.containsKey(QueryParams.OUT_DIR.key())) {
+            jobParameters.put(QueryParams.OUT_DIR.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.OUT_DIR.key())));
+        }
+        if (parameters.containsKey(QueryParams.TMP_DIR.key())) {
+            jobParameters.put(QueryParams.TMP_DIR.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.TMP_DIR.key())));
+        }
+        if (parameters.containsKey(QueryParams.LOG.key())) {
+            jobParameters.put(QueryParams.LOG.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.LOG.key())));
+        }
+        if (parameters.containsKey(QueryParams.ERROR_LOG.key())) {
+            jobParameters.put(QueryParams.ERROR_LOG.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.ERROR_LOG.key())));
+        }
+
+        String[] acceptedObjectParams = {QueryParams.RESULT.key()};
+        filterObjectParams(parameters, jobParameters, acceptedObjectParams);
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key()};
         filterMapParams(parameters, jobParameters, acceptedMapParams);

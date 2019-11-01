@@ -194,9 +194,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         ObjectMap attributes = new ObjectMap();
         attributes.putIfNotNull(Job.OPENCGA_STUDY, study.getFqn());
 
-        return catalogManager.getJobManager().queue(studyStr, "Interpretation analysis", "opencga-analysis", "",
-                "interpretation " + interpretationTool, Job.Type.ANALYSIS, params, Collections.emptyList(), Collections.emptyList(), null,
-                attributes, token);
+        return catalogManager.getJobManager().register(studyStr, "interpretation", interpretationTool, params, token);
     }
 
     public OpenCGAResult<Interpretation> create(String studyStr, Interpretation entry, QueryOptions options, String sessionId)

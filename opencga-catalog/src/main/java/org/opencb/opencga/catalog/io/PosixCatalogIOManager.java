@@ -215,10 +215,15 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public void moveFile(URI source, URI target) throws IOException, CatalogIOException {
+    public void moveFile(URI source, URI target) throws CatalogIOException {
         checkUriExists(source);
         if (source.getScheme().equals("file") && target.getScheme().equals("file")) {
-            Files.move(Paths.get(source), Paths.get(target), StandardCopyOption.REPLACE_EXISTING);
+            try {
+                Files.move(Paths.get(source), Paths.get(target), StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                throw new CatalogIOException("Can't move from " + source.getScheme() + " to " + target.getScheme() + ": " + e.getMessage(),
+                        e.getCause());
+            }
         } else {
             throw new CatalogIOException("Can't move from " + source.getScheme() + " to " + target.getScheme());
         }

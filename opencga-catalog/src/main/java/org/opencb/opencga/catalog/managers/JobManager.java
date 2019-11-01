@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
+import org.opencb.opencga.catalog.models.update.JobUpdateParams;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -41,7 +42,6 @@ import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
@@ -50,7 +50,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.net.URI;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -176,7 +175,7 @@ public class JobManager extends ResourceManager<Job> {
         ParamUtils.checkObj(sessionId, "session id");
 
         if (job.getStudyUid() <= 0) {
-            throw new CatalogException("Missing study uid field in file");
+            throw new CatalogException("Missing study uid field in job");
         }
 
         String user = catalogManager.getUserManager().getUserId(sessionId);
@@ -190,7 +189,6 @@ public class JobManager extends ResourceManager<Job> {
             throw new CatalogException("Incorrect study uid");
         }
     }
-
 
     public OpenCGAResult<Job> visit(String studyId, String jobId, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
@@ -219,32 +217,6 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
-    @Deprecated
-    public OpenCGAResult<Job> create(long studyId, String name, String toolName, String description, String executor,
-                                  Map<String, String> params, String commandLine, URI tmpOutDirUri, long outDirId,
-                                  List<File> inputFiles, List<File> outputFiles, Map<String, Object> attributes,
-                                  Map<String, Object> resourceManagerAttributes, Job.JobStatus status, long startTime,
-                                  long endTime, QueryOptions options, String sessionId) throws CatalogException {
-        Job job = new Job(-1, null, name, "", toolName, null, "", description, startTime, endTime, executor, "", commandLine, false, status,
-                -1, new File().setUid(outDirId), inputFiles, outputFiles, Collections.emptyList(), params, -1, attributes,
-                resourceManagerAttributes);
-        return create(String.valueOf(studyId), job, options, sessionId);
-    }
-
-    public OpenCGAResult<Job> create(String studyStr, String jobName, String description, String toolId, String execution, String outDir,
-                                  Map<String, String> params, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(toolId, "toolId");
-        if (StringUtils.isEmpty(jobName)) {
-            jobName = toolId + "_" + TimeUtils.getTime();
-        }
-        ObjectMap attributes = new ObjectMap();
-        attributes.putIfNotNull(Job.OPENCGA_OUTPUT_DIR, outDir);
-        attributes.putIfNotNull(Job.OPENCGA_STUDY, studyStr);
-        Job job = new Job(jobName, toolId, execution, Job.Type.ANALYSIS, description, params, attributes);
-
-        return create(studyStr, job, QueryOptions.empty(), sessionId);
-    }
-
     @Override
     public OpenCGAResult<Job> create(String studyStr, Job job, QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
@@ -259,57 +231,56 @@ public class JobManager extends ResourceManager<Job> {
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
             ParamUtils.checkObj(job, "Job");
-            ParamUtils.checkParameter(job.getToolId(), "toolId");
-            job.setId(ParamUtils.defaultString(job.getId(), job.getToolId() + "_" + TimeUtils.getTimeMillis()));
-//        ParamUtils.checkParameter(job.getCommandLine(), "commandLine");
-//        ParamUtils.checkObj(job.getOutDir(), "outDir");
+            ParamUtils.checkAlias(job.getId(), "job id");
+            job.setName(ParamUtils.defaultString(job.getName(), ""));
             job.setDescription(ParamUtils.defaultString(job.getDescription(), ""));
+            job.setCommandLine(ParamUtils.defaultString(job.getCommandLine(), ""));
             job.setCreationDate(ParamUtils.defaultString(job.getCreationDate(), TimeUtils.getTime()));
-            job.setStatus(ParamUtils.defaultObject(job.getStatus(), new Job.JobStatus(Job.JobStatus.PREPARED)));
+            job.setStatus(ParamUtils.defaultObject(job.getStatus(), new Job.JobStatus(Job.JobStatus.DONE)));
             job.setInput(ParamUtils.defaultObject(job.getInput(), Collections.emptyList()));
             job.setOutput(ParamUtils.defaultObject(job.getOutput(), Collections.emptyList()));
-            job.setExecution(ParamUtils.defaultObject(job.getExecution(), ""));
             job.setParams(ParamUtils.defaultObject(job.getParams(), HashMap::new));
-            job.setResourceManagerAttributes(ParamUtils.defaultObject(job.getResourceManagerAttributes(), HashMap::new));
             job.setAttributes(ParamUtils.defaultObject(job.getAttributes(), HashMap::new));
             job.setUserId(userId);
             job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
             job.setOutDir(job.getOutDir() != null && StringUtils.isNotEmpty(job.getOutDir().getPath()) ? job.getOutDir() : null);
 
-            // FIXME check inputFiles? is a null conceptually valid?
-//        URI tmpOutDirUri = createJobOutdir(studyId, randomString, sessionId);
+            if (!Arrays.asList(Job.JobStatus.ABORTED, Job.JobStatus.DONE, Job.JobStatus.UNREGISTERED, Job.JobStatus.ERROR)
+                    .contains(job.getStatus().getName())) {
+                throw new CatalogException("Cannot create a job in a status different from one of the final ones.");
+            }
 
             if (ListUtils.isNotEmpty(job.getInput())) {
-                List<String> inputFileStringList = new ArrayList<>(job.getInput().size());
-                for (File inputFile : job.getInput()) {
-                    inputFileStringList.add(StringUtils.isEmpty(inputFile.getPath()) ? inputFile.getName() : inputFile.getPath());
+                List<File> inputFiles = new ArrayList<>(job.getInput().size());
+                for (File file : job.getInput()) {
+                    inputFiles.add(getFile(study.getUid(), file.getPath(), userId));
                 }
-                List<File> inputFileList = catalogManager.getFileManager().internalGet(study.getUid(), inputFileStringList,
-                        QueryOptions.empty(), userId, false).getResults();
-                job.setInput(inputFileList);
+                job.setInput(inputFiles);
             }
-
             if (ListUtils.isNotEmpty(job.getOutput())) {
-                List<String> outputFileStringList = new ArrayList<>(job.getOutput().size());
-                for (File outputFile : job.getOutput()) {
-                    outputFileStringList.add(StringUtils.isEmpty(outputFile.getPath()) ? outputFile.getName() : outputFile.getPath());
+                List<File> outputFiles = new ArrayList<>(job.getOutput().size());
+                for (File file : job.getOutput()) {
+                    outputFiles.add(getFile(study.getUid(), file.getPath(), userId));
                 }
-                List<File> outputFileList = catalogManager.getFileManager().internalGet(study.getUid(), outputFileStringList,
-                        QueryOptions.empty(), userId, false).getResults();
-                job.setOutput(outputFileList);
+                job.setOutput(outputFiles);
             }
-
-            if (job.getOutDir() != null) {
-                String fileName = StringUtils.isNotEmpty(job.getOutDir().getPath()) ? job.getOutDir().getPath() : job.getOutDir().getName();
-                File file = catalogManager.getFileManager().internalGet(study.getUid(), fileName, QueryOptions.empty(), userId).first();
-
-                authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
-
-                if (!file.getType().equals(File.Type.DIRECTORY)) {
-                    throw new CatalogException("Bad outDir type. Required type : " + File.Type.DIRECTORY);
+            if (job.getOutDir() != null && StringUtils.isNotEmpty(job.getOutDir().getPath())) {
+                job.setOutDir(getFile(study.getUid(), job.getOutDir().getPath(), userId));
+                if (job.getOutDir().getType() != File.Type.DIRECTORY) {
+                    throw new CatalogException("Unexpected outDir type. Expected " + File.Type.DIRECTORY);
                 }
-
-                job.setOutDir(file);
+            }
+            if (job.getTmpDir() != null && StringUtils.isNotEmpty(job.getTmpDir().getPath())) {
+                job.setTmpDir(getFile(study.getUid(), job.getTmpDir().getPath(), userId));
+                if (job.getTmpDir().getType() != File.Type.DIRECTORY) {
+                    throw new CatalogException("Unexpected tmpDir type. Expected " + File.Type.DIRECTORY);
+                }
+            }
+            if (job.getLog() != null && StringUtils.isNotEmpty(job.getLog().getPath())) {
+                job.setLog(getFile(study.getUid(), job.getLog().getPath(), userId));
+            }
+            if (job.getErrorLog() != null && StringUtils.isNotEmpty(job.getErrorLog().getPath())) {
+                job.setErrorLog(getFile(study.getUid(), job.getErrorLog().getPath(), userId));
             }
 
             job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
@@ -324,6 +295,81 @@ public class JobManager extends ResourceManager<Job> {
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
+    }
+
+    private void autoCompleteNewJob(Study study, Job job) throws CatalogException {
+        ParamUtils.checkObj(job, "Job");
+
+        // Auto generate id
+        if (StringUtils.isEmpty(job.getId())) {
+            String command = String.valueOf(job.getAttributes().get(Job.OPENCGA_COMMAND));
+            String subcommand = String.valueOf(job.getAttributes().get(Job.OPENCGA_SUBCOMMAND));
+            job.setId(command + "-" + subcommand + "-" + TimeUtils.getTime() + "-" + org.opencb.commons.utils.StringUtils.randomString(6));
+        }
+        job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
+        job.setCreationDate(ParamUtils.defaultString(job.getCreationDate(), TimeUtils.getTime()));
+        job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
+
+        if (job.getStatus() == null || StringUtils.isEmpty(job.getStatus().getName())) {
+            job.setStatus(new Job.JobStatus(Job.JobStatus.PENDING));
+        }
+    }
+
+    public OpenCGAResult<Job> register(String studyStr, String command, String subcommand, Map<String, String> params, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("command", command)
+                .append("options", subcommand)
+                .append("params", params)
+                .append("token", token);
+
+        Job job = new Job();
+
+        try {
+            Map<String, Object> attributes = new HashMap<>();
+            attributes.put(Job.OPENCGA_STUDY, study.getFqn());
+            attributes.put(Job.OPENCGA_COMMAND, command);
+            attributes.put(Job.OPENCGA_SUBCOMMAND, subcommand);
+
+            job.setUserId(userId);
+            job.setParams(params);
+            job.setAttributes(attributes);
+
+            autoCompleteNewJob(study, job);
+
+            OpenCGAResult<Job> jobResult = jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
+
+            auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return jobResult;
+        } catch (CatalogException e) {
+            auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+
+            job.setStatus(new Job.JobStatus(Job.JobStatus.ABORTED));
+            jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
+
+            throw e;
+        }
+    }
+
+    public OpenCGAResult count(Query query, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        authorizationManager.checkIsAdmin(userId);
+
+        return jobDBAdaptor.count(query);
+    }
+
+    public DBIterator<Job> iterator(Query query, QueryOptions options, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        authorizationManager.checkIsAdmin(userId);
+
+        return jobDBAdaptor.iterator(query, options);
     }
 
     public OpenCGAResult<Job> get(long jobId, QueryOptions options, String sessionId) throws CatalogException {
@@ -578,17 +624,136 @@ public class JobManager extends ResourceManager<Job> {
         switch (job.getStatus().getName()) {
             case Job.JobStatus.DELETED:
                 throw new CatalogException("Job already deleted.");
-            case Job.JobStatus.PREPARED:
+            case Job.JobStatus.PENDING:
             case Job.JobStatus.RUNNING:
             case Job.JobStatus.QUEUED:
                 throw new CatalogException("The status of the job is " + job.getStatus().getName()
                         + ". Please, stop the job before deleting it.");
-            case Job.JobStatus.DONE:
-            case Job.JobStatus.ERROR:
-            case Job.JobStatus.READY:
             default:
                 break;
         }
+    }
+
+    public OpenCGAResult<Job> update(String studyStr, String jobId, JobUpdateParams updateParams, QueryOptions options, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("jobId", jobId)
+                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("options", options)
+                .append("token", token);
+
+        OpenCGAResult<Job> result = OpenCGAResult.empty();
+        String jobUuid = "";
+        try {
+            OpenCGAResult<Job> internalResult = internalGet(study.getUid(), jobId, INCLUDE_JOB_IDS, userId);
+            if (internalResult.getNumResults() == 0) {
+                throw new CatalogException("Job '" + jobId + "' not found");
+            }
+            Job job = internalResult.first();
+
+            // We set the proper values for the audit
+            jobId = job.getId();
+            jobUuid = job.getUuid();
+
+            OpenCGAResult updateResult = update(study, job, updateParams, options, userId);
+            result.append(updateResult);
+
+            auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+        } catch (CatalogException e) {
+            Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
+            result.getEvents().add(event);
+
+            logger.error("Could not update job {}: {}", jobId, e.getMessage(), e);
+            auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, jobId, jobUuid, study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+
+        return result;
+    }
+
+    private OpenCGAResult update(Study study, Job job, JobUpdateParams updateParams, QueryOptions options, String userId)
+            throws CatalogException {
+        if (updateParams == null) {
+            throw new CatalogException("Missing parameters to update");
+        }
+        if (updateParams.getUpdateMap().isEmpty()) {
+            throw new CatalogException("Missing parameters to update");
+        }
+
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.UPDATE);
+
+        if (StringUtils.isNotEmpty(updateParams.getId())) {
+            ParamUtils.checkAlias(updateParams.getId(), JobDBAdaptor.QueryParams.ID.key());
+        }
+
+        if (updateParams.getOutDir() != null && updateParams.getOutDir().getUid() <= 0) {
+            updateParams.setOutDir(getFile(study.getUid(), updateParams.getOutDir().getPath(), userId));
+        }
+
+        if (updateParams.getTmpDir() != null && updateParams.getTmpDir().getUid() <= 0) {
+            if (StringUtils.isEmpty(updateParams.getTmpDir().getPath())) {
+                // We set the file uid to -1 because this update means the user wants to remove the reference to the temporal directory
+                job.setTmpDir(updateParams.getTmpDir().setUid(-1));
+            } else {
+                job.setTmpDir(getFile(study.getUid(), updateParams.getOutDir().getPath(), userId));
+            }
+        }
+
+        if (ListUtils.isNotEmpty(updateParams.getInput())) {
+            List<File> inputFiles = new ArrayList<>(updateParams.getInput().size());
+            for (File file : updateParams.getInput()) {
+                if (file.getUid() <= 0) {
+                    inputFiles.add(getFile(study.getUid(), file.getPath(), userId));
+                } else {
+                    inputFiles.add(file);
+                }
+            }
+            updateParams.setInput(inputFiles);
+        }
+
+        if (ListUtils.isNotEmpty(updateParams.getOutput())) {
+            List<File> outputFiles = new ArrayList<>(updateParams.getOutput().size());
+            for (File file : updateParams.getOutput()) {
+                if (file.getUid() <= 0) {
+                    outputFiles.add(getFile(study.getUid(), file.getPath(), userId));
+                } else {
+                    outputFiles.add(file);
+                }
+            }
+            updateParams.setOutput(outputFiles);
+        }
+
+        if (updateParams.getLog() != null && updateParams.getLog().getUid() <= 0) {
+            updateParams.setLog(getFile(study.getUid(), updateParams.getLog().getPath(), userId));
+        }
+
+        if (updateParams.getErrorLog() != null && updateParams.getErrorLog().getUid() <= 0) {
+            updateParams.setErrorLog(getFile(study.getUid(), updateParams.getErrorLog().getPath(), userId));
+        }
+
+        return jobDBAdaptor.update(job.getUid(), updateParams.getUpdateMap(), options);
+    }
+
+    private File getFile(long studyUid, String path, String userId) throws CatalogException {
+        if (StringUtils.isEmpty(path)) {
+            throw new CatalogException("Missing file path");
+        }
+
+        OpenCGAResult<File> fileResult = catalogManager.getFileManager().internalGet(studyUid, path, FileManager.INCLUDE_FILE_URI_PATH,
+                userId);
+        if (fileResult.getNumResults() == 0) {
+            throw new CatalogException("File/Folder '" + path + "' not found");
+        }
+        return fileResult.first();
     }
 
     public OpenCGAResult<Job> update(String studyId, Query query, ObjectMap parameters, QueryOptions options, String token)
@@ -764,50 +929,45 @@ public class JobManager extends ResourceManager<Job> {
         return endResult(result, ignoreException);
     }
 
-    @Deprecated
-    public OpenCGAResult<Job> update(Long jobId, ObjectMap parameters, QueryOptions options, String token) throws CatalogException {
-        throw new UnsupportedOperationException("Deprecated code. Managers no longer accept uid values");
-    }
-
-    public void setStatus(String studyId, String jobId, String status, String message, String token) throws CatalogException {
-        String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyId, userId);
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("study", studyId)
-                .append("jobId", jobId)
-                .append("status", status)
-                .append("message", message)
-                .append("token", token);
-        Job job;
-        try {
-            job = internalGet(study.getUid(), jobId, INCLUDE_JOB_IDS, userId).first();
-        } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, Enums.Resource.JOB, jobId, "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
-
-        try {
-            authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.UPDATE);
-
-            if (status != null && !Job.JobStatus.isValid(status)) {
-                throw new CatalogException("The status " + status + " is not valid job status.");
-            }
-
-            ObjectMap parameters = new ObjectMap();
-            parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_NAME.key(), status);
-            parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_MSG.key(), message);
-
-            jobDBAdaptor.update(job.getUid(), parameters, QueryOptions.empty());
-            auditManager.auditUpdate(userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-        } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
-    }
+//    public void setStatus(String studyId, String jobId, String status, String message, String token) throws CatalogException {
+//        String userId = userManager.getUserId(token);
+//        Study study = studyManager.resolveId(studyId, userId);
+//
+//        ObjectMap auditParams = new ObjectMap()
+//                .append("study", studyId)
+//                .append("jobId", jobId)
+//                .append("status", status)
+//                .append("message", message)
+//                .append("token", token);
+//        Job job;
+//        try {
+//            job = internalGet(study.getUid(), jobId, INCLUDE_JOB_IDS, userId).first();
+//        } catch (CatalogException e) {
+//            auditManager.auditUpdate(userId, Enums.Resource.JOB, jobId, "", study.getId(), study.getUuid(), auditParams,
+//                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+//            throw e;
+//        }
+//
+//        try {
+//            authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.UPDATE);
+//
+//            if (status != null && !Job.JobStatus.isValid(status)) {
+//                throw new CatalogException("The status " + status + " is not valid job status.");
+//            }
+//
+//            ObjectMap parameters = new ObjectMap();
+//            parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_NAME.key(), status);
+//            parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_MSG.key(), message);
+//
+//            jobDBAdaptor.update(job.getUid(), parameters, QueryOptions.empty());
+//            auditManager.auditUpdate(userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(), study.getUuid(),
+//                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+//        } catch (CatalogException e) {
+//            auditManager.auditUpdate(userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(), study.getUuid(),
+//                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+//            throw e;
+//        }
+//    }
 
     @Override
     public OpenCGAResult rank(String studyId, Query query, String field, int numResults, boolean asc, String token)
@@ -851,18 +1011,6 @@ public class JobManager extends ResourceManager<Job> {
         OpenCGAResult queryResult = jobDBAdaptor.groupBy(study.getUid(), query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
-    }
-
-    public OpenCGAResult<Job> queue(String studyId, String jobName, String toolId, String description, String execution, Job.Type type,
-                                 Map<String, String> params, List<File> input, List<File> output, File outDir,
-                                 Map<String, Object> attributes, String token)
-            throws CatalogException {
-        Job job = new Job(jobName, toolId, execution, type, description, params, attributes)
-                .setInput(input)
-                .setOutput(output)
-                .setOutDir(outDir);
-
-        return create(studyId, job, QueryOptions.empty(), token);
     }
 
     // **************************   ACLs  ******************************** //

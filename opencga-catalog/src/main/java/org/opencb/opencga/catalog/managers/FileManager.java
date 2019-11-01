@@ -36,7 +36,6 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.models.update.FileUpdateParams;
-import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.*;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -102,14 +101,14 @@ public class FileManager extends AnnotationSetManager<File> {
     static {
         INCLUDE_FILE_IDS = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
                 FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.UID.key(), FileDBAdaptor.QueryParams.UUID.key(),
-                FileDBAdaptor.QueryParams.STUDY_UID.key()));
+                FileDBAdaptor.QueryParams.STUDY_UID.key(), FileDBAdaptor.QueryParams.TYPE.key()));
         INCLUDE_FILE_URI = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
                 FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.UID.key(), FileDBAdaptor.QueryParams.UUID.key(),
-                FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.STUDY_UID.key()));
+                FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.STUDY_UID.key(), FileDBAdaptor.QueryParams.TYPE.key()));
         INCLUDE_FILE_URI_PATH = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
                 FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.UID.key(), FileDBAdaptor.QueryParams.UUID.key(),
                 FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.EXTERNAL.key(),
-                FileDBAdaptor.QueryParams.STUDY_UID.key()));
+                FileDBAdaptor.QueryParams.STUDY_UID.key(), FileDBAdaptor.QueryParams.TYPE.key()));
         EXCLUDE_FILE_ATTRIBUTES = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
                 FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), FileDBAdaptor.QueryParams.STATS.key()));
         INCLUDE_STUDY_URI = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key());
@@ -619,6 +618,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("options", options)
                 .append("token", token);
         try {
+            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_FILES);
+
             OpenCGAResult<File> result = create(study, file, parents, content, options, token);
             auditManager.auditCreate(userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -627,6 +628,74 @@ public class FileManager extends AnnotationSetManager<File> {
             auditManager.auditCreate(userId, Enums.Resource.FILE, file.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
+        }
+    }
+
+    /**
+     * Register files (not directories) assuming the file already exists in the file system and it is in the final path.
+     *
+     * @param studyStr Study to which the file will be associated.
+     * @param path Path of the file to be registered.
+     * @param options QueryOptions object.
+     * @param token Token.
+     * @return An OpenCGAResult containing the registered file.
+     * @throws CatalogException if there is any error.
+     */
+    public OpenCGAResult<File> register(String studyStr, Path path, QueryOptions options, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("path", path)
+                .append("options", options)
+                .append("token", token);
+        try {
+            URI uri = UriUtils.createUri(path.toString());
+            // Check uri not in use in OpenCGA
+            Query query = new Query()
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                    .append(FileDBAdaptor.QueryParams.URI.key(), uri.toString());
+            if (fileDBAdaptor.count(query).getNumMatches() == 1) {
+                throw new CatalogException("Path " + path + " already registered in Catalog");
+            }
+
+            if (!path.toFile().isFile()) {
+                throw new CatalogException("Operation 'register' is only supported for files.");
+            }
+
+            URI parentUri = UriUtils.createUri(path.getParent().toString());
+            query = new Query()
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                    .append(FileDBAdaptor.QueryParams.URI.key(), parentUri.toString());
+            OpenCGAResult<File> fileOpenCGAResult = fileDBAdaptor.get(query, INCLUDE_FILE_URI_PATH);
+            if (fileOpenCGAResult.getNumResults() == 0) {
+                throw new CatalogException("Parent path " + parentUri.toString() + " not found.");
+            }
+            File parentDirectory = fileOpenCGAResult.first();
+
+            // Check the user have write permissions in the directory
+            authorizationManager.checkFilePermission(study.getUid(), parentDirectory.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+
+            File file = new File()
+                    .setName(path.toFile().getName())
+                    .setPath(parentDirectory.getPath() + path.toFile().getName())
+                    .setUri(uri)
+                    .setExternal(parentDirectory.isExternal());
+
+            OpenCGAResult<File> result = create(study, file, false, null, options, token);
+            auditManager.auditCreate(userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return result;
+        } catch (CatalogException e) {
+            auditManager.auditCreate(userId, Enums.Resource.FILE, path.toString().replace("/", ":"), "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        } catch (URISyntaxException e) {
+            auditManager.auditCreate(userId, Enums.Resource.FILE, path.toString().replace("/", ":"), "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", "Could not register file: "
+                            +  e.getMessage())));
+            throw new CatalogException("Could not register file: " + e.getMessage(), e.getCause());
         }
     }
 
@@ -664,6 +733,7 @@ public class FileManager extends AnnotationSetManager<File> {
             file.setPath(file.getPath().substring(0, file.getPath().length() - 1));
         }
         file.setName(Paths.get(file.getPath()).getFileName().toString());
+        file.setId(file.getPath().replace("/", ":"));
 
         URI uri;
         try {
@@ -771,7 +841,9 @@ public class FileManager extends AnnotationSetManager<File> {
             ioManager.createDirectory(Paths.get(file.getUri()).getParent().toUri(), true);
             InputStream inputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
             ioManager.createFile(file.getUri(), inputStream);
+        }
 
+        if (file.getType() == File.Type.FILE) {
             new FileMetadataReader(catalogManager).addMetadataInformation(study, file, sessionId);
             validateNewSamples(study, file, sessionId);
         }
@@ -2446,201 +2518,6 @@ public class FileManager extends AnnotationSetManager<File> {
             return dataInputStream;
         } catch (CatalogException e) {
             auditManager.audit(userId, Enums.Action.DOWNLOAD, Enums.Resource.FILE, fileId, "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        }
-    }
-
-    public OpenCGAResult<Job> index(String studyStr, List<String> fileList, String type, Map<String, String> params, String token)
-            throws CatalogException {
-        params = ParamUtils.defaultObject(params, HashMap::new);
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("study", studyStr)
-                .append("fileList", fileList)
-                .append("type", type)
-                .append("params", params)
-                .append("token", token);
-
-        String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
-
-        try {
-            List<File> fileFolderIdList = internalGet(study.getUid(), fileList, QueryOptions.empty(), userId, false).getResults();
-
-            long studyUid = study.getUid();
-
-            // Define the output directory where the indexes will be put
-            String outDirPath = ParamUtils.defaultString(params.get("outdir"), "/").replace(":", "/");
-            if (outDirPath.contains("/") && !outDirPath.endsWith("/")) {
-                outDirPath = outDirPath + "/";
-            }
-
-            File outDir;
-            try {
-                outDir = internalGet(studyUid, outDirPath, QueryOptions.empty(), userId).first();
-            } catch (CatalogException e) {
-                logger.warn("'{}' does not exist. Trying to create the output directory.", outDirPath);
-                OpenCGAResult<File> folder = createFolder(studyStr, outDirPath, new File.FileStatus(), true, "", new QueryOptions(), token);
-                outDir = folder.first();
-            }
-
-            authorizationManager.checkFilePermission(studyUid, outDir.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
-
-            OpenCGAResult<Job> jobDataResult;
-            List<File> fileIdList = new ArrayList<>();
-            String indexDaemonType = null;
-            String jobName = null;
-            String description = null;
-
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                    FileDBAdaptor.QueryParams.NAME.key(),
-                    FileDBAdaptor.QueryParams.PATH.key(),
-                    FileDBAdaptor.QueryParams.URI.key(),
-                    FileDBAdaptor.QueryParams.TYPE.key(),
-                    FileDBAdaptor.QueryParams.BIOFORMAT.key(),
-                    FileDBAdaptor.QueryParams.FORMAT.key(),
-                    FileDBAdaptor.QueryParams.INDEX.key())
-            );
-
-            if (type.equals("VCF")) {
-
-                indexDaemonType = IndexDaemon.VARIANT_TYPE;
-                Boolean transform = Boolean.valueOf(params.get("transform"));
-                Boolean load = Boolean.valueOf(params.get("load"));
-                if (transform && !load) {
-                    jobName = "variant_transform";
-                    description = "Transform variants from " + fileList;
-                } else if (load && !transform) {
-                    description = "Load variants from " + fileList;
-                    jobName = "variant_load";
-                } else {
-                    description = "Index variants from " + fileList;
-                    jobName = "variant_index";
-                }
-
-                for (File file : fileFolderIdList) {
-                    if (File.Type.DIRECTORY.equals(file.getType())) {
-                        // Retrieve all the VCF files that can be found within the directory
-                        String path = file.getPath().endsWith("/") ? file.getPath() : file.getPath() + "/";
-                        Query query = new Query()
-                                .append(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF, File.Format.GVCF))
-                                .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + path + "*")
-                                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                        OpenCGAResult<File> fileDataResult = fileDBAdaptor.get(query, queryOptions);
-
-                        if (fileDataResult.getNumResults() == 0) {
-                            throw new CatalogException("No VCF files could be found in directory " + file.getPath());
-                        }
-
-                        for (File fileTmp : fileDataResult.getResults()) {
-                            authorizationManager.checkFilePermission(studyUid, fileTmp.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
-                            authorizationManager.checkFilePermission(studyUid, fileTmp.getUid(), userId,
-                                    FileAclEntry.FilePermissions.WRITE);
-
-                            fileIdList.add(fileTmp);
-                        }
-
-                    } else {
-                        if (isTransformedFile(file.getName())) {
-                            if (file.getRelatedFiles() == null || file.getRelatedFiles().isEmpty()) {
-                                catalogManager.getFileManager().matchUpVariantFiles(studyStr, Collections.singletonList(file), token);
-                            }
-                            if (file.getRelatedFiles() != null) {
-                                for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
-                                    if (File.RelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
-                                        Query query = new Query(FileDBAdaptor.QueryParams.UID.key(), relatedFile.getFile().getUid());
-                                        file = search(studyStr, query, null, token).first();
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        if (!File.Format.VCF.equals(file.getFormat()) && !File.Format.GVCF.equals(file.getFormat())) {
-                            throw new CatalogException("The file " + file.getName() + " is not a VCF file.");
-                        }
-
-                        authorizationManager.checkFilePermission(studyUid, file.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
-                        authorizationManager.checkFilePermission(studyUid, file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
-
-                        fileIdList.add(file);
-                    }
-                }
-
-                if (fileIdList.size() == 0) {
-                    throw new CatalogException("Cannot send to index. No files could be found to be indexed.");
-                }
-
-                params.put("sid", token);
-
-            } else if (type.equals("BAM")) {
-
-                indexDaemonType = IndexDaemon.ALIGNMENT_TYPE;
-                jobName = "AlignmentIndex";
-
-                for (File file : fileFolderIdList) {
-                    if (File.Type.DIRECTORY.equals(file.getType())) {
-                        // Retrieve all the BAM files that can be found within the directory
-                        String path = file.getPath().endsWith("/") ? file.getPath() : file.getPath() + "/";
-                        Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.SAM, File.Format.BAM))
-                                .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + path + "*")
-                                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
-                        OpenCGAResult<File> fileDataResult = fileDBAdaptor.get(query, queryOptions);
-
-                        if (fileDataResult.getNumResults() == 0) {
-                            throw new CatalogException("No SAM/BAM files could be found in directory " + file.getPath());
-                        }
-
-                        for (File fileTmp : fileDataResult.getResults()) {
-                            authorizationManager.checkFilePermission(studyUid, fileTmp.getUid(), userId,
-                                    FileAclEntry.FilePermissions.VIEW);
-                            authorizationManager.checkFilePermission(studyUid, fileTmp.getUid(), userId,
-                                    FileAclEntry.FilePermissions.WRITE);
-
-                            fileIdList.add(fileTmp);
-                        }
-
-                    } else {
-                        if (!File.Format.BAM.equals(file.getFormat()) && !File.Format.SAM.equals(file.getFormat())) {
-                            throw new CatalogException("The file " + file.getName() + " is not a SAM/BAM file.");
-                        }
-
-                        authorizationManager.checkFilePermission(studyUid, file.getUid(), userId, FileAclEntry.FilePermissions.VIEW);
-                        authorizationManager.checkFilePermission(studyUid, file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
-
-                        fileIdList.add(file);
-                    }
-                }
-
-            }
-
-            if (fileIdList.size() == 0) {
-                throw new CatalogException("Cannot send to index. No files could be found to be indexed.");
-            }
-
-            if (!params.containsKey("study") && !params.containsKey("studyId")) {
-                params.put("study", study.getFqn());
-            }
-
-            params.put("outdir", outDir.getPath());
-            String fileIds = fileIdList.stream().map(File::getPath).collect(Collectors.joining(","));
-            params.put("file", fileIds);
-            List<File> outputList = outDir.getUid() > 0 ? Arrays.asList(outDir) : Collections.emptyList();
-            ObjectMap attributes = new ObjectMap();
-            attributes.put(IndexDaemon.INDEX_TYPE, indexDaemonType);
-            attributes.putIfNotNull(Job.OPENCGA_OUTPUT_DIR, outDirPath);
-            attributes.putIfNotNull(Job.OPENCGA_STUDY, study.getFqn());
-
-            logger.info("job description: " + description);
-            jobDataResult = catalogManager.getJobManager().queue(studyStr, jobName, jobName, description, null,
-                    Job.Type.INDEX, params, fileIdList, outputList, outDir, attributes, token);
-
-            auditManager.audit(userId, Enums.Action.INDEX, Enums.Resource.FILE, "", "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            return jobDataResult;
-        } catch (CatalogException e) {
-            auditManager.audit(userId, Enums.Action.INDEX, Enums.Resource.FILE, "", "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }

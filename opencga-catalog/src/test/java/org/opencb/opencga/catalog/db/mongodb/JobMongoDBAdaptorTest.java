@@ -28,7 +28,10 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -61,10 +64,10 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void deleteJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        catalogJobDBAdaptor.insert(studyId, new Job("name", user3.getId(), "", "", "", new File().setUid(4),
-                        Collections.emptyList(), 1), null);
+        catalogJobDBAdaptor.insert(studyId, new Job().setStatus(new Job.JobStatus()).setId("name").setUserId(user3.getId())
+                .setOutDir(new File().setUid(4)), null);
         Job job = getJob(studyId, "name");
-        assertEquals(Job.JobStatus.PREPARED, job.getStatus().getName());
+        assertEquals(Job.JobStatus.PENDING, job.getStatus().getName());
         catalogJobDBAdaptor.delete(job);
 
         Query query = new Query()
@@ -90,7 +93,8 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void getJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        catalogJobDBAdaptor.insert(studyId, new Job("name", user3.getId(), "", "", "", new File().setUid(4), Collections.emptyList(), 1), null);
+        catalogJobDBAdaptor.insert(studyId, new Job().setStatus(new Job.JobStatus()).setId("name").setUserId(user3.getId())
+                .setOutDir(new File().setUid(4)), null);
         Job job = getJob(studyId, "name");
 
         job = catalogJobDBAdaptor.get(job.getUid(), null).first();
@@ -105,20 +109,20 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     }
 
-    @Test
-    public void SetVisitedJob() throws CatalogException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        catalogJobDBAdaptor.insert(studyId, new Job("name", user3.getId(), "", "", "", new File().setUid(4), Collections.emptyList(), 1), null);
-        Job jobBefore = getJob(studyId, "name");
-        long jobId = jobBefore.getUid();
-        assertTrue(!jobBefore.isVisited());
-
-        ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.VISITED.key(), true);
-        catalogJobDBAdaptor.update(jobBefore.getUid(), params, QueryOptions.empty());
-
-        Job jobAfter = catalogJobDBAdaptor.get(jobId, null).first();
-        assertTrue(jobAfter.isVisited());
-    }
+//    @Test
+//    public void SetVisitedJob() throws CatalogException {
+//        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
+//        catalogJobDBAdaptor.insert(studyId, new Job("name", user3.getId(), "", "", "", new File().setUid(4), Collections.emptyList(), 1), null);
+//        Job jobBefore = getJob(studyId, "name");
+//        long jobId = jobBefore.getUid();
+//        assertTrue(!jobBefore.isVisited());
+//
+//        ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.VISITED.key(), true);
+//        catalogJobDBAdaptor.update(jobBefore.getUid(), params, QueryOptions.empty());
+//
+//        Job jobAfter = catalogJobDBAdaptor.get(jobId, null).first();
+//        assertTrue(jobAfter.isVisited());
+//    }
 
     @Test
     public void getJobsOrderedByDate() throws CatalogDBException {
