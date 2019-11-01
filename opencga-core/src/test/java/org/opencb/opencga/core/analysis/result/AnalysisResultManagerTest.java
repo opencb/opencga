@@ -15,8 +15,7 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class AnalysisResultManagerTest {
 
@@ -33,6 +32,7 @@ public class AnalysisResultManagerTest {
     @Before
     public void setUp() throws Exception {
         arm = new AnalysisResultManager("myTest", rootDir);
+        arm.setMonitorThreadPeriod(1000);
         arm.init(new ObjectMap(), new ObjectMap());
         arm.setSteps(Arrays.asList("step1", "step2"));
     }
@@ -62,5 +62,13 @@ public class AnalysisResultManagerTest {
     public void testCheckStepWrong() throws AnalysisException {
         arm.checkStep("OtherStep");
      }
+
+    @Test
+    public void checkMonitorThread() throws InterruptedException, AnalysisException {
+        Date pre = arm.read().getStatus().getDate();
+        Thread.sleep(2000);
+        Date post = arm.read().getStatus().getDate();
+        assertNotEquals(pre, post);
+    }
 
 }

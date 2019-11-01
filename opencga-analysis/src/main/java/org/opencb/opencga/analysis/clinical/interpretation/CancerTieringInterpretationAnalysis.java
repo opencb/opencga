@@ -38,7 +38,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
 
     private ClinicalAnalysis clinicalAnalysis;
 
-    protected void check() throws AnalysisException {
+    protected void check() throws Exception {
         super.check();
 
         // Check study
@@ -72,8 +72,6 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
 
     @Override
     protected void run() throws AnalysisException {
-        check();
-
         step(() -> {
             CancerTieringInterpretationAnalysisExecutor executor = new CancerTieringInterpretationAnalysisExecutor();
             setUpAnalysisExecutor(executor);

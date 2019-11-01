@@ -45,7 +45,7 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
     private List<DiseasePanel> diseasePanels;
 
     @Override
-    protected void check() throws AnalysisException {
+    protected void check() throws Exception {
         super.check();
 
         // Check study
@@ -92,7 +92,6 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
 
     @Override
     protected void run() throws AnalysisException {
-
         step(() -> {
             TeamInterpretationAnalysisExecutor executor = new TeamInterpretationAnalysisExecutor();
             setUpAnalysisExecutor(executor);

@@ -83,7 +83,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
     }
 
     @Override
-    protected void check() throws AnalysisException {
+    protected void check() throws Exception {
         super.check();
         setUpStorageEngineExecutor(study);
 

@@ -95,7 +95,7 @@ public abstract class OpenCgaAnalysis {
         this.variantStorageManager = variantStorageManager;
         this.storageConfiguration = variantStorageManager.getStorageConfiguration();
         this.sessionId = sessionId;
-        this.params = params;
+        this.params = new ObjectMap(params);
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
 
@@ -153,32 +153,56 @@ public abstract class OpenCgaAnalysis {
      * @throws AnalysisException on error
      */
     public final AnalysisResult start() throws AnalysisException {
+        if (this.getClass().getAnnotation(Analysis.class) == null) {
+            throw new AnalysisException("Missing @" + Analysis.class.getSimpleName() + " annotation in " + this.getClass());
+        }
         arm = new AnalysisResultManager(getId(), outDir);
         arm.init(params, executorParams);
+        Thread hook = new Thread(() -> {
+            if (!arm.isClosed()) {
+                privateLogger.error("Unexpected system shutdown!");
+                try {
+                    arm.close(new RuntimeException("Unexpected system shutdown"));
+                } catch (AnalysisException e) {
+                    privateLogger.error("Error closing AnalysisResult", e);
+                }
+            }
+        });
+        Runtime.getRuntime().addShutdownHook(hook);
         try {
             if (scratchDir == null) {
                 Path baseScratchDir = this.outDir; // TODO: Read from configuration
                 try {
-                    scratchDir = Files.createDirectory(baseScratchDir.resolve(getId() + RandomStringUtils.random(10)));
+                    scratchDir = Files.createDirectory(baseScratchDir.resolve("scratch_" + getId() + RandomStringUtils.randomAlphanumeric(10)));
                 } catch (IOException e) {
                     throw new AnalysisException(e);
                 }
             }
-            arm.setSteps(getSteps());
-            check();
-            arm.setParams(params); // params may be modified after check method
-            run();
+            try {
+                check();
+                arm.setSteps(getSteps());
+
+                arm.setParams(params); // params may be modified after check method
+
+                run();
+            } catch (AnalysisException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new AnalysisException(e);
+            }
             try {
                 FileUtils.deleteDirectory(scratchDir.toFile());
             } catch (IOException e) {
                 String warningMessage = "Error deleting scratch folder " + scratchDir + " : " + e.getMessage();
-                logger.warn(warningMessage, e);
+                privateLogger.warn(warningMessage, e);
                 arm.addWarning(warningMessage);
             }
             return arm.close();
         } catch (RuntimeException | AnalysisException e) {
             arm.close(e);
             throw e;
+        } finally {
+            Runtime.getRuntime().removeShutdownHook(hook);
         }
     }
 
@@ -186,16 +210,16 @@ public abstract class OpenCgaAnalysis {
      * Check that the given parameters are correct.
      * This method will be called before the {@link #run()}.
      *
-     * @throws AnalysisException if the parameters are not correct
+     * @throws Exception if the parameters are not correct
      */
-    protected void check() throws AnalysisException {
+    protected void check() throws Exception {
     }
 
     /**
      * Method to be implemented by subclasses with the actual execution of the analysis.
-     * @throws AnalysisException on error
+     * @throws Exception on error
      */
-    protected abstract void run() throws AnalysisException;
+    protected abstract void run() throws Exception;
 
     /**
      * @return the analysis id

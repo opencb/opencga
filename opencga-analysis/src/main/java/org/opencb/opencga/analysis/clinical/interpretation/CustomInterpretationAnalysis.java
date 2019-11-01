@@ -47,7 +47,7 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
     private List<DiseasePanel> diseasePanels;
 
     @Override
-    protected void check() throws AnalysisException {
+    protected void check() throws Exception {
         super.check();
 
         // Sanity check
@@ -137,7 +137,6 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
 
     @Override
     protected void run() throws AnalysisException {
-
         step(() -> {
             CustomInterpretationAnalysisExecutor executor = new CustomInterpretationAnalysisExecutor();
             setUpAnalysisExecutor(executor);

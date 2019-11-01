@@ -43,7 +43,7 @@ public class TieringInterpretationAnalysis extends InterpretationAnalysis {
     private List<DiseasePanel> diseasePanels;
 
     @Override
-    protected void check() throws AnalysisException {
+    protected void check() throws Exception {
         super.check();
 
         // Check study
@@ -81,8 +81,6 @@ public class TieringInterpretationAnalysis extends InterpretationAnalysis {
 
     @Override
     protected void run() throws AnalysisException {
-        check();
-
         step(() -> {
             TieringInterpretationAnalysisExecutor executor = new TieringInterpretationAnalysisExecutor();
             setUpAnalysisExecutor(executor);
