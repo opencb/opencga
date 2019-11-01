@@ -3,11 +3,14 @@ package org.opencb.opencga.core.analysis.result;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
 import org.opencb.opencga.core.exception.AnalysisException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,6 +19,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,9 +32,12 @@ public class AnalysisResultManager {
     private final ObjectWriter objectWriter;
     private final ObjectReader objectReader;
 
+    private Thread thread;
     private File file;
     private boolean initialized;
     private boolean closed;
+    private final Logger logger = LoggerFactory.getLogger(AnalysisResultManager.class);
+    private int monitorThreadPeriod = 5000;
 
     public AnalysisResultManager(String analysisId, Path outDir) {
         this.analysisId = analysisId;
@@ -78,6 +85,12 @@ public class AnalysisResultManager {
                 .setName(Status.Type.RUNNING);
 
         write(analysisResult);
+        startMonitorThread();
+        return this;
+    }
+
+    public AnalysisResultManager setMonitorThreadPeriod(int monitorThreadPeriod) {
+        this.monitorThreadPeriod = monitorThreadPeriod;
         return this;
     }
 
@@ -91,15 +104,19 @@ public class AnalysisResultManager {
         });
     }
 
+    public boolean isClosed() {
+        return closed;
+    }
+
     public synchronized AnalysisResult close() throws AnalysisException {
         return close(null);
     }
 
-    public AnalysisResult close(Exception exception) throws AnalysisException {
+    public synchronized AnalysisResult close(Exception exception) throws AnalysisException {
         if (closed) {
             throw new AnalysisException("AnalysisResultManager already closed!");
         }
-        closed = true;
+        thread.interrupt();
 
         AnalysisResult analysisResult = read();
 
@@ -110,6 +127,9 @@ public class AnalysisResultManager {
 
         AnalysisStep step;
         if (StringUtils.isEmpty(analysisResult.getStatus().getStep())) {
+            if (CollectionUtils.isEmpty(analysisResult.getSteps())) {
+                analysisResult.setSteps(Collections.singletonList(new AnalysisStep().setId("check")));
+            }
             step = analysisResult.getSteps().get(0);
             step.setStart(analysisResult.getStart());
         } else {
@@ -128,12 +148,13 @@ public class AnalysisResultManager {
                 .setStep(null)
                 .setName(finalStatus);
 
-        if (step.getStatus().equals(Status.Type.RUNNING)) {
+        if (Status.Type.RUNNING.equals(step.getStatus())) {
             step.setStatus(finalStatus);
             step.setEnd(now);
         }
 
         write(analysisResult);
+        closed = true;
         return analysisResult;
     }
 
@@ -232,12 +253,16 @@ public class AnalysisResultManager {
         updateResult(analysisResult -> analysisResult.setParams(params));
     }
 
+    private void updateStatusDate() throws AnalysisException {
+        updateResult(analysisResult -> analysisResult.getStatus().setDate(now()));
+    }
+
     @FunctionalInterface
     public interface AnalysisResultFunction<R> {
         R apply(AnalysisResult analysisResult) throws AnalysisException;
     }
 
-    private <R> R updateResult(AnalysisResultFunction<R> update) throws AnalysisException {
+    private synchronized <R> R updateResult(AnalysisResultFunction<R> update) throws AnalysisException {
         AnalysisResult analysisResult = read();
         R apply = update.apply(analysisResult);
         write(analysisResult);
@@ -271,5 +296,24 @@ public class AnalysisResultManager {
         return dtf.format(now);
     }
 
+    private Thread startMonitorThread() {
+        thread = new Thread(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    Thread.sleep(monitorThreadPeriod);
+                } catch (InterruptedException e) {
+                    return;
+                }
+
+                try {
+                    updateStatusDate();
+                } catch (AnalysisException e) {
+                    logger.error("Error updating status date", e);
+                }
+            }
+        });
+        thread.start();
+        return thread;
+    }
 }
 

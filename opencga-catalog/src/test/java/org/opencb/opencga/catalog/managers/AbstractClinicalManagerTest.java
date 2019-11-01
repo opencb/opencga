@@ -54,13 +54,6 @@ public class AbstractClinicalManagerTest extends GenericTest {
                 null, null, null, null, null, null, token).first();
         studyFqn = study.getFqn();
 
-        URI familyVCF = getClass().getResource("/biofiles/family.vcf").toURI();
-
-        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(familyVCF)))) {
-            catalogManager.getFileManager().upload(studyFqn, inputStream,
-                    new File().setPath(Paths.get(familyVCF).getFileName().toString()), false, true, false, token);
-        }
-
         family = catalogManager.getFamilyManager().create(studyFqn, getFamily(), QueryOptions.empty(), token).first();
 
         // Clinical analysis
@@ -74,6 +67,12 @@ public class AbstractClinicalManagerTest extends GenericTest {
         clinicalAnalysis = catalogManager.getClinicalAnalysisManager().create(studyFqn, auxClinicalAnalysis, QueryOptions.empty(), token)
                 .first();
 
+        URI familyVCF = getClass().getResource("/biofiles/family.vcf").toURI();
+
+        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(new java.io.File(familyVCF)))) {
+            catalogManager.getFileManager().upload(studyFqn, inputStream,
+                    new File().setPath(Paths.get(familyVCF).getFileName().toString()), false, true, false, token);
+        }
     }
 
     private Individual getMother() {

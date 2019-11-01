@@ -44,6 +44,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
@@ -470,7 +471,7 @@ public class OpenCGAWSServer {
             queryResponse.setError(new Error(-1, "error", e.getMessage()));
         }
 
-        DataResult<ObjectMap> result = new DataResult<>();
+        OpenCGAResult<ObjectMap> result = OpenCGAResult.empty();
         queryResponse.setResponses(Arrays.asList(result));
 
         Response.Status errorStatus = Response.Status.INTERNAL_SERVER_ERROR;

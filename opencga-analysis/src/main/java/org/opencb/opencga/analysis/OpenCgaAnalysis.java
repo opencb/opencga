@@ -51,6 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -95,7 +96,7 @@ public abstract class OpenCgaAnalysis {
         this.variantStorageManager = variantStorageManager;
         this.storageConfiguration = variantStorageManager.getStorageConfiguration();
         this.sessionId = sessionId;
-        this.params = params;
+        this.params = params == null ? new ObjectMap() : new ObjectMap(params);
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
 
@@ -129,14 +130,14 @@ public abstract class OpenCgaAnalysis {
         availableFrameworks = new ArrayList<>();
         sourceTypes = new ArrayList<>();
         if (storageConfiguration.getDefaultStorageEngineId().equals("mongodb")) {
-            if (getAnalysisData().equals(Analysis.AnalysisType.VARIANT)) {
+            if (getAnalysisType().equals(Analysis.AnalysisType.VARIANT)) {
                 sourceTypes.add(AnalysisExecutor.Source.MONGODB);
             }
         } else if (storageConfiguration.getDefaultStorageEngineId().equals("hadoop")) {
             availableFrameworks.add(AnalysisExecutor.Framework.MAP_REDUCE);
             // TODO: Check from configuration if spark is available
 //            availableFrameworks.add(AnalysisExecutor.Framework.SPARK);
-            if (getAnalysisData().equals(Analysis.AnalysisType.VARIANT)) {
+            if (getAnalysisType().equals(Analysis.AnalysisType.VARIANT)) {
                 sourceTypes.add(AnalysisExecutor.Source.HBASE);
             }
         }
@@ -153,32 +154,56 @@ public abstract class OpenCgaAnalysis {
      * @throws AnalysisException on error
      */
     public final AnalysisResult start() throws AnalysisException {
+        if (this.getClass().getAnnotation(Analysis.class) == null) {
+            throw new AnalysisException("Missing @" + Analysis.class.getSimpleName() + " annotation in " + this.getClass());
+        }
         arm = new AnalysisResultManager(getId(), outDir);
         arm.init(params, executorParams);
+        Thread hook = new Thread(() -> {
+            if (!arm.isClosed()) {
+                privateLogger.error("Unexpected system shutdown!");
+                try {
+                    arm.close(new RuntimeException("Unexpected system shutdown"));
+                } catch (AnalysisException e) {
+                    privateLogger.error("Error closing AnalysisResult", e);
+                }
+            }
+        });
+        Runtime.getRuntime().addShutdownHook(hook);
         try {
             if (scratchDir == null) {
                 Path baseScratchDir = this.outDir; // TODO: Read from configuration
                 try {
-                    scratchDir = Files.createDirectory(baseScratchDir.resolve(getId() + RandomStringUtils.random(10)));
+                    scratchDir = Files.createDirectory(baseScratchDir.resolve("scratch_" + getId() + RandomStringUtils.randomAlphanumeric(10)));
                 } catch (IOException e) {
                     throw new AnalysisException(e);
                 }
             }
-            check();
-            arm.setParams(params); // params may be modified after check method
-            arm.setSteps(getSteps());
-            run();
+            try {
+                check();
+
+                arm.setParams(params); // params may be modified after check method
+                arm.setSteps(getSteps());
+
+                run();
+            } catch (AnalysisException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new AnalysisException(e);
+            }
             try {
                 FileUtils.deleteDirectory(scratchDir.toFile());
             } catch (IOException e) {
                 String warningMessage = "Error deleting scratch folder " + scratchDir + " : " + e.getMessage();
-                logger.warn(warningMessage, e);
+                privateLogger.warn(warningMessage, e);
                 arm.addWarning(warningMessage);
             }
             return arm.close();
         } catch (RuntimeException | AnalysisException e) {
             arm.close(e);
             throw e;
+        } finally {
+            Runtime.getRuntime().removeShutdownHook(hook);
         }
     }
 
@@ -186,16 +211,16 @@ public abstract class OpenCgaAnalysis {
      * Check that the given parameters are correct.
      * This method will be called before the {@link #run()}.
      *
-     * @throws AnalysisException if the parameters are not correct
+     * @throws Exception if the parameters are not correct
      */
-    protected void check() throws AnalysisException {
+    protected void check() throws Exception {
     }
 
     /**
      * Method to be implemented by subclasses with the actual execution of the analysis.
-     * @throws AnalysisException on error
+     * @throws Exception on error
      */
-    protected abstract void run() throws AnalysisException;
+    protected abstract void run() throws Exception;
 
     /**
      * @return the analysis id
@@ -216,7 +241,7 @@ public abstract class OpenCgaAnalysis {
     /**
      * @return the analysis id
      */
-    public final Analysis.AnalysisType getAnalysisData() {
+    public final Analysis.AnalysisType getAnalysisType() {
         return this.getClass().getAnnotation(Analysis.class).type();
     }
 
@@ -298,20 +323,24 @@ public abstract class OpenCgaAnalysis {
     }
 
     protected final Class<? extends OpenCgaAnalysisExecutor> getAnalysisExecutorClass(String analysisExecutorId) {
-        return getAnalysisExecutorClass(OpenCgaAnalysisExecutor.class, analysisExecutorId, null, null);
+        return getAnalysisExecutorClass(OpenCgaAnalysisExecutor.class, analysisExecutorId);
     }
 
-    protected final <T extends OpenCgaAnalysisExecutor> Class<? extends T> getAnalysisExecutorClass(
-            Class<T> clazz, String analysisExecutorId, List<AnalysisExecutor.Source> sourceTypes,
-            List<AnalysisExecutor.Framework> availableFrameworks) {
+    protected final <T extends OpenCgaAnalysisExecutor> Class<? extends T> getAnalysisExecutorClass(Class<T> clazz,
+                                                                                                    String analysisExecutorId) {
         Objects.requireNonNull(clazz);
         String analysisId = getId();
 
-        if (sourceTypes == null) {
-            sourceTypes = this.sourceTypes;
-        }
-        if (CollectionUtils.isEmpty(availableFrameworks)) {
-            availableFrameworks = this.availableFrameworks;
+        List<Class<? extends T>> candidateClasses = new ArrayList<>();
+        // If the given class is not abstract, check if matches the criteria.
+        if (!Modifier.isAbstract(clazz.getModifiers())) {
+            if (isValidClass(analysisId, analysisExecutorId, clazz)) {
+                if (StringUtils.isNotEmpty(analysisExecutorId) || Modifier.isFinal(clazz.getModifiers())) {
+                    // Shortcut to skip reflection
+                    return clazz;
+                }
+                candidateClasses.add(clazz);
+            }
         }
 
         Reflections reflections = new Reflections(new ConfigurationBuilder()
@@ -323,28 +352,18 @@ public abstract class OpenCgaAnalysis {
         );
 
         Set<Class<? extends T>> typesAnnotatedWith = reflections.getSubTypesOf(clazz);
-        List<Class<? extends T>> matchedClasses = new ArrayList<>();
         for (Class<? extends T> aClass : typesAnnotatedWith) {
-            AnalysisExecutor annotation = aClass.getAnnotation(AnalysisExecutor.class);
-            if (annotation != null) {
-                if (annotation.analysis().equals(analysisId)) {
-                    if (StringUtils.isEmpty(analysisExecutorId) || analysisExecutorId.equals(annotation.id())) {
-                        if (CollectionUtils.isEmpty(sourceTypes) || sourceTypes.contains(annotation.source())) {
-                            if (CollectionUtils.isEmpty(availableFrameworks) || availableFrameworks.contains(annotation.framework())) {
-                                matchedClasses.add(aClass);
-                            }
-                        }
-                    }
-                }
+            if (isValidClass(analysisId, analysisExecutorId, aClass)) {
+                candidateClasses.add(aClass);
             }
         }
-        if (matchedClasses.isEmpty()) {
+        if (candidateClasses.isEmpty()) {
             return null;
-        } else if (matchedClasses.size() == 1) {
-            return matchedClasses.get(0);
+        } else if (candidateClasses.size() == 1) {
+            return candidateClasses.get(0);
         } else {
             privateLogger.info("Found multiple OpenCgaAnalysisExecutor candidates.");
-            for (Class<? extends T> matchedClass : matchedClasses) {
+            for (Class<? extends T> matchedClass : candidateClasses) {
                 privateLogger.info(" - " + matchedClass);
             }
             privateLogger.info("Sort by framework and source preference.");
@@ -364,34 +383,47 @@ public abstract class OpenCgaAnalysis {
                 return finalSourceTypes.indexOf(annot.source());
             }).thenComparing(Class::getName);
 
-            matchedClasses.sort(comparator);
+            candidateClasses.sort(comparator);
 
-            return matchedClasses.get(0);
+            return candidateClasses.get(0);
         }
+    }
+
+    private <T> boolean isValidClass(String analysisId, String analysisExecutorId, Class<T> aClass) {
+        AnalysisExecutor annotation = aClass.getAnnotation(AnalysisExecutor.class);
+        if (annotation != null) {
+            if (annotation.analysis().equals(analysisId)) {
+                if (StringUtils.isEmpty(analysisExecutorId) || analysisExecutorId.equals(annotation.id())) {
+                    if (CollectionUtils.isEmpty(sourceTypes) || sourceTypes.contains(annotation.source())) {
+                        if (CollectionUtils.isEmpty(availableFrameworks) || availableFrameworks.contains(annotation.framework())) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     protected final OpenCgaAnalysisExecutor getAnalysisExecutor()
             throws AnalysisExecutorException {
-        return getAnalysisExecutor(OpenCgaAnalysisExecutor.class, null, null, null);
+        return getAnalysisExecutor(OpenCgaAnalysisExecutor.class);
     }
 
     protected final <T extends OpenCgaAnalysisExecutor> T getAnalysisExecutor(Class<T> clazz)
             throws AnalysisExecutorException {
-        return getAnalysisExecutor(clazz, executorParams.getString(EXECUTOR_ID), null, null);
+        String executorId = executorParams == null ? null : executorParams.getString(EXECUTOR_ID);
+        if (StringUtils.isEmpty(executorId) && params != null) {
+            executorId = params.getString(EXECUTOR_ID);
+        }
+        return getAnalysisExecutor(clazz, executorId);
     }
 
     protected final <T extends OpenCgaAnalysisExecutor> T getAnalysisExecutor(Class<T> clazz, String analysisExecutorId)
             throws AnalysisExecutorException {
-        return getAnalysisExecutor(clazz, analysisExecutorId, null, null);
-    }
-
-    protected final <T extends OpenCgaAnalysisExecutor> T getAnalysisExecutor(
-            Class<T> clazz, String analysisExecutorId, List<AnalysisExecutor.Source> source,
-            List<AnalysisExecutor.Framework> availableFrameworks)
-            throws AnalysisExecutorException {
-        Class<? extends T> executorClass = getAnalysisExecutorClass(clazz, analysisExecutorId, source, availableFrameworks);
+        Class<? extends T> executorClass = getAnalysisExecutorClass(clazz, analysisExecutorId);
         if (executorClass == null) {
-            throw AnalysisExecutorException.executorNotFound(clazz, getId(), analysisExecutorId, source, availableFrameworks);
+            throw AnalysisExecutorException.executorNotFound(clazz, getId(), analysisExecutorId, sourceTypes, availableFrameworks);
         }
         try {
             T t = executorClass.newInstance();
