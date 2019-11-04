@@ -1,6 +1,7 @@
 package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.clinical.interpretation.Interpretation;
@@ -144,26 +145,37 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
         checkInterpretation(12, result);
     }
 
-    private void checkInterpretation(int expected, AnalysisResult result) throws AnalysisException {
+    private void checkInterpretation(int expected, AnalysisResult result) {
         System.out.println("out dir (to absolute path) = " + outDir.toAbsolutePath());
 
         String msg = "Success";
+
         Interpretation interpretation = null;
-        java.io.File file = new File(outDir + "/" + InterpretationAnalysis.INTERPRETATION_FILENAME);
-        if (file.exists()) {
-            interpretation = ClinicalUtils.readInterpretation(file.toPath());
-        } else {
-            msg = "Interpretation file not found for " + result.getId() + " analysis";
-            if (CollectionUtils.isNotEmpty(result.getEvents())) {
-                msg += (": " + org.apache.commons.lang3.StringUtils.join(result.getEvents(), ". "));
-            }
-        }
-        System.out.println("Reading interpretation:\n" + msg);
-        if (interpretation != null) {
+        try {
+            interpretation = readInterpretation(result, outDir);
             System.out.println("Interpreation ID: " + interpretation.getId());
             System.out.println("# primary findings: " + interpretation.getPrimaryFindings().size());
+        } catch (AnalysisException e) {
+            if (CollectionUtils.isNotEmpty(result.getEvents())) {
+                System.out.println(StringUtils.join(result.getEvents(), "\n"));
+            }
+            Assert.fail();
         }
-        Assert.assertEquals(expected, interpretation.getPrimaryFindings().size());
 
+        Assert.assertEquals(expected, interpretation.getPrimaryFindings().size());
     }
+
+    private Interpretation readInterpretation(AnalysisResult result, Path outDir)
+            throws AnalysisException {
+        File file = new java.io.File(outDir + "/" + InterpretationAnalysis.INTERPRETATION_FILENAME);
+        if (file.exists()) {
+            return ClinicalUtils.readInterpretation(file.toPath());
+        }
+        String msg = "Interpretation file not found for " + result.getId() + " analysis";
+        if (CollectionUtils.isNotEmpty(result.getEvents())) {
+            msg += (": " + StringUtils.join(result.getEvents(), ". "));
+        }
+        throw new AnalysisException(msg);
+    }
+
 }
