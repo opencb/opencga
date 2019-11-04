@@ -24,11 +24,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga-test</artifactId>
-<<<<<<< HEAD
-    <version>1.4.1</version>
-=======
     <version>1.4.2</version>
->>>>>>> hotfix-1.4.x
     <packaging>pom</packaging>
 
     <dependencies>
