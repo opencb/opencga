@@ -216,8 +216,11 @@ public class OpenCGATestExternalResource extends ExternalResource {
     }
 
     public String createTmpOutdir(String suffix) throws IOException {
-        String date = "I_tmp_" + new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss.SSS").format(new Date()) + suffix;
-        Path tmpOutDir = opencgaHome.resolve("jobs").resolve(date);
+        if (suffix.endsWith("_")) {
+            suffix = suffix.substring(0, suffix.length() - 1);
+        }
+        String folder = "I_tmp_" + new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss.SSS").format(new Date()) + suffix;
+        Path tmpOutDir = opencgaHome.resolve("jobs").resolve(folder);
         Files.createDirectory(tmpOutDir);
         return tmpOutDir.toString();
 //        return getCatalogManager().getJobManager().createJobOutDir(studyId, "I_tmp_" + date + sufix, sessionId).toString();

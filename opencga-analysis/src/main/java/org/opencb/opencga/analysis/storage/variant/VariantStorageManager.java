@@ -30,7 +30,11 @@ import org.opencb.biodata.tools.variant.converters.ga4gh.factories.AvroGa4GhVari
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.ProtoGa4GhVariantFactory;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.solr.SolrManager;
+import org.opencb.opencga.analysis.storage.StorageManager;
+import org.opencb.opencga.analysis.storage.models.StudyInfo;
 import org.opencb.opencga.analysis.storage.variant.metadata.CatalogStorageMetadataSynchronizer;
+import org.opencb.opencga.analysis.storage.variant.metadata.CatalogVariantMetadataFactory;
+import org.opencb.opencga.analysis.storage.variant.operations.*;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
@@ -38,6 +42,8 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.analysis.result.AnalysisResult;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.results.VariantQueryResult;
@@ -45,10 +51,6 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.analysis.storage.StorageManager;
-import org.opencb.opencga.analysis.storage.models.StudyInfo;
-import org.opencb.opencga.analysis.storage.variant.metadata.CatalogVariantMetadataFactory;
-import org.opencb.opencga.analysis.storage.variant.operations.*;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -60,6 +62,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
+import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
@@ -67,6 +70,7 @@ import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -113,7 +117,7 @@ public class VariantStorageManager extends StorageManager {
     public void importData(URI inputUri, String study, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
 
-        VariantExportStorageOperation op = new VariantExportStorageOperation(catalogManager, storageConfiguration);
+        VariantImportStorageOperation op = new VariantImportStorageOperation(catalogManager, storageEngineFactory);
         StudyInfo studyInfo = getStudyInfo(study, Collections.emptyList(), sessionId);
         op.importData(studyInfo, inputUri, sessionId);
 
@@ -132,7 +136,7 @@ public class VariantStorageManager extends StorageManager {
      * @throws StorageEngineException If there is any error exporting variants
      */
     public List<URI> exportData(String outputFile, VariantOutputFormat outputFormat, String study, String sessionId)
-            throws StorageEngineException, CatalogException, IOException {
+            throws StorageEngineException, CatalogException, IOException, AnalysisException {
         Query query = new Query(VariantQueryParam.INCLUDE_STUDY.key(), study)
                 .append(VariantQueryParam.STUDY.key(), study);
         return exportData(outputFile, outputFormat, null, query, new QueryOptions(), sessionId);
@@ -153,23 +157,42 @@ public class VariantStorageManager extends StorageManager {
      */
     public List<URI> exportData(String outputFile, VariantOutputFormat outputFormat, String variantsFile,
                                 Query query, QueryOptions queryOptions, String sessionId)
-            throws CatalogException, IOException, StorageEngineException {
+            throws CatalogException, IOException, StorageEngineException, AnalysisException {
         if (query == null) {
             query = new Query();
         }
-        VariantExportStorageOperation op = new VariantExportStorageOperation(catalogManager, storageConfiguration);
 
         catalogUtils.parseQuery(query, sessionId);
-        Collection<String> studies = checkSamplesPermissions(query, queryOptions, sessionId).keySet();
-        if (studies.isEmpty()) {
-            studies = catalogUtils.getStudies(query, sessionId);
-        }
-        List<StudyInfo> studyInfos = new ArrayList<>(studies.size());
-        for (String study : studies) {
-            studyInfos.add(getStudyInfo(study, Collections.emptyList(), sessionId));
-        }
+        checkSamplesPermissions(query, queryOptions, sessionId);
 
-        return op.exportData(studyInfos, query, outputFormat, outputFile, variantsFile, sessionId, queryOptions);
+        Path outDir;
+        if (StringUtils.isEmpty(outputFile)) {
+            outDir = Paths.get("");
+        } else {
+            URI uri = URI.create(outputFile);
+            if (StringUtils.isEmpty(uri.getScheme()) || uri.getScheme().equals("file")) {
+                java.io.File file = Paths.get(outputFile).toFile();
+                if (file.exists() && file.isDirectory()) {
+                    outDir = Paths.get(outputFile).toAbsolutePath();
+                } else {
+                    outDir = Paths.get(outputFile).toAbsolutePath().getParent();
+                }
+            } else {
+                outDir = Paths.get("");
+            }
+        }
+        AnalysisResult result = new VariantExportStorageOperation()
+                .setQuery(query)
+                .setOutputFormat(outputFormat)
+                .setVariantsFile(variantsFile)
+                .setOutputFile(outputFile)
+                .setUp(null, catalogManager, this, queryOptions, outDir, sessionId)
+                .start();
+
+        return result.getOutputFiles()
+                .stream()
+                .map(fileResult -> outDir.resolve(fileResult.getPath()).toUri())
+                .collect(Collectors.toList());
     }
 
     // --------------------------//
