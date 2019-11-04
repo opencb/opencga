@@ -294,7 +294,7 @@ public abstract class OpenCgaAnalysis {
 
     @FunctionalInterface
     protected interface StepRunnable {
-        void run() throws AnalysisException;
+        void run() throws Exception;
     }
 
     protected final void step(StepRunnable step) throws AnalysisException {
@@ -305,7 +305,9 @@ public abstract class OpenCgaAnalysis {
         if (checkStep(stepId)) {
             try {
                 step.run();
-            } catch (RuntimeException e) {
+            } catch (AnalysisException e) {
+                throw e;
+            } catch (Exception e) {
                 throw new AnalysisException("Exception from step " + stepId, e);
             }
         }
