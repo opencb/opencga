@@ -152,7 +152,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%d\t%d\n", "",
                         StringUtils.defaultIfEmpty(user.getId(), "-"), StringUtils.defaultIfEmpty(user.getName(), "-"),
                         StringUtils.defaultIfEmpty(user.getEmail(), "-"), StringUtils.defaultIfEmpty(user.getOrganization(), "-"),
-                        StringUtils.defaultIfEmpty(user.getAccount() != null ? user.getAccount().getType() : "-", "-"),
+                        StringUtils.defaultIfEmpty(user.getAccount() != null ? user.getAccount().getType().name() : "-", "-"),
                         user.getSize(), user.getQuota()));
 
                 if (user.getProjects().size() > 0) {
@@ -278,7 +278,8 @@ public class TextOutputWriter extends AbstractOutputWriter {
                     file.getRelatedFiles() != null ?
                             StringUtils.join(file.getRelatedFiles()
                                     .stream()
-                                    .map(File.RelatedFile::getFileId)
+                                    .map(File.RelatedFile::getFile)
+                                    .map(File::getId)
                                     .collect(Collectors.toList()), ", ")
                             : "-",
                     file.getSamples() != null ?

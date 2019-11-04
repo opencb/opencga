@@ -52,17 +52,16 @@ public class VariantWriterFactoryTest {
 
     @Test
     public void checkOutputTest() throws Exception {
-        String path = "";
-        assertEquals(path + "myFile.json.gz", VariantWriterFactory.checkOutput(path + "myFile", JSON_GZ));
-        assertEquals(path + "myFile.json.gz", VariantWriterFactory.checkOutput(path + "myFile.json", JSON_GZ));
-        assertEquals(path + "myFile.json.gz", VariantWriterFactory.checkOutput(path + "myFile.json.gz", JSON_GZ));
-        assertEquals(path + "myFile.json.gz", VariantWriterFactory.checkOutput(path + "myFile.json.gz.", JSON_GZ));
-        assertEquals(path + "myFile.stats.tsv.gz", VariantWriterFactory.checkOutput(path + "myFile.", STATS_GZ));
-        assertEquals(path + "myFile.stats.tsv.gz", VariantWriterFactory.checkOutput(path + "myFile", STATS_GZ));
-        assertEquals(path + "myFile.stats.tsv.gz", VariantWriterFactory.checkOutput(path + "myFile.stats", STATS_GZ));
-        assertEquals(path + "myFile.stats.tsv.gz", VariantWriterFactory.checkOutput(path + "myFile.stats.", STATS_GZ));
-        assertEquals(path + "myFile.stats.tsv.gz", VariantWriterFactory.checkOutput(path + "myFile.stats.tsv", STATS_GZ));
-        assertEquals(path + "myFile.stats.tsv.gz", VariantWriterFactory.checkOutput(path + "myFile.stats.tsv.gz", STATS_GZ));
+        assertEquals("myFile.json.gz", VariantWriterFactory.checkOutput("myFile", JSON_GZ));
+        assertEquals("myFile.json.gz", VariantWriterFactory.checkOutput("myFile.json", JSON_GZ));
+        assertEquals("myFile.json.gz", VariantWriterFactory.checkOutput("myFile.json.gz", JSON_GZ));
+        assertEquals("myFile.json.gz", VariantWriterFactory.checkOutput("myFile.json.gz.", JSON_GZ));
+        assertEquals("myFile.stats.tsv.gz", VariantWriterFactory.checkOutput("myFile.", STATS_GZ));
+        assertEquals("myFile.stats.tsv.gz", VariantWriterFactory.checkOutput("myFile", STATS_GZ));
+        assertEquals("myFile.stats.tsv.gz", VariantWriterFactory.checkOutput("myFile.stats", STATS_GZ));
+        assertEquals("myFile.stats.tsv.gz", VariantWriterFactory.checkOutput("myFile.stats.", STATS_GZ));
+        assertEquals("myFile.stats.tsv.gz", VariantWriterFactory.checkOutput("myFile.stats.tsv", STATS_GZ));
+        assertEquals("myFile.stats.tsv.gz", VariantWriterFactory.checkOutput("myFile.stats.tsv.gz", STATS_GZ));
     }
 
     @Test

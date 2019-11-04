@@ -322,6 +322,22 @@ migrateCollection("file", {"uuid": {$exists: false}}, {attributes: 0, stats: 0},
     }
     /* end uid and uuid migration: #819 */
 
+    // Check related files
+    if (isNotEmptyArray(doc.relatedFiles)) {
+        var relatedFiles = [];
+
+        for (var i = 0; i < doc.relatedFiles.length; i++) {
+            relatedFiles.push({
+                "relation": doc.relatedFiles[i].relation,
+                "file": {
+                    "id": doc.relatedFiles[i].fileId,
+                }
+            });
+        }
+
+        setChanges["relatedFiles"] = relatedFiles;
+    }
+
     haveInternalPermissions(doc._studyId, doc._acl, studyUserMap);
 
     bulk.find({"_id": doc._id}).updateOne({"$set": setChanges, "$unset": unsetChanges});
@@ -491,10 +507,10 @@ updateStudyPermissions(studyUserMap, "SAMPLE");
 var projectUidFqnMap = {};
 
 print("\nMigrating user");
-migrateCollection("user", {"uuid": {$exists: false}}, {attributes: 0}, function(bulk, doc) {
-    if (isNotUndefinedOrNull(doc.projects) && doc.projects.length > 0) {
-        var changes = {};
+migrateCollection("user", {"account.authentication": {$exists: false}}, {attributes: 0}, function(bulk, doc) {
+    var changes = {};
 
+    if (isNotUndefinedOrNull(doc.projects) && doc.projects.length > 0 && isUndefinedOrNull(doc.projects[0].uid)) {
         var projects = [];
         for (var i in doc.projects) {
             var project = doc.projects[i];
@@ -516,10 +532,19 @@ migrateCollection("user", {"uuid": {$exists: false}}, {attributes: 0}, function(
         if (projects.length > 0) {
             changes["projects"] = projects;
         }
+    }
 
-        if (Object.keys(changes).length > 0) {
-            bulk.find({"_id": doc._id}).updateOne({"$set": changes});
-        }
+    // #1268
+    var account = doc.account;
+    account["type"] = account.type.toUpperCase();
+    account["authentication"] = {
+        id: account.authOrigin,
+        application: false
+    };
+    changes['account'] = account;
+
+    if (Object.keys(changes).length > 0) {
+        bulk.find({"_id": doc._id}).updateOne({"$set": changes});
     }
 });
 
@@ -682,6 +707,27 @@ db.panel.createIndex({"uid": 1, "version": 1}, {"unique": true, "background": tr
 db.panel.createIndex({"id": 1, "studyUid": 1, "version": 1}, {"unique": true, "background": true});
 db.panel.createIndex({"_lastOfVersion": 1, "studyUid": 1}, {"background": true});
 db.panel.createIndex({"studyUid": 1}, {"background": true});
+
+db.clinical.createIndex({"uuid": 1}, {"background": true});
+db.clinical.createIndex({"uid": 1}, {"background": true});
+db.clinical.createIndex({"id": 1, "studyUid": 1}, {"unique": true, "background": true});
+db.clinical.createIndex({"type": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.clinical.createIndex({"status.name": 1, "studyUid": 1}, {"background": true});
+db.clinical.createIndex({"_acl": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.clinical.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.clinical.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.clinical.createIndex({"dueDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.clinical.createIndex({"priority": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.clinical.createIndex({"flags": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.clinical.createIndex({"studyUid": 1}, {"background": true});
+
+db.interpretation.createIndex({"uuid": 1}, {"background": true});
+db.interpretation.createIndex({"uid": 1}, {"background": true});
+db.interpretation.createIndex({"id": 1, "studyUid": 1}, {"unique": true, "background": true});
+db.interpretation.createIndex({"status": 1, "studyUid": 1}, {"background": true});
+db.interpretation.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.interpretation.createIndex({"_modificationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});
+db.interpretation.createIndex({"studyUid": 1}, {"background": true});
 
 // #912
 db.job.createIndex({"_creationDate": 1, "studyUid": 1, "status.name": 1}, {"background": true});

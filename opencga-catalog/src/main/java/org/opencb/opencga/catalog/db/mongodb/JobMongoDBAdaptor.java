@@ -161,7 +161,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
 
     @Override
-    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermissions)
+    public QueryResult<Long> count(long studyUid, Query query, String user, StudyAclEntry.StudyPermissions studyPermissions)
             throws CatalogDBException, CatalogAuthorizationException {
         filterOutDeleted(query);
 
@@ -169,10 +169,10 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 ? StudyAclEntry.StudyPermissions.VIEW_JOBS : studyPermissions);
 
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), studyUid);
         QueryResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
+            throw new CatalogDBException("Study " + studyUid + " not found");
         }
 
         // Get the document query needed to check the permissions as well
@@ -361,11 +361,12 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public QueryResult<Job> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+    public QueryResult<Job> get(long studyUid, Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Job> documentList = new ArrayList<>();
         QueryResult<Job> queryResult;
-        try (DBIterator<Job> dbIterator = iterator(query, options, user)) {
+        try (DBIterator<Job> dbIterator = iterator(studyUid, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
@@ -378,7 +379,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            QueryResult<Long> count = count(query, user, StudyAclEntry.StudyPermissions.VIEW_JOBS);
+            QueryResult<Long> count = count(studyUid, query, user, StudyAclEntry.StudyPermissions.VIEW_JOBS);
             queryResult.setNumTotalResults(count.first());
         }
         return queryResult;
@@ -433,11 +434,12 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+    public QueryResult nativeGet(long studyUid, Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
         QueryResult<Document> queryResult;
-        try (DBIterator<Document> dbIterator = nativeIterator(query, options, user)) {
+        try (DBIterator<Document> dbIterator = nativeIterator(studyUid, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
@@ -472,20 +474,20 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public DBIterator<Job> iterator(Query query, QueryOptions options, String user)
+    public DBIterator<Job> iterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        Document studyDocument = getStudyDocument(query);
+        Document studyDocument = getStudyDocument(studyUid);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
         return new MongoDBIterator<>(mongoCursor, jobConverter);
     }
 
     @Override
-    public DBIterator nativeIterator(Query query, QueryOptions options, String user)
+    public DBIterator nativeIterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        Document studyDocument = getStudyDocument(query);
+        Document studyDocument = getStudyDocument(studyUid);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, studyDocument, user);
         return new MongoDBIterator<>(mongoCursor);
     }
@@ -524,12 +526,12 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         return jobCollection.nativeQuery().find(bson, qOptions).iterator();
     }
 
-    private Document getStudyDocument(Query query) throws CatalogDBException {
+    private Document getStudyDocument(long studyUid) throws CatalogDBException {
         // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), query.getLong(QueryParams.STUDY_UID.key()));
+        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), studyUid);
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
         if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + query.getLong(QueryParams.STUDY_UID.key()) + " not found");
+            throw new CatalogDBException("Study " + studyUid + " not found");
         }
         return queryResult.first();
     }
@@ -556,9 +558,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options, String user)
+    public QueryResult groupBy(long studyUid, Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        Document studyDocument = getStudyDocument(query);
+        Document studyDocument = getStudyDocument(studyUid);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                 StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name(), Entity.JOB.name());
         filterOutDeleted(query);
@@ -567,9 +569,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    public QueryResult groupBy(long studyUid, Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        Document studyDocument = getStudyDocument(query);
+        Document studyDocument = getStudyDocument(studyUid);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                 StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name(), Entity.JOB.name());
         filterOutDeleted(query);

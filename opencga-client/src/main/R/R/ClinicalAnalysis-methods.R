@@ -15,16 +15,18 @@
 
 setMethod("clinicalAnalysisClient", "OpencgaR", function(OpencgaR, clinicalAnalysis,
                                                  action, params=NULL, ...) {
-    category <- "clinical"
+    category <- "analysis"
+    subcategory <- "clinical"
     switch(action,
-           search=fetchOpenCGA(object=OpencgaR, category=category, 
+           search=fetchOpenCGA(object=OpencgaR, category=category, subcategory= subcategory,
                                action=action, params=params, httpMethod="GET", ...),
-           info=fetchOpenCGA(object=OpencgaR, category=category, 
-                             categoryId=clinicalAnalysis, action=action, 
+           info=fetchOpenCGA(object=OpencgaR, category=category, subcategory= subcategory,
+                             subcategoryId=clinicalAnalysis, action=action, 
                              params=params, httpMethod="GET", ...),
-           create=fetchOpenCGA(object=OpencgaR, category=category, 
+           create=fetchOpenCGA(object=OpencgaR, category=category, subcategory= subcategory,
                                action=action, params=params, httpMethod="POST", ...),
-           update=fetchOpenCGA(object=OpencgaR, category=category, categoryId=clinicalAnalysis,
+           update=fetchOpenCGA(object=OpencgaR, category=category, subcategory= subcategory,
+                               subcategoryId=clinicalAnalysis,
                                action=action, params=params, httpMethod="POST", ...)
     )
 })
@@ -37,5 +39,16 @@ setMethod("clinicalAnalysisInterpretationClient", "OpencgaR", function(OpencgaR,
            update=fetchOpenCGA(object=OpencgaR, category=category, 
                                categoryId=clinicalAnalysis,action=action, params=params, 
                                as.queryParam="interpretationAction", httpMethod="POST", ...)
+    )
+})
+
+#' @export
+setMethod("clinicalAnalysisInterpretationToolClient", "OpencgaR", function(OpencgaR, action, 
+                                                                           params=NULL, ...) {
+    category <- "analysis/clinical"
+    subcategory <- "interpretation/tools"
+    switch(action,
+           custom=fetchOpenCGA(object=OpencgaR, category=category, subcategory=subcategory,
+                               action=action, params=params, httpMethod="GET", ...)
     )
 })

@@ -32,7 +32,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
@@ -172,48 +175,75 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
     /* =================    ALIGNMENTS     ===================*/
 
     @GET
-    @Path("/reads/{file}")
+    @Path("/reads/{study}/{file}")
     @ApiOperation(value = "Fetch alignment files using HTSget protocol")
     @Produces("text/plain")
     public Response getHtsget(
             @Context HttpHeaders headers,
             @ApiParam(value = "File id, name or path") @PathParam("file") String fileIdStr,
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
             @ApiParam(value = "Reference sequence name (Example: 'chr1', '1' or 'chrX'") @QueryParam("referenceName") String reference,
             @ApiParam(value = "The start position of the range on the reference, 0-based, inclusive.") @QueryParam("start") int start,
-            @ApiParam(value = "The end position of the range on the reference, 0-based, exclusive.") @QueryParam("end") int end) {
+            @ApiParam(value = "The end position of the range on the reference, 0-based, exclusive.") @QueryParam("end") int end,
+            @ApiParam(value = "Reference genome.") @QueryParam("referenceGenome") String referenceGenome) {
         try {
-            QueryResult<File> queryResult = catalogManager.getFileManager().get(studyStr, fileIdStr, this.queryOptions, sessionId);
+            File file = catalogManager.getFileManager().get(studyStr, fileIdStr, FileManager.EXCLUDE_FILE_ATTRIBUTES, sessionId).first();
+            java.nio.file.Path referencePath = null;
 
-            BamManager bamManager = new BamManager(Paths.get(queryResult.first().getUri().getPath()));
-            List<String> chunkOffsetList = bamManager.getBreakpoints(new Region(reference, start, end));
+            if (file.getFormat() == File.Format.CRAM) {
+                if (org.apache.commons.lang3.StringUtils.isNotEmpty(referenceGenome)) {
+                    referencePath = Paths.get(catalogManager.getFileManager().get(studyStr, referenceGenome, FileManager.INCLUDE_FILE_URI_PATH, sessionId).first().getUri().getPath());
+                } else if (ListUtils.isNotEmpty(file.getRelatedFiles())) {
+                    for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
+                        if (relatedFile.getRelation() == File.RelatedFile.Relation.REFERENCE_GENOME) {
+                            referencePath = Paths.get(relatedFile.getFile().getUri().getPath());
+                            break;
+                        }
+                    }
 
-            String url = uriInfo.getBaseUri().toString() + apiVersion + "/utils/ranges/" + fileIdStr + "?study=" + studyStr;
-            List<ObjectMap> urls = new ArrayList<>(chunkOffsetList.size() + 2);
-
-            // Add header
-            urls.add(new ObjectMap("url", "data:application/octet-stream;base64,"
-                    + Base64.getEncoder().encodeToString(bamManager.compressedHeader())));
-
-            // Add urls to ranges
-            for (String byteRange : chunkOffsetList) {
-                urls.add(new ObjectMap()
-                        .append("url", url)
-                        .append("headers", new ObjectMap()
-                                .append("Authorization", "Bearer " + sessionId)
-                                .append("Range", "bytes=" + byteRange)
-                        )
-                );
+                    if (referencePath == null) {
+                        // Look for a reference genome in the study
+                        Query referenceQuery = new Query(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.REFERENCE_GENOME);
+                        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(studyStr, referenceQuery, FileManager.INCLUDE_FILE_URI_PATH, sessionId);
+                        if (fileQueryResult.getNumResults() == 0 || fileQueryResult.getNumResults() > 1) {
+                            throw new CatalogException("Missing referenceGenome field for CRAM file");
+                        }
+                        referencePath = Paths.get(fileQueryResult.first().getUri().getPath());
+                    }
+                }
             }
+            try (BamManager bamManager = new BamManager(Paths.get(file.getUri().getPath()), referencePath)) {
+                List<String> chunkOffsetList = bamManager.getBreakpoints(new Region(reference, start, end));
 
-            // Add EOF marker
-            urls.add(new ObjectMap("url", "data:application/octet-stream;base64,H4sIBAAAAAAA/wYAQkMCABsAAwAAAAAAAAAAAA=="));
+                String url = uriInfo.getBaseUri().toString() + apiVersion + "/utils/ranges/" + fileIdStr + "?study=" + studyStr;
+                List<ObjectMap> urls = new ArrayList<>(chunkOffsetList.size() + 2);
 
-            ObjectMap result = new ObjectMap("htsget", new ObjectMap()
-                    .append("format", queryResult.first().getFormat())
-                    .append("urls", urls)
-            );
-            return createRawOkResponse(result);
+                // Add header
+                urls.add(new ObjectMap()
+                        .append("url", "data:application/octet-stream;base64," + Base64.getEncoder().encodeToString(bamManager.compressedHeader()))
+                        .append("class", "header"));
+
+                // Add urls to ranges
+                for (String byteRange : chunkOffsetList) {
+                    urls.add(new ObjectMap()
+                            .append("url", url)
+                            .append("headers", new ObjectMap()
+                                    .append("Authorization", "Bearer " + sessionId)
+                                    .append("Range", "bytes=" + byteRange)
+                            )
+                            .append("class", "body")
+                    );
+                }
+
+                // Add EOF marker
+                urls.add(new ObjectMap("url", "data:application/octet-stream;base64,H4sIBAAAAAAA/wYAQkMCABsAAwAAAAAAAAAAAA=="));
+
+                ObjectMap result = new ObjectMap("htsget", new ObjectMap()
+                        .append("format", file.getFormat())
+                        .append("urls", urls)
+                );
+                return createRawOkResponse(result);
+            }
         } catch (CatalogException | IOException e) {
             return createErrorResponse(e);
         }

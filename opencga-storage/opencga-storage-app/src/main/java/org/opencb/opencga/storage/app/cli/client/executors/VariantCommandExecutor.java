@@ -349,13 +349,16 @@ public class VariantCommandExecutor extends CommandExecutor {
             URI uri = StringUtils.isEmpty(variantQueryCommandOptions.commonQueryOptions.output)
                     ? null
                     : UriUtils.createUri(variantQueryCommandOptions.commonQueryOptions.output);
+            URI variantsFile = StringUtils.isEmpty(variantQueryCommandOptions.variantsFile)
+                    ? null
+                    : UriUtils.createUri(variantQueryCommandOptions.variantsFile);
 
             if (variantQueryCommandOptions.annotations != null) {
                 options.add("annotations", variantQueryCommandOptions.annotations);
             }
             VariantWriterFactory.VariantOutputFormat of = VariantWriterFactory
                     .toOutputFormat(variantQueryCommandOptions.outputFormat, variantQueryCommandOptions.commonQueryOptions.output);
-            variantStorageEngine.exportData(uri, of, query, options);
+            variantStorageEngine.exportData(uri, of, variantsFile, query, options);
         }
     }
 
@@ -588,13 +591,21 @@ public class VariantCommandExecutor extends CommandExecutor {
 
 //        assertDirectoryExists(directoryUri);
 
-        /*
-         * Create and load stats
-         */
-        if (cohorts == null || cohorts.values().stream().allMatch(Set::isEmpty)) {
-            variantStorageEngine.calculateStats(studyName, cohortNames, options);
+        if (statsVariantsCommandOptions.load != null) {
+            DefaultVariantStatisticsManager statisticsManager =
+                    (DefaultVariantStatisticsManager) variantStorageEngine.newVariantStatisticsManager();
+            statisticsManager.loadStats(
+                    UriUtils.createUri(statsVariantsCommandOptions.load, true),
+                    statsVariantsCommandOptions.study, options);
         } else {
-            variantStorageEngine.calculateStats(studyName, cohorts, options);
+            /*
+             * Create and load stats
+             */
+            if (cohorts == null || cohorts.values().stream().allMatch(Set::isEmpty)) {
+                variantStorageEngine.calculateStats(studyName, cohortNames, options);
+            } else {
+                variantStorageEngine.calculateStats(studyName, cohorts, options);
+            }
         }
     }
 

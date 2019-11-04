@@ -33,8 +33,10 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 
 import java.util.List;
 
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.MendelianErrorPrecomputeCommandOptions.MENDELIAN_ERRORS_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.MendelianErrorPrecomputeCommandOptions.MENDELIAN_ERRORS_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexRemoveCommandOptions.SECONDARY_INDEX_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
@@ -66,7 +68,8 @@ public class VariantCommandOptions {
 //    public final QueryVariantCommandOptionsOld queryVariantCommandOptionsOld;
     public final VariantQueryCommandOptions queryVariantCommandOptions;
     public final VariantStatsCommandOptions statsVariantCommandOptions;
-    public final MendelianErrorPrecomputeCommandOptions mendelianErrorCommandOptions;
+    public final SampleIndexCommandOptions sampleIndexCommandOptions;
+    public final FamilyIndexCommandOptions familyIndexCommandOptions;
     public final VariantAnnotateCommandOptions annotateVariantCommandOptions;
     public final AnnotationSaveCommandOptions annotationSaveSnapshotCommandOptions;
     public final AnnotationDeleteCommandOptions annotationDeleteCommandOptions;
@@ -99,7 +102,8 @@ public class VariantCommandOptions {
 //        this.queryVariantCommandOptionsOld = new QueryVariantCommandOptionsOld();
         this.queryVariantCommandOptions = new VariantQueryCommandOptions();
         this.statsVariantCommandOptions = new VariantStatsCommandOptions();
-        this.mendelianErrorCommandOptions = new MendelianErrorPrecomputeCommandOptions();
+        this.sampleIndexCommandOptions = new SampleIndexCommandOptions();
+        this.familyIndexCommandOptions = new FamilyIndexCommandOptions();
         this.annotateVariantCommandOptions = new VariantAnnotateCommandOptions();
         this.annotationSaveSnapshotCommandOptions = new AnnotationSaveCommandOptions();
         this.annotationDeleteCommandOptions = new AnnotationDeleteCommandOptions();
@@ -476,9 +480,18 @@ public class VariantCommandOptions {
         @Parameter(names = {"--family-segregation"}, description = FAMILY_SEGREGATION_DESCR, arity = 1)
         public String modeOfInheritance;
 
+        @Parameter(names = {"--family-members"}, description = FAMILY_MEMBERS_DESC, arity = 1)
+        public String familyMembers;
+
+        @Parameter(names = {"--family-proband"}, description = FAMILY_PROBAND_DESC, arity = 1)
+        public String familyProband;
+
         @Parameter(names = {"--panel"}, description = PANEL_DESC, arity = 1)
         public String panel;
 
+        // FIXME: This param should not be in the REST command line!
+        @Parameter(names = {"--variants-file"}, description = "GFF File with regions")
+        public String variantsFile;
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Create and load stats into a database.")
@@ -501,19 +514,35 @@ public class VariantCommandOptions {
         public String catalogPath = null;
     }
 
-    @Parameters(commandNames = {MENDELIAN_ERRORS_COMMAND}, commandDescription = MENDELIAN_ERRORS_COMMAND_DESCRIPTION)
-    public class MendelianErrorPrecomputeCommandOptions extends GeneralCliOptions.StudyOption {
-        public static final String MENDELIAN_ERRORS_COMMAND = "mendelian-errors";
-        public static final String MENDELIAN_ERRORS_COMMAND_DESCRIPTION = "Precompute mendelian errors for a given set of families.";
+    @Parameters(commandNames = {SAMPLE_INDEX_COMMAND}, commandDescription = SAMPLE_INDEX_COMMAND_DESCRIPTION)
+    public class SampleIndexCommandOptions extends GeneralCliOptions.StudyOption {
+        public static final String SAMPLE_INDEX_COMMAND = "sample-index";
+        public static final String SAMPLE_INDEX_COMMAND_DESCRIPTION = "Annotate sample index.";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--family"}, required = true, description = "Families to precompute the mendelian errors. " +
-                "Use \"" + VariantQueryUtils.ALL + "\" to calculate mendelian errors for all families in the study.")
+        @Parameter(names = {"--sample"}, required = true, description = "Samples to include in the index. " +
+                "Use \"" + VariantQueryUtils.ALL + "\" to annotate the index for all samples in the study.")
+        public String sample;
+
+//        @Parameter(names = {"--overwrite"}, description = "Overwrite mendelian errors")
+//        public boolean overwrite = false;
+    }
+
+    @Parameters(commandNames = {FAMILY_INDEX_COMMAND}, commandDescription = FAMILY_INDEX_COMMAND_DESCRIPTION)
+    public class FamilyIndexCommandOptions extends GeneralCliOptions.StudyOption {
+        public static final String FAMILY_INDEX_COMMAND = "family-index";
+        public static final String FAMILY_INDEX_COMMAND_DESCRIPTION = "Build the family index.";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--family"}, required = true, description = "Families to index. " +
+                "Use \"" + VariantQueryUtils.ALL + "\" to index all families in the study.")
         public String family;
 
-        @Parameter(names = {"--overwrite"}, description = "Overwrite mendelian errors")
+        @Parameter(names = {"--overwrite"}, description = "Overwrite existing values")
         public boolean overwrite = false;
     }
 

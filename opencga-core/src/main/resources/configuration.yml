@@ -10,49 +10,9 @@ dataDir: ${OPENCGA.USER.WORKSPACE}
 tempJobsDir: ${OPENCGA.JOBS.DIR}
 toolDir: ${OPENCGA.TOOLS.DIR}
 
-admin:
-  password: ""
-  email: ""
-
-audit:
-  maxDocuments: 20000000 # Maximum number of documents that will be created in the audit collection.
-  maxSize: 100000000000  # Maximum size that the audit collection will have in bytes.
-  javaClass: ""          # Java class of the audit implementation to be used to audit.
-  exclude: []            # Array of resource:action to select pairwise resource-actions to be excluded for audit purposes.
-
-monitor:
-  daysToRemove: 30
-  executionDaemonInterval: 4000 # number of milliseconds between checks
-  fileDaemonInterval: 8000      # number of milliseconds between checks
-  port: ${OPENCGA.MONITOR.PORT}
-
-execution:
-  mode: ${OPENCGA.EXECUTION.MODE}
-  defaultQueue: ""
-  availableQueues: ""
-  toolsPerQueue: {}
-
-email:
-  host: ${OPENCGA.MAIL.HOST}
-  port: ${OPENCGA.MAIL.PORT}
-  user: ${OPENCGA.MAIL.USER}
-  password: ${OPENCGA.MAIL.PASSWORD}
-  from: ""
-  ssl: false
-
-#hooks:
-#  user@project:study:              # Full Qualified Name of the study.
-#    file:                          # Entity where the hook will be checked
-#     - field: "name"               # Field of the entity to be checked
-#       value: "~(.*)SV.vcf.gz$"    # Value that needs to be satisfied to perform the hook action
-#       stage: "CREATE"             # Stage when the hook will be checked
-#       action: "ADD"               # Action to be performed
-#       where: "tags"               # Field over which the action will be performed
-#       what: "SV"                  # Value to be updated
-
+## Configuration for Catalog databases
 catalog:
-  # offset: Starting point for the catalog internal ids. Use a big offset number (1000000 for instance) if you plan to use numerical ids
-  #         for names or aliases of any entity.
+  # DEPRECATED
   offset: 0
   database:
     hosts:
@@ -62,7 +22,7 @@ catalog:
     options:
       authenticationDatabase: ${OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE}
       connectionsPerHost: ${OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST}
-  ## Solr configuration, by default is the same than storage
+  ## Solr Search engine configuration, by default is the same than storage
   search:
     # List of hosts pointing either to the Solr nodes directly using a complete URL or to the zookeper nodes with HOST:PORT
     #    Example for Solr connection:       http://opencga-solr-01.zone:8983/solr
@@ -75,17 +35,19 @@ catalog:
     timeout: ${OPENCGA.CATALOG.SEARCH.TIMEOUT}
     insertBatchSize: ${OPENCGA.CATALOG.SEARCH.BATCH}
 
+## We support multiple Authentication providers, if none is provided then we use an internal authentication implementation
 authentication:
   # Session expiration time in seconds
   expiration: 3600
-# LDAP configuration example
   authenticationOrigins:
+# LDAP configuration example
 #  - id: ldap            # Any id
 #    type: LDAP
 #    host: ldap://localhost:9000
 #    options:
 #      usersSearch: dc=ge,dc=co,dc=uk # Base search to look for the users
 #      groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups
+# Azure AD configuration example
 #  - id: aad                                               # Any id
 #    type: AzureAD
 #    host:
@@ -104,7 +66,54 @@ server:
     logFile: null
     defaultLimit: 2000
     maxLimit: 5000
-
   grpc:
     port: ${OPENCGA.SERVER.GRPC.PORT}
     logFile: null
+
+audit:
+  maxDocuments: 20000000 # Maximum number of documents that will be created in the audit collection.
+  maxSize: 100000000000  # Maximum size that the audit collection will have in bytes.
+  javaClass: ""          # Java class of the audit implementation to be used to audit.
+  exclude: []            # Array of resource:action to select pairwise resource-actions to be excluded for audit purposes.
+
+monitor:
+  daysToRemove: 30
+  executionDaemonInterval: 4000 # number of milliseconds between checks
+  fileDaemonInterval: 8000      # number of milliseconds between checks
+  port: ${OPENCGA.MONITOR.PORT}
+
+healthCheck:
+  interval : 30 # seconds to get actual healthCheck than cache
+
+execution:
+  mode: ${OPENCGA.EXECUTION.MODE}
+  maxConcurrentIndexJobs : 1 # only applies to local executor
+  defaultQueue: ""
+  availableQueues: ""
+  toolsPerQueue: {}
+  options:
+# Azure Batch Service configuration example
+#    batchAccount : "batchAccount"
+#    batchKey : "batchKey"
+#    batchUri : "https://batchservice.uksouth.batch.azure.com"
+#    batchPoolId : "poolId"
+#    dockerImageName : "openCGADockerImageName"
+#    dockerArgs : "dockerRunOptions"
+
+email:
+  host: ${OPENCGA.MAIL.HOST}
+  port: ${OPENCGA.MAIL.PORT}
+  user: ${OPENCGA.MAIL.USER}
+  password: ${OPENCGA.MAIL.PASSWORD}
+  from: ""
+  ssl: false
+
+#hooks:
+#  user@project:study:              # Full Qualified Name of the study.
+#    file:                          # Entity where the hook will be checked
+#     - field: "name"               # Field of the entity to be checked
+#       value: "~(.*)SV.vcf.gz$"    # Value that needs to be satisfied to perform the hook action
+#       stage: "CREATE"             # Stage when the hook will be checked
+#       action: "ADD"               # Action to be performed
+#       where: "tags"               # Field over which the action will be performed
+#       what: "SV"                  # Value to be updated

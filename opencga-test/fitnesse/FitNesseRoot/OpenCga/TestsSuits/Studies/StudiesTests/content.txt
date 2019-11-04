@@ -117,10 +117,51 @@
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/studies/$lStudyId/acl?$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
 
-!3 Create Group
+#deprecated
+
+!3 Create Group (Deprecated WS)
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$groupId",  "users" : "$userA,$userB"}|
 | POST | /v1/studies/$lStudyId/groups/create |200|  Content-Type: application/json ||
+
+!3 Remove Group
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"id" : "$groupId"}|
+| POST | /v1/studies/$lStudyId/groups/update?action=REMOVE |200|  Content-Type: application/json ||
+
+!3 Get Removed Group 
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/$lStudyId/groups?name=$groupId|200|  Content-Type: application/json |jsonbody.response[0].result.length == 0|
+
+
+!3 Create Group
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"name" : "$groupId",  "users" : "$userA,$userB"}|
+| POST | /v1/studies/$lStudyId/groups/update |200|  Content-Type: application/json ||
+
+!3 (Negative) Create Group With @@ in ID
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"id" : "@@ABC", "users" : "$userA,$userB"}|
+| POST | /v1/studies/$lStudyId/groups/update |500|  Content-Type: application/json |jsonbody.error == "Error in identifier: Invalid group identifier format"|
+
+!3 Create Group With @ in Name
+!|Table: Rest Fixture | $baseURL |
+| setBody | { "name" : "@XYZ", "users" : "$userA,$userB"}|
+| POST | /v1/studies/$lStudyId/groups/update |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == "@XYZ" && jsonbody.response[0].result[0].id == "@XYZ" |
+
+!3 Remove Group
+!|Table: Rest Fixture | $baseURL |
+| setBody | {"id" : "@XYZ"}|
+| POST | /v1/studies/$lStudyId/groups/update?action=REMOVE |200|  Content-Type: application/json |jsonbody.response[0].result.length == 1|
+
+!3 Get Group By Name
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/$lStudyId/groups?name=$groupId|200|  Content-Type: application/json |jsonbody.response[0].result.length == 1 && jsonbody.response[0].result[0].name == "$groupId"|
+
+# @ is added to groupID 
+!3 Get Group By ID
+!|Table: Rest Fixture | $baseURL |
+| GET | /v1/studies/$lStudyId/groups?id=@$groupId|200|  Content-Type: application/json |jsonbody.response[0].result.length == 1 && jsonbody.response[0].result[0].id == "@$groupId"|
 
 !3 Create Empty Group
 !|Table: Rest Fixture | $baseURL |
@@ -158,7 +199,7 @@
 
 !3 Get Groups From Studies In Reverser Order With One Invalid Entry And Silent False
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId,000,$lStudyId/groups?silent=false|403|Content-Type: application/json |jsonbody.error == "No study found given '000' or the user '$user'  does not have permissions to view any."|
+| GET | /v1/studies/$studyId,000,$lStudyId/groups?silent=false|500|Content-Type: application/json |jsonbody.error == "No study found given '000' or the user '$user'  does not have permissions to view any."|
 
 !3 Get Groups From Studies In Reverser Order With One Invalid Entry And Silent True
 !|Table: Rest Fixture | $baseURL |

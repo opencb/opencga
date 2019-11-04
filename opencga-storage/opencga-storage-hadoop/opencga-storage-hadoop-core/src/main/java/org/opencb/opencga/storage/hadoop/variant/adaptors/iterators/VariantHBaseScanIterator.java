@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class VariantHBaseScanIterator extends VariantDBIterator {
 
+    private static final int POOL_SIZE = 4;
     private final Logger logger = LoggerFactory.getLogger(VariantHBaseScanIterator.class);
     private final Iterator<ResultScanner> resultScanners;
     private ResultScanner currentResultScanner;
@@ -71,7 +72,7 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
                 .setIncludeIndexStatus(query.getBoolean(VariantQueryUtils.VARIANTS_TO_INDEX.key(), false))
                 .setFormats(formats);
         setLimit(options.getLong(QueryOptions.LIMIT));
-        threadPool = Executors.newFixedThreadPool(4);
+        threadPool = Executors.newFixedThreadPool(POOL_SIZE);
     }
 
     @Override
@@ -133,8 +134,11 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
     @Override
     public void close() throws Exception {
         super.close();
-        logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms",
-                getTimeFetching() / 1000000.0, getTimeConverting() / 1000000.0);
+        double timeConverting = getTimeConverting() / 1000000.0;
+        logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms (total)   ~{}ms/thread",
+                getTimeFetching() / 1000000.0,
+                timeConverting,
+                timeConverting / POOL_SIZE);
         threadPool.shutdownNow();
         if (currentResultScanner != null) {
             currentResultScanner.close();

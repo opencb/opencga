@@ -3,6 +3,8 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.feature.Genotype;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -27,7 +29,11 @@ public enum GenotypeClass {
      * 1, 1/1, 1|1, 2/2, 3/3, 1/1/1, ...
      */
     HOM_ALT(str -> {
-        Genotype gt = new Genotype(str);
+        Genotype gt = parseGenotype(str);
+        if (gt == null) {
+            // Skip invalid genotypes
+            return false;
+        }
         int[] alleles = gt.getAllelesIdx();
         int firstAllele = alleles[0];
         if (firstAllele <= 0) {
@@ -48,7 +54,11 @@ public enum GenotypeClass {
      * 0/1, 1/2, 0/2, 2/4, 0|1, 1|0, 0/0/1, ...
      */
     HET(str -> {
-        Genotype gt = new Genotype(str);
+        Genotype gt = parseGenotype(str);
+        if (gt == null) {
+            // Skip invalid genotypes
+            return false;
+        }
         int[] alleles = gt.getAllelesIdx();
         int firstAllele = alleles[0];
         if (firstAllele < 0 || gt.isHaploid()) {
@@ -70,7 +80,11 @@ public enum GenotypeClass {
      * 0/1, 0/2, 0/3, 0|1, ...
      */
     HET_REF(str -> {
-        Genotype gt = new Genotype(str);
+        Genotype gt = parseGenotype(str);
+        if (gt == null) {
+            // Skip invalid genotypes
+            return false;
+        }
         if (gt.isHaploid()) {
             // Discard if haploid
             return false;
@@ -91,7 +105,11 @@ public enum GenotypeClass {
      * 1/2, 1/3, 2/4, 2|1, ...
      */
     HET_ALT(str -> {
-        Genotype gt = new Genotype(str);
+        Genotype gt = parseGenotype(str);
+        if (gt == null) {
+            // Skip invalid genotypes
+            return false;
+        }
         int[] alleles = gt.getAllelesIdx();
         int firstAllele = alleles[0];
         if (firstAllele <= 0 || gt.isHaploid()) {
@@ -113,7 +131,11 @@ public enum GenotypeClass {
      * ., ./., ././., ...
      */
     MISS(str -> {
-        Genotype gt = new Genotype(str);
+        Genotype gt = parseGenotype(str);
+        if (gt == null) {
+            // Skip invalid genotypes
+            return false;
+        }
         for (int allele : gt.getAllelesIdx()) {
             if (allele != -1) {
                 return false;
@@ -132,8 +154,14 @@ public enum GenotypeClass {
      * Indicate that the genotype value was not available in the input variant file.
      */
     public static final String NA_GT_VALUE = "NA";
+    /**
+     * Indicate that none genotype should match with this value.
+     */
+    public static final String NONE_GT_VALUE = "x/x";
 
     private final Predicate<String> predicate;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(GenotypeClass.class);
 
     GenotypeClass(Predicate<String> predicate) {
         Predicate<String> stringPredicate = gt -> !gt.equals(UNKNOWN_GENOTYPE);
@@ -161,17 +189,71 @@ public enum GenotypeClass {
     }
 
     public static List<String> filter(List<String> gts, List<String> loadedGts, List<String> defaultGts) {
-        Set<String> filteredGts = new HashSet<>(gts.size());
+        Set<String> filteredGts = new LinkedHashSet<>(gts.size());
         for (String gt : gts) {
             GenotypeClass genotypeClass = GenotypeClass.from(gt);
-            if (genotypeClass == null) {
+            if (gt.equals(NONE_GT_VALUE) || gt.equals(NA_GT_VALUE) || gt.equals(UNKNOWN_GENOTYPE)) {
                 filteredGts.add(gt);
+            } else if (genotypeClass == null) {
+                boolean negated = VariantQueryUtils.isNegated(gt);
+                if (negated) {
+                    gt = VariantQueryUtils.removeNegation(gt);
+                }
+                Genotype genotype = parseGenotype(gt);
+                if (genotype == null) {
+                    // Skip invalid genotypes
+                    continue;
+                }
+
+                // Normalize if needed
+                if (!genotype.isPhased()) {
+                    genotype.normalizeAllelesIdx();
+                }
+
+                // If unphased, add phased genotypes, if any
+                List<String> phasedGenotypes = getPhasedGenotypes(genotype, loadedGts);
+
+                if (negated) {
+                    filteredGts.add(VariantQueryUtils.NOT + genotype.toString());
+                    for (String phasedGenotype : phasedGenotypes) {
+                        filteredGts.add(VariantQueryUtils.NOT + phasedGenotype);
+                    }
+                } else {
+                    filteredGts.add(genotype.toString());
+                    filteredGts.addAll(phasedGenotypes);
+                }
+
             } else {
                 filteredGts.addAll(genotypeClass.filter(loadedGts));
                 filteredGts.addAll(genotypeClass.filter(defaultGts));
             }
         }
         return new ArrayList<>(filteredGts);
+    }
+
+    public static List<String> getPhasedGenotypes(Genotype genotype, List<String> loadedGts) {
+        genotype = new Genotype(genotype);
+        if (!genotype.isPhased()) {
+            List<String> phasedGts = new ArrayList<>(2);
+            genotype.setPhased(true);
+            String phased = genotype.toString();
+            if (loadedGts.contains(phased)) {
+                phasedGts.add(phased);
+            }
+            int[] allelesIdx = genotype.getAllelesIdx();
+            if (allelesIdx.length == 2) {
+                int allelesIdx0 = allelesIdx[0];
+                allelesIdx[0] = allelesIdx[1];
+                allelesIdx[1] = allelesIdx0;
+                phased = genotype.toString();
+                if (loadedGts.contains(phased)) {
+                    phasedGts.add(phased);
+                }
+            }
+            return phasedGts;
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     /**
@@ -181,6 +263,27 @@ public enum GenotypeClass {
      * @return the enum, null if not found
      */
     public static GenotypeClass from(String gt) {
-        return EnumUtils.getEnum(GenotypeClass.class, gt.toUpperCase());
+        GenotypeClass genotypeClass = EnumUtils.getEnum(GenotypeClass.class, gt.toUpperCase());
+        if (genotypeClass == null && VariantQueryUtils.isNegated(gt)) {
+            if (EnumUtils.getEnum(GenotypeClass.class, VariantQueryUtils.removeNegation(gt.toUpperCase())) != null) {
+                throw VariantQueryException.malformedParam(VariantQueryParam.GENOTYPE, gt,
+                        "Unsupported negated genotype alias");
+            }
+        }
+        return genotypeClass;
+    }
+
+    private static Genotype parseGenotype(String gt) {
+        if (VariantQueryUtils.isNegated(gt)) {
+            throw new IllegalStateException("Unable to parse negated genotype " + gt);
+        }
+        Genotype genotype;
+        try {
+            genotype = new Genotype(gt);
+        } catch (IllegalArgumentException e) {
+            LOGGER.debug("Invalid genotype " + gt, e);
+            return null;
+        }
+        return genotype;
     }
 }

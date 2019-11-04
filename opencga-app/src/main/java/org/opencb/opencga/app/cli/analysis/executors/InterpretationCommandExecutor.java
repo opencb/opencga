@@ -32,6 +32,7 @@ import org.opencb.opencga.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.app.cli.analysis.options.InterpretationCommandOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.Job;
 
 import java.nio.file.Path;
@@ -144,7 +145,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         InterpretationResult interpretationResult = teamAnalysis.execute();
 
         // Store team analysis in DB
-        catalogManager.getInterpretationManager().create(studyStr, clinicalAnalysisId, interpretationResult.getResult(),
+        catalogManager.getInterpretationManager().create(studyStr, clinicalAnalysisId, new Interpretation(interpretationResult.getResult()),
                 QueryOptions.empty(), token);
 
         // Stop monitor
@@ -218,8 +219,8 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
             System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter()
                     .writeValueAsString(interpretationResult));
         } else {
-            catalogManager.getInterpretationManager().create(studyStr, clinicalAnalysisId, interpretationResult.getResult(),
-                    QueryOptions.empty(), token);
+            catalogManager.getInterpretationManager().create(studyStr, clinicalAnalysisId,
+                    new Interpretation(interpretationResult.getResult()), QueryOptions.empty(), token);
         }
 
         // Stop monitor

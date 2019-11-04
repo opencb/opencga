@@ -1,12 +1,16 @@
 package org.opencb.opencga.catalog.auth.authentication;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonElement;
 import com.microsoft.aad.adal4j.AuthenticationContext;
 import com.microsoft.aad.adal4j.AuthenticationResult;
-import com.microsoft.azure.credentials.ApplicationTokenCredentials;
-import com.microsoft.azure.management.Azure;
-import com.microsoft.azure.management.graphrbac.ActiveDirectoryGroup;
-import com.microsoft.azure.management.graphrbac.ActiveDirectoryObject;
-import com.microsoft.azure.management.graphrbac.ActiveDirectoryUser;
+import com.microsoft.graph.core.ClientException;
+import com.microsoft.graph.http.GraphServiceException;
+import com.microsoft.graph.models.extensions.DirectoryObject;
+import com.microsoft.graph.models.extensions.IGraphServiceClient;
+import com.microsoft.graph.requests.extensions.GraphServiceClient;
+import com.microsoft.graph.requests.extensions.IDirectoryObjectCollectionWithReferencesPage;
 import com.nimbusds.jose.Header;
 import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.oauth2.sdk.ParseException;
@@ -17,6 +21,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationProvider;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
@@ -40,7 +45,8 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
 
     private String originId;
 
-    private OIDCProviderMetadata oidcProviderMetadata;
+    private final OIDCProviderMetadata oidcProviderMetadata;
+    private final IGraphServiceClient graphServiceClient;
     private String tenantId;
 
     private String authClientId;
@@ -80,6 +86,11 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
             throw new CatalogException("AzureAD authentication origin configuration error. Missing mandatory 'syncSecretKey' option "
                     + "field.");
         }
+
+        // Initialise GraphServiceClient to have access to the graph API
+        AuthenticationProvider provider = new AuthenticationProvider(syncClientId, syncSecretKey, tenantId);
+        // Create the service client from the configuration
+        graphServiceClient =  GraphServiceClient.builder().authenticationProvider(provider).buildClient();
 
         String filterString = (String) authenticationOrigin.getOptions().get("filters");
         this.filters = new HashMap<>();
@@ -211,104 +222,107 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
     }
 
     @Override
-    public List<User> getUsersFromRemoteGroup(String group) throws CatalogException {
-        ApplicationTokenCredentials tokenCredentials = new ApplicationTokenCredentials(syncClientId, tenantId, syncSecretKey, null);
-        Azure.Authenticated azureAuthenticated = Azure.authenticate(tokenCredentials);
-
-        // This method should only be called from the admin environment to sync or obtain groups from AAD. We are going to force users to
-        // pass always the group name instead of the group oid.
-        /*ActiveDirectoryGroup azureADGroup = azureAuthenticated.activeDirectoryGroups().getById(group);
-        if (azureADGroup == null) {
-            // We try to get the group by name
-            azureADGroup = azureAuthenticated.activeDirectoryGroups().getByName(group);
-            if (azureADGroup == null) {
-                logger.error("Group '{}' not found.");
-                throw new CatalogException("Group '" + group + "' not found");
-            }
-        }*/
-        ActiveDirectoryGroup azureADGroup = azureAuthenticated.activeDirectoryGroups().getByName(group);
-        if (azureADGroup == null) {
-            logger.error("Group '{}' not found.");
-            throw new CatalogException("Group '" + group + "' not found");
+    public List<User> getUsersFromRemoteGroup(String groupId) throws CatalogException {
+        IDirectoryObjectCollectionWithReferencesPage membersPage;
+        try {
+            membersPage = graphServiceClient.groups(groupId).members().buildRequest().get();
+        } catch (GraphServiceException e) {
+            logger.error("Group '{}' not found.", groupId);
+            throw new CatalogException("Group '" + groupId + "' not found");
+        } catch (ClientException e) {
+            logger.error("Graph query could not be performed: {}", e.getMessage());
+            throw e;
         }
 
-        List<ActiveDirectoryUser> azureADUserList = new ArrayList<>(azureADGroup.listMembers().size());
-        for (ActiveDirectoryObject azureADUser : azureADGroup.listMembers()) {
-            if (azureADUser instanceof ActiveDirectoryUser) {
-                azureADUserList.add((ActiveDirectoryUser) azureADUser);
+        List<com.microsoft.graph.models.extensions.User> graphUserList = new ArrayList<>();
+
+        ObjectMapper jsonObjectMapper = new ObjectMapper()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        boolean moreElems = true;
+        while (membersPage.getCurrentPage() != null && moreElems) {
+            for (DirectoryObject directoryObject : membersPage.getCurrentPage()) {
+                com.microsoft.graph.models.extensions.User graphUser;
+                if ("#microsoft.graph.user".equals(directoryObject.oDataType)) {
+                    try {
+                        graphUser = jsonObjectMapper.readValue(String.valueOf(directoryObject.getRawObject()),
+                                com.microsoft.graph.models.extensions.User.class);
+                        graphUserList.add(graphUser);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            if (membersPage.getNextPage() != null) {
+                membersPage = membersPage.getNextPage().buildRequest().get();
+            } else {
+                moreElems = false;
             }
         }
-
-        return extractUserInformation(azureADUserList);
+        return extractUserInformation(graphUserList);
     }
 
     @Override
     public List<User> getRemoteUserInformation(List<String> userStringList) throws CatalogException {
-        ApplicationTokenCredentials tokenCredentials = new ApplicationTokenCredentials(syncClientId, tenantId, syncSecretKey, null);
-        Azure.Authenticated azureAuthenticated = Azure.authenticate(tokenCredentials);
-
-        List<ActiveDirectoryUser> azureADUserList = new ArrayList<>(userStringList.size());
-        for (String user : userStringList) {
-            ActiveDirectoryUser azureADUser = azureAuthenticated.activeDirectoryUsers().getById(user);
-            if (azureADUser == null) {
-                logger.error("User '{}' not found");
-                throw new CatalogException("User '" + user + "' not found");
-            } else {
-                azureADUserList.add(azureADUser);
+        List<com.microsoft.graph.models.extensions.User> graphUserList = new ArrayList<>(userStringList.size());
+        for (String userId : userStringList) {
+            com.microsoft.graph.models.extensions.User graphUser;
+            try {
+                graphUser = graphServiceClient.users(userId).buildRequest().get();
+            } catch (GraphServiceException e) {
+                logger.error("User '{}' not found", userId);
+                throw new CatalogException("User '" + userId + "' not found");
+            } catch (ClientException e) {
+                logger.error("Graph query could not be performed: {}", e.getMessage());
+                throw e;
             }
+
+            graphUserList.add(graphUser);
         }
 
-        return extractUserInformation(azureADUserList);
+        return extractUserInformation(graphUserList);
     }
 
     @Override
     public List<String> getRemoteGroups(String token) throws CatalogException {
-        List<String> groupOids = jwtManager.getGroups(token, "groups", getPublicKey(token));
-
-        ApplicationTokenCredentials tokenCredentials = new ApplicationTokenCredentials(syncClientId, tenantId, syncSecretKey, null);
-        Azure.Authenticated azureAuthenticated = Azure.authenticate(tokenCredentials);
-
-        List<String> groupIds = new ArrayList<>();
-        for (String groupOid : groupOids) {
-            ActiveDirectoryGroup group = azureAuthenticated.activeDirectoryGroups().getById(groupOid);
-            if (group == null) {
-                // Try to get the group by name instead. This works as a validation that the group name exists.
-                group = azureAuthenticated.activeDirectoryGroups().getByName(groupOid);
-            }
-
-            if (group != null) {
-                groupIds.add(group.name());
-            }
-        }
-
-        return groupIds;
+        return jwtManager.getGroups(token, "groups", getPublicKey(token));
     }
 
-    private List<User> extractUserInformation(List<ActiveDirectoryUser> azureAdUserList) {
-        List<User> userList = new ArrayList<>(azureAdUserList.size());
+    private List<User> extractUserInformation(List<com.microsoft.graph.models.extensions.User> graphUserList) {
+        List<User> userList = new ArrayList<>(graphUserList.size());
 
         String name;
         String mail;
         String id;
         Map<String, Object> attributes = new HashMap<>();
 
-        for (ActiveDirectoryUser activeDirectoryUser : azureAdUserList) {
-            id = activeDirectoryUser.id();
-            name = activeDirectoryUser.name();
-            if (!StringUtils.isEmpty(activeDirectoryUser.mail())) {
-                mail = activeDirectoryUser.mail();
-            } else {
-                mail = activeDirectoryUser.userPrincipalName();
+        for (com.microsoft.graph.models.extensions.User graphUser : graphUserList) {
+            id = graphUser.id;
+            name = graphUser.displayName;
+            mail = graphUser.mail;
+//            if (!StringUtils.isEmpty(graphUser.mail)) {
+//                mail = graphUser.mail;
+//            } else {
+//                mail = graphUser.userPrincipalName;
+//            }
+
+            Map<String, String> additionalProperties = new HashMap<>();
+            if (graphUser.getRawObject() != null) {
+                for (Map.Entry<String, JsonElement> entry : graphUser.getRawObject().entrySet()) {
+                    if (!entry.getValue().isJsonNull() && entry.getValue().isJsonPrimitive()) {
+                        additionalProperties.put(entry.getKey(), entry.getValue().getAsString());
+                    }
+                }
             }
 
             ObjectMap azureADMap = new ObjectMap()
-                    .append("UserPrincipalName", activeDirectoryUser.userPrincipalName())
+                    .append("UserPrincipalName", graphUser.userPrincipalName)
                     .append("TenantId", tenantId)
-                    .append("UserType", activeDirectoryUser.inner().userType())
-                    .append("AdditionalProperties", activeDirectoryUser.inner().additionalProperties());
+                    .append("AdditionalProperties", additionalProperties);
             attributes.put("OPENCGA_REGISTRATION_TOKEN", azureADMap);
 
-            User user = new User(id, name, mail, "", "", new Account().setType(Account.GUEST).setAuthOrigin(originId),
+            User user = new User(id, name, mail, "", "", new Account().setType(Account.Type.GUEST).
+                    setAuthentication(new Account.AuthenticationOrigin(originId, false)),
                     User.UserStatus.READY, "", -1, -1, Collections.emptyList(), Collections.emptyList(), Collections.emptyMap(),
                     attributes);
 

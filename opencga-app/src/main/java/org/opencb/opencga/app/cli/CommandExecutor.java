@@ -299,7 +299,7 @@ public abstract class CommandExecutor {
         }
     }
 
-    protected void saveCliSessionFile(String user, String session, Map<String, List<String>> studies) throws IOException {
+    protected void saveCliSessionFile(String user, String session, List<String> studies) throws IOException {
         // Check the home folder exists
         if (!Files.exists(Paths.get(System.getProperty("user.home")))) {
             System.out.println("WARNING: Could not store token. User home folder '" + System.getProperty("user.home")

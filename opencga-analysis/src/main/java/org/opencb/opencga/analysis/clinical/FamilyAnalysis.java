@@ -1,6 +1,7 @@
 package org.opencb.opencga.analysis.clinical;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
@@ -247,7 +248,7 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
     }
 
 
-    protected List<ReportedLowCoverage> getReportedLowCoverage(ClinicalAnalysis clinicalAnalysis, List<Panel> diseasePanels)
+    protected List<ReportedLowCoverage> getReportedLowCoverage(ClinicalAnalysis clinicalAnalysis, List<DiseasePanel> diseasePanels)
             throws AnalysisException {
         String clinicalAnalysisId = clinicalAnalysis.getId();
 
@@ -285,8 +286,8 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
         String bamFileId = fileQueryResult.getNumResults() == 1 ? fileQueryResult.first().getUuid() : null;
 
         if (bamFileId != null) {
-            for (Panel diseasePanel : diseasePanels) {
-                for (DiseasePanel.GenePanel genePanel : diseasePanel.getDiseasePanel().getGenes()) {
+            for (DiseasePanel diseasePanel : diseasePanels) {
+                for (DiseasePanel.GenePanel genePanel : diseasePanel.getGenes()) {
                     String geneName = genePanel.getId();
                     if (!lowCoverageByGeneDone.contains(geneName)) {
                         reportedLowCoverages.addAll(getReportedLowCoverages(geneName, bamFileId, maxCoverage));
@@ -325,13 +326,13 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
         return reportedLowCoverages;
     }
 
-    protected List<Panel> getDiseasePanelsFromIds(List<String> diseasePanelIds) throws AnalysisException {
-        List<Panel> diseasePanels = new ArrayList<>();
+    protected List<DiseasePanel> getDiseasePanelsFromIds(List<String> diseasePanelIds) throws AnalysisException {
+        List<DiseasePanel> diseasePanels = new ArrayList<>();
         if (diseasePanelIds != null && !diseasePanelIds.isEmpty()) {
             List<QueryResult<Panel>> queryResults;
             try {
                 queryResults = catalogManager.getPanelManager()
-                        .get(studyStr, diseasePanelIds, new Query(), QueryOptions.empty(), token);
+                        .get(studyStr, diseasePanelIds, QueryOptions.empty(), token);
             } catch (CatalogException e) {
                 throw new AnalysisException(e.getMessage(), e);
             }
@@ -401,11 +402,14 @@ public abstract class FamilyAnalysis<T> extends OpenCgaAnalysis<T> {
 
 
     protected void putGenotypes(Map<String, List<String>> genotypes, Map<String, String> sampleMap, Query query) {
-        query.put(VariantQueryParam.GENOTYPE.key(),
-                StringUtils.join(genotypes.entrySet().stream()
-                        .filter(entry -> sampleMap.containsKey(entry.getKey()))
-                        .map(entry -> sampleMap.get(entry.getKey()) + ":" + StringUtils.join(entry.getValue(), VariantQueryUtils.OR))
-                        .collect(Collectors.toList()), ";"));
+        String genotypeString = StringUtils.join(genotypes.entrySet().stream()
+                .filter(entry -> sampleMap.containsKey(entry.getKey()))
+                .filter(entry -> ListUtils.isNotEmpty(entry.getValue()))
+                .map(entry -> sampleMap.get(entry.getKey()) + ":" + StringUtils.join(entry.getValue(), VariantQueryUtils.OR))
+                .collect(Collectors.toList()), ";");
+        if (StringUtils.isNotEmpty(genotypeString)) {
+            query.put(VariantQueryParam.GENOTYPE.key(), genotypeString);
+        }
         try {
             logger.debug("Query: {}", JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(query));
         } catch (Exception e) {

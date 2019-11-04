@@ -20,6 +20,8 @@ import com.google.common.base.Throwables;
 import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PInteger;
@@ -33,16 +35,15 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.HBaseToVariantStatsConverter;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +86,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private final Map<String, String> fileIdToNameMap = new HashMap<>();
     private final Map<String, Integer> fileNameToIdMap = new HashMap<>();
     private final Map<Integer, LinkedHashSet<Integer>> indexedFiles = new HashMap<>();
-    private final Map<String, FileMetadata> fileIdToFileMetadata = new HashMap<>();
+    private final Map<Integer, Set<Integer>> filesFromReturnedSamples = new HashMap<>();
     private final Map<String, String> cohortIdToNameMap = new HashMap<>();
 
     private boolean studyNameAsStudyId = false;
@@ -252,10 +253,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         Map<Integer, List<Pair<Integer, List<String>>>> sampleDataMap = new HashMap<>();
         Map<Integer, List<Pair<String, PhoenixArray>>> filesMap = new HashMap<>();
 
-        for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(columnFamily).entrySet()) {
-            byte[] qualifier = entry.getKey();
-            byte[] bytes = entry.getValue();
-            if (bytes == null || bytes.length == 0) {
+        for (Cell cell : result.rawCells()) {
+            byte[] qualifier = CellUtil.cloneQualifier(cell);
+            if (cell.getValueLength() == 0) {
                 continue;
             }
             if (endsWith(qualifier, VariantPhoenixHelper.SAMPLE_DATA_SUFIX_BYTES)) {
@@ -263,7 +263,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
                 Integer studyId = getStudyId(split);
                 Integer sampleId = getSampleId(split);
-                PhoenixArray array = (PhoenixArray) PVarcharArray.INSTANCE.toObject(bytes);
+                PhoenixArray array = (PhoenixArray) PVarcharArray.INSTANCE.toObject(
+                        cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                 List<String> sampleData = toModifiableList(array);
                 studies.add(studyId);
                 sampleDataMap.computeIfAbsent(studyId, s -> new ArrayList<>()).add(Pair.of(sampleId, sampleData));
@@ -273,7 +274,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 Integer studyId = getStudyId(split);
                 String fileId = getFileId(split);
                 studies.add(studyId);
-                PhoenixArray array = (PhoenixArray) PVarcharArray.INSTANCE.toObject(bytes);
+                PhoenixArray array = (PhoenixArray) PVarcharArray.INSTANCE.toObject(
+                        cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                 filesMap.computeIfAbsent(studyId, s -> new ArrayList<>()).add(Pair.of(fileId, array));
             } else if (endsWith(qualifier, VariantPhoenixHelper.STUDY_SUFIX_BYTES)) {
                 String columnName = Bytes.toString(qualifier);
@@ -303,7 +305,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         return map;
     }
 
-    protected StudyEntry convert(List<Pair<Integer, List<String>>> sampleDataMap,
+    public StudyEntry convert(List<Pair<Integer, List<String>>> sampleDataMap,
                                  List<Pair<String, PhoenixArray>> filesMap,
                                  Variant variant, Integer studyId) {
         return convert(sampleDataMap, filesMap, variant, getStudyMetadata(studyId), -1);
@@ -417,7 +419,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         // Add all combinations of secondary alternates, even the combination of "none secondary alternates", i.e. empty string
         alternateFileMap.computeIfAbsent(alternate, (key) -> new ArrayList<>()).add(fileName);
         String call = (String) (fileColumn.getElement(FILE_CALL_IDX));
-        if (!selectVariantElements.getFiles().get(studyMetadata.getId()).contains(fileId)) {
+        if (selectVariantElements != null && !selectVariantElements.getFiles().get(studyMetadata.getId()).contains(fileId)) {
             // TODO: Should we return the original CALL?
 //            if (call != null && !call.isEmpty()) {
 //                studyEntry.getFiles().add(new FileEntry(fileName, call, Collections.emptyMap()));
@@ -425,6 +427,13 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             return;
         }
 
+        List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
+        HashMap<String, String> attributes = convertFileAttributes(fileColumn, fixedAttributes);
+        // fileColumn.getElement(FILE_VARIANT_OVERLAPPING_STATUS_IDX);
+        studyEntry.getFiles().add(new FileEntry(fileName, call, attributes));
+    }
+
+    public static HashMap<String, String> convertFileAttributes(PhoenixArray fileColumn, List<String> fixedAttributes) {
         HashMap<String, String> attributes = new HashMap<>(fileColumn.getDimensions() - 1);
         String qual = (String) (fileColumn.getElement(FILE_QUAL_IDX));
         if (qual != null) {
@@ -435,7 +444,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             attributes.put(StudyEntry.FILTER, filter);
         }
 
-        List<String> fixedAttributes = HBaseToVariantConverter.getFixedAttributes(studyMetadata);
         int i = FILE_INFO_START_IDX;
         for (String attribute : fixedAttributes) {
             if (i >= fileColumn.getDimensions()) {
@@ -447,8 +455,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             }
             i++;
         }
-        // fileColumn.getElement(FILE_VARIANT_OVERLAPPING_STATUS_IDX);
-        studyEntry.getFiles().add(new FileEntry(fileName, call, attributes));
+        return attributes;
     }
 
     private void fillEmptySamplesData(StudyEntry studyEntry, StudyMetadata studyMetadata, int fillMissingColumnValue) {
@@ -513,7 +520,8 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         Pair<Integer, Integer> pair = Pair.of(studyMetadata.getId(), fillMissingColumnValue);
         return missingUpdatedSamplesMap.computeIfAbsent(pair, key -> {
             // If not found, no sample has been processed
-            Set<Integer> sampleIds = getReturnedSampleIds(studyMetadata);
+            Set<Integer> sampleIds = getReturnedSampleIds(studyMetadata.getId());
+            Set<Integer> fileIds = getFilesFromReturnedSamples(studyMetadata.getId());
             List<Boolean> missingUpdatedList = Arrays.asList(new Boolean[sampleIds.size()]);
             if (fillMissingColumnValue <= 0) {
                 for (int i = 0; i < sampleIds.size(); i++) {
@@ -528,16 +536,19 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
                 boolean missingUpdated = true;
                 int count = 0;
                 for (Integer indexedFile : indexedFiles) {
-                    LinkedHashSet<Integer> samples = getFileMetadata(studyMetadata.getId(), indexedFile).getSamples();
 
-                    // Do not skip the not returned files, as they may have returned samples
-                    // if (selectVariantElements != null && selectVariantElements.getFiles().containsKey(indexedFile))
-                    for (Integer sampleId : samples) {
-                        if (sampleIds.contains(sampleId)) {
-                            String sampleName = getSampleName(studyMetadata.getId(), sampleId);
-                            if (null == missingUpdatedList.set(returnedSamplesPosition.get(sampleName), missingUpdated)) {
-                                count++;
-                            } // else, the sample was found in two different files. Data may be split in one file per chromosome
+                    if (fileIds.contains(indexedFile)) {
+                        LinkedHashSet<Integer> samples = metadataManager.getSampleIdsFromFileId(studyMetadata.getId(), indexedFile);
+
+                        // Do not skip the not returned files, as they may have returned samples
+                        // if (selectVariantElements != null && selectVariantElements.getFiles().containsKey(indexedFile))
+                        for (Integer sampleId : samples) {
+                            if (sampleIds.contains(sampleId)) {
+                                String sampleName = getSampleName(studyMetadata.getId(), sampleId);
+                                if (null == missingUpdatedList.set(returnedSamplesPosition.get(sampleName), missingUpdated)) {
+                                    count++;
+                                } // else, the sample was found in two different files. Data may be split in one file per chromosome
+                            }
                         }
                     }
 
@@ -800,39 +811,37 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         });
     }
 
-    private Set<Integer> getReturnedSampleIds(StudyMetadata studyMetadata) {
-        return returnedSampleIds.computeIfAbsent(studyMetadata.getId(), studyId -> {
+    private Set<Integer> getReturnedSampleIds(int studyId) {
+        return returnedSampleIds.computeIfAbsent(studyId, id -> {
             if (selectVariantElements == null) {
-                return new HashSet<>(metadataManager.getIndexedSamples(studyId));
+                return new HashSet<>(metadataManager.getIndexedSamples(id));
             } else {
-                return new HashSet<>(selectVariantElements.getSamples().get(studyId));
+                return new HashSet<>(selectVariantElements.getSamples().get(id));
             }
         });
+    }
+
+    private Set<Integer> getFilesFromReturnedSamples(int studyId) {
+        return filesFromReturnedSamples.computeIfAbsent(studyId,
+                id -> metadataManager.getFileIdsFromSampleIds(id, getReturnedSampleIds(id)));
     }
 
     private List<String> getSamplesInFile(int studyId, int fileId) {
         List<String> samples = samplesFromFileMap.get(studyId + "_" + fileId);
         if (samples == null) {
-            FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, fileId);
-            LinkedHashSet<Integer> sampleIds = fileMetadata.getSamples();
+            LinkedHashSet<Integer> sampleIds = metadataManager.getSampleIdsFromFileId(studyId, fileId);
             samples = new ArrayList<>(sampleIds.size());
             for (Integer sample : sampleIds) {
                 samples.add(metadataManager.getSampleName(studyId, sample));
             }
-            samplesFromFileMap.put(studyId + "_" + fileMetadata.getId(), samples);
-            samplesFromFileMap.put(studyId + "_" + fileMetadata.getName(), samples);
-            fileIdToFileMetadata.put(studyId + "_" + fileMetadata.getId(), fileMetadata);
+            samplesFromFileMap.put(studyId + "_" + fileId, samples);
         }
         return samples;
     }
 
     private List<String> getSamplesInFile(int studyId, String fileName) {
-        List<String> samples = samplesFromFileMap.get(studyId + "_" + fileName);
-        if (samples == null) {
-            Integer fileId = metadataManager.getFileId(studyId, fileName);
-            return getSamplesInFile(studyId, fileId);
-        }
-        return samples;
+        Integer fileId = metadataManager.getFileId(studyId, fileName);
+        return getSamplesInFile(studyId, fileId);
     }
 
     private String getSampleName(int studyId, int sampleId) {
@@ -849,10 +858,6 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
 
     private LinkedHashSet<Integer> getIndexedFiles(int studyId) {
         return indexedFiles.computeIfAbsent(studyId, metadataManager::getIndexedFiles);
-    }
-
-    private FileMetadata getFileMetadata(int studyId, int fileId) {
-        return fileIdToFileMetadata.computeIfAbsent(studyId + "_" + fileId, s -> metadataManager.getFileMetadata(studyId, fileId));
     }
 
     private String getCohortName(int studyId, int cohortId) {

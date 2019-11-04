@@ -346,20 +346,20 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
 
-        if (checkUserPermission(userId, query, studyPermission, fileDBAdaptor)) {
+        if (checkUserPermission(studyId, userId, query, studyPermission, fileDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "File", fileId, null);
     }
 
-    private boolean checkUserPermission(String userId, Query query, StudyAclEntry.StudyPermissions studyPermission, DBAdaptor dbAdaptor)
-            throws CatalogDBException, CatalogAuthorizationException {
+    private boolean checkUserPermission(long studyUid, String userId, Query query, StudyAclEntry.StudyPermissions studyPermission,
+                                        DBAdaptor dbAdaptor) throws CatalogDBException, CatalogAuthorizationException {
         if (userId.equals(ADMIN)) {
             if (getSpecialPermissions(ADMIN).getPermissions().contains(studyPermission)) {
                 return true;
             }
         } else {
-            if ((Long) dbAdaptor.count(query, userId, studyPermission).first() == 1) {
+            if ((Long) dbAdaptor.count(studyUid, query, userId, studyPermission).first() == 1) {
                 return true;
             }
         }
@@ -396,7 +396,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
 
-        if (checkUserPermission(userId, query, studyPermission, sampleDBAdaptor)) {
+        if (checkUserPermission(studyId, userId, query, studyPermission, sampleDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Sample", sampleId, null);
@@ -432,7 +432,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
 
-        if (checkUserPermission(userId, query, studyPermission, individualDBAdaptor)) {
+        if (checkUserPermission(studyId, userId, query, studyPermission, individualDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Individual", individualId, null);
@@ -458,7 +458,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
 
-        if (checkUserPermission(userId, query, studyPermission, jobDBAdaptor)) {
+        if (checkUserPermission(studyId, userId, query, studyPermission, jobDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Job", jobId, null);
@@ -494,7 +494,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
 
-        if (checkUserPermission(userId, query, studyPermission, cohortDBAdaptor)) {
+        if (checkUserPermission(studyId, userId, query, studyPermission, cohortDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Cohort", cohortId, null);
@@ -522,7 +522,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
 
-        if (checkUserPermission(userId, query, studyPermission, panelDBAdaptor)) {
+        if (checkUserPermission(studyId, userId, query, studyPermission, panelDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Panel", panelId, null);
@@ -558,7 +558,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
 
-        if (checkUserPermission(userId, query, studyPermission, familyDBAdaptor)) {
+        if (checkUserPermission(studyId, userId, query, studyPermission, familyDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Family", familyId, null);
@@ -586,7 +586,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
         }
 
-        if (checkUserPermission(userId, query, studyPermission, clinicalAnalysisDBAdaptor)) {
+        if (checkUserPermission(studyId, userId, query, studyPermission, clinicalAnalysisDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "ClinicalAnalysis", analysisId, null);

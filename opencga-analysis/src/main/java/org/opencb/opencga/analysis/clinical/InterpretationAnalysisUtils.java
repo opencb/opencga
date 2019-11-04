@@ -182,18 +182,18 @@ public class InterpretationAnalysisUtils {
         return file;
     }
 
-    public static Map<String, ClinicalProperty.RoleInCancer> getRoleInCancer(String opencgaHome) throws IOException {
+    public static Map<String, ClinicalProperty.RoleInCancer> getRoleInCancer(Path opencgaHome) throws IOException {
         // Load role in cancer, if presents
-        java.nio.file.Path path = Paths.get(opencgaHome + "/analysis/resources/roleInCancer.txt");
+        java.nio.file.Path path = opencgaHome.resolve("/analysis/resources/roleInCancer.txt");
         return InterpretationAnalysisUtils.loadRoleInCancer(path);
 
     }
 
-    public static Map<String, Map<String, List<String>>> getActionableVariantsByAssembly(String opencgaHome) throws IOException {
+    public static Map<String, Map<String, List<String>>> getActionableVariantsByAssembly(Path opencgaHome) throws IOException {
         // Load actionable variants for each assembly, if present
         // First, read all actionableVariants filenames, actionableVariants_xxx.txt[.gz] where xxx = assembly in lower case
         Map<String, Map<String, List<String>>> actionableVariantsByAssembly = new HashMap<>();
-        java.io.File folder = Paths.get(opencgaHome + "/analysis/resources/").toFile();
+        java.io.File folder = opencgaHome.resolve("/analysis/resources/").toFile();
         java.io.File[] files = folder.listFiles();
         if (ArrayUtils.isNotEmpty(files)) {
             for (java.io.File file : files) {

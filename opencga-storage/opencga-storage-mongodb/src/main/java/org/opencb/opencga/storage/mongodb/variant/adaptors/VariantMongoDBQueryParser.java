@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.slf4j.Logger;
@@ -92,7 +93,7 @@ public class VariantMongoDBQueryParser {
             }
 
             // Object with all VariantIds, ids, genes and xrefs from ID, XREF, GENES, ... filters
-            VariantQueryXref variantQueryXref = VariantQueryUtils.parseXrefs(query);
+            VariantQueryParser.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
 
             if (!variantQueryXref.getIds().isEmpty()) {
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
@@ -260,8 +261,8 @@ public class VariantMongoDBQueryParser {
                 addScoreFilter(value, builder, ANNOT_CONSERVATION, false);
             }
 
-            if (isValidParam(query, ANNOT_TRANSCRIPTION_FLAG)) {
-                String value = query.getString(ANNOT_TRANSCRIPTION_FLAG.key());
+            if (isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
+                String value = query.getString(ANNOT_TRANSCRIPT_FLAG.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CT_TRANSCRIPT_ANNOT_FLAGS, value, builder, QueryOperation.AND);
@@ -707,7 +708,7 @@ public class VariantMongoDBQueryParser {
                     // If empty, should find none. Add non-existing genotype
                     // TODO: Fast empty result
                     if (!entry.getValue().isEmpty() && genotypes.isEmpty()) {
-                        genotypes.add("x/x");
+                        genotypes.add(GenotypeClass.NONE_GT_VALUE);
                     }
 
                     int sampleId = metadataManager.getSampleId(defaultStudy.getId(), sample, true);
@@ -1022,6 +1023,16 @@ public class VariantMongoDBQueryParser {
                                 }
                             }
                         });
+            }
+
+            if (query.get(STATS_REF.key()) != null && !query.getString(STATS_REF.key()).isEmpty()) {
+                addStatsFilterList(DocumentToVariantStatsConverter.REF_FREQ_FIELD, query.getString(STATS_REF.key()),
+                        builder, defaultStudy);
+            }
+
+            if (query.get(STATS_ALT.key()) != null && !query.getString(STATS_ALT.key()).isEmpty()) {
+                addStatsFilterList(DocumentToVariantStatsConverter.ALT_FREQ_FIELD, query.getString(STATS_ALT.key()),
+                        builder, defaultStudy);
             }
 
             if (query.get(STATS_MAF.key()) != null && !query.getString(STATS_MAF.key()).isEmpty()) {

@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -141,28 +140,32 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
      */
     public QueryResult<AnnotationSet> updateAnnotationSet(String id, @Nullable String studyStr, String annotationSetName,
                                                           Map<String, Object> newAnnotations, String sessionId) throws CatalogException {
-        MyResource resource = getUid(id, studyStr, sessionId);
-        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, null, newAnnotations, Collections.emptyMap());
-        ObjectMap parameters;
-        ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
+//        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, null, newAnnotations, Collections.emptyMap());
+//        ObjectMap parameters;
+//        ObjectMapper jsonObjectMapper = getDefaultObjectMapper();
+//
+//        try {
+//            parameters = new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet));
+//            parameters = new ObjectMap(ANNOTATION_SETS, Arrays.asList(parameters));
+//        } catch (JsonProcessingException e) {
+//            logger.error("Error parsing AnnotationSet {} to ObjectMap: {}", annotationSet, e.getMessage(), e);
+//            throw new CatalogException("Error parsing AnnotationSet to ObjectMap");
+//        }
 
-        try {
-            parameters = new ObjectMap(jsonObjectMapper.writeValueAsString(annotationSet));
-            parameters = new ObjectMap(ANNOTATION_SETS, Arrays.asList(parameters));
-        } catch (JsonProcessingException e) {
-            logger.error("Error parsing AnnotationSet {} to ObjectMap: {}", annotationSet, e.getMessage(), e);
-            throw new CatalogException("Error parsing AnnotationSet to ObjectMap");
-        }
+        ObjectMap params = new ObjectMap(AnnotationSetManager.ANNOTATIONS, new AnnotationSet(annotationSetName, "", newAnnotations));
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATIONS,
+                ParamUtils.CompleteUpdateAction.ADD));
 
-        QueryResult<R> update = update(studyStr, id, parameters, QueryOptions.empty(), sessionId);
+        QueryResult<R> update = update(studyStr, id, params, options, sessionId);
         if (update.getNumResults() == 0) {
             return new QueryResult<>("Update annotation set", update.getDbTime(), 0, 0, update.getWarningMsg(), update.getErrorMsg(),
                     Collections.emptyList());
         } else {
-            Query query = new Query("uid", resource.getResource().getUid());
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationSetName);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
+            Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
-            QueryResult<Annotable> queryResult = (QueryResult<Annotable>) get(studyStr, query, options, sessionId);
+            options = new QueryOptions(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationSetName);
+            QueryResult<Annotable> queryResult = (QueryResult<Annotable>) internalGet(study.getUid(), id, options, userId);
             return new QueryResult<>("Update annotation set", update.getDbTime(), queryResult.first().getAnnotationSets().size(),
                     queryResult.first().getAnnotationSets().size(), queryResult.getWarningMsg(), queryResult.getErrorMsg(),
                     queryResult.first().getAnnotationSets());
@@ -295,10 +298,10 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
         return variableSetList;
     }
 
-    public List<VariableSet> checkUpdateAnnotationsAndExtractVariableSets(MyResource<? extends Annotable> resource,
-                                                                          ObjectMap parameters, QueryOptions options,
-                                                                          VariableSet.AnnotableDataModels annotableEntity,
-                                                                          AnnotationSetDBAdaptor dbAdaptor) throws CatalogException {
+    public <T extends Annotable> List<VariableSet> checkUpdateAnnotationsAndExtractVariableSets(
+            Study study, T entry, ObjectMap parameters, QueryOptions options, VariableSet.AnnotableDataModels annotableEntity,
+            AnnotationSetDBAdaptor dbAdaptor, String user) throws CatalogException {
+
         List<VariableSet> variableSetList = null;
         boolean confidentialPermissionsChecked = false;
 
@@ -320,10 +323,10 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                         /* We need to validate that the new annotationSets are fine to be stored */
 
                         // Obtain all the variable sets from the study
-                        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(resource.getStudy().getUid(),
+                        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(study.getUid(),
                                 new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
                         if (studyQueryResult.getNumResults() == 0) {
-                            throw new CatalogException("Internal error: Study " + resource.getStudy().getFqn()
+                            throw new CatalogException("Internal error: Study " + study.getFqn()
                                     + " not found. Update could not be performed.");
                         }
                         variableSetList = studyQueryResult.first().getVariableSets();
@@ -342,8 +345,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                         List<AnnotationSet> annotationSetList = new ArrayList<>();
                         if (action == ParamUtils.UpdateAction.ADD) {
                             // Get all the annotation sets from the entry
-                            QueryResult<AnnotationSet> annotationSetQueryResult =
-                                    dbAdaptor.getAnnotationSet(resource.getResource().getUid(), null);
+                            QueryResult<AnnotationSet> annotationSetQueryResult = dbAdaptor.getAnnotationSet(entry.getUid(), null);
 
                             if (annotationSetQueryResult != null && annotationSetQueryResult.getNumResults() > 0) {
                                 for (AnnotationSet annotationSet : annotationSetQueryResult.getResult()) {
@@ -390,7 +392,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
 
                                 if (variableSet.isConfidential()) {
                                     if (!confidentialPermissionsChecked) {
-                                        authorizationManager.checkStudyPermission(resource.getStudy().getUid(), resource.getUser(),
+                                        authorizationManager.checkStudyPermission(study.getUid(), user,
                                                 StudyAclEntry.StudyPermissions.CONFIDENTIAL_VARIABLE_SET_ACCESS, "");
                                         confidentialPermissionsChecked = true;
                                     }
@@ -480,12 +482,11 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 }
 
                 // Obtain all the variable sets from the study
-                QueryResult<Study> studyQueryResult = studyDBAdaptor.get(resource.getStudy().getUid(),
+                QueryResult<Study> studyQueryResult = studyDBAdaptor.get(study.getUid(),
                         new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
                 if (studyQueryResult.getNumResults() == 0) {
-                    throw new CatalogException("Internal error: Study " + resource.getStudy().getFqn()
-                            + " not found. Update could not be performed.");
+                    throw new CatalogException("Internal error: Study " + study.getFqn() + " not found. Update could not be performed.");
                 }
                 variableSetList = studyQueryResult.first().getVariableSets();
                 if (variableSetList == null || variableSetList.isEmpty()) {
@@ -498,8 +499,7 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
                 }
 
                 // Get the annotation set from the entry
-                QueryResult<AnnotationSet> annotationSetQueryResult = dbAdaptor.getAnnotationSet(resource.getResource().getUid(),
-                        annotationSet.getId());
+                QueryResult<AnnotationSet> annotationSetQueryResult = dbAdaptor.getAnnotationSet(entry.getUid(), annotationSet.getId());
                 if (annotationSetQueryResult.getNumResults() == 0) {
                     throw new CatalogException("AnnotationSet " + annotationSet.getId() + " not found. Annotations could not be updated.");
                 }

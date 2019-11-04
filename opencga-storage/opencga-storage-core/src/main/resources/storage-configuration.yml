@@ -17,6 +17,7 @@ cellbase:
     options:         ## This is intended for database specific options such as --authenticationDatabase in MongoDB
       authenticationDatabase: "${OPENCGA.CELLBASE.DB.AUTHENTICATION_DATABASE}"
       readPreference: "${OPENCGA.CELLBASE.DB.READ_PREFERENCE}"
+      enableSSL: false
 
   preferred: "remote"   ## This accept two values: 'local' and 'remote' to fetch data
 
@@ -81,6 +82,14 @@ benchmark:
       user: ""
       password: ""
       options: {}         ## This is intended for database specific options such as --authenticationDatabase in MongoDB
+
+io:
+  connectors:
+#    azure:
+#      class: "org.opencb.opencga.storage.core.io.managers.AzureBlobStorageIOConnector"
+#      options:
+#        accountName: "<accountName>"
+#        accountKey: "<accountKey>"
 
 ## The following section defines all availables storage engine plugins installed
 ## Default plugin is 'mongodb' storage engine
@@ -168,11 +177,6 @@ storageEngines:
       species: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
       assembly: ${OPENCGA.CLIENT.ORGANISM.ASSEMBLY}
       #Plugin specific options
-      hadoop.bin: "hadoop"
-#      hadoop.env: # See opencga-env.sh
-#      - "HADOOP_USER_CLASSPATH_FIRST=true"
-#      - "HADOOP_CLASSPATH=$HADOOP_CLASSPATH:${OPENCGA.INSTALLATION.DIR}/libs/protobuf-java-${protobuf}.jar"
-#      - ....
       opencga.storage.hadoop.jar-with-dependencies: "opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"
       opencga.archive.chunk_size: 1000
       hadoop.load.archive.batch.size: 3
@@ -193,6 +197,20 @@ storageEngines:
       limit.max: 5000                  # Maximum limit value in GET operations. If tried to be exceeded, the query will fail.
       sample.limit.default: 100        # Default sampleLimit in GET operations. To be used only if not defined.
       sample.limit.max: 1000           # Maximum sampleLimit value in GET operations. If tried to be exceeded, the query will fail.
+
+      # Hadoop executable file. Used to lunch MapReduce applications
+      opencga.hadoop.bin: "hadoop"
+
+      # Define the way of executing MapReduce jobs.
+      opencga.mr.executor: "system"  # Use system hadoop installation
+      
+      # Use external hadoop installation. ssh to a host edge node
+      # opencga.mr.executor: "ssh"                 # Uncomment to enable
+      opencga.mr.executor.ssh.host: ""             # Hadoop edge node host name
+      opencga.mr.executor.ssh.user: ""             # Hadoop edge node user name
+      # opencga.mr.executor.ssh.key: "~/.ssh/id_rsa" # Hadoop edge node ssh-key file
+      opencga.mr.executor.ssh.password: ""         # Hadoop edge node password. Only if ssh-key is not present. Requires sshpass to run
+      opencga.mr.executor.ssh.remote_opencga_home:  # Remote opencga home location. Only if different than local location.
 
 ### hadoop properties
       mapreduce.map.cpu.vcores: 1

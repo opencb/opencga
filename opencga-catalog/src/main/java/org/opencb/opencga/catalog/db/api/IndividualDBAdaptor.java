@@ -21,7 +21,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
@@ -206,8 +205,8 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
 
     QueryResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<Individual> get(long individualId, QueryOptions options, String userId)
-            throws CatalogDBException, CatalogAuthorizationException;
+//    QueryResult<Individual> get(long individualId, QueryOptions options, String userId)
+//            throws CatalogDBException, CatalogAuthorizationException;
 
 //    @Deprecated
 //    QueryResult<Individual> getAllIndividuals(Query query, QueryOptions options) throws CatalogDBException;

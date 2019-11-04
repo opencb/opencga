@@ -27,10 +27,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.core.result.WriteResult;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
@@ -71,7 +69,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testCreateExistingUser() throws Exception {
         thrown.expect(CatalogException.class);
         thrown.expectMessage(containsString("already exists"));
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
     }
 
     @Test
@@ -169,7 +167,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void importLdapUsers() throws CatalogException, NamingException, IOException {
         // Action only for admins
-        catalogManager.getUserManager().importRemoteUsers("ldap", Arrays.asList("pfurio", "imedina"), null, null, getAdminToken());
+        catalogManager.getUserManager().importRemoteEntities("ldap", Arrays.asList("pfurio", "imedina"), false, null, null, getAdminToken());
         // TODO: Validate the users have been imported
     }
 
@@ -191,6 +189,25 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 ""), sessionIdUser);
 
         assertEquals(0, catalogManager.getSampleManager().count(studyFqn, new Query(), token).getNumTotalResults());
+    }
+
+    @Ignore
+    @Test
+    public void syncUsers() throws CatalogException {
+        // Action only for admins
+        String token = catalogManager.getUserManager().login("admin", "admin");
+
+        catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", "bio", "bio", studyFqn, true, token);
+        QueryResult<Group> bio = catalogManager.getStudyManager().getGroup(studyFqn, "bio", sessionIdUser);
+
+        assertEquals(1, bio.getNumResults());
+        assertEquals(0, bio.first().getUserIds().size());
+
+        catalogManager.getUserManager().syncAllUsersOfExternalGroup(studyFqn, "ldap", token);
+        bio = catalogManager.getStudyManager().getGroup(studyFqn, "bio", sessionIdUser);
+
+        assertEquals(1, bio.getNumResults());
+        assertTrue(!bio.first().getUserIds().isEmpty());
     }
 
     @Ignore
@@ -224,7 +241,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void testAssignPermissions() throws CatalogException {
-        catalogManager.getUserManager().create("test", "test", "test@mail.com", "test", null, 100L, "guest", null, null);
+        catalogManager.getUserManager().create("test", "test", "test@mail.com", "test", null, 100L, Account.Type.GUEST, null, null);
 
         catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else", "group_cancer_some_thing_else",
                 "test", sessionIdUser);
@@ -1070,6 +1087,30 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals(Status.DELETED, cohort.getStatus().getName());
     }
 
+    @Test
+    public void getSamplesFromCohort() throws CatalogException, IOException {
+        String studyId = "user@1000G:phase1";
+
+        Sample sampleId1 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_1"), new QueryOptions(),
+                sessionIdUser).first();
+        Sample sampleId2 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_2"), new QueryOptions(),
+                sessionIdUser).first();
+        Sample sampleId3 = catalogManager.getSampleManager().create(studyId, new Sample().setId("SAMPLE_3"), new QueryOptions(),
+                sessionIdUser).first();
+
+        Cohort myCohort = catalogManager.getCohortManager().create(studyId, new Cohort().setId("MyCohort").setType(Study.Type.FAMILY)
+                .setSamples(Arrays.asList(sampleId1, sampleId2, sampleId3)), null, sessionIdUser).first();
+
+        QueryResult<Sample> myCohort1 = catalogManager.getCohortManager().getSamples(studyId, "MyCohort", sessionIdUser);
+        assertEquals(3, myCohort1.getNumResults());
+
+        thrown.expect(CatalogParameterException.class);
+        catalogManager.getCohortManager().getSamples(studyId, "MyCohort,AnotherCohort", sessionIdUser);
+
+        thrown.expect(CatalogParameterException.class);
+        catalogManager.getCohortManager().getSamples(studyId, "MyCohort,MyCohort", sessionIdUser);
+    }
+
     /**
      * Individual methods
      * ***************************
@@ -1176,7 +1217,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testUpdateIndividuaParents() throws CatalogException {
+    public void testUpdateIndividualParents() throws CatalogException {
         IndividualManager individualManager = catalogManager.getIndividualManager();
         individualManager.create(studyFqn, new Individual().setId("child"), QueryOptions.empty(), sessionIdUser);
         individualManager.create(studyFqn, new Individual().setId("father"), QueryOptions.empty(), sessionIdUser);
@@ -1192,6 +1233,39 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         assertEquals("father", individualQueryResult.first().getFather().getId());
         assertEquals(1, individualQueryResult.first().getFather().getVersion());
+    }
+
+    @Test
+    public void testDeleteIndividualWithFamiliesError() throws CatalogException {
+        IndividualManager individualManager = catalogManager.getIndividualManager();
+        Individual child = individualManager.create(studyFqn, new Individual().setId("child"), QueryOptions.empty(), sessionIdUser).first();
+        Individual father = individualManager.create(studyFqn, new Individual().setId("father"), QueryOptions.empty(), sessionIdUser).first();
+        Individual mother = individualManager.create(studyFqn, new Individual().setId("mother"), QueryOptions.empty(), sessionIdUser).first();
+
+//        QueryResult<Individual> individualQueryResult = individualManager.update(studyFqn, "child", new ObjectMap()
+//                        .append(IndividualDBAdaptor.QueryParams.FATHER.key(), new ObjectMap(IndividualDBAdaptor.QueryParams.ID.key(), "father"))
+//                        .append(IndividualDBAdaptor.QueryParams.MOTHER.key(), new ObjectMap(IndividualDBAdaptor.QueryParams.ID.key(), "mother")),
+//                QueryOptions.empty(), sessionIdUser);
+
+        FamilyManager familyManager = catalogManager.getFamilyManager();
+        familyManager.create(studyFqn, new Family().setId("family1").setMembers(Arrays.asList(father, child)), QueryOptions.empty(), sessionIdUser);
+        familyManager.create(studyFqn, new Family().setId("family2").setMembers(Arrays.asList(father, mother, child)), QueryOptions.empty(), sessionIdUser);
+
+        WriteResult writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"), new ObjectMap(), sessionIdUser);
+        assertEquals(0, writeResult.getNumModified());
+        assertTrue(writeResult.getFailed().get(0).getMessage().contains("found in the families"));
+
+        writeResult = individualManager.delete(studyFqn, new Query(IndividualDBAdaptor.QueryParams.ID.key(), "child"), new ObjectMap(Constants.FORCE, true), sessionIdUser);
+        assertEquals(1, writeResult.getNumModified());
+
+        Family family1 = familyManager.get(studyFqn, "family1", QueryOptions.empty(), sessionIdUser).first();
+        Family family2 = familyManager.get(studyFqn, "family2", QueryOptions.empty(), sessionIdUser).first();
+
+        assertEquals(1, family1.getMembers().size());
+        assertEquals(0, family1.getMembers().stream().filter(i -> i.getId().equals("child")).count());
+
+        assertEquals(2, family2.getMembers().size());
+        assertEquals(0, family2.getMembers().stream().filter(i -> i.getId().equals("child")).count());
     }
 
     @Test

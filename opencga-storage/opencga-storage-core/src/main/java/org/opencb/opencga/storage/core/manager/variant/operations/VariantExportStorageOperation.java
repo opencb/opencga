@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
+import org.opencb.opencga.catalog.monitor.executors.BatchExecutor;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -66,7 +66,7 @@ public class VariantExportStorageOperation extends StorageOperation {
     }
 
     public List<URI> exportData(List<StudyInfo> studyInfos, Query query, VariantOutputFormat outputFormat, String outputStr,
-                                String sessionId, ObjectMap options)
+                                String variantsFile, String sessionId, ObjectMap options)
             throws IOException, StorageEngineException, CatalogException {
         if (options == null) {
             options = new ObjectMap();
@@ -145,13 +145,14 @@ public class VariantExportStorageOperation extends StorageOperation {
             VariantMetadataFactory metadataExporter =
                     new CatalogVariantMetadataFactory(catalogManager, variantStorageEngine.getDBAdaptor(), sessionId);
 
-            variantStorageEngine.exportData(outputFile, outputFormat, metadataExporter, query, new QueryOptions(options));
+            URI variantsFileUri = StringUtils.isEmpty(variantsFile) ? null : UriUtils.createUri(variantsFile);
+            variantStorageEngine.exportData(outputFile, outputFormat, variantsFileUri, query, new QueryOptions(options), metadataExporter);
 
             if (catalogOutDirId != null && outdir != null) {
                 copyResults(outdir, studyFqn, catalogOutDirId, sessionId);
             }
             if (outdir != null) {
-                java.io.File[] files = outdir.toFile().listFiles((dir, name) -> !name.equals(AbstractExecutor.JOB_STATUS_FILE));
+                java.io.File[] files = outdir.toFile().listFiles((dir, name) -> !name.equals(BatchExecutor.JOB_STATUS_FILE));
                 if (files != null) {
                     for (java.io.File file : files) {
                         newFiles.add(file.toURI());

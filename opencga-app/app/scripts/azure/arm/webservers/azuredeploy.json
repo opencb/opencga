@@ -1,0 +1,457 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "_artifactsLocation": {
+            "type": "string",
+            "metadata": {
+                "description": ""
+            }
+        },
+        "_artifactsLocationSasToken": {
+            "type": "string",
+            "metadata": {
+                "description": ""
+            }
+        },
+        "virtualNetworkSubnetId": {
+            "type": "string",
+            "metadata": {
+                "description": "The ID of the subnet in which the Avere cluster should be deployed"
+            }
+        },
+        "appgwBackendAddressPoolId": {
+            "type": "string",
+            "metadata": {
+                "description": "The ID of the app gateway backend address pool"
+            }
+        },
+        "virtualMachineSize": {
+            "type": "string",
+            "defaultValue": "Standard_D2s_v3",
+            "metadata": {
+                "description": "Size of VMs in the VM Scale Set."
+            }
+        },
+        "initialInstanceCount": {
+            "type": "int",
+            "defaultValue": 3,
+            "metadata": {
+                "description": "Number of VM instances (100 or less)."
+            },
+            "maxValue": 100
+        },
+        "minInstanceCount": {
+            "type": "int",
+            "defaultValue": 2,
+            "metadata": {
+                "description": "How few instances can the AutoScale reduce to?."
+            },
+            "maxValue": 100
+        },
+        "maxInstanceCount": {
+            "type": "int",
+            "defaultValue": 5,
+            "metadata": {
+                "description": "How many instances can the AutoScaler increate to? (100 or less)."
+            },
+            "maxValue": 100
+        },
+        "openCGAContainerImage": {
+            "type": "string",
+            "metadata": {
+                "description": "The docker image and tag for running the tomcat service."
+            }
+        },
+        "ivaContainerImage" : {
+            "type": "string",
+            "metadata": {
+                "description": "The docker image and tag for running the IVA service."
+            }
+        },
+        "adminUsername": {
+            "type": "string",
+            "defaultValue": "opencgaadmin",
+            "metadata": {
+                "description": "Admin username on all VMs."
+            }
+        },
+        "sshKeyData": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Admin password on all VMs."
+            }
+        },
+        "mountArgs": {
+            "type": "string",
+            "metadata": {
+                "description": "Arguments passed to the mount.py script."
+            }
+        },
+        "LogAnalyticsWorkspaceID": {
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace ID"
+            }
+        },
+        "logAnalyticsWorkSpaceKey":{
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace Key"
+            }
+        },
+        "LogAnalyticsWorkspaceResourceID": {
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace Resource ID"
+            }
+        }
+    },
+    "variables": {
+        "vmssName":"opencgavmss",
+        "namingPrefix":"webservers",
+        "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
+        "loadBalancerName": "[concat(variables('namingPrefix'), '-lb')]",
+        "lbID": "[resourceId('Microsoft.Network/loadBalancers',variables('loadBalancerName'))]",
+        "natPoolName": "[concat(variables('namingPrefix'), 'natpool')]",
+        "natStartPort": 50000,
+        "natEndPort": 50119,
+        "natBackendPort": 22,
+       "privateFrontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/privateFrontEnd')]",
+        "imageReference": {
+            "publisher": "Canonical",
+            "offer": "UbuntuServer",
+            "sku": "18.04-LTS",
+            "version": "latest"
+        },
+        "logAnalyticsAgent": "[concat('docker run --privileged -d -v /var/run/docker.sock:/var/run/docker.sock -v /var/log:/var/log -v /var/lib/docker/containers:/var/lib/docker/containers -e WSID=',parameters('logAnalyticsWorkSpaceID'),' -e KEY=',parameters('logAnalyticsWorkSpaceKey'),' -p 127.0.0.1:25225:25225 -p 127.0.0.1:25224:25224/udp --name=omsagent -h=`hostname` --restart=always microsoft/oms')]",
+    
+        "_comment": "The cloud init below is used to install docker then run the Avere mounting scripts located in ./arm/scripts/mount.py",
+        "cloud-init": [
+            "#cloud-config",
+            "package_upgrade: true",
+            "package_reboot_if_required: true",
+            "runcmd:",
+            "- curl -fsSL https://get.docker.com/ | sh",
+            "- curl -fsSL https://get.docker.com/gpg | sudo apt-key add -",
+            "[concat('- ', variables('logAnalyticsAgent'))]",
+            "[concat('- curl -fsSL ', parameters('_artifactsLocation'), '/scripts/mount.py',parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'))]",
+            "[concat('- curl -fsSL ', parameters('_artifactsLocation'), '/scripts/wait_config.sh',parameters('_artifactsLocationSasToken'),' | bash')]",
+            "[concat('- docker run  --name=opencga-app -d -p 8080:8080 -p 8443:8443 --restart=always --mount type=bind,src=/media/primarynfs/conf,dst=/opt/opencga/conf,readonly --mount type=bind,src=/media/primarynfs/sessions,dst=/opt/opencga/sessions ', parameters('openCGAContainerImage'))]",
+            "[concat('- docker run --name=iva -d -p 80:80 -p 443:443 --restart=always --mount type=bind,src=/media/primarynfs/ivaconf,dst=/usr/local/apache2/htdocs/conf,readonly ', parameters('ivaContainerImage'))]",
+            ""
+        ],
+        "cloud-init-string": "[replace(replace(replace(string(variables('cloud-init')),'\",\"','\n'),'[\"',''),'\"]','')]",
+        "customData": "[base64(variables('cloud-init-string'))]"
+     },
+    "resources": [
+      
+        {
+            "comments": "The LB configured to send traffic to the web nodes in the VMSS. It monitors the health endpoint of OpenCGA removing unhealthy nodes from the LB",
+            "type": "Microsoft.Network/loadBalancers",
+            "name": "[variables('loadBalancerName')]",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2016-03-30",
+            "dependsOn": [
+             
+              
+            ],
+            "properties": {
+                "loadBalancingRules": [
+                    {
+                        "name": "ivaHttp",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[variables('privateFrontEndIPConfigID')]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(variables('lbID'),'/backendAddressPools/VMSSBackendPool')]"
+                            },
+                            "protocol": "Tcp",
+                            "frontendPort": 80,
+                            "backendPort": 80,
+                            "enableFloatingIP": false,
+                            "idleTimeoutInMinutes": 5,
+                            "probe": {
+                                "id": "[concat(variables('lbID'),'/probes/ivaHttpProbe')]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "tomcatHttp",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[variables('privateFrontEndIPConfigID')]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(variables('lbID'),'/backendAddressPools/VMSSBackendPool')]"
+                            },
+                            "protocol": "Tcp",
+                            "frontendPort": 8080,
+                            "backendPort": 8080,
+                            "enableFloatingIP": false,
+                            "idleTimeoutInMinutes": 5,
+                            "probe": {
+                                "id": "[concat(variables('lbID'),'/probes/tomcatHttpProbe')]"
+                            }
+                        }
+                    }
+                ],
+                "probes": [
+                    {
+                        "name": "ivaHttpProbe",
+                        "properties": {
+                            "protocol": "Http",
+                            "port": 80,
+                            "requestPath": "/",
+                            "intervalInSeconds": 5,
+                            "numberOfProbes": 2
+                        }
+                    },
+                    {
+                        "name": "tomcatHttpProbe",
+                        "properties": {
+                            "protocol": "Http",
+                            "port": 8080,
+                            "requestPath": "/opencga/webservices/rest/v1/meta/status",
+                            "intervalInSeconds": 5,
+                            "numberOfProbes": 2
+                        }
+                    }
+                ],
+                "frontendIPConfigurations": [
+                    {
+                        "name": "privateFrontEnd",
+                        "properties": {
+                            "privateIPAllocationMethod" : "Dynamic",
+                            "subnet": {
+                                "id": "[parameters('virtualNetworkSubnetId')]"
+                            }
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "VMSSBackendPool"
+                    }
+                ],
+                "inboundNatPools": [
+                    {
+                        "name": "[variables('natPoolName')]",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[variables('privateFrontEndIPConfigID')]"
+                            },
+                            "protocol": "tcp",
+                            "frontendPortRangeStart": "[variables('natStartPort')]",
+                            "frontendPortRangeEnd": "[variables('natEndPort')]",
+                            "backendPort": "[variables('natBackendPort')]"
+                        }
+                    }
+                ]
+            },
+            "resources":[
+                {
+                    "type": "providers/diagnosticSettings",
+                    "name": "[concat('Microsoft.Insights/', variables('loadBalancerName'))]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Network/loadBalancers',variables('loadBalancerName'))]"
+                    ],
+                    "apiVersion": "2017-05-01-preview",
+                    "properties": {
+                      "name": "[variables('loadBalancerName')]",
+                      "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
+                      "logs": [ 
+                        {
+                          "category": "LoadBalancerAlertEvent",
+                          "enabled": true,
+                          "retentionPolicy": {
+                            "days": 0,
+                            "enabled": false
+                          }
+                        },
+                        {
+                            "category": "LoadBalancerProbeHealthStatus",
+                            "enabled": true,
+                            "retentionPolicy": {
+                              "days": 0,
+                              "enabled": false
+                            }
+                          }
+                      ],
+                      "metrics": [
+                        {
+                          "category": "AllMetrics",
+                          "enabled": true,
+                          "retentionPolicy": {
+                            "enabled": false,
+                            "days": 0
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+        },
+        {
+            "comments": "This VMSS creates machines used to host the web components of OpenCGA, they are configured using the CloudInit found in the variables section of this ARM template",
+            "type": "Microsoft.Compute/virtualMachineScaleSets",
+            "name": "[variables('vmssName')]",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2019-03-01",
+            "dependsOn": [
+                "[concat('Microsoft.Network/loadBalancers/', variables('loadBalancerName'))]"
+                   ],
+            "sku": {
+                "name": "[parameters('virtualMachineSize')]",
+                "tier": "Standard",
+                "capacity": "[parameters('initialInstanceCount')]"
+            },
+            "properties": {
+                "overprovision": true,
+                "upgradePolicy": {
+                    "mode": "Rolling",
+                    "automaticOSUpgradePolicy": {
+                        "enableAutomaticOSUpgrade": true
+                    }
+                },
+                "virtualMachineProfile": {
+                    "storageProfile": {
+                        "osDisk": {
+                            "createOption": "FromImage",
+                            "caching": "ReadWrite"
+                        },
+                        "imageReference": "[variables('imageReference')]"
+                    },
+                    "osProfile": {
+                        "computerNamePrefix": "opencga",
+                        "adminUsername": "[parameters('adminUsername')]",
+                        "linuxConfiguration": {
+                            "disablePasswordAuthentication": true,
+                            "ssh": {
+                                "publicKeys": [
+                                    {
+                                        "path": "[variables('sshKeyPath')]",
+                                        "keyData": "[parameters('sshKeyData')]"
+                                    }
+                                ]
+                            }
+                        },
+                        "customData": "[variables('customData')]"
+                    },           
+                    "networkProfile": {
+                        "healthProbe": {
+                            "id": "[concat(variables('lbId'), '/probes/tomcatHttpProbe')]"
+                        },
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": "nic1",
+                                "properties": {
+                                    "primary": true,
+                                    "ipConfigurations": [
+                                        {
+                                            "name": "ipconfig",
+                                            "properties": {
+                                                "subnet": {
+                                                    "id": "[parameters('virtualNetworkSubnetId')]"
+                                                },
+                                                "ApplicationGatewayBackendAddressPools": [
+
+                                                    {
+                          
+                                                      "id": "[parameters('appgwBackendAddressPoolId')]"
+                          
+                                                    }
+                          
+                                                ],
+                                                "loadBalancerBackendAddressPools": [
+                                                    {
+                                                        "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/', variables('loadBalancerName'), '/backendAddressPools/VMSSBackendPool')]"
+                                                    }
+                                                ],
+                                                "loadBalancerInboundNatPools": [
+                                                    {
+                                                        "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/', variables('loadBalancerName'), '/inboundNatPools/', variables('natPoolName'))]"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "comments": "This Autoscale rule scales up the VMSS when servers have a CPU usage higher than 60%",
+            "type": "Microsoft.Insights/autoscaleSettings",
+            "apiVersion": "2015-04-01",
+            "name": "autoscalewad",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName'))]"
+            ],
+            "properties": {
+                "name": "autoscalewad",
+                "targetResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName'))]",
+                "enabled": true,
+                "mode": "Incremental",
+                "profiles": [
+                    {
+                        "name": "CPUBasedScaling",
+                        "capacity": {
+                            "minimum": "[parameters('minInstanceCount')]",
+                            "maximum": "[parameters('maxInstanceCount')]",
+                            "default": "[parameters('initialInstanceCount')]"
+                        },
+                        "rules": [
+                            {
+                                "metricTrigger": {
+                                    "metricName": "Percentage CPU",
+                                    "metricNamespace": "",
+                                    "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName'))]",
+                                    "timeGrain": "PT1M",
+                                    "statistic": "Average",
+                                    "timeWindow": "PT5M",
+                                    "timeAggregation": "Average",
+                                    "operator": "GreaterThan",
+                                    "threshold": 60
+                                },
+                                "scaleAction": {
+                                    "direction": "Increase",
+                                    "type": "ChangeCount",
+                                    "value": "1",
+                                    "cooldown": "PT1M"
+                                }
+                            },
+                            {
+                                "metricTrigger": {
+                                    "metricName": "Percentage CPU",
+                                    "metricNamespace": "",
+                                    "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName'))]",
+                                    "timeGrain": "PT1M",
+                                    "statistic": "Average",
+                                    "timeWindow": "PT5M",
+                                    "timeAggregation": "Average",
+                                    "operator": "LessThan",
+                                    "threshold": 30
+                                },
+                                "scaleAction": {
+                                    "direction": "Decrease",
+                                    "type": "ChangeCount",
+                                    "value": "1",
+                                    "cooldown": "PT5M"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ],
+    "outputs": {
+       
+    }
+}

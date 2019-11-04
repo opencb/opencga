@@ -1,0 +1,256 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "_artifactsLocation": {
+            "type": "string",
+            "metadata": {
+                "description": ""
+            }
+        },
+        "_artifactsLocationSasToken": {
+            "type": "string",
+            "metadata": {
+                "description": ""
+            }
+        },
+        "mountArgs": {
+            "type": "string",
+            "metadata": {
+                "description": "Arguments passed to the mount.py script."
+            }
+        },
+        "virtualNetworkSubnetId": {
+            "type": "string",
+            "metadata": {
+                "description": "The subnet in which Batch will be deployed. Requires the following ports to be enabled via NSG: https://docs.microsoft.com/en-us/azure/batch/batch-virtual-network#network-security-groups-1."
+            }
+        },
+        "maxNodeCount": {
+            "type": "int",
+            "defaultValue": 3
+        },
+        "virtualMachineSize": {
+            "type": "string",
+            "defaultValue": "Standard_F8s_v2",
+            "metadata": {
+                "description": "Size of VMs in the VM Scale Set."
+            }
+        },
+        "storageAccountSku": {
+            "type": "string",
+            "defaultValue": "Standard_LRS",
+            "allowedValues": [
+                "Standard_LRS",
+                "Standard_GRS",
+                "Standard_ZRS",
+                "Premium_LRS"
+            ],
+            "metadata": {
+                "description": "Storage Account type"
+            }
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "Location for all resources."
+            }
+        },
+        "poolId": {
+            "type": "string",
+            "defaultValue": "defaultpool"
+        },
+        "LogAnalyticsWorkspaceResourceID": {
+            "type": "string",
+            "metadata": {
+                "description": "Log Analytics Workspace Resource ID"
+            }
+        },
+        "appInsightsAppId":{
+            "type": "string",
+            "metadata": {
+                "description": "Applciation Insights ID"
+            }
+        },
+        "appInsightsInstrumentationKey":{
+            "type": "string",
+            "metadata": {
+                "description": "Applciation Insights Instrumentation Key"
+            }
+        },
+        "batchInsightsDownloadURL":{
+            "type": "string",
+            "defaultValue": "https://github.com/Azure/batch-insights/releases/download/v1.1.1/batch-insights",
+            "metadata": {
+                "description": "Batch Insights download URL"
+            }
+        }
+        
+    },
+    "variables": {
+        "storageAccountName": "[concat('batch', uniqueString(resourceGroup().id))]",
+        "batchAccountName": "[concat('batch', uniqueString(resourceGroup().id))]",
+        "batchEndpoint": "[concat('https://', variables('batchAccountName'), '.' , parameters('location'), '.batch.azure.com')]"
+    },
+    "resources": [
+        {
+            "comments": "This is the storage account used by Azure Batch for file processing/storage",
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[variables('storageAccountname')]",
+            "apiVersion": "2016-01-01",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "[parameters('storageAccountsku')]"
+            },
+            "kind": "Storage",
+            "tags": {
+                "ObjectName": "[variables('storageAccountName')]"
+            },
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.Batch/batchAccounts",
+            "name": "[variables('batchAccountName')]",
+            "apiVersion": "2018-12-01",
+            "location": "[parameters('location')]",
+            "tags": {
+                "ObjectName": "[variables('batchAccountName')]"
+            },
+            "properties": {
+                "autoStorage": {
+                    "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+                }
+            },
+            "resources": [
+                {
+                    "type": "providers/diagnosticSettings",
+                    "name": "[concat('Microsoft.Insights/', variables('batchAccountName'))]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Batch/batchAccounts', variables('batchAccountName'))]"
+                    ],
+                    "apiVersion": "2017-05-01-preview",
+                    "properties": {
+                      "name": "[variables('batchAccountName')]",
+                      "workspaceId": "[parameters('LogAnalyticsWorkspaceResourceID')]",
+                      "logs": [ 
+                        {
+                          "category": "ServiceLog",
+                          "enabled": true,
+                          "retentionPolicy": {
+                            "days": 0,
+                            "enabled": false
+                          }
+                        }
+                      ],
+                      "metrics": [
+                        {
+                          "category": "AllMetrics",
+                          "enabled": true,
+                          "retentionPolicy": {
+                            "enabled": false,
+                            "days": 0
+                          }
+                        }
+                      ]
+                    }
+                  }
+            ],
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+            ]
+        },
+        
+        {
+            "comments": "This creates a pool of VMs in Azure Batch which support container workloads. It runs a startup task to mount the shared storage before accepting tasks.",
+            "type": "Microsoft.Batch/batchAccounts/pools",
+            "name": "[concat(variables('batchAccountName'), '/', parameters('poolID'))]",
+            "apiVersion": "2018-12-01",
+            "scale": null,
+            "properties": {
+                "vmSize": "[parameters('virtualMachineSize')]",
+                "networkConfiguration": {
+                    "subnetId": "[parameters('virtualNetworkSubnetId')]"
+                },
+                "maxTasksPerNode": 1,
+                "taskSchedulingPolicy": {
+                    "nodeFillType": "Spread"
+                },
+                "startTask": {
+                    "commandLine": "[concat('/bin/bash -c \"curl -fsSL ', parameters('_artifactsLocation'), '/scripts/mount.py', parameters('_artifactsLocationSasToken'), ' | python3 - ', parameters('mountArgs'), '  && echo $BATCH_INSIGHTS_DOWNLOAD_URL &&  wget  -O - https://raw.githubusercontent.com/Azure/batch-insights/master/scripts/run-linux.sh | bash \"')]",
+                    "userIdentity": {
+                        "autoUser": {
+                            "elevationLevel": "Admin",
+                            "scope": "Pool"
+                        }
+                    },
+                    "waitForSuccess": true,
+                    "maxTaskRetryCount": 0,
+                    "environmentSettings":[
+                        {
+                            "name": "BATCH_INSIGHTS_DOWNLOAD_URL",
+                            "value": "[parameters('batchInsightsDownloadURL')]"
+                        },
+                        {
+                            "name": "APP_INSIGHTS_INSTRUMENTATION_KEY",
+                            "value": "[parameters('appInsightsInstrumentationKey')]"
+                        },
+                        {
+                            "name": "APP_INSIGHTS_APP_ID",
+                            "value": "[parameters('appInsightsAppId')]"
+                        }
+                    ]   
+                },
+                "deploymentConfiguration": {
+                    "virtualMachineConfiguration": {
+                        "containerConfiguration": {
+                            "type": "DockerCompatible"
+                        },
+                        "imageReference": {
+                            "publisher": "microsoft-azure-batch",
+                            "offer": "ubuntu-server-container",
+                            "sku": "16-04-lts",
+                            "version": "latest"
+                        },
+                        "nodeAgentSkuId": "batch.node.ubuntu 16.04"
+                    }
+                },
+                "scaleSettings": {
+                    "autoScale": {
+                        "evaluationInterval": "PT5M",
+                        "formula": "[concat('startingNumberOfVMs = 1;maxNumberofVMs = ', parameters('maxNodeCount'), ';pendingTaskSamplePercent = $PendingTasks.GetSamplePercent(160 * TimeInterval_Second);pendingTaskSamples = pendingTaskSamplePercent < 70 ? startingNumberOfVMs : avg($PendingTasks.GetSample(160 * TimeInterval_Second));$TargetDedicatedNodes=max(1,min(maxNumberofVMs, pendingTaskSamples));')]"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Batch/batchAccounts', variables('batchAccountName'))]"
+            ]
+        }
+    ],
+    "outputs": {
+        "storageAccountName": {
+            "type": "string",
+            "value": "[variables('storageAccountName')]"
+        },
+        "batchAccountName": {
+            "type": "string",
+            "value": "[variables('batchAccountName')]"
+        },
+        "batchEndpoint": {
+            "type": "string",
+            "value": "[variables('batchEndpoint')]"
+        },
+        "batchAccountKey": {
+            "type": "string",
+            "value": "[listKeys(resourceId('Microsoft.Batch/batchAccounts', variables('batchAccountName')), '2017-09-01').primary]"
+        },
+        "batchPoolId": {
+            "type": "string",
+            "value": "[parameters('poolId')]"
+        },
+        "maxNodeCount": {
+            "type": "int",
+            "value": "[parameters('maxNodeCount')]"
+        }
+    }
+}

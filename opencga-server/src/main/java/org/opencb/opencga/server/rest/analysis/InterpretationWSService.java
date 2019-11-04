@@ -29,20 +29,17 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
-import static org.opencb.opencga.server.rest.analysis.VariantAnalysisWSService.DEPRECATED_VARIANT_QUERY_PARAM;
 import static org.opencb.opencga.storage.core.clinical.ReportedVariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -154,7 +151,7 @@ public class InterpretationWSService extends AnalysisWSService {
             }
 
             if (interpretationAction == ParamUtils.BasicUpdateAction.ADD) {
-                org.opencb.biodata.models.clinical.interpretation.Interpretation  interpretation = params.toClinicalInterpretation();
+                Interpretation interpretation = params.toClinicalInterpretation();
                 interpretation.setClinicalAnalysisId(clinicalAnalysisStr);
                 return createOkResponse(catalogInterpretationManager.create(studyStr, clinicalAnalysisStr, interpretation, queryOptions, sessionId));
             } else {
@@ -187,7 +184,7 @@ public class InterpretationWSService extends AnalysisWSService {
             query.remove("clinicalAnalyses");
 
             List<String> analysisList = getIdList(clinicalAnalysisStr);
-            List<QueryResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyStr, analysisList, query, queryOptions, silent, sessionId);
+            List<QueryResult<ClinicalAnalysis>> analysisResult = clinicalManager.get(studyStr, analysisList, queryOptions, silent, sessionId);
             return createOkResponse(analysisResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -356,6 +353,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
         public String dueDate;
         public List<Comment> comments;
+        public List<Alert> alerts;
         public ClinicalAnalysis.Priority priority;
         public List<String> flags;
 
@@ -403,14 +401,13 @@ public class InterpretationWSService extends AnalysisWSService {
                     interpretations != null
                             ? interpretations.stream()
                             .map(ClinicalInterpretationParameters::toClinicalInterpretation)
-                            .map(i -> new Interpretation(null, i))
                             .collect(Collectors.toList())
                             : new ArrayList<>();
             String clinicalId = StringUtils.isEmpty(id) ? name : id;
             String assignee = analyst != null ? analyst.assignee : "";
             return new ClinicalAnalysis(clinicalId, description, type, disorder, fileMap, individual, f, roleToProband, consent,
                     interpretationList, priority, new ClinicalAnalysis.ClinicalAnalyst(assignee, ""), flags, null,
-                    dueDate, comments, status, 1, attributes).setName(name);
+                    dueDate, comments, alerts, status, 1, attributes).setName(name);
         }
     }
     
@@ -564,8 +561,10 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "sampleSkip", value = SAMPLE_SKIP_DESCR, dataType = "integer", paramType = "query"),
 
             @ApiImplicitParam(name = "cohort", value = COHORT_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "maf", value = STATS_MAF_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "mgf", value = STATS_MGF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsRef", value = STATS_REF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsAlt", value = STATS_ALT_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsMaf", value = STATS_MAF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsMgf", value = STATS_MGF_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingAlleles", value = MISSING_ALLELES_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingGenotypes", value = MISSING_GENOTYPES_DESCR, dataType = "string", paramType = "query"),
 
@@ -586,7 +585,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "populationFrequencyAlt", value = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "populationFrequencyRef", value = ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "populationFrequencyMaf", value = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "transcriptionFlag", value = ANNOT_TRANSCRIPTION_FLAG_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "transcriptFlag", value = ANNOT_TRANSCRIPT_FLAG_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "geneTraitId", value = ANNOT_GENE_TRAIT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "go", value = ANNOT_GO_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "expression", value = ANNOT_EXPRESSION_DESCR, dataType = "string", paramType = "query"),
@@ -685,8 +684,10 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "sampleSkip", value = SAMPLE_SKIP_DESCR, dataType = "integer", paramType = "query"),
 
             @ApiImplicitParam(name = "cohort", value = COHORT_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "maf", value = STATS_MAF_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "mgf", value = STATS_MGF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsRef", value = STATS_REF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsAlt", value = STATS_ALT_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsMaf", value = STATS_MAF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsMgf", value = STATS_MGF_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingAlleles", value = MISSING_ALLELES_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingGenotypes", value = MISSING_GENOTYPES_DESCR, dataType = "string", paramType = "query"),
 
@@ -707,7 +708,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "populationFrequencyAlt", value = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "populationFrequencyRef", value = ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "populationFrequencyMaf", value = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "transcriptionFlag", value = ANNOT_TRANSCRIPTION_FLAG_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "transcriptFlag", value = ANNOT_TRANSCRIPT_FLAG_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "geneTraitId", value = ANNOT_GENE_TRAIT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "go", value = ANNOT_GO_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "expression", value = ANNOT_EXPRESSION_DESCR, dataType = "string", paramType = "query"),
@@ -758,9 +759,6 @@ public class InterpretationWSService extends AnalysisWSService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             ObjectMap teamAnalysisOptions = getAnalysisOptions(queryOptions);
 
-            String dataDir = configuration.getDataDir();
-            String opencgaHome = Paths.get(dataDir).getParent().toString();
-
             List<String> panelList = null;
             if (StringUtils.isNotEmpty(panelIds)) {
                 panelList = Arrays.asList(panelIds.split(","));
@@ -783,7 +781,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
                 // Execute TEAM analysis
                 TeamAnalysis teamAnalysis = new TeamAnalysis(clinicalAnalysisId, panelList, moi, studyStr, roleInCancer,
-                        actionableVariantsByAssembly.get(assembly), teamAnalysisOptions, opencgaHome, sessionId);
+                        actionableVariantsByAssembly.get(assembly), teamAnalysisOptions, opencgaHome.toString(), sessionId);
                 result = teamAnalysis.execute();
             }
             return createAnalysisOkResponse(result);
@@ -815,9 +813,6 @@ public class InterpretationWSService extends AnalysisWSService {
                 penetrance = ClinicalProperty.Penetrance.COMPLETE;
             }
 
-            String dataDir = configuration.getDataDir();
-            String opencgaHome = Paths.get(dataDir).getParent().toString();
-
             List<String> panelList = null;
             if (StringUtils.isNotEmpty(panelIds)) {
                 panelList = Arrays.asList(panelIds.split(","));
@@ -833,7 +828,7 @@ public class InterpretationWSService extends AnalysisWSService {
             } else {
                 // Execute tiering analysis
                 TieringAnalysis tieringAnalysis = new TieringAnalysis(clinicalAnalysisId, panelList, studyStr, roleInCancer,
-                        actionableVariantsByAssembly.get(assembly), penetrance, tieringAnalysisOptions, opencgaHome, sessionId);
+                        actionableVariantsByAssembly.get(assembly), penetrance, tieringAnalysisOptions, opencgaHome.toString(), sessionId);
                 result = tieringAnalysis.execute();
             }
 
@@ -886,14 +881,18 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "sampleSkip", value = SAMPLE_SKIP_DESCR, dataType = "integer", paramType = "query"),
 
             @ApiImplicitParam(name = "cohort", value = COHORT_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "maf", value = STATS_MAF_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "mgf", value = STATS_MGF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsRef", value = STATS_REF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsAlt", value = STATS_ALT_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsMaf", value = STATS_MAF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsMgf", value = STATS_MGF_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingAlleles", value = MISSING_ALLELES_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingGenotypes", value = MISSING_GENOTYPES_DESCR, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "family", value = VariantCatalogQueryUtils.FAMILY_DESC, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "familyDisorder", value = VariantCatalogQueryUtils.FAMILY_DISORDER_DESC, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "familySegregation", value = VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "familyMembers", value = VariantCatalogQueryUtils.FAMILY_MEMBERS_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "familyProband", value = VariantCatalogQueryUtils.FAMILY_PROBAND_DESC, dataType = "string", paramType = "query"),
 
             @ApiImplicitParam(name = "includeStudy", value = INCLUDE_STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeFile", value = INCLUDE_FILE_DESCR, dataType = "string", paramType = "query"),
@@ -912,7 +911,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "populationFrequencyAlt", value = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "populationFrequencyRef", value = ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "populationFrequencyMaf", value = ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "transcriptionFlag", value = ANNOT_TRANSCRIPTION_FLAG_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "transcriptFlag", value = ANNOT_TRANSCRIPT_FLAG_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "geneTraitId", value = ANNOT_GENE_TRAIT_ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "go", value = ANNOT_GO_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "expression", value = ANNOT_EXPRESSION_DESCR, dataType = "string", paramType = "query"),
@@ -940,19 +939,16 @@ public class InterpretationWSService extends AnalysisWSService {
 
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            Query query = getVariantQuery(queryOptions);
+            Query query = VariantAnalysisWSService.getVariantQuery(queryOptions);
             ObjectMap customAnalysisOptions = getAnalysisOptions(queryOptions);
             customAnalysisOptions.put(FamilyAnalysis.SKIP_UNTIERED_VARIANTS_PARAM, false);
-
-            String dataDir = configuration.getDataDir();
-            String opencgaHome = Paths.get(dataDir).getParent().toString();
 
             // Get assembly from study for actionable variants
             String assembly = InterpretationAnalysisUtils.getAssembly(catalogManager, studyStr, sessionId);
 
             // Execute custom analysis
             CustomAnalysis customAnalysis = new CustomAnalysis(clinicalAnalysisId, query, studyStr, roleInCancer,
-                    actionableVariantsByAssembly.get(assembly), penetrance, customAnalysisOptions, opencgaHome, sessionId);
+                    actionableVariantsByAssembly.get(assembly), penetrance, customAnalysisOptions, opencgaHome.toString(), sessionId);
             InterpretationResult interpretationResult = customAnalysis.execute();
             return createAnalysisOkResponse(interpretationResult);
         } catch (Exception e) {
@@ -996,30 +992,6 @@ public class InterpretationWSService extends AnalysisWSService {
         }
     }
 
-    // FIXME This method must be deleted once deprecated params are not supported any more
-    private Query getVariantQuery(QueryOptions queryOptions) {
-        Query query = VariantStorageManager.getVariantQuery(queryOptions);
-        queryOptions.forEach((key, value) -> {
-            org.opencb.commons.datastore.core.QueryParam newKey = DEPRECATED_VARIANT_QUERY_PARAM.get(key);
-            if (newKey != null) {
-                if (!VariantQueryUtils.isValidParam(query, newKey)) {
-                    query.put(newKey.key(), value);
-                }
-            }
-        });
-
-        String chromosome = queryOptions.getString("chromosome");
-        if (StringUtils.isNotEmpty(chromosome)) {
-            String region = query.getString(REGION.key());
-            if (StringUtils.isEmpty(region)) {
-                query.put(REGION.key(), chromosome);
-            } else {
-                query.put(REGION.key(), region + VariantQueryUtils.OR + chromosome);
-            }
-        }
-        return query;
-    }
-
     private static class ClinicalInterpretationParameters {
         public String id;
         public String description;
@@ -1036,37 +1008,13 @@ public class InterpretationWSService extends AnalysisWSService {
         public List<Comment> comments;
         public Map<String, Object> attributes;
 
-        public org.opencb.biodata.models.clinical.interpretation.Interpretation  toClinicalInterpretation() {
-            return new org.opencb.biodata.models.clinical.interpretation.Interpretation (id, description, clinicalAnalysisId, software,
-                    analyst, dependencies, filters, panels, primaryFindings, secondaryFindings, reportedLowCoverages, comments,
-                    org.opencb.biodata.models.clinical.interpretation.Interpretation.Status.NOT_REVIEWED, creationDate, -1, attributes);
+        public Interpretation  toClinicalInterpretation() {
+            return new Interpretation(id, description, clinicalAnalysisId, panels, software, analyst, dependencies, filters, creationDate,
+                    primaryFindings, secondaryFindings, reportedLowCoverages, comments, attributes);
         }
 
         public ObjectMap toInterpretationObjectMap() throws JsonProcessingException {
             return new ObjectMap(getUpdateObjectMapper().writeValueAsString(this.toClinicalInterpretation()));
-        }
-
-        private Query getVariantQuery(QueryOptions queryOptions) {
-            Query query = VariantStorageManager.getVariantQuery(queryOptions);
-            queryOptions.forEach((key, value) -> {
-                org.opencb.commons.datastore.core.QueryParam newKey = DEPRECATED_VARIANT_QUERY_PARAM.get(key);
-                if (newKey != null) {
-                    if (!VariantQueryUtils.isValidParam(query, newKey)) {
-                        query.put(newKey.key(), value);
-                    }
-                }
-            });
-
-            String chromosome = queryOptions.getString("chromosome");
-            if (StringUtils.isNotEmpty(chromosome)) {
-                String region = query.getString(REGION.key());
-                if (StringUtils.isEmpty(region)) {
-                    query.put(REGION.key(), chromosome);
-                } else {
-                    query.put(REGION.key(), region + VariantQueryUtils.OR + chromosome);
-                }
-            }
-            return query;
         }
     }
 
@@ -1091,9 +1039,6 @@ public class InterpretationWSService extends AnalysisWSService {
     }
 
     private void loadExternalFiles() throws IOException {
-        String dataDir = configuration.getDataDir();
-        String opencgaHome = Paths.get(dataDir).getParent().toString();
-
         roleInCancer = InterpretationAnalysisUtils.getRoleInCancer(opencgaHome);
         actionableVariantsByAssembly = InterpretationAnalysisUtils.getActionableVariantsByAssembly(opencgaHome);
     }

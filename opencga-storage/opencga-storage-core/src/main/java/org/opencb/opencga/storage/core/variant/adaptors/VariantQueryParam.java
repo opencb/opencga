@@ -83,6 +83,7 @@ public final class VariantQueryParam implements QueryParam {
     public static final String GENOTYPE_DESCR
             = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)*"
             + " e.g. HG0097:0/0;HG0098:0/1,1/1. "
+            + "Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. "
             + "Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT and MISS "
             + " e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT. "
             + "This will automatically set 'includeSample' parameter when not provided";
@@ -151,13 +152,21 @@ public final class VariantQueryParam implements QueryParam {
             = "Select variants with calculated stats for the selected cohorts";
     public static final VariantQueryParam COHORT = new VariantQueryParam("cohort", TEXT_ARRAY, COHORT_DESCR);
 
+    public static final String STATS_REF_DESCR
+            = "Reference Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4";
+    public static final VariantQueryParam STATS_REF = new VariantQueryParam("cohortStatsRef", TEXT_ARRAY, STATS_REF_DESCR);
+
+    public static final String STATS_ALT_DESCR
+            = "Alternate Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4";
+    public static final VariantQueryParam STATS_ALT = new VariantQueryParam("cohortStatsAlt", TEXT_ARRAY, STATS_ALT_DESCR);
+
     public static final String STATS_MAF_DESCR
             = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4";
-    public static final VariantQueryParam STATS_MAF = new VariantQueryParam("maf", TEXT_ARRAY, STATS_MAF_DESCR);
+    public static final VariantQueryParam STATS_MAF = new VariantQueryParam("cohortStatsMaf", TEXT_ARRAY, STATS_MAF_DESCR);
 
     public static final String STATS_MGF_DESCR
             = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}. e.g. ALL<=0.4";
-    public static final VariantQueryParam STATS_MGF = new VariantQueryParam("mgf", TEXT_ARRAY, STATS_MGF_DESCR);
+    public static final VariantQueryParam STATS_MGF = new VariantQueryParam("cohortStatsMgf", TEXT_ARRAY, STATS_MGF_DESCR);
 
     public static final String MISSING_ALLELES_DESCR
             = "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}";
@@ -230,10 +239,10 @@ public final class VariantQueryParam implements QueryParam {
     public static final VariantQueryParam ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY
             = new VariantQueryParam("populationFrequencyMaf", TEXT_ARRAY, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR);
 
-    public static final String ANNOT_TRANSCRIPTION_FLAG_DESCR
+    public static final String ANNOT_TRANSCRIPT_FLAG_DESCR
             = "List of transcript annotation flags. e.g. CCDS, basic, cds_end_NF, mRNA_end_NF, cds_start_NF, mRNA_start_NF, seleno";
-    public static final VariantQueryParam ANNOT_TRANSCRIPTION_FLAG
-            = new VariantQueryParam("transcriptionFlag", TEXT_ARRAY, ANNOT_TRANSCRIPTION_FLAG_DESCR);
+    public static final VariantQueryParam ANNOT_TRANSCRIPT_FLAG
+            = new VariantQueryParam("transcriptFlag", TEXT_ARRAY, ANNOT_TRANSCRIPT_FLAG_DESCR);
 
     public static final String ANNOT_GENE_TRAIT_ID_DESCR
             = "List of gene trait association id. e.g. \"umls:C0007222\" , \"OMIM:269600\"";
@@ -317,7 +326,9 @@ public final class VariantQueryParam implements QueryParam {
         this.description = description;
 
         VALUES.add(this);
-        VALUES_MAP.put(key, this);
+        if (VALUES_MAP.put(key, this) != null) {
+            throw new IllegalStateException("Found two VariantQueryParams with same key '" + key + "'.");
+        }
     }
 
     @Override

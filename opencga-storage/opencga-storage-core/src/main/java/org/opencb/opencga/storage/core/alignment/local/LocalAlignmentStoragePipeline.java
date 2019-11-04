@@ -24,6 +24,7 @@ import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.StoragePipeline;
+import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import java.io.FileInputStream;
@@ -37,9 +38,11 @@ import java.nio.file.Paths;
  */
 public class LocalAlignmentStoragePipeline implements StoragePipeline {
 
+    private final StorageEtlConfiguration etlConfiguration;
 
-    public LocalAlignmentStoragePipeline() {
+    public LocalAlignmentStoragePipeline(StorageEtlConfiguration etlConfiguration) {
         super();
+        this.etlConfiguration = etlConfiguration;
     }
 
     @Override
@@ -81,7 +84,8 @@ public class LocalAlignmentStoragePipeline implements StoragePipeline {
 
         // 3) Create the BigWig file containing the coverage using the bamCoverage from the DeepTools package
         Path bwPath = workspace.resolve(path.getFileName() + BamManager.COVERAGE_BIGWIG_EXTENSION);
-        bamManager.calculateBigWigCoverage(bwPath, BamManager.DEFAULT_WINDOW_SIZE);
+        int windowSize = etlConfiguration.getOptions().getInt("bigWigWindowsSize", BamManager.DEFAULT_WINDOW_SIZE);
+        bamManager.calculateBigWigCoverage(bwPath, windowSize);
 
         return input;
     }

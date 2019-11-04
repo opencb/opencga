@@ -69,6 +69,8 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
         addParam(query, VariantCatalogQueryUtils.FAMILY, queryVariantsOptions.family);
         addParam(query, VariantCatalogQueryUtils.FAMILY_DISORDER, queryVariantsOptions.familyPhenotype);
         addParam(query, VariantCatalogQueryUtils.FAMILY_SEGREGATION, queryVariantsOptions.modeOfInheritance);
+        addParam(query, VariantCatalogQueryUtils.FAMILY_MEMBERS, queryVariantsOptions.familyMembers);
+        addParam(query, VariantCatalogQueryUtils.FAMILY_PROBAND, queryVariantsOptions.familyProband);
 
         if (!VariantQueryUtils.isValidParam(query, VariantQueryParam.INCLUDE_FORMAT)
                 && !VariantQueryUtils.isValidParam(query, VariantQueryParam.INCLUDE_GENOTYPE)

@@ -25,13 +25,16 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
+import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,8 +80,32 @@ public final class VariantQueryUtils {
             "Get the precomputed mendelian errors for the given samples", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam SAMPLE_DE_NOVO = QueryParam.create("sampleDeNovo",
             "Get the precomputed mendelian errors non HOM_REF for the given samples", QueryParam.Type.TEXT_ARRAY);
+    public static final QueryParam SAMPLE_COMPOUND_HETEROZYGOUS = QueryParam.create("sampleCompoundHeterozygous",
+            "", QueryParam.Type.TEXT_ARRAY);
     public static final QueryParam NUM_SAMPLES = QueryParam.create("numSamples", "", QueryParam.Type.INTEGER);
     public static final QueryParam NUM_TOTAL_SAMPLES = QueryParam.create("numTotalSamples", "", QueryParam.Type.INTEGER);
+
+    public static final String LOF = "lof";
+    // LOF does not include missense_variant
+    public static final Set<String> LOF_SET = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            VariantAnnotationUtils.FRAMESHIFT_VARIANT,
+            VariantAnnotationUtils.INFRAME_DELETION,
+            VariantAnnotationUtils.INFRAME_INSERTION,
+            VariantAnnotationUtils.START_LOST,
+            VariantAnnotationUtils.STOP_GAINED,
+            VariantAnnotationUtils.STOP_LOST,
+            VariantAnnotationUtils.SPLICE_ACCEPTOR_VARIANT,
+            VariantAnnotationUtils.SPLICE_DONOR_VARIANT,
+            VariantAnnotationUtils.TRANSCRIPT_ABLATION,
+            VariantAnnotationUtils.TRANSCRIPT_AMPLIFICATION,
+            VariantAnnotationUtils.INITIATOR_CODON_VARIANT,
+            VariantAnnotationUtils.SPLICE_REGION_VARIANT,
+            VariantAnnotationUtils.INCOMPLETE_TERMINAL_CODON_VARIANT
+    )));
+    public static final Set<String> LOF_EXTENDED_SET = Collections.unmodifiableSet(new HashSet<>(
+            ListUtils.concat(
+                    new ArrayList<>(LOF_SET),
+                    Arrays.asList(VariantAnnotationUtils.MISSENSE_VARIANT))));
 
     public static final Set<VariantQueryParam> MODIFIER_QUERY_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             INCLUDE_STUDY,
@@ -113,6 +140,56 @@ public final class VariantQueryUtils {
     }
 
     private static final ObjectMapper QUERY_MAPPER = new ObjectMapper().addMixIn(Variant.class, VariantMixin.class);
+
+    public enum BiotypeConsquenceTypeFlagCombination {
+        NONE,
+        BIOTYPE,
+        BIOTYPE_CT,
+        BIOTYPE_FLAG,
+        BIOTYPE_CT_FLAG,
+        CT,
+        CT_FLAG,
+        FLAG;
+
+        public int numParams() {
+            return this == NONE ? 0 : StringUtils.countMatches(name(), "_") + 1;
+        }
+
+        public boolean isConsequenceType() {
+            return name().contains("CT");
+        }
+
+        public boolean isBiotype() {
+            return name().contains("BIOTYPE");
+        }
+
+        public boolean isFlag() {
+            return name().endsWith("FLAG");
+        }
+
+        public static BiotypeConsquenceTypeFlagCombination fromQuery(Query query) {
+            // Do not change the order of the following lines, it must match the Enum values!
+            String combination = isValidParam(query, ANNOT_BIOTYPE) ? "BIOTYPE_" : "";
+            combination += isValidParam(query, ANNOT_CONSEQUENCE_TYPE) ? "CT_" : "";
+            if (isValidParam(query, ANNOT_TRANSCRIPT_FLAG)) {
+                List<String> flags = new LinkedList<>(query.getAsStringList(ANNOT_TRANSCRIPT_FLAG.key()));
+                flags.remove("basic");
+                flags.remove("CCDS");
+                // If empty, it means it only contains "basic" or "CCDS"
+                if (flags.isEmpty()) {
+                    combination += "FLAG";
+                }
+            }
+            if (combination.isEmpty()) {
+                return BiotypeConsquenceTypeFlagCombination.NONE;
+            } else {
+                if (combination.endsWith("_")) {
+                    combination = combination.substring(0, combination.length() - 1);
+                }
+                return valueOf(combination);
+            }
+        }
+    }
 
     interface VariantMixin {
         // Serialize variants with "toString". Used to serialize queries.
@@ -352,100 +429,6 @@ public final class VariantQueryUtils {
         return variant;
     }
 
-    public static class VariantQueryXref {
-        private final List<String> genes = new LinkedList<>();
-        private final List<Variant> variants = new LinkedList<>();
-        private final List<String> ids = new LinkedList<>();
-        private final List<String> otherXrefs = new LinkedList<>();
-
-        /**
-         * @return List of genes found at {@link VariantQueryParam#GENE} and {@link VariantQueryParam#ANNOT_XREF}
-         */
-        public List<String> getGenes() {
-            return genes;
-        }
-
-        /**
-         * @return List of variants found at {@link VariantQueryParam#ANNOT_XREF} and {@link VariantQueryParam#ID}
-         */
-        public List<Variant> getVariants() {
-            return variants;
-        }
-
-        /**
-         * @return List of ids found at {@link VariantQueryParam#ID}
-         */
-        public List<String> getIds() {
-            return ids;
-        }
-
-        /**
-         * @return List of other xrefs found at
-         * {@link VariantQueryParam#ANNOT_XREF},
-         * {@link VariantQueryParam#ID},
-         * {@link VariantQueryParam#ANNOT_CLINVAR},
-         * {@link VariantQueryParam#ANNOT_COSMIC}
-         */
-        public List<String> getOtherXrefs() {
-            return otherXrefs;
-        }
-    }
-
-    /**
-     * Parses XREFS related filters, and sorts in different lists.
-     *
-     * - {@link VariantQueryParam#ID}
-     * - {@link VariantQueryParam#GENE}
-     * - {@link VariantQueryParam#ANNOT_XREF}
-     * - {@link VariantQueryParam#ANNOT_CLINVAR}
-     * - {@link VariantQueryParam#ANNOT_COSMIC}
-     *
-     * @param query Query to parse
-     * @return VariantQueryXref with all VariantIds, ids, genes and xrefs
-     */
-    public static VariantQueryXref parseXrefs(Query query) {
-        VariantQueryXref xrefs = new VariantQueryXref();
-        if (query == null) {
-            return xrefs;
-        }
-        xrefs.getGenes().addAll(query.getAsStringList(GENE.key(), OR));
-
-        if (isValidParam(query, ID)) {
-            List<String> idsList = query.getAsStringList(ID.key(), OR);
-
-            for (String value : idsList) {
-                Variant variant = toVariant(value);
-                if (variant != null) {
-                    xrefs.getVariants().add(variant);
-                } else {
-                    xrefs.getIds().add(value);
-                }
-            }
-        }
-
-        if (isValidParam(query, ANNOT_XREF)) {
-            List<String> xrefsList = query.getAsStringList(ANNOT_XREF.key(), OR);
-            for (String value : xrefsList) {
-                Variant variant = toVariant(value);
-                if (variant != null) {
-                    xrefs.getVariants().add(variant);
-                } else {
-                    if (isVariantAccession(value) || isClinicalAccession(value) || isGeneAccession(value)) {
-                        xrefs.getOtherXrefs().add(value);
-                    } else {
-                        xrefs.getGenes().add(value);
-                    }
-                }
-            }
-
-        }
-//        xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_HPO.key(), OR));
-        xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_COSMIC.key(), OR));
-        xrefs.getOtherXrefs().addAll(query.getAsStringList(ANNOT_CLINVAR.key(), OR));
-
-        return xrefs;
-    }
-
     public static VariantQueryFields parseVariantQueryFields(
             Query query, QueryOptions options, VariantStorageMetadataManager metadataManager) {
         Set<VariantField> includeFields = VariantField.getIncludeFields(options);
@@ -545,8 +528,7 @@ public final class VariantQueryUtils {
         }
     }
 
-    public static StudyMetadata getDefaultStudy(Query query, QueryOptions options,
-                                                VariantStorageMetadataManager metadataManager) {
+    public static StudyMetadata getDefaultStudy(Query query, QueryOptions options, VariantStorageMetadataManager metadataManager) {
         final StudyMetadata defaultStudy;
         if (isValidParam(query, STUDY)) {
             String value = query.getString(STUDY.key());
@@ -555,14 +537,11 @@ public final class VariantQueryUtils {
             VariantQueryUtils.QueryOperation studiesOperation = checkOperator(value);
             List<String> studiesNames = splitValue(value, studiesOperation);
             List<Integer> studyIds = metadataManager.getStudyIds(studiesNames); // Non negated studyIds
-
-
             if (studyIds.size() == 1) {
                 defaultStudy = metadataManager.getStudyMetadata(studyIds.get(0));
             } else {
                 defaultStudy = null;
             }
-
         } else {
             List<String> studyNames = metadataManager.getStudyNames();
             if (studyNames != null && studyNames.size() == 1) {
@@ -1018,6 +997,7 @@ public final class VariantQueryUtils {
         if (samples != null) {
             samples = samples.stream()
                     .map(s -> s.contains(":") ? s.split(":")[1] : s)
+                    .distinct() // Remove possible duplicates
                     .collect(Collectors.toList());
         }
         return samples;
@@ -1155,6 +1135,14 @@ public final class VariantQueryUtils {
                 samples = genotypeMap.keySet().stream().map(Object::toString).collect(Collectors.toList());
             }
 
+            if (samples.isEmpty()) {
+                samples = getIncludeSamplesList(query);
+                samplesOperator = QueryOperation.OR;
+                if (samples == null) {
+                    samples = Collections.emptyList();
+                }
+            }
+
             if (operator == null && samples.size() > 1) {
                 operator = samplesOperator;
             }
@@ -1258,6 +1246,18 @@ public final class VariantQueryUtils {
         }
 
         return pair.getKey();
+    }
+
+    public static List<String> parseConsequenceTypes(List<String> cts) {
+        List<String> parsedCts = new ArrayList<>(cts.size());
+        for (String ct : cts) {
+            if (ct.equalsIgnoreCase(LOF)) {
+                parsedCts.addAll(VariantQueryUtils.LOF_SET);
+            } else {
+                parsedCts.add(ConsequenceTypeMappings.accessionToTerm.get(VariantQueryUtils.parseConsequenceType(ct)));
+            }
+        }
+        return parsedCts;
     }
 
     public static int parseConsequenceType(String so) {
@@ -1554,7 +1554,7 @@ public final class VariantQueryUtils {
     }
 
     public static void convertGenesToRegionsQuery(Query query, CellBaseUtils cellBaseUtils) {
-        VariantQueryXref variantQueryXref = VariantQueryUtils.parseXrefs(query);
+        VariantQueryParser.VariantQueryXref variantQueryXref = VariantQueryParser.parseXrefs(query);
         List<String> genes = variantQueryXref.getGenes();
         if (!genes.isEmpty()) {
 

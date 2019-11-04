@@ -28,9 +28,12 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.AlignmentOptions;
 import org.opencb.biodata.tools.alignment.BamManager;
 import org.opencb.biodata.tools.alignment.BamUtils;
+import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
 import org.opencb.biodata.tools.alignment.filters.AlignmentFilters;
 import org.opencb.biodata.tools.alignment.filters.SamRecordFilters;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
+import org.opencb.biodata.tools.feature.BigWigManager;
+import org.opencb.biodata.tools.feature.WigUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -40,7 +43,11 @@ import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.iterators.SamRecordAlignmentIterator;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -166,6 +173,34 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
+    public QueryResult<RegionCoverage> coverage(Path path, Region region, int minCoverage, int maxCoverage) throws Exception {
+        FileUtils.checkFile(path);
+
+        StopWatch watch = StopWatch.createStarted();
+        RegionCoverage regionCoverage;
+        if (path.toFile().getName().endsWith(".bam")) {
+            BamManager bamManager = new BamManager(path);
+            regionCoverage = bamManager.coverage(region, 1);
+            bamManager.close();
+        } else {
+            regionCoverage = BamUtils.getCoverageFromBigWig(region, 1, path);
+        }
+        List<RegionCoverage> regionCoverages = BamUtils.filterByCoverage(regionCoverage, minCoverage, maxCoverage);
+
+        // Remove empty regions
+        List<RegionCoverage> selectedRegions = new ArrayList<>();
+        for (RegionCoverage coverage : regionCoverages) {
+            if (coverage.getValues() != null && coverage.getValues().length > 0) {
+                selectedRegions.add(coverage);
+            }
+        }
+
+        watch.stop();
+        return new QueryResult<>(region.toString(), ((int) watch.getTime()), selectedRegions.size(), selectedRegions.size(),
+                null, null, selectedRegions);
+    }
+
+    @Override
     public QueryResult<RegionCoverage> getLowCoverageRegions(Path path, Region region, int maxCoverage) throws Exception {
         FileUtils.checkFile(path);
 
@@ -178,11 +213,30 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         } else {
             regionCoverage = BamUtils.getCoverageFromBigWig(region, 1, path);
         }
-        List<RegionCoverage> regionCoverages = BamUtils.getUncoveredRegions(regionCoverage, maxCoverage);
+        List<RegionCoverage> regionCoverages = BamUtils.filterByCoverage(regionCoverage, 0, maxCoverage);
 
         watch.stop();
         return new QueryResult<>(region.toString(), ((int) watch.getTime()), regionCoverages.size(), regionCoverages.size(),
                 null, null, regionCoverages);
+    }
+
+    @Override
+    public QueryResult<Long> getTotalCounts(Path path) throws AlignmentCoverageException, IOException {
+        FileUtils.checkFile(path);
+
+        StopWatch watch = StopWatch.createStarted();
+        long totalCounts;
+        if (path.toFile().getName().endsWith(".bam")) {
+            if (new File(path.toString() + ".bw").exists()) {
+                totalCounts = WigUtils.getTotalCounts(new BigWigManager(Paths.get(path + ".bw")).getBbFileReader());
+            } else {
+                throw new AlignmentCoverageException("BigWig file not found and getTotalCount is not supported for BAM files.");
+            }
+        } else {
+            totalCounts = WigUtils.getTotalCounts(new BigWigManager(path).getBbFileReader());
+        }
+        watch.stop();
+        return new QueryResult<>(path.toString(), ((int) watch.getTime()), 1, 1, null, null, Collections.singletonList(totalCounts));
     }
 
     @Override

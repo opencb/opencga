@@ -1,6 +1,6 @@
 !define TEST_SYSTEM {slim}
 !path target/appassembler/dependencies/*.jar
-!define OPENCGA_VERSION {opencga-1.4.0}
+!define OPENCGA_VERSION {opencga-1.4.2}
 !define TEST_HOST {qa.opencb.org}
 !define VERSION {v1}
 
@@ -33,14 +33,14 @@
 
 !3 Create User
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  { "name": "$user", "id": "$user","email": "test@test.com", "password" : "user_P@ssword",  "account": "full" }|
+| setBody |  { "name": "$user", "id": "$user","email": "test@test.com", "password" : "user_P@ssword",  "type": "FULL" }|
 | setHeaders|!- Content-Type:application/json 
 Authorization : Bearer $root-!|
-| POST | /v1/admin/users/create |200| Content-Type : application/json| jsonbody.error === '' && jsonbody.response[0].result[0].id == '$user'|
+| POST | /v1/admin/users/create || Content-Type : application/json||
 
 !3 (Negative) Create User With In-Valid ID 
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  { "name": "$inValidUserId", "id": "$inValidUserId","email": "test@test.com", "password" : "user_P@ssword",  "account": "full" }|
+| setBody |  { "name": "$inValidUserId", "id": "$inValidUserId","email": "test@test.com", "password" : "user_P@ssword",  "type": "FULL" }|
 | setHeader|Content-Type:application/json|
 | POST | /v1/admin/users/create?sid=$root |500| Content-Type : application/json||
 
@@ -92,7 +92,7 @@ Authorization : Bearer $sessionId -!|
 #userA has Full Permissions
 !3 Create userA  
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  { "name": "$userA", "id": "$userA","email": "test@test.com", "password" : "p@ssword" , "account": "full" }|
+| setBody |  { "name": "$userA", "id": "$userA","email": "test@test.com", "password" : "p@ssword" , "type": "FULL" }|
 | setHeaders|!- Content-Type:application/json 
 Authorization : Bearer -!|
 | POST | /v1/admin/users/create?sid=$root|200| Content-Type : application/json| jsonbody.error === '' |
@@ -100,7 +100,7 @@ Authorization : Bearer -!|
 #userB has Empty(no) Permissions
 !3 Create userB  
 !|Table: Rest Fixture  | $baseURL |
-| setBody |  { "name": "$userB", "id": "$userB","email": "test@test.com", "password" : "p@ssword" ,  "account": "full" }|
+| setBody |  { "name": "$userB", "id": "$userB","email": "test@test.com", "password" : "p@ssword" ,  "type": "FULL" }|
 | setHeaders|!- Content-Type:application/json 
 Authorization : Bearer -!|
 | POST | /v1/admin/users/create?sid=$root |200| Content-Type : application/json| jsonbody.error === '' |

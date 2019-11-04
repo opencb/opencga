@@ -32,11 +32,14 @@ import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -53,8 +56,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
@@ -111,6 +114,8 @@ public class OpenCGAWSServer {
     protected static Logger logger; // = LoggerFactory.getLogger(this.getClass());
 
     protected static AtomicBoolean initialized;
+
+    protected static java.nio.file.Path opencgaHome;
 
     protected static Configuration configuration;
     protected static CatalogManager catalogManager;
@@ -207,7 +212,9 @@ public class OpenCGAWSServer {
 
         // Check and execute the init methods
         java.nio.file.Path configDirPath = Paths.get(configDirString);
-        if (configDirPath != null && Files.exists(configDirPath) && Files.isDirectory(configDirPath)) {
+        opencgaHome = configDirPath.getParent();
+
+        if (Files.exists(configDirPath) && Files.isDirectory(configDirPath)) {
             logger.info("|  * Configuration folder: '{}'", configDirPath.toString());
             initOpenCGAObjects(configDirPath);
 
@@ -216,8 +223,8 @@ public class OpenCGAWSServer {
 //            Config.setOpenCGAHome(configDirPath.getParent().toString());
 
             // TODO use configuration.yml for getting the server.log, for now is hardcoded
-            logger.info("|  * Server logfile: " + configDirPath.getParent().resolve("logs").resolve("server.log"));
-            initLogger(configDirPath.getParent().resolve("logs"));
+            logger.info("|  * Server logfile: " + opencgaHome.resolve("logs").resolve("server.log"));
+            initLogger(opencgaHome.resolve("logs"));
         } else {
             errorMessage = "No valid configuration directory provided: '" + configDirString + "'";
             logger.error(errorMessage);
@@ -472,7 +479,21 @@ public class OpenCGAWSServer {
         logResponse(response.getStatusInfo(), queryResponse);
         return response;
     }
-    
+
+    protected Response createErrorResponse(String errorMessage, QueryResult result) {
+
+        QueryResponse<ObjectMap> queryResponse = new QueryResponse<>();
+        queryResponse.setApiVersion(apiVersion);
+        queryResponse.setQueryOptions(queryOptions);
+        queryResponse.setError("true");
+        result.setErrorMsg("DEPRECATED: " + errorMessage);
+        queryResponse.setResponse(Arrays.asList(result));
+
+        Response response = Response.fromResponse(createJsonResponse(queryResponse)).status(Response.Status.INTERNAL_SERVER_ERROR).build();
+        logResponse(response.getStatusInfo(), queryResponse);
+        return response;
+    }
+
     protected Response createErrorResponse(String method, String errorMessage) {
         try {
             Response response = buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(new ObjectMap("error", errorMessage)),
@@ -482,6 +503,7 @@ public class OpenCGAWSServer {
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
+
         return buildResponse(Response.ok("{\"error\":\"Error parsing json error\"}", MediaType.APPLICATION_JSON_TYPE));
     }
 
@@ -642,35 +664,30 @@ public class OpenCGAWSServer {
         }
     }
 
-    protected List<String> checkUniqueList(String ids) throws WebServiceException {
+    protected static List<String> checkUniqueList(String ids) throws WebServiceException {
         if (StringUtils.isNotEmpty(ids)) {
             List<String> idsList = Arrays.asList(ids.split(","));
-            Set<String> hashSet = new HashSet<>(idsList);
-            if (hashSet.size() == idsList.size()) {
-                return idsList;
-            } else {
-                throw new WebServiceException("Provided IDs are not unique. Only unique IDs are accepted.");
-            }
+            return checkUniqueList(idsList, "");
         } else {
             throw new WebServiceException("ID is null or Empty");
         }
     }
 
-    protected boolean isSingleId(String id) throws WebServiceException {
-        if (StringUtils.isNotEmpty(id)) {
-            if (id.contains(",")) {
-                throw new WebServiceException("More than one id is provided. Only one ID is allowed!");
+    protected static List<String> checkUniqueList(List<String> ids, String field) throws WebServiceException {
+        if (ListUtils.isNotEmpty(ids)) {
+            Set<String> hashSet = new HashSet<>(ids);
+            if (hashSet.size() == ids.size()) {
+                return ids;
             } else {
-                return true;
+                throw new WebServiceException("Provided " + field + " IDs are not unique. Only unique IDs are accepted.");
             }
-        } else {
-            throw new WebServiceException("ID is null or Empty");
         }
+        return null;
     }
 
-    protected void areSingleIds(String... ids) throws WebServiceException {
+    protected void areSingleIds(String... ids) throws CatalogParameterException {
         for (String id : ids) {
-            isSingleId(id);
+            ParamUtils.checkIsSingleID(id);
         }
     }
 

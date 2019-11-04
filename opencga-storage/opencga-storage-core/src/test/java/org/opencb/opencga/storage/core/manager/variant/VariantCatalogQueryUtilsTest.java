@@ -59,7 +59,7 @@ public class VariantCatalogQueryUtilsTest {
     public static void setUp() throws Exception {
         catalog = catalogManagerExternalResource.getCatalogManager();
 
-        User user = catalog.getUserManager().create("user", "user", "my@email.org", "1234", "ACME", 1000L, Account.FULL, null, null).first();
+        User user = catalog.getUserManager().create("user", "user", "my@email.org", "1234", "ACME", 1000L, Account.Type.FULL, null, null).first();
 
         sessionId = catalog.getUserManager().login("user", "1234");
         catalog.getProjectManager().create("p1", "p1", "", null, "hsapiens", "Homo Sapiens", null, "GRCh38", null, sessionId);
@@ -98,7 +98,7 @@ public class VariantCatalogQueryUtilsTest {
         catalog.getStudyManager().create("p2", "p2s2", null, "s1", Study.Type.CONTROL_SET, null, null, null, null, null, null, null, null, null, null, sessionId);
 
         Panel panel = new Panel("MyPanel", "MyPanel", 1);
-        panel.getDiseasePanel().setGenes(
+        panel.setGenes(
                 Arrays.asList(
                         new GenePanel().setName("BRCA2"),
                         new GenePanel().setName("CADM1"),
@@ -250,6 +250,7 @@ public class VariantCatalogQueryUtilsTest {
 
         assertEquals("sample1:HOM_ALT;sample2:HET_REF", parseValue("s1", GENOTYPE, "sample1:HOM_ALT;sample2:HET_REF"));
         assertEquals("sample1:HOM_ALT,sample2:HET_REF", parseValue("s1", GENOTYPE, "sample1:HOM_ALT,sample2:HET_REF"));
+        assertEquals("sample2:HOM_ALT,sample1:HET_REF", parseValue("s1", GENOTYPE, "sample2:HOM_ALT,sample1:HET_REF"));
 
 
         assertEquals("c1;c2", parseValue("s1", COHORT, "c1;c2"));

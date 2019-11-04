@@ -60,7 +60,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
         List<Bson> filterList = new ArrayList<>();
-        filterList.add(Filters.eq(QueryParams.ID.key(), interpretation.getInterpretation().getId()));
+        filterList.add(Filters.eq(QueryParams.ID.key(), interpretation.getId()));
         filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
         filterList.add(Filters.eq(QueryParams.STATUS.key(), Status.READY));
 
@@ -68,7 +68,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         QueryResult<Long> count = interpretationCollection.count(bson);
         if (count.getResult().get(0) > 0) {
             throw new CatalogDBException("Cannot create interpretation. An interpretation with { id: '"
-                    + interpretation.getInterpretation().getId() + "'} already exists.");
+                    + interpretation.getId() + "'} already exists.");
         }
 
         long interpretationUid = getNewId();
@@ -79,8 +79,8 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }
 
         Document interpretationObject = interpretationConverter.convertToStorageType(interpretation);
-        if (StringUtils.isNotEmpty(interpretation.getInterpretation().getCreationDate())) {
-            interpretationObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(interpretation.getInterpretation().getCreationDate()));
+        if (StringUtils.isNotEmpty(interpretation.getCreationDate())) {
+            interpretationObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(interpretation.getCreationDate()));
         } else {
             interpretationObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
         }
@@ -119,7 +119,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public QueryResult<Long> count(Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+    public QueryResult<Long> count(long studyUid, Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
             throws CatalogDBException {
         return count(query);
     }
@@ -158,7 +158,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public QueryResult<Interpretation> get(Query query, QueryOptions options, String user)
+    public QueryResult<Interpretation> get(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return get(query, options);
     }
@@ -188,7 +188,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public QueryResult nativeGet(Query query, QueryOptions options, String user) throws CatalogDBException {
+    public QueryResult nativeGet(long studyUid, Query query, QueryOptions options, String user) throws CatalogDBException {
         return nativeGet(query, options);
     }
 
@@ -377,13 +377,13 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public DBIterator<Interpretation> iterator(Query query, QueryOptions options, String user)
+    public DBIterator<Interpretation> iterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException {
         return iterator(query, options);
     }
 
     @Override
-    public DBIterator nativeIterator(Query query, QueryOptions options, String user)
+    public DBIterator nativeIterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException {
         return nativeIterator(query, options);
     }
@@ -418,13 +418,13 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options, String user)
+    public QueryResult groupBy(long studyUid, Query query, String field, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+    public QueryResult groupBy(long studyUid, Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }

@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.core.config;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.commons.utils.FileUtils;
@@ -29,6 +27,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -50,6 +49,7 @@ public class Configuration {
 
     private Admin admin;
     private Monitor monitor;
+    private HealthCheck healthCheck;
     private Execution execution;
     private Audit audit;
 
@@ -70,6 +70,16 @@ public class Configuration {
     }
 
     public Configuration() {
+        admin = new Admin();
+        monitor = new Monitor();
+        healthCheck = new HealthCheck();
+        execution = new Execution();
+        audit = new Audit();
+        hooks = new HashMap<>();
+        email = new Email();
+        catalog = new Catalog();
+        server = new ServerConfiguration();
+        authentication = new Authentication();
     }
 
     public void serialize(OutputStream configurationOututStream) throws IOException {
@@ -362,5 +372,14 @@ public class Configuration {
 
     public void setAuthentication(Authentication authentication) {
         this.authentication = authentication;
+    }
+
+    public HealthCheck getHealthCheck() {
+        return healthCheck;
+    }
+
+    public Configuration setHealthCheck(HealthCheck healthCheck) {
+        this.healthCheck = healthCheck;
+        return this;
     }
 }

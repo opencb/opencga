@@ -55,6 +55,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.api.DBAdaptor.FORCE;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
 /**
@@ -107,7 +108,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 Filters.eq(UserDBAdaptor.QueryParams.PROJECTS_ID.key(), project.getId()));
         QueryResult<Long> count = userCollection.count(countQuery);
         if (count.getResult().get(0) != 0) {
-            throw new CatalogDBException("Project {alias:\"" + project.getId() + "\"} already exists for this user");
+            throw new CatalogDBException("Project {id:\"" + project.getId() + "\"} already exists for this user");
         }
         long projectUid = dbAdaptorFactory.getCatalogMetaDBAdaptor().getNewAutoIncrementId();
         project.setUid(projectUid);

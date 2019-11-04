@@ -52,7 +52,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTaskTest;
+import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsTest;
 
 import java.io.IOException;
 import java.net.URI;
@@ -455,7 +455,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     public void checkLoadedFilesS1S2(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor) throws IOException, StorageEngineException {
 
         Path path = Paths.get(getResourceUri("s1_s2.genome.vcf"));
-        VariantFileMetadata fileMetadata = VariantReaderUtils.readVariantFileMetadata(path, null);
+        VariantFileMetadata fileMetadata = variantReaderUtils.readVariantFileMetadata(path, null);
 
         VariantReader variantReader = new VariantVcfHtsjdkReader(path, fileMetadata.toVariantStudyMetadata(STUDY_NAME));
         variantReader.open();
@@ -654,13 +654,13 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         List<Integer> sampleIds = new ArrayList<>();
         metadataManager.sampleMetadataIterator(studyMetadata.getId()).forEachRemaining(s -> sampleIds.add(s.getId()));
 
-        FillGapsTaskTest.fillGaps(variantStorageEngine, studyMetadata, sampleIds.subList(0, sampleIds.size()/2));
+        FillGapsTest.fillGaps(variantStorageEngine, studyMetadata, sampleIds.subList(0, sampleIds.size()/2));
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
-        FillGapsTaskTest.fillGaps(variantStorageEngine, studyMetadata, sampleIds.subList(sampleIds.size()/2, sampleIds.size()));
+        FillGapsTest.fillGaps(variantStorageEngine, studyMetadata, sampleIds.subList(sampleIds.size()/2, sampleIds.size()));
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
-        FillGapsTaskTest.fillGaps(variantStorageEngine, studyMetadata, sampleIds);
+        FillGapsTest.fillGaps(variantStorageEngine, studyMetadata, sampleIds);
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
 

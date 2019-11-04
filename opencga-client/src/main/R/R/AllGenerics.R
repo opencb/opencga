@@ -112,6 +112,10 @@ setGeneric("clinicalAnalysisInterpretationClient", function(OpencgaR, clinicalAn
                                                              action, params=NULL, ...)
     standardGeneric("clinicalAnalysisInterpretationClient"))
 
+setGeneric("clinicalAnalysisInterpretationToolClient", function(OpencgaR,  action, 
+                                                                params=NULL, ...)
+    standardGeneric("clinicalAnalysisInterpretationToolClient"))
+
 ################################################################################
 ## PanelClient
 setGeneric("panelClient", function(OpencgaR, panel, action,

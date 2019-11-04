@@ -26,11 +26,8 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
-import org.opencb.opencga.core.models.Group;
-import org.opencb.opencga.core.models.GroupParams;
 import org.opencb.opencga.core.models.User;
 
-import javax.naming.NamingException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -75,7 +72,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
     }
 
-    private void syncGroups() throws CatalogException, NamingException, IOException {
+    private void syncGroups() throws CatalogException {
         AdminCliOptionsParser.SyncCommandOptions executor = usersCommandOptions.syncCommandOptions;
 
         setCatalogDatabaseCredentials(executor.databaseHost, executor.prefix, executor.databaseUser, executor.databasePassword,
@@ -85,38 +82,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             String sessionId = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
 
             if (executor.syncAll) {
-                QueryResult<Group> allGroups = catalogManager.getStudyManager().getGroup(executor.study, null, sessionId);
-
-                boolean foundAny = false;
-                for (Group group : allGroups.getResult()) {
-                    if (group.getSyncedFrom() != null && group.getSyncedFrom().getAuthOrigin().equals(executor.authOrigin)) {
-                        foundAny = true;
-                        logger.info("Synchronising users from {} to {}", group.getSyncedFrom().getRemoteGroup(), group.getId());
-
-                        // Sync
-                        GroupParams groupParams = new GroupParams(StringUtils.join(group.getUserIds(), ","), GroupParams.Action.REMOVE);
-                        QueryResult<Group> deleteUsers = catalogManager.getStudyManager()
-                                .updateGroup(executor.study, group.getId(), groupParams, sessionId);
-                        if (deleteUsers.first().getUserIds().size() > 0) {
-                            logger.error("Could not sync. An internal error happened. {} users could not be removed from {}.",
-                                    deleteUsers.first().getUserIds().size(), deleteUsers.first().getId());
-                            return;
-                        }
-
-                        ObjectMap params = new ObjectMap();
-                        params.putIfNotNull("group", group.getSyncedFrom().getRemoteGroup());
-                        params.putIfNotNull("study-group", group.getId());
-                        params.putIfNotNull("study", executor.study);
-                        params.putIfNotNull("expirationDate", executor.expDate);
-                        QueryResult<User> ldapImportResult = catalogManager.getUserManager().importFromExternalAuthOrigin(
-                                executor.authOrigin, executor.type, params, sessionId);
-
-                        printImportReport(ldapImportResult);
-                    }
-                }
-                if (!foundAny) {
-                    logger.info("No groups to sync found under study {}", executor.study);
-                }
+                catalogManager.getUserManager().syncAllUsersOfExternalGroup(executor.study, executor.authOrigin, sessionId);
             } else {
                 catalogManager.getUserManager().importRemoteGroupOfUsers(executor.authOrigin, executor.from, executor.to, executor.study,
                         true, sessionId);
@@ -124,22 +90,36 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
     }
 
-    private void importUsersAndGroups() throws CatalogException, NamingException, IOException {
+    private void importUsersAndGroups() throws CatalogException {
         AdminCliOptionsParser.ImportCommandOptions executor = usersCommandOptions.importCommandOptions;
+
+        // TODO: Remove this piece of code when we remove the deprecated variables
+        if (StringUtils.isNotEmpty(executor.user)) {
+            executor.id = executor.user;
+            executor.resourceType = "user";
+        } else if (StringUtils.isNotEmpty(executor.group)) {
+            executor.id = executor.group;
+            executor.resourceType = "group";
+        }
 
         setCatalogDatabaseCredentials(executor.databaseHost, executor.prefix, executor.databaseUser, executor.databasePassword,
                 executor.commonOptions.adminPassword);
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             String token = catalogManager.getUserManager().login("admin", executor.commonOptions.adminPassword);
 
-            if (StringUtils.isNotEmpty(executor.user)) {
-                catalogManager.getUserManager().importRemoteUsers(executor.authOrigin, Arrays.asList(executor.user.split(",")),
-                        executor.studyGroup, executor.study, token);
-            } else if (StringUtils.isNotEmpty(executor.group)) {
-                catalogManager.getUserManager().importRemoteGroupOfUsers(executor.authOrigin, executor.group, executor.studyGroup,
+            if (StringUtils.isEmpty(executor.resourceType)) {
+                logger.error("Missing resource type");
+                return;
+            }
+
+            if ("user".equalsIgnoreCase(executor.resourceType) || "application".equalsIgnoreCase(executor.resourceType)) {
+                catalogManager.getUserManager().importRemoteEntities(executor.authOrigin, Arrays.asList(executor.id.split(",")),
+                        executor.resourceType.equalsIgnoreCase("application"), executor.studyGroup, executor.study, token);
+            } else if ("group".equalsIgnoreCase(executor.resourceType)) {
+                catalogManager.getUserManager().importRemoteGroupOfUsers(executor.authOrigin, executor.id, executor.studyGroup,
                         executor.study, false, token);
             } else {
-                logger.error("Nothing to do. Missing 'users' or 'groups'");
+                logger.error("Unknown resource type. Please use one of 'user', 'group' or 'application'");
             }
         }
     }

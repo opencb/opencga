@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,11 +98,11 @@ public class CatalogManager implements AutoCloseable {
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager, this.configuration);
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
-        fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
+        projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
         studyManager = new StudyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
-        projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
+        fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
         jobManager = new JobManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, this.configuration);
@@ -122,6 +123,10 @@ public class CatalogManager implements AutoCloseable {
     }
 
     private void initializeAdmin() throws CatalogDBException {
+        if (this.configuration.getAdmin() == null) {
+            this.configuration.setAdmin(new Admin());
+        }
+
         if (StringUtils.isEmpty(this.configuration.getAdmin().getSecretKey())) {
             this.configuration.getAdmin().setSecretKey(this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readSecretKey());
         }
@@ -144,11 +149,11 @@ public class CatalogManager implements AutoCloseable {
         catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().updateJWTParameters(params);
     }
 
-    public ObjectMap getDatabaseStatus() {
+    public boolean getDatabaseStatus() {
         if (existsCatalogDB()) {
             return catalogDBAdaptorFactory.getDatabaseStatus();
         } else {
-            return new ObjectMap("error", "Database " + configuration.getDatabasePrefix() + "_opencga not found");
+            return false;
         }
     }
 

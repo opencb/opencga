@@ -21,6 +21,7 @@ import org.opencb.commons.utils.FileUtils;
 import java.io.*;
 import java.nio.file.Path;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
 /**
  * Created on 02/08/16.
@@ -29,13 +30,25 @@ import java.util.function.BiConsumer;
  */
 public class MalformedVariantHandler implements BiConsumer<String, RuntimeException> {
 
+    private Supplier<OutputStream> supplier;
     private PrintStream out;
-    private final Path outputFile;
     private long counter = 0;
 
     public MalformedVariantHandler(Path outputFile) throws IOException {
-        this.outputFile = outputFile;
         FileUtils.checkDirectory(outputFile.toAbsolutePath().getParent(), true);
+        supplier = () -> {
+            try {
+                return new FileOutputStream(outputFile.toFile());
+            } catch (FileNotFoundException e) {
+                // This should not happen. Permissions already checked at creation.
+                // May have changes?
+                throw new UncheckedIOException(e);
+            }
+        };
+    }
+
+    public MalformedVariantHandler(Supplier<OutputStream> supplier) throws IOException {
+        this.supplier = supplier;
     }
 
     @Override
@@ -43,14 +56,8 @@ public class MalformedVariantHandler implements BiConsumer<String, RuntimeExcept
         counter++;
 
         if (out == null) {
-            try {
-                // Only create file if required
-                out = new PrintStream(new FileOutputStream(outputFile.toFile()));
-            } catch (FileNotFoundException e) {
-                // This should not happen. Permissions already checked at creation.
-                // May have changes?
-                throw new UncheckedIOException(e);
-            }
+            // Only create file if required
+            out = new PrintStream(supplier.get());
         }
 
         out.print("ERROR >>>>\t");

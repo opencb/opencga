@@ -62,6 +62,7 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         FAMILY_UID("family.uid", INTEGER, ""),
         FILES("files", TEXT_ARRAY, ""),
         COMMENTS("comments", TEXT_ARRAY, ""),
+        ALERTS("alerts", TEXT_ARRAY, ""),
         PROBAND("proband", TEXT_ARRAY, ""),
         PROBAND_UID("proband.uid", INTEGER, ""),
         ROLE_TO_PROBAND("roleToProband", TEXT_ARRAY, ""),

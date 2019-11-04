@@ -30,6 +30,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.*;
 
@@ -201,7 +202,7 @@ public class VariantMatchers {
                         .stream()
                         .map(ConsequenceType::getSequenceOntologyTerms)
                         .flatMap(Collection::stream)
-                        .map(SequenceOntologyTerm::getAccession)
+                        .flatMap(so -> Stream.of(so.getAccession(), so.getName()))
                         .collect(Collectors.toSet());
             }
         };

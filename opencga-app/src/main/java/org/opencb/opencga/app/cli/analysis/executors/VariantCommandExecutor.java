@@ -60,15 +60,16 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.MendelianErrorPrecomputeCommandOptions.MENDELIAN_ERRORS_COMMAND;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexRemoveCommandOptions.SECONDARY_INDEX_REMOVE_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.LOAD;
 import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.TRANSFORM;
@@ -124,8 +125,11 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             case "stats":
                 stats();
                 break;
-            case MENDELIAN_ERRORS_COMMAND:
-                calculateMendelianErrors();
+            case SAMPLE_INDEX_COMMAND:
+                sampleIndex();
+                break;
+            case FAMILY_INDEX_COMMAND:
+                familyIndex();
                 break;
             case "annotate":
                 annotate();
@@ -240,7 +244,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             }
             VariantWriterFactory.VariantOutputFormat outputFormat = VariantWriterFactory
                     .toOutputFormat(cliOptions.commonOptions.outputFormat, cliOptions.output);
-            variantManager.exportData(cliOptions.output, outputFormat, query, queryOptions, sessionId);
+            variantManager.exportData(cliOptions.output, outputFormat, cliOptions.variantsFile, query, queryOptions, sessionId);
         }
     }
 
@@ -368,9 +372,23 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         variantManager.stats(cliOptions.study, cohorts, cliOptions.outdir, options, sessionId);
     }
 
-    private void calculateMendelianErrors() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException,
-            StorageEngineException, InstantiationException, IllegalAccessException, URISyntaxException {
-        VariantCommandOptions.MendelianErrorPrecomputeCommandOptions cliOptions = variantCommandOptions.mendelianErrorCommandOptions;
+    private void sampleIndex()
+            throws CatalogException, ClassNotFoundException, StorageEngineException, InstantiationException, IllegalAccessException {
+        VariantCommandOptions.SampleIndexCommandOptions cliOptions = variantCommandOptions.sampleIndexCommandOptions;
+
+        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
+
+        QueryOptions options = new QueryOptions();
+        options.putAll(cliOptions.commonOptions.params);
+
+        List<String> samples = Arrays.asList(cliOptions.sample.split(","));
+
+        variantManager.sampleIndexAnnotate(cliOptions.study, samples, options, sessionId);
+    }
+
+    private void familyIndex()
+            throws CatalogException, ClassNotFoundException, StorageEngineException, InstantiationException, IllegalAccessException {
+        VariantCommandOptions.FamilyIndexCommandOptions cliOptions = variantCommandOptions.familyIndexCommandOptions;
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
@@ -380,7 +398,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
         List<String> families = Arrays.asList(cliOptions.family.split(","));
 
-        variantManager.calculateMendelianErrors(cliOptions.study, families, options, sessionId);
+        variantManager.familyIndex(cliOptions.study, families, options, sessionId);
     }
 
     private void annotate() throws StorageEngineException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException,

@@ -20,6 +20,7 @@ import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +36,7 @@ public abstract class StorageEngine<DBADAPTOR> implements AutoCloseable {
     protected String storageEngineId;
     protected StorageConfiguration configuration;
     protected String dbName;
+    protected IOConnectorProvider ioConnectorProvider;
 
     private Logger logger = LoggerFactory.getLogger(StorageEngine.class);
 
@@ -59,6 +61,11 @@ public abstract class StorageEngine<DBADAPTOR> implements AutoCloseable {
         this.configuration = configuration;
         this.storageEngineId = storageEngineId;
         this.dbName = dbName;
+        this.ioConnectorProvider = createIOConnectorProvider(configuration);
+    }
+
+    protected IOConnectorProvider createIOConnectorProvider(StorageConfiguration configuration) {
+        return new IOConnectorProvider(configuration);
     }
 
     public String getStorageEngineId() {
@@ -182,8 +189,11 @@ public abstract class StorageEngine<DBADAPTOR> implements AutoCloseable {
         return configuration;
     }
 
+    public IOConnectorProvider getIOManagerProvider() {
+        return ioConnectorProvider;
+    }
+
     @Override
     public void close() throws Exception {
     }
-
 }

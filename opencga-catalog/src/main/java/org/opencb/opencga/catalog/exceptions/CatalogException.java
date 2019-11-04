@@ -16,6 +16,10 @@
 
 package org.opencb.opencga.catalog.exceptions;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.List;
+
 /**
  * Created by jacobo on 12/12/14.
  */
@@ -31,5 +35,9 @@ public class CatalogException extends Exception {
 
     public CatalogException(Throwable cause) {
         super(cause);
+    }
+
+    public static CatalogException notFound(String entity, List<String> entries) {
+        return new CatalogException("Missing " + entity + ": " + StringUtils.join(entries, ", ") + " not found.");
     }
 }

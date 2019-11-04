@@ -5,6 +5,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -49,7 +50,7 @@ public class PanelManagerTest extends GenericTest {
     }
 
     private void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
-        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.FULL, null, null);
+        catalogManager.getUserManager().create("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null, null);
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
 
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
@@ -72,7 +73,7 @@ public class PanelManagerTest extends GenericTest {
 
         QueryResult<Panel> diseasePanelQueryResult = panelManager.create(studyFqn, panel, null, sessionIdUser);
         assertEquals(1, diseasePanelQueryResult.getNumResults());
-        assertEquals(panel.getDiseasePanel().getId(), diseasePanelQueryResult.first().getDiseasePanel().getId());
+        assertEquals(panel.getId(), diseasePanelQueryResult.first().getId());
         assertEquals(panel.toString(), diseasePanelQueryResult.first().toString());
     }
 
@@ -81,10 +82,10 @@ public class PanelManagerTest extends GenericTest {
         Panel panel = Panel.load(getClass().getResource("/disease_panels/panel1.json").openStream());
 
         panelManager.create(panel, false, adminToken);
-        QueryResult<Panel> diseasePanelQueryResult = panelManager.get(PanelManager.INSTALLATION_PANELS, panel.getDiseasePanel().getId(),
+        QueryResult<Panel> diseasePanelQueryResult = panelManager.get(PanelManager.INSTALLATION_PANELS, panel.getId(),
                 QueryOptions.empty(), null);
         assertEquals(1, diseasePanelQueryResult.getNumResults());
-        assertEquals(panel.getDiseasePanel().getId(), diseasePanelQueryResult.first().getDiseasePanel().getId());
+        assertEquals(panel.getId(), diseasePanelQueryResult.first().getId());
         assertEquals(panel.toString(), diseasePanelQueryResult.first().toString());
     }
 
@@ -103,10 +104,10 @@ public class PanelManagerTest extends GenericTest {
         Panel panel = Panel.load(getClass().getResource("/disease_panels/panel1.json").openStream());
 
         panelManager.create(panel, false, adminToken);
-        QueryResult<Panel> diseasePanelQueryResult = panelManager.get(PanelManager.INSTALLATION_PANELS, panel.getDiseasePanel().getId(),
+        QueryResult<Panel> diseasePanelQueryResult = panelManager.get(PanelManager.INSTALLATION_PANELS, panel.getId(),
                 QueryOptions.empty(), null);
         panelManager.create(panel, true, adminToken);
-        QueryResult<Panel> diseasePanelQueryResult2 = panelManager.get(PanelManager.INSTALLATION_PANELS, panel.getDiseasePanel().getId(),
+        QueryResult<Panel> diseasePanelQueryResult2 = panelManager.get(PanelManager.INSTALLATION_PANELS, panel.getId(),
                 QueryOptions.empty(), null);
 
         assertNotEquals(diseasePanelQueryResult.first().getUuid(), diseasePanelQueryResult2.first().getUuid());
@@ -125,11 +126,11 @@ public class PanelManagerTest extends GenericTest {
         Panel panel = Panel.load(getClass().getResource("/disease_panels/panel1.json").openStream());
         panelManager.create(panel, false, adminToken);
 
-        Panel installationPanel = panelManager.get(PanelManager.INSTALLATION_PANELS, panel.getDiseasePanel().getId(),
+        Panel installationPanel = panelManager.get(PanelManager.INSTALLATION_PANELS, panel.getId(),
                 QueryOptions.empty(), null).first();
 
         QueryResult<Panel> diseasePanelQueryResult = panelManager.importGlobalPanels(studyFqn,
-                Collections.singletonList(panel.getDiseasePanel().getId()),
+                Collections.singletonList(panel.getId()),
                 QueryOptions.empty(), sessionIdUser);
 
         assertEquals(1, diseasePanelQueryResult.getNumResults());
@@ -154,12 +155,12 @@ public class PanelManagerTest extends GenericTest {
         Panel panel = Panel.load(getClass().getResource("/disease_panels/panel1.json").openStream());
         panelManager.create(panel, false, adminToken);
         Panel diseasePanelQueryResult = panelManager.importGlobalPanels(studyFqn,
-                Collections.singletonList(panel.getDiseasePanel().getId()), null, sessionIdUser).first();
+                Collections.singletonList(panel.getId()), null, sessionIdUser).first();
 
         ObjectMap params = new ObjectMap()
                 .append(PanelDBAdaptor.UpdateParams.AUTHOR.key(), "author")
                 .append(PanelDBAdaptor.UpdateParams.REGIONS.key(), Collections.singletonList(
-                        new ObjectMap("location", "chr1:1-1000")
+                        new ObjectMap("coordinates", Collections.singletonList(new DiseasePanel.Coordinate("", "chr1:1-1000", "")))
                 ))
                 .append(PanelDBAdaptor.UpdateParams.PHENOTYPES.key(), Collections.singletonList(
                         new ObjectMap("id", "ontologyTerm")
@@ -170,18 +171,18 @@ public class PanelManagerTest extends GenericTest {
                 .append(PanelDBAdaptor.UpdateParams.GENES.key(), Collections.singletonList(
                         new ObjectMap("id", "BRCA2")
                 ));
-        Panel panelUpdated = panelManager.update(studyFqn, diseasePanelQueryResult.getDiseasePanel().getId(), params, null, sessionIdUser)
+        Panel panelUpdated = panelManager.update(studyFqn, diseasePanelQueryResult.getId(), params, null, sessionIdUser)
                 .first();
 
-        assertEquals("author", panelUpdated.getDiseasePanel().getSource().getAuthor());
-        assertEquals(1, panelUpdated.getDiseasePanel().getRegions().size());
-        assertEquals("chr1:1-1000", panelUpdated.getDiseasePanel().getRegions().get(0).getLocation());
-        assertEquals(1, panelUpdated.getDiseasePanel().getGenes().size());
-        assertEquals("BRCA2", panelUpdated.getDiseasePanel().getGenes().get(0).getId());
-        assertEquals(1, panelUpdated.getDiseasePanel().getPhenotypes().size());
-        assertEquals("ontologyTerm", panelUpdated.getDiseasePanel().getPhenotypes().get(0).getId());
-        assertEquals(1, panelUpdated.getDiseasePanel().getVariants().size());
-        assertEquals("variant1", panelUpdated.getDiseasePanel().getVariants().get(0).getId());
+        assertEquals("author", panelUpdated.getSource().getAuthor());
+        assertEquals(1, panelUpdated.getRegions().size());
+        assertEquals("chr1:1-1000", panelUpdated.getRegions().get(0).getCoordinates().get(0).getLocation());
+        assertEquals(1, panelUpdated.getGenes().size());
+        assertEquals("BRCA2", panelUpdated.getGenes().get(0).getId());
+        assertEquals(1, panelUpdated.getPhenotypes().size());
+        assertEquals("ontologyTerm", panelUpdated.getPhenotypes().get(0).getId());
+        assertEquals(1, panelUpdated.getVariants().size());
+        assertEquals("variant1", panelUpdated.getVariants().get(0).getId());
     }
 
 }

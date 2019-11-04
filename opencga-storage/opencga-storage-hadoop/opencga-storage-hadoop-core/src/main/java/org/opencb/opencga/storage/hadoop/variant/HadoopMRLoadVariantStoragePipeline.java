@@ -20,8 +20,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
@@ -31,9 +33,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Paths;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.HADOOP_BIN;
+import static org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor.HADOOP_BIN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.INTERMEDIATE_HDFS_DIRECTORY;
 
 /**
@@ -49,10 +50,10 @@ public class HadoopMRLoadVariantStoragePipeline extends HadoopVariantStoragePipe
     public HadoopMRLoadVariantStoragePipeline(
             StorageConfiguration configuration,
             VariantHadoopDBAdaptor dbAdaptor, MRExecutor mrExecutor,
-            Configuration conf,
-            VariantReaderUtils variantReaderUtils, ObjectMap options) {
-        super(configuration, dbAdaptor, variantReaderUtils,
-                options, mrExecutor, conf);
+            IOConnectorProvider ioConnectorProvider, Configuration conf,
+            ObjectMap options) {
+        super(configuration, dbAdaptor,
+                options, mrExecutor, conf, ioConnectorProvider);
         throw new IllegalStateException("Unable to load from hdfs using a MR job");
     }
 
@@ -71,16 +72,14 @@ public class HadoopMRLoadVariantStoragePipeline extends HadoopVariantStoragePipe
                 long startTime = System.currentTimeMillis();
 //                    Configuration conf = getHadoopConfiguration(options);
                 FileSystem fs = FileSystem.get(conf);
-                org.apache.hadoop.fs.Path variantsOutputPath = new org.apache.hadoop.fs.Path(
-                        output.resolve(Paths.get(input.getPath()).getFileName().toString()));
+                org.apache.hadoop.fs.Path variantsOutputPath = new org.apache.hadoop.fs.Path(output.resolve(UriUtils.fileName(input)));
                 logger.info("Copy from {} to {}", new org.apache.hadoop.fs.Path(input).toUri(), variantsOutputPath.toUri());
                 fs.copyFromLocalFile(false, new org.apache.hadoop.fs.Path(input), variantsOutputPath);
                 logger.info("Copied to hdfs in {}s", (System.currentTimeMillis() - startTime) / 1000.0);
 
                 startTime = System.currentTimeMillis();
                 URI fileInput = URI.create(VariantReaderUtils.getMetaFromTransformedFile(input.toString()));
-                org.apache.hadoop.fs.Path fileOutputPath = new org.apache.hadoop.fs.Path(
-                        output.resolve(Paths.get(fileInput.getPath()).getFileName().toString()));
+                org.apache.hadoop.fs.Path fileOutputPath = new org.apache.hadoop.fs.Path(output.resolve(UriUtils.fileName(fileInput)));
                 logger.info("Copy from {} to {}", new org.apache.hadoop.fs.Path(fileInput).toUri(), fileOutputPath.toUri());
                 fs.copyFromLocalFile(false, new org.apache.hadoop.fs.Path(fileInput), fileOutputPath);
                 logger.info("Copied to hdfs in {}s", (System.currentTimeMillis() - startTime) / 1000.0);
@@ -98,7 +97,7 @@ public class HadoopMRLoadVariantStoragePipeline extends HadoopVariantStoragePipe
         URI vcfMeta = URI.create(VariantReaderUtils.getMetaFromTransformedFile(input.toString()));
 
         String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
-        String jar = getJarWithDependencies();
+        String jar = MRExecutor.getJarWithDependencies(getOptions());
 
         Class execClass = ArchiveDriver.class;
         String executable = hadoopRoute + " jar " + jar + " " + execClass.getName();

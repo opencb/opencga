@@ -17,14 +17,16 @@
 package org.opencb.opencga.storage.hadoop.variant.converters.stats;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +35,6 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.NavigableMap;
 
 /**
  * Created on 07/07/16.
@@ -61,23 +62,23 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
     public Map<Integer, Map<Integer, VariantStats>> convert(Result result) {
 //        String studyIdStr = String.valueOf(studyConfiguration.getStudyId());
 
-        NavigableMap<byte[], byte[]> map = result.getFamilyMap(columnFamily);
         Map<Integer, Map<Integer, VariantStats>> studyCohortStatsMap = new HashMap<>();
+        if (result.rawCells() != null) {
+            for (Cell cell : result.rawCells()) {
+                if (cell.getValueLength() != 0 && endsWith(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength(),
+                        VariantPhoenixHelper.COHORT_STATS_PROTOBUF_SUFFIX_BYTES)) {
+                    byte[] value = CellUtil.cloneValue(cell);
+                    String columnName = Bytes.toString(cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength());
+                    String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
+                    Integer studyId = getStudyId(split);
+                    Integer cohortId = getCohortId(split);
 
-        for (Map.Entry<byte[], byte[]> entry : map.entrySet()) {
-            byte[] columnBytes = entry.getKey();
-            byte[] value = entry.getValue();
-            if (value != null && startsWith(columnBytes, VariantPhoenixHelper.STATS_PREFIX_BYTES)
-                    && endsWith(columnBytes, VariantPhoenixHelper.STATS_PROTOBUF_SUFIX_BYTES)) {
-                String columnName = Bytes.toString(columnBytes);
-                String[] split = columnName.split(VariantPhoenixHelper.COLUMN_KEY_SEPARATOR_STR);
-                Integer studyId = getStudyId(split);
-                Integer cohortId = getCohortId(split);
-
-                Map<Integer, VariantStats> statsMap = studyCohortStatsMap.computeIfAbsent(studyId, k -> new HashMap<>());
-                statsMap.put(cohortId, convert(value));
+                    Map<Integer, VariantStats> statsMap = studyCohortStatsMap.computeIfAbsent(studyId, k -> new HashMap<>());
+                    statsMap.put(cohortId, convert(value));
+                }
             }
         }
+
 
         return studyCohortStatsMap;
     }
@@ -91,8 +92,7 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
             for (int i = 1; i <= metaData.getColumnCount(); i++) {
                 String columnName = metaData.getColumnName(i);
                 byte[] value = resultSet.getBytes(i);
-                if (value != null && columnName.startsWith(VariantPhoenixHelper.STATS_PREFIX)
-                        && columnName.endsWith(VariantPhoenixHelper.STATS_PROTOBUF_SUFIX)) {
+                if (value != null && columnName.endsWith(VariantPhoenixHelper.COHORT_STATS_PROTOBUF_SUFFIX)) {
                     String[] split = columnName.split("_");
                     Integer studyId = getStudyId(split);
                     Integer cohortId = getCohortId(split);
@@ -124,6 +124,7 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
             stats.setMgfGenotype(protoStats.getMgfGenotype());
             stats.setMaf(protoStats.getMaf());
             stats.setMafAllele(protoStats.getMafAllele());
+            stats.setAlleleCount(protoStats.getAlleleCount());
             stats.setAltAlleleCount(protoStats.getAltAlleleCount());
             stats.setAltAlleleFreq(protoStats.getAltAlleleFreq());
             stats.setRefAlleleCount(protoStats.getRefAlleleCount());

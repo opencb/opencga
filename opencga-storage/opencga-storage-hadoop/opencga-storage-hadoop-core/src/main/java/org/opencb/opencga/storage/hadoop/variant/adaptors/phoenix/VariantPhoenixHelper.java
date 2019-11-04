@@ -52,27 +52,27 @@ public class VariantPhoenixHelper {
     // TODO: Make default varants table type configurable
     public static final PTableType DEFAULT_TABLE_TYPE = PTableType.VIEW;
 
-    public static final String STATS_PREFIX = "";
-    public static final byte[] STATS_PREFIX_BYTES = Bytes.toBytes(STATS_PREFIX);
     public static final String ANNOTATION_PREFIX = "A_";
     public static final String POPULATION_FREQUENCY_PREFIX = ANNOTATION_PREFIX + "PF_";
     public static final String FUNCTIONAL_SCORE_PREFIX = ANNOTATION_PREFIX + "FS_";
-    public static final String STATS_PROTOBUF_SUFIX = "_PB";
     public static final String SAMPLE_DATA_SUFIX = "_S";
     public static final byte[] SAMPLE_DATA_SUFIX_BYTES = Bytes.toBytes(SAMPLE_DATA_SUFIX);
     public static final String FILE_SUFIX = "_F";
     public static final byte[] FILE_SUFIX_BYTES = Bytes.toBytes(FILE_SUFIX);
     public static final String STUDY_SUFIX = "_ST";
     public static final byte[] STUDY_SUFIX_BYTES = Bytes.toBytes(STUDY_SUFIX);
-    public static final byte[] STATS_PROTOBUF_SUFIX_BYTES = Bytes.toBytes(STATS_PROTOBUF_SUFIX);
-    public static final String MAF_SUFIX = "_MAF";
-    public static final String MGF_SUFIX = "_MGF";
+
+    public static final String COHORT_STATS_PROTOBUF_SUFFIX = "_PB";
+    public static final byte[] COHORT_STATS_PROTOBUF_SUFFIX_BYTES = Bytes.toBytes(COHORT_STATS_PROTOBUF_SUFFIX);
+    public static final String COHORT_STATS_FREQ_SUFFIX = "_CF";
+    public static final String COHORT_STATS_MAF_SUFFIX = "_MAF";
+    public static final String COHORT_STATS_MGF_SUFFIX = "_MGF";
+
     public static final char COLUMN_KEY_SEPARATOR = '_';
     public static final String COLUMN_KEY_SEPARATOR_STR = String.valueOf(COLUMN_KEY_SEPARATOR);
     public static final String RELEASE_PREFIX = "R_";
     public static final byte[] RELEASE_PREFIX_BYTES = Bytes.toBytes(RELEASE_PREFIX);
-    public static final String HOM_REF = "0/0";
-    public static final byte[] HOM_REF_BYTES = Bytes.toBytes(HOM_REF);
+
     private static final String STUDY_POP_FREQ_SEPARATOR = "_";
     public static final List<Column> PRIMARY_KEY = Collections.unmodifiableList(Arrays.asList(
             CHROMOSOME,
@@ -109,9 +109,15 @@ public class VariantPhoenixHelper {
         SO(ANNOTATION_PREFIX + "SO", PIntegerArray.INSTANCE),
         GENES(ANNOTATION_PREFIX + "GENES", PVarcharArray.INSTANCE),
         GENE_SO(ANNOTATION_PREFIX + "GENE_SO", PVarcharArray.INSTANCE),
+        BIOTYPE_SO(ANNOTATION_PREFIX + "BT_SO", PVarcharArray.INSTANCE),
+        GENE_BIOTYPE_SO(ANNOTATION_PREFIX + "GENE_BT_SO", PVarcharArray.INSTANCE),
+        GENE_BIOTYPE(ANNOTATION_PREFIX + "GENE_BT", PVarcharArray.INSTANCE),
+        GENE_SO_FLAG(ANNOTATION_PREFIX + "GENE_SO_FLAG", PVarcharArray.INSTANCE),
+        SO_FLAG(ANNOTATION_PREFIX + "SO_FLAG", PVarcharArray.INSTANCE),
+
         BIOTYPE(ANNOTATION_PREFIX + "BIOTYPE", PVarcharArray.INSTANCE),
         TRANSCRIPTS(ANNOTATION_PREFIX + "TRANSCRIPTS", PVarcharArray.INSTANCE),
-        TRANSCRIPTION_FLAGS(ANNOTATION_PREFIX + "FLAGS", PVarcharArray.INSTANCE),
+        TRANSCRIPT_FLAGS(ANNOTATION_PREFIX + "FLAGS", PVarcharArray.INSTANCE),
         GENE_TRAITS_NAME(ANNOTATION_PREFIX + "GT_NAME", PVarcharArray.INSTANCE),
         GENE_TRAITS_ID(ANNOTATION_PREFIX + "GT_ID", PVarcharArray.INSTANCE),
         CLINICAL_SIGNIFICANCE(ANNOTATION_PREFIX + "CLI_SIG", PVarcharArray.INSTANCE),
@@ -595,11 +601,15 @@ public class VariantPhoenixHelper {
     }
 
     public static List<Column> getStatsColumns(int studyId, int cohortId) {
-        return Arrays.asList(getStatsColumn(studyId, cohortId), getMafColumn(studyId, cohortId), getMgfColumn(studyId, cohortId));
+        return Arrays.asList(
+                getStatsColumn(studyId, cohortId),
+                getStatsFreqColumn(studyId, cohortId),
+                getStatsMafColumn(studyId, cohortId),
+                getStatsMgfColumn(studyId, cohortId));
     }
 
     public static Column getStatsColumn(int studyId, int cohortId) {
-        return Column.build(STATS_PREFIX + studyId + COLUMN_KEY_SEPARATOR + cohortId + STATS_PROTOBUF_SUFIX, PVarbinary.INSTANCE);
+        return Column.build(studyId + COLUMN_KEY_SEPARATOR_STR + cohortId + COHORT_STATS_PROTOBUF_SUFFIX, PVarbinary.INSTANCE);
     }
 
     public static Column getStudyColumn(int studyId) {
@@ -651,6 +661,14 @@ public class VariantPhoenixHelper {
         }
     }
 
+    public static Integer extractFileId(byte[] columnValue, int offset, int length) {
+        if (AbstractPhoenixConverter.endsWith(columnValue, offset, length, FILE_SUFIX_BYTES)) {
+            return extractId(Bytes.toString(columnValue, offset, length), false, "file");
+        } else {
+            return null;
+        }
+    }
+
     private static Integer extractId(String columnKey, boolean failOnMissing, String idType) {
         int startIndex = columnKey.indexOf(COLUMN_KEY_SEPARATOR);
         int endIndex = columnKey.lastIndexOf(COLUMN_KEY_SEPARATOR);
@@ -669,12 +687,24 @@ public class VariantPhoenixHelper {
         }
     }
 
-    public static Column getMafColumn(int studyId, int cohortId) {
-        return Column.build(STATS_PREFIX + studyId + "_" + cohortId + MAF_SUFIX, PFloat.INSTANCE);
+    public static StringBuilder buildStudyColumnsPrefix(int studyId, StringBuilder stringBuilder) {
+        return stringBuilder.append(studyId).append(COLUMN_KEY_SEPARATOR);
     }
 
-    public static Column getMgfColumn(int studyId, int cohortId) {
-        return Column.build(STATS_PREFIX + studyId + "_" + cohortId + MGF_SUFIX, PFloat.INSTANCE);
+    public static String buildStudyColumnsPrefix(int studyId) {
+        return studyId + "_";
+    }
+
+    public static Column getStatsFreqColumn(int studyId, int cohortId) {
+        return Column.build(buildStudyColumnsPrefix(studyId) + cohortId + COHORT_STATS_FREQ_SUFFIX, PFloatArray.INSTANCE);
+    }
+
+    public static Column getStatsMafColumn(int studyId, int cohortId) {
+        return Column.build(buildStudyColumnsPrefix(studyId) + cohortId + COHORT_STATS_MAF_SUFFIX, PFloat.INSTANCE);
+    }
+
+    public static Column getStatsMgfColumn(int studyId, int cohortId) {
+        return Column.build(buildStudyColumnsPrefix(studyId) + cohortId + COHORT_STATS_MGF_SUFFIX, PFloat.INSTANCE);
     }
 
     public static byte[] buildSampleColumnKey(int studyId, int sampleId) {
@@ -682,7 +712,7 @@ public class VariantPhoenixHelper {
     }
 
     public static StringBuilder buildSampleColumnKey(int studyId, int sampleId, StringBuilder stringBuilder) {
-        return stringBuilder.append(studyId).append(COLUMN_KEY_SEPARATOR).append(sampleId).append(SAMPLE_DATA_SUFIX);
+        return buildStudyColumnsPrefix(studyId, stringBuilder).append(sampleId).append(SAMPLE_DATA_SUFIX);
     }
 
     public static Column getSampleColumn(int studyId, int sampleId) {
@@ -699,7 +729,7 @@ public class VariantPhoenixHelper {
     }
 
     public static StringBuilder buildFileColumnKey(int studyId, int fileId, StringBuilder stringBuilder) {
-        return stringBuilder.append(studyId).append(COLUMN_KEY_SEPARATOR).append(fileId).append(FILE_SUFIX);
+        return buildStudyColumnsPrefix(studyId, stringBuilder).append(fileId).append(FILE_SUFIX);
     }
 
     public static Column getFileColumn(int studyId, int sampleId) {

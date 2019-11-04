@@ -1,462 +1,344 @@
 package org.opencb.opencga.storage.hadoop.variant.gaps;
 
-import org.junit.Assert;
-import org.junit.Rule;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
-import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.VariantBuilder;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.storage.core.StoragePipelineResult;
+import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
+import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
+import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
+import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 
-import java.io.IOException;
-import java.net.URI;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static junit.framework.TestCase.*;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.ARCHIVE_NON_REF_FILTER;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED;
-import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariants;
-import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.removeFile;
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
 
 /**
- * Created on 27/10/17.
+ * Created on 15/02/18.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class FillGapsTaskTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
+public class FillGapsTaskTest {
 
-    @Rule
-    public ExternalResource externalResource = new HadoopExternalResource();
+    private VariantStorageMetadataManager metadataManager;
+    private StudyMetadata studyMetadata;
+    private VariantToVcfSliceConverter toSliceConverter;
 
-    public static void fillGaps(HadoopVariantStorageEngine variantStorageEngine, StudyMetadata studyMetadata,
-                                Collection<Integer> sampleIds) throws Exception {
-//        fillGapsMR(variantStorageEngine, studyMetadata, sampleIds, true);
-//        fillGapsMR(variantStorageEngine, studyMetadata, sampleIds, false);
-//        fillGapsLocal(variantStorageEngine, studyMetadata, sampleIds);
-//        fillLocalMRDriver(variantStorageEngine, studyMetadata, sampleIds);
-//        fillGapsLocalFromArchive(variantStorageEngine, studyMetadata, sampleIds, false);
-        variantStorageEngine.fillGaps(studyMetadata.getName(), sampleIds.stream().map(Object::toString).collect(Collectors.toList()), new ObjectMap("local", false));
-//        variantStorageEngine.fillGaps(studyMetadata.getStudyName(), sampleIds.stream().map(Object::toString).collect(Collectors.toList()), new ObjectMap("local", true));
+    @Before
+    public void setUp() throws Exception {
+        DummyVariantStorageMetadataDBAdaptorFactory.clear();
+        metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
+        studyMetadata = metadataManager.createStudy("S");
+        metadataManager.updateStudyMetadata("S", sm -> {
+            sm.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DP");
+            sm.getVariantHeader().getComplexLines().add(new VariantFileHeaderComplexLine("INFO", "OTHER", "asdf", "1", "String", Collections.emptyMap()));
+            return sm;
+        });
+        int studyId = studyMetadata.getId();
+        int file1 = metadataManager.registerFile(studyId, "file1.vcf", Arrays.asList("S1", "S2"));
+        int file2 = metadataManager.registerFile(studyId, "file2.vcf", Arrays.asList("S3", "S4"));
+        metadataManager.addIndexedFiles(studyId, Arrays.asList(file1, file2));
+        toSliceConverter = new VariantToVcfSliceConverter(
+                new HashSet<>(Arrays.asList("FILTER", "QUAL", "OTHER")),
+                new HashSet<>(Arrays.asList("GT", "DP")));
     }
 
     @Test
-    public void testFillGapsPlatinumFiles() throws Exception {
-        testFillGapsPlatinumFiles(new ObjectMap());
+    public void testGetOverlappingVariants() {
+        FillGapsTask a = new FillGapsTask(this.studyMetadata, new GenomeHelper(new Configuration()), true, false, metadataManager);
+
+        VcfSliceProtos.VcfSlice vcfSlice = buildVcfSlice("17:29113:T:C", "17:29185:A:G", "17:29190-29189::AAAAAAAA", "17:29464:G:");
+
+        List<Variant> variants = Arrays.asList(
+                new Variant("1:29180:CAGAGACAGC:AAGAAACAGCAAAAAAAAAA"),
+                new Variant("1:29180:C:A"),
+                new Variant("1:29180::CAGAGA"),
+                new Variant("1:29181:A:G"),
+                new Variant("1:29193:A:G"),
+                new Variant("1:29198:A:G")
+        );
+
+        ListIterator<VcfSliceProtos.VcfRecord> iterator = vcfSlice.getRecordsList().listIterator();
+        for (Variant variant : variants) {
+            ArrayList<Pair<VcfSliceProtos.VcfSlice, VcfSliceProtos.VcfRecord>> list = new ArrayList<>();
+            a.getOverlappingVariants(variant, 1, vcfSlice, iterator, list);
+//            System.out.println(variant + " iteratorIdx : " + iterator.nextIndex());
+        }
+    }
+
+
+    @Test
+    public void testGetOverlappingVariants2() {
+        FillGapsTask a = new FillGapsTask(this.studyMetadata, new GenomeHelper(new Configuration()), true, false, metadataManager);
+
+        VcfSliceProtos.VcfSlice vcfSlice = buildVcfSlice(
+                "2:182562574-182562573::T",
+                "2:182562574-182562573::TT",
+                "2:182562574-182562576:TTT:"
+        );
+
+        List<Variant> variants = Arrays.asList(
+                new Variant("2:182562571:CTG:"),
+                new Variant("2:182562572:TGT:"),
+                new Variant("2:182562572:TG:"),
+                new Variant("2:182562572::T"),
+                new Variant("2:182562573:G:T"),
+                new Variant("2:182562574:TTTT:"),
+                new Variant("2:182562574:TTT:"),
+                new Variant("2:182562574:TT:"),
+                new Variant("2:182562574:T:"),
+                new Variant("2:182562574::T"),
+                new Variant("2:182562574::TT"),
+                new Variant("2:182562575:T:C"),
+                new Variant("2:182562575:T:G"),
+                new Variant("2:182562576:T:A"),
+                new Variant("2:182562576:T:C"),
+                new Variant("2:182562594:G:A"),
+                new Variant("2:182562613:G:A"),
+                new Variant("2:182562674:A:G"),
+                new Variant("2:182562683:A:G"),
+                new Variant("2:182562890:A:G"),
+                new Variant("2:182562947:C:A")
+        );
+
+        ListIterator<VcfSliceProtos.VcfRecord> iterator = vcfSlice.getRecordsList().listIterator();
+        for (Variant variant : variants) {
+            ArrayList<Pair<VcfSliceProtos.VcfSlice, VcfSliceProtos.VcfRecord>> list = new ArrayList<>();
+            a.getOverlappingVariants(variant, 1, vcfSlice, iterator, list);
+//            System.out.println(variant + " iteratorIdx : " + iterator.nextIndex());
+        }
+    }
+
+    private VcfSliceProtos.VcfSlice buildVcfSlice(String... variants) {
+        Variant variant = new Variant(variants[0]);
+        int position = (variant.getStart() / 1000) * 1000;
+        VcfSliceProtos.VcfSlice.Builder vcfSlice = VcfSliceProtos.VcfSlice.newBuilder()
+                .setChromosome(variant.getChromosome())
+                .setPosition(position);
+
+        for (String s : variants) {
+            variant = new Variant(s);
+            vcfSlice.addRecords(VcfSliceProtos.VcfRecord.newBuilder()
+                    .setRelativeStart(variant.getStart() - position)
+                    .setRelativeEnd(variant.getEnd() - position)
+                    .setReference(variant.getReference())
+                    .setAlternate(variant.getAlternate())
+                    .build());
+
+        }
+
+        return vcfSlice.build();
     }
 
     @Test
-    public void testFillGapsPlatinumFilesMultiFileBatch() throws Exception {
-        testFillGapsPlatinumFiles(new ObjectMap(HadoopVariantStorageEngine.ARCHIVE_FILE_BATCH_SIZE, 2));
-    }
+    public void testOverlapsWith() {
+        assertTrue(FillGapsTask.overlapsWith(new Variant("1:100:T:-"), "1", 100, 100));
 
-    public void testFillGapsPlatinumFiles(ObjectMap options) throws Exception {
-        StudyMetadata studyMetadata = loadPlatinum(options
-                        .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC), 4);
+        Variant variant = new Variant("1:100:-:T");
+        assertTrue(FillGapsTask.overlapsWith(variant, "1", variant.getStart(), variant.getEnd()));
 
-        HadoopVariantStorageEngine variantStorageEngine = (HadoopVariantStorageEngine) this.variantStorageEngine;
-
-        VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
-        List<Integer> sampleIds = new ArrayList<>(metadataManager.getIndexedSamplesMap(studyMetadata.getId()).values());
-        sampleIds.sort(Integer::compareTo);
-
-        List<Integer> subSamples = sampleIds.subList(0, sampleIds.size() / 2);
-        System.out.println("subSamples = " + subSamples);
-        fillGaps(variantStorageEngine, studyMetadata, subSamples);
-        printVariants(studyMetadata, dbAdaptor, newOutputUri());
-        checkFillGaps(studyMetadata, dbAdaptor, subSamples);
-        checkSampleIndexTable(dbAdaptor);
-
-        subSamples = sampleIds.subList(sampleIds.size() / 2, sampleIds.size());
-        System.out.println("subSamples = " + subSamples);
-        fillGaps(variantStorageEngine, studyMetadata, subSamples);
-        printVariants(studyMetadata, dbAdaptor, newOutputUri());
-        checkFillGaps(studyMetadata, dbAdaptor, subSamples);
-        checkSampleIndexTable(dbAdaptor);
-
-        subSamples = sampleIds;
-        System.out.println("subSamples = " + subSamples);
-        fillGaps(variantStorageEngine, studyMetadata, subSamples);
-        printVariants(studyMetadata, dbAdaptor, newOutputUri());
-        checkFillGaps(studyMetadata, dbAdaptor, subSamples);
-        checkSampleIndexTable(dbAdaptor);
-
-        checkNewMultiAllelicVariants(dbAdaptor);
-        checkNewMissingPositions(dbAdaptor);
-        checkQueryGenotypes(dbAdaptor);
+        variant = new Variant("1:100:-:TTTTT");
+        assertFalse(FillGapsTask.overlapsWith(variant, "1", 102, 102));
     }
 
     @Test
-    public void testFillGapsConflictingFiles() throws Exception {
-        StudyMetadata studyMetadata = load(new QueryOptions(), Arrays.asList(
-                getResourceUri("gaps/file1.genome.vcf"),
-                getResourceUri("gaps/file2.genome.vcf")));
+    public void testIsRegionAfterVariantStart() {
+        assertTrue(FillGapsTask.isRegionAfterVariantStart(100, 100, new Variant("1:100:-:T")));
+        assertFalse(FillGapsTask.isRegionAfterVariantStart(100, 100, new Variant("1:100:A:T")));
+        assertTrue(FillGapsTask.isRegionAfterVariantStart(101, 101, new Variant("1:100:A:T")));
 
-        checkConflictingFiles(studyMetadata);
+        assertFalse(FillGapsTask.isRegionAfterVariantStart(99, 99, new Variant("1:100:AAA:GGG")));
+        assertFalse(FillGapsTask.isRegionAfterVariantStart(100, 100, new Variant("1:100:AAA:GGG")));
+        assertFalse(FillGapsTask.isRegionAfterVariantStart(101, 100, new Variant("1:100:AAA:GGG")));
+        assertTrue(FillGapsTask.isRegionAfterVariantStart(101, 101, new Variant("1:100:AAA:GGG")));
+        assertTrue(FillGapsTask.isRegionAfterVariantStart(102, 102, new Variant("1:100:AAA:GGG")));
+        assertTrue(FillGapsTask.isRegionAfterVariantStart(103, 103, new Variant("1:100:AAA:GGG")));
     }
 
     @Test
-    public void testFillMissingFilterNonRef() throws Exception {
-        StudyMetadata studyMetadata = load(new QueryOptions(VariantStorageEngine.Options.GVCF.key(), true)
-                .append(ARCHIVE_NON_REF_FILTER, "FORMAT:DP<6"), Arrays.asList(
-                getResourceUri("gaps/file1.genome.vcf"),
-                getResourceUri("gaps/file2.genome.vcf")));
+    public void fillGapsAlreadyPresent() {
+        FillGapsTask task = new FillGapsTask(this.studyMetadata, new GenomeHelper(new Configuration()), true, false, metadataManager);
 
-        variantStorageEngine.fillMissing(studyMetadata.getName(), new ObjectMap(), true);
-        VariantHadoopDBAdaptor dbAdaptor = (VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor();
-        printVariants(studyMetadata, dbAdaptor, newOutputUri());
+        Put put = new Put(VariantPhoenixKeyFactory.generateVariantRowKey(new Variant("1:100:A:T")));
+        VariantOverlappingStatus overlappingStatus = task.fillGaps(new Variant("1:100:A:T"),
+                new HashSet<>(Arrays.asList(1, 2)), put, new ArrayList<>(), 1,
+                toSliceConverter.convert(Arrays.asList(variantFile1("1:100:A:C"), variantFile1("1:100:A:T"))),
+                toSliceConverter.convert(Collections.emptyList()));
+        assertEquals(VariantOverlappingStatus.NONE, overlappingStatus);
 
-        for (String file : Arrays.asList("file1.genome.vcf", "file2.genome.vcf")) {
-            AtomicInteger refVariants = new AtomicInteger();
-            System.out.println("Query archive file " + file);
-            dbAdaptor.iterator(new Query(STUDY.key(), studyMetadata.getName())
-                            .append(FILE.key(), file),
-                    new QueryOptions("archive", true)
-                            .append("ref", false)).forEachRemaining(variant -> {
-                System.out.println("variant = " + variant);
-                if (variant.getType().equals(VariantType.NO_VARIATION)) {
-                    StudyEntry study = variant.getStudies().get(0);
-                    Integer dpIdx = study.getFormatPositions().get("DP");
-                    if (dpIdx != null) {
-                        String dpStr = study.getSampleData(0).get(dpIdx);
-                        try {
-                            Integer dp = Integer.valueOf(dpStr);
-                            assertTrue(dp <= 5);
-                            refVariants.getAndIncrement();
-                        } catch (NumberFormatException e) {
-                        }
-                    }
-                }
-            });
-            assertTrue(refVariants.get() > 0);
-        }
-
-        Variant variant = dbAdaptor.get(new Query(ID.key(), "1:10032:A:G"), null).first();
-        assertEquals("0/0", variant.getStudies().get(0).getSampleData("s1", "GT"));
-        assertEquals("5", variant.getStudies().get(0).getSampleData("s1", "DP"));
-        variant = dbAdaptor.get(new Query(ID.key(), "1:10050:A:T"), null).first();
-        assertEquals("0/0", variant.getStudies().get(0).getSampleData("s2", "GT"));
-        assertEquals("other", variant.getStudies().get(0).getSampleData("s2", "OTHER"));
+        assertTrue(put.getFamilyCellMap().isEmpty());
     }
 
     @Test
-    public void testFillGapsConflictingFilesNonRef() throws Exception {
-        StudyMetadata studyMetadata = load(new QueryOptions(), Arrays.asList(
-                getResourceUri("gaps2/file1.genome.vcf"),
-                getResourceUri("gaps2/file2.genome.vcf")));
+    public void fillGapsReferenceOverlapping() {
+        FillGapsTask task = new FillGapsTask(this.studyMetadata, new GenomeHelper(new Configuration()), false, false, metadataManager);
 
-        checkConflictingFiles(studyMetadata);
+        Variant variant = fillGaps(task, VariantOverlappingStatus.REFERENCE, "1:100:A:T",
+                toSliceConverter.convert(Collections.emptyList()), toSliceConverter.convert(Arrays.asList(variantFile1("1:100:A:<*>"))));
 
-        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
+        StudyEntry studyEntry = variant.getStudies().get(0);
+        assertEquals(1, studyEntry.getSecondaryAlternates().size());
+        assertEquals("<*>", studyEntry.getSecondaryAlternates().get(0).getAlternate());
+        assertEquals("GT:DP", studyEntry.getFormatAsString());
+        assertEquals("0/0", studyEntry.getSampleData("S1", "GT"));
+        assertEquals("./.", studyEntry.getSampleData("S2", "GT"));
+        assertEquals("1234", studyEntry.getSampleData("S1", "DP"));
+        assertEquals("1", studyEntry.getSampleData("S2", "DP"));
+        assertEquals("PASS", studyEntry.getFiles().get(0).getAttributes().get("FILTER"));
+        assertEquals("50", studyEntry.getFiles().get(0).getAttributes().get("QUAL"));
+        assertEquals("VALUE", studyEntry.getFiles().get(0).getAttributes().get("OTHER"));
+        assertEquals("100:A:<*>:0", studyEntry.getFiles().get(0).getCall());
 
-        Variant variantMulti = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10035:A:G"), null).first();
-        assertEquals("0/0", variantMulti.getStudies().get(0).getSampleData("s1", "GT"));
-        assertEquals(new AlternateCoordinate("1", 10035, 10035, "A", "<*>", VariantType.NO_VARIATION),
-                variantMulti.getStudies().get(0).getSecondaryAlternates().get(0));
-        assertEquals("4,0,1", variantMulti.getStudies().get(0).getSampleData("s1", "AD"));
-        assertEquals("0/1", variantMulti.getStudies().get(0).getSampleData("s2", "GT"));
-        assertEquals("13,23,0", variantMulti.getStudies().get(0).getSampleData("s2", "AD"));
-    }
 
-    public void checkConflictingFiles(StudyMetadata studyMetadata) throws Exception {
-        HadoopVariantStorageEngine variantStorageEngine = (HadoopVariantStorageEngine) this.variantStorageEngine;
+        variant = fillGaps(task, VariantOverlappingStatus.REFERENCE, "1:100:A:T",
+                toSliceConverter.convert(Collections.emptyList()), toSliceConverter.convert(Arrays.asList(variantFile1("1:100:A:."))));
 
-        VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
-        List<Integer> sampleIds = new ArrayList<>(metadataManager.getIndexedSamplesMap(studyMetadata.getId()).values());
-        sampleIds.sort(Integer::compareTo);
-
-        fillGaps(variantStorageEngine, studyMetadata, sampleIds);
-        printVariants(studyMetadata, dbAdaptor, newOutputUri(1));
-        checkFillGaps(studyMetadata, dbAdaptor, sampleIds, Collections.singleton("1:10020:A:T"));
-        checkSampleIndexTable(dbAdaptor);
-
-        Variant variantGap = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10020:A:T"), null).first();
-        assertEquals("0/1", variantGap.getStudies().get(0).getSampleData("s1", "GT"));
-        assertEquals(GenotypeClass.UNKNOWN_GENOTYPE, variantGap.getStudies().get(0).getSampleData("s2", "GT"));
-
-        Variant variantMulti = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10012:TTT:-"), null).first();
-        assertEquals("<*>", variantMulti.getStudies().get(0).getSecondaryAlternates().get(0).getAlternate());
-        assertEquals("0/1", variantMulti.getStudies().get(0).getSampleData("s1", "GT"));
-        assertEquals("2/2", variantMulti.getStudies().get(0).getSampleData("s2", "GT"));
-
-        Variant variantNonMulti = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10054:A:G"), null).first();
-        assertEquals(new HashSet<>(Arrays.asList("C", "T")),
-                variantNonMulti.getStudies().get(0).getSecondaryAlternates().stream().map(AlternateCoordinate::getAlternate).collect(Collectors.toSet()));
-        assertEquals("2/3", variantNonMulti.getStudies().get(0).getSampleData("s1", "GT"));
-        assertEquals("0/1", variantNonMulti.getStudies().get(0).getSampleData("s2", "GT"));
-
+        studyEntry = variant.getStudies().get(0);
+        assertEquals(0, studyEntry.getSecondaryAlternates().size());
+        assertEquals("GT:DP", studyEntry.getFormatAsString());
+        assertEquals("0/0", studyEntry.getSampleData("S1", "GT"));
+        assertEquals("./.", studyEntry.getSampleData("S2", "GT"));
+        assertEquals("1234", studyEntry.getSampleData("S1", "DP"));
+        assertEquals("1", studyEntry.getSampleData("S2", "DP"));
+        assertEquals("PASS", studyEntry.getFiles().get(0).getAttributes().get("FILTER"));
+        assertEquals("50", studyEntry.getFiles().get(0).getAttributes().get("QUAL"));
+        assertEquals("VALUE", studyEntry.getFiles().get(0).getAttributes().get("OTHER"));
+        assertEquals("100:A:.:0", studyEntry.getFiles().get(0).getCall());
     }
 
     @Test
-    public void testFillMissingPlatinumFiles() throws Exception {
-        ObjectMap options = new ObjectMap()
-                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
-                .append(HadoopVariantStorageEngine.ARCHIVE_FILE_BATCH_SIZE, 2);
+    public void fillGapsMultipleOverlapping() {
+        FillGapsTask task = new FillGapsTask(this.studyMetadata, new GenomeHelper(new Configuration()), true, false, metadataManager);
 
-        // Load files 1277 , 1278
-        StudyMetadata studyMetadata = loadPlatinum(options, 12877, 12878);
-        assertFalse(studyMetadata.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
-        HadoopVariantStorageEngine variantStorageEngine = ((HadoopVariantStorageEngine) this.variantStorageEngine);
-        VariantHadoopDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
-        checkFillMissing(dbAdaptor);
-        checkSampleIndexTable(dbAdaptor);
-        assertEquals(new HashSet<>(Arrays.asList("0/1", "1/1")), new HashSet<>(studyMetadata.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key())));
+        Variant variant = fillGaps(task, VariantOverlappingStatus.MULTI, "1:100:A:T",
+                toSliceConverter.convert(Arrays.asList(variantFile1("1:100:A:C"), variantFile1("1:100:A:G"))));
 
-        List<Integer> sampleIds = new ArrayList<>(metadataManager.getIndexedSamplesMap(studyMetadata.getId()).values());
-        sampleIds.sort(Integer::compareTo);
-
-        // Fill missing
-        variantStorageEngine.fillMissing(studyMetadata.getName(), options, false);
-        printVariants(dbAdaptor, newOutputUri());
-        studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
-        assertTrue(studyMetadata.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
-        checkFillMissing(dbAdaptor, "NA12877", "NA12878");
-        checkSampleIndexTable(dbAdaptor);
-        assertEquals(new HashSet<>(Arrays.asList("0/1", "1/1", "0/2")), new HashSet<>(studyMetadata.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key())));
-
-        // Load file 12879
-        studyMetadata = loadPlatinum(options, 12879, 12879);
-
-        assertFalse(studyMetadata.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
-        checkFillMissing(dbAdaptor, Arrays.asList(3), "NA12877", "NA12878");
-        checkSampleIndexTable(dbAdaptor);
-
-        // Load file 12880
-        studyMetadata = loadPlatinum(options, 12880, 12880);
-        checkFillMissing(dbAdaptor, Arrays.asList(3, 4), "NA12877", "NA12878");
-        checkSampleIndexTable(dbAdaptor);
-
-        // Fill missing
-        variantStorageEngine.fillMissing(studyMetadata.getName(), options, false);
-        printVariants(dbAdaptor, newOutputUri());
-        studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
-        assertTrue(studyMetadata.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
-        checkFillMissing(dbAdaptor, "NA12877", "NA12878", "NA12879", "NA12880", "NA12881");
-        checkSampleIndexTable(dbAdaptor);
-
-        // Check fill missing for 4 files
-        checkNewMultiAllelicVariants(dbAdaptor);
-        checkNewMissingPositions(dbAdaptor);
-
-        // Remove last file
-        removeFile(variantStorageEngine, null, 4, studyMetadata, Collections.emptyMap());
-        printVariants(dbAdaptor, newOutputUri());
-        checkFillMissing(dbAdaptor, "NA12877", "NA12878", "NA12879", "NA12880");
-        checkSampleIndexTable(dbAdaptor);
-
-        // Fill missing
-        variantStorageEngine.fillMissing(studyMetadata.getName(), options, false);
-        printVariants(dbAdaptor, newOutputUri());
-        checkFillMissing(dbAdaptor, "NA12877", "NA12878", "NA12879", "NA12880");
-        checkQueryGenotypes(dbAdaptor);
-        checkSampleIndexTable(dbAdaptor);
+        StudyEntry studyEntry = variant.getStudies().get(0);
+        assertEquals(1, studyEntry.getSecondaryAlternates().size());
+        assertEquals("<*>", studyEntry.getSecondaryAlternates().get(0).getAlternate());
+        assertEquals("GT:DP", studyEntry.getFormatAsString());
+        assertEquals("2/2", studyEntry.getSampleData("S1", "GT"));
+        assertEquals("2/2", studyEntry.getSampleData("S2", "GT"));
+        assertEquals(".", studyEntry.getSampleData("S1", "DP"));
+        assertEquals(".", studyEntry.getSampleData("S2", "DP"));
+        assertEquals(null, studyEntry.getFiles().get(0).getAttributes().get("FILTER"));
+        assertEquals(null, studyEntry.getFiles().get(0).getAttributes().get("QUAL"));
+        assertEquals(null, studyEntry.getFiles().get(0).getAttributes().get("OTHER"));
+        assertEquals(null, studyEntry.getFiles().get(0).getCall());
     }
 
-    public void checkNewMultiAllelicVariants(VariantHadoopDBAdaptor dbAdaptor) {
-        Variant v = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10297:C:G").append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "?"), null).first();
-        assertEquals(1, v.getStudies().get(0).getSecondaryAlternates().size());
-        assertEquals("0/1", v.getStudies().get(0).getSampleData("NA12877", "GT"));
-        assertEquals("0/2", v.getStudies().get(0).getSampleData("NA12878", "GT"));
+    @Test
+    public void testFillGapsMultiAllelic() {
+        FillGapsTask task = new FillGapsTask(this.studyMetadata, new GenomeHelper(new Configuration()), true, false, metadataManager);
 
-        v = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10297:C:T").append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "?"), null).first();
-        assertEquals(1, v.getStudies().get(0).getSecondaryAlternates().size());
-        assertEquals("0/2", v.getStudies().get(0).getSampleData("NA12877", "GT"));
-        assertEquals("0/1", v.getStudies().get(0).getSampleData("NA12878", "GT"));
+        Variant variant = fillGaps(task, VariantOverlappingStatus.VARIANT, "1:100:A:T",
+                toSliceConverter.convert(Arrays.asList(variantFile1("1:100:A:C"))));
+
+        StudyEntry studyEntry = variant.getStudies().get(0);
+        assertEquals(1, studyEntry.getSecondaryAlternates().size());
+        assertEquals("C", studyEntry.getSecondaryAlternates().get(0).getAlternate());
+        assertEquals("GT:DP", studyEntry.getFormatAsString());
+        assertEquals("0/2", studyEntry.getSampleData("S1", "GT"));
+        assertEquals("2/2", studyEntry.getSampleData("S2", "GT"));
+        assertEquals("1234", studyEntry.getSampleData("S1", "DP"));
+        assertEquals("1234", studyEntry.getSampleData("S2", "DP"));
+        assertEquals("PASS", studyEntry.getFiles().get(0).getAttributes().get("FILTER"));
+        assertEquals("50", studyEntry.getFiles().get(0).getAttributes().get("QUAL"));
+        assertEquals("VALUE", studyEntry.getFiles().get(0).getAttributes().get("OTHER"));
+        assertEquals("100:A:C:0", studyEntry.getFiles().get(0).getCall());
     }
 
-    public void checkNewMissingPositions(VariantHadoopDBAdaptor dbAdaptor) {
-        Variant v;
-        v = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10821:T:A").append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "?"), null).first();
-        assertEquals(0, v.getStudies().get(0).getSecondaryAlternates().size());
-        assertEquals("./.", v.getStudies().get(0).getSampleData("NA12878", "GT"));
-        assertEquals("./.", v.getStudies().get(0).getSampleData("NA12880", "GT"));
+    @Test
+    public void testFillGapsSkipMultiNewAllelic() {
+        FillGapsTask task = new FillGapsTask(this.studyMetadata, new GenomeHelper(new Configuration()), true, true, metadataManager);
 
-        v = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), "1:10635:C:G").append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "?"), null).first();
-        assertEquals(0, v.getStudies().get(0).getSecondaryAlternates().size());
-        assertEquals("./.", v.getStudies().get(0).getSampleData("NA12880", "GT"));
+        Variant variant = fillGaps(task, VariantOverlappingStatus.VARIANT, "1:100:A:T",
+                toSliceConverter.convert(Arrays.asList(variantFile1("1:100:A:C"))));
+
+        StudyEntry studyEntry = variant.getStudies().get(0);
+        assertEquals(1, studyEntry.getSecondaryAlternates().size());
+        assertEquals("<*>", studyEntry.getSecondaryAlternates().get(0).getAlternate());
+        assertEquals("GT:DP", studyEntry.getFormatAsString());
+        assertEquals("0/2", studyEntry.getSampleData("S1", "GT"));
+        assertEquals("2/2", studyEntry.getSampleData("S2", "GT"));
+        assertEquals(".", studyEntry.getSampleData("S1", "DP"));
+        assertEquals(".", studyEntry.getSampleData("S2", "DP"));
+        assertEquals("PASS", studyEntry.getFiles().get(0).getAttributes().get("FILTER"));
+        assertEquals("50", studyEntry.getFiles().get(0).getAttributes().get("QUAL"));
+        assertEquals(null, studyEntry.getFiles().get(0).getAttributes().get("OTHER"));
+        assertEquals("100:A:C:0", studyEntry.getFiles().get(0).getCall());
+
+
+        Variant archiveVariant = variantFile1("1:100:A:C,G");
+        assertEquals("1/1", archiveVariant.getStudies().get(0).getSampleData(1).set(0, "1/2"));
+        variant = fillGaps(task, VariantOverlappingStatus.VARIANT, "1:100:A:T",
+                toSliceConverter.convert(Arrays.asList(archiveVariant)));
+
+        studyEntry = variant.getStudies().get(0);
+        assertEquals(1, studyEntry.getSecondaryAlternates().size());
+        assertEquals("<*>", studyEntry.getSecondaryAlternates().get(0).getAlternate());
+        assertEquals("0/2", studyEntry.getSampleData("S1", "GT"));
+        assertEquals("2/2", studyEntry.getSampleData("S2", "GT"));
+        assertEquals("100:A:C,G:0", studyEntry.getFiles().get(0).getCall());
     }
 
-    private StudyMetadata loadPlatinum(ObjectMap extraParams, int max) throws Exception {
-        return loadPlatinum(extraParams, 12877, 12877 + max - 1);
+    protected Variant fillGaps(FillGapsTask task,
+                               VariantOverlappingStatus expected, String variant, VcfSliceProtos.VcfSlice nonRefVcfSlice) {
+        return fillGaps(task, expected, variant, nonRefVcfSlice, VcfSliceProtos.VcfSlice.newBuilder().build());
     }
 
-    private StudyMetadata loadPlatinum(ObjectMap extraParams, int from, int to) throws Exception {
+    protected Variant fillGaps(FillGapsTask task,
+                               VariantOverlappingStatus expected, String variant, VcfSliceProtos.VcfSlice nonRefVcfSlice, VcfSliceProtos.VcfSlice refVcfSlice) {
+        Put put = new Put(VariantPhoenixKeyFactory.generateVariantRowKey(new Variant(variant)));
+        VariantOverlappingStatus overlappingStatus = task.fillGaps(new Variant(variant), new HashSet<>(Arrays.asList(1, 2)), put, new ArrayList<>(), 1, nonRefVcfSlice, refVcfSlice);
+        assertEquals(expected, overlappingStatus);
 
-        List<URI> inputFiles = new LinkedList<>();
-
-        for (int fileId = from; fileId <= to; fileId++) {
-            String fileName = "platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
-            inputFiles.add(getResourceUri(fileName));
-        }
-
-        return load(extraParams, inputFiles);
+        return putToVariant(put);
     }
 
-    private StudyMetadata load(ObjectMap extraParams, List<URI> inputFiles) throws Exception {
-        StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
-        HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
-        VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor();
-
-        ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
-        options.put(VariantStorageEngine.Options.STUDY.key(), studyMetadata.getName());
-        options.put(VariantStorageEngine.Options.GVCF.key(), true);
-        options.put(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true);
-        options.put(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE_BATCH_SIZE, 1);
-        options.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
-        options.putAll(extraParams);
-        List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
-
-        for (StoragePipelineResult storagePipelineResult : index) {
-            System.out.println(storagePipelineResult);
-        }
-
-        URI outputUri = newOutputUri(1);
-        studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
-        printVariants(studyMetadata, dbAdaptor, outputUri);
-
-        return studyMetadata;
+    private Variant putToVariant(Put put) {
+        Result result = Result.create(put.getFamilyCellMap().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
+        return HBaseToVariantConverter.fromResult(new GenomeHelper(new Configuration()), metadataManager)
+                .setFormats(Arrays.asList("GT", "DP"))
+                .convert(result);
     }
 
-    protected void checkFillGaps(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor, List<Integer> sampleIds) {
-        checkFillGaps(studyMetadata, dbAdaptor, sampleIds, Collections.singleton("1:10178:-:C"));
-    }
-
-    protected void checkFillGaps(StudyMetadata studyMetadata, VariantHadoopDBAdaptor dbAdaptor, List<Integer> sampleIds, Set<String> variantsWithGaps) {
-        for (Variant variant : dbAdaptor) {
-            boolean anyUnknown = false;
-            boolean allUnknown = true;
-            for (Integer sampleId : sampleIds) {
-                String sampleName = metadataManager.getSampleName(studyMetadata.getId(), sampleId);
-                boolean unknown = variant.getStudies().get(0).getSampleData(sampleName, "GT").equals("?/?");
-                anyUnknown |= unknown;
-                allUnknown &= unknown;
-            }
-            // Fail if any, but not all samples are unknown
-            if (anyUnknown && !allUnknown) {
-                if (variantsWithGaps.contains(variant.toString())) {
-                    System.out.println("Gaps in variant " + variant);
-                } else {
-                    Assert.fail("Gaps in variant " + variant);
-                }
-            }
+    protected Variant variantFile1(String variant) {
+        if (new Variant(variant).getType().equals(VariantType.NO_VARIATION)) {
+            return new VariantBuilder(variant).setStudyId("S")
+                    .setFormat("GT", "DP")
+                    .addSample("S1", "0/0", "1234")
+                    .addSample("S2", "./.", "1")
+                    .setFileId("file1.vcf")
+                    .setFilter("PASS")
+                    .setQuality(50.0)
+                    .addAttribute("OTHER", "VALUE")
+                    .build();
+        } else {
+            return new VariantBuilder(variant).setStudyId("S")
+                    .setFormat("GT", "DP")
+                    .addSample("S1", "0/1", "1234")
+                    .addSample("S2", "1/1", "1234")
+                    .setFileId("file1.vcf")
+                    .setFilter("PASS")
+                    .setQuality(50.0)
+                    .addAttribute("OTHER", "VALUE")
+                    .build();
         }
     }
-
-    protected void checkFillMissing(VariantHadoopDBAdaptor dbAdaptor, String... processedSamples) {
-        checkFillMissing(dbAdaptor, Arrays.asList(), processedSamples);
-    }
-
-    protected void checkFillMissing(VariantHadoopDBAdaptor dbAdaptor, List<Integer> newFiles, String... processedSamples) {
-        Set<Integer> newFilesSet = new HashSet<>(newFiles);
-        Set<String> samplesSet = new HashSet<>(Arrays.asList(processedSamples));
-        StudyMetadata studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(STUDY_NAME);
-        boolean missingGenotypesUpdated = studyMetadata.getAttributes().getBoolean(MISSING_GENOTYPES_UPDATED);
-
-        for (Variant variant : dbAdaptor) {
-            StudyEntry studyEntry = variant.getStudies().get(0);
-            boolean newVariant = !missingGenotypesUpdated && studyEntry.getFiles().stream().map(FileEntry::getFileId)
-                    .map(name -> metadataManager.getFileId(studyMetadata.getId(), name)).allMatch(newFilesSet::contains);
-            List<List<String>> samplesData = studyEntry.getSamplesData();
-            for (int i = 0; i < samplesData.size(); i++) {
-                List<String> data = samplesData.get(i);
-                String sampleName = studyEntry.getOrderedSamplesName().get(i);
-                if (!newVariant && samplesSet.contains(sampleName)) {
-                    assertFalse((newVariant ? "new variant " : "") + variant + " _ " + sampleName + " should not have GT=?/?", data.get(0).equals("?/?"));
-                } else {
-                    assertFalse((newVariant ? "new variant " : "") + variant + " _ " + sampleName + " should not have GT=0/0", data.get(0).equals("0/0"));
-                }
-            }
-        }
-    }
-
-    private void checkQueryGenotypes(VariantHadoopDBAdaptor dbAdaptor) {
-        StudyMetadata sc = dbAdaptor.getMetadataManager().getStudyMetadata(STUDY_NAME);
-        List<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions()).getResult();
-
-        for (String sample : metadataManager.getIndexedSamplesMap(sc.getId()).keySet()) {
-            VariantQueryResult<Variant> queryResult = dbAdaptor.get(new Query(VariantQueryParam.SAMPLE.key(), sample)
-                    .append(VariantQueryParam.INCLUDE_SAMPLE.key(), VariantQueryUtils.ALL)
-                    .append(VariantQueryParam.INCLUDE_FILE.key(), VariantQueryUtils.ALL), new QueryOptions("explain", true));
-            assertThat(queryResult, everyResult(allVariants,
-                    withStudy(STUDY_NAME,
-                            withSampleData(sample, "GT", containsString("1")))));
-        }
-    }
-
-    protected void checkSampleIndexTable(VariantHadoopDBAdaptor dbAdaptor) throws IOException {
-        SampleIndexDBAdaptor sampleIndexDBAdaptor = new SampleIndexDBAdaptor(dbAdaptor.getGenomeHelper(), dbAdaptor.getHBaseManager(),
-                dbAdaptor.getTableNameGenerator(), dbAdaptor.getMetadataManager());
-
-        for (String study : metadataManager.getStudies(null).keySet()) {
-            StudyMetadata sc = metadataManager.getStudyMetadata(study);
-            for (Integer fileId : metadataManager.getIndexedFiles(sc.getId())) {
-                for (int sampleId : metadataManager.getFileMetadata(sc.getId(), fileId).getSamples()) {
-                    String message = "Sample '" + metadataManager.getSampleName(sc.getId(), sampleId) + "' : " + sampleId;
-                    int countFromIndex = 0;
-                    Iterator<Map<String, List<Variant>>> iterator = sampleIndexDBAdaptor.rawIterator(sc.getId(), sampleId);
-                    while (iterator.hasNext()) {
-                        Map<String, List<Variant>> map = iterator.next();
-                        for (Map.Entry<String, List<Variant>> entry : map.entrySet()) {
-                            String gt = entry.getKey();
-                            List<Variant> variants = entry.getValue();
-                            countFromIndex += variants.size();
-                            VariantQueryResult<Variant> result = dbAdaptor.get(new Query(VariantQueryParam.ID.key(), variants)
-                                    .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId), null);
-                            Set<String> expected = variants.stream().map(Variant::toString).collect(Collectors.toSet());
-                            Set<String> actual = result.getResult().stream().map(Variant::toString).collect(Collectors.toSet());
-                            if (!expected.equals(actual)) {
-                                HashSet<String> extra = new HashSet<>(actual);
-                                extra.removeAll(expected);
-                                HashSet<String> missing = new HashSet<>(expected);
-                                missing.removeAll(actual);
-                                System.out.println("missing = " + missing);
-                                System.out.println("extra = " + extra);
-                            }
-                            assertEquals(message, variants.size(), result.getNumResults());
-                            for (Variant variant : result.getResult()) {
-                                assertEquals(message, gt, variant.getStudies().get(0).getSampleData(0).get(0));
-                            }
-                        }
-                    }
-
-                    int countFromVariants = 0;
-                    for (Variant variant : dbAdaptor.get(new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId), null).getResult()) {
-                        String gt = variant.getStudies().get(0).getSampleData(0).get(0);
-                        if (!gt.equals(GenotypeClass.UNKNOWN_GENOTYPE) && SampleIndexDBLoader.validGenotype(gt)) {
-                            countFromVariants++;
-                        }
-                    }
-
-                    assertNotEquals(message, 0, countFromIndex);
-                    assertEquals(message, countFromVariants, countFromIndex);
-                }
-            }
-        }
-    }
-
 }

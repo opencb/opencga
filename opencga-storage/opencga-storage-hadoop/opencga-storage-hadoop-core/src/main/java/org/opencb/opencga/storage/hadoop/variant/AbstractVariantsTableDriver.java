@@ -32,6 +32,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
@@ -45,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -57,6 +59,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
 
     public static final String CONFIG_VARIANT_TABLE_NAME           = "opencga.variant.table.name";
     public static final String TIMESTAMP                           = "opencga.variant.table.timestamp";
+    public static final String NONE_TIMESTAMP                      = "none";
     public static final String COUNTER_GROUP_NAME = VariantsTableMapReduceHelper.COUNTER_GROUP_NAME;
 
     private final Logger logger = LoggerFactory.getLogger(AbstractVariantsTableDriver.class);
@@ -65,6 +68,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
     private List<Integer> fileIds;
     protected HBaseVariantTableNameGenerator generator;
     private HBaseManager hBaseManager;
+    private Integer studyId;
 
     public AbstractVariantsTableDriver() {
         super(HBaseConfiguration.create());
@@ -225,10 +229,25 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
                     .collect(Collectors.toList());
     }
 
+    protected void setStudyId(int studyId) {
+        this.studyId = studyId;
+        getConf().setInt(STUDY_ID, studyId);
+    }
+
     protected int getStudyId() {
-        int studyId = getConf().getInt(HadoopVariantStorageEngine.STUDY_ID, -1);
-        if (studyId < 0) {
-            studyId = getConf().getInt("--" + HadoopVariantStorageEngine.STUDY_ID, -1);
+        if (studyId == null) {
+            int studyId = Integer.valueOf(getParam(STUDY_ID, "-1"));
+            if (studyId < 0) {
+                String study = getParam(VariantStorageEngine.Options.STUDY.key());
+                if (StringUtils.isNotEmpty(study)) {
+                    try {
+                        studyId = getMetadataManager().getStudyId(study);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                }
+            }
+            this.studyId = studyId;
         }
         return studyId;
     }
@@ -315,6 +334,10 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
 
     protected String getParam(String key, String defaultValue) {
         return getConf().get(key, getConf().get("--" + key, defaultValue));
+    }
+
+    public static void setNoneTimestamp(Job job) {
+        job.getConfiguration().set(TIMESTAMP, NONE_TIMESTAMP);
     }
 
     public int privateMain(String[] args) throws Exception {

@@ -68,8 +68,9 @@ public class FillGapsFromArchiveMapper extends AbstractArchiveTableMapper {
                     getStudyMetadata(), getHelper(),
                     samples, getMetadataManager());
         } else {
-            boolean overwrite = FillGapsFromArchiveMapper.isOverwrite(context.getConfiguration());
-            task = new FillMissingFromArchiveTask(getStudyMetadata(), getMetadataManager(), getHelper(), overwrite);
+            throw new IllegalArgumentException("Attempting to run FillMissings with FillGapsFromArchiveMapper");
+//            boolean overwrite = FillGapsFromArchiveMapper.isOverwrite(context.getConfiguration());
+//            task = new FillMissingFromArchiveTask(getStudyMetadata(), getMetadataManager(), getHelper(), overwrite);
         }
         task.setTimestamp(timestamp);
         task.setQuiet(true);

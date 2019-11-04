@@ -6,9 +6,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.hbase.client.Put;
+import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantBuilder;
+import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
@@ -20,8 +22,8 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseToSampleIndexConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +46,7 @@ public class FillGapsTask {
     private final VariantMerger variantMerger;
     // fill-gaps-when-missing-gt
     private final boolean skipReferenceVariants;
+    private final boolean simplifiedNewMultiAllelicVariants;
     private final GenomeHelper helper;
     private final VariantStorageMetadataManager metadataManager;
 
@@ -51,7 +54,7 @@ public class FillGapsTask {
     private boolean quiet = false;
 
     public FillGapsTask(StudyMetadata studyMetadata, GenomeHelper helper, boolean skipReferenceVariants,
-                        VariantStorageMetadataManager metadataManager) {
+                        boolean simplifiedNewMultiAllelicVariants, VariantStorageMetadataManager metadataManager) {
         this.studyMetadata = studyMetadata;
         this.skipReferenceVariants = skipReferenceVariants;
 
@@ -62,6 +65,7 @@ public class FillGapsTask {
                 null, // Do not update release
                 true); // Do not skip any genotype
         variantMerger = new VariantMerger(false).configure(studyMetadata.getVariantHeader());
+        this.simplifiedNewMultiAllelicVariants = simplifiedNewMultiAllelicVariants;
     }
 
     public FillGapsTask setQuiet(boolean quiet) {
@@ -179,7 +183,11 @@ public class FillGapsTask {
         FileEntry fileEntry = archiveVariant.getStudies().get(0).getFiles().get(0);
         fileEntry.getAttributes().remove(VCFConstants.END_KEY);
         if (StringUtils.isEmpty(fileEntry.getCall())) {
-            fileEntry.setCall(archiveVariant.getStart() + ":" + archiveVariant.getReference() + ":" + archiveVariant.getAlternate() + ":0");
+            String alternate = archiveVariant.getAlternate();
+            if (alternate.isEmpty()) {
+                alternate = Allele.NO_CALL_STRING;
+            }
+            fileEntry.setCall(archiveVariant.getStart() + ":" + archiveVariant.getReference() + ":" + alternate + ":0");
         }
         // SYMBOLIC reference overlap -- <*> , <NON_REF>
         if (VariantType.NO_VARIATION.equals(archiveVariant.getType())
@@ -224,15 +232,76 @@ public class FillGapsTask {
                 variant.getReference(),
                 variant.getAlternate());
         StudyEntry studyEntry = new StudyEntry();
-        studyEntry.setFormat(archiveVariant.getStudies().get(0).getFormat());
-        studyEntry.setSortedSamplesPosition(new LinkedHashMap<>());
-        studyEntry.setSamplesData(new ArrayList<>());
-
         mergedVariant.addStudyEntry(studyEntry);
         mergedVariant.setType(variant.getType());
+        StudyEntry archiveStudyEntry = archiveVariant.getStudies().get(0);
+        if (simplifiedNewMultiAllelicVariants) {
+            if (archiveStudyEntry.getFormat().contains("GT")) {
+                studyEntry.setFormat(Collections.singletonList("GT"));
 
-        mergedVariant = variantMerger.merge(mergedVariant, archiveVariant);
+                studyEntry.setSortedSamplesPosition(archiveStudyEntry.getSamplesPosition());
+                ArrayList<List<String>> samplesData = new ArrayList<>(archiveStudyEntry.getSamplesPosition().size());
+                studyEntry.setSamplesData(samplesData);
+                studyEntry.getSecondaryAlternates().add(new AlternateCoordinate(
+                        variant.getChromosome(),
+                        variant.getStart(),
+                        variant.getEnd(),
+                        variant.getReference(),
+                        "<*>",
+                        VariantType.SYMBOLIC));
 
+                FileEntry archiveFileEntry = archiveStudyEntry.getFiles().get(0);
+                String call = archiveFileEntry.getCall();
+                if (StringUtils.isEmpty(call)) {
+                    call = archiveVariant.getStart() + ":" + archiveVariant.getReference() + ":" + archiveVariant.getAlternate();
+                    for (AlternateCoordinate secondaryAlternate : archiveStudyEntry.getSecondaryAlternates()) {
+                        call += "," + secondaryAlternate.getAlternate();
+                    }
+                    call += ":0";
+                }
+                HashMap<String, String> attributes = new HashMap<>();
+                archiveFileEntry.getAttributes().computeIfPresent(StudyEntry.FILTER, attributes::put);
+                archiveFileEntry.getAttributes().computeIfPresent(StudyEntry.QUAL, attributes::put);
+                studyEntry.setFiles(Collections.singletonList(new FileEntry(archiveFileEntry.getFileId(), call, attributes)));
+
+                for (int idx = 0; idx < archiveStudyEntry.getSamplesPosition().size(); idx++) {
+                    String gt = archiveStudyEntry.getSampleData(idx).get(0);
+                    switch (gt) {
+                        case "0/0":
+                        case "0|0":
+                        case "0":
+                            break;
+                        case "1/1":
+                            gt = "2/2";
+                            break;
+                        case "0/1":
+                            gt = "0/2";
+                            break;
+                        case "1":
+                            gt = "2";
+                            break;
+                        default:
+                            Genotype genotype = new Genotype(gt);
+                            int[] allelesIdx = genotype.getAllelesIdx();
+                            for (int i = 0; i < allelesIdx.length; i++) {
+                                if (allelesIdx[i] > 0) {
+                                    allelesIdx[i] = 2;
+                                }
+                            }
+                            gt = genotype.toString();
+                            break;
+                    }
+                    samplesData.add(Collections.singletonList(gt));
+                }
+            } else {
+                studyEntry.setFormat(Collections.emptyList());
+            }
+        } else {
+            studyEntry.setSortedSamplesPosition(new LinkedHashMap<>());
+            studyEntry.setSamplesData(new ArrayList<>());
+            studyEntry.setFormat(archiveStudyEntry.getFormat());
+            mergedVariant = variantMerger.merge(mergedVariant, archiveVariant);
+        }
 
         if (studyEntry.getFormatPositions().containsKey("GT")) {
             int samplePosition = 0;
@@ -324,9 +393,9 @@ public class FillGapsTask {
 
     private Put buildSampleIndexPut(Variant variant, Put put, Integer sampleId, String gt) {
         Put sampleIndexPut = new Put(
-                HBaseToSampleIndexConverter.toRowKey(sampleId, variant.getChromosome(), variant.getStart()),
+                SampleIndexSchema.toRowKey(sampleId, variant.getChromosome(), variant.getStart()),
                 put.getTimeStamp());
-        sampleIndexPut.addColumn(helper.getColumnFamily(), HBaseToSampleIndexConverter.toPendingColumn(variant, gt), null);
+        sampleIndexPut.addColumn(helper.getColumnFamily(), SampleIndexSchema.toPendingColumn(variant, gt), null);
         return sampleIndexPut;
     }
 

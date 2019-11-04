@@ -51,14 +51,16 @@ import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.HBaseToSampleIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexVariantBiConverter;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 
 import java.io.*;
@@ -67,6 +69,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.zip.DataFormatException;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getTmpRootDir;
@@ -173,17 +176,17 @@ public class VariantHbaseTestUtils {
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", "
                                 + column.getPDataType().toObject(entry.getValue())
                          + ", ts:" + result.getColumnLatestCell(family, column.bytes()).getTimestamp());
-                    } else if (key.endsWith(VariantPhoenixHelper.STATS_PROTOBUF_SUFIX)) {
+                    } else if (key.endsWith(VariantPhoenixHelper.COHORT_STATS_PROTOBUF_SUFFIX)) {
 //                        ComplexFilter complexFilter = ComplexFilter.parseFrom(entry.getValue());
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", " + Arrays.toString(entry.getValue()));
-                    } else if (key.startsWith(VariantPhoenixHelper.POPULATION_FREQUENCY_PREFIX)) {
+                    } else if (key.startsWith(VariantPhoenixHelper.POPULATION_FREQUENCY_PREFIX) || key.endsWith(VariantPhoenixHelper.COHORT_STATS_FREQ_SUFFIX)) {
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", " + PFloatArray.INSTANCE.toObject(entry.getValue()));
                     } else if (key.endsWith(VariantPhoenixHelper.STUDY_SUFIX)) {
                         os.println("\t" + key + " = " + PUnsignedInt.INSTANCE.toObject(entry.getValue()));
                     } else if (key.endsWith(VariantPhoenixHelper.SAMPLE_DATA_SUFIX) || key.endsWith(VariantPhoenixHelper.FILE_SUFIX)) {
                         os.println("\t" + key + " = " + result.getColumnLatestCell(genomeHelper.getColumnFamily(), entry.getKey()).getTimestamp()+", " + PVarcharArray.INSTANCE.toObject(entry.getValue()));
-                    } else if (key.endsWith(VariantPhoenixHelper.MAF_SUFIX)
-                            || key.endsWith(VariantPhoenixHelper.MGF_SUFIX)) {
+                    } else if (key.endsWith(VariantPhoenixHelper.COHORT_STATS_MAF_SUFFIX)
+                            || key.endsWith(VariantPhoenixHelper.COHORT_STATS_MGF_SUFFIX)) {
                         os.println("\t" + key + " = " + PFloat.INSTANCE.toObject(entry.getValue()));
                     } else if (key.startsWith(VariantPhoenixHelper.RELEASE_PREFIX)) {
                         os.println("\t" + key + " = " + PBoolean.INSTANCE.toObject(entry.getValue()));
@@ -388,7 +391,7 @@ public class VariantHbaseTestUtils {
             }
         }
         printMetaTable(dbAdaptor, outDir);
-        printSamplesIndexTable(dbAdaptor, outDir);
+        printSampleIndexTable(dbAdaptor, outDir);
         printAnnotationIndexTable(dbAdaptor, outDir);
         printVariantsFromVariantsTable(dbAdaptor, outDir);
         printVariantsFromDBAdaptor(dbAdaptor, outDir);
@@ -421,52 +424,62 @@ public class VariantHbaseTestUtils {
         }
     }
 
-    private static void printSamplesIndexTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
+    private static void printSampleIndexTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
         for (Integer studyId : dbAdaptor.getMetadataManager().getStudies(null).values()) {
             String sampleGtTableName = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId);
-            if (!dbAdaptor.getHBaseManager().tableExists(sampleGtTableName)) {
-                // Skip table
-                return;
-            }
-            Path fileName = outDir.resolve(sampleGtTableName + ".txt");
-            try (
-                    FileOutputStream fos = new FileOutputStream(fileName.toFile()); PrintStream out = new PrintStream(fos)
-            ) {
-                dbAdaptor.getHBaseManager().act(sampleGtTableName, table -> {
+            if (printSampleIndexTable(dbAdaptor, outDir, sampleGtTableName)) return;
+        }
+    }
 
-                    table.getScanner(new Scan()).iterator().forEachRemaining(result -> {
+    public static boolean printSampleIndexTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir, String sampleGtTableName) throws IOException {
+        if (!dbAdaptor.getHBaseManager().tableExists(sampleGtTableName)) {
+            // Skip table
+            return true;
+        }
+        Path fileName = outDir.resolve(sampleGtTableName + ".txt");
+        try (
+                FileOutputStream fos = new FileOutputStream(fileName.toFile()); PrintStream out = new PrintStream(fos)
+        ) {
+            dbAdaptor.getHBaseManager().act(sampleGtTableName, table -> {
 
-//                        SampleIndexConverter converter = new SampleIndexConverter();
+                table.getScanner(new Scan()).iterator().forEachRemaining(result -> {
+
 //                        Map<String, List<Variant>> map = converter.convertToMap(result);
-                        Map<String, String> map = new TreeMap<>();
-                        for (Cell cell : result.rawCells()) {
-                            String s = Bytes.toString(CellUtil.cloneQualifier(cell));
-                            byte[] value = CellUtil.cloneValue(cell);
-                            if (s.startsWith("_C_")) {
-                                map.put(s, String.valueOf(Bytes.toInt(value)));
-                            } else if (s.startsWith("_A_") || s.startsWith("_F_")) {
-                                StringBuilder sb = new StringBuilder();
-                                for (byte b : value) {
-                                    sb.append(IndexUtils.byteToString(b));
-                                    sb.append(" - ");
-                                }
-                                map.put(s, sb.toString());
-                            } else {
-                                map.put(s, Bytes.toString(value));
+                    Map<String, String> map = new TreeMap<>();
+                    String chromosome = SampleIndexSchema.chromosomeFromRowKey(result.getRow());
+                    int batchStart = SampleIndexSchema.batchStartFromRowKey(result.getRow());
+                    for (Cell cell : result.rawCells()) {
+                        String s = Bytes.toString(CellUtil.cloneQualifier(cell));
+                        byte[] value = CellUtil.cloneValue(cell);
+                        if (s.startsWith("_C_")) {
+                            map.put(s, String.valueOf(Bytes.toInt(value)));
+                        } else if (s.startsWith("_AC_")) {
+                            map.put(s, IntStream.of(IndexUtils.countPerBitToObject(value)).mapToObj(String::valueOf).collect(Collectors.toList()).toString());
+                        } else if (s.startsWith("_A_") || s.startsWith("_F_") || s.startsWith("_P_")) {
+                            StringBuilder sb = new StringBuilder();
+                            for (byte b : value) {
+                                sb.append(IndexUtils.byteToString(b));
+                                sb.append(" - ");
                             }
+                            map.put(s, sb.toString());
+                        } else if (s.startsWith(Bytes.toString(SampleIndexSchema.toMendelianErrorColumn()))) {
+                            map.put(s, MendelianErrorSampleIndexConverter.toVariants(value, 0, value.length).toString());
+                        } else {
+                            map.put(s, new SampleIndexVariantBiConverter().toVariants(chromosome, batchStart, value, 0, value.length).toString());
                         }
+                    }
 
-                        out.println("_______________________");
-                        out.println(HBaseToSampleIndexConverter.rowKeyToString(result.getRow()));
-                        for (Map.Entry<String, ?> entry : map.entrySet()) {
-                            out.println("\t" + entry.getKey() + " = " + entry.getValue());
-                        }
-
-                    });
+                    out.println("_______________________");
+                    out.println(SampleIndexSchema.rowKeyToString(result.getRow()));
+                    for (Map.Entry<String, ?> entry : map.entrySet()) {
+                        out.println("\t" + entry.getKey() + " = " + entry.getValue());
+                    }
 
                 });
-            }
+
+            });
         }
+        return false;
     }
 
     public static void removeFile(HadoopVariantStorageEngine variantStorageManager, String dbName, int fileId,
@@ -517,7 +530,7 @@ public class VariantHbaseTestUtils {
 //            studyMetadata.copy(updatedStudyMetadata);
 //        }
 
-        return variantStorageManager.readVariantFileMetadata(doTransform ? etlResult.getTransformResult() : etlResult.getInput());
+        return variantStorageManager.getVariantReaderUtils().readVariantFileMetadata(doTransform ? etlResult.getTransformResult() : etlResult.getInput());
     }
 
     public static VariantFileMetadata loadFile(HadoopVariantStorageEngine variantStorageManager, String dbName, URI outputUri,

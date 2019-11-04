@@ -1,12 +1,13 @@
 package org.opencb.opencga.storage.hadoop.variant.index.annotation.mr;
 
 import htsjdk.variant.vcf.VCFConstants;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -14,7 +15,8 @@ import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexAnnotationLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantAlignedInputFormat;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
@@ -35,6 +37,7 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
 
     private List<Integer> sampleIds;
     private boolean hasGenotype;
+    private String region;
 
     @Override
     protected Class<SampleIndexAnnotationLoaderMapper> getMapperClass() {
@@ -82,6 +85,8 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
         } else {
             LOGGER.info("Study without genotypes : " + HBaseToVariantConverter.getFixedFormat(attributes));
         }
+
+        region = getParam(VariantQueryParam.REGION.key(), "");
     }
 
     @Override
@@ -89,7 +94,6 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
 
         Scan scan = new Scan();
 
-        String region = getParam(VariantQueryParam.REGION.key(), "");
         if (StringUtils.isNotEmpty(region)) {
             VariantHBaseQueryParser.addRegionFilter(scan, new Region(region));
         }
@@ -106,7 +110,7 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
         VariantMapReduceUtil.initTableMapperJob(job, variantTable,
                 scan, getMapperClass(), VariantAlignedInputFormat.class);
         VariantAlignedInputFormat.setDelegatedInputFormat(job, TableInputFormat.class);
-        VariantAlignedInputFormat.setBatchSize(job, SampleIndexDBLoader.BATCH_SIZE);
+        VariantAlignedInputFormat.setBatchSize(job, SampleIndexSchema.BATCH_SIZE);
 
         VariantMapReduceUtil.setOutputHBaseTable(job, getTableNameGenerator().getSampleIndexTableName(getStudyId()));
 
@@ -118,6 +122,14 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
     @Override
     protected String getJobOperationName() {
         return "sample_index_annotation_loader";
+    }
+
+    @Override
+    protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
+        super.postExecution(succeed);
+        if (succeed && StringUtils.isEmpty(region)) {
+            SampleIndexAnnotationLoader.postAnnotationLoad(getStudyId(), sampleIds, getMetadataManager());
+        }
     }
 
     public static void main(String[] args) throws Exception {

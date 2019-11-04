@@ -95,7 +95,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         Files.createDirectory(opencgaHome.resolve("storage"));
         VariantStorageBaseTest.setRootDir(opencgaHome.resolve("storage"));
 
-//        ExecutorManager.LOCAL_EXECUTOR_FACTORY.set((c, s) -> new StorageLocalExecutorManager(s));
+//        ExecutorFactory.LOCAL_EXECUTOR_FACTORY.set((c, s) -> new StorageLocalExecutorManager(s));
     }
 
     @Override

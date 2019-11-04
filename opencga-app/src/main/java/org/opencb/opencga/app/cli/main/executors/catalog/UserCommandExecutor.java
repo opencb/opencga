@@ -18,12 +18,10 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.UserCommandOptions;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -32,10 +30,7 @@ import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.User;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -108,20 +103,18 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
             String sessionId = openCGAClient.login(user, password);
             if (StringUtils.isNotEmpty(sessionId)) {
-                Map<String, List<String>> studies = new HashMap<>();
-                QueryResponse<Project> projects = openCGAClient.getUserClient().getProjects(QueryOptions.empty());
+                List<String> studies = new ArrayList<>();
+
+                QueryResponse<Project> projects = openCGAClient.getProjectClient().search(
+                        new Query(ProjectDBAdaptor.QueryParams.OWNER.key(), user), QueryOptions.empty());
 
                 if (projects.getResponse().get(0).getNumResults() == 0) {
                     // We try to fetch shared projects and studies instead when the user does not owe any project or study
-                    projects = openCGAClient.getUserClient().getProjects(new QueryOptions("shared", true));
+                    projects = openCGAClient.getProjectClient().search(new Query(), QueryOptions.empty());
                 }
                 for (Project project : projects.getResponse().get(0).getResult()) {
-                    if (!studies.containsKey(project.getId())) {
-                        studies.put(project.getId(), new ArrayList<>());
-                    }
-
                     for (Study study : project.getStudies()) {
-                        studies.get(project.getId()).add(study.getId());
+                        studies.add(study.getFqn());
                     }
                 }
                 // write CLI session file

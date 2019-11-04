@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.MonitorService;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
+import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
@@ -102,6 +103,10 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             configuration.setDatabasePrefix("demo");
         }
         configuration.setOpenRegister(true);
+
+        if (configuration.getAdmin() == null) {
+            configuration.setAdmin(new Admin());
+        }
 
         configuration.getAdmin().setPassword(adminPassword);
         configuration.getAdmin().setSecretKey("demo");
@@ -283,9 +288,9 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                             try {
                                 catalogManager.getPanelManager().create(panel,
                                         catalogCommandOptions.panelCatalogCommandOptions.overwrite, token);
-                                logger.info("Panel {} imported", panel.getDiseasePanel().getId());
+                                logger.info("Panel {} imported", panel.getId());
                             } catch (CatalogException e) {
-                                logger.error("Could not import {} - {}", panel.getDiseasePanel().getId(), e.getMessage());
+                                logger.error("Could not import {} - {}", panel.getId(), e.getMessage());
                             }
                         });
             }
@@ -295,9 +300,9 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             try {
                 catalogManager.getPanelManager().create(panel, catalogCommandOptions.panelCatalogCommandOptions.overwrite,
                         token);
-                logger.info("Panel {} imported", panel.getDiseasePanel().getId());
+                logger.info("Panel {} imported", panel.getId());
             } catch (CatalogException e) {
-                logger.error("Could not import {} - {}", panel.getDiseasePanel().getId(), e.getMessage());
+                logger.error("Could not import {} - {}", panel.getId(), e.getMessage());
             }
         }
     }
@@ -329,7 +334,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             configuration.getCatalog().getDatabase().setHosts(Collections.singletonList(catalogOptions.databaseHost));
         }
         if (adminOptions.adminPassword != null) {
-            configuration.getAdmin().setPassword(adminOptions.adminPassword);
+            configuration.setAdmin(new Admin(adminOptions.adminPassword, null));
         }
     }
 }

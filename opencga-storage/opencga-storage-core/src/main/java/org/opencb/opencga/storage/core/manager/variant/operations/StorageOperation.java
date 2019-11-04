@@ -27,7 +27,8 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
+import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.monitor.executors.BatchExecutor;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -49,7 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
-import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.*;
+import static org.opencb.opencga.catalog.monitor.executors.BatchExecutor.*;
 
 /**
  * Created by pfurio on 23/08/16.
@@ -102,8 +103,8 @@ public abstract class StorageOperation {
         String catalogOutDirId;
         if (isCatalogPathDefined(options)) {
             String catalogOutDirIdStr = options.getString(CATALOG_PATH);
-            catalogOutDirId = catalogManager.getFileManager()
-                    .getUid(catalogOutDirIdStr, studyStr, sessionId).getResource().getId();
+            catalogOutDirId = catalogManager.getFileManager().get(studyStr, catalogOutDirIdStr, FileManager.INCLUDE_FILE_IDS, sessionId)
+                    .first().getId();
         } else {
             catalogOutDirId = null;
         }
@@ -163,7 +164,7 @@ public abstract class StorageOperation {
                         }
                     }
                 } catch (IOException e) {
-                    logger.error("Error modifying " + AbstractExecutor.JOB_STATUS_FILE, e);
+                    logger.error("Error modifying " + BatchExecutor.JOB_STATUS_FILE, e);
                 }
             });
     }
@@ -182,7 +183,7 @@ public abstract class StorageOperation {
             Predicate<URI> fileStatusFilter = uri -> !uri.getPath().endsWith(JOB_STATUS_FILE)
                     && !uri.getPath().endsWith(OUT_LOG_EXTENSION)
                     && !uri.getPath().endsWith(ERR_LOG_EXTENSION);
-            files = fileScanner.scan(outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, true, false, fileStatusFilter, -1,
+            files = fileScanner.scan(outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, false, true, fileStatusFilter, -1,
                     sessionId);
 
             // TODO: Check whether we want to store the logs as well. At this point, we are also storing them.
@@ -372,7 +373,7 @@ public abstract class StorageOperation {
     }
 
     private static boolean isVcfFormat(File.Format format) {
-        return format.equals(File.Format.VCF) || format.equals(File.Format.BCF);
+        return format.equals(File.Format.VCF) || format.equals(File.Format.GVCF) || format.equals(File.Format.BCF);
     }
 
 }

@@ -27,7 +27,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
-import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
+import org.opencb.opencga.catalog.monitor.executors.BatchExecutor;
+import org.opencb.opencga.catalog.monitor.executors.LocalExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.Job;
@@ -77,6 +78,7 @@ public class IndexDaemon extends MonitorParentDaemon {
 
     private String binHome;
     private Path tempJobFolder;
+    private int maxConcurrentIndexJobs;
 //    private VariantIndexOutputRecorder variantIndexOutputRecorder;
 
     public IndexDaemon(int interval, String sessionId, CatalogManager catalogManager, String appHome)
@@ -87,13 +89,12 @@ public class IndexDaemon extends MonitorParentDaemon {
         this.tempJobFolder = Paths.get(uri.getPath());
         this.catalogIOManager = catalogManager.getCatalogIOManagerFactory().get("file");
         this.jobDBAdaptor = dbAdaptorFactory.getCatalogJobDBAdaptor();
+        this.maxConcurrentIndexJobs = catalogManager.getConfiguration().getExecution().getMaxConcurrentIndexJobs();
 //        this.variantIndexOutputRecorder = new VariantIndexOutputRecorder(catalogManager, catalogIOManager, sessionId);
     }
 
     @Override
     public void run() {
-
-        int maxConcurrentIndexJobs = 1; // TODO: Read from configuration?
 
         while (!exit) {
             try {
@@ -138,7 +139,7 @@ public class IndexDaemon extends MonitorParentDaemon {
                 try {
                     QueryResult<Job> preparedJobs = jobDBAdaptor.get(PREPARED_JOBS_QUERY, QUERY_OPTIONS_LIMIT_1);
                     if (preparedJobs != null && preparedJobs.getNumResults() > 0) {
-                        if (getRunningOrQueuedJobs() < maxConcurrentIndexJobs) {
+                        if (!(batchExecutor instanceof LocalExecutor) || getRunningOrQueuedJobs() < maxConcurrentIndexJobs) {
                             queuePreparedIndex(preparedJobs.first());
                         } else {
                             logger.debug("Too many jobs indexing now, waiting for indexing new jobs");
@@ -174,7 +175,7 @@ public class IndexDaemon extends MonitorParentDaemon {
                 closeSessionId(job);
             }
         } else {
-            String status = executorManager.status(tmpOutdirPath, job);
+            String status = batchExecutor.status(tmpOutdirPath, job);
             if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.RUNNING)) {
                 ObjectMap parameters = new ObjectMap(JobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
 //                variantIndexOutputRecorder.registerStorageETLResults(job, tmpOutdirPath);
@@ -235,7 +236,7 @@ public class IndexDaemon extends MonitorParentDaemon {
 //            } else {
 //                // TODO: Call the executor status
 //                logger.debug("Call executor status not yet implemented.");
-////                    executorManager.status(job).equalsIgnoreCase()
+////                    batchExecutor.status(job).equalsIgnoreCase()
 //            }
         }
     }
@@ -243,12 +244,26 @@ public class IndexDaemon extends MonitorParentDaemon {
     private void queuePreparedIndex(Job job) {
         // Create the temporal output directory.
         Path path = getJobTemporaryFolder(job.getUid(), tempJobFolder);
-        try {
-            catalogIOManager.createDirectory(path.toUri());
-        } catch (CatalogIOException e) {
-            logger.warn("Could not create the temporal output directory " + path + " to run the job", e);
-            return;
-            // TODO: Maximum attemps ... -> Error !
+
+        if (catalogIOManager.isDirectory(path.toUri())) {
+            try {
+                if (catalogIOManager.listFiles(path.toUri()).size() > 0) {
+                    logger.warn("Job temporal output directory " + path + " is not empty.");
+                    return;
+                }
+            } catch (CatalogIOException e) {
+                logger.warn("Could not access the temporal output directory " + path + " to run the job", e);
+                return;
+            }
+            logger.info("Empty temporal output directory " + path + " already exist");
+        } else {
+            try {
+                catalogIOManager.createDirectory(path.toUri());
+            } catch (CatalogIOException e) {
+                logger.warn("Could not create the temporal output directory " + path + " to run the job", e);
+                return;
+                // TODO: Maximum attemps ... -> Error !
+            }
         }
 
         // Define where the stdout and stderr will be stored
@@ -310,9 +325,9 @@ public class IndexDaemon extends MonitorParentDaemon {
             updateObjectMap.put(JobDBAdaptor.QueryParams.START_TIME.key(), System.currentTimeMillis());
             updateObjectMap.put(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
 
-            job.getResourceManagerAttributes().put(AbstractExecutor.STDOUT, stdout);
-            job.getResourceManagerAttributes().put(AbstractExecutor.STDERR, stderr);
-            job.getResourceManagerAttributes().put(AbstractExecutor.OUTDIR, path.toString());
+            job.getResourceManagerAttributes().put(BatchExecutor.STDOUT, stdout);
+            job.getResourceManagerAttributes().put(BatchExecutor.STDERR, stderr);
+            job.getResourceManagerAttributes().put(BatchExecutor.OUTDIR, path.toString());
             updateObjectMap.put(JobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key(), job.getResourceManagerAttributes());
 
             QueryResult<Job> update = jobDBAdaptor.update(job.getUid(), updateObjectMap, QueryOptions.empty());

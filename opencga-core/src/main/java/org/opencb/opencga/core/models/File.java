@@ -17,6 +17,8 @@
 package org.opencb.opencga.core.models;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -202,7 +204,9 @@ public class File extends Annotable {
         BAM,
         BAI,
         CRAM,
+        CRAI,
         FASTQ,
+        FASTA,
         PED,
 
         TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, //Serialization formats
@@ -252,45 +256,46 @@ public class File extends Annotable {
         COVERAGE,
         SEQUENCE,
         PEDIGREE,
+        REFERENCE_GENOME,
         NONE,
         UNKNOWN
     }
 
     public static class RelatedFile {
 
-        private long fileId;
+        private File file;
         private Relation relation;
 
         public enum Relation {
             PRODUCED_FROM,
             PART_OF_PAIR,
-            PEDIGREE
+            PEDIGREE,
+            REFERENCE_GENOME
         }
 
         public RelatedFile() {
         }
 
-        public RelatedFile(long fileId, Relation relation) {
-            this.fileId = fileId;
+        public RelatedFile(File file, Relation relation) {
+            this.file = file;
             this.relation = relation;
         }
 
         @Override
         public String toString() {
             final StringBuilder sb = new StringBuilder("RelatedFile{");
-            sb.append("fileId=").append(fileId);
+            sb.append("file=").append(file);
             sb.append(", relation=").append(relation);
             sb.append('}');
             return sb.toString();
         }
 
-        public long getFileId() {
-            return fileId;
+        public File getFile() {
+            return file;
         }
 
-        public RelatedFile setFileId(long fileId) {
-            this.fileId = fileId;
-            return this;
+        public void setFile(File file) {
+            this.file = file;
         }
 
         public Relation getRelation() {
@@ -304,20 +309,24 @@ public class File extends Annotable {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (!(o instanceof RelatedFile)) {
-                return false;
-            }
+            if (this == o) return true;
+
+            if (o == null || getClass() != o.getClass()) return false;
+
             RelatedFile that = (RelatedFile) o;
-            return fileId == that.fileId
-                    && relation == that.relation;
+
+            return new EqualsBuilder()
+                    .append(file.getId(), that.file.getId())
+                    .append(relation, that.relation)
+                    .isEquals();
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(fileId, relation);
+            return new HashCodeBuilder(17, 37)
+                    .append(file.getId())
+                    .append(relation)
+                    .toHashCode();
         }
     }
 

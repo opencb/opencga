@@ -4,11 +4,14 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,13 +38,13 @@ public class VariantSampleDataManager {
 
     }
 
-    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) {
+    public final QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) {
         options = options == null ? new QueryOptions() : options;
         int sampleLimit = options.getInt(SAMPLE_BATCH_SIZE, SAMPLE_BATCH_SIZE_DEFAULT);
         return getSampleData(variant, study, options, sampleLimit);
     }
 
-    public QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options, int sampleLimit) {
+    public final QueryResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options, int sampleLimit) {
         options = options == null ? new QueryOptions() : options;
 
         Set<String> genotypes = new HashSet<>(options.getAsStringList(VariantQueryParam.GENOTYPE.key()));
@@ -49,15 +52,31 @@ public class VariantSampleDataManager {
             genotypes.add("0/1");
             genotypes.add("1/1");
         }
-        List<String> includeSamples = options.getAsStringList(VariantQueryParam.INCLUDE_SAMPLE.key());
 
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
+        boolean studyWithGts = !studyMetadata.getAttributes().getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(),
+                VariantStorageEngine.Options.EXCLUDE_GENOTYPES.defaultValue());
+
+        if (!studyWithGts) {
+            genotypes = Collections.singleton(GenotypeClass.NA_GT_VALUE);
+        }
+        List<String> loadedGenotypes = studyMetadata.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key());
+        if (loadedGenotypes.size() == 1) {
+            if (loadedGenotypes.contains(GenotypeClass.NA_GT_VALUE) || loadedGenotypes.contains("-1")) {
+                genotypes = Collections.singleton(GenotypeClass.NA_GT_VALUE);
+            }
+        } else if (loadedGenotypes.contains(GenotypeClass.NA_GT_VALUE)) {
+            genotypes.add(GenotypeClass.NA_GT_VALUE);
+        }
+
+        List<String> includeSamples = options.getAsStringList(VariantQueryParam.INCLUDE_SAMPLE.key());
         boolean merge = options.getBoolean(MERGE, false);
 
-        return getSampleData(variant, study, options, includeSamples, genotypes, merge, sampleLimit);
+        return getSampleData(variant, study, options, includeSamples, studyWithGts, genotypes, merge, sampleLimit);
     }
 
-    public QueryResult<VariantSampleData> getSampleData(
-            String variant, String study, QueryOptions options, List<String> includeSamples, Set<String> genotypes,
+    protected QueryResult<VariantSampleData> getSampleData(
+            String variant, String study, QueryOptions options, List<String> includeSamples, boolean studyWithGts, Set<String> genotypes,
             boolean merge, int sampleLimit) {
         options = options == null ? new QueryOptions() : options;
         int studyId = metadataManager.getStudyId(study);
@@ -68,6 +87,7 @@ public class VariantSampleDataManager {
         Map<String, Integer> gtCountMap = new HashMap<>();
         Map<String, List<SampleData>> gtMap = new HashMap<>();
         Map<String, FileEntry> files = new HashMap<>();
+        Map<String, VariantStats> stats = new HashMap<>();
 
         for (String gt : merge ? Collections.singleton(VariantQueryUtils.ALL) : genotypes) {
             gtCountMap.put(gt, 0);
@@ -80,12 +100,19 @@ public class VariantSampleDataManager {
         while (true) {
             Query query = new Query(VariantQueryParam.ID.key(), variant)
                     .append(VariantQueryParam.STUDY.key(), study)
-                    .append(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSamples) // if empty, will return all
                     .append(VariantQueryParam.SAMPLE_LIMIT.key(), sampleLimit)
                     .append(VariantQueryParam.SAMPLE_SKIP.key(), sampleSkip);
+            if (includeSamples != null && !includeSamples.isEmpty()) {
+                query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSamples); // if empty, will return all
+            }
             sampleSkip += sampleLimit;
-            QueryOptions variantQueryOptions = new QueryOptions(QueryOptions.EXCLUDE,
-                    Arrays.asList(VariantField.ANNOTATION, VariantField.STUDIES_STATS));
+            QueryOptions variantQueryOptions;
+            if (stats.isEmpty()) {
+                variantQueryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.ANNOTATION);
+            } else {
+                variantQueryOptions = new QueryOptions(QueryOptions.EXCLUDE,
+                        Arrays.asList(VariantField.ANNOTATION, VariantField.STUDIES_STATS));
+            }
 
             VariantQueryResult<Variant> result = dbAdaptor.get(query, variantQueryOptions);
             if (result.getNumResults() == 0) {
@@ -97,12 +124,19 @@ public class VariantSampleDataManager {
 
             StudyEntry studyEntry = v.getStudies().get(0);
 
+            if (studyEntry.getStats() != null) {
+                stats.putAll(studyEntry.getStats());
+            }
+
             List<String> samples = studyEntry.getOrderedSamplesName();
             readSamples += samples.size();
             for (String sample : samples) {
                 Map<String, String> sampleDataAsMap = studyEntry.getSampleDataAsMap(sample);
 
                 String gt = normalizeGt(sampleDataAsMap.getOrDefault("GT", GenotypeClass.NA_GT_VALUE));
+                if (gt.equals(".")) {
+                    gt = GenotypeClass.NA_GT_VALUE;
+                }
 
                 if (genotypes.contains(gt)) {
                     // Skip other genotypes
@@ -122,6 +156,9 @@ public class VariantSampleDataManager {
                                 break;
                             }
                             if (fileEntry == null) {
+                                if (gt.equals(GenotypeClass.NA_GT_VALUE)) {
+                                    continue;
+                                }
                                 List<String> fileNames = new LinkedList<>();
                                 for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, Collections.singleton(sampleId))) {
                                     fileNames.add(metadataManager.getFileName(studyId, fileId));
@@ -150,10 +187,10 @@ public class VariantSampleDataManager {
 
 //        String msg = "Queries : " + queries + " , readSamples : " + readSamples;
         return new QueryResult<>(variant, dbTime, 1, 1, null, null,
-                Collections.singletonList(new VariantSampleData(variant, study, gtMap, files)));
+                Collections.singletonList(new VariantSampleData(variant, study, gtMap, files, stats)));
     }
 
-    protected String normalizeGt(String gt) {
+    protected final String normalizeGt(String gt) {
         if (gt.contains("|")) {
             return normalizeGt.computeIfAbsent(gt, k -> {
                 Genotype genotype = new Genotype(k.replace('|', '/'));

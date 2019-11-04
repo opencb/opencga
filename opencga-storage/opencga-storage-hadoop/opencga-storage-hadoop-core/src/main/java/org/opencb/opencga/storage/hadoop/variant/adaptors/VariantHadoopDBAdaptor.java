@@ -372,7 +372,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         }
 
         boolean archiveIterator = options.getBoolean("archive", false);
-        boolean hbaseIterator = VariantHBaseQueryParser.isSupportedQuery(query) || options.getBoolean(NATIVE, false);
+        boolean hbaseIterator = options.getBoolean(NATIVE, VariantHBaseQueryParser.isSupportedQuery(query));
         // || VariantHBaseQueryParser.fullySupportedQuery(query);
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
