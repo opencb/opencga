@@ -7,35 +7,35 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import java.util.Arrays;
 
 public enum MongoDBVariantStorageOptions implements ConfigurationOption {
-    COLLECTION_VARIANTS("mongodb.collection.variants",   "variants"),
-    COLLECTION_PROJECT("mongodb.collection.project",    "project"),
-    COLLECTION_STUDIES("mongodb.collection.studies",    "studies"),
-    COLLECTION_FILES("mongodb.collection.files",      "files"),
-    COLLECTION_SAMPLES("mongodb.collection.samples",    "samples"),
-    COLLECTION_TASKS("mongodb.collection.tasks",      "tasks"),
-    COLLECTION_COHORTS("mongodb.collection.cohorts",    "cohorts"),
-    COLLECTION_STAGE("mongodb.collection.stage",      "stage"),
-    COLLECTION_ANNOTATION("mongodb.collection.annotation", "annot"),
-    COLLECTION_TRASH("mongodb.collection.trash",      "trash"),
+    COLLECTION_VARIANTS("storage.mongodb.collection.variants", "variants"),
+    COLLECTION_PROJECT("storage.mongodb.collection.project", "project"),
+    COLLECTION_STUDIES("storage.mongodb.collection.studies", "studies"),
+    COLLECTION_FILES("storage.mongodb.collection.files", "files"),
+    COLLECTION_SAMPLES("storage.mongodb.collection.samples", "samples"),
+    COLLECTION_TASKS("storage.mongodb.collection.tasks", "tasks"),
+    COLLECTION_COHORTS("storage.mongodb.collection.cohorts", "cohorts"),
+    COLLECTION_STAGE("storage.mongodb.collection.stage", "stage"),
+    COLLECTION_ANNOTATION("storage.mongodb.collection.annotation", "annot"),
+    COLLECTION_TRASH("storage.mongodb.collection.trash", "trash"),
 
-    ALREADY_LOADED_VARIANTS("mongodb.alreadyLoadedVariants", 0),
+    ALREADY_LOADED_VARIANTS("storage.mongodb.alreadyLoadedVariants", 0),
 
-    PARALLEL_WRITE("mongodb.parallel.write", false),
+    PARALLEL_WRITE("storage.mongodb.parallel.write", false),
 
-    STAGE("mongodb.stage", false),
-    STAGE_RESUME("mongodb.stage.resume", false),
-    STAGE_PARALLEL_WRITE("mongodb.stage.parallel.write", false),
-    STAGE_CLEAN_WHILE_LOAD("mongodb.stage.clean.while.load", true),
+    STAGE("storage.mongodb.stage", false),
+    STAGE_RESUME("storage.mongodb.stage.resume", false),
+    STAGE_PARALLEL_WRITE("storage.mongodb.stage.parallel.write", false),
+    STAGE_CLEAN_WHILE_LOAD("storage.mongodb.stage.clean.while.load", true),
 
-    DIRECT_LOAD("mongodb.direct_load", false),
-    DIRECT_LOAD_PARALLEL_WRITE("mongodb.direct_load.parallel.write", false),
+    DIRECT_LOAD("storage.mongodb.direct_load", false),
+    DIRECT_LOAD_PARALLEL_WRITE("storage.mongodb.direct_load.parallel.write", false),
 
-    MERGE("mongodb.merge", false),
-    MERGE_SKIP("mongodb.merge.skip", false), // Internal use only
-    MERGE_RESUME("mongodb.merge.resume", false),
-    MERGE_IGNORE_OVERLAPPING_VARIANTS("mongodb.merge.ignore-overlapping-variants", false),   //Do not look for overlapping variants
-    MERGE_PARALLEL_WRITE("mongodb.merge.parallel.write", false),
-    MERGE_BATCH_SIZE("mongodb.merge.batch.size", 10),          //Number of files to merge directly from first to second collection
+    MERGE("storage.mongodb.merge", false),
+    MERGE_SKIP("storage.mongodb.merge.skip", false), // Internal use only
+    MERGE_RESUME("storage.mongodb.merge.resume", false),
+    MERGE_IGNORE_OVERLAPPING_VARIANTS("storage.mongodb.merge.ignore-overlapping-variants", false),   //Do not look for overlapping variants
+    MERGE_PARALLEL_WRITE("storage.mongodb.merge.parallel.write", false),
+    MERGE_BATCH_SIZE("storage.mongodb.merge.batch.size", 10),          //Number of files to merge directly from first to second collection
 
 
     EXTRA_GENOTYPE_FIELDS_COMPRESS("extra-fields.compress", true),    //Compress with gzip other sample information

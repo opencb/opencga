@@ -175,7 +175,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             return super.index(inputFiles, outdirUri, doExtract, doTransform, doLoad);
         }
 
-        final int nThreadArchive = getOptions().getInt(HADOOP_LOAD_BATCH_SIZE.key(), HADOOP_LOAD_BATCH_SIZE.defaultValue());
+        final int nThreadArchive = getOptions().getInt(HADOOP_LOAD_FILES_IN_PARALLEL.key(), HADOOP_LOAD_FILES_IN_PARALLEL.defaultValue());
         ObjectMap extraOptions = new ObjectMap();
 
         final List<StoragePipelineResult> concurrResult = new CopyOnWriteArrayList<>();

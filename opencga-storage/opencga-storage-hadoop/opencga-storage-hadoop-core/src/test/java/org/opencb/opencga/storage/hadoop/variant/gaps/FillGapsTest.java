@@ -335,7 +335,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
         options.put(VariantStorageOptions.STUDY.key(), studyMetadata.getName());
         options.put(VariantStorageOptions.GVCF.key(), true);
         options.put(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), true);
-        options.put(HadoopVariantStorageOptions.HADOOP_LOAD_BATCH_SIZE.key(), 1);
+        options.put(HadoopVariantStorageOptions.HADOOP_LOAD_FILES_IN_PARALLEL.key(), 1);
         options.put(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
         options.putAll(extraParams);
         List<StoragePipelineResult> index = engine.index(inputFiles, outputUri, true, true, true);

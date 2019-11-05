@@ -404,6 +404,10 @@ public class VariantMapReduceUtil {
     }
 
     public static void configureVCores(Configuration conf) {
+//        mapreduce.map.cpu.vcores: 1
+//        mapreduce.map.memory.mb: 2560
+//        opencga.variant.table.mapreduce.map.java.opts: -Xmx2048m,-XX:+UseG1GC,-Djava.util.concurrent.ForkJoinPool.common.parallelism=1
+
         // Set parallel pool size
         String fjpKey = "java.util.concurrent.ForkJoinPool.common.parallelism";
         boolean hasForkJoinPool = false;

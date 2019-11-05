@@ -40,7 +40,7 @@ public class HadoopVariantStatisticsManagerMultiFilesTest extends VariantStatist
         return new ObjectMap(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), true)
                 .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
                 .append(HadoopVariantStorageOptions.STATS_LOCAL.key(), false)
-                .append(HadoopVariantStorageOptions.HADOOP_LOAD_BATCH_SIZE.key(), 1);
+                .append(HadoopVariantStorageOptions.HADOOP_LOAD_FILES_IN_PARALLEL.key(), 1);
     }
 
     @Test

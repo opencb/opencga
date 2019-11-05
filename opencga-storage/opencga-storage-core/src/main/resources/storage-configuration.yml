@@ -148,11 +148,11 @@ variant:
           connectionsPerHost: ${OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST}
           readPreference: "secondaryPreferred"
       options:
-        mongodb.parallel.write: false
-        mongodb.stage.parallel.write: false
-        mongodb.direct_load.parallel.write: false
-        mongodb.merge.parallel.write: false
-        mongodb.merge.batch.size: 10 #Number of files to merge directly from first to second collection
+        storage.mongodb.parallel.write: false
+        storage.mongodb.stage.parallel.write: false
+        storage.mongodb.direct_load.parallel.write: false
+        storage.mongodb.merge.parallel.write: false
+        storage.mongodb.merge.batch.size: 10 #Number of files to merge directly from first to second collection
 
     ## Hadoop Storage Engine
     - id: "hadoop"
@@ -163,47 +163,36 @@ variant:
         user: "${OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER}"
         password: "${OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD}"
       options:
-        #Generic options
+        storage.hadoop.hbase.namespace: "${OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE}"
+        storage.hadoop.archive.table.presplit.size: 500
+        storage.hadoop.archive.table.compression: "gz"                # Allowed values: none, snappy, gz
+        storage.hadoop.archive.table.chunk_size: 1000
+        storage.hadoop.archive.table.file_batch_size: 1000
+        storage.hadoop.variant.table.presplit.size: 500
+        storage.hadoop.variant.table.compression: "snappy"            # Allowed values: none, snappy, gz
+        storage.hadoop.sample-index.table.presplit.size: 15
+        storage.hadoop.sample-index.table.compression: "snappy"       # Allowed values: none, snappy, gz
+        storage.hadoop.annotation-index.table.compression: "snappy"   # Allowed values: none, snappy, gz
+        storage.hadoop.pending-annotation.table.compression: "snappy" # Allowed values: none, snappy, gz
 
-        #Plugin specific options
-        dbadaptor.phoenix.fetch_size: -1
-        opencga.storage.hadoop.jar-with-dependencies: "opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"
-        opencga.archive.chunk_size: 1000
-        hadoop.load.archive.batch.size: 3
-        hadoop.load.variant.batch.size: 500
-        opencga.archive.table.presplit.size: 500
-        opencga.archive.table.compression: "gz"           # Allowed values: none, snappy, gz
-        opencga.variant.table.presplit.size: 500
-        opencga.variant.table.compression: "snappy"       # Allowed values: none, snappy, gz
-        opencga.sample-index.table.presplit.size: 15
-        opencga.sample-index.table.compression: "snappy"  # Allowed values: none, snappy, gz
-        opencga.storage.hadoop.variant.hbase.namespace: "${OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE}"
+        # Batch size for querying phoenix
+        storage.hadoop.phoenix.fetch_size: -1
 
         # Hadoop executable file. Used to lunch MapReduce applications
-        opencga.hadoop.bin: "hadoop"
+        storage.hadoop.bin: "hadoop"
 
-        # Define the way of executing MapReduce jobs.
-        opencga.mr.executor: "system"  # Use system hadoop installation
+        storage.hadoop.mr.jar-with-dependencies: "opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"
 
-        # Use external hadoop installation. ssh to a host edge node
-        # opencga.mr.executor: "ssh"                 # Uncomment to enable
-        opencga.mr.executor.ssh.host: ""             # Hadoop edge node host name
-        opencga.mr.executor.ssh.user: ""             # Hadoop edge node user name
-        # opencga.mr.executor.ssh.key: "~/.ssh/id_rsa" # Hadoop edge node ssh-key file
-        opencga.mr.executor.ssh.password: ""         # Hadoop edge node password. Only if ssh-key is not present. Requires sshpass to run
-        opencga.mr.executor.ssh.remote_opencga_home:  # Remote opencga home location. Only if different than local location.
+        # Define the MapReduce job executor.
+        storage.hadoop.mr.executor: "system"  # Either "system" or "ssh".
 
-        ### hadoop properties
-        mapreduce.map.cpu.vcores: 1
-        mapreduce.map.memory.mb: 2560
-        opencga.variant.table.mapreduce.map.java.opts: -Xmx2048m,-XX:+UseG1GC,-Djava.util.concurrent.ForkJoinPool.common.parallelism=1
-        opencga.storage.hadoop.hbase.merge.archive.scan.batchsize: 2000
+        # Use external hadoop installation. ssh to a hadoop edge node
+        storage.hadoop.mr.executor.ssh.host: ""               # Hadoop edge node host name
+        storage.hadoop.mr.executor.ssh.user: ""               # Hadoop edge node user name
+        storage.hadoop.mr.executor.ssh.key: "~/.ssh/id_rsa"   # Hadoop edge node ssh-key file
+        storage.hadoop.mr.executor.ssh.password: ""           # Hadoop edge node password. Only if ssh-key is not present. Requires sshpass to run
+        storage.hadoop.mr.executor.ssh.remote_opencga_home:   # Remote opencga home location. Only if different than local location.
+
         # Increase the ScannerTimeoutPeriod from 60000 (1min) to 300000 (5min) to avoid ScannerTimeoutExceptions
         # See opencb/opencga#352 for more info.
-        opencga.storage.hadoop.mapreduce.scanner.timeout: 300000
-        # 900000 -> 15 minutes
-        #      hbase.client.scanner.timeout.period: 900000
-        #      hbase.rpc.timeout: 900000
-        ###
-        #Hadoop options
-        #fs.defaultFS: "${OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS}"
+        storage.hadoop.mr.scanner.timeout: 300000

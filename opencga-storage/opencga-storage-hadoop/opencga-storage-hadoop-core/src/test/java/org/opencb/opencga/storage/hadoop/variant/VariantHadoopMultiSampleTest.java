@@ -316,14 +316,14 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     public void testMultipleFilesConcurrentMergeBasic() throws Exception {
         testMultipleFilesConcurrent(new ObjectMap(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
                 .append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro")
-                .append(HadoopVariantStorageOptions.HADOOP_LOAD_BATCH_SIZE.key(), 5));
+                .append(HadoopVariantStorageOptions.HADOOP_LOAD_FILES_IN_PARALLEL.key(), 5));
     }
 
     @Test
     public void testMultipleFilesConcurrentMergeBasicMultipleBatches() throws Exception {
         testMultipleFilesConcurrent(new ObjectMap(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
                 .append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro")
-                .append(HadoopVariantStorageOptions.HADOOP_LOAD_BATCH_SIZE.key(), 5)
+                .append(HadoopVariantStorageOptions.HADOOP_LOAD_FILES_IN_PARALLEL.key(), 5)
                 .append(HadoopVariantStorageOptions.ARCHIVE_FILE_BATCH_SIZE.key(), 5));
 
         ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(1000, 5);
