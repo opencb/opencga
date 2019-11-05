@@ -22,8 +22,9 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 
-import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.DEFAULT_ROWKEY_SEPARATOR;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.ARCHIVE_CHUNK_SIZE;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.ARCHIVE_FILE_BATCH_SIZE;
+
 
 /**
  * Created on 25/04/17.
@@ -32,8 +33,8 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
  */
 public class ArchiveRowKeyFactory {
 
+    public static final char SEPARATOR = '_';
     private final int chunkSize;
-    private final char separator;
     private final int fileBatchSize;
 
     private static final int FILE_BATCH_IDX = 0;
@@ -45,14 +46,12 @@ public class ArchiveRowKeyFactory {
     private static final int POSITION_PAD = 12;
 
     public ArchiveRowKeyFactory(Configuration conf) {
-        this.chunkSize = conf.getInt(ARCHIVE_CHUNK_SIZE, DEFAULT_ARCHIVE_CHUNK_SIZE);
-        this.separator = conf.get(ARCHIVE_ROW_KEY_SEPARATOR, DEFAULT_ROWKEY_SEPARATOR).charAt(0);
-        this.fileBatchSize = conf.getInt(ARCHIVE_FILE_BATCH_SIZE, DEFAULT_ARCHIVE_FILE_BATCH_SIZE);
+        this.chunkSize = conf.getInt(ARCHIVE_CHUNK_SIZE.key(), ARCHIVE_CHUNK_SIZE.defaultValue());
+        this.fileBatchSize = conf.getInt(ARCHIVE_FILE_BATCH_SIZE.key(), ARCHIVE_FILE_BATCH_SIZE.defaultValue());
     }
 
-    public ArchiveRowKeyFactory(int chunkSize, char separator, int fileBatchSize) {
+    public ArchiveRowKeyFactory(int chunkSize, int fileBatchSize) {
         this.chunkSize = chunkSize;
-        this.separator = separator;
         this.fileBatchSize = fileBatchSize;
     }
 
@@ -61,7 +60,7 @@ public class ArchiveRowKeyFactory {
     }
 
     public char getSeparator() {
-        return separator;
+        return SEPARATOR;
     }
 
     public long getSliceId(long position) {

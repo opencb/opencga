@@ -56,7 +56,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         this.hBaseManager = hBaseManager;
         this.tableNameGenerator = tableNameGenerator;
         this.metadataManager = metadataManager;
-        family = helper.getColumnFamily();
+        family = GenomeHelper.COLUMN_FAMILY_BYTES;
     }
 
     @Override

@@ -22,7 +22,9 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -70,7 +72,7 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
         if (StringUtils.isEmpty(outputPath)) {
             outputPath = "saturation." + TimeUtils.getTime() + ".json";
         }
-        caching = getConf().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 50);
+        caching = getConf().getInt(HadoopVariantStorageEngineOptions.MR_HBASE_SCAN_CACHING.key(), 50);
     }
 
     @Override
@@ -96,14 +98,14 @@ public class SaturationStatsDriver extends AbstractVariantsTableDriver {
         for (Integer id : studyIds) {
             int maxSampleIdInStudy = 0;
             for (Integer sampleId : metadataManager.getIndexedSamples(id)) {
-                scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.buildSampleColumnKey(id, sampleId));
+                scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.buildSampleColumnKey(id, sampleId));
                 numSamples++;
                 maxSampleIdInStudy = Math.max(maxSampleIdInStudy, sampleId);
             }
             sampleIdsPad.put(id, maxSampleId);
             maxSampleId += maxSampleIdInStudy;
         }
-        scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.VariantColumn.TYPE.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.VariantColumn.TYPE.bytes());
 
 //        scan.setFilter(new KeyOnlyFilter());
         scan.setFilter(

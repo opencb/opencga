@@ -30,6 +30,7 @@ import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.storage.core.config.ConfigurationOption;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -88,7 +89,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     private Logger logger = LoggerFactory.getLogger(MongoDBVariantStorageEngine.class);
     private VariantStorageMetadataManager metadataManager;
 
-    public enum MongoDBVariantOptions {
+    public enum MongoDBVariantOptions implements ConfigurationOption {
         COLLECTION_VARIANTS("collection.variants", "variants"),
         COLLECTION_PROJECT("collection.project",  "project"),
         COLLECTION_STUDIES("collection.studies",  "studies"),
@@ -157,10 +158,12 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                     || options.getBoolean(option.key(), option.defaultValue());
         }
 
+        @Override
         public String key() {
             return key;
         }
 
+        @Override
         @SuppressWarnings("unchecked")
         public <T> T defaultValue() {
             return (T) value;

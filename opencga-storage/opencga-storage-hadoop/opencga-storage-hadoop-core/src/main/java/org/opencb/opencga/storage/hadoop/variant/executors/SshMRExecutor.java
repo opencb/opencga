@@ -9,6 +9,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.*;
+
 /**
  * Created on 14/02/19.
  *
@@ -16,11 +18,6 @@ import java.util.List;
  */
 public class SshMRExecutor extends MRExecutor {
 
-    public static final String SSH_HOST =       "opencga.mr.executor.ssh.host";
-    public static final String SSH_USER =       "opencga.mr.executor.ssh.user";
-    public static final String SSH_KEY =        "opencga.mr.executor.ssh.key";
-    public static final String SSH_PASSWORD =   "opencga.mr.executor.ssh.password";
-    public static final String REMOTE_OPENCGA_HOME = "opencga.mr.executor.ssh.remote_opencga_home";
     public static final String HADOOP_SSH_BIN =  "hadoop-ssh.sh";
 
     private static final String HADOOP_SSH_USER_ENV = "HADOOP_SSH_USER";
@@ -40,7 +37,7 @@ public class SshMRExecutor extends MRExecutor {
     }
 
     protected String buildCommand(String executable, String args) {
-        String remoteOpencgaHome = getOptions().getString(REMOTE_OPENCGA_HOME);
+        String remoteOpencgaHome = getOptions().getString(MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME.key());
         String commandLine;
         String opencgaHome = getOpencgaHome();
         if (opencgaHome.isEmpty()) {
@@ -59,17 +56,17 @@ public class SshMRExecutor extends MRExecutor {
     }
 
     protected List<String> buildEnv() {
-        String sshHost = getOptions().getString(SSH_HOST);
-        String sshUser = getOptions().getString(SSH_USER);
-        String sshPassword = getOptions().getString(SSH_PASSWORD);
-        String sshKey = getOptions().getString(SSH_KEY);
-        String remoteOpencgaHome = getOptions().getString(REMOTE_OPENCGA_HOME);
+        String sshHost = getOptions().getString(MR_EXECUTOR_SSH_HOST.key());
+        String sshUser = getOptions().getString(MR_EXECUTOR_SSH_USER.key());
+        String sshPassword = getOptions().getString(MR_EXECUTOR_SSH_PASSWORD.key());
+        String sshKey = getOptions().getString(MR_EXECUTOR_SSH_KEY.key());
+        String remoteOpencgaHome = getOptions().getString(MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME.key());
 
         if (StringUtils.isEmpty(sshHost)) {
-            throw new IllegalArgumentException("Missing ssh credentials to run MapReduce job. Missing " + SSH_HOST);
+            throw new IllegalArgumentException("Missing ssh credentials to run MapReduce job. Missing " + MR_EXECUTOR_SSH_HOST.key());
         }
         if (StringUtils.isEmpty(sshUser)) {
-            throw new IllegalArgumentException("Missing ssh credentials to run MapReduce job. Missing " + SSH_USER);
+            throw new IllegalArgumentException("Missing ssh credentials to run MapReduce job. Missing " + MR_EXECUTOR_SSH_USER.key());
         }
 
         List<String> env = new ArrayList<>(getEnv());

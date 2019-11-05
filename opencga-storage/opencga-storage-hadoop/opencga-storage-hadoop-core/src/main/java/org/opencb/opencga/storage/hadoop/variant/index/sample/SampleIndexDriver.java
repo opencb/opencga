@@ -227,10 +227,10 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                     scans.add(scan);
                 }
                 byte[] sampleColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample);
-                scan.addColumn(getHelper().getColumnFamily(), sampleColumn);
+                scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, sampleColumn);
                 for (Integer fileId : sampleIdToFileIdMap.get(sample)) {
                     byte[] fileColumn = VariantPhoenixHelper.buildFileColumnKey(study, fileId);
-                    scan.addColumn(getHelper().getColumnFamily(), fileColumn);
+                    scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, fileColumn);
                 }
                 samplesCount++;
             }
@@ -250,10 +250,10 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             if (sampleIds.size() < 6000) {
                 for (Integer sample : sampleIds) {
                     byte[] sampleColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample);
-                    scan.addColumn(getHelper().getColumnFamily(), sampleColumn);
+                    scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, sampleColumn);
                     for (Integer fileId : sampleIdToFileIdMap.get(sample)) {
                         byte[] fileColumn = VariantPhoenixHelper.buildFileColumnKey(study, fileId);
-                        scan.addColumn(getHelper().getColumnFamily(), fileColumn);
+                        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, fileColumn);
                     }
                 }
             }
@@ -332,7 +332,8 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
+            new GenomeHelper(context.getConfiguration());
+            family = GenomeHelper.COLUMN_FAMILY_BYTES;
             hasGenotype = context.getConfiguration().getBoolean(HAS_GENOTYPE, true);
 
             int[] samples = context.getConfiguration().getInts(SAMPLES);
@@ -351,7 +352,8 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                     samplesToCount.add(samples[i]);
                 }
             }
-            byte[] family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
+            new GenomeHelper(context.getConfiguration());
+            byte[] family = GenomeHelper.COLUMN_FAMILY_BYTES;
             putConverter = new SampleIndexToHBaseConverter(family);
             variantsConverter = new SampleIndexVariantBiConverter();
 

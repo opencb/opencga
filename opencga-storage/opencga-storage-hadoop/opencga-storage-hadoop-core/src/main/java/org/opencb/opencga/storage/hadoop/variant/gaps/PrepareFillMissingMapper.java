@@ -43,7 +43,7 @@ public class PrepareFillMissingMapper extends TableMapper<ImmutableBytesWritable
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         GenomeHelper helper = new GenomeHelper(context.getConfiguration());
-        family = helper.getColumnFamily();
+        family = GenomeHelper.COLUMN_FAMILY_BYTES;
         rowKeyFactory = new ArchiveRowKeyFactory(context.getConfiguration());
         indexedFiles = getIndexedFiles(context.getConfiguration());
         allFileBatches = indexedFiles.stream().map(rowKeyFactory::getFileBatch).collect(Collectors.toSet());

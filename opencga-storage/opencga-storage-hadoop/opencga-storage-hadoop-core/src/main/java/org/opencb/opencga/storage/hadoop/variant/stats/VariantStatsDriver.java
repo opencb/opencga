@@ -22,6 +22,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -191,7 +192,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
             Scan scan = new VariantHBaseQueryParser(getHelper(), getMetadataManager()).parseQuery(query, queryOptions);
             if (excludeFiles) {
                 // Ensure we are not returning any file
-                NavigableSet<byte[]> columns = scan.getFamilyMap().get(getHelper().getColumnFamily());
+                NavigableSet<byte[]> columns = scan.getFamilyMap().get(GenomeHelper.COLUMN_FAMILY_BYTES);
                 columns.removeIf(column -> endsWith(column, VariantPhoenixHelper.FILE_SUFIX_BYTES));
             }
             VariantMapReduceUtil.configureMapReduceScan(scan, getConf());

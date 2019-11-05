@@ -212,7 +212,9 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         int studyId = getStudyId();
         int fileId = getFileId();
 
-        ArchiveTableHelper.setChunkSize(conf, getOptions().getInt(ARCHIVE_CHUNK_SIZE, DEFAULT_ARCHIVE_CHUNK_SIZE));
+        int chunkSize = getOptions().getInt(HadoopVariantStorageEngineOptions.ARCHIVE_CHUNK_SIZE.key(),
+                HadoopVariantStorageEngineOptions.ARCHIVE_CHUNK_SIZE.defaultValue());
+        ArchiveTableHelper.setChunkSize(conf, chunkSize);
         ArchiveTableHelper.setStudyId(conf, studyId);
 
         FileMetadata fileMetadata = getMetadataManager().getFileMetadata(studyId, fileId);
@@ -351,7 +353,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
 
         if (VariantPhoenixHelper.DEFAULT_TABLE_TYPE == PTableType.VIEW) {
             logger.debug("Skip create indexes for VIEW table");
-        } else if (options.getBoolean(VARIANT_TABLE_INDEXES_SKIP, false)) {
+        } else if (options.getBoolean(HadoopVariantStorageEngineOptions.VARIANT_TABLE_INDEXES_SKIP.key(), false)) {
             logger.info("Skip create indexes!!");
         } else {
             lock = null;

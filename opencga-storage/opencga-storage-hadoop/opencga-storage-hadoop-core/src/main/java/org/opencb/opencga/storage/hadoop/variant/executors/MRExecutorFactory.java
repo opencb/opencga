@@ -3,6 +3,8 @@ package org.opencb.opencga.storage.hadoop.variant.executors;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.MR_EXECUTOR;
+
 /**
  * Created on 14/02/19.
  *
@@ -10,39 +12,29 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
  */
 public class MRExecutorFactory {
 
-    public static final String MR_EXECUTOR = "opencga.mr.executor";
-
     public static MRExecutor getMRExecutor(ObjectMap options) throws StorageEngineException {
         MRExecutor mrExecutor;
-        if (options.containsKey(MR_EXECUTOR)) {
-            Class<? extends MRExecutor> aClass;
-            if (options.get(MR_EXECUTOR) instanceof Class) {
-                aClass = ((Class<?>) options.get(MR_EXECUTOR, Class.class)).asSubclass(MRExecutor.class);
-            } else {
-                String className = options.getString(MR_EXECUTOR);
-                switch (className.toLowerCase()) {
-                    case "system":
-                        aClass = SystemMRExecutor.class;
-                        break;
-                    case "ssh":
-                        aClass = SshMRExecutor.class;
-                        break;
-                    default:
-                        try {
-                            aClass = Class.forName(className).asSubclass(MRExecutor.class);
-                        } catch (ClassNotFoundException e) {
-                            throw new StorageEngineException("Error creating MRExecutor", e);
-                        }
-                        break;
+        Class<? extends MRExecutor> aClass;
+        String executor = options.getString(MR_EXECUTOR.key(), MR_EXECUTOR.defaultValue());
+        switch (executor.toLowerCase()) {
+            case "system":
+                aClass = SystemMRExecutor.class;
+                break;
+            case "ssh":
+                aClass = SshMRExecutor.class;
+                break;
+            default:
+                try {
+                    aClass = Class.forName(executor).asSubclass(MRExecutor.class);
+                } catch (ClassNotFoundException | ClassCastException e) {
+                    throw new StorageEngineException("Error creating MRExecutor '" + executor + "'", e);
                 }
-            }
-            try {
-                mrExecutor = aClass.newInstance();
-            } catch (InstantiationException | IllegalAccessException e) {
-                throw new StorageEngineException("Error creating MRExecutor", e);
-            }
-        } else {
-            mrExecutor = new SystemMRExecutor();
+                break;
+        }
+        try {
+            mrExecutor = aClass.newInstance();
+        } catch (InstantiationException | IllegalAccessException e) {
+            throw new StorageEngineException("Error creating MRExecutor '" + executor + "'", e);
         }
 
         // configure MRExecutor

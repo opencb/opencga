@@ -334,7 +334,7 @@ public class VariantPhoenixHelper {
     }
 
     public VariantPhoenixHelper(GenomeHelper genomeHelper) {
-        this(genomeHelper.getColumnFamily(), genomeHelper.getConf());
+        this(GenomeHelper.COLUMN_FAMILY_BYTES, genomeHelper.getConf());
     }
 
     public VariantPhoenixHelper(byte[] columnFamily, Configuration conf) {

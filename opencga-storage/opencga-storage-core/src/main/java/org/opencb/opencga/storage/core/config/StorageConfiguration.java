@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.opencga.core.config.SearchConfiguration;
@@ -77,15 +78,16 @@ public class StorageConfiguration {
         switch (format) {
             case "json":
                 objectMapper = new ObjectMapper();
-                storageConfiguration = objectMapper.readValue(configurationInputStream, StorageConfiguration.class);
                 break;
             case "yml":
             case "yaml":
-            default:
                 objectMapper = new ObjectMapper(new YAMLFactory());
-                storageConfiguration = objectMapper.readValue(configurationInputStream, StorageConfiguration.class);
                 break;
+            default:
+                throw new IllegalArgumentException("Unknown format " + format);
         }
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        storageConfiguration = objectMapper.readValue(configurationInputStream, StorageConfiguration.class);
 
         return storageConfiguration;
     }

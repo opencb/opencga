@@ -21,7 +21,6 @@ import org.apache.hadoop.util.Tool;
 import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +29,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.*;
+
 /**
  * Created on 18/01/16 .
  *
@@ -37,22 +38,20 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class MRExecutor {
 
-    public static final String HADOOP_BIN = "opencga.hadoop.bin";
-    public static final String HADOOP_ENV = "opencga.hadoop.env";
-
     private ObjectMap options;
     private List<String> env;
 
     public MRExecutor init(ObjectMap options) {
         this.options = options;
-        env = options.getAsStringList(HADOOP_ENV);
+        env = options.getAsStringList(MR_HADOOP_ENV.key());
         return this;
     }
 
     public static String getJarWithDependencies(ObjectMap options) throws StorageEngineException {
-        String jar = options.getString(HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
+        String jar = options.getString(MR_JAR_WITH_DEPENDENCIES.key(), null);
         if (jar == null) {
-            throw new StorageEngineException("Missing option " + HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
+            throw new StorageEngineException("Missing option "
+                    + MR_JAR_WITH_DEPENDENCIES);
         }
         if (!Paths.get(jar).isAbsolute()) {
             jar = getOpencgaHome() + "/" + jar;
@@ -62,11 +61,6 @@ public abstract class MRExecutor {
 
     protected static String getOpencgaHome() {
         return System.getProperty("app.home", "");
-    }
-
-    public <T extends Tool> void run(Class<T> execClass, String args, ObjectMap options, String taskDescription)
-            throws StorageEngineException {
-        run(execClass, Commandline.translateCommandline(args), options, taskDescription);
     }
 
     public <T extends Tool> void run(Class<T> execClass, String[] args, ObjectMap options, String taskDescription)
@@ -89,7 +83,7 @@ public abstract class MRExecutor {
     }
 
     public <T extends Tool> int run(Class<T> execClass, String[] args, ObjectMap options) throws StorageEngineException {
-        String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
+        String hadoopRoute = options.getString(MR_HADOOP_BIN.key(), MR_HADOOP_BIN.defaultValue());
         String jar = getJarWithDependencies(options);
         String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
         Logger logger = LoggerFactory.getLogger(MRExecutor.class);

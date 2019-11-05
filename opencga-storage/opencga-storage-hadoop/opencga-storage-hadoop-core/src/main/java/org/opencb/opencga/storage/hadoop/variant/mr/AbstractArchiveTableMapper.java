@@ -23,6 +23,7 @@ import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
@@ -57,7 +58,8 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
     private Set<Integer> extractFileIds(Result value) {
         Set<Integer> set = new HashSet<>();
         for (Cell c : value.rawCells()) {
-            if (Bytes.equals(CellUtil.cloneFamily(c), getHelper().getColumnFamily())) {
+            getHelper();
+            if (Bytes.equals(CellUtil.cloneFamily(c), GenomeHelper.COLUMN_FAMILY_BYTES)) {
                 byte[] column = CellUtil.cloneQualifier(c);
                 if (ArchiveTableHelper.isNonRefColumn(column)) {
                     set.add(ArchiveTableHelper.getFileIdFromNonRefColumnName(column));
@@ -76,7 +78,8 @@ public abstract class AbstractArchiveTableMapper extends AbstractHBaseVariantMap
 
         // Load VCF meta data for columns
         int studyId = getStudyMetadata().getId();
-        resultConverter = new ArchiveResultToVariantConverter(studyId, getHelper().getColumnFamily(), this.getMetadataManager());
+        getHelper();
+        resultConverter = new ArchiveResultToVariantConverter(studyId, GenomeHelper.COLUMN_FAMILY_BYTES, this.getMetadataManager());
 
         rowKeyFactory = new ArchiveRowKeyFactory(getHelper().getConf());
     }

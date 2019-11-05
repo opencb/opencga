@@ -56,7 +56,7 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
 
     @Override
     protected Put createPut(Variant v) {
-        return super.createPut(v).addColumn(helper.getColumnFamily(), fillMissingColumn.bytes(), lastFileBytes);
+        return super.createPut(v).addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, fillMissingColumn.bytes(), lastFileBytes);
     }
 
     private class FillMissingContext extends Context {
@@ -73,7 +73,7 @@ public class FillMissingFromArchiveTask extends AbstractFillFromArchiveTask {
 
         @Override
         protected VcfSlicePair getVcfSlicePairFromResult(Integer fileId) throws IOException {
-            VcfSliceProtos.VcfSlice nonRefVcfSlice = parseVcfSlice(result.getValue(helper.getColumnFamily(),
+            VcfSliceProtos.VcfSlice nonRefVcfSlice = parseVcfSlice(result.getValue(GenomeHelper.COLUMN_FAMILY_BYTES,
                     fileToNonRefColumnMap.get(fileId)));
 
             if (nonRefVcfSlice == null) {

@@ -60,7 +60,7 @@ public class FillGapsTask {
 
         this.helper = helper;
         this.metadataManager = metadataManager;
-        studyConverter = new StudyEntryToHBaseConverter(this.helper.getColumnFamily(), studyMetadata.getId(), metadataManager,
+        studyConverter = new StudyEntryToHBaseConverter(GenomeHelper.COLUMN_FAMILY_BYTES, studyMetadata.getId(), metadataManager,
                 true,
                 null, // Do not update release
                 true); // Do not skip any genotype
@@ -395,7 +395,7 @@ public class FillGapsTask {
         Put sampleIndexPut = new Put(
                 SampleIndexSchema.toRowKey(sampleId, variant.getChromosome(), variant.getStart()),
                 put.getTimeStamp());
-        sampleIndexPut.addColumn(helper.getColumnFamily(), SampleIndexSchema.toPendingColumn(variant, gt), null);
+        sampleIndexPut.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, SampleIndexSchema.toPendingColumn(variant, gt), null);
         return sampleIndexPut;
     }
 

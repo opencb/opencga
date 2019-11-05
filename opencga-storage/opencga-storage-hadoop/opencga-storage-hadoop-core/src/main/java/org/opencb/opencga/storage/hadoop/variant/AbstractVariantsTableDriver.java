@@ -83,7 +83,8 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
         String archiveTable = getArchiveTable();
         String variantTable = getVariantsTable();
 
-        int maxKeyValueSize = conf.getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_KEYVALUE_SIZE_MAX, 10485760); // 10MB
+        int maxKeyValueSize = conf.getInt(HadoopVariantStorageEngineOptions.MR_HBASE_KEYVALUE_SIZE_MAX.key(),
+                HadoopVariantStorageEngineOptions.MR_HBASE_KEYVALUE_SIZE_MAX.defaultValue());
         logger.info("HBASE: set " + ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY + " to " + maxKeyValueSize);
         conf.setInt(ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY, maxKeyValueSize); // always overwrite server default (usually 1MB)
 
@@ -117,7 +118,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
 
         // Increase the ScannerTimeoutPeriod to avoid ScannerTimeoutExceptions
         // See opencb/opencga#352 for more info.
-        int scannerTimeout = getConf().getInt(MAPREDUCE_HBASE_SCANNER_TIMEOUT,
+        int scannerTimeout = getConf().getInt(HadoopVariantStorageEngineOptions.MR_HBASE_SCANNER_TIMEOUT.key(),
                 getConf().getInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, HConstants.DEFAULT_HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD));
         logger.info("Set Scanner timeout to " + scannerTimeout + " ...");
         conf.setInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, scannerTimeout);
@@ -171,7 +172,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
 
     protected final Scan createArchiveTableScan(List<Integer> files) {
         Scan scan = new Scan();
-        int caching = getConf().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 50);
+        int caching = getConf().getInt(HadoopVariantStorageEngineOptions.MR_HBASE_SCAN_CACHING.key(), 50);
         logger.info("Scan set Caching to " + caching);
         scan.setCaching(caching);        // 1 is the default in Scan, 200 caused timeout issues.
         scan.setCacheBlocks(false);  // don't set to true for MR jobs
@@ -193,7 +194,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
 //        getLog().info("Scan set Caching to " + caching);
 //        scan.setCaching(caching);        // 1 is the default in Scan, 200 caused timeout issues.
         scan.setCacheBlocks(false);  // don't set to true for MR jobs
-        scan.addFamily(getHelper().getColumnFamily()); // Ignore PHOENIX columns!!!
+        scan.addFamily(GenomeHelper.COLUMN_FAMILY_BYTES); // Ignore PHOENIX columns!!!
         return scan;
     }
 

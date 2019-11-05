@@ -25,6 +25,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -248,9 +249,9 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
             VariantStorageMetadataManager metadataManager = getMetadataManager();
             StudyMetadata studyMetadata = getStudyMetadata();
 
-            caseCohortCalculator = new HBaseVariantStatsCalculator(helper.getColumnFamily(),
+            caseCohortCalculator = new HBaseVariantStatsCalculator(GenomeHelper.COLUMN_FAMILY_BYTES,
                     metadataManager, studyMetadata, caseCohortIds, false, "0/0");
-            controlCohortCalculator = new HBaseVariantStatsCalculator(helper.getColumnFamily(),
+            controlCohortCalculator = new HBaseVariantStatsCalculator(GenomeHelper.COLUMN_FAMILY_BYTES,
                     metadataManager, studyMetadata, controlCohortIds, false, "0/0");
         }
 

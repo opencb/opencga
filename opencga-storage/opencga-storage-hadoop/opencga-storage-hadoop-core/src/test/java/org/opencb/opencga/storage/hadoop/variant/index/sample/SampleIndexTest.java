@@ -113,7 +113,7 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
 
         String copy = dbAdaptor.getTableNameGenerator().getSampleIndexTableName(1) + "_copy";
 
-        dbAdaptor.getHBaseManager().createTableIfNeeded(copy, Bytes.toBytes(GenomeHelper.DEFAULT_COLUMN_FAMILY),
+        dbAdaptor.getHBaseManager().createTableIfNeeded(copy, Bytes.toBytes(GenomeHelper.COLUMN_FAMILY),
                 Compression.Algorithm.NONE);
 
         ObjectMap options = new ObjectMap()

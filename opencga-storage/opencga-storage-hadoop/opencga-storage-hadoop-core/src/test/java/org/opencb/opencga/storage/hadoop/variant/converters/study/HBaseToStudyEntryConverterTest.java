@@ -47,7 +47,7 @@ public class HBaseToStudyEntryConverterTest {
         });
 
         final GenomeHelper genomeHelper = new GenomeHelper(new Configuration());
-        converter = new HBaseToStudyEntryConverter(genomeHelper.getColumnFamily(), mm, null);
+        converter = new HBaseToStudyEntryConverter(GenomeHelper.COLUMN_FAMILY_BYTES, mm, null);
     }
 
     @Test

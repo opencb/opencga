@@ -208,7 +208,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         int numVariants = hm.act(dbAdaptor.getVariantTable(), table -> {
             int num = 0;
-            ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
+            ResultScanner resultScanner = table.getScanner(GenomeHelper.COLUMN_FAMILY_BYTES);
             for (Result result : resultScanner) {
                 Variant variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
                 System.out.println("Variant = " + variant);
@@ -235,10 +235,10 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         ArchiveTableHelper archiveHelper = dbAdaptor.getArchiveHelper(studyMetadata.getId(), FILE_ID);
         VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(archiveHelper.getFileMetadata().toVariantStudyMetadata(STUDY_NAME));
         hm.act(tableName, table -> {
-            ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
+            ResultScanner resultScanner = table.getScanner(GenomeHelper.COLUMN_FAMILY_BYTES);
             for (Result result : resultScanner) {
                 System.out.println("VcfSlice = " + Bytes.toString(result.getRow()));
-                byte[] value = result.getValue(archiveHelper.getColumnFamily(), archiveHelper.getNonRefColumnName());
+                byte[] value = result.getValue(GenomeHelper.COLUMN_FAMILY_BYTES, archiveHelper.getNonRefColumnName());
                 if (value != null && value.length > 0) {
                     VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(
                             value);
@@ -248,7 +248,7 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
                         System.out.println(variant.toJson());
                     }
                 }
-                value = result.getValue(archiveHelper.getColumnFamily(), archiveHelper.getRefColumnName());
+                value = result.getValue(GenomeHelper.COLUMN_FAMILY_BYTES, archiveHelper.getRefColumnName());
                 if (value != null && value.length > 0) {
                     VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(
                             value);

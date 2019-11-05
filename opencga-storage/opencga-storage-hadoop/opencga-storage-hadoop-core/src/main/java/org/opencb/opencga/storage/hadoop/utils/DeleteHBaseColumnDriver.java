@@ -16,7 +16,7 @@ import org.apache.hadoop.hbase.util.Pair;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,7 @@ public class DeleteHBaseColumnDriver extends AbstractHBaseDriver {
                 .toArray(new String[columns.size()]));
 
         Scan templateScan = new Scan();
-        int caching = job.getConfiguration().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 100);
+        int caching = job.getConfiguration().getInt(HadoopVariantStorageEngineOptions.MR_HBASE_SCAN_CACHING.key(), 100);
         LOGGER.info("Scan set Caching to " + caching);
         templateScan.setCaching(caching);        // 1 is the default in Scan
         templateScan.setCacheBlocks(false);  // don't set to true for MR jobs

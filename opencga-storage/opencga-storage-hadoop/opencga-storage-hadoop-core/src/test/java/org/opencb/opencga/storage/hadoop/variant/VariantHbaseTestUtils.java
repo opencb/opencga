@@ -109,7 +109,7 @@ public class VariantHbaseTestUtils {
             return dbAdaptor;
         }
         dbAdaptor.getHBaseManager().act(archiveTableName, table -> {
-            for (Result result : table.getScanner(helper.getColumnFamily())) {
+            for (Result result : table.getScanner(GenomeHelper.COLUMN_FAMILY_BYTES)) {
                 out.println("-----------------");
                 out.println(Bytes.toString(result.getRow()));
                 for (Cell c : result.rawCells()) {
@@ -157,7 +157,7 @@ public class VariantHbaseTestUtils {
         PrintStream os = new PrintStream(new FileOutputStream(outputFile.toFile()));
         int numVariants = hm.act(tableName, table -> {
             int num = 0;
-            byte[] family = genomeHelper.getColumnFamily();
+            byte[] family = GenomeHelper.COLUMN_FAMILY_BYTES;
             ResultScanner resultScanner = table.getScanner(family);
             for (Result result : resultScanner) {
                 Variant variant;
@@ -186,7 +186,7 @@ public class VariantHbaseTestUtils {
                     } else if (key.endsWith(VariantPhoenixHelper.STUDY_SUFIX)) {
                         os.println("\t" + key + " = " + PUnsignedInt.INSTANCE.toObject(entry.getValue()));
                     } else if (key.endsWith(VariantPhoenixHelper.SAMPLE_DATA_SUFIX) || key.endsWith(VariantPhoenixHelper.FILE_SUFIX)) {
-                        os.println("\t" + key + " = " + result.getColumnLatestCell(genomeHelper.getColumnFamily(), entry.getKey()).getTimestamp()+", " + PVarcharArray.INSTANCE.toObject(entry.getValue()));
+                        os.println("\t" + key + " = " + result.getColumnLatestCell(GenomeHelper.COLUMN_FAMILY_BYTES, entry.getKey()).getTimestamp()+", " + PVarcharArray.INSTANCE.toObject(entry.getValue()));
                     } else if (key.endsWith(VariantPhoenixHelper.COHORT_STATS_MAF_SUFFIX)
                             || key.endsWith(VariantPhoenixHelper.COHORT_STATS_MGF_SUFFIX)) {
                         os.println("\t" + key + " = " + PFloat.INSTANCE.toObject(entry.getValue()));
@@ -278,8 +278,8 @@ public class VariantHbaseTestUtils {
 
         ArchiveTableHelper archiveHelper = dbAdaptor.getArchiveHelper(studyMetadata.getId(), fileId);
         Scan scan = new Scan();
-        scan.addColumn(archiveHelper.getColumnFamily(), archiveHelper.getNonRefColumnName());
-        scan.addColumn(archiveHelper.getColumnFamily(), archiveHelper.getRefColumnName());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, archiveHelper.getNonRefColumnName());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, archiveHelper.getRefColumnName());
         VariantHBaseQueryParser.addArchiveRegionFilter(scan, null, archiveHelper);
 
         dbAdaptor.getHBaseManager().act(tableName, (table) -> {
@@ -289,7 +289,7 @@ public class VariantHbaseTestUtils {
                 os.println(Bytes.toString(result.getRow()));
 
                 os.println("\t" + Bytes.toString(archiveHelper.getNonRefColumnName()));
-                byte[] value = result.getValue(archiveHelper.getColumnFamily(), archiveHelper.getNonRefColumnName());
+                byte[] value = result.getValue(GenomeHelper.COLUMN_FAMILY_BYTES, archiveHelper.getNonRefColumnName());
                 if (value != null) {
                     VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(value);
                     for (String s : vcfSlice.toString().split("\n")) {
@@ -300,7 +300,7 @@ public class VariantHbaseTestUtils {
                 }
 
                 os.println("\t" + Bytes.toString(archiveHelper.getRefColumnName()));
-                value = result.getValue(archiveHelper.getColumnFamily(), archiveHelper.getRefColumnName());
+                value = result.getValue(GenomeHelper.COLUMN_FAMILY_BYTES, archiveHelper.getRefColumnName());
                 if (value != null) {
                     VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(value);
                     for (String s : vcfSlice.toString().split("\n")) {
@@ -515,10 +515,7 @@ public class VariantHbaseTestUtils {
                 .append(VariantStorageEngine.Options.STUDY.key(), studyMetadata.getName())
                 .append(VariantStorageEngine.Options.DB_NAME.key(), dbName).append(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantAnnotationManager.SPECIES, "hsapiens").append(VariantAnnotationManager.ASSEMBLY, "GRch37")
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
-                .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true)
-                .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE, loadArchive)
-                .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, loadVariant);
+                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
 
         if (otherParams != null) {
             params.putAll(otherParams);

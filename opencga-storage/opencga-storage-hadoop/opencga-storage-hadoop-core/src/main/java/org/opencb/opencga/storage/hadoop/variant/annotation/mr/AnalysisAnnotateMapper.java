@@ -33,6 +33,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
@@ -67,7 +68,8 @@ public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWrita
         this.forceAnnotation = context.getConfiguration().getBoolean(CONFIG_VARIANT_TABLE_ANNOTATE_FORCE, false);
 
         /* Annotation -> Phoenix converter */
-        annotationConverter = new VariantAnnotationToPhoenixConverter(getHelper().getColumnFamily());
+        getHelper();
+        annotationConverter = new VariantAnnotationToPhoenixConverter(GenomeHelper.COLUMN_FAMILY_BYTES);
         columnsOrdered = VariantPhoenixHelper.VariantColumn.values();
 
         /* Annotator config */

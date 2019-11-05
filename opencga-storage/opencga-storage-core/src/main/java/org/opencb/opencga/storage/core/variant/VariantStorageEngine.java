@@ -33,6 +33,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
+import org.opencb.opencga.storage.core.config.ConfigurationOption;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -127,7 +128,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
     }
 
-    public enum Options {
+    public enum Options implements ConfigurationOption {
         INCLUDE_STATS("include.stats", true),              //Include existing stats on the original file.
         //        @Deprecated
 //        INCLUDE_GENOTYPES("include.genotypes", true),      //Include sample information (genotypes)

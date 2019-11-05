@@ -14,7 +14,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.ANNOTATION_INDEX_TABLE_COMPRESSION;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.ANNOTATION_INDEX_TABLE_COMPRESSION;
 
 /**
  * Created by jacobo on 04/01/19.
@@ -59,7 +59,8 @@ public class AnnotationIndexDBAdaptor {
 
     public static void createTableIfNeeded(HBaseManager hBaseManager, String tableName) throws IOException {
         hBaseManager.createTableIfNeeded(tableName, AnnotationIndexConverter.COLUMN_FMAILY,
-                Compression.getCompressionAlgorithmByName(
-                        hBaseManager.getConf().get(ANNOTATION_INDEX_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName())));
+                Compression.getCompressionAlgorithmByName(hBaseManager.getConf().get(
+                        ANNOTATION_INDEX_TABLE_COMPRESSION.key(),
+                        ANNOTATION_INDEX_TABLE_COMPRESSION.defaultValue())));
     }
 }

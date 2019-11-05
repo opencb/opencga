@@ -14,7 +14,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.HBaseToVariantAnnotationConverter;
@@ -57,7 +57,8 @@ public class AnnotationIndexDriver extends AbstractVariantsTableDriver {
 
     @Override
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
-        int caching = job.getConfiguration().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 100);
+        int caching = job.getConfiguration().getInt(HadoopVariantStorageEngineOptions.MR_HBASE_SCAN_CACHING.key(),
+                HadoopVariantStorageEngineOptions.MR_HBASE_SCAN_CACHING.defaultValue());
         LOGGER.info("Scan set Caching to " + caching);
 
         Scan scan = new Scan();
@@ -65,7 +66,7 @@ public class AnnotationIndexDriver extends AbstractVariantsTableDriver {
             VariantHBaseQueryParser.addRegionFilter(scan, region);
         }
 
-        scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
 
         VariantMapReduceUtil.initTableMapperJob(job, variantTable, scan, getMapperClass());
         VariantMapReduceUtil.setOutputHBaseTable(job, annotationIndexTable);

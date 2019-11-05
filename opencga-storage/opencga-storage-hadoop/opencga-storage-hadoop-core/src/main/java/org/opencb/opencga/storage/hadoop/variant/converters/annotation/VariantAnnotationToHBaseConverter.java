@@ -21,9 +21,9 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter 
     protected static Logger logger = LoggerFactory.getLogger(VariantAnnotationToHBaseConverter.class);
 
     public VariantAnnotationToHBaseConverter(GenomeHelper genomeHelper, ProgressLogger progressLogger, int annotationId) {
-        super(genomeHelper.getColumnFamily());
+        super(GenomeHelper.COLUMN_FAMILY_BYTES);
         this.progressLogger = progressLogger;
-        this.converter = new VariantAnnotationToPhoenixConverter(genomeHelper.getColumnFamily(), annotationId);
+        this.converter = new VariantAnnotationToPhoenixConverter(GenomeHelper.COLUMN_FAMILY_BYTES, annotationId);
     }
 
     @Override

@@ -40,14 +40,13 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
@@ -98,7 +97,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     @Override
     public Map<String, ?> getOtherStorageConfigurationOptions() {
-        return new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true).append(VariantStorageEngine.Options.ANNOTATE.key(), false);
+        return new ObjectMap(HadoopVariantStorageEngineOptions.VARIANT_TABLE_INDEXES_SKIP.key(), true).append(VariantStorageEngine.Options.ANNOTATE.key(), false);
     }
 
     public VariantFileMetadata loadFile(String resourceName, StudyMetadata studyMetadata) throws Exception {
@@ -138,7 +137,6 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     @Test
     public void testTwoFilesBasicFillMissing() throws Exception {
         ObjectMap params = new ObjectMap();
-        params.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
         params.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
         params.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
 
@@ -164,8 +162,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     @Test
     public void testTwoFilesBasicAggregateLimitArchiveRefFields() throws Exception {
         ObjectMap params = new ObjectMap();
-        params.put(HadoopVariantStorageEngine.ARCHIVE_FIELDS, "QUAL,FORMAT:DP,INFO:DP");
-        params.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
+        params.put(HadoopVariantStorageEngineOptions.ARCHIVE_FIELDS.key(), "QUAL,FORMAT:DP,INFO:DP");
         params.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
         params.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
 
@@ -188,7 +185,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         dbAdaptor.getHBaseManager().act(dbAdaptor.getArchiveTableName(1), table -> {
             for (Result r : table.getScanner(new Scan())) {
-                for (Map.Entry<byte[], byte[]> entry : r.getFamilyMap(dbAdaptor.getGenomeHelper().getColumnFamily()).entrySet()) {
+                for (Map.Entry<byte[], byte[]> entry : r.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES).entrySet()) {
                     if (Bytes.toString(entry.getKey()).endsWith(ArchiveTableHelper.REF_COLUMN_SUFIX)) {
                         VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(entry.getValue());
                         List<String> formats = vcfSlice.getFields().getFormatsList();
@@ -206,8 +203,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     @Test
     public void testTwoFilesBasicAggregateNoneArchiveRefFields() throws Exception {
         ObjectMap params = new ObjectMap();
-        params.put(HadoopVariantStorageEngine.ARCHIVE_FIELDS, VariantQueryUtils.NONE);
-        params.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
+        params.put(HadoopVariantStorageEngineOptions.ARCHIVE_FIELDS.key(), VariantQueryUtils.NONE);
         params.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
         params.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
 
@@ -228,7 +224,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         dbAdaptor.getHBaseManager().act(dbAdaptor.getArchiveTableName(1), table -> {
             for (Result r : table.getScanner(new Scan())) {
-                for (Map.Entry<byte[], byte[]> entry : r.getFamilyMap(dbAdaptor.getGenomeHelper().getColumnFamily()).entrySet()) {
+                for (Map.Entry<byte[], byte[]> entry : r.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES).entrySet()) {
                     assertFalse(Bytes.toString(entry.getKey()).endsWith(ArchiveTableHelper.REF_COLUMN_SUFIX));
                 }
             }
@@ -260,7 +256,6 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
-        options.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
         options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto");
         options.put(VariantStorageEngine.Options.STUDY.key(), studyMetadata.getName());
 
@@ -320,28 +315,26 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     public void testMultipleFilesConcurrentMergeBasic() throws Exception {
         testMultipleFilesConcurrent(new ObjectMap(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
                 .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
-                .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_BATCH_SIZE, 5)
-                .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE_BATCH_SIZE, 5));
+                .append(HadoopVariantStorageEngineOptions.HADOOP_LOAD_BATCH_SIZE.key(), 5));
     }
 
     @Test
     public void testMultipleFilesConcurrentMergeBasicMultipleBatches() throws Exception {
         testMultipleFilesConcurrent(new ObjectMap(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
                 .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
-                .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_BATCH_SIZE, 5)
-                .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE_BATCH_SIZE, 5)
-                .append(HadoopVariantStorageEngine.ARCHIVE_FILE_BATCH_SIZE, 5));
+                .append(HadoopVariantStorageEngineOptions.HADOOP_LOAD_BATCH_SIZE.key(), 5)
+                .append(HadoopVariantStorageEngineOptions.ARCHIVE_FILE_BATCH_SIZE.key(), 5));
 
-        ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(1000, '_', 5);
+        ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(1000, 5);
 
         HadoopVariantStorageEngine engine = getVariantStorageEngine();
         VariantHadoopDBAdaptor dbAdaptor = engine.getDBAdaptor();
         Integer count = dbAdaptor.getHBaseManager().act(engine.getArchiveTableName(STUDY_ID), table -> {
             int numBlocks = 0;
-            for (Result result : table.getScanner(dbAdaptor.getGenomeHelper().getColumnFamily())) {
+            for (Result result : table.getScanner(GenomeHelper.COLUMN_FAMILY_BYTES)) {
                 numBlocks++;
                 int batch = rowKeyFactory.extractFileBatchFromBlockId(Bytes.toString(result.getRow()));
-                for (byte[] column : result.getFamilyMap(dbAdaptor.getGenomeHelper().getColumnFamily()).keySet()) {
+                for (byte[] column : result.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES).keySet()) {
                     if (!Bytes.startsWith(column, VARIANT_COLUMN_B_PREFIX)) {
                         int fileId = ArchiveTableHelper.getFileIdFromNonRefColumnName(column);
                         int expectedBatch = rowKeyFactory.getFileBatch(fileId);
@@ -607,7 +600,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-        loadFile("s1_s2.genome.vcf", studyMetadata, new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_LOAD_REFERENCE, true));
+        loadFile("s1_s2.genome.vcf", studyMetadata, new ObjectMap(HadoopVariantStorageEngineOptions.VARIANT_TABLE_LOAD_REFERENCE.key(), true));
         checkArchiveTableTimeStamp(dbAdaptor);
 
 
@@ -636,7 +629,6 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     @Test
     public void testPlatinumFilesOneByOne_extraFields() throws Exception {
         testPlatinumFilesOneByOne(new ObjectMap()
-                .append(HadoopVariantStorageEngine.MERGE_ARCHIVE_SCAN_BATCH_SIZE, 2)
                 .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ"), 6);
     }
 

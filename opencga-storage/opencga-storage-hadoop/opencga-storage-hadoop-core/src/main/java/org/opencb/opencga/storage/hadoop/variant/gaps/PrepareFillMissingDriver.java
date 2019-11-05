@@ -8,6 +8,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -59,8 +60,8 @@ public class PrepareFillMissingDriver extends AbstractVariantsTableDriver {
             VariantHBaseQueryParser.addRegionFilter(scan, new Region(region));
         }
         scan.setCacheBlocks(false);
-        scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.getStudyColumn(getStudyId()).bytes());
-        scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.getFillMissingColumn(getStudyId()).bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.getStudyColumn(getStudyId()).bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.getFillMissingColumn(getStudyId()).bytes());
 
         LOG.info(scan.toString());
 

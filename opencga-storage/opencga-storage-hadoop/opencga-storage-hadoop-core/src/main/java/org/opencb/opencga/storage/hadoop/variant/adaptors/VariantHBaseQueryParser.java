@@ -244,7 +244,7 @@ public class VariantHBaseQueryParser {
     public Scan parseQuery(VariantQueryFields selectElements, Query query, QueryOptions options) {
 
         Scan scan = new Scan();
-        byte[] family = genomeHelper.getColumnFamily();
+        byte[] family = GenomeHelper.COLUMN_FAMILY_BYTES;
         FilterList filters = new FilterList(FilterList.Operator.MUST_PASS_ALL);
 //        FilterList regionFilters = new FilterList(FilterList.Operator.MUST_PASS_ONE);
 //        filters.addFilter(regionFilters);
@@ -315,9 +315,9 @@ public class VariantHBaseQueryParser {
         Set<String> studyNames = studies.keySet();
         if (query.getBoolean(VARIANTS_TO_INDEX.key(), false)) {
 
-            scan.addColumn(genomeHelper.getColumnFamily(), INDEX_NOT_SYNC.bytes());
-            scan.addColumn(genomeHelper.getColumnFamily(), INDEX_UNKNOWN.bytes());
-            scan.addColumn(genomeHelper.getColumnFamily(), INDEX_STUDIES.bytes());
+            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_NOT_SYNC.bytes());
+            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_UNKNOWN.bytes());
+            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, INDEX_STUDIES.bytes());
 
             Filter f1 = existingColumnFilter(INDEX_NOT_SYNC.bytes());
             Filter f2 = existingColumnFilter(INDEX_UNKNOWN.bytes());
@@ -575,7 +575,7 @@ public class VariantHBaseQueryParser {
      * @return Filter
      */
     public Filter existingColumnFilter(byte[] column) {
-        SingleColumnValueFilter filter = new SingleColumnValueFilter(genomeHelper.getColumnFamily(), column,
+        SingleColumnValueFilter filter = new SingleColumnValueFilter(GenomeHelper.COLUMN_FAMILY_BYTES, column,
                 CompareFilter.CompareOp.NOT_EQUAL, new NullComparator());
         filter.setFilterIfMissing(true);
         filter.setLatestVersionOnly(true);
@@ -600,7 +600,7 @@ public class VariantHBaseQueryParser {
     private void addValueFilter(FilterList filters, byte[] column, List<String> values) {
         List<Filter> valueFilters = new ArrayList<>(values.size());
         for (String value : values) {
-            SingleColumnValueFilter valueFilter = new SingleColumnValueFilter(genomeHelper.getColumnFamily(),
+            SingleColumnValueFilter valueFilter = new SingleColumnValueFilter(GenomeHelper.COLUMN_FAMILY_BYTES,
                     column, CompareFilter.CompareOp.EQUAL, new SubstringComparator(value));
             valueFilter.setFilterIfMissing(true);
             valueFilters.add(valueFilter);

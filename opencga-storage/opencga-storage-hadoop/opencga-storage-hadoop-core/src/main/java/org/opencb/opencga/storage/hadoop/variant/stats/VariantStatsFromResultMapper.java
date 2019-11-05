@@ -13,6 +13,7 @@ import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
@@ -77,11 +78,8 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
                 VariantStorageEngine.Options.STATS_MULTI_ALLELIC.defaultValue());
         try (VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(
                 new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
-            samples.forEach((cohort, samples) -> {
-                calculators.put(cohort,
-                        new HBaseVariantStatsCalculator(
-                                helper.getColumnFamily(), metadataManager, studyMetadata, samples, statsMultiAllelic, unknownGenotype));
-            });
+            samples.forEach((cohort, samples) -> calculators.put(cohort, new HBaseVariantStatsCalculator(
+                    GenomeHelper.COLUMN_FAMILY_BYTES, metadataManager, studyMetadata, samples, statsMultiAllelic, unknownGenotype)));
         }
     }
 
@@ -161,7 +159,7 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
         if (put == null) {
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put.null").increment(1);
         } else {
-            HadoopVariantSearchIndexUtils.addNotSyncStatus(put, helper.getColumnFamily());
+            HadoopVariantSearchIndexUtils.addNotSyncStatus(put, GenomeHelper.COLUMN_FAMILY_BYTES);
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put").increment(1);
             context.write(new ImmutableBytesWritable(helper.getVariantsTable()), put);
         }

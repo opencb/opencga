@@ -49,6 +49,7 @@ import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.iterators.VariantHBaseResultSetIterator;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.iterators.VariantHBaseScanIterator;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
@@ -126,7 +127,9 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable,
                 studyConfigurationManager.get(), clientSideSkip);
 
-        phoenixFetchSize = options.getInt(HadoopVariantStorageEngine.DBADAPTOR_PHOENIX_FETCH_SIZE, -1);
+        phoenixFetchSize = options.getInt(
+                HadoopVariantStorageEngineOptions.DBADAPTOR_PHOENIX_FETCH_SIZE.key(),
+                HadoopVariantStorageEngineOptions.DBADAPTOR_PHOENIX_FETCH_SIZE.defaultValue());
 
         phoenixHelper = new VariantPhoenixHelper(genomeHelper);
 
@@ -189,10 +192,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         return configuration;
     }
 
-    public ArchiveTableHelper getArchiveHelper(int studyId, int fileId) throws StorageEngineException, IOException {
+    public ArchiveTableHelper getArchiveHelper(int studyId, int fileId) throws StorageEngineException {
         VariantFileMetadata fileMetadata = getMetadataManager().getVariantFileMetadata(studyId, fileId, null).first();
         if (fileMetadata == null) {
-            throw new StorageEngineException("File '" + fileId + "' not found in study '" + studyId + "'");
+            throw VariantQueryException.fileNotFound(fileId, studyId);
         }
         return new ArchiveTableHelper(genomeHelper, studyId, fileMetadata);
 
@@ -396,14 +399,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             ArchiveTableHelper archiveHelper;
             try {
                 archiveHelper = getArchiveHelper(studyId, fileId);
-            } catch (IOException | StorageEngineException e) {
+            } catch (StorageEngineException e) {
                 throw VariantQueryException.internalException(e);
             }
 
             Scan scan = new Scan();
-            scan.addColumn(archiveHelper.getColumnFamily(), archiveHelper.getNonRefColumnName());
+            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, archiveHelper.getNonRefColumnName());
             if (options.getBoolean("ref", true)) {
-                scan.addColumn(archiveHelper.getColumnFamily(), archiveHelper.getRefColumnName());
+                scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, archiveHelper.getRefColumnName());
             }
             VariantHBaseQueryParser.addArchiveRegionFilter(scan, region, archiveHelper);
             scan.setMaxResultSize(options.getInt("limit"));
@@ -605,7 +608,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
         final GenomeHelper genomeHelper1 = new GenomeHelper(configuration);
         int currentAnnotationId = getMetadataManager().getProjectMetadata().getAnnotation().getCurrent().getId();
-        VariantAnnotationToPhoenixConverter converter = new VariantAnnotationToPhoenixConverter(genomeHelper1.getColumnFamily(),
+        VariantAnnotationToPhoenixConverter converter = new VariantAnnotationToPhoenixConverter(GenomeHelper.COLUMN_FAMILY_BYTES,
                 currentAnnotationId);
         Iterable<Map<PhoenixHelper.Column, ?>> records = converter.apply(variantAnnotations);
 

@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions;
 
 import java.util.List;
 
@@ -24,9 +25,9 @@ public class SshMRExecutorTest {
     @Before
     public void setUp() throws Exception {
         System.setProperty("app.home", "/opt/opencga");
-        options = new ObjectMap(MRExecutorFactory.MR_EXECUTOR, "ssh");
-        options.put(SshMRExecutor.SSH_USER, "test_user");
-        options.put(SshMRExecutor.SSH_HOST, "test_host");
+        options = new ObjectMap(HadoopVariantStorageEngineOptions.MR_EXECUTOR.key(), "ssh");
+        options.put(HadoopVariantStorageEngineOptions.MR_EXECUTOR_SSH_USER.key(), "test_user");
+        options.put(HadoopVariantStorageEngineOptions.MR_EXECUTOR_SSH_HOST.key(), "test_host");
 
     }
 
@@ -53,7 +54,7 @@ public class SshMRExecutorTest {
     @Test
     public void testChangeRemoteOpenCGAHome() throws StorageEngineException {
         SshMRExecutor sshMRExecutor = new SshMRExecutor();
-        sshMRExecutor.init(options.append(SshMRExecutor.REMOTE_OPENCGA_HOME, "/home/user/opencga"));
+        sshMRExecutor.init(options.append(HadoopVariantStorageEngineOptions.MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME.key(), "/home/user/opencga"));
 
         String hadoopClasspath = "/opt/opencga/libs/myLib.jar::/opt/opencga/libs/myLibOther.jar:/opt/opencga/conf/hadoop";
         String expectedHadoopClasspath = "/home/user/opencga/libs/myLib.jar:/home/user/opencga/libs/myLibOther.jar:/home/user/opencga/conf/hadoop";

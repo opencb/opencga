@@ -11,6 +11,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantRowMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
@@ -46,7 +47,7 @@ public class VariantStatsFromVariantRowTsvMapper extends VariantRowMapper<NullWr
             CohortMetadata cohortMetadata = metadataManager.getCohortMetadata(studyMetadata.getId(), cohort);
             String alias = cohortMetadata.getAttributes().getString("alias");
             String name = cohortMetadata.getName();
-            calculators.put(StringUtils.isNotEmpty(alias) ? alias : name, new HBaseVariantStatsCalculator(helper.getColumnFamily(),
+            calculators.put(StringUtils.isNotEmpty(alias) ? alias : name, new HBaseVariantStatsCalculator(GenomeHelper.COLUMN_FAMILY_BYTES,
                     metadataManager, studyMetadata, cohortMetadata.getSamples(), statsMultiAllelic, unknownGenotype));
         }
 

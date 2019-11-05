@@ -87,7 +87,6 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -382,25 +381,25 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         StorageEtlConfiguration variantConfiguration = storageConfiguration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getVariant();
         ObjectMap options = variantConfiguration.getOptions();
 
-        options.put(MRExecutorFactory.MR_EXECUTOR, TestMRExecutor.class);
+        options.put(HadoopVariantStorageEngineOptions.MR_EXECUTOR.key(), TestMRExecutor.class);
         TestMRExecutor.setStaticConfiguration(conf);
 
-        options.put(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, false);
+        options.put(HadoopVariantStorageEngineOptions.MR_ADD_DEPENDENCY_JARS.key(), false);
         EnumSet<Compression.Algorithm> supportedAlgorithms = EnumSet.of(Compression.Algorithm.NONE, HBaseTestingUtility.getSupportedCompressionAlgorithms());
 
-        options.put(HadoopVariantStorageEngine.ARCHIVE_TABLE_COMPRESSION, supportedAlgorithms.contains(Compression.Algorithm.GZ)
+        options.put(HadoopVariantStorageEngineOptions.ARCHIVE_TABLE_COMPRESSION.key(), supportedAlgorithms.contains(Compression.Algorithm.GZ)
                 ? Compression.Algorithm.GZ.getName()
                 : Compression.Algorithm.NONE.getName());
-        options.put(HadoopVariantStorageEngine.VARIANT_TABLE_COMPRESSION, supportedAlgorithms.contains(Compression.Algorithm.SNAPPY)
+        options.put(HadoopVariantStorageEngineOptions.VARIANT_TABLE_COMPRESSION.key(), supportedAlgorithms.contains(Compression.Algorithm.SNAPPY)
                 ? Compression.Algorithm.SNAPPY.getName()
                 : Compression.Algorithm.NONE.getName());
-        options.put(HadoopVariantStorageEngine.SAMPLE_INDEX_TABLE_COMPRESSION, supportedAlgorithms.contains(Compression.Algorithm.SNAPPY)
+        options.put(HadoopVariantStorageEngineOptions.SAMPLE_INDEX_TABLE_COMPRESSION.key(), supportedAlgorithms.contains(Compression.Algorithm.SNAPPY)
                 ? Compression.Algorithm.SNAPPY.getName()
                 : Compression.Algorithm.NONE.getName());
-        options.put(HadoopVariantStorageEngine.ANNOTATION_INDEX_TABLE_COMPRESSION, supportedAlgorithms.contains(Compression.Algorithm.SNAPPY)
+        options.put(HadoopVariantStorageEngineOptions.ANNOTATION_INDEX_TABLE_COMPRESSION.key(), supportedAlgorithms.contains(Compression.Algorithm.SNAPPY)
                 ? Compression.Algorithm.SNAPPY.getName()
                 : Compression.Algorithm.NONE.getName());
-        options.put(HadoopVariantStorageEngine.PENDING_ANNOTATION_TABLE_COMPRESSION, supportedAlgorithms.contains(Compression.Algorithm.SNAPPY)
+        options.put(HadoopVariantStorageEngineOptions.PENDING_ANNOTATION_TABLE_COMPRESSION.key(), supportedAlgorithms.contains(Compression.Algorithm.SNAPPY)
                 ? Compression.Algorithm.SNAPPY.getName()
                 : Compression.Algorithm.NONE.getName());
 
@@ -408,11 +407,11 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         String intermediateDirectory = fs.getHomeDirectory().toUri().resolve("opencga_test/").toString();
 //        System.out.println(HadoopVariantStorageEngine.INTERMEDIATE_HDFS_DIRECTORY + " = " + intermediateDirectory);
         options.put(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, conf.get(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY));
-        options.put(HadoopVariantStorageEngine.INTERMEDIATE_HDFS_DIRECTORY, intermediateDirectory);
+        options.put(HadoopVariantStorageEngineOptions.INTERMEDIATE_HDFS_DIRECTORY.key(), intermediateDirectory);
 
-        options.put(HadoopVariantStorageEngine.ARCHIVE_TABLE_PRESPLIT_SIZE, 5);
-        options.put(HadoopVariantStorageEngine.VARIANT_TABLE_PRESPLIT_SIZE, 5);
-        options.put(HadoopVariantStorageEngine.EXPECTED_FILES_NUMBER, 10);
+        options.put(HadoopVariantStorageEngineOptions.ARCHIVE_TABLE_PRESPLIT_SIZE.key(), 5);
+        options.put(HadoopVariantStorageEngineOptions.VARIANT_TABLE_PRESPLIT_SIZE.key(), 5);
+        options.put(HadoopVariantStorageEngineOptions.EXPECTED_FILES_NUMBER.key(), 10);
         options.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
 
         options.put(VariantAnnotationManager.SPECIES, "hsapiens");

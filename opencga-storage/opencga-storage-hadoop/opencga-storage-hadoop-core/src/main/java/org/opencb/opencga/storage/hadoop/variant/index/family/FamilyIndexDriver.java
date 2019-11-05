@@ -156,7 +156,7 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
         job.getConfiguration().set(TRIOS_LIST, sampleIds.stream().map(Objects::toString).collect(Collectors.joining(",")));
 
         for (Integer sampleId : sampleIds) {
-            scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.buildSampleColumnKey(getStudyId(), sampleId));
+            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.buildSampleColumnKey(getStudyId(), sampleId));
         }
 //        scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
 
@@ -214,7 +214,8 @@ public class FamilyIndexDriver extends AbstractVariantsTableDriver {
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
+            new GenomeHelper(context.getConfiguration());
+            family = GenomeHelper.COLUMN_FAMILY_BYTES;
             converter = new SampleIndexToHBaseConverter(family);
 
             int[] sampleIds = context.getConfiguration().getInts(TRIOS_LIST);

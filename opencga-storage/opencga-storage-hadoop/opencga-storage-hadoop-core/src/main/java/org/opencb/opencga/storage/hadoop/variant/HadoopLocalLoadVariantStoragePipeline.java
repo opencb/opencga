@@ -57,6 +57,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.STDIN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.*;
 
 /**
  * Created on 06/06/17.
@@ -175,7 +176,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         } else {
             sampleIndexDBLoader = new SampleIndexDBLoader(dbAdaptor.getHBaseManager(),
                     dbAdaptor.getTableNameGenerator().getSampleIndexTableName(helper.getStudyId()), sampleIds,
-                    dbAdaptor.getGenomeHelper().getColumnFamily(),
+                    GenomeHelper.COLUMN_FAMILY_BYTES,
                     getOptions());
         }
 
@@ -263,13 +264,13 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         } else {
             sampleIndexDBLoader = new SampleIndexDBLoader(dbAdaptor.getHBaseManager(),
                     dbAdaptor.getTableNameGenerator().getSampleIndexTableName(studyId), sampleIds,
-                    dbAdaptor.getGenomeHelper().getColumnFamily(),
+                    GenomeHelper.COLUMN_FAMILY_BYTES,
                     getOptions());
         }
 
         // TaskMetadata
-        String archiveFields = options.getString(ARCHIVE_FIELDS);
-        String nonRefFilter = options.getString(ARCHIVE_NON_REF_FILTER);
+        String archiveFields = options.getString(ARCHIVE_FIELDS.key());
+        String nonRefFilter = options.getString(ARCHIVE_NON_REF_FILTER.key());
         GroupedVariantsTask task = new GroupedVariantsTask(archiveWriter, hadoopDBWriter, sampleIndexDBLoader,
                 null, archiveFields, nonRefFilter);
 
@@ -345,7 +346,9 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     }
 
     private VariantHadoopDBWriter newVariantHadoopDBWriter() throws StorageEngineException {
-        boolean includeReferenceVariantsData = getOptions().getBoolean(VARIANT_TABLE_LOAD_REFERENCE, false);
+        boolean includeReferenceVariantsData = getOptions().getBoolean(
+                VARIANT_TABLE_LOAD_REFERENCE.key(),
+                VARIANT_TABLE_LOAD_REFERENCE.defaultValue());
         return new VariantHadoopDBWriter(
                 dbAdaptor.getGenomeHelper(),
                 dbAdaptor.getCredentials().getTable(),

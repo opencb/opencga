@@ -87,7 +87,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         this.annotationConverter = new HBaseToVariantAnnotationConverter(genomeHelper, ts)
                 .setAnnotationIds(scm.getProjectMetadata().getAnnotation());
         HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter(genomeHelper);
-        this.studyEntryConverter = new HBaseToStudyEntryConverter(genomeHelper.getColumnFamily(), scm, statsConverter);
+        this.studyEntryConverter = new HBaseToStudyEntryConverter(GenomeHelper.COLUMN_FAMILY_BYTES, scm, statsConverter);
     }
 
     /**
@@ -292,7 +292,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         public Variant convert(Result result) {
             Variant variant = extractVariantFromVariantRowKey(result.getRow());
             try {
-                Cell cell = result.getColumnLatestCell(genomeHelper.getColumnFamily(), VariantPhoenixHelper.VariantColumn.TYPE.bytes());
+                Cell cell = result.getColumnLatestCell(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.VariantColumn.TYPE.bytes());
                 if (cell != null && cell.getValueLength() > 0) {
                     String string = Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                     variant.setType(VariantType.valueOf(string));
