@@ -618,7 +618,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("options", options)
                 .append("token", token);
         try {
-            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.WRITE_FILES);
+            File parentFile = getParents(study.getUid(), file.getPath(), false, INCLUDE_FILE_URI_PATH).first();
+            authorizationManager.checkFilePermission(study.getUid(), parentFile.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
 
             OpenCGAResult<File> result = create(study, file, parents, content, options, token);
             auditManager.auditCreate(userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
@@ -2738,13 +2739,12 @@ public class FileManager extends AnnotationSetManager<File> {
             }
         }
 
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UID.key());
         if (CollectionUtils.isNotEmpty(pathList)) {
             // Search for all the files within the list of paths
             Query query = new Query()
                     .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), pathList);
-            OpenCGAResult<File> fileDataResult1 = fileDBAdaptor.get(query, options);
+            OpenCGAResult<File> fileDataResult1 = fileDBAdaptor.get(query, INCLUDE_FILE_URI_PATH);
             for (File file1 : fileDataResult1.getResults()) {
                 if (!uidFileSet.contains(file1.getUid())) {
                     uidFileSet.add(file1.getUid());

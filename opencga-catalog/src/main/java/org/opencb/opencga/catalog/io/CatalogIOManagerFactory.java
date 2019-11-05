@@ -44,7 +44,7 @@ public class CatalogIOManagerFactory {
         this.properties = null;
         this.configuration = configuration;
         try {
-            mainRootdir = UriUtils.createDirectoryUri(configuration.getDataDir());
+            mainRootdir = UriUtils.createDirectoryUri(configuration.getWorkspace());
         } catch (URISyntaxException e) {
             throw new CatalogIOException("Malformed URI 'OPENCGA.CATALOG.MAIN.ROOTDIR'", e);
         }

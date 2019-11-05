@@ -722,7 +722,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         DataResult<Job> allJobs = catalogManager.getJobManager().search(String.valueOf(studyId), (Query) null, null, sessionIdUser);
         assertEquals(5, allJobs.getNumResults());
 
-        thrown.expectMessage("final status");
+        thrown.expectMessage("status different");
         thrown.expect(CatalogException.class);
         catalogManager.getJobManager().create(studyId, new Job().setId("job5").setStatus(new Job.JobStatus(Job.JobStatus.PENDING)),
                 QueryOptions.empty(), sessionIdUser);

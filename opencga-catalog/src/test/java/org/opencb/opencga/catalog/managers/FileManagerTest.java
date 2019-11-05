@@ -91,7 +91,7 @@ public class FileManagerTest extends AbstractManagerTest {
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, "analyst");
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "user2", aclParams, sessionIdUser);
         fileManager.create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
-                "data/test/folder/file.txt", "My description", null, 0, null, (long) -1, null, null, true, null, null, sessionIdUser2);
+                "data/test/folder/file.txt", "My description", null, 0, null, (long) -1, null, null, true, "blabla", null, sessionIdUser2);
         assertEquals(1, fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(),
                 "data/test/folder/file.txt"), null, sessionIdUser).getNumResults());
     }
@@ -713,7 +713,7 @@ public class FileManagerTest extends AbstractManagerTest {
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, "analyst");
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "user2", aclParams, sessionIdUser);
         File file = fileManager.create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
-                "data/test/folder/file.txt", "My description", null, 0, null, (long) -1, null, null, true, null, null,
+                "data/test/folder/file.txt", "My description", null, 0, null, (long) -1, null, null, true, "blabla", null,
                 sessionIdUser2).first();
         long fileId = fileManager.get(studyFqn, file.getPath(), FileManager.INCLUDE_FILE_IDS, sessionIdUser).first().getUid();
         assertEquals(file.getUid(), fileId);

@@ -55,24 +55,12 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     @Override
     protected void setConfiguration(Configuration configuration) throws CatalogIOException {
         try {
-            rootDir = UriUtils.createDirectoryUri(configuration.getDataDir());
+            rootDir = UriUtils.createDirectoryUri(configuration.getWorkspace());
         } catch (URISyntaxException e) {
             throw new CatalogIOException("Malformed URI 'OPENCGA.CATALOG.MAIN.ROOTDIR'", e);
         }
         if (!rootDir.getScheme().equals("file")) {
             throw new CatalogIOException("wrong posix file system in catalog.properties: " + rootDir);
-        }
-        if (configuration.getTempJobsDir().isEmpty()) {
-            jobsDir = rootDir.resolve(DEFAULT_OPENCGA_JOBS_FOLDER);
-        } else {
-            try {
-                jobsDir = UriUtils.createDirectoryUri(configuration.getTempJobsDir());
-            } catch (URISyntaxException e) {
-                throw new CatalogIOException("Malformed URI 'OPENCGA.CATALOG.MAIN.ROOTDIR'", e);
-            }
-        }
-        if (!jobsDir.getScheme().equals("file")) {
-            throw new CatalogIOException("wrong posix file system in catalog.properties: " + jobsDir);
         }
     }
 

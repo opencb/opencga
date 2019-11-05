@@ -988,7 +988,7 @@ public class InterpretationWSService extends AnalysisWSService {
             param = FamilyInterpretationAnalysis.MAX_LOW_COVERAGE_PARAM;
             options.put(param, queryOptions.getInt(param, FamilyInterpretationAnalysis.LOW_COVERAGE_DEFAULT));
 
-            String dataDir = configuration.getDataDir();
+            String dataDir = configuration.getWorkspace();
             String opencgaHome = Paths.get(dataDir).getParent().toString();
 
             Object result;
@@ -1020,7 +1020,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(value = "Clinical analysis ID, the proband will be used") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyId) {
         try {
-            String dataDir = configuration.getDataDir();
+            String dataDir = configuration.getWorkspace();
             String opencgaHome = Paths.get(dataDir).getParent().toString();
 
             List<String> sampleNames = new ArrayList<>();

@@ -1,29 +1,14 @@
 package org.opencb.opencga.analysis;
 
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.hpg.bigdata.analysis.exceptions.AnalysisToolException;
 import org.opencb.hpg.bigdata.analysis.tools.ToolManager;
-import org.opencb.hpg.bigdata.analysis.tools.manifest.Param;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class ToolAnalysis {
 
@@ -37,7 +22,8 @@ public class ToolAnalysis {
 
     public ToolAnalysis(Configuration configuration) throws CatalogException, AnalysisToolException {
         this.catalogManager = new CatalogManager(configuration);
-        this.toolManager = new ToolManager(Paths.get(configuration.getToolDir()));
+//        this.toolManager = new ToolManager(Paths.get(configuration.getToolDir()));
+        this.toolManager = null;
 
         this.jobManager = catalogManager.getJobManager();
         this.fileManager = catalogManager.getFileManager();

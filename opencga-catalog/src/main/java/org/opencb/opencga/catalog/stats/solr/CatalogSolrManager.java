@@ -29,8 +29,8 @@ import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.config.SearchConfiguration;
 import org.opencb.opencga.core.models.Study;
+import org.opencb.oskar.core.config.DatabaseCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,10 +68,13 @@ public class CatalogSolrManager {
 
     public CatalogSolrManager(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
-        SearchConfiguration searchConfiguration = catalogManager.getConfiguration().getCatalog().getSearch();
-        this.solrManager = new SolrManager(searchConfiguration.getHosts(), searchConfiguration.getMode(), searchConfiguration.getTimeout());
-        insertBatchSize = searchConfiguration.getInsertBatchSize() > 0
-                ? searchConfiguration.getInsertBatchSize() : DEFAULT_INSERT_BATCH_SIZE;
+        DatabaseCredentials searchConfiguration = catalogManager.getConfiguration().getCatalog().getSearchEngine();
+        String mode = searchConfiguration.getOptions().getOrDefault("mode", "cloud");
+        int timeout = Integer.parseInt(searchConfiguration.getOptions().getOrDefault("timeout", "30000"));
+        int tmpInsertBatchSize = Integer.parseInt(searchConfiguration.getOptions().getOrDefault("insertBatchSize",
+                String.valueOf(DEFAULT_INSERT_BATCH_SIZE)));
+        insertBatchSize = tmpInsertBatchSize > 0 ? tmpInsertBatchSize : DEFAULT_INSERT_BATCH_SIZE;
+        this.solrManager = new SolrManager(searchConfiguration.getHosts(), mode, timeout);
 
         DATABASE_PREFIX = catalogManager.getConfiguration().getDatabasePrefix() + "_";
 
@@ -109,7 +112,7 @@ public class CatalogSolrManager {
     }
 
     public void createSolrCollections() {
-        if (catalogManager.getConfiguration().getCatalog().getSearch().getMode().equals("cloud")) {
+        if (catalogManager.getConfiguration().getCatalog().getSearchEngine().getOptions().getOrDefault("mode", "cloud").equals("cloud")) {
             createCatalogSolrCollections();
         } else {
             createCatalogSolrCores();

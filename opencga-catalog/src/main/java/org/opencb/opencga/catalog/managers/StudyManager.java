@@ -363,37 +363,25 @@ public class StudyManager extends AbstractManager {
         long studyId;
         long variableSetId;
 
-        if (StringUtils.isNumeric(variableStr) && Long.parseLong(variableStr) > configuration.getCatalog().getOffset()) {
-            variableSetId = Long.parseLong(variableStr);
-            Query query = new Query(StudyDBAdaptor.QueryParams.VARIABLE_SET_UID.key(), variableSetId);
-            OpenCGAResult<Study> studyDataResult = studyDBAdaptor.get(query, new QueryOptions(QueryOptions.INCLUDE,
-                    StudyDBAdaptor.QueryParams.UID.key()));
-            if (studyDataResult.getNumResults() == 0) {
-                throw new CatalogException("Variable set " + variableStr + " not found");
-            }
-            studyId = studyDataResult.first().getUid();
-            userId = catalogManager.getUserManager().getUserId(sessionId);
-        } else {
-            if (variableStr.contains(",")) {
-                throw new CatalogException("More than one variable set found. Please, choose just one variable set");
-            }
-
-            userId = catalogManager.getUserManager().getUserId(sessionId);
-            Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-            studyId = study.getUid();
-
-            Query query = new Query()
-                    .append(StudyDBAdaptor.VariableSetParams.STUDY_UID.key(), study.getUid())
-                    .append(StudyDBAdaptor.VariableSetParams.ID.key(), variableStr);
-            QueryOptions queryOptions = new QueryOptions();
-            OpenCGAResult<VariableSet> variableSetDataResult = studyDBAdaptor.getVariableSets(query, queryOptions);
-            if (variableSetDataResult.getNumResults() == 0) {
-                throw new CatalogException("Variable set " + variableStr + " not found in study " + studyStr);
-            } else if (variableSetDataResult.getNumResults() > 1) {
-                throw new CatalogException("More than one variable set found under " + variableStr + " in study " + studyStr);
-            }
-            variableSetId = variableSetDataResult.first().getUid();
+        if (variableStr.contains(",")) {
+            throw new CatalogException("More than one variable set found. Please, choose just one variable set");
         }
+
+        userId = catalogManager.getUserManager().getUserId(sessionId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        studyId = study.getUid();
+
+        Query query = new Query()
+                .append(StudyDBAdaptor.VariableSetParams.STUDY_UID.key(), study.getUid())
+                .append(StudyDBAdaptor.VariableSetParams.ID.key(), variableStr);
+        QueryOptions queryOptions = new QueryOptions();
+        OpenCGAResult<VariableSet> variableSetDataResult = studyDBAdaptor.getVariableSets(query, queryOptions);
+        if (variableSetDataResult.getNumResults() == 0) {
+            throw new CatalogException("Variable set " + variableStr + " not found in study " + studyStr);
+        } else if (variableSetDataResult.getNumResults() > 1) {
+            throw new CatalogException("More than one variable set found under " + variableStr + " in study " + studyStr);
+        }
+        variableSetId = variableSetDataResult.first().getUid();
 
         return new MyResourceId(userId, studyId, variableSetId);
     }

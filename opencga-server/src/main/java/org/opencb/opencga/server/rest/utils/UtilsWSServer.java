@@ -45,135 +45,136 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 @Produces("application/json")
 public class UtilsWSServer extends OpenCGAWSServer {
 
-    public UtilsWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam) throws IOException, VersionException {
+    public UtilsWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam)
+            throws IOException, VersionException {
         super(uriInfo, httpServletRequest, headerParam);
     }
 
-    @POST
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @Path("/network/community")
-    public Response community(@FormDataParam("sif") String sifData,
-                              @DefaultValue("F") @FormDataParam("directed") String directed,
-                              @DefaultValue("F") @FormDataParam("weighted") String weighted,
-                              @DefaultValue("infomap") @FormDataParam("method") String method) throws IOException {
-//        String home = Config.getGcsaHome();
-//        Properties analysisProperties = Config.getAnalysisProperties();
-//        Properties accountProperties = Config.getAccountProperties();
-
-        String scriptName = "communities-structure-detection";
-        java.nio.file.Path scriptPath = Paths.get(configuration.getToolDir(), scriptName, scriptName + ".r");
-
-        // creating a random tmp folder
-        String rndStr = StringUtils.randomString(20);
-        java.nio.file.Path randomFolder = Paths.get(configuration.getTempJobsDir(), rndStr);
-        Files.createDirectory(randomFolder);
-
-        java.nio.file.Path inFilePath = randomFolder.resolve("file.sif");
-        java.nio.file.Path outFilePath = randomFolder.resolve("result.comm");
-        java.nio.file.Path outFilePath2 = randomFolder.resolve("result.json");
-
-        Files.write(inFilePath, sifData.getBytes(), StandardOpenOption.CREATE_NEW);
-
-        String command = "Rscript " + scriptPath.toString() + " " + method + " " + directed + " " + weighted + " " + inFilePath.toString() + " " + randomFolder.toString() + "/";
-
-        logger.info(command);
-//        DBObjectMap result = new DBObjectMap();
-        Map<String, Object> result = new HashMap<>();
-        try {
-            Process process = Runtime.getRuntime().exec(command);
-            process.waitFor();
-            int exitValue = process.exitValue();
-
-            try (BufferedReader br = Files.newBufferedReader(outFilePath, Charset.defaultCharset())) {
-                StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    sb.append(line);
-                    sb.append("\n");
-                }
-                result.put("attributes", sb.toString());
-            }
-
-            try (BufferedReader br = Files.newBufferedReader(outFilePath2, Charset.defaultCharset())) {
-                JsonFactory factory = getUpdateObjectMapper().getFactory();
-                JsonParser jp = factory.createParser(br);
-                JsonNode jsonNode = getUpdateObjectMapper().readTree(jp);
-                result.put("results", jsonNode);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            result.put("error", "could not read result files");
-        }
-
-        return createOkResponse(result);
-    }
-
-    @POST
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @Path("/network/topological-study")
-    public Response topology(@FormDataParam("sif") String sifData,
-                             @DefaultValue("F") @FormDataParam("directed") String directed,
-                             @DefaultValue("F") @FormDataParam("weighted") String weighted) throws IOException {
-//        String home = Config.getGcsaHome();
-//        Properties analysisProperties = Config.getAnalysisProperties();
-//        Properties accountProperties = Config.getAccountProperties();
-
-        String scriptName = "topological-study";
-        java.nio.file.Path scriptPath = Paths.get(configuration.getToolDir(), scriptName, scriptName + ".r");
-
-        // creating a random tmp folder
-        String rndStr = StringUtils.randomString(20);
-        java.nio.file.Path randomFolder = Paths.get(configuration.getTempJobsDir(), rndStr);
-        Files.createDirectory(randomFolder);
-
-        java.nio.file.Path inFilePath = randomFolder.resolve("file.sif");
-        java.nio.file.Path outFilePath = randomFolder.resolve("result.local");
-        java.nio.file.Path outFilePath2 = randomFolder.resolve("result.global.json");
-
-        Files.write(inFilePath, sifData.getBytes(), StandardOpenOption.CREATE_NEW);
-
-        String command = "Rscript " + scriptPath.toString() + " " + directed + " " + weighted + " " + inFilePath.toString() + " " + randomFolder.toString() + "/";
-
-        logger.info(command);
-        Map<String, Object> result = new HashMap<>();
-        try {
-            Process process = Runtime.getRuntime().exec(command);
-            process.waitFor();
-
-            try (BufferedReader br = Files.newBufferedReader(outFilePath, Charset.defaultCharset())) {
-                StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    sb.append(line);
-                    sb.append("\n");
-                }
-                result.put("local", sb.toString());
-            }
-
-            try (BufferedReader br = Files.newBufferedReader(outFilePath2, Charset.defaultCharset())) {
-                ObjectMapper mapper = new ObjectMapper();
-                JsonFactory factory = mapper.getFactory();
-                JsonParser jp = factory.createParser(br);
-                JsonNode jsonNode = mapper.readTree(jp);
-                result.put("global", jsonNode);
-            }
-
-        } catch (InterruptedException | IOException e) {
-            e.printStackTrace();
-            result.put("error", "could not read result files");
-        }
-
-        return createOkResponse(result);
-    }
-
-    @GET
-    @Path("/proxy")
-    public Response proxy(@QueryParam("url") String url) {
-        System.out.println("url = " + url);
-        Response response = ClientBuilder.newClient().target(url).request().header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8").get();
-        System.out.println("mediatype = " + response.getMediaType());
-        System.out.println("content-type = " + response.getHeaderString("Content-Type"));
-        return this.buildResponse(Response.ok(response.readEntity(String.class), response.getMediaType()));
-    }
+//    @POST
+//    @Consumes(MediaType.MULTIPART_FORM_DATA)
+//    @Path("/network/community")
+//    public Response community(@FormDataParam("sif") String sifData,
+//                              @DefaultValue("F") @FormDataParam("directed") String directed,
+//                              @DefaultValue("F") @FormDataParam("weighted") String weighted,
+//                              @DefaultValue("infomap") @FormDataParam("method") String method) throws IOException {
+////        String home = Config.getGcsaHome();
+////        Properties analysisProperties = Config.getAnalysisProperties();
+////        Properties accountProperties = Config.getAccountProperties();
+//
+//        String scriptName = "communities-structure-detection";
+//        java.nio.file.Path scriptPath = Paths.get(configuration.getToolDir(), scriptName, scriptName + ".r");
+//
+//        // creating a random tmp folder
+//        String rndStr = StringUtils.randomString(20);
+//        java.nio.file.Path randomFolder = Paths.get(configuration.getTempJobsDir(), rndStr);
+//        Files.createDirectory(randomFolder);
+//
+//        java.nio.file.Path inFilePath = randomFolder.resolve("file.sif");
+//        java.nio.file.Path outFilePath = randomFolder.resolve("result.comm");
+//        java.nio.file.Path outFilePath2 = randomFolder.resolve("result.json");
+//
+//        Files.write(inFilePath, sifData.getBytes(), StandardOpenOption.CREATE_NEW);
+//
+//        String command = "Rscript " + scriptPath.toString() + " " + method + " " + directed + " " + weighted + " " + inFilePath.toString() + " " + randomFolder.toString() + "/";
+//
+//        logger.info(command);
+////        DBObjectMap result = new DBObjectMap();
+//        Map<String, Object> result = new HashMap<>();
+//        try {
+//            Process process = Runtime.getRuntime().exec(command);
+//            process.waitFor();
+//            int exitValue = process.exitValue();
+//
+//            try (BufferedReader br = Files.newBufferedReader(outFilePath, Charset.defaultCharset())) {
+//                StringBuilder sb = new StringBuilder();
+//                String line;
+//                while ((line = br.readLine()) != null) {
+//                    sb.append(line);
+//                    sb.append("\n");
+//                }
+//                result.put("attributes", sb.toString());
+//            }
+//
+//            try (BufferedReader br = Files.newBufferedReader(outFilePath2, Charset.defaultCharset())) {
+//                JsonFactory factory = getUpdateObjectMapper().getFactory();
+//                JsonParser jp = factory.createParser(br);
+//                JsonNode jsonNode = getUpdateObjectMapper().readTree(jp);
+//                result.put("results", jsonNode);
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            result.put("error", "could not read result files");
+//        }
+//
+//        return createOkResponse(result);
+//    }
+//
+//    @POST
+//    @Consumes(MediaType.MULTIPART_FORM_DATA)
+//    @Path("/network/topological-study")
+//    public Response topology(@FormDataParam("sif") String sifData,
+//                             @DefaultValue("F") @FormDataParam("directed") String directed,
+//                             @DefaultValue("F") @FormDataParam("weighted") String weighted) throws IOException {
+////        String home = Config.getGcsaHome();
+////        Properties analysisProperties = Config.getAnalysisProperties();
+////        Properties accountProperties = Config.getAccountProperties();
+//
+//        String scriptName = "topological-study";
+//        java.nio.file.Path scriptPath = Paths.get(configuration.getToolDir(), scriptName, scriptName + ".r");
+//
+//        // creating a random tmp folder
+//        String rndStr = StringUtils.randomString(20);
+//        java.nio.file.Path randomFolder = Paths.get(configuration.getTempJobsDir(), rndStr);
+//        Files.createDirectory(randomFolder);
+//
+//        java.nio.file.Path inFilePath = randomFolder.resolve("file.sif");
+//        java.nio.file.Path outFilePath = randomFolder.resolve("result.local");
+//        java.nio.file.Path outFilePath2 = randomFolder.resolve("result.global.json");
+//
+//        Files.write(inFilePath, sifData.getBytes(), StandardOpenOption.CREATE_NEW);
+//
+//        String command = "Rscript " + scriptPath.toString() + " " + directed + " " + weighted + " " + inFilePath.toString() + " " + randomFolder.toString() + "/";
+//
+//        logger.info(command);
+//        Map<String, Object> result = new HashMap<>();
+//        try {
+//            Process process = Runtime.getRuntime().exec(command);
+//            process.waitFor();
+//
+//            try (BufferedReader br = Files.newBufferedReader(outFilePath, Charset.defaultCharset())) {
+//                StringBuilder sb = new StringBuilder();
+//                String line;
+//                while ((line = br.readLine()) != null) {
+//                    sb.append(line);
+//                    sb.append("\n");
+//                }
+//                result.put("local", sb.toString());
+//            }
+//
+//            try (BufferedReader br = Files.newBufferedReader(outFilePath2, Charset.defaultCharset())) {
+//                ObjectMapper mapper = new ObjectMapper();
+//                JsonFactory factory = mapper.getFactory();
+//                JsonParser jp = factory.createParser(br);
+//                JsonNode jsonNode = mapper.readTree(jp);
+//                result.put("global", jsonNode);
+//            }
+//
+//        } catch (InterruptedException | IOException e) {
+//            e.printStackTrace();
+//            result.put("error", "could not read result files");
+//        }
+//
+//        return createOkResponse(result);
+//    }
+//
+//    @GET
+//    @Path("/proxy")
+//    public Response proxy(@QueryParam("url") String url) {
+//        System.out.println("url = " + url);
+//        Response response = ClientBuilder.newClient().target(url).request().header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8").get();
+//        System.out.println("mediatype = " + response.getMediaType());
+//        System.out.println("content-type = " + response.getHeaderString("Content-Type"));
+//        return this.buildResponse(Response.ok(response.readEntity(String.class), response.getMediaType()));
+//    }
 
 }

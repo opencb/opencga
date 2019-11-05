@@ -17,6 +17,7 @@
 package org.opencb.opencga.core.config;
 
 import org.junit.Test;
+import org.opencb.oskar.core.config.DatabaseCredentials;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -33,8 +34,7 @@ public class ConfigurationTest {
 
         configuration.setLogLevel("INFO");
 
-        configuration.setDataDir("/opt/opencga/sessions");
-        configuration.setTempJobsDir("/opt/opencga/sessions/jobs");
+        configuration.setWorkspace("/opt/opencga/sessions");
 
         configuration.setAdmin(new Admin("password", "admin@admin.com"));
 
@@ -61,9 +61,8 @@ public class ConfigurationTest {
         Email emailServer = new Email("localhost", "", "", "", "", false);
         configuration.setEmail(emailServer);
 
-        CatalogDBCredentials databaseCredentials = new CatalogDBCredentials(Arrays.asList("localhost"), "opencga_catalog", "admin", "");
+        DatabaseCredentials databaseCredentials = new DatabaseCredentials(Arrays.asList("localhost"), "admin", "");
         Catalog catalog = new Catalog();
-        catalog.setOffset(1000000);
         catalog.setDatabase(databaseCredentials);
         configuration.setCatalog(catalog);
 

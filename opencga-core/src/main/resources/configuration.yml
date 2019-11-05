@@ -3,18 +3,17 @@ logLevel: "INFO"
 logFile: null
 
 openRegister: false
-userDefaultQuota: 200000
 
 databasePrefix: ${OPENCGA.DB.PREFIX}
-dataDir: ${OPENCGA.USER.WORKSPACE}
-tempJobsDir: ${OPENCGA.JOBS.DIR}
-toolDir: ${OPENCGA.TOOLS.DIR}
+workspace: ${OPENCGA.USER.WORKSPACE}
+#tempJobsDir: ${OPENCGA.JOBS.DIR}
+#toolDir: ${OPENCGA.TOOLS.DIR}
 
 ## Configuration for Catalog databases
 catalog:
   # DEPRECATED
-  offset: 0
-  database:
+#  offset: 0
+  database:   # MongoDB database credentials
     hosts:
     - ${OPENCGA.CATALOG.DB.HOSTS}
     user: ${OPENCGA.CATALOG.DB.USER}
@@ -23,17 +22,24 @@ catalog:
       authenticationDatabase: ${OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE}
       connectionsPerHost: ${OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST}
   ## Solr Search engine configuration, by default is the same than storage
-  search:
+  searchEngine:
     # List of hosts pointing either to the Solr nodes directly using a complete URL or to the zookeper nodes with HOST:PORT
     #    Example for Solr connection:       http://opencga-solr-01.zone:8983/solr
     #    Example for Zookeeper connection:  opencga-zookeeper-01:2181               <-- Recommended for replicated installations
     hosts:
     - ${OPENCGA.CATALOG.SEARCH.HOST}
-    mode: "cloud"
     user: ""
     password: ""
-    timeout: ${OPENCGA.CATALOG.SEARCH.TIMEOUT}
-    insertBatchSize: ${OPENCGA.CATALOG.SEARCH.BATCH}
+    options:
+      mode: "cloud"
+      timeout: ${OPENCGA.CATALOG.SEARCH.TIMEOUT}
+      insertBatchSize: ${OPENCGA.CATALOG.SEARCH.BATCH}
+
+#  batch:
+#    id: ""        # SGE, SLURM
+#    queue: ""     # Queue id
+#    timeout: 60 # Maximum time in minutes a task can be running
+
 
 ## We support multiple Authentication providers, if none is provided then we use an internal authentication implementation
 authentication:
@@ -75,6 +81,11 @@ audit:
   maxSize: 100000000000  # Maximum size that the audit collection will have in bytes.
   javaClass: ""          # Java class of the audit implementation to be used to audit.
   exclude: []            # Array of resource:action to select pairwise resource-actions to be excluded for audit purposes.
+#audit:
+#  manager: ""             # Java manager of the audit implementation to be used to audit. If empty, catalog database will be used.
+#  maxDocuments: 20000000  # Maximum number of documents that will be created in the audit collection.
+#  maxSize: 100            # Maximum size that the audit collection will have in Gigabytes (GB).
+
 
 monitor:
   daysToRemove: 30
@@ -85,13 +96,15 @@ monitor:
 healthCheck:
   interval : 30 # seconds to get actual healthCheck than cache
 
-execution:
-  mode: ${OPENCGA.EXECUTION.MODE}
-  maxConcurrentIndexJobs : 1 # only applies to local executor
-  defaultQueue: ""
-  availableQueues: ""
-  toolsPerQueue: {}
-  options:
+#execution:
+#  mode: ${OPENCGA.EXECUTION.MODE}
+#  maxConcurrentIndexJobs : 1 # only applies to local executor
+#  defaultQueue: ""
+#  availableQueues: ""
+#  toolsPerQueue: {}
+#  options:
+
+
 # Azure Batch Service configuration example
 #    batchAccount : "batchAccount"
 #    batchKey : "batchKey"
