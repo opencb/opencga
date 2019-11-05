@@ -13,7 +13,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -42,8 +42,8 @@ public abstract class VariantScoreLoaderTest extends VariantStorageBaseTest {
     public void setUp() throws Exception {
         StudyMetadata studyMetadata = new StudyMetadata(1, "s1");
         runDefaultETL(smallInputUri, variantStorageEngine, studyMetadata, new QueryOptions()
-                .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false));
+                .append(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.CALCULATE_STATS.key(), false));
         List<String> variants = variantStorageEngine
                 .stream()
                 .filter(v -> !v.isSV())

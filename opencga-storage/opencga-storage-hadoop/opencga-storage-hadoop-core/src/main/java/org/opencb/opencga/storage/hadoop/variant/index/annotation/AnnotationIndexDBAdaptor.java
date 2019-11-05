@@ -14,7 +14,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.ANNOTATION_INDEX_TABLE_COMPRESSION;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.ANNOTATION_INDEX_TABLE_COMPRESSION;
 
 /**
  * Created by jacobo on 04/01/19.

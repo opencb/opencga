@@ -30,7 +30,6 @@ import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.auth.IllegalOpenCGACredentialsException;
-import org.opencb.opencga.storage.core.config.ConfigurationOption;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -39,6 +38,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -67,11 +67,11 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DB_NAME;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.DB_NAME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.RESUME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
-import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.*;
 
 /**
  * Created by imedina on 13/08/14.
@@ -88,87 +88,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     private final AtomicReference<VariantMongoDBAdaptor> dbAdaptor = new AtomicReference<>();
     private Logger logger = LoggerFactory.getLogger(MongoDBVariantStorageEngine.class);
     private VariantStorageMetadataManager metadataManager;
-
-    public enum MongoDBVariantOptions implements ConfigurationOption {
-        COLLECTION_VARIANTS("collection.variants", "variants"),
-        COLLECTION_PROJECT("collection.project",  "project"),
-        COLLECTION_STUDIES("collection.studies",  "studies"),
-        COLLECTION_FILES("collection.files", "files"),
-        COLLECTION_SAMPLES("collection.samples",  "samples"),
-        COLLECTION_TASKS("collection.tasks",  "tasks"),
-        COLLECTION_COHORTS("collection.cohorts",  "cohorts"),
-        COLLECTION_STAGE("collection.stage",  "stage"),
-        COLLECTION_ANNOTATION("collection.annotation",  "annot"),
-        COLLECTION_TRASH("collection.trash", "trash"),
-        BULK_SIZE("bulkSize",  100),
-        DEFAULT_GENOTYPE("defaultGenotype", Arrays.asList("0/0", "0|0")),
-        ALREADY_LOADED_VARIANTS("alreadyLoadedVariants", 0),
-
-        PARALLEL_WRITE("parallel.write", false),
-
-        STAGE("stage", false),
-        STAGE_RESUME("stage.resume", false),
-        STAGE_PARALLEL_WRITE("stage.parallel.write", false),
-        STAGE_CLEAN_WHILE_LOAD("stage.clean.while.load", true),
-
-        DIRECT_LOAD("direct_load", false),
-        DIRECT_LOAD_PARALLEL_WRITE("direct_load.parallel.write", false),
-
-        MERGE("merge", false),
-        MERGE_SKIP("merge.skip", false), // Internal use only
-        MERGE_RESUME("merge.resume", false),
-        MERGE_IGNORE_OVERLAPPING_VARIANTS("merge.ignore-overlapping-variants", false),   //Do not look for overlapping variants
-        MERGE_PARALLEL_WRITE("merge.parallel.write", false),
-        MERGE_BATCH_SIZE("merge.batch.size", 10);          //Number of files to merge directly from first to second collection
-
-        private final String key;
-        private final Object value;
-
-        MongoDBVariantOptions(String key, Object value) {
-            this.key = key;
-            this.value = value;
-        }
-
-        public static boolean isResume(ObjectMap options) {
-            return options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue());
-        }
-
-        public static boolean isResumeStage(ObjectMap options) {
-            return isResume(options) || options.getBoolean(STAGE_RESUME.key(), false);
-        }
-
-        public static boolean isResumeMerge(ObjectMap options) {
-            return isResume(options) || options.getBoolean(MERGE_RESUME.key(), false);
-        }
-
-        public static boolean isDirectLoadParallelWrite(ObjectMap options) {
-            return isParallelWrite(DIRECT_LOAD_PARALLEL_WRITE, options);
-        }
-
-        public static boolean isStageParallelWrite(ObjectMap options) {
-            return isParallelWrite(STAGE_PARALLEL_WRITE, options);
-        }
-
-        public static boolean isMergeParallelWrite(ObjectMap options) {
-            return isParallelWrite(MERGE_PARALLEL_WRITE, options);
-        }
-
-        private static boolean isParallelWrite(MongoDBVariantOptions option, ObjectMap options) {
-            return options.getBoolean(PARALLEL_WRITE.key(), PARALLEL_WRITE.defaultValue())
-                    || options.getBoolean(option.key(), option.defaultValue());
-        }
-
-        @Override
-        public String key() {
-            return key;
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public <T> T defaultValue() {
-            return (T) value;
-        }
-    }
 
     public MongoDBVariantStorageEngine() {
         //Disable MongoDB useless logging
@@ -335,7 +254,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             for (URI inputFile : inputFiles) {
                 StoragePipelineResult storagePipelineResult = new StoragePipelineResult(inputFile);
                 MongoDBVariantStoragePipeline storagePipeline = newStoragePipeline(doLoad);
-                storagePipeline.getOptions().append(VariantStorageEngine.Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
+                storagePipeline.getOptions().append(VariantStorageOptions.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
                 storageResultMap.put(inputFile, storagePipeline);
                 resultsMap.put(inputFile, storagePipelineResult);
                 results.add(storagePipelineResult);
@@ -474,7 +393,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                 if (doMerge) {
                     StudyMetadata metadata = storageResultMap.get(inputFiles.get(0)).getStudyMetadata();
                     ObjectMap options = getOptions();
-                    options.put(Options.STUDY.key(), metadata.getName());
+                    options.put(VariantStorageOptions.STUDY.key(), metadata.getName());
 
                     annotateLoadedFiles(outdirUri, inputFiles, results, options);
                     calculateStatsForLoadedFiles(outdirUri, inputFiles, results, options);

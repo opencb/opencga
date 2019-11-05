@@ -14,7 +14,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
@@ -57,12 +57,12 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     public void load() throws Exception {
         clearDB(DB_NAME);
 
-        ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.FAMILY)
-                .append(VariantStorageEngine.Options.STUDY.key(), "study")
-                .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
-                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
+        ObjectMap params = new ObjectMap(VariantStorageOptions.STUDY_TYPE.key(), SampleSetType.FAMILY)
+                .append(VariantStorageOptions.STUDY.key(), "study")
+                .append(VariantStorageOptions.ANNOTATE.key(), true)
+                .append(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
                 .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseRestVariantAnnotator.class.getName())
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+                .append(VariantStorageOptions.CALCULATE_STATS.key(), false);
 
         runETL(getVariantStorageEngine(), smallInputUri, outputUri, params, true, true, true);
 

@@ -45,6 +45,7 @@ import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -243,20 +244,20 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         /* Add CLi options to the variant options */
         ObjectMap params = storageConfiguration.getVariant().getOptions();
-        params.put(VariantStorageEngine.Options.MERGE_MODE.key(), indexVariantsCommandOptions.merge);
-        params.put(VariantStorageEngine.Options.STUDY.key(), indexVariantsCommandOptions.study);
-        params.put(VariantStorageEngine.Options.STUDY_TYPE.key(), indexVariantsCommandOptions.studyType);
-        params.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), indexVariantsCommandOptions.calculateStats);
-        params.put(VariantStorageEngine.Options.INCLUDE_STATS.key(), indexVariantsCommandOptions.includeStats);
-        params.put(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), indexVariantsCommandOptions.excludeGenotype);
-        params.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), indexVariantsCommandOptions.extraFields);
+        params.put(VariantStorageOptions.MERGE_MODE.key(), indexVariantsCommandOptions.merge);
+        params.put(VariantStorageOptions.STUDY.key(), indexVariantsCommandOptions.study);
+        params.put(VariantStorageOptions.STUDY_TYPE.key(), indexVariantsCommandOptions.studyType);
+        params.put(VariantStorageOptions.CALCULATE_STATS.key(), indexVariantsCommandOptions.calculateStats);
+        params.put(VariantStorageOptions.INCLUDE_STATS.key(), indexVariantsCommandOptions.includeStats);
+        params.put(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), indexVariantsCommandOptions.excludeGenotype);
+        params.put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), indexVariantsCommandOptions.extraFields);
 //        variantOptions.put(VariantStorageEngine.Options.INCLUDE_SRC.key(), indexVariantsCommandOptions.includeSrc);
 //        variantOptions.put(VariantStorageEngine.Options.COMPRESS_GENOTYPES.key(), indexVariantsCommandOptions.compressGenotypes);
-        params.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), indexVariantsCommandOptions.aggregated);
-        params.put(VariantStorageEngine.Options.STDIN.key(), indexVariantsCommandOptions.stdin);
-        params.put(VariantStorageEngine.Options.STDOUT.key(), indexVariantsCommandOptions.stdout);
+        params.put(VariantStorageOptions.AGGREGATED_TYPE.key(), indexVariantsCommandOptions.aggregated);
+        params.put(VariantStorageOptions.STDIN.key(), indexVariantsCommandOptions.stdin);
+        params.put(VariantStorageOptions.STDOUT.key(), indexVariantsCommandOptions.stdout);
 
-        params.put(VariantStorageEngine.Options.ANNOTATE.key(), indexVariantsCommandOptions.annotate);
+        params.put(VariantStorageOptions.ANNOTATE.key(), indexVariantsCommandOptions.annotate);
         if (indexVariantsCommandOptions.annotator != null) {
             params.put(VariantAnnotationManager.ANNOTATOR, indexVariantsCommandOptions.annotator);
         }
@@ -264,17 +265,17 @@ public class VariantCommandExecutor extends CommandExecutor {
 //        if (indexVariantsCommandOptions.studyConfigurationFile != null && !indexVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
 //            params.put(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, indexVariantsCommandOptions.studyConfigurationFile);
 //        }
-        params.put(VariantStorageEngine.Options.RESUME.key(), indexVariantsCommandOptions.resume);
-        params.put(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), indexVariantsCommandOptions.loadSplitData);
-        params.put(VariantStorageEngine.Options.POST_LOAD_CHECK_SKIP.key(), indexVariantsCommandOptions.skipPostLoadCheck);
-        params.put(VariantStorageEngine.Options.INDEX_SEARCH.key(), indexVariantsCommandOptions.indexSearch);
+        params.put(VariantStorageOptions.RESUME.key(), indexVariantsCommandOptions.resume);
+        params.put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), indexVariantsCommandOptions.loadSplitData);
+        params.put(VariantStorageOptions.POST_LOAD_CHECK_SKIP.key(), indexVariantsCommandOptions.skipPostLoadCheck);
+        params.put(VariantStorageOptions.INDEX_SEARCH.key(), indexVariantsCommandOptions.indexSearch);
 
         if (indexVariantsCommandOptions.aggregationMappingFile != null) {
             // TODO move this options to new configuration.yml
             Properties aggregationMappingProperties = new Properties();
             try {
                 aggregationMappingProperties.load(new FileInputStream(indexVariantsCommandOptions.aggregationMappingFile));
-                params.put(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
+                params.put(VariantStorageOptions.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
             } catch (FileNotFoundException e) {
                 logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", indexVariantsCommandOptions
                         .aggregationMappingFile);
@@ -305,7 +306,7 @@ public class VariantCommandExecutor extends CommandExecutor {
     private void remove() throws Exception {
         StorageVariantCommandOptions.VariantRemoveCommandOptions cliOptions = variantCommandOptions.variantRemoveCommandOptions;
 
-        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.RESUME.key(), cliOptions.resume);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.RESUME.key(), cliOptions.resume);
         variantStorageEngine.getOptions().putAll(cliOptions.commonOptions.params);
 
         if (cliOptions.files.size() == 1 && cliOptions.files.get(0).equalsIgnoreCase(VariantQueryUtils.ALL)) {
@@ -533,15 +534,15 @@ public class VariantCommandExecutor extends CommandExecutor {
         StorageVariantCommandOptions.VariantStatsCommandOptions statsVariantsCommandOptions = variantCommandOptions.statsVariantsCommandOptions;
 
         QueryOptions options = new QueryOptions(storageConfiguration.getVariant().getOptions());
-        options.put(VariantStorageEngine.Options.OVERWRITE_STATS.key(), statsVariantsCommandOptions.overwriteStats);
-        options.put(VariantStorageEngine.Options.UPDATE_STATS.key(), statsVariantsCommandOptions.updateStats);
+        options.put(VariantStorageOptions.OVERWRITE_STATS.key(), statsVariantsCommandOptions.overwriteStats);
+        options.put(VariantStorageOptions.UPDATE_STATS.key(), statsVariantsCommandOptions.updateStats);
 //        options.putIfNotEmpty(VariantStorageEngine.Options.FILE_ID.key(), statsVariantsCommandOptions.file);
-        options.put(VariantStorageEngine.Options.STUDY.key(), statsVariantsCommandOptions.study);
+        options.put(VariantStorageOptions.STUDY.key(), statsVariantsCommandOptions.study);
 //        if (statsVariantsCommandOptions.studyConfigurationFile != null && !statsVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
 //            options.put(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, statsVariantsCommandOptions.studyConfigurationFile);
 //        }
         options.put(VariantQueryParam.REGION.key(), statsVariantsCommandOptions.region);
-        options.put(VariantStorageEngine.Options.RESUME.key(), statsVariantsCommandOptions.resume);
+        options.put(VariantStorageOptions.RESUME.key(), statsVariantsCommandOptions.resume);
 
         if (statsVariantsCommandOptions.commonOptions.params != null) {
             options.putAll(statsVariantsCommandOptions.commonOptions.params);
@@ -561,13 +562,13 @@ public class VariantCommandExecutor extends CommandExecutor {
             cohortNames = new ArrayList<>(cohorts.keySet());
         }
 
-        options.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), statsVariantsCommandOptions.aggregated);
+        options.put(VariantStorageOptions.AGGREGATED_TYPE.key(), statsVariantsCommandOptions.aggregated);
 
         if (statsVariantsCommandOptions.aggregationMappingFile != null) {
             Properties aggregationMappingProperties = new Properties();
             try {
                 aggregationMappingProperties.load(new FileInputStream(statsVariantsCommandOptions.aggregationMappingFile));
-                options.put(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
+                options.put(VariantStorageOptions.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
             } catch (FileNotFoundException e) {
                 logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", statsVariantsCommandOptions
                         .aggregationMappingFile);
@@ -609,7 +610,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         StorageVariantCommandOptions.FillGapsCommandOptions fillGapsCommandOptions = variantCommandOptions.fillGapsCommandOptions;
 
         ObjectMap options = storageConfiguration.getVariant().getOptions();
-        options.put(VariantStorageEngine.Options.RESUME.key(), fillGapsCommandOptions.resume);
+        options.put(VariantStorageOptions.RESUME.key(), fillGapsCommandOptions.resume);
         options.putAll(fillGapsCommandOptions.commonOptions.params);
 
         variantStorageEngine.fillGaps(fillGapsCommandOptions.study, fillGapsCommandOptions.samples, options);
@@ -619,7 +620,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         StorageVariantCommandOptions.FillMissingCommandOptions cliOptions = variantCommandOptions.fillMissingCommandOptions;
 
         ObjectMap options = storageConfiguration.getVariant().getOptions();
-        options.put(VariantStorageEngine.Options.RESUME.key(), cliOptions.resume);
+        options.put(VariantStorageOptions.RESUME.key(), cliOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
 
         variantStorageEngine.fillMissing(cliOptions.study, options, cliOptions.overwrite);

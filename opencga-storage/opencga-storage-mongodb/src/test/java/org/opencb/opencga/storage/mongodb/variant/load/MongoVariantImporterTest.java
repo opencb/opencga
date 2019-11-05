@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
@@ -52,7 +52,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
     public void setUp() throws Exception {
         studyMetadata = newStudyMetadata();
         runDefaultETL(smallInputUri, variantStorageEngine, studyMetadata,
-                new ObjectMap(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "GL,DS"));
+                new ObjectMap(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), "GL,DS"));
     }
 
     @Test

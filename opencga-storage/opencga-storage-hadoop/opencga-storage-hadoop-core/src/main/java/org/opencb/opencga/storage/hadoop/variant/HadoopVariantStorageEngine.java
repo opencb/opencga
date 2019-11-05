@@ -45,6 +45,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -110,13 +111,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MERGE_MODE;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.MERGE_MODE;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.RESUME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.convertGenesToRegionsQuery;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isValidParam;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.*;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.*;
 
 public class HadoopVariantStorageEngine extends VariantStorageEngine implements Configurable {
@@ -577,7 +578,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
         MergeMode mergeMode;
         if (connected) {
-            String study = options.getString(Options.STUDY.key());
+            String study = options.getString(VariantStorageOptions.STUDY.key());
 //            archiveCredentials = buildCredentials(getArchiveTableName(studyId));
             StudyMetadata sm = getMetadataManager().getStudyMetadata(study);
             if (sm == null || !sm.getAttributes().containsKey(MERGE_MODE.key())) {

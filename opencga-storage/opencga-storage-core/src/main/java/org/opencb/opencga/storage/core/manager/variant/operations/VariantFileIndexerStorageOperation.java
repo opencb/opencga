@@ -43,6 +43,7 @@ import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.manager.models.FileInfo;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.LoggerFactory;
 
@@ -133,7 +134,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             transform = options.getBoolean(TRANSFORM, false);
             load = options.getBoolean(LOAD, false);
         }
-        boolean resume = options.getBoolean(VariantStorageEngine.Options.RESUME.key());
+        boolean resume = options.getBoolean(VariantStorageOptions.RESUME.key());
 
         // Obtain the type of analysis (transform, load or index)
         Type step = getType(load, transform);
@@ -143,8 +144,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         // or this can be a directory, in that case we use all VCF files in that directory or subdirectory
         String studyFQNByInputFileId = studyInfo.getStudyFQN();
 
-        options.put(VariantStorageEngine.Options.STUDY.key(), studyFQNByInputFileId);
-        options.putIfAbsent(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregation(studyFQNByInputFileId, options, sessionId));
+        options.put(VariantStorageOptions.STUDY.key(), studyFQNByInputFileId);
+        options.putIfAbsent(VariantStorageOptions.AGGREGATED_TYPE.key(), getAggregation(studyFQNByInputFileId, options, sessionId));
 
 //        Study study = catalogManager.getStudyManager().get(studyUidByInputFileId, new QueryOptions(), sessionId).getResults().get(0);
         Study study = studyInfo.getStudy();
@@ -208,7 +209,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         updateProjectMetadata(variantStorageEngine.getMetadataManager(), studyInfo.getOrganism(), release);
 
         variantStorageEngine.getOptions().putAll(options);
-        boolean calculateStats = options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key())
+        boolean calculateStats = options.getBoolean(VariantStorageOptions.CALCULATE_STATS.key())
                 && (step.equals(Type.LOAD) || step.equals(Type.INDEX));
 
         String fileStatus;
@@ -493,7 +494,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             // Update index status
             fileManager.updateFileIndexStatus(indexedFile, indexStatusName, indexStatusMessage, release, sessionId);
 
-            boolean calculateStats = options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
+            boolean calculateStats = options.getBoolean(VariantStorageOptions.CALCULATE_STATS.key());
             if (indexStatusName.equals(FileIndex.IndexStatus.READY) && calculateStats) {
                 Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
                 DataResult<Cohort> queryResult = catalogManager.getCohortManager()
@@ -648,7 +649,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                         if (!resume) {
                             logger.warn("File already being transformed. "
                                             + "We can only transform VCF files not transformed, the status is {}. "
-                                            + "Do '" + VariantStorageEngine.Options.RESUME.key() + "' to continue.",
+                                            + "Do '" + VariantStorageOptions.RESUME.key() + "' to continue.",
                                     indexStatus);
                         } else {
                             filteredFiles.add(file);

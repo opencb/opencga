@@ -13,6 +13,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -40,7 +41,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
     public void testChangeAnnotator() throws Exception {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
         runDefaultETL(smallInputUri, variantStorageEngine, newStudyMetadata(),
-                new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false));
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
 
         variantStorageEngine.getOptions()
                 .append(VARIANT_ANNOTATOR_CLASSNAME, TestAnnotator.class.getName())
@@ -63,7 +64,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
     public void testChangeAnnotatorFail() throws Exception {
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
         runDefaultETL(smallInputUri, variantStorageEngine, newStudyMetadata(),
-                new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false));
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
 
         variantStorageEngine.getOptions()
                 .append(VARIANT_ANNOTATOR_CLASSNAME, TestAnnotator.class.getName())
@@ -97,7 +98,7 @@ public abstract class VariantAnnotationManagerTest extends VariantStorageBaseTes
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
         runDefaultETL(smallInputUri, variantStorageEngine, newStudyMetadata(),
-                new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false));
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
 
         variantStorageEngine.getOptions()
                 .append(VARIANT_ANNOTATOR_CLASSNAME, TestAnnotator.class.getName())

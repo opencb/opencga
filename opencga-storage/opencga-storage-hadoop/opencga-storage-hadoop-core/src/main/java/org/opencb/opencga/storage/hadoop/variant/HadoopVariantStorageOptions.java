@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.opencb.opencga.storage.core.config.ConfigurationOption;
 
-public enum HadoopVariantStorageEngineOptions implements ConfigurationOption {
+public enum HadoopVariantStorageOptions implements ConfigurationOption {
 
 
     HADOOP_LOAD_BATCH_SIZE("hadoop.load.archive.batch.size", 2),
@@ -93,11 +93,11 @@ public enum HadoopVariantStorageEngineOptions implements ConfigurationOption {
     private final String key;
     private final Object value;
 
-    HadoopVariantStorageEngineOptions(String key) {
+    HadoopVariantStorageOptions(String key) {
         this(key, null);
     }
 
-    HadoopVariantStorageEngineOptions(String key, Object value) {
+    HadoopVariantStorageOptions(String key, Object value) {
         this.key = key;
         this.value = value;
     }

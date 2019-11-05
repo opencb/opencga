@@ -36,7 +36,7 @@ import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 
@@ -99,9 +99,9 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
             studyMetadata3 = metadataManager.createStudy("Study3");
 
             ObjectMap options = getExtraOptions()
-                    .append(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
-                    .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)
-                    .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
+                    .append(VariantStorageOptions.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
+                    .append(VariantStorageOptions.CALCULATE_STATS.key(), true)
+                    .append(VariantStorageOptions.ANNOTATE.key(), false);
             //Study1
             URI file1Uri = getResourceUri("1000g_batches/" + fileName1);
             runDefaultETL(file1Uri, variantStorageEngine, studyMetadata1, options);

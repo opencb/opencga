@@ -43,7 +43,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -487,8 +487,8 @@ public class VariantHbaseTestUtils {
     public static void removeFile(HadoopVariantStorageEngine variantStorageManager, String dbName, int fileId,
                                   StudyMetadata studyMetadata, Map<? extends String, ?> otherParams) throws Exception {
         ObjectMap params = new ObjectMap()
-                .append(VariantStorageEngine.Options.STUDY.key(), studyMetadata.getName())
-                .append(VariantStorageEngine.Options.DB_NAME.key(), dbName);
+                .append(VariantStorageOptions.STUDY.key(), studyMetadata.getName())
+                .append(VariantStorageOptions.DB_NAME.key(), dbName);
         if (otherParams != null) {
             params.putAll(otherParams);
         }
@@ -511,11 +511,11 @@ public class VariantHbaseTestUtils {
             boolean loadVariant) throws Exception {
         URI fileInputUri = VariantStorageBaseTest.getResourceUri(resourceName);
 
-        ObjectMap params = new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto")
-                .append(VariantStorageEngine.Options.STUDY.key(), studyMetadata.getName())
-                .append(VariantStorageEngine.Options.DB_NAME.key(), dbName).append(VariantStorageEngine.Options.ANNOTATE.key(), false)
+        ObjectMap params = new ObjectMap(VariantStorageOptions.TRANSFORM_FORMAT.key(), "proto")
+                .append(VariantStorageOptions.STUDY.key(), studyMetadata.getName())
+                .append(VariantStorageOptions.DB_NAME.key(), dbName).append(VariantStorageOptions.ANNOTATE.key(), false)
                 .append(VariantAnnotationManager.SPECIES, "hsapiens").append(VariantAnnotationManager.ASSEMBLY, "GRch37")
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+                .append(VariantStorageOptions.CALCULATE_STATS.key(), false);
 
         if (otherParams != null) {
             params.putAll(otherParams);

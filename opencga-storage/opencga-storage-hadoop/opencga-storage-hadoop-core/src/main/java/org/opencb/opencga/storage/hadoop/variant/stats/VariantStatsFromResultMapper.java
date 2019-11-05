@@ -11,7 +11,7 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
@@ -71,11 +71,11 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
 
         calculators = new HashMap<>(cohorts.size());
         String unknownGenotype = context.getConfiguration().get(
-                VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE.key(),
-                VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE.defaultValue());
+                VariantStorageOptions.STATS_DEFAULT_GENOTYPE.key(),
+                VariantStorageOptions.STATS_DEFAULT_GENOTYPE.defaultValue());
         boolean statsMultiAllelic = context.getConfiguration().getBoolean(
-                VariantStorageEngine.Options.STATS_MULTI_ALLELIC.key(),
-                VariantStorageEngine.Options.STATS_MULTI_ALLELIC.defaultValue());
+                VariantStorageOptions.STATS_MULTI_ALLELIC.key(),
+                VariantStorageOptions.STATS_MULTI_ALLELIC.defaultValue());
         try (VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(
                 new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
             samples.forEach((cohort, samples) -> calculators.put(cohort, new HBaseVariantStatsCalculator(

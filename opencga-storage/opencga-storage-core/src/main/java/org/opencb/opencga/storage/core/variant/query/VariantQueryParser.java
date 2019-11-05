@@ -24,8 +24,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.EXCLUDE_GENOTYPES;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.LOADED_GENOTYPES;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.EXCLUDE_GENOTYPES;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.LOADED_GENOTYPES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 

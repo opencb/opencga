@@ -14,7 +14,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -55,9 +55,9 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
             HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();
             URI outputUri = newOutputUri();
 
-            ObjectMap params = new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                    .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
-                    .append(VariantStorageEngine.Options.STUDY.key(), study);
+            ObjectMap params = new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
+                    .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                    .append(VariantStorageOptions.STUDY.key(), study);
             runETL(variantStorageEngine, getPlatinumFile(12877), outputUri, params, true, true, true);
             runETL(variantStorageEngine, getPlatinumFile(12878), outputUri, params, true, true, true);
             runETL(variantStorageEngine, getPlatinumFile(12879), outputUri, params, true, true, true);

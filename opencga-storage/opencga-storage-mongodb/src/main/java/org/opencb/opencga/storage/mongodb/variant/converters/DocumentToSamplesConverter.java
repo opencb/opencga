@@ -27,7 +27,7 @@ import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 import java.util.zip.DataFormatException;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass.UNKNOWN_GENOTYPE;
-import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.DEFAULT_GENOTYPE;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
@@ -172,10 +172,11 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         final LinkedHashMap<String, Integer> samplesPositionToReturn = getSamplesPosition(studyMetadata);
 
         boolean excludeGenotypes = !object.containsKey(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD)
-                || studyMetadata.getAttributes().getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
+                || studyMetadata.getAttributes().getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
+                VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
         boolean compressExtraParams = studyMetadata.getAttributes()
-                .getBoolean(Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
-                        Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
+                .getBoolean(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
+                        VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
         if (sampleIds == null || sampleIds.isEmpty()) {
             fillStudyEntryFields(study, samplesPositionToReturn, Collections.emptyList(), Collections.emptyList(), excludeGenotypes);
             return Collections.emptyList();
@@ -438,11 +439,11 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         Map<String, List<Integer>> genotypeCodes = new HashMap<>();
 
         final StudyMetadata studyMetadata = getStudyMetadata(studyId);
-        boolean excludeGenotypes = studyMetadata.getAttributes().getBoolean(Options.EXCLUDE_GENOTYPES.key(),
-                Options.EXCLUDE_GENOTYPES.defaultValue());
+        boolean excludeGenotypes = studyMetadata.getAttributes().getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
+                VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
         boolean compressExtraParams = studyMetadata.getAttributes()
-                .getBoolean(Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
-                        Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
+                .getBoolean(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
+                        VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
 
         Set<String> defaultGenotype = studyDefaultGenotypeSet.get(studyId).stream().collect(Collectors.toSet());
 
@@ -502,9 +503,9 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         }
 
         List<String> extraFields = studyMetadata.getAttributes()
-                .getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
+                .getAsStringList(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key());
         List<String> extraFieldsType = studyMetadata.getAttributes()
-                .getAsStringList(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key());
+                .getAsStringList(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_TYPE.key());
 
         for (int i = 0; i < extraFields.size(); i++) {
             String extraField = extraFields.get(i);

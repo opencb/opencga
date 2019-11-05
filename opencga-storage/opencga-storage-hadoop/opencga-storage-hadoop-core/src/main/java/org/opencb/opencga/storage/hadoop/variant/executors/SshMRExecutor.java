@@ -9,7 +9,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.*;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 
 /**
  * Created on 14/02/19.

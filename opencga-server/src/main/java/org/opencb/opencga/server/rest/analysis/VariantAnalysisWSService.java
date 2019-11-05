@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.manager.CatalogUtils.parseSampleAnnotationQuery;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 

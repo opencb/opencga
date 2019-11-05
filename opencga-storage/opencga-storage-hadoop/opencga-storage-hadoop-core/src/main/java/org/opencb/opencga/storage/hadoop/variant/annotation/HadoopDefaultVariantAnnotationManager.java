@@ -41,7 +41,7 @@ import org.opencb.opencga.storage.hadoop.utils.CopyHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.utils.DeleteHBaseColumnDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.annotation.pending.DiscoverPendingVariantsToAnnotateDriver;
@@ -171,7 +171,7 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
             DataReader<VariantAnnotation> reader, ParallelTaskRunner.Config config, ProgressLogger progressLogger, ObjectMap params) {
 
         if (VariantPhoenixHelper.DEFAULT_TABLE_TYPE == PTableType.VIEW
-                || params.getBoolean(HadoopVariantStorageEngineOptions.VARIANT_TABLE_INDEXES_SKIP.key(), false)) {
+                || params.getBoolean(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), false)) {
             int currentAnnotationId = dbAdaptor.getMetadataManager().getProjectMetadata()
                     .getAnnotation().getCurrent().getId();
             VariantAnnotationToHBaseConverter hBaseConverter =

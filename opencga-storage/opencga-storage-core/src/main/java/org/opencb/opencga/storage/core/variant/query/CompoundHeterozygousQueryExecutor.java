@@ -11,7 +11,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVariantKeyIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -197,7 +197,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
         options.remove(QueryOptions.SKIP);
 
         options.put(QueryOptions.SKIP_COUNT, true);
-        options.put(VariantStorageEngine.Options.APPROXIMATE_COUNT.key(), false);
+        options.put(VariantStorageOptions.APPROXIMATE_COUNT.key(), false);
         return options;
     }
 

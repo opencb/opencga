@@ -42,7 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.*;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk.

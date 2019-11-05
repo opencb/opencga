@@ -10,11 +10,11 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -75,8 +75,8 @@ public class VariantMongoDBQueryParserTest {
         }
 
         metadataManager.updateStudyMetadata(studyId, studyMetadata -> {
-            studyMetadata.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), "0/1,1/1,?/?");
-            studyMetadata.getAttributes().put(MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE.key(), "0/0");
+            studyMetadata.getAttributes().put(VariantStorageOptions.LOADED_GENOTYPES.key(), "0/1,1/1,?/?");
+            studyMetadata.getAttributes().put(MongoDBVariantStorageOptions.DEFAULT_GENOTYPE.key(), "0/0");
             return studyMetadata;
         });
 

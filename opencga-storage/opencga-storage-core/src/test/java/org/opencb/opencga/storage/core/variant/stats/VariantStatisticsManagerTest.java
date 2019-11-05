@@ -28,13 +28,12 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
@@ -77,7 +76,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         studyMetadata = newStudyMetadata();
         clearDB(DB_NAME);
         runDefaultETL(inputUri, getVariantStorageEngine(), studyMetadata,
-                new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false));
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false));
         dbAdaptor = getVariantStorageEngine().getDBAdaptor();
     }
 
@@ -87,7 +86,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         checkCohorts(dbAdaptor, studyMetadata);
 
         QueryOptions options = new QueryOptions();
-        options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
+        options.put(VariantStorageOptions.LOAD_BATCH_SIZE.key(), 100);
         Iterator<SampleMetadata> iterator = metadataManager.sampleMetadataIterator(studyMetadata.getId());
 
         /** Create cohorts **/
@@ -115,7 +114,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
 
         String studyName = studyMetadata.getName();
         QueryOptions options = new QueryOptions();
-        options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
+        options.put(VariantStorageOptions.LOAD_BATCH_SIZE.key(), 100);
         Iterator<SampleMetadata> iterator = metadataManager.sampleMetadataIterator(studyMetadata.getId());
         StudyMetadata studyMetadata;
 

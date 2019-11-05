@@ -15,6 +15,7 @@ import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 
 import java.io.IOException;
@@ -73,7 +74,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     protected void load() throws Exception {
         VariantStorageEngine storageEngine = getVariantStorageEngine();
         ObjectMap options = getOptions();
-        options.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
+        options.put(VariantStorageOptions.CALCULATE_STATS.key(), true);
 
         int maxStudies = 2;
         int studyId = 1;
@@ -90,11 +91,11 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
             if (inputFiles.size() == 4) {
 
-                options.put(VariantStorageEngine.Options.STUDY.key(), "S_" + studyId);
+                options.put(VariantStorageOptions.STUDY.key(), "S_" + studyId);
                 storageEngine.getOptions().putAll(options);
-                storageEngine.getOptions().put(VariantStorageEngine.Options.RELEASE.key(), release++);
+                storageEngine.getOptions().put(VariantStorageOptions.RELEASE.key(), release++);
                 storageEngine.index(inputFiles.subList(0, 2), outputUri, true, true, true);
-                storageEngine.getOptions().put(VariantStorageEngine.Options.RELEASE.key(), release++);
+                storageEngine.getOptions().put(VariantStorageOptions.RELEASE.key(), release++);
                 storageEngine.index(inputFiles.subList(2, 4), outputUri, true, true, true);
 
                 studyId++;
@@ -305,7 +306,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
     @Test
     public void testSampleLimitFail() throws Exception {
-        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.SAMPLE_LIMIT_MAX.key(), 2);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.SAMPLE_LIMIT_MAX.key(), 2);
         VariantQueryException e = VariantQueryException.maxLimitReached("samples", 10, 2);
         thrown.expect(e.getClass());
         thrown.expectMessage(e.getMessage());
@@ -314,7 +315,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
     @Test
     public void testLimitFail() throws Exception {
-        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.LIMIT_MAX.key(), 2);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LIMIT_MAX.key(), 2);
         VariantQueryException e = VariantQueryException.maxLimitReached("variants", 10, 2);
         thrown.expect(e.getClass());
         thrown.expectMessage(e.getMessage());

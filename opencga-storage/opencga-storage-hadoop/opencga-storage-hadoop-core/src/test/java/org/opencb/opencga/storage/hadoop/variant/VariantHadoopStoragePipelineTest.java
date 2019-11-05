@@ -35,7 +35,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -79,9 +79,9 @@ public class VariantHadoopStoragePipelineTest extends VariantStorageBaseTest imp
         try {
             studyMetadata = VariantStorageBaseTest.newStudyMetadata();
             etlResult = VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageManager, studyMetadata,
-                    new ObjectMap(Options.TRANSFORM_FORMAT.key(), "avro")
-                            .append(Options.ANNOTATE.key(), true)
-                            .append(Options.CALCULATE_STATS.key(), false)
+                    new ObjectMap(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro")
+                            .append(VariantStorageOptions.ANNOTATE.key(), true)
+                            .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
             );
 
             fileMetadata = variantStorageManager.getVariantReaderUtils().readVariantFileMetadata(etlResult.getTransformResult());

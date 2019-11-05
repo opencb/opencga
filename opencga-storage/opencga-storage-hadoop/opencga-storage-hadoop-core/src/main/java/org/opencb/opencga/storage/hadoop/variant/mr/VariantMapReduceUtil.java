@@ -23,7 +23,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
@@ -87,8 +87,8 @@ public class VariantMapReduceUtil {
                                           Class<? extends InputFormat> inputFormatClass)
             throws IOException {
         boolean addDependencyJar = job.getConfiguration().getBoolean(
-                HadoopVariantStorageEngineOptions.MR_ADD_DEPENDENCY_JARS.key(),
-                HadoopVariantStorageEngineOptions.MR_ADD_DEPENDENCY_JARS.defaultValue());
+                HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.key(),
+                HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.defaultValue());
         LOGGER.info("Use table {} as input", inTable);
         TableMapReduceUtil.initTableMapperJob(
                 inTable,      // input table
@@ -109,8 +109,8 @@ public class VariantMapReduceUtil {
             initTableMapperJob(job, inTable, scans.get(0), mapperClass);
         } else {
             boolean addDependencyJar = job.getConfiguration().getBoolean(
-                    HadoopVariantStorageEngineOptions.MR_ADD_DEPENDENCY_JARS.key(),
-                    HadoopVariantStorageEngineOptions.MR_ADD_DEPENDENCY_JARS.defaultValue());
+                    HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.key(),
+                    HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.defaultValue());
             LOGGER.info("Use table {} as input", inTable);
             for (Scan scan : scans) {
                 scan.setAttribute(Scan.SCAN_ATTRIBUTES_TABLE_NAME, Bytes.toBytes(inTable));
@@ -364,8 +364,8 @@ public class VariantMapReduceUtil {
 
     public static void setOutputHBaseTable(Job job, String outTable) throws IOException {
         boolean addDependencyJar = job.getConfiguration().getBoolean(
-                HadoopVariantStorageEngineOptions.MR_ADD_DEPENDENCY_JARS.key(),
-                HadoopVariantStorageEngineOptions.MR_ADD_DEPENDENCY_JARS.defaultValue());
+                HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.key(),
+                HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.defaultValue());
         LOGGER.info("Use table {} as output", outTable);
         TableMapReduceUtil.initTableReducerJob(
                 outTable,      // output table
@@ -380,8 +380,8 @@ public class VariantMapReduceUtil {
         LOGGER.info("Use multi-table as output");
 
         boolean addDependencyJars = job.getConfiguration().getBoolean(
-                HadoopVariantStorageEngineOptions.MR_ADD_DEPENDENCY_JARS.key(),
-                HadoopVariantStorageEngineOptions.MR_ADD_DEPENDENCY_JARS.defaultValue());
+                HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.key(),
+                HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.defaultValue());
 
         if (addDependencyJars) {
             TableMapReduceUtil.addDependencyJars(job);
@@ -464,11 +464,11 @@ public class VariantMapReduceUtil {
     }
 
     public static List<Scan> configureMapReduceScans(List<Scan> scans, Configuration conf) {
-        return configureMapReduceScans(scans, conf, HadoopVariantStorageEngineOptions.MR_HBASE_SCAN_CACHING.defaultValue());
+        return configureMapReduceScans(scans, conf, HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING.defaultValue());
     }
 
     public static List<Scan> configureMapReduceScans(List<Scan> scans, Configuration conf, int defaultCacheSize) {
-        int caching = conf.getInt(HadoopVariantStorageEngineOptions.MR_HBASE_SCAN_CACHING.key(), defaultCacheSize);
+        int caching = conf.getInt(HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING.key(), defaultCacheSize);
 
         LOGGER.info("Scan set Caching to " + caching);
         for (Scan scan : scans) {

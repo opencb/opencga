@@ -48,7 +48,7 @@ import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -289,7 +289,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         QueryOptions options = new QueryOptions();
-        options.put(VariantStorageEngine.Options.RESUME.key(), cliOptions.genericVariantRemoveOptions.resume);
+        options.put(VariantStorageOptions.RESUME.key(), cliOptions.genericVariantRemoveOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
         if (cliOptions.genericVariantRemoveOptions.files.size() == 1 && cliOptions.genericVariantRemoveOptions.files.get(0).equalsIgnoreCase(VariantQueryUtils.ALL)) {
             variantManager.removeStudy(cliOptions.study, sessionId, options);
@@ -305,30 +305,30 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(LOAD, cliOptions.genericVariantIndexOptions.load);
         queryOptions.put(TRANSFORM, cliOptions.genericVariantIndexOptions.transform);
-        queryOptions.put(VariantStorageEngine.Options.STDIN.key(), cliOptions.genericVariantIndexOptions.stdin);
-        queryOptions.put(VariantStorageEngine.Options.STDOUT.key(), cliOptions.genericVariantIndexOptions.stdout);
-        queryOptions.put(VariantStorageEngine.Options.MERGE_MODE.key(), cliOptions.genericVariantIndexOptions.merge);
+        queryOptions.put(VariantStorageOptions.STDIN.key(), cliOptions.genericVariantIndexOptions.stdin);
+        queryOptions.put(VariantStorageOptions.STDOUT.key(), cliOptions.genericVariantIndexOptions.stdout);
+        queryOptions.put(VariantStorageOptions.MERGE_MODE.key(), cliOptions.genericVariantIndexOptions.merge);
 
-        queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), cliOptions.genericVariantIndexOptions.calculateStats);
-        queryOptions.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), cliOptions.genericVariantIndexOptions.extraFields);
-        queryOptions.put(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), cliOptions.genericVariantIndexOptions.excludeGenotype);
-        queryOptions.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), cliOptions.genericVariantIndexOptions.aggregated);
-        queryOptions.put(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.genericVariantIndexOptions.aggregationMappingFile);
-        queryOptions.put(VariantStorageEngine.Options.GVCF.key(), cliOptions.genericVariantIndexOptions.gvcf);
+        queryOptions.put(VariantStorageOptions.CALCULATE_STATS.key(), cliOptions.genericVariantIndexOptions.calculateStats);
+        queryOptions.put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), cliOptions.genericVariantIndexOptions.extraFields);
+        queryOptions.put(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), cliOptions.genericVariantIndexOptions.excludeGenotype);
+        queryOptions.put(VariantStorageOptions.AGGREGATED_TYPE.key(), cliOptions.genericVariantIndexOptions.aggregated);
+        queryOptions.put(VariantStorageOptions.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.genericVariantIndexOptions.aggregationMappingFile);
+        queryOptions.put(VariantStorageOptions.GVCF.key(), cliOptions.genericVariantIndexOptions.gvcf);
 
         queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
         queryOptions.putIfNotNull(VariantFileIndexerStorageOperation.TRANSFORMED_FILES, cliOptions.transformedPaths);
 
-        queryOptions.put(VariantStorageEngine.Options.ANNOTATE.key(), cliOptions.genericVariantIndexOptions.annotate);
+        queryOptions.put(VariantStorageOptions.ANNOTATE.key(), cliOptions.genericVariantIndexOptions.annotate);
         if (cliOptions.genericVariantIndexOptions.annotator != null) {
             queryOptions.put(VariantAnnotationManager.ANNOTATOR,
                     cliOptions.genericVariantIndexOptions.annotator);
         }
         queryOptions.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.genericVariantIndexOptions.overwriteAnnotations);
-        queryOptions.put(VariantStorageEngine.Options.RESUME.key(), cliOptions.genericVariantIndexOptions.resume);
-        queryOptions.put(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(), cliOptions.genericVariantIndexOptions.loadSplitData);
-        queryOptions.put(VariantStorageEngine.Options.POST_LOAD_CHECK_SKIP.key(), cliOptions.genericVariantIndexOptions.skipPostLoadCheck);
-        queryOptions.put(VariantStorageEngine.Options.INDEX_SEARCH.key(), cliOptions.genericVariantIndexOptions.indexSearch);
+        queryOptions.put(VariantStorageOptions.RESUME.key(), cliOptions.genericVariantIndexOptions.resume);
+        queryOptions.put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), cliOptions.genericVariantIndexOptions.loadSplitData);
+        queryOptions.put(VariantStorageOptions.POST_LOAD_CHECK_SKIP.key(), cliOptions.genericVariantIndexOptions.skipPostLoadCheck);
+        queryOptions.put(VariantStorageOptions.INDEX_SEARCH.key(), cliOptions.genericVariantIndexOptions.indexSearch);
         queryOptions.putAll(cliOptions.commonOptions.params);
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
@@ -376,11 +376,11 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, cliOptions.genericVariantStatsOptions.fileName)
 //                .append(AnalysisFileIndexer.CREATE, cliOptions.create)
 //                .append(AnalysisFileIndexer.LOAD, cliOptions.load)
-                .append(VariantStorageEngine.Options.OVERWRITE_STATS.key(), cliOptions.genericVariantStatsOptions.overwriteStats)
-                .append(VariantStorageEngine.Options.UPDATE_STATS.key(), cliOptions.genericVariantStatsOptions.updateStats)
-                .append(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), cliOptions.genericVariantStatsOptions.aggregated)
-                .append(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.genericVariantStatsOptions.aggregationMappingFile)
-                .append(VariantStorageEngine.Options.RESUME.key(), cliOptions.genericVariantStatsOptions.resume)
+                .append(VariantStorageOptions.OVERWRITE_STATS.key(), cliOptions.genericVariantStatsOptions.overwriteStats)
+                .append(VariantStorageOptions.UPDATE_STATS.key(), cliOptions.genericVariantStatsOptions.updateStats)
+                .append(VariantStorageOptions.AGGREGATED_TYPE.key(), cliOptions.genericVariantStatsOptions.aggregated)
+                .append(VariantStorageOptions.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.genericVariantStatsOptions.aggregationMappingFile)
+                .append(VariantStorageOptions.RESUME.key(), cliOptions.genericVariantStatsOptions.resume)
                 .append(VariantQueryParam.REGION.key(), cliOptions.genericVariantStatsOptions.region)
                 .append(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
 
@@ -402,7 +402,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         QueryOptions options = new QueryOptions()
-                .append(VariantStorageEngine.Options.RESUME.key(), cliOptions.resume);
+                .append(VariantStorageOptions.RESUME.key(), cliOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
 
         URI inputUri = UriUtils.createUri(cliOptions.input, true);
@@ -455,8 +455,8 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         QueryOptions options = new QueryOptions()
-                .append(VariantStorageEngine.Options.RESUME.key(), cliOptions.resume)
-                .append(VariantStorageEngine.Options.FORCE.key(), cliOptions.force);
+                .append(VariantStorageOptions.RESUME.key(), cliOptions.resume)
+                .append(VariantStorageOptions.FORCE.key(), cliOptions.force);
         options.putAll(cliOptions.commonOptions.params);
 
         variantManager.removeVariantScore(cliOptions.study, cliOptions.scoreName, options, sessionId);
@@ -600,7 +600,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
         ObjectMap options = new ObjectMap();
 //        options.put("skipReferenceVariants", cliOptions.genericFillGapsOptions.excludeHomRef);
-        options.put(VariantStorageEngine.Options.RESUME.key(), cliOptions.genericFillGapsOptions.resume);
+        options.put(VariantStorageOptions.RESUME.key(), cliOptions.genericFillGapsOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
 
         variantManager.fillGaps(cliOptions.study, cliOptions.genericFillGapsOptions.samples, options, sessionId);
@@ -613,7 +613,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         ObjectMap options = new ObjectMap();
-        options.put(VariantStorageEngine.Options.RESUME.key(), cliOptions.fillMissingCommandOptions.resume);
+        options.put(VariantStorageOptions.RESUME.key(), cliOptions.fillMissingCommandOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
 
         variantManager.fillMissing(cliOptions.study, cliOptions.fillMissingCommandOptions.overwrite, options, sessionId);

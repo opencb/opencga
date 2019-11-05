@@ -19,7 +19,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
@@ -77,7 +77,7 @@ public class DiscoverPendingVariantsToAnnotateDriver extends AbstractVariantsTab
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, TYPE.bytes());
         scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, SO.bytes());
 
-        int caching = getConf().getInt(HadoopVariantStorageEngineOptions.MR_HBASE_SCAN_CACHING.key(), 50);
+        int caching = getConf().getInt(HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING.key(), 50);
         boolean multiThread = getConf().getBoolean("annotation.pending.discover.MultithreadedTableMapper", false);
 
 

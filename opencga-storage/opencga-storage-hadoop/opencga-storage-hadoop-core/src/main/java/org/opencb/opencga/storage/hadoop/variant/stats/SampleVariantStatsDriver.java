@@ -20,7 +20,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -60,7 +60,7 @@ public class SampleVariantStatsDriver extends VariantTableAggregationDriver {
     @Override
     protected Map<String, String> getParams() {
         Map<String, String> params = new LinkedHashMap<>();
-        params.put("--" + VariantStorageEngine.Options.STUDY.key(), "<study>*");
+        params.put("--" + VariantStorageOptions.STUDY.key(), "<study>*");
         params.put("--" + SAMPLES, "<samples|all|auto>*");
         params.put("--" + OUTPUT, "<output>");
         return params;

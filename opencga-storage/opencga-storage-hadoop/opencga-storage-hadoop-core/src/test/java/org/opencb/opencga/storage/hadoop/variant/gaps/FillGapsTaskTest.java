@@ -15,7 +15,7 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
@@ -45,7 +45,7 @@ public class FillGapsTaskTest {
         metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         studyMetadata = metadataManager.createStudy("S");
         metadataManager.updateStudyMetadata("S", sm -> {
-            sm.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DP");
+            sm.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), "DP");
             sm.getVariantHeader().getComplexLines().add(new VariantFileHeaderComplexLine("INFO", "OTHER", "asdf", "1", "String", Collections.emptyMap()));
             return sm;
         });

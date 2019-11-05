@@ -249,10 +249,10 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         }
         printActiveThreadsNumber();
         variantStorageEngine = getVariantStorageEngine();
-        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.LIMIT_DEFAULT.key(), 10000);
-        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.LIMIT_MAX.key(), 10000);
-        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.SAMPLE_LIMIT_DEFAULT.key(), 10000);
-        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.SAMPLE_LIMIT_MAX.key(), 10000);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LIMIT_DEFAULT.key(), 10000);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.LIMIT_MAX.key(), 10000);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.SAMPLE_LIMIT_DEFAULT.key(), 10000);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.SAMPLE_LIMIT_MAX.key(), 10000);
         variantStorageEngine.getOptions().put(DefaultVariantAnnotationManager.NUM_THREADS, 2);
         metadataManager = variantStorageEngine.getMetadataManager();
         variantReaderUtils = variantStorageEngine.getVariantReaderUtils();
@@ -306,18 +306,18 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         ObjectMap newParams = new ObjectMap(params);
 
         if (studyMetadata == null) {
-            newParams.putIfAbsent(VariantStorageEngine.Options.STUDY.key(), STUDY_NAME);
+            newParams.putIfAbsent(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         } else {
-            newParams.putIfAbsent(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), studyMetadata.getAggregation());
-            newParams.putIfAbsent(VariantStorageEngine.Options.STUDY.key(), studyMetadata.getName());
+            newParams.putIfAbsent(VariantStorageOptions.AGGREGATED_TYPE.key(), studyMetadata.getAggregation());
+            newParams.putIfAbsent(VariantStorageOptions.STUDY.key(), studyMetadata.getName());
         }
 //        newParams.putIfAbsent(VariantStorageEngine.Options.FILE_ID.key(), FILE_ID);
         // Default value is already avro
 //        newParams.putIfAbsent(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
-        newParams.putIfAbsent(VariantStorageEngine.Options.ANNOTATE.key(), true);
+        newParams.putIfAbsent(VariantStorageOptions.ANNOTATE.key(), true);
         newParams.putIfAbsent(VariantAnnotationManager.SPECIES, "hsapiens");
         newParams.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRch37");
-        newParams.putIfAbsent(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
+        newParams.putIfAbsent(VariantStorageOptions.CALCULATE_STATS.key(), true);
 
         StoragePipelineResult storagePipelineResult = runETL(variantStorageManager, inputUri, outputUri, newParams, true, doTransform, doLoad);
 

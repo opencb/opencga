@@ -21,6 +21,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrIterator;
@@ -142,7 +143,7 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
     public void testResumeWhileRunning() throws Exception {
         Integer id = getSecondaryIndexCohortId(samples1.get(0));
         metadataManager.updateCohortMetadata(sm.getId(), id, cohortMetadata -> cohortMetadata.setSecondaryIndexStatus(TaskMetadata.Status.RUNNING));
-        variantStorageEngine.getOptions().put(VariantStorageEngine.Options.RESUME.key(), true);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.RESUME.key(), true);
         variantStorageEngine.secondaryIndexSamples(STUDY_NAME, samples1);
     }
 

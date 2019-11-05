@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.BiFunction;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.*;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk.

@@ -9,12 +9,12 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIteratorWithCounts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.APPROXIMATE_COUNT;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.APPROXIMATE_COUNT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isValidParam;
 
@@ -137,7 +137,7 @@ public abstract class AbstractTwoPhasedVariantQueryExecutor extends VariantQuery
     protected int getSamplingSize(QueryOptions inputOptions, int defaultSamplingSize, boolean iterator) {
         int samplingSize;
         if (shouldGetApproximateCount(inputOptions, iterator)) {
-            samplingSize = inputOptions.getInt(VariantStorageEngine.Options.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), defaultSamplingSize);
+            samplingSize = inputOptions.getInt(VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), defaultSamplingSize);
         } else {
             samplingSize = 0;
         }

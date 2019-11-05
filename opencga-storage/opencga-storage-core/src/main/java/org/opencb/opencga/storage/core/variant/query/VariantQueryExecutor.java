@@ -12,8 +12,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DEFAULT_TIMEOUT;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MAX_TIMEOUT;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.DEFAULT_TIMEOUT;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.MAX_TIMEOUT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultSampleLimit;
 

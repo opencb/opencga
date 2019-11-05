@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.UnionMultiVariantKeyIterator;
@@ -128,7 +128,7 @@ public class SampleIndexCompoundHeterozygousQueryExecutor extends CompoundHetero
     }
 
     private ExposedMultiVariantDBIterator exposedMultiVariantIterator(Query query, QueryOptions options, VariantDBIterator iterator) {
-        int samplingSize = options.getInt(VariantStorageEngine.Options.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), DEFAULT_SAMPLING_SIZE);
+        int samplingSize = options.getInt(VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), DEFAULT_SAMPLING_SIZE);
         return new ExposedMultiVariantDBIterator(
                 new VariantDBIteratorWithCounts(iterator),
                 ((int) (samplingSize * 1.4)),

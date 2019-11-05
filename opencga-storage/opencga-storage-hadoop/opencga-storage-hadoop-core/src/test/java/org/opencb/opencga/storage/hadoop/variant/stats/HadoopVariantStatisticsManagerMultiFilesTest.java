@@ -6,8 +6,9 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManagerMultiFilesTest;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
@@ -36,10 +37,10 @@ public class HadoopVariantStatisticsManagerMultiFilesTest extends VariantStatist
 
     @Override
     public Map<String, ?> getOtherStorageConfigurationOptions() {
-        return new ObjectMap(HadoopVariantStorageEngineOptions.VARIANT_TABLE_INDEXES_SKIP.key(), true)
-                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
-                .append(HadoopVariantStorageEngineOptions.STATS_LOCAL.key(), false)
-                .append(HadoopVariantStorageEngineOptions.HADOOP_LOAD_BATCH_SIZE.key(), 1);
+        return new ObjectMap(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), true)
+                .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
+                .append(HadoopVariantStorageOptions.STATS_LOCAL.key(), false)
+                .append(HadoopVariantStorageOptions.HADOOP_LOAD_BATCH_SIZE.key(), 1);
     }
 
     @Test

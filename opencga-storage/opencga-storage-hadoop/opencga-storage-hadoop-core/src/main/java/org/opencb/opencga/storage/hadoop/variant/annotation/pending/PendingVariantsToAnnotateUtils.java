@@ -5,7 +5,7 @@ import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
@@ -43,8 +43,8 @@ public final class PendingVariantsToAnnotateUtils {
                 GenomeHelper.COLUMN_FAMILY_BYTES, preSplits,
                 Compression.getCompressionAlgorithmByName(
                         conf.get(
-                                HadoopVariantStorageEngineOptions.PENDING_ANNOTATION_TABLE_COMPRESSION.key(),
-                                HadoopVariantStorageEngineOptions.PENDING_ANNOTATION_TABLE_COMPRESSION.defaultValue())));
+                                HadoopVariantStorageOptions.PENDING_ANNOTATION_TABLE_COMPRESSION.key(),
+                                HadoopVariantStorageOptions.PENDING_ANNOTATION_TABLE_COMPRESSION.defaultValue())));
     }
 
 }

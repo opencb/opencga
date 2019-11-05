@@ -29,7 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.*;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 
 /**
  * Created on 18/01/16 .

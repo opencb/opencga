@@ -33,7 +33,7 @@ import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -53,7 +53,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.SEARCH_INDEX_LAST_TIMESTAMP;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.extractVariantFromResultSet;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.extractVariantFromVariantRowKey;
 
@@ -97,13 +97,13 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
      */
     public static List<String> getFixedFormat(ObjectMap attributes) {
         List<String> format;
-        List<String> extraFields = attributes.getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
+        List<String> extraFields = attributes.getAsStringList(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key());
         if (extraFields.isEmpty()) {
             extraFields = Collections.singletonList(VariantMerger.GENOTYPE_FILTER_KEY);
         }
 
         boolean excludeGenotypes = attributes
-                .getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
+                .getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
 
         if (excludeGenotypes) {
             format = extraFields;

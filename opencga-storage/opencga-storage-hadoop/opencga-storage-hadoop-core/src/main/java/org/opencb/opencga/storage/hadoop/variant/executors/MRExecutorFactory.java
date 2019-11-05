@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.executors;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.MR_EXECUTOR;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.MR_EXECUTOR;
 
 /**
  * Created on 14/02/19.

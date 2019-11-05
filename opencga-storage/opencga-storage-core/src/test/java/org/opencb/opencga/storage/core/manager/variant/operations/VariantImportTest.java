@@ -28,7 +28,7 @@ import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.VariableSet;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 
@@ -56,7 +56,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
     @Before
     public void setUp() throws Exception {
 
-        indexFile(getSmallFile(), new QueryOptions(VariantStorageEngine.Options.CALCULATE_STATS.key(), true), outputId);
+        indexFile(getSmallFile(), new QueryOptions(VariantStorageOptions.CALCULATE_STATS.key(), true), outputId);
 
         catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, Arrays.asList(
                 new Variable("name", "", "", Variable.VariableType.TEXT, null, true, false, null, 0, null, null, null, null),

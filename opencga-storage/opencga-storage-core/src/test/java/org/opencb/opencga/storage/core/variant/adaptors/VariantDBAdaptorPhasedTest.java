@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 /**
  * Created on 13/05/16
@@ -38,9 +39,9 @@ public abstract class VariantDBAdaptorPhasedTest extends VariantStorageBaseTest 
     public void setUp() throws Exception {
         clearDB(DB_NAME);
         VariantStorageEngine variantStorageManager = getVariantStorageEngine();
-        ObjectMap options = new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
-                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DP,PS");
+        ObjectMap options = new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                .append(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), "DP,PS");
         runDefaultETL(getResourceUri("variant-test-phased.vcf"), variantStorageManager, newStudyMetadata(), options);
 
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor();

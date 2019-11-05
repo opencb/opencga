@@ -43,7 +43,7 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantToVcfSliceMapper;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceCombiner;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceReducer;
@@ -121,8 +121,8 @@ public class ArchiveDriver extends Configured implements Tool {
 
 
         TableMapReduceUtil.initTableReducerJob(tableName, VcfSliceReducer.class, job, null, null, null, null,
-                conf.getBoolean(HadoopVariantStorageEngineOptions.MR_ADD_DEPENDENCY_JARS.key(),
-                        HadoopVariantStorageEngineOptions.MR_ADD_DEPENDENCY_JARS.defaultValue()));
+                conf.getBoolean(HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.key(),
+                        HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.defaultValue()));
         job.setMapOutputValueClass(VcfSliceWritable.class);
 
         Thread hook = new Thread(() -> {

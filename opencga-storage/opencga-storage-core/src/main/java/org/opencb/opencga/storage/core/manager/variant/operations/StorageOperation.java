@@ -38,6 +38,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
 import org.slf4j.Logger;
 
@@ -323,8 +324,8 @@ public abstract class StorageOperation {
     public Aggregation getAggregation(String studyId, QueryOptions options, String sessionId) throws CatalogException {
         QueryOptions include = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ATTRIBUTES.key());
         Study study = catalogManager.getStudyManager().get(studyId, include, sessionId).first();
-        Aggregation argsAggregation = options.get(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), Aggregation.class, Aggregation.NONE);
-        Object studyAggregationObj = study.getAttributes().get(VariantStorageEngine.Options.AGGREGATED_TYPE.key());
+        Aggregation argsAggregation = options.get(VariantStorageOptions.AGGREGATED_TYPE.key(), Aggregation.class, Aggregation.NONE);
+        Object studyAggregationObj = study.getAttributes().get(VariantStorageOptions.AGGREGATED_TYPE.key());
         Aggregation studyAggregation = null;
         if (studyAggregationObj != null) {
             studyAggregation = AggregationUtils.valueOf(studyAggregationObj.toString());
@@ -340,7 +341,7 @@ public abstract class StorageOperation {
             // If studyAggregation is not define, update study aggregation
             if (studyAggregation == null) {
                 //update study aggregation
-                Map<String, Aggregation> attributes = Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(),
+                Map<String, Aggregation> attributes = Collections.singletonMap(VariantStorageOptions.AGGREGATED_TYPE.key(),
                         argsAggregation);
                 ObjectMap parameters = new ObjectMap("attributes", attributes);
                 catalogManager.getStudyManager().update(studyId, parameters, null, sessionId);

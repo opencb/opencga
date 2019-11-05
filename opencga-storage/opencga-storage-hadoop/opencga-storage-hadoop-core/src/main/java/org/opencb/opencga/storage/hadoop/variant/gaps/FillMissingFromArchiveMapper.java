@@ -14,7 +14,7 @@ import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper
 import java.io.IOException;
 import java.util.Map;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS;
 
 /**
  * Created on 09/03/18.

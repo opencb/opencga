@@ -34,8 +34,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.MR_HADOOP_BIN;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.INTERMEDIATE_HDFS_DIRECTORY;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.MR_HADOOP_BIN;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.INTERMEDIATE_HDFS_DIRECTORY;
 
 /**
  * Created on 31/03/16.

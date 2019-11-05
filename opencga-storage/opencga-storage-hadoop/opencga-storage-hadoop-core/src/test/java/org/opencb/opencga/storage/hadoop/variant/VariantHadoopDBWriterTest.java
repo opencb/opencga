@@ -54,6 +54,7 @@ import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
@@ -139,8 +140,8 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
 
         sm1=metadataManager.updateStudyMetadata(sm1.getId(), sm -> {
             sm.getAttributes()
-                    .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,AD")
-                    .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+                    .append(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,AD")
+                    .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
             return sm;
         });
 
@@ -221,7 +222,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
 
     private void loadVariantsBasic(StudyMetadata sc, int fileId, List<Variant> variants) throws Exception {
         String archiveTableName = engine.getArchiveTableName(sc.getId());
-        sc.getAttributes().append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+        sc.getAttributes().append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
         VariantStorageMetadataManager metadataManager = this.metadataManager;
         metadataManager.unsecureUpdateStudyMetadata(sc);
         ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableName);

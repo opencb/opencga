@@ -31,7 +31,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
@@ -62,8 +62,8 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
         clearDB(DB_NAME);
         inputUri = getInputUri();
         runDefaultETL(inputUri, getVariantStorageEngine(), studyMetadata,
-                new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false));
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
+                        .append(VariantStorageOptions.CALCULATE_STATS.key(), false));
         dbAdaptor = getVariantStorageEngine().getDBAdaptor();
     }
 
@@ -90,7 +90,7 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
             sm.setAggregation(Aggregation.NONE);
             return sm;
         });
-        calculateAggregatedStatsTest(new QueryOptions(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregationType()));
+        calculateAggregatedStatsTest(new QueryOptions(VariantStorageOptions.AGGREGATED_TYPE.key(), getAggregationType()));
     }
 
     protected void calculateAggregatedStatsTest(QueryOptions options) throws Exception {
@@ -99,10 +99,10 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
 
         checkAggregatedCohorts(dbAdaptor, studyMetadata);
 
-        options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
+        options.put(VariantStorageOptions.LOAD_BATCH_SIZE.key(), 100);
         options.put(DefaultVariantStatisticsManager.OUTPUT, outputUri.resolve("aggregated.stats").getPath());
         if (getAggregationMappingFile() != null) {
-            options.put(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), getAggregationMappingFile());
+            options.put(VariantStorageOptions.AGGREGATION_MAPPING_PROPERTIES.key(), getAggregationMappingFile());
         }
 
         //Calculate stats

@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
@@ -60,8 +61,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 
 /**
  * Created by jmmut on 12/02/15.
@@ -177,10 +176,10 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         }
 
         //Parse query options
-        int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
-        int numTasks = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
-        boolean overwrite = options.getBoolean(Options.OVERWRITE_STATS.key(), false);
-        boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
+        int batchSize = options.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(), VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue());
+        int numTasks = options.getInt(VariantStorageOptions.LOAD_THREADS.key(), VariantStorageOptions.LOAD_THREADS.defaultValue());
+        boolean overwrite = options.getBoolean(VariantStorageOptions.OVERWRITE_STATS.key(), false);
+        boolean updateStats = options.getBoolean(VariantStorageOptions.UPDATE_STATS.key(), false);
         Properties tagmap = VariantStatisticsManager.getAggregationMappingProperties(options);
 //            fileId = options.getString(VariantStorageEngine.Options.FILE_ID.key());
         Aggregation aggregation = getAggregation(studyMetadata, options);
@@ -401,8 +400,10 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
                     },
                     null,
                     ParallelTaskRunner.Config.builder().setAbortOnFail(true)
-                            .setBatchSize(options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue()))
-                            .setNumTasks(options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue())).build()
+                            .setBatchSize(options.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(),
+                                    VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue()))
+                            .setNumTasks(options.getInt(VariantStorageOptions.LOAD_THREADS.key(),
+                                    VariantStorageOptions.LOAD_THREADS.defaultValue())).build()
 
             );
         } else {
@@ -414,8 +415,10 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
                     batch -> batch,
                     dbWriter,
                     ParallelTaskRunner.Config.builder().setAbortOnFail(true)
-                            .setBatchSize(options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue()))
-                            .setNumTasks(options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue())).build()
+                            .setBatchSize(options.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(),
+                                    VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue()))
+                            .setNumTasks(options.getInt(VariantStorageOptions.LOAD_THREADS.key(),
+                                    VariantStorageOptions.LOAD_THREADS.defaultValue())).build()
 
             );
         }

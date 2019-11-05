@@ -22,8 +22,8 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.ARCHIVE_CHUNK_SIZE;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.ARCHIVE_FILE_BATCH_SIZE;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.ARCHIVE_CHUNK_SIZE;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.ARCHIVE_FILE_BATCH_SIZE;
 
 
 /**

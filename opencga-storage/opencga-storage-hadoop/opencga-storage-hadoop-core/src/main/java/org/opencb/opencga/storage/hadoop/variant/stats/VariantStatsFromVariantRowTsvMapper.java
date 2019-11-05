@@ -10,7 +10,7 @@ import org.opencb.biodata.tools.variant.converters.avro.VariantStatsToTsvConvert
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantRowMapper;
@@ -38,11 +38,11 @@ public class VariantStatsFromVariantRowTsvMapper extends VariantRowMapper<NullWr
 
 
         String unknownGenotype = context.getConfiguration().get(
-                VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE.key(),
-                VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE.defaultValue());
+                VariantStorageOptions.STATS_DEFAULT_GENOTYPE.key(),
+                VariantStorageOptions.STATS_DEFAULT_GENOTYPE.defaultValue());
         boolean statsMultiAllelic = context.getConfiguration().getBoolean(
-                VariantStorageEngine.Options.STATS_MULTI_ALLELIC.key(),
-                VariantStorageEngine.Options.STATS_MULTI_ALLELIC.defaultValue());
+                VariantStorageOptions.STATS_MULTI_ALLELIC.key(),
+                VariantStorageOptions.STATS_MULTI_ALLELIC.defaultValue());
         for (Integer cohort : cohorts) {
             CohortMetadata cohortMetadata = metadataManager.getCohortMetadata(studyMetadata.getId(), cohort);
             String alias = cohortMetadata.getAttributes().getString("alias");

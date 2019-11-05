@@ -11,7 +11,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -612,7 +612,7 @@ public class SampleIndexQueryParser {
     private static List<String> getAllLoadedGenotypes(StudyMetadata studyMetadata) {
         List<String> allGts = studyMetadata
                 .getAttributes()
-                .getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key());
+                .getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key());
         if (allGts == null || allGts.isEmpty()) {
             allGts = DEFAULT_LOADED_GENOTYPES;
         }

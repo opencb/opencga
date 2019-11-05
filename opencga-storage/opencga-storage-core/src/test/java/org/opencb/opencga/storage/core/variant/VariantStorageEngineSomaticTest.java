@@ -44,9 +44,9 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
         StudyMetadata studyMetadata = newStudyMetadata();
         VariantStorageEngine engine = getVariantStorageEngine();
         runDefaultETL(getResourceUri("variant-test-somatic.vcf"), engine, studyMetadata,
-                new ObjectMap(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GL", "DP", "AU", "CU", "GU", "TU"))
-                        .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
+                new ObjectMap(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GL", "DP", "AU", "CU", "GU", "TU"))
+                        .append(VariantStorageOptions.ANNOTATE.key(), false)
+                        .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
         );
         VariantDBIterator iterator = engine.iterator(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions());
         while (iterator.hasNext()) {
@@ -80,13 +80,13 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
         StudyMetadata studyMetadata = newStudyMetadata();
         VariantStorageEngine engine = getVariantStorageEngine();
         runDefaultETL(getResourceUri("variant-test-somatic.vcf"), engine, studyMetadata,
-                new ObjectMap(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GL", "DP", "AU", "CU", "GU", "TU"))
-                        .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
+                new ObjectMap(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GL", "DP", "AU", "CU", "GU", "TU"))
+                        .append(VariantStorageOptions.ANNOTATE.key(), false)
+                        .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
         );
         runDefaultETL(getResourceUri("variant-test-somatic_2.vcf"), engine, studyMetadata,
-                new ObjectMap(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
-                        .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                new ObjectMap(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                        .append(VariantStorageOptions.ANNOTATE.key(), false)
         );
         VariantDBIterator iterator = engine.iterator(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./."), new QueryOptions());
         while (iterator.hasNext()) {
@@ -123,24 +123,24 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
         List<String> extraFields = Arrays.asList("GL", "DP", "AU", "CU", "GU", "TU");
         VariantStorageEngine engine = getVariantStorageEngine();
         StoragePipelineResult etlResult = runDefaultETL(getResourceUri("variant-test-somatic.vcf"), engine, studyMetadata,
-                new ObjectMap(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), extraFields)
-                        .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(), false)
-                        .append(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), true)
-                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
+                new ObjectMap(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), extraFields)
+                        .append(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(), false)
+                        .append(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), true)
+                        .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
 //                        .append(VariantStorageEngine.Options.FILE_ID.key(), 2)
-                        .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                        .append(VariantStorageOptions.ANNOTATE.key(), false)
         );
         etlResult = runDefaultETL(getResourceUri("variant-test-somatic_2.vcf"), engine, studyMetadata,
-                new ObjectMap(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), extraFields)
-                        .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(), true)
-                        .append(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), false)
-                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
+                new ObjectMap(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), extraFields)
+                        .append(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(), true)
+                        .append(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), false)
+                        .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
 //                        .append(VariantStorageEngine.Options.FILE_ID.key(), 3)
-                        .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                        .append(VariantStorageOptions.ANNOTATE.key(), false)
         );
         studyMetadata = engine.getMetadataManager().getStudyMetadata(studyMetadata.getId());
-        assertEquals(true, studyMetadata.getAttributes().getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), false));
-        assertEquals(extraFields, studyMetadata.getAttributes().getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key()));
+        assertEquals(true, studyMetadata.getAttributes().getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), false));
+        assertEquals(extraFields, studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key()));
 
         for (Variant variant : engine) {
 //            System.out.println(variant.toJson());

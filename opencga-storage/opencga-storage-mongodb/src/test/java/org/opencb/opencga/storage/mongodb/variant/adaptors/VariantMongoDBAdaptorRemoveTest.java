@@ -30,7 +30,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -73,11 +73,11 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
         studyMetadata = newStudyMetadata();
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
         clearDB(DB_NAME);
-        ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.FAMILY)
-                .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
-                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
+        ObjectMap params = new ObjectMap(VariantStorageOptions.STUDY_TYPE.key(), SampleSetType.FAMILY)
+                .append(VariantStorageOptions.ANNOTATE.key(), true)
+                .append(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
                 .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseRestVariantAnnotator.class.getName())
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
+                .append(VariantStorageOptions.CALCULATE_STATS.key(), true);
 
 //        HashSet FORMAT = new HashSet<>();
 //        if (!params.getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(),
@@ -94,8 +94,8 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
 
 
         //Calculate stats
-        QueryOptions options = new QueryOptions(VariantStorageEngine.Options.STUDY.key(), STUDY_NAME)
-                .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
+        QueryOptions options = new QueryOptions(VariantStorageOptions.STUDY.key(), STUDY_NAME)
+                .append(VariantStorageOptions.LOAD_BATCH_SIZE.key(), 100)
                 .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
                 .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "cohort1.cohort2.stats");
         Iterator<Integer> iterator = metadataManager.getFileMetadata(studyMetadata.getId(), indexedFileId).getSamples().iterator();

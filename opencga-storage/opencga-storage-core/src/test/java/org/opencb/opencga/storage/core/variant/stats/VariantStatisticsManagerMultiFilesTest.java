@@ -9,6 +9,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.net.URI;
@@ -45,8 +46,8 @@ public abstract class VariantStatisticsManagerMultiFilesTest extends VariantStor
             String fileName = "1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
             inputFiles.add(getResourceUri("platinum/" + fileName));
         }
-        storageEngine.getOptions().put(VariantStorageEngine.Options.STUDY.key(), STUDY_NAME);
-        storageEngine.getOptions().put(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+        storageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
+        storageEngine.getOptions().put(VariantStorageOptions.CALCULATE_STATS.key(), false);
 //        storageEngine.index(inputFiles.subList(0, inputFiles.size()/2), outputUri, true, true, true);
 //        storageEngine.index(inputFiles.subList(inputFiles.size()/2, inputFiles.size()), outputUri, true, true, true);
         storageEngine.index(inputFiles, outputUri, true, true, true);
@@ -61,7 +62,7 @@ public abstract class VariantStatisticsManagerMultiFilesTest extends VariantStor
         checkCohorts(dbAdaptor, studyMetadata);
 
         QueryOptions options = new QueryOptions();
-        options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
+        options.put(VariantStorageOptions.LOAD_BATCH_SIZE.key(), 100);
 
         List<String> samples = new ArrayList<>(metadataManager.getIndexedSamplesMap(studyMetadata.getId()).keySet());
 

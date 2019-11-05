@@ -16,7 +16,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -34,7 +34,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.STATS_DEFAULT_GENOTYPE;
 import static org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter.endsWith;
 import static org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil.getQueryFromConfig;
 import static org.opencb.opencga.storage.hadoop.variant.stats.HBaseVariantStatsCalculator.excludeFiles;
@@ -72,7 +72,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
     @Override
     protected Map<String, String> getParams() {
         Map<String, String> params = new LinkedHashMap<>();
-        params.put("--" + VariantStorageEngine.Options.STUDY.key(), "<study>*");
+        params.put("--" + VariantStorageOptions.STUDY.key(), "<study>*");
         params.put("--" + COHORTS, "<cohorts>*");
         params.put("--" + OUTPUT, "<output>");
         return params;
@@ -91,19 +91,19 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
         }
 
         aggregation = VariantStatsMapper.getAggregation(getConf());
-        updateStats = getConf().getBoolean(VariantStorageEngine.Options.UPDATE_STATS.key(),
-                VariantStorageEngine.Options.UPDATE_STATS.defaultValue());
-        overwrite = getConf().getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(),
-                VariantStorageEngine.Options.OVERWRITE_STATS.defaultValue());
-        statsMultiAllelic = getConf().getBoolean(VariantStorageEngine.Options.STATS_MULTI_ALLELIC.key(),
-                VariantStorageEngine.Options.STATS_MULTI_ALLELIC.defaultValue());
-        statsDefaultGenotype = getConf().get(VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE.key(),
-                VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE.defaultValue());
+        updateStats = getConf().getBoolean(VariantStorageOptions.UPDATE_STATS.key(),
+                VariantStorageOptions.UPDATE_STATS.defaultValue());
+        overwrite = getConf().getBoolean(VariantStorageOptions.OVERWRITE_STATS.key(),
+                VariantStorageOptions.OVERWRITE_STATS.defaultValue());
+        statsMultiAllelic = getConf().getBoolean(VariantStorageOptions.STATS_MULTI_ALLELIC.key(),
+                VariantStorageOptions.STATS_MULTI_ALLELIC.defaultValue());
+        statsDefaultGenotype = getConf().get(VariantStorageOptions.STATS_DEFAULT_GENOTYPE.key(),
+                VariantStorageOptions.STATS_DEFAULT_GENOTYPE.defaultValue());
         excludeFiles = excludeFiles(statsMultiAllelic, statsDefaultGenotype, aggregation);
 
         logger.info(" * Aggregation: " + aggregation);
-        logger.info(" * " + VariantStorageEngine.Options.STATS_MULTI_ALLELIC.key() + ": " + statsMultiAllelic);
-        logger.info(" * " + VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE.key() + ": " + statsDefaultGenotype);
+        logger.info(" * " + VariantStorageOptions.STATS_MULTI_ALLELIC.key() + ": " + statsMultiAllelic);
+        logger.info(" * " + VariantStorageOptions.STATS_DEFAULT_GENOTYPE.key() + ": " + statsDefaultGenotype);
 
 
         String outdirStr = getParam(OUTPUT);

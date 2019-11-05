@@ -49,7 +49,7 @@ import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.iterators.VariantHBaseResultSetIterator;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.iterators.VariantHBaseScanIterator;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
@@ -76,7 +76,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.SEARCH_INDEX_LAST_TIMESTAMP;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 
@@ -128,8 +128,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 studyConfigurationManager.get(), clientSideSkip);
 
         phoenixFetchSize = options.getInt(
-                HadoopVariantStorageEngineOptions.DBADAPTOR_PHOENIX_FETCH_SIZE.key(),
-                HadoopVariantStorageEngineOptions.DBADAPTOR_PHOENIX_FETCH_SIZE.defaultValue());
+                HadoopVariantStorageOptions.DBADAPTOR_PHOENIX_FETCH_SIZE.key(),
+                HadoopVariantStorageOptions.DBADAPTOR_PHOENIX_FETCH_SIZE.defaultValue());
 
         phoenixHelper = new VariantPhoenixHelper(genomeHelper);
 

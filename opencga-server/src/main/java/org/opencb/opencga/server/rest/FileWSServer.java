@@ -60,7 +60,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 
 
 @Path("/{apiVersion}/files")

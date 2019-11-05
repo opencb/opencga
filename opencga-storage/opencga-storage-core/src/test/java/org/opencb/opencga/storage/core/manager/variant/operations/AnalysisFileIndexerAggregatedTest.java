@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,10 +51,10 @@ public class AnalysisFileIndexerAggregatedTest extends AbstractVariantStorageOpe
 
     @Test
     public void testIndexWithAggregatedStats() throws Exception {
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), Aggregation.BASIC);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.AGGREGATED_TYPE.key(), Aggregation.BASIC);
 
-        queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
+        queryOptions.put(VariantStorageOptions.CALCULATE_STATS.key(), true);
         queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, outputId);
         variantManager.index(studyFqn, files.get(0).getId(), opencga.createTmpOutdir(studyId, "index", sessionId), queryOptions, sessionId);
         assertEquals(0, getDefaultCohort(studyId).getSamples().size());

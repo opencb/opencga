@@ -14,7 +14,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -320,7 +320,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
     protected List<String> getAllLoadedGenotypes(String study) {
         List<String> allGts = metadataManager.getStudyMetadata(study)
                 .getAttributes()
-                .getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key());
+                .getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key());
         if (allGts == null || allGts.isEmpty()) {
             allGts = DEFAULT_LOADED_GENOTYPES;
         }

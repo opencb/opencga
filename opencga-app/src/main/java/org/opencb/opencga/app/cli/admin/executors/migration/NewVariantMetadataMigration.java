@@ -60,8 +60,8 @@ import java.util.zip.GZIPOutputStream;
 
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Filters.exists;
-import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_FILES;
-import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_STUDIES;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.COLLECTION_FILES;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.COLLECTION_STUDIES;
 
 /**
  * Executes all migration scripts related with the issue #673

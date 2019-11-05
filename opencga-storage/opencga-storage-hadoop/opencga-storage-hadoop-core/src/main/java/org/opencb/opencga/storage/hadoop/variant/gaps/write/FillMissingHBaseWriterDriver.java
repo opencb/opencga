@@ -21,7 +21,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import static org.apache.hadoop.mapreduce.MRJobConfig.JOB_RUNNING_MAP_LIMIT;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.FILL_MISSING_WRITE_MAPPERS_LIMIT_FACTOR;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.FILL_MISSING_WRITE_MAPPERS_LIMIT_FACTOR;
 
 /**
  * Created on 09/03/18.

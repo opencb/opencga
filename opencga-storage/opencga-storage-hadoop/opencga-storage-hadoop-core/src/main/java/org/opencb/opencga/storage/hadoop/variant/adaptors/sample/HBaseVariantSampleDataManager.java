@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
@@ -257,7 +257,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
     protected Map<String, Collection<String>> getGenotypeGroups(int studyId, Set<String> genotypes, boolean merge) {
         Map<String, Collection<String>> gtGroups = new LinkedHashMap<>(genotypes.size());
         List<String> loadedGts = metadataManager.getStudyMetadata(studyId).getAttributes()
-                .getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key());
+                .getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key());
         if (merge) {
             List<String> allGts = new LinkedList<>();
             for (String genotypeStr : genotypes) {

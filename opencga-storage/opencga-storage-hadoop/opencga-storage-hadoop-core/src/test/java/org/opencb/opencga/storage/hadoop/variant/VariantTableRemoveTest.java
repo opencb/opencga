@@ -29,6 +29,7 @@ import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 
@@ -70,8 +71,8 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         System.out.println("studyMetadata = " + studyMetadata);
         String studyName = studyMetadata.getName();
 
-        ObjectMap options = new ObjectMap(HadoopVariantStorageEngineOptions.VARIANT_TABLE_INDEXES_SKIP.key(), true)
-                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED);
+        ObjectMap options = new ObjectMap(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), true)
+                .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED);
         loadFile("s1.genome.vcf", studyMetadata, options);
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
         Map<String, Variant> variants = buildVariantsIdx();
@@ -114,8 +115,8 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         System.out.println("studyMetadata = " + studyMetadata);
         String studyName = studyMetadata.getName();
 
-        ObjectMap options = new ObjectMap(HadoopVariantStorageEngineOptions.VARIANT_TABLE_INDEXES_SKIP.key(), true)
-                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+        ObjectMap options = new ObjectMap(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), true)
+                .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
         loadFile("s1.genome.vcf", studyMetadata, options);
         VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri());
         Map<String, Variant> variants = buildVariantsIdx();
@@ -159,8 +160,8 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         System.out.println("studyMetadata = " + studyMetadata);
         String studyName = studyMetadata.getName();
 
-        ObjectMap options = new ObjectMap(HadoopVariantStorageEngineOptions.VARIANT_TABLE_INDEXES_SKIP.key(), true)
-                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+        ObjectMap options = new ObjectMap(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), true)
+                .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
         loadFile("s1.genome.vcf", studyMetadata, options);
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
@@ -209,7 +210,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
         System.out.println("studyMetadata = " + studyMetadata);
         String studyName = studyMetadata.getName();
 
-        Map<String, Object> options = Collections.singletonMap(HadoopVariantStorageEngineOptions.VARIANT_TABLE_INDEXES_SKIP.key(), true);
+        Map<String, Object> options = Collections.singletonMap(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), true);
         loadFile("s1.genome.vcf", studyMetadata, options);
         Map<String, Variant> variants = buildVariantsIdx();
 

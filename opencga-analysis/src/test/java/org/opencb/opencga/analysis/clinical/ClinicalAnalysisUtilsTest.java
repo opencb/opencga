@@ -13,7 +13,7 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
@@ -49,8 +49,8 @@ public class ClinicalAnalysisUtilsTest {
                 StandardCopyOption.REPLACE_EXISTING);
 
         ObjectMap storageOptions = new ObjectMap()
-                .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+                .append(VariantStorageOptions.ANNOTATE.key(), true)
+                .append(VariantStorageOptions.CALCULATE_STATS.key(), false);
 
         StorageConfiguration configuration = variantStorageEngine.getConfiguration();
         configuration.setDefaultStorageEngineId(variantStorageEngine.getStorageEngineId());

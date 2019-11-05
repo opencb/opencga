@@ -58,10 +58,10 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
         studyMetadata = new StudyMetadata(1, "s1");
         variantStorageEngine.getOptions().append(AbstractCellBaseVariantAnnotator.ANNOTATOR_CELLBASE_EXCLUDE, "expression,clinical");
         pipelineResult1 = runDefaultETL(input1, variantStorageEngine, studyMetadata, new QueryOptions()
-                .append(VariantStorageEngine.Options.ANNOTATE.key(), true));
+                .append(VariantStorageOptions.ANNOTATE.key(), true));
         input2 = getResourceUri("variant-test-sv_2.vcf");
         pipelineResult2 = runDefaultETL(input2, variantStorageEngine, studyMetadata, new QueryOptions()
-                .append(VariantStorageEngine.Options.ANNOTATE.key(), true));
+                .append(VariantStorageOptions.ANNOTATE.key(), true));
     }
 
     @Test

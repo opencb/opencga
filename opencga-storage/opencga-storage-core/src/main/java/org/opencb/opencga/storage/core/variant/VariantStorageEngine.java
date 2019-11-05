@@ -19,11 +19,9 @@ package org.opencb.opencga.storage.core.variant;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
@@ -33,7 +31,6 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
-import org.opencb.opencga.storage.core.config.ConfigurationOption;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -77,7 +74,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.buildSamplesIndexCollectionName;
@@ -100,7 +97,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         ADVANCED;
 
         public static MergeMode from(ObjectMap options) {
-            String mergeModeStr = options.getString(Options.MERGE_MODE.key(), Options.MERGE_MODE.defaultValue().toString());
+            String mergeModeStr = options.getString(VariantStorageOptions.MERGE_MODE.key(),
+                    VariantStorageOptions.MERGE_MODE.defaultValue().toString());
             return MergeMode.valueOf(mergeModeStr.toUpperCase());
         }
     }
@@ -126,96 +124,6 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         public String key() {
             return c;
         }
-    }
-
-    public enum Options implements ConfigurationOption {
-        INCLUDE_STATS("include.stats", true),              //Include existing stats on the original file.
-        //        @Deprecated
-//        INCLUDE_GENOTYPES("include.genotypes", true),      //Include sample information (genotypes)
-        EXTRA_GENOTYPE_FIELDS("include.extra-fields", ""),  //Include other sample information (like DP, GQ, ...)
-        EXTRA_GENOTYPE_FIELDS_TYPE("include.extra-fields-format", ""),  //Other sample information format (String, Integer, Float)
-        EXTRA_GENOTYPE_FIELDS_COMPRESS("extra-fields.compress", true),    //Compress with gzip other sample information
-        //        @Deprecated
-//        INCLUDE_SRC("include.src", false),                  //Include original source file on the transformed file and the final db
-//        COMPRESS_GENOTYPES ("compressGenotypes", true),    //Stores sample information as compressed genotypes
-        EXCLUDE_GENOTYPES("exclude.genotypes", false),              //Do not store genotypes from samples
-
-        STUDY_TYPE("studyType", SampleSetType.CASE_CONTROL),
-        AGGREGATED_TYPE("aggregatedType", Aggregation.NONE),
-        STUDY("study", null),
-        OVERRIDE_FILE_ID("overrideFileId", false),
-        GVCF("gvcf", false),
-        ISOLATE_FILE_FROM_STUDY_CONFIGURATION("isolateStudyConfiguration", false),
-        TRANSFORM_FAIL_ON_MALFORMED_VARIANT("transform.fail.on.malformed", false),
-
-        COMPRESS_METHOD("compressMethod", "gzip"),
-        AGGREGATION_MAPPING_PROPERTIES("aggregationMappingFile", null),
-        @Deprecated
-        DB_NAME("database.name", "opencga"),
-
-        STDIN("stdin", false),
-        STDOUT("stdout", false),
-        TRANSFORM_BATCH_SIZE("transform.batch.size", 200),
-        TRANSFORM_THREADS("transform.threads", 4),
-        TRANSFORM_FORMAT("transform.format", "avro"),
-        LOAD_BATCH_SIZE("load.batch.size", 100),
-        LOAD_THREADS("load.threads", 6),
-        LOAD_SPLIT_DATA("load.split-data", false),
-
-        LOADED_GENOTYPES("loadedGenotypes", null),
-
-        POST_LOAD_CHECK_SKIP("postLoad.check.skip", false),
-
-        RELEASE("release", 1),
-
-        MERGE_MODE("merge.mode", MergeMode.ADVANCED),
-
-        CALCULATE_STATS("calculateStats", false),          //Calculate stats on the postLoad step
-        OVERWRITE_STATS("overwriteStats", false),          //Overwrite stats already present
-        UPDATE_STATS("updateStats", false),                //Calculate missing stats
-        STATS_DEFAULT_GENOTYPE("stats.default-genotype", "0/0"), // Default genotype to be used for calculating stats.
-        STATS_MULTI_ALLELIC("stats.multiallelic", false),  // Include secondary alternates in the variant stats calculation
-
-        ANNOTATE("annotate", false),
-        INDEX_SEARCH("indexSearch", false),
-
-        RESUME("resume", false),
-        FORCE("force", false),
-
-        SEARCH_INDEX_LAST_TIMESTAMP("search.index.last.timestamp", 0),
-
-        DEFAULT_TIMEOUT("dbadaptor.default_timeout", 10000), // Default timeout for DBAdaptor operations. Only used if none is provided.
-        MAX_TIMEOUT("dbadaptor.max_timeout", 30000),         // Max allowed timeout for DBAdaptor operations
-        LIMIT_DEFAULT("limit.default", 1000),
-        LIMIT_MAX("limit.max", 5000),
-        SAMPLE_LIMIT_DEFAULT("sample.limit.default", 100),
-        SAMPLE_LIMIT_MAX("sample.limit.max", 1000),
-
-        // Intersect options
-        INTERSECT_ACTIVE("search.intersect.active", true),                       // Allow intersect queries with the SearchEngine (Solr)
-        INTERSECT_ALWAYS("search.intersect.always", false),                      // Force intersect queries
-        INTERSECT_PARAMS_THRESHOLD("search.intersect.params.threshold", 3),      // Minimum number of QueryParams in the query to intersect
-
-        APPROXIMATE_COUNT_SAMPLING_SIZE("approximateCountSamplingSize", 1000),
-        APPROXIMATE_COUNT("approximateCount", false);
-
-        private final String key;
-        private final Object value;
-
-        Options(String key, Object value) {
-            this.key = key;
-            this.value = value;
-        }
-
-        public String key() {
-            return key;
-        }
-
-        @SuppressWarnings("unchecked")
-        public <T> T defaultValue() {
-            return (T) value;
-        }
-
     }
 
     @Deprecated
@@ -379,10 +287,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected void annotateLoadedFiles(URI outdirUri, List<URI> files, List<StoragePipelineResult> results, ObjectMap options)
             throws StoragePipelineException {
-        if (files != null && !files.isEmpty() && options.getBoolean(Options.ANNOTATE.key(), Options.ANNOTATE.defaultValue())) {
+        if (files != null && !files.isEmpty() && options.getBoolean(VariantStorageOptions.ANNOTATE.key(),
+                VariantStorageOptions.ANNOTATE.defaultValue())) {
             try {
 
-                String studyName = options.getString(Options.STUDY.key());
+                String studyName = options.getString(VariantStorageOptions.STUDY.key());
                 VariantStorageMetadataManager metadataManager = getMetadataManager();
                 int studyId = metadataManager.getStudyId(studyName);
 
@@ -482,11 +391,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param study     Study
      * @param cohorts   Cohorts to calculate stats
      * @param options   Other options
-     *                  {@link Options#AGGREGATION_MAPPING_PROPERTIES}
-     *                  {@link Options#OVERWRITE_STATS}
-     *                  {@link Options#UPDATE_STATS}
-     *                  {@link Options#LOAD_THREADS}
-     *                  {@link Options#LOAD_BATCH_SIZE}
+     *                  {@link VariantStorageOptions#AGGREGATION_MAPPING_PROPERTIES}
+     *                  {@link VariantStorageOptions#OVERWRITE_STATS}
+     *                  {@link VariantStorageOptions#UPDATE_STATS}
+     *                  {@link VariantStorageOptions#LOAD_THREADS}
+     *                  {@link VariantStorageOptions#LOAD_BATCH_SIZE}
      *                  {@link VariantQueryParam#REGION}
      *
      * @throws StorageEngineException      If there is any problem related with the StorageEngine
@@ -519,13 +428,13 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     protected void calculateStatsForLoadedFiles(URI output, List<URI> files, List<StoragePipelineResult> results, ObjectMap options)
             throws StoragePipelineException {
         if (files != null && !files.isEmpty() && options != null
-                && options.getBoolean(Options.CALCULATE_STATS.key(), Options.CALCULATE_STATS.defaultValue())) {
+                && options.getBoolean(VariantStorageOptions.CALCULATE_STATS.key(), VariantStorageOptions.CALCULATE_STATS.defaultValue())) {
             // TODO add filters
             try {
                 VariantDBAdaptor dbAdaptor = getDBAdaptor();
                 logger.debug("Calculating stats for files: '{}'...", files.toString());
 
-                String studyName = options.getString(Options.STUDY.key());
+                String studyName = options.getString(VariantStorageOptions.STUDY.key());
                 QueryOptions statsOptions = new QueryOptions(options);
                 VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
                 StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyName);
@@ -539,7 +448,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 CohortMetadata defaultCohort = metadataManager.getCohortMetadata(studyMetadata.getId(), defaultCohortId);
                 if (defaultCohort.isStatsReady()) {
                     logger.debug("Cohort '{}':{} was already calculated. Just update stats.", StudyEntry.DEFAULT_COHORT, defaultCohortId);
-                    statsOptions.append(Options.UPDATE_STATS.key(), true);
+                    statsOptions.append(VariantStorageOptions.UPDATE_STATS.key(), true);
                 }
                 URI statsOutputUri = output.resolve(VariantStoragePipeline
                         .buildFilename(studyMetadata.getName(), fileIds.get(0)) + "." + TimeUtils.getTime());

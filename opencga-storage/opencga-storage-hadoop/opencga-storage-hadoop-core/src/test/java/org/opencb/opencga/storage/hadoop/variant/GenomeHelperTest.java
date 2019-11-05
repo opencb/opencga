@@ -73,9 +73,9 @@ public class GenomeHelperTest {
     @Test
     public void testGenerateSplitArchiveMultipleBatches() throws Exception {
         Configuration conf = new Configuration();
-        conf.setInt(HadoopVariantStorageEngineOptions.ARCHIVE_TABLE_PRESPLIT_SIZE.key(), 10);
-        conf.setInt(HadoopVariantStorageEngineOptions.EXPECTED_FILES_NUMBER.key(), 4500);
-        conf.setInt(HadoopVariantStorageEngineOptions.ARCHIVE_FILE_BATCH_SIZE.key(), 1000);
+        conf.setInt(HadoopVariantStorageOptions.ARCHIVE_TABLE_PRESPLIT_SIZE.key(), 10);
+        conf.setInt(HadoopVariantStorageOptions.EXPECTED_FILES_NUMBER.key(), 4500);
+        conf.setInt(HadoopVariantStorageOptions.ARCHIVE_FILE_BATCH_SIZE.key(), 1000);
         assertOrder(ArchiveTableHelper.generateArchiveTableBootPreSplitHuman(conf), 50);
     }
 

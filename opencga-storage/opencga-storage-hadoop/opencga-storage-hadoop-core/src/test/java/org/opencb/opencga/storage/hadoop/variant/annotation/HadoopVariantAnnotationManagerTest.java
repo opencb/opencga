@@ -8,7 +8,7 @@ import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManagerTest;
@@ -43,8 +43,8 @@ public class HadoopVariantAnnotationManagerTest extends VariantAnnotationManager
         for (int i = 0; i < 3; i++) {
             URI platinumFile = getPlatinumFile(i);
 
-            runDefaultETL(platinumFile, engine, null, new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                    .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false));
+            runDefaultETL(platinumFile, engine, null, new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
+                    .append(VariantStorageOptions.CALCULATE_STATS.key(), false));
 
             // Update pending variants
             new TestMRExecutor().run(DiscoverPendingVariantsToAnnotateDriver.class,

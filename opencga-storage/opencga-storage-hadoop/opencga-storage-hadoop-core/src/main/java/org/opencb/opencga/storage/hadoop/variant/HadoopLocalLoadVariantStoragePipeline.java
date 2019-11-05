@@ -34,7 +34,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.transform.DiscardDuplicatedVariantsResolver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -55,9 +55,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.STDIN;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.STDIN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngineOptions.*;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 
 /**
  * Created on 06/06/17.
@@ -81,13 +81,13 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata fileMetadata) throws StorageEngineException {
         super.securePreLoad(studyMetadata, fileMetadata);
 
-        if (options.getBoolean(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key(),
-                VariantStorageEngine.Options.LOAD_SPLIT_DATA.defaultValue())) {
+        if (options.getBoolean(VariantStorageOptions.LOAD_SPLIT_DATA.key(),
+                VariantStorageOptions.LOAD_SPLIT_DATA.defaultValue())) {
             throw new StorageEngineException("Unable to load split data in " + STORAGE_ENGINE_ID);
         }
 
         final AtomicInteger ongoingLoads = new AtomicInteger(1); // this
-        boolean resume = options.getBoolean(VariantStorageEngine.Options.RESUME.key(), VariantStorageEngine.Options.RESUME.defaultValue());
+        boolean resume = options.getBoolean(VariantStorageOptions.RESUME.key(), VariantStorageOptions.RESUME.defaultValue());
         List<Integer> fileIds = Collections.singletonList(getFileId());
 
         taskId = getMetadataManager()
@@ -340,8 +340,8 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         super.securePostLoad(fileIds, studyMetadata);
 
         if (loadedGenotypes != null) {
-            loadedGenotypes.addAll(studyMetadata.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key()));
-            studyMetadata.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), loadedGenotypes);
+            loadedGenotypes.addAll(studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key()));
+            studyMetadata.getAttributes().put(VariantStorageOptions.LOADED_GENOTYPES.key(), loadedGenotypes);
         }
     }
 

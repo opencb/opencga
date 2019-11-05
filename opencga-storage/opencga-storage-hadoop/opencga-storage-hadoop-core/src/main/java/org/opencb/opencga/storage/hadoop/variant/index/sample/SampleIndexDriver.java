@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -107,7 +107,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     protected Map<String, String> getParams() {
         Map<String, String> params = new LinkedHashMap<>();
         params.put("--" + SAMPLES, "<samples>*");
-        params.put("--" + VariantStorageEngine.Options.STUDY.key(), "<study>");
+        params.put("--" + VariantStorageOptions.STUDY.key(), "<study>");
         params.put("--" + OUTPUT, "<output-table>");
         params.put("--" + SECONDARY_ONLY, "<true|false>");
 //        params.put("--" + MAIN_ONLY, "<main-alternate-only>");

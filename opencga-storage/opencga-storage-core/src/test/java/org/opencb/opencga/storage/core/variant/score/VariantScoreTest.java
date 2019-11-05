@@ -11,7 +11,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 
 import java.io.IOException;
@@ -119,7 +119,7 @@ public class VariantScoreTest {
         metadataManager.updateVariantScoreMetadata(study.getId(), score1.getId(), variantScoreMetadata -> variantScoreMetadata.setIndexStatus(TaskMetadata.Status.RUNNING));
         Assert.assertEquals(TaskMetadata.Status.RUNNING, metadataManager.getVariantScoreMetadata(study.getId(), "score1").getIndexStatus());
 
-        remover.remove("STUDY", "score1", new ObjectMap(VariantStorageEngine.Options.FORCE.key(), true));
+        remover.remove("STUDY", "score1", new ObjectMap(VariantStorageOptions.FORCE.key(), true));
         Assert.assertNull(metadataManager.getVariantScoreMetadata(study.getId(), "score1"));
     }
 

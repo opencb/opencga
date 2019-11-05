@@ -5,7 +5,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,8 +41,8 @@ public abstract class VariantScoreRemover {
         }
         int scoreId = scoreMetadata.getId();
 
-        boolean resume = options.getBoolean(VariantStorageEngine.Options.RESUME.key(), false);
-        boolean force = options.getBoolean(VariantStorageEngine.Options.FORCE.key(), false);
+        boolean resume = options.getBoolean(VariantStorageOptions.RESUME.key(), false);
+        boolean force = options.getBoolean(VariantStorageOptions.FORCE.key(), false);
 
         return metadataManager.updateVariantScoreMetadata(studyId, scoreId, variantScoreMetadata -> {
             switch (variantScoreMetadata.getRemoveStatus()) {
@@ -50,7 +50,7 @@ public abstract class VariantScoreRemover {
                     // Unexpected status. Resume to continue
                     if (!resume) {
                         throw new StorageEngineException("Score '" + scoreName + "' already being removed from study '" + study + "'. "
-                                + "To resume a failed remove, rerun with " + VariantStorageEngine.Options.RESUME.key() + "=true");
+                                + "To resume a failed remove, rerun with " + VariantStorageOptions.RESUME.key() + "=true");
                     }
                     // Do not break
                 case ERROR:
@@ -77,7 +77,7 @@ public abstract class VariantScoreRemover {
                     if (!force) {
                         throw new StorageEngineException("Score '" + scoreName + "' is in status "
                                 + "'" + variantScoreMetadata.getIndexStatus() + "' right now. "
-                                + "To force remove, rerun with " + VariantStorageEngine.Options.FORCE.key() + "=true"
+                                + "To force remove, rerun with " + VariantStorageOptions.FORCE.key() + "=true"
                         );
                     }
                     break;

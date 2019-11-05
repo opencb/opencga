@@ -9,7 +9,7 @@ import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
@@ -47,9 +47,9 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
 
         StudyMetadata studyMetadata = newStudyMetadata();
 
-        ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.FAMILY)
-                .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+        ObjectMap params = new ObjectMap(VariantStorageOptions.STUDY_TYPE.key(), SampleSetType.FAMILY)
+                .append(VariantStorageOptions.ANNOTATE.key(), true)
+                .append(VariantStorageOptions.CALCULATE_STATS.key(), false);
 
         URI input = getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
         IntStream controlCohort = IntStream.range(1, 250);

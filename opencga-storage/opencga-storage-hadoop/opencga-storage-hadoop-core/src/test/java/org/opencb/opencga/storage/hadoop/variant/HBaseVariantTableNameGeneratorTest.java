@@ -54,7 +54,7 @@ public class HBaseVariantTableNameGeneratorTest {
     public void archiveNameWithNamespace() throws Exception {
         String namespace = "ns";
 
-        ObjectMap options = new ObjectMap().append(HadoopVariantStorageEngineOptions.HBASE_NAMESPACE.key(), namespace);
+        ObjectMap options = new ObjectMap().append(HadoopVariantStorageOptions.HBASE_NAMESPACE.key(), namespace);
         assertEquals(namespace + ":" + DB_NAME + "_archive_44", HBaseVariantTableNameGenerator.getArchiveTableName(DB_NAME, 44, options));
     }
 
@@ -63,7 +63,7 @@ public class HBaseVariantTableNameGeneratorTest {
         String namespace = "ns";
         String dbName = "table";
 
-        ObjectMap options = new ObjectMap().append(HadoopVariantStorageEngineOptions.HBASE_NAMESPACE.key(), namespace);
+        ObjectMap options = new ObjectMap().append(HadoopVariantStorageOptions.HBASE_NAMESPACE.key(), namespace);
         assertEquals(namespace + ":" + dbName + "_variants", HBaseVariantTableNameGenerator.getVariantTableName(dbName, options));
     }
 
@@ -72,7 +72,7 @@ public class HBaseVariantTableNameGeneratorTest {
         String namespace = "ns";
         String table = "table";
 
-        ObjectMap options = new ObjectMap().append(HadoopVariantStorageEngineOptions.HBASE_NAMESPACE.key(), namespace);
+        ObjectMap options = new ObjectMap().append(HadoopVariantStorageOptions.HBASE_NAMESPACE.key(), namespace);
         assertEquals(namespace + ":" + table+"_variants", HBaseVariantTableNameGenerator.getVariantTableName(namespace + ":" + table, options));
     }
 
@@ -90,7 +90,7 @@ public class HBaseVariantTableNameGeneratorTest {
         String namespace = "ns";
         String table = "table";
 
-        ObjectMap options = new ObjectMap().append(HadoopVariantStorageEngineOptions.HBASE_NAMESPACE.key(), namespace);
+        ObjectMap options = new ObjectMap().append(HadoopVariantStorageOptions.HBASE_NAMESPACE.key(), namespace);
         thrown.expect(IllegalArgumentException.class);
         thrown.expectMessage("Wrong namespace");
         HBaseVariantTableNameGenerator.getVariantTableName("wrong_ns" + ":" + table, options);

@@ -49,7 +49,8 @@ import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
+
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 /**
  * Created by jacobo on 06/03/15.
@@ -62,9 +63,9 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
     public void calculateStats(String studyStr, List<String> cohorts, String outdirStr, QueryOptions options, String sessionId)
             throws CatalogException, IOException, URISyntaxException, StorageEngineException {
-        boolean overwriteStats = options.getBoolean(Options.OVERWRITE_STATS.key(), false);
-        boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
-        boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue());
+        boolean overwriteStats = options.getBoolean(VariantStorageOptions.OVERWRITE_STATS.key(), false);
+        boolean updateStats = options.getBoolean(VariantStorageOptions.UPDATE_STATS.key(), false);
+        boolean resume = options.getBoolean(VariantStorageOptions.RESUME.key(), VariantStorageOptions.RESUME.defaultValue());
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
@@ -93,18 +94,18 @@ public class VariantStatsStorageOperation extends StorageOperation {
         QueryOptions calculateStatsOptions = new QueryOptions(options)
 //                .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
 //                .append(VariantStorageEngine.Options.LOAD_THREADS.key(), 6)
-                .append(Options.AGGREGATED_TYPE.key(), aggregation)
-                .append(Options.OVERWRITE_STATS.key(), overwriteStats)
-                .append(Options.UPDATE_STATS.key(), updateStats)
-                .append(Options.RESUME.key(), resume);
+                .append(VariantStorageOptions.AGGREGATED_TYPE.key(), aggregation)
+                .append(VariantStorageOptions.OVERWRITE_STATS.key(), overwriteStats)
+                .append(VariantStorageOptions.UPDATE_STATS.key(), updateStats)
+                .append(VariantStorageOptions.RESUME.key(), resume);
         calculateStatsOptions.putIfNotEmpty(VariantQueryParam.REGION.key(), region);
 
         // if the study is aggregated and a mapping file is provided, pass it to storage
         // and create in catalog the cohorts described in the mapping file
-        String aggregationMappingFile = options.getString(Options.AGGREGATION_MAPPING_PROPERTIES.key());
+        String aggregationMappingFile = options.getString(VariantStorageOptions.AGGREGATION_MAPPING_PROPERTIES.key());
         if (AggregationUtils.isAggregated(aggregation) && StringUtils.isNotEmpty(aggregationMappingFile)) {
             Properties mappingFile = readAggregationMappingFile(aggregationMappingFile);
-            calculateStatsOptions.append(Options.AGGREGATION_MAPPING_PROPERTIES.key(), mappingFile);
+            calculateStatsOptions.append(VariantStorageOptions.AGGREGATION_MAPPING_PROPERTIES.key(), mappingFile);
         }
 
 
@@ -212,7 +213,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         String studyId = study.getFqn();
 
         // Check aggregation mapping properties
-        String tagMap = options.getString(Options.AGGREGATION_MAPPING_PROPERTIES.key());
+        String tagMap = options.getString(VariantStorageOptions.AGGREGATION_MAPPING_PROPERTIES.key());
         List<String> cohortsByAggregationMapFile = Collections.emptyList();
         if (!isBlank(tagMap)) {
             if (!AggregationUtils.isAggregated(aggregation)) {

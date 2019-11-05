@@ -32,7 +32,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDriver;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
@@ -83,8 +83,8 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
         String archiveTable = getArchiveTable();
         String variantTable = getVariantsTable();
 
-        int maxKeyValueSize = conf.getInt(HadoopVariantStorageEngineOptions.MR_HBASE_KEYVALUE_SIZE_MAX.key(),
-                HadoopVariantStorageEngineOptions.MR_HBASE_KEYVALUE_SIZE_MAX.defaultValue());
+        int maxKeyValueSize = conf.getInt(HadoopVariantStorageOptions.MR_HBASE_KEYVALUE_SIZE_MAX.key(),
+                HadoopVariantStorageOptions.MR_HBASE_KEYVALUE_SIZE_MAX.defaultValue());
         logger.info("HBASE: set " + ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY + " to " + maxKeyValueSize);
         conf.setInt(ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY, maxKeyValueSize); // always overwrite server default (usually 1MB)
 
@@ -118,7 +118,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
 
         // Increase the ScannerTimeoutPeriod to avoid ScannerTimeoutExceptions
         // See opencb/opencga#352 for more info.
-        int scannerTimeout = getConf().getInt(HadoopVariantStorageEngineOptions.MR_HBASE_SCANNER_TIMEOUT.key(),
+        int scannerTimeout = getConf().getInt(HadoopVariantStorageOptions.MR_HBASE_SCANNER_TIMEOUT.key(),
                 getConf().getInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, HConstants.DEFAULT_HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD));
         logger.info("Set Scanner timeout to " + scannerTimeout + " ...");
         conf.setInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, scannerTimeout);
@@ -172,7 +172,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
 
     protected final Scan createArchiveTableScan(List<Integer> files) {
         Scan scan = new Scan();
-        int caching = getConf().getInt(HadoopVariantStorageEngineOptions.MR_HBASE_SCAN_CACHING.key(), 50);
+        int caching = getConf().getInt(HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING.key(), 50);
         logger.info("Scan set Caching to " + caching);
         scan.setCaching(caching);        // 1 is the default in Scan, 200 caused timeout issues.
         scan.setCacheBlocks(false);  // don't set to true for MR jobs
@@ -243,7 +243,7 @@ public abstract class AbstractVariantsTableDriver extends AbstractHBaseDriver im
         if (studyId == null) {
             int studyId = Integer.valueOf(getParam(STUDY_ID, "-1"));
             if (studyId < 0) {
-                String study = getParam(VariantStorageEngine.Options.STUDY.key());
+                String study = getParam(VariantStorageOptions.STUDY.key());
                 if (StringUtils.isNotEmpty(study)) {
                     try {
                         studyId = getMetadataManager().getStudyId(study);

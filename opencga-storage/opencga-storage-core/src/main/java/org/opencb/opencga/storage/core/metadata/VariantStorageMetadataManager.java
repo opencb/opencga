@@ -32,7 +32,7 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.*;
 import org.opencb.opencga.storage.core.metadata.models.*;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -493,8 +493,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
                     pm = new ProjectMetadata();
                 }
                 if (pm.getRelease() <= 0) {
-                    pm.setRelease(options.getInt(VariantStorageEngine.Options.RELEASE.key(),
-                            VariantStorageEngine.Options.RELEASE.defaultValue()));
+                    pm.setRelease(options.getInt(VariantStorageOptions.RELEASE.key(),
+                            VariantStorageOptions.RELEASE.defaultValue()));
                 }
                 if (StringUtils.isEmpty(pm.getSpecies())) {
                     pm.setSpecies(toCellBaseSpeciesName(options.getString(VariantAnnotationManager.SPECIES)));

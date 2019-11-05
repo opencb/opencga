@@ -29,6 +29,7 @@ import org.opencb.opencga.storage.core.manager.OpenCGATestExternalResource;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
@@ -115,7 +116,7 @@ public class VariantAnalysisTest {
 
 
             file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", sessionId);
-            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), true), sessionId);
+            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), sessionId);
 
             for (int i = 0; i < file.getSamples().size(); i++) {
                 if (i % 2 == 0) {

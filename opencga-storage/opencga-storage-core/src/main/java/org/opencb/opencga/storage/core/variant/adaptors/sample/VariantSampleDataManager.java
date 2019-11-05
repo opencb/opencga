@@ -11,7 +11,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,13 +54,13 @@ public class VariantSampleDataManager {
         }
 
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
-        boolean studyWithGts = !studyMetadata.getAttributes().getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(),
-                VariantStorageEngine.Options.EXCLUDE_GENOTYPES.defaultValue());
+        boolean studyWithGts = !studyMetadata.getAttributes().getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
+                VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
 
         if (!studyWithGts) {
             genotypes = Collections.singleton(GenotypeClass.NA_GT_VALUE);
         }
-        List<String> loadedGenotypes = studyMetadata.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key());
+        List<String> loadedGenotypes = studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key());
         if (loadedGenotypes.size() == 1) {
             if (loadedGenotypes.contains(GenotypeClass.NA_GT_VALUE) || loadedGenotypes.contains("-1")) {
                 genotypes = Collections.singleton(GenotypeClass.NA_GT_VALUE);
