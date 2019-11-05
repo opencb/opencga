@@ -17,6 +17,7 @@
 package org.opencb.opencga.core.models;
 
 import org.opencb.opencga.core.analysis.result.AnalysisResult;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.Arrays;
 import java.util.List;
@@ -39,6 +40,8 @@ public class Job extends PrivateStudyUid {
 
     private String creationDate;
     private String modificationDate;
+
+    private Enums.Priority priority;
 
     private JobStatus status;
 
@@ -84,8 +87,8 @@ public class Job extends PrivateStudyUid {
     }
 
     public Job(String id, String uuid, String name, String description, String userId, String commandLine, Map<String, String> params,
-               String creationDate, String modificationDate, JobStatus status, File outDir, File tmpDir, List<File> input,
-               List<File> output, List<String> tags, AnalysisResult result, File log, File errorLog, int release,
+               String creationDate, String modificationDate, Enums.Priority priority, JobStatus status, File outDir, File tmpDir,
+               List<File> input, List<File> output, List<String> tags, AnalysisResult result, File log, File errorLog, int release,
                Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
@@ -96,6 +99,7 @@ public class Job extends PrivateStudyUid {
         this.params = params;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
+        this.priority = priority;
         this.status = status;
         this.outDir = outDir;
         this.tmpDir = tmpDir;
@@ -192,6 +196,7 @@ public class Job extends PrivateStudyUid {
         sb.append(", params=").append(params);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", priority='").append(priority).append('\'');
         sb.append(", status=").append(status);
         sb.append(", outDir=").append(outDir);
         sb.append(", tmpDir=").append(tmpDir);
@@ -300,6 +305,15 @@ public class Job extends PrivateStudyUid {
 
     public Job setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
+        return this;
+    }
+
+    public Enums.Priority getPriority() {
+        return priority;
+    }
+
+    public Job setPriority(Enums.Priority priority) {
+        this.priority = priority;
         return this;
     }
 

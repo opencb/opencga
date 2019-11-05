@@ -61,6 +61,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     private final MongoDBCollection deletedJobCollection;
     private JobConverter jobConverter;
 
+    private static final String PRIVATE_PRIORITY = "_priority";
+
     public JobMongoDBAdaptor(MongoDBCollection jobCollection, MongoDBCollection deletedJobCollection,
                              MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(JobMongoDBAdaptor.class));
@@ -130,6 +132,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Document jobObject = jobConverter.convertToStorageType(job);
         jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(job.getCreationDate()));
         jobObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
+        jobObject.put(PRIVATE_PRIORITY, job.getPriority().getValue());
 
         logger.debug("Inserting job '{}' ({})...", job.getId(), job.getUid());
         jobCollection.insert(clientSession, jobObject, null);
@@ -410,6 +413,11 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             jobParameters.put(QueryParams.ERROR_LOG.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.ERROR_LOG.key())));
         }
 
+        if (parameters.containsKey(QueryParams.PRIORITY.key())) {
+            jobParameters.put(QueryParams.PRIORITY.key(), parameters.getString(QueryParams.PRIORITY.key()));
+            jobParameters.put(PRIVATE_PRIORITY, Enums.Priority.getPriority(parameters.getString(QueryParams.PRIORITY.key())).getValue());
+        }
+
         String[] acceptedObjectParams = {QueryParams.RESULT.key()};
         filterObjectParams(parameters, jobParameters, acceptedObjectParams);
 
@@ -631,7 +639,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         } else {
             qOptions = new QueryOptions();
         }
-        qOptions = filterOptions(qOptions, FILTER_ROUTE_JOBS);
+        qOptions = fixOptions(qOptions);
 
         logger.debug("Job get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
@@ -639,6 +647,34 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         } else {
             return deletedJobCollection.nativeQuery().find(bson, qOptions).iterator();
         }
+    }
+
+    private QueryOptions fixOptions(QueryOptions queryOptions) {
+        QueryOptions options = new QueryOptions(queryOptions);
+
+        filterOptions(options, FILTER_ROUTE_JOBS);
+        if (options.containsKey(QueryOptions.SORT)) {
+            // If the user is sorting by priority, we will point to the private priority stored as integers to properly sort
+            List<String> sortList = options.getAsStringList(QueryOptions.SORT);
+            List<String> fixedSortList = new ArrayList<>(sortList.size());
+            for (String key : sortList) {
+                if (key.startsWith(QueryParams.PRIORITY.key())) {
+                    String[] priorityArray = key.split(":");
+                    if (priorityArray.length == 1) {
+                        fixedSortList.add(PRIVATE_PRIORITY);
+                    } else {
+                        // The order (ascending or descending) should be in priorityArray[1]
+                        fixedSortList.add(PRIVATE_PRIORITY + ":" + priorityArray[1]);
+                    }
+                } else {
+                    fixedSortList.add(key);
+                }
+            }
+            // Add new fixed sort list
+            options.put(QueryOptions.SORT, fixedSortList);
+        }
+
+        return options;
     }
 
     @Override
@@ -650,13 +686,13 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public OpenCGAResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
-        return groupBy(jobCollection, bsonQuery, field, "name", options);
+        return groupBy(jobCollection, bsonQuery, field, "name", fixOptions(options));
     }
 
     @Override
     public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
-        return groupBy(jobCollection, bsonQuery, fields, "name", options);
+        return groupBy(jobCollection, bsonQuery, fields, "name", fixOptions(options));
     }
 
     @Override
@@ -666,7 +702,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                 StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name(), Enums.Resource.JOB.name());
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
-        return groupBy(jobCollection, bsonQuery, field, QueryParams.NAME.key(), options);
+        return groupBy(jobCollection, bsonQuery, field, QueryParams.NAME.key(), fixOptions(options));
     }
 
     @Override
@@ -676,7 +712,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                 StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name(), Enums.Resource.JOB.name());
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
-        return groupBy(jobCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
+        return groupBy(jobCollection, bsonQuery, fields, QueryParams.NAME.key(), fixOptions(options));
     }
 
     @Override
@@ -812,6 +848,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case TOOL_NAME:
                     case TYPE:
                     case DESCRIPTION:
+                    case PRIORITY:
                     case START_TIME:
                     case END_TIME:
                     case OUTPUT_ERROR:

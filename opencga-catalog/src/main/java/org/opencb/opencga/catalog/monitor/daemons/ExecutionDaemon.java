@@ -73,11 +73,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         Query pendingJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.PENDING);
         Query queuedJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED);
         Query runningJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING);
-        // Sort jobs by creation date
-        // TODO: Sort by priority first
-        QueryOptions queryOptions = new QueryOptions()
-                .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key())
-                .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
+        // Sort jobs by priority and creation date
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.SORT,
+                Arrays.asList(JobDBAdaptor.QueryParams.PRIORITY.key() + ":" + QueryOptions.DESCENDING,
+                        JobDBAdaptor.QueryParams.CREATION_DATE.key() + ":" + QueryOptions.ASCENDING));
 
         while (!exit) {
             try {

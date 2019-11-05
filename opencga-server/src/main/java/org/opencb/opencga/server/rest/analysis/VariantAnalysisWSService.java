@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
@@ -200,7 +201,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
         try {
 //            List<String> idList = getIdList(fileIdStr);
-            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().register(studyStr, "variant", "index", params, token);
+            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().register(studyStr, "variant", "index", Enums.Priority.HIGH,
+                    params, token);
 //            DataResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "VCF", params, token);
             return createOkResponse(queryResult);
         } catch(Exception e) {
@@ -698,7 +700,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             Map<String, String> params = new HashMap<>();
             params.put("input", file);
 
-            OpenCGAResult<Job> result = catalogManager.getJobManager().register(studyStr, "variant", "validate", params, token);
+            OpenCGAResult<Job> result = catalogManager.getJobManager().register(studyStr, "variant", "validate", Enums.Priority.HIGH,
+                    params, token);
             return createOkResponse(result);
         } catch(Exception e) {
             return createErrorResponse(e);

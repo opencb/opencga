@@ -7,6 +7,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +40,7 @@ public class ClinicalUpdateParams {
     private String dueDate;
     private List<Comment> comments;
     private List<Alert> alerts;
-    private ClinicalAnalysis.Priority priority;
+    private Enums.Priority priority;
     private List<String> flags;
 
     private Map<String, Object> attributes;
@@ -332,11 +333,11 @@ public class ClinicalUpdateParams {
         return this;
     }
 
-    public ClinicalAnalysis.Priority getPriority() {
+    public Enums.Priority getPriority() {
         return priority;
     }
 
-    public ClinicalUpdateParams setPriority(ClinicalAnalysis.Priority priority) {
+    public ClinicalUpdateParams setPriority(Enums.Priority priority) {
         this.priority = priority;
         return this;
     }

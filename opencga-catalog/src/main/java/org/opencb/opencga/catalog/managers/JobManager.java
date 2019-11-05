@@ -237,6 +237,7 @@ public class JobManager extends ResourceManager<Job> {
             job.setCommandLine(ParamUtils.defaultString(job.getCommandLine(), ""));
             job.setCreationDate(ParamUtils.defaultString(job.getCreationDate(), TimeUtils.getTime()));
             job.setStatus(ParamUtils.defaultObject(job.getStatus(), new Job.JobStatus(Job.JobStatus.DONE)));
+            job.setPriority(ParamUtils.defaultObject(job.getPriority(), Enums.Priority.MEDIUM));
             job.setInput(ParamUtils.defaultObject(job.getInput(), Collections.emptyList()));
             job.setOutput(ParamUtils.defaultObject(job.getOutput(), Collections.emptyList()));
             job.setParams(ParamUtils.defaultObject(job.getParams(), HashMap::new));
@@ -306,6 +307,7 @@ public class JobManager extends ResourceManager<Job> {
             String subcommand = String.valueOf(job.getAttributes().get(Job.OPENCGA_SUBCOMMAND));
             job.setId(command + "-" + subcommand + "-" + TimeUtils.getTime() + "-" + org.opencb.commons.utils.StringUtils.randomString(6));
         }
+        job.setPriority(ParamUtils.defaultObject(job.getPriority(), Enums.Priority.MEDIUM));
         job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
         job.setCreationDate(ParamUtils.defaultString(job.getCreationDate(), TimeUtils.getTime()));
         job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
@@ -315,15 +317,16 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
-    public OpenCGAResult<Job> register(String studyStr, String command, String subcommand, Map<String, String> params, String token)
-            throws CatalogException {
+    public OpenCGAResult<Job> register(String studyStr, String command, String subcommand, Enums.Priority priority,
+                                       Map<String, String> params, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("command", command)
-                .append("options", subcommand)
+                .append("subcommand", subcommand)
+                .append("priority", priority)
                 .append("params", params)
                 .append("token", token);
 
@@ -338,6 +341,7 @@ public class JobManager extends ResourceManager<Job> {
             job.setUserId(userId);
             job.setParams(params);
             job.setAttributes(attributes);
+            job.setPriority(priority);
 
             autoCompleteNewJob(study, job);
 

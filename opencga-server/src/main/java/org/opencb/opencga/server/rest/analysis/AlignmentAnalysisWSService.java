@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Project;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
 
@@ -92,7 +93,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         logger.info("ObjectMap: {}", params);
 
         try {
-            DataResult queryResult = catalogManager.getJobManager().register(studyStr, "alignment", "index", params, token);
+            DataResult queryResult = catalogManager.getJobManager().register(studyStr, "alignment", "index", Enums.Priority.HIGH, params,
+                    token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -19,6 +19,7 @@ package org.opencb.opencga.core.models;
 import org.opencb.biodata.models.clinical.interpretation.Comment;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.Arrays;
 import java.util.List;
@@ -49,7 +50,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private ClinicalConsent consent;
 
     private ClinicalAnalyst analyst;
-    private Priority priority;
+    private Enums.Priority priority;
     private List<String> flags;
 
     private String creationDate;
@@ -61,10 +62,6 @@ public class ClinicalAnalysis extends PrivateStudyUid {
     private List<Comment> comments;
     private List<Alert> alerts;
     private Map<String, Object> attributes;
-
-    public enum Priority {
-        URGENT, HIGH, MEDIUM, LOW
-    }
 
     public enum Type {
         SINGLE, FAMILY, CANCER, COHORT, AUTOCOMPARATIVE
@@ -209,7 +206,7 @@ public class ClinicalAnalysis extends PrivateStudyUid {
 
     public ClinicalAnalysis(String id, String description, Type type, Disorder disorder, Map<String, List<File>> files, Individual proband,
                             Family family, Map<String, FamiliarRelationship> roleToProband, ClinicalConsent consent,
-                            List<Interpretation> interpretations, Priority priority, ClinicalAnalyst analyst, List<String> flags,
+                            List<Interpretation> interpretations, Enums.Priority priority, ClinicalAnalyst analyst, List<String> flags,
                             String creationDate, String dueDate, List<Comment> comments, List<Alert> alerts, ClinicalStatus status,
                             int release, Map<String, Object> attributes) {
         this.id = id;
@@ -392,11 +389,11 @@ public class ClinicalAnalysis extends PrivateStudyUid {
         return this;
     }
 
-    public Priority getPriority() {
+    public Enums.Priority getPriority() {
         return priority;
     }
 
-    public ClinicalAnalysis setPriority(Priority priority) {
+    public ClinicalAnalysis setPriority(Enums.Priority priority) {
         this.priority = priority;
         return this;
     }

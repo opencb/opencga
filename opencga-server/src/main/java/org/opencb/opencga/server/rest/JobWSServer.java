@@ -30,6 +30,7 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.common.Enums;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -72,6 +73,8 @@ public class JobWSServer extends OpenCGAWSServer {
         private String id;
         private String name;
         private String description;
+
+        private Enums.Priority priority;
 
         private String commandLine;
 
@@ -158,7 +161,7 @@ public class JobWSServer extends OpenCGAWSServer {
         }
 
         public Job toJob() {
-            return new Job(id, null, name, description, null, commandLine, params, creationDate, null, status,
+            return new Job(id, null, name, description, null, commandLine, params, creationDate, null, priority, status,
                     outDir != null ? outDir.toFile() : null, tmpDir != null ? tmpDir.toFile() : null,
                     getInput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
                     getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()), tags, result,

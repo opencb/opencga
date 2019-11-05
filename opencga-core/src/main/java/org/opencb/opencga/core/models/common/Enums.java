@@ -109,4 +109,40 @@ public class Enums {
         FACET
     }
 
+    public enum Priority {
+        URGENT(4),
+        HIGH(3),
+        MEDIUM(2),
+        LOW(1);
+
+        private int value;
+
+        Priority(int value) {
+            this.value = value;
+        }
+
+        public static Priority getPriority(int value) {
+            switch (value) {
+                case 1:
+                    return Priority.LOW;
+                case 2:
+                    return Priority.MEDIUM;
+                case 3:
+                    return Priority.HIGH;
+                case 4:
+                    return Priority.URGENT;
+                default:
+                    return null;
+            }
+        }
+
+        public static Priority getPriority(String key) {
+            return Priority.valueOf(key);
+        }
+
+        public int getValue() {
+            return this.value;
+        }
+
+    }
 }

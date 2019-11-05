@@ -25,6 +25,7 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.core.exception.AnalysisException;
@@ -371,7 +372,7 @@ public class InterpretationWSService extends AnalysisWSService {
         public String dueDate;
         public List<Comment> comments;
         public List<Alert> alerts;
-        public ClinicalAnalysis.Priority priority;
+        public Enums.Priority priority;
         public List<String> flags;
 
         public Map<String, Object> attributes;
