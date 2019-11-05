@@ -60,8 +60,8 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
         //Parse query options
         int batchSize = options.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(), VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue());
         int numTasks = options.getInt(VariantStorageOptions.LOAD_THREADS.key(), VariantStorageOptions.LOAD_THREADS.defaultValue());
-        boolean overwrite = options.getBoolean(VariantStorageOptions.OVERWRITE_STATS.key(), false);
-        boolean updateStats = options.getBoolean(VariantStorageOptions.UPDATE_STATS.key(), false);
+        boolean overwrite = options.getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
+        boolean updateStats = options.getBoolean(VariantStorageOptions.STATS_UPDATE.key(), false);
 
         if (cohorts == null) {
             cohorts = new LinkedHashMap<>();

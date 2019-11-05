@@ -271,7 +271,7 @@ public class VariantCommandOptions {
         public boolean annotate = false;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
-        public VariantAnnotatorFactory.AnnotationSource annotator = null;
+        public VariantAnnotatorFactory.AnnotationEngine annotator = null;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations;
@@ -786,7 +786,7 @@ public class VariantCommandOptions {
         public String customAnnotationKey = null;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
-        public VariantAnnotatorFactory.AnnotationSource annotator;
+        public VariantAnnotatorFactory.AnnotationEngine annotator;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations = false;

@@ -52,9 +52,9 @@ public class AnalysisFileIndexerAggregatedTest extends AbstractVariantStorageOpe
     @Test
     public void testIndexWithAggregatedStats() throws Exception {
         QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
-                .append(VariantStorageOptions.AGGREGATED_TYPE.key(), Aggregation.BASIC);
+                .append(VariantStorageOptions.STATS_AGGREGATION.key(), Aggregation.BASIC);
 
-        queryOptions.put(VariantStorageOptions.CALCULATE_STATS.key(), true);
+        queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), true);
         queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, outputId);
         variantManager.index(studyFqn, files.get(0).getId(), opencga.createTmpOutdir(studyId, "index", sessionId), queryOptions, sessionId);
         assertEquals(0, getDefaultCohort(studyId).getSamples().size());

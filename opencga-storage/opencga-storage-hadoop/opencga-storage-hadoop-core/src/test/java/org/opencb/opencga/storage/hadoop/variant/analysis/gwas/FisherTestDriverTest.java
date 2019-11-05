@@ -5,7 +5,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.junit.*;
 import org.junit.rules.ExternalResource;
-import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -47,9 +46,9 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
 
         StudyMetadata studyMetadata = newStudyMetadata();
 
-        ObjectMap params = new ObjectMap(VariantStorageOptions.STUDY_TYPE.key(), SampleSetType.FAMILY)
+        ObjectMap params = new ObjectMap()
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), false);
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
         URI input = getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
         IntStream controlCohort = IntStream.range(1, 250);

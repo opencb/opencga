@@ -40,8 +40,8 @@ public abstract class VariantDBAdaptorPhasedTest extends VariantStorageBaseTest 
         clearDB(DB_NAME);
         VariantStorageEngine variantStorageManager = getVariantStorageEngine();
         ObjectMap options = new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
-                .append(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), "DP,PS");
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
+                .append(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "DP,PS");
         runDefaultETL(getResourceUri("variant-test-phased.vcf"), variantStorageManager, newStudyMetadata(), options);
 
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor();

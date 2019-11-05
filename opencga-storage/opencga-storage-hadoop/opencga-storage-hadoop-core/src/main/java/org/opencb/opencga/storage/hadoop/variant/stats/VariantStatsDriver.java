@@ -91,10 +91,10 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
         }
 
         aggregation = VariantStatsMapper.getAggregation(getConf());
-        updateStats = getConf().getBoolean(VariantStorageOptions.UPDATE_STATS.key(),
-                VariantStorageOptions.UPDATE_STATS.defaultValue());
-        overwrite = getConf().getBoolean(VariantStorageOptions.OVERWRITE_STATS.key(),
-                VariantStorageOptions.OVERWRITE_STATS.defaultValue());
+        updateStats = getConf().getBoolean(VariantStorageOptions.STATS_UPDATE.key(),
+                VariantStorageOptions.STATS_UPDATE.defaultValue());
+        overwrite = getConf().getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(),
+                VariantStorageOptions.STATS_OVERWRITE.defaultValue());
         statsMultiAllelic = getConf().getBoolean(VariantStorageOptions.STATS_MULTI_ALLELIC.key(),
                 VariantStorageOptions.STATS_MULTI_ALLELIC.defaultValue());
         statsDefaultGenotype = getConf().get(VariantStorageOptions.STATS_DEFAULT_GENOTYPE.key(),

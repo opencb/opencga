@@ -43,7 +43,7 @@ public abstract class VariantScoreLoaderTest extends VariantStorageBaseTest {
         StudyMetadata studyMetadata = new StudyMetadata(1, "s1");
         runDefaultETL(smallInputUri, variantStorageEngine, studyMetadata, new QueryOptions()
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), false));
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false));
         List<String> variants = variantStorageEngine
                 .stream()
                 .filter(v -> !v.isSV())

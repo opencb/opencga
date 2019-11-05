@@ -8,7 +8,6 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
-import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -16,7 +15,6 @@ import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -57,12 +55,12 @@ public class SampleIndexTest extends VariantStorageBaseTest implements HadoopVar
     public void load() throws Exception {
         clearDB(DB_NAME);
 
-        ObjectMap params = new ObjectMap(VariantStorageOptions.STUDY_TYPE.key(), SampleSetType.FAMILY)
+        ObjectMap params = new ObjectMap()
                 .append(VariantStorageOptions.STUDY.key(), "study")
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
-                .append(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
-                .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseRestVariantAnnotator.class.getName())
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), false);
+                .append(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "DS,GL")
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), CellBaseRestVariantAnnotator.class.getName())
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
         runETL(getVariantStorageEngine(), smallInputUri, outputUri, params, true, true, true);
 

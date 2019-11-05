@@ -63,7 +63,7 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
         inputUri = getInputUri();
         runDefaultETL(inputUri, getVariantStorageEngine(), studyMetadata,
                 new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
-                        .append(VariantStorageOptions.CALCULATE_STATS.key(), false));
+                        .append(VariantStorageOptions.STATS_CALCULATE.key(), false));
         dbAdaptor = getVariantStorageEngine().getDBAdaptor();
     }
 
@@ -90,7 +90,7 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
             sm.setAggregation(Aggregation.NONE);
             return sm;
         });
-        calculateAggregatedStatsTest(new QueryOptions(VariantStorageOptions.AGGREGATED_TYPE.key(), getAggregationType()));
+        calculateAggregatedStatsTest(new QueryOptions(VariantStorageOptions.STATS_AGGREGATION.key(), getAggregationType()));
     }
 
     protected void calculateAggregatedStatsTest(QueryOptions options) throws Exception {
@@ -102,7 +102,7 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
         options.put(VariantStorageOptions.LOAD_BATCH_SIZE.key(), 100);
         options.put(DefaultVariantStatisticsManager.OUTPUT, outputUri.resolve("aggregated.stats").getPath());
         if (getAggregationMappingFile() != null) {
-            options.put(VariantStorageOptions.AGGREGATION_MAPPING_PROPERTIES.key(), getAggregationMappingFile());
+            options.put(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), getAggregationMappingFile());
         }
 
         //Calculate stats

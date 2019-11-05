@@ -1312,7 +1312,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         if (!excludeGenotypes) {
             format.add(VariantMerger.GT_KEY);
         }
-        format.addAll(studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key()));
+        format.addAll(studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key()));
         return format;
     }
 

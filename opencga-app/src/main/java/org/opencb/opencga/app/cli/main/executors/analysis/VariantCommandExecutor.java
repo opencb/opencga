@@ -43,7 +43,6 @@ import org.opencb.opencga.storage.core.manager.variant.operations.VariantFileInd
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -116,13 +115,13 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         o.putIfNotNull("includeExtraFields", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.extraFields);
         o.putIfNotNull("merge", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.merge);
         o.putIfNotNull("aggregated", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.aggregated);
-        o.putIfNotNull(VariantStorageOptions.CALCULATE_STATS.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.calculateStats);
+        o.putIfNotNull(VariantStorageOptions.STATS_CALCULATE.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.calculateStats);
         o.putIfNotNull(VariantStorageOptions.ANNOTATE.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.annotate);
         o.putIfNotNull(VariantStorageOptions.RESUME.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.resume);
         o.putIfNotNull(VariantStorageOptions.LOAD_SPLIT_DATA.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.loadSplitData);
         o.putIfNotNull(VariantStorageOptions.POST_LOAD_CHECK_SKIP.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.skipPostLoadCheck);
         o.putIfNotNull(VariantStorageOptions.INDEX_SEARCH.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.indexSearch);
-        o.putIfNotNull(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.overwriteAnnotations);
+        o.putIfNotNull(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.overwriteAnnotations);
         o.putAll(variantCommandOptions.commonCommandOptions.params);
 
 //        return openCGAClient.getFileClient().index(fileIds, o);

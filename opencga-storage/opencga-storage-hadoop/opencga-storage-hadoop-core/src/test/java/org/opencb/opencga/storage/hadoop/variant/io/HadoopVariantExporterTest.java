@@ -60,19 +60,19 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
 
         VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageEngine, new StudyMetadata(0, study1),
                 new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true)
-                        .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                        .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
         );
 
         inputUri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz");
         VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageEngine, new StudyMetadata(0, study1),
                 new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true)
-                        .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                        .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
         );
 
         inputUri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz");
         VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageEngine, new StudyMetadata(0, study2),
                 new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true)
-                        .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                        .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
         );
 
         VariantHbaseTestUtils.printVariants(variantStorageEngine.getDBAdaptor(), newOutputUri());

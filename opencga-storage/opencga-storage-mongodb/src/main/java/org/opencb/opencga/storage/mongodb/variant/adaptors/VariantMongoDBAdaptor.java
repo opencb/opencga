@@ -933,7 +933,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DocumentToVariantStatsConverter statsConverter = new DocumentToVariantStatsConverter(metadataManager);
 //        VariantSource variantSource = queryOptions.get(VariantStorageEngine.VARIANT_SOURCE, VariantSource.class);
         DocumentToVariantConverter variantConverter = getDocumentToVariantConverter(new Query(), options);
-        boolean overwrite = options.getBoolean(VariantStorageOptions.OVERWRITE_STATS.key(), false);
+        boolean overwrite = options.getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
 
         // TODO make unset of 'st' if already present?
         for (VariantStatsWrapper wrapper : variantStatsWrappers) {

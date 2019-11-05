@@ -69,7 +69,7 @@ public class VariantHadoopNamespaceTest extends VariantStorageBaseTest implement
 
         runDefaultETL(getResourceUri("s1.genome.vcf"), variantStorageManager, newStudyMetadata(),
                 new ObjectMap().append(VariantStorageOptions.ANNOTATE.key(), true)
-                        .append(VariantStorageOptions.CALCULATE_STATS.key(), true));
+                        .append(VariantStorageOptions.STATS_CALCULATE.key(), true));
 
         NamespaceDescriptor[] namespaceDescriptors = admin.listNamespaceDescriptors();
         for (NamespaceDescriptor namespaceDescriptor : namespaceDescriptors) {
@@ -94,7 +94,7 @@ public class VariantHadoopNamespaceTest extends VariantStorageBaseTest implement
                 new ObjectMap()
                         .append(HadoopVariantStorageOptions.HBASE_NAMESPACE.key(), "")
                         .append(VariantStorageOptions.ANNOTATE.key(), true)
-                        .append(VariantStorageOptions.CALCULATE_STATS.key(), true));
+                        .append(VariantStorageOptions.STATS_CALCULATE.key(), true));
 
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
         Admin admin = variantStorageManager.getDBAdaptor().getConnection().getAdmin();

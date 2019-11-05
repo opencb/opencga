@@ -53,8 +53,8 @@ public class HadoopMRVariantStatisticsManager extends VariantStatisticsManager {
 //            throw new StorageEngineException("Unsupported calculate aggregated statistics with map-reduce. Please, use "
 //                    + HadoopVariantStorageEngine.STATS_LOCAL + '=' + true);
         }
-        boolean updateStats = options.getBoolean(VariantStorageOptions.UPDATE_STATS.key(), false);
-        boolean overwriteStats = options.getBoolean(VariantStorageOptions.OVERWRITE_STATS.key(), false);
+        boolean updateStats = options.getBoolean(VariantStorageOptions.STATS_UPDATE.key(), false);
+        boolean overwriteStats = options.getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
 //
 //        DefaultVariantStatisticsManager.checkAndUpdateStudyConfigurationCohorts(sc, cohorts.stream()
 //                    .collect(Collectors.toMap(c -> c, c -> Collections.emptySet())), null, updateStats, overwriteStats);

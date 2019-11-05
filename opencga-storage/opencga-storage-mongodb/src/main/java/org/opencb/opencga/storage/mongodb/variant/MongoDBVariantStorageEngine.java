@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
 import com.google.common.base.Throwables;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.log4j.Level;
 import org.opencb.commons.ProgressLogger;
@@ -67,7 +66,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.DB_NAME;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.RESUME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
@@ -254,7 +252,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             for (URI inputFile : inputFiles) {
                 StoragePipelineResult storagePipelineResult = new StoragePipelineResult(inputFile);
                 MongoDBVariantStoragePipeline storagePipeline = newStoragePipeline(doLoad);
-                storagePipeline.getOptions().append(VariantStorageOptions.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
+                storagePipeline.getOptions().append(VariantStorageOptions.TRANSFORM_ISOLATE.key(), true);
                 storageResultMap.put(inputFile, storagePipeline);
                 resultsMap.put(inputFile, storagePipelineResult);
                 results.add(storagePipelineResult);
@@ -458,11 +456,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     MongoCredentials getMongoCredentials() {
-
-        // If no database name is provided, read from the configuration file
-        if (StringUtils.isEmpty(dbName)) {
-            dbName = getOptions().getString(DB_NAME.key(), DB_NAME.defaultValue());
-        }
 
         DatabaseCredentials database = configuration.getVariantEngine(STORAGE_ENGINE_ID).getDatabase();
 

@@ -50,7 +50,7 @@ public class ClinicalAnalysisUtilsTest {
 
         ObjectMap storageOptions = new ObjectMap()
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), false);
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
         StorageConfiguration configuration = variantStorageEngine.getConfiguration();
         configuration.getVariant().setDefaultEngine(variantStorageEngine.getStorageEngineId());

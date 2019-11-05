@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,11 +43,6 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.Addi
  */
 public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator {
 
-    public static final String ANNOTATOR_CELLBASE_USE_CACHE = "annotator.cellbase.use_cache";
-    public static final String ANNOTATOR_CELLBASE_INCLUDE = "annotator.cellbase.include";
-    public static final String ANNOTATOR_CELLBASE_EXCLUDE = "annotator.cellbase.exclude";
-    // Imprecise variants supported by cellbase (REST only)
-    public static final String ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS = "annotator.cellbase.imprecise_variants";
     public static final int CELLBASE_VARIANT_THRESHOLD = 5000;
 
     protected static Logger logger = LoggerFactory.getLogger(AbstractCellBaseVariantAnnotator.class);
@@ -66,15 +62,15 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
         cellbaseVersion = storageConfiguration.getCellbase().getVersion();
 
         queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(params.getString(ANNOTATOR_CELLBASE_INCLUDE))) {
-            queryOptions.put(QueryOptions.INCLUDE, params.getString(ANNOTATOR_CELLBASE_INCLUDE));
-        } else if (StringUtils.isNotEmpty(params.getString(ANNOTATOR_CELLBASE_EXCLUDE))) {
-            queryOptions.put(QueryOptions.EXCLUDE, params.getString(ANNOTATOR_CELLBASE_EXCLUDE));
+        if (StringUtils.isNotEmpty(params.getString(VariantStorageOptions.ANNOTATOR_CELLBASE_INCLUDE.key()))) {
+            queryOptions.put(QueryOptions.INCLUDE, params.getString(VariantStorageOptions.ANNOTATOR_CELLBASE_INCLUDE.key()));
+        } else if (StringUtils.isNotEmpty(params.getString(VariantStorageOptions.ANNOTATOR_CELLBASE_EXCLUDE.key()))) {
+            queryOptions.put(QueryOptions.EXCLUDE, params.getString(VariantStorageOptions.ANNOTATOR_CELLBASE_EXCLUDE.key()));
         }
-        if (!params.getBoolean(ANNOTATOR_CELLBASE_USE_CACHE)) {
+        if (!params.getBoolean(VariantStorageOptions.ANNOTATOR_CELLBASE_USE_CACHE.key())) {
             queryOptions.append("useCache", false);
         }
-        impreciseVariants = params.getBoolean(ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS, true);
+        impreciseVariants = params.getBoolean(VariantStorageOptions.ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS.key(), true);
 
         checkNotNull(cellbaseVersion, "cellbase version");
         checkNotNull(species, "species");

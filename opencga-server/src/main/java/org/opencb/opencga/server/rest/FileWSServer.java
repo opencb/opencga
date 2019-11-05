@@ -44,7 +44,6 @@ import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -592,11 +591,11 @@ public class FileWSServer extends OpenCGAWSServer {
         addParamIfNotNull(params, "outdir", outDirStr);
         addParamIfTrue(params, "transform", transform);
         addParamIfTrue(params, "load", load);
-        addParamIfNotNull(params, EXTRA_GENOTYPE_FIELDS.key(), includeExtraFields);
-        addParamIfNotNull(params, AGGREGATED_TYPE.key(), aggregated);
-        addParamIfTrue(params, CALCULATE_STATS.key(), calculateStats);
+        addParamIfNotNull(params, EXTRA_FORMAT_FIELDS.key(), includeExtraFields);
+        addParamIfNotNull(params, STATS_AGGREGATION.key(), aggregated);
+        addParamIfTrue(params, STATS_CALCULATE.key(), calculateStats);
         addParamIfTrue(params, ANNOTATE.key(), annotate);
-        addParamIfTrue(params, VariantAnnotationManager.OVERWRITE_ANNOTATIONS, overwriteAnnotations);
+        addParamIfTrue(params, ANNOTATION_OVERWEITE.key(), overwriteAnnotations);
 
         Set<String> knownParams = new HashSet<>();
         knownParams.add("outDir");
@@ -640,7 +639,7 @@ public class FileWSServer extends OpenCGAWSServer {
 //                outDirId = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
 //            }
 //            // TODO: Change it to query
-//            queryOptions.add(VariantStorageEngine.Options.CALCULATE_STATS.key(), calculateStats);
+//            queryOptions.add(VariantStorageEngine.Options.STATS_CALCULATE.key(), calculateStats);
 //            queryOptions.add(VariantStorageEngine.Options.ANNOTATE.key(), annotate);
 //            DataResult<Job> queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, new QueryOptions(queryOptions));
 //            return createOkResponse(queryResult);

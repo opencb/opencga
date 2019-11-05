@@ -26,7 +26,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.vcf4.VariantVcfFactory;
-import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
@@ -46,7 +45,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
@@ -158,11 +156,11 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
                 outputUri,
                 new ObjectMap(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro")
                         .append(VariantStorageOptions.STUDY.key(), STUDY_NAME)
-                        .append(VariantStorageOptions.CALCULATE_STATS.key(), true)
+                        .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
                         .append(VariantStorageOptions.ANNOTATE.key(), true)
 //                        .append("annotation.file.avro", "true")
-                        .append(VariantAnnotationManager.SPECIES, "hsapiens")
-                        .append(VariantAnnotationManager.ASSEMBLY, "grch37"),
+                        .append(VariantStorageOptions.SPECIES.key(), "hsapiens")
+                        .append(VariantStorageOptions.ASSEMBLY.key(), "grch37"),
                 true, true, true);
 
         assertTrue("Incorrect transform file extension " + etlResult.getTransformResult() + ". Expected 'variants.avro.gz'",
@@ -189,8 +187,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
         StoragePipelineResult etlResult;
         ObjectMap options = new ObjectMap()
-                .append(VariantStorageOptions.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                 .append(VariantStorageOptions.ANNOTATE.key(), false);
         URI file1Uri = getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
         runDefaultETL(file1Uri, variantStorageEngine, studyMetadataMultiFile, options);
@@ -203,7 +200,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         Integer fileId1 = metadataManager.getFileId(studyMetadataMultiFile.getId(), file1Uri);
         assertTrue(metadataManager.getIndexedFiles(studyMetadataMultiFile.getId()).contains(fileId1));
 
-        options.append(VariantStorageOptions.CALCULATE_STATS.key(), true);
+        options.append(VariantStorageOptions.STATS_CALCULATE.key(), true);
         URI file2Uri = getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
         runDefaultETL(file2Uri, variantStorageEngine, studyMetadataMultiFile, options);
         defaultCohort = metadataManager.getCohortMetadata(studyMetadataMultiFile.getId(), StudyEntry.DEFAULT_COHORT);
@@ -213,7 +210,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         Integer fileId2 = metadataManager.getFileId(studyMetadataMultiFile.getId(), file2Uri);
         assertTrue(metadataManager.getIndexedFiles(studyMetadataMultiFile.getId()).contains(fileId2));
 
-        options.append(VariantStorageOptions.CALCULATE_STATS.key(), false);
+        options.append(VariantStorageOptions.STATS_CALCULATE.key(), false);
         URI file3Uri = getResourceUri("1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
         runDefaultETL(file3Uri, variantStorageEngine, studyMetadataMultiFile, options);
         defaultCohort = metadataManager.getCohortMetadata(studyMetadataMultiFile.getId(), StudyEntry.DEFAULT_COHORT);
@@ -223,7 +220,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         int fileId3 = metadataManager.getFileId(studyMetadataMultiFile.getId(), file3Uri);
         assertTrue(metadataManager.getIndexedFiles(studyMetadataMultiFile.getId()).contains(fileId3));
 
-        options.append(VariantStorageOptions.CALCULATE_STATS.key(), true);
+        options.append(VariantStorageOptions.STATS_CALCULATE.key(), true);
         URI file4Uri = getResourceUri("1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
         runDefaultETL(file4Uri, variantStorageEngine, studyMetadataMultiFile, options);
         defaultCohort = metadataManager.getCohortMetadata(studyMetadataMultiFile.getId(), StudyEntry.DEFAULT_COHORT);
@@ -301,8 +298,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         StudyMetadata studyMetadataMultiFile = new StudyMetadata(1, "multi");
         StudyMetadata studyMetadataBatchFile = new StudyMetadata(2, "batch");
 
-        options.putIfAbsent(VariantStorageOptions.STUDY_TYPE.key(), SampleSetType.UNKNOWN);
-        options.putIfAbsent(VariantStorageOptions.CALCULATE_STATS.key(), false);
+        options.putIfAbsent(VariantStorageOptions.STATS_CALCULATE.key(), false);
         options.putIfAbsent(VariantStorageOptions.ANNOTATE.key(), false);
 
         VariantStorageEngine variantStorageManager = getVariantStorageEngine();
@@ -382,8 +378,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
         StoragePipelineResult etlResult;
         ObjectMap options = new ObjectMap()
-                .append(VariantStorageOptions.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), true)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
                 .append(VariantStorageOptions.ANNOTATE.key(), false);
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
@@ -426,8 +421,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         StudyMetadata studyMetadata = new StudyMetadata(1, "multiRegion");
 
         ObjectMap options = new ObjectMap()
-                .append(VariantStorageOptions.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), true)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
                 .append(VariantStorageOptions.ANNOTATE.key(), false);
 
         runDefaultETL(getResourceUri("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageEngine,
@@ -487,8 +481,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         StudyMetadata studyMetadata = new StudyMetadata(1, "multiRegion");
 
         ObjectMap options = new ObjectMap()
-                .append(VariantStorageOptions.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), true)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
                 .append(VariantStorageOptions.ANNOTATE.key(), false);
 
         runDefaultETL(getResourceUri("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageEngine,
@@ -515,7 +508,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         StudyMetadata studyMetadata = newStudyMetadata();
         params.put(VariantStorageOptions.STUDY.key(), studyMetadata.getName());
         params.put(VariantStorageOptions.TRANSFORM_FORMAT.key(), "json");
-        params.put(VariantStorageOptions.COMPRESS_METHOD.key(), "gZiP");
+        params.put(VariantStorageOptions.TRANSFORM_COMPRESSION.key(), "gZiP");
         params.put(VariantStorageOptions.TRANSFORM_THREADS.key(), 1);
         params.put(VariantStorageOptions.LOAD_THREADS.key(), 1);
 //        params.put(VariantStorageEngine.Options.INCLUDE_GENOTYPES.key(), true);
@@ -546,7 +539,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         ObjectMap params = new ObjectMap();
         StudyMetadata studyMetadata = newStudyMetadata();
         params.put(VariantStorageOptions.STUDY.key(), studyMetadata.getName());
-        params.put(VariantStorageOptions.COMPRESS_METHOD.key(), "snappy");
+        params.put(VariantStorageOptions.TRANSFORM_COMPRESSION.key(), "snappy");
         params.put(VariantStorageOptions.TRANSFORM_THREADS.key(), 8);
         params.put(VariantStorageOptions.LOAD_THREADS.key(), 8);
 //        params.put(VariantStorageEngine.Options.INCLUDE_GENOTYPES.key(), false);
@@ -588,10 +581,10 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
         StudyMetadata studyMetadata = newStudyMetadata();
         StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyMetadata,
-                new ObjectMap(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), extraFields)
+                new ObjectMap(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), extraFields)
                         .append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro")
                         .append(VariantStorageOptions.ANNOTATE.key(), false)
-                        .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                        .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
         );
 
         VariantFileMetadata fileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(etlResult.getTransformResult());
@@ -640,10 +633,10 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
     public void indexWithoutOtherFields() throws Exception {
         StudyMetadata studyMetadata = newStudyMetadata();
         runDefaultETL(smallInputUri, getVariantStorageEngine(), studyMetadata,
-                new ObjectMap(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), VariantQueryUtils.NONE)
+                new ObjectMap(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), VariantQueryUtils.NONE)
                         .append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro")
                         .append(VariantStorageOptions.ANNOTATE.key(), false)
-                        .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                        .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
         );
         for (Variant variant : variantStorageEngine.getDBAdaptor()) {
             assertEquals("GT", variant.getStudy(STUDY_NAME).getFormatAsString());
@@ -777,7 +770,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
 
         params.put(VariantStorageOptions.STUDY.key(), studyMetadata.getName());
         params.put(VariantStorageOptions.TRANSFORM_FORMAT.key(), "json");
-        params.put(VariantStorageOptions.COMPRESS_METHOD.key(), "gZiP");
+        params.put(VariantStorageOptions.TRANSFORM_COMPRESSION.key(), "gZiP");
         params.put(VariantStorageOptions.TRANSFORM_THREADS.key(), 1);
         params.put(VariantStorageOptions.LOAD_THREADS.key(), 1);
         params.put(VariantStorageOptions.ANNOTATE.key(), true);
@@ -802,8 +795,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         StudyMetadata studyMetadata2 = variantStorageEngine.getMetadataManager().createStudy("Study2");
 
         ObjectMap options = new ObjectMap(params)
-                .append(VariantStorageOptions.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                 .append(VariantStorageOptions.ANNOTATE.key(), false);
         //Study1
         runDefaultETL(getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),

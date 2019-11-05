@@ -52,7 +52,7 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
             study = studyMetadata.getName();
 
 
-    //        boolean overwrite = context.getConfiguration().getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);
+    //        boolean overwrite = context.getConfiguration().getBoolean(VariantStorageEngine.Options.STATS_OVERWRITE.key(), false);
     //        calculator = new VariantStatisticsCalculator(overwrite);
     //        Properties tagmap = getAggregationMappingProperties(context.getConfiguration());
     //        calculator.setAggregationType(studyConfiguration.getAggregation(), tagmap);

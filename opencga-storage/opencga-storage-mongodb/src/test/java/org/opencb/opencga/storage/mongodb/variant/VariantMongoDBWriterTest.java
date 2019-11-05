@@ -187,10 +187,10 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     @Test
     public void testInsertMultiFiles() throws StorageEngineException {
         List<Variant> allVariants;
-        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GQX", "DP"));
-        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
-        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
-        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
+        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), Arrays.asList("GQX", "DP"));
+        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
+        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), Arrays.asList("DP", "GQX"));
+        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
 
         assertEqualsResult(new MongoDBVariantWriteResult(3, 0, 0, 0, 0, 0), loadFile1());
         allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResults();
@@ -211,10 +211,10 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     @Test
     public void testInsertMultiFilesMultiMerge() throws StorageEngineException {
         List<Variant> allVariants;
-        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GQX", "DP"));
-        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
-        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
-        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
+        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), Arrays.asList("GQX", "DP"));
+        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
+        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), Arrays.asList("DP", "GQX"));
+        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
 
         assertEqualsResult(new MongoDBVariantWriteResult(3, 0, 0, 0, 0, 0), loadFile1());
         allVariants = dbAdaptor.get(query, QUERY_OPTIONS).getResults();
@@ -240,10 +240,10 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     @Test
     public void testInsertMultiFilesMultipleRegions() throws StorageEngineException {
         List<Variant> allVariants;
-        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GQX", "DP"));
-        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
-        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
-        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
+        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), Arrays.asList("GQX", "DP"));
+        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
+        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), Arrays.asList("DP", "GQX"));
+        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
 
         int i = 1;
         for (String chr : Arrays.asList("1", "2", "3")) {
@@ -276,10 +276,10 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     @Test
     public void testInsertMultiFilesMultipleRegionsStudyByStudy() throws StorageEngineException {
         List<Variant> allVariants;
-        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GQX", "DP"));
-        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
-        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
-        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
+        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), Arrays.asList("GQX", "DP"));
+        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
+        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), Arrays.asList("DP", "GQX"));
+        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
 
 
         int i = 1;
@@ -324,10 +324,10 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     @Test
     public void testInsertMultiFilesMultipleRegionsStudyByStudy2() throws StorageEngineException {
         List<Variant> allVariants;
-        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GQX", "DP"));
-        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
-        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
-        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
+        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), Arrays.asList("GQX", "DP"));
+        studyConfiguration.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
+        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), Arrays.asList("DP", "GQX"));
+        studyConfiguration2.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
 
 
         int i = 1;

@@ -45,7 +45,7 @@ public class FillGapsTaskTest {
         metadataManager = new VariantStorageMetadataManager(new DummyVariantStorageMetadataDBAdaptorFactory());
         studyMetadata = metadataManager.createStudy("S");
         metadataManager.updateStudyMetadata("S", sm -> {
-            sm.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), "DP");
+            sm.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "DP");
             sm.getVariantHeader().getComplexLines().add(new VariantFileHeaderComplexLine("INFO", "OTHER", "asdf", "1", "String", Collections.emptyMap()));
             return sm;
         });

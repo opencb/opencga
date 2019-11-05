@@ -19,7 +19,6 @@ package org.opencb.opencga.storage.mongodb.variant.adaptors;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
@@ -33,7 +32,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
@@ -73,18 +71,18 @@ public class VariantMongoDBAdaptorRemoveTest extends VariantStorageBaseTest impl
         studyMetadata = newStudyMetadata();
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
         clearDB(DB_NAME);
-        ObjectMap params = new ObjectMap(VariantStorageOptions.STUDY_TYPE.key(), SampleSetType.FAMILY)
+        ObjectMap params = new ObjectMap()
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
-                .append(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
-                .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseRestVariantAnnotator.class.getName())
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), true);
+                .append(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "DS,GL")
+                .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), CellBaseRestVariantAnnotator.class.getName())
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true);
 
 //        HashSet FORMAT = new HashSet<>();
 //        if (!params.getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(),
 //                VariantStorageEngine.Options.EXCLUDE_GENOTYPES.defaultValue())) {
 //            FORMAT.add("GT");
 //        }
-//        FORMAT.addAll(params.getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key()));
+//        FORMAT.addAll(params.getAsStringList(VariantStorageEngine.Options.EXTRA_FORMAT_FIELDS.key()));
 
         StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyMetadata, params);
         VariantFileMetadata fileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(Paths.get(etlResult.getTransformResult().getPath()).toUri());

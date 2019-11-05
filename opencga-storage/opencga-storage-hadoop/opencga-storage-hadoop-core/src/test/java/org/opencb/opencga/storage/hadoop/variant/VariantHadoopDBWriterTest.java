@@ -140,7 +140,7 @@ public class VariantHadoopDBWriterTest extends VariantStorageBaseTest implements
 
         sm1=metadataManager.updateStudyMetadata(sm1.getId(), sm -> {
             sm.getAttributes()
-                    .append(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,AD")
+                    .append(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,AD")
                     .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
             return sm;
         });

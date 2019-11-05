@@ -20,6 +20,7 @@ import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +36,7 @@ import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotati
  */
 public final class VariantAnnotatorFactory {
 
-    public enum AnnotationSource {
+    public enum AnnotationEngine {
         CELLBASE_DB_ADAPTOR,
         CELLBASE_REST,
         VEP,
@@ -54,36 +55,36 @@ public final class VariantAnnotatorFactory {
                                                          ProjectMetadata projectMetadata, ObjectMap options)
             throws VariantAnnotatorException {
 
-        AnnotationSource defaultValue = options.containsKey(VARIANT_ANNOTATOR_CLASSNAME)
-                ? AnnotationSource.OTHER
-                : AnnotationSource.CELLBASE_REST;
-        AnnotationSource annotationSource;
-        String annotator = options.getString(ANNOTATOR);
+        AnnotationEngine defaultValue = options.containsKey(VariantStorageOptions.ANNOTATOR_CLASS.key())
+                ? AnnotationEngine.OTHER
+                : AnnotationEngine.CELLBASE_REST;
+        AnnotationEngine annotationEngine;
+        String annotator = options.getString(VariantStorageOptions.ANNOTATOR.key());
         if (StringUtils.isNotBlank(annotator)) {
             if (annotator.equalsIgnoreCase("cellbase")) {
                 String preferred = configuration.getCellbase().getPreferred();
                 switch (preferred.toLowerCase()) {
                     case "remote":
-                        annotationSource = AnnotationSource.CELLBASE_REST;
+                        annotationEngine = AnnotationEngine.CELLBASE_REST;
                         break;
                     case "local":
-                        annotationSource = AnnotationSource.CELLBASE_DB_ADAPTOR;
+                        annotationEngine = AnnotationEngine.CELLBASE_DB_ADAPTOR;
                         break;
                     default:
                         throw new IllegalArgumentException("Unknown cellbase preferred method '"
                                 + preferred + "'");
                 }
             } else {
-                annotationSource = AnnotationSource.valueOf(annotator.toUpperCase());
+                annotationEngine = AnnotationEngine.valueOf(annotator.toUpperCase());
             }
         } else if (StringUtils.isNotBlank(options.getString(ANNOTATION_SOURCE))) {
-            annotationSource = AnnotationSource.valueOf(options.getString(ANNOTATION_SOURCE).toUpperCase());
-            logger.warn("Using deprecated parameter '" + ANNOTATION_SOURCE + "'. Use '" + ANNOTATOR + "' instead");
+            annotationEngine = AnnotationEngine.valueOf(options.getString(ANNOTATION_SOURCE).toUpperCase());
+            logger.warn("Using deprecated parameter '" + ANNOTATION_SOURCE + "'. Use '" + VariantStorageOptions.ANNOTATOR + "' instead");
         } else {
-            annotationSource = defaultValue;
+            annotationEngine = defaultValue;
         }
 
-        switch (annotationSource) {
+        switch (annotationEngine) {
             case CELLBASE_DB_ADAPTOR:
                 return new CellBaseDirectVariantAnnotator(configuration, projectMetadata, options);
             case CELLBASE_REST:
@@ -92,8 +93,8 @@ public final class VariantAnnotatorFactory {
                 return VepVariantAnnotator.buildVepAnnotator();
             case OTHER:
             default:
-                String className = options.getString(VARIANT_ANNOTATOR_CLASSNAME);
-                logger.info("Annotating with {} = {}", annotationSource, className);
+                String className = options.getString(VariantStorageOptions.ANNOTATOR_CLASS.key());
+                logger.info("Annotating with {} = {}", annotationEngine, className);
                 try {
                     Class<?> clazz = Class.forName(className);
                     if (VariantAnnotator.class.isAssignableFrom(clazz)) {

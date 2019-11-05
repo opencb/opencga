@@ -246,22 +246,20 @@ public class VariantCommandExecutor extends CommandExecutor {
         ObjectMap params = storageConfiguration.getOptions();
         params.put(VariantStorageOptions.MERGE_MODE.key(), indexVariantsCommandOptions.merge);
         params.put(VariantStorageOptions.STUDY.key(), indexVariantsCommandOptions.study);
-        params.put(VariantStorageOptions.STUDY_TYPE.key(), indexVariantsCommandOptions.studyType);
-        params.put(VariantStorageOptions.CALCULATE_STATS.key(), indexVariantsCommandOptions.calculateStats);
-        params.put(VariantStorageOptions.INCLUDE_STATS.key(), indexVariantsCommandOptions.includeStats);
+        params.put(VariantStorageOptions.STATS_CALCULATE.key(), indexVariantsCommandOptions.calculateStats);
         params.put(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), indexVariantsCommandOptions.excludeGenotype);
-        params.put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), indexVariantsCommandOptions.extraFields);
+        params.put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), indexVariantsCommandOptions.extraFields);
 //        variantOptions.put(VariantStorageEngine.Options.INCLUDE_SRC.key(), indexVariantsCommandOptions.includeSrc);
 //        variantOptions.put(VariantStorageEngine.Options.COMPRESS_GENOTYPES.key(), indexVariantsCommandOptions.compressGenotypes);
-        params.put(VariantStorageOptions.AGGREGATED_TYPE.key(), indexVariantsCommandOptions.aggregated);
+        params.put(VariantStorageOptions.STATS_AGGREGATION.key(), indexVariantsCommandOptions.aggregated);
         params.put(VariantStorageOptions.STDIN.key(), indexVariantsCommandOptions.stdin);
         params.put(VariantStorageOptions.STDOUT.key(), indexVariantsCommandOptions.stdout);
 
         params.put(VariantStorageOptions.ANNOTATE.key(), indexVariantsCommandOptions.annotate);
         if (indexVariantsCommandOptions.annotator != null) {
-            params.put(VariantAnnotationManager.ANNOTATOR, indexVariantsCommandOptions.annotator);
+            params.put(VariantStorageOptions.ANNOTATOR.key(), indexVariantsCommandOptions.annotator);
         }
-        params.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, indexVariantsCommandOptions.overwriteAnnotations);
+        params.put(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), indexVariantsCommandOptions.overwriteAnnotations);
 //        if (indexVariantsCommandOptions.studyConfigurationFile != null && !indexVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
 //            params.put(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, indexVariantsCommandOptions.studyConfigurationFile);
 //        }
@@ -275,7 +273,7 @@ public class VariantCommandExecutor extends CommandExecutor {
             Properties aggregationMappingProperties = new Properties();
             try {
                 aggregationMappingProperties.load(new FileInputStream(indexVariantsCommandOptions.aggregationMappingFile));
-                params.put(VariantStorageOptions.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
+                params.put(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), aggregationMappingProperties);
             } catch (FileNotFoundException e) {
                 logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", indexVariantsCommandOptions
                         .aggregationMappingFile);
@@ -378,16 +376,16 @@ public class VariantCommandExecutor extends CommandExecutor {
          */
         ObjectMap options = configuration.getVariantEngine(storageEngine).getOptions();
         if (annotateVariantsCommandOptions.annotator != null) {
-            options.put(VariantAnnotationManager.ANNOTATOR, annotateVariantsCommandOptions.annotator);
+            options.put(VariantStorageOptions.ANNOTATOR.key(), annotateVariantsCommandOptions.annotator);
         }
         if (annotateVariantsCommandOptions.customAnnotationKey != null) {
             options.put(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, annotateVariantsCommandOptions.customAnnotationKey);
         }
         if (annotateVariantsCommandOptions.species != null) {
-            options.put(VariantAnnotationManager.SPECIES, annotateVariantsCommandOptions.species);
+            options.put(VariantStorageOptions.SPECIES.key(), annotateVariantsCommandOptions.species);
         }
         if (annotateVariantsCommandOptions.assembly != null) {
-            options.put(VariantAnnotationManager.ASSEMBLY, annotateVariantsCommandOptions.assembly);
+            options.put(VariantStorageOptions.ASSEMBLY.key(), annotateVariantsCommandOptions.assembly);
         }
 
         String fileName = annotateVariantsCommandOptions.fileName == null
@@ -534,8 +532,8 @@ public class VariantCommandExecutor extends CommandExecutor {
         StorageVariantCommandOptions.VariantStatsCommandOptions statsVariantsCommandOptions = variantCommandOptions.statsVariantsCommandOptions;
 
         QueryOptions options = new QueryOptions(storageConfiguration.getOptions());
-        options.put(VariantStorageOptions.OVERWRITE_STATS.key(), statsVariantsCommandOptions.overwriteStats);
-        options.put(VariantStorageOptions.UPDATE_STATS.key(), statsVariantsCommandOptions.updateStats);
+        options.put(VariantStorageOptions.STATS_OVERWRITE.key(), statsVariantsCommandOptions.overwriteStats);
+        options.put(VariantStorageOptions.STATS_UPDATE.key(), statsVariantsCommandOptions.updateStats);
 //        options.putIfNotEmpty(VariantStorageEngine.Options.FILE_ID.key(), statsVariantsCommandOptions.file);
         options.put(VariantStorageOptions.STUDY.key(), statsVariantsCommandOptions.study);
 //        if (statsVariantsCommandOptions.studyConfigurationFile != null && !statsVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
@@ -562,13 +560,13 @@ public class VariantCommandExecutor extends CommandExecutor {
             cohortNames = new ArrayList<>(cohorts.keySet());
         }
 
-        options.put(VariantStorageOptions.AGGREGATED_TYPE.key(), statsVariantsCommandOptions.aggregated);
+        options.put(VariantStorageOptions.STATS_AGGREGATION.key(), statsVariantsCommandOptions.aggregated);
 
         if (statsVariantsCommandOptions.aggregationMappingFile != null) {
             Properties aggregationMappingProperties = new Properties();
             try {
                 aggregationMappingProperties.load(new FileInputStream(statsVariantsCommandOptions.aggregationMappingFile));
-                options.put(VariantStorageOptions.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
+                options.put(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), aggregationMappingProperties);
             } catch (FileNotFoundException e) {
                 logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", statsVariantsCommandOptions
                         .aggregationMappingFile);

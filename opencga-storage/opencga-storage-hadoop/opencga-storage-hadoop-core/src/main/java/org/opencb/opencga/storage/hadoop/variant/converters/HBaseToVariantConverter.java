@@ -97,7 +97,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
      */
     public static List<String> getFixedFormat(ObjectMap attributes) {
         List<String> format;
-        List<String> extraFields = attributes.getAsStringList(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key());
+        List<String> extraFields = attributes.getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key());
         if (extraFields.isEmpty()) {
             extraFields = Collections.singletonList(VariantMerger.GENOTYPE_FILTER_KEY);
         }

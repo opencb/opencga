@@ -25,7 +25,7 @@ public class VariantSourceToVariantFileMetadataConverterTest extends VariantStor
     public void testConvert() throws Exception {
 
         // Transform smallInputFile to get the expected meta file with stats
-        StoragePipelineResult storagePipelineResult = runETL(variantStorageEngine, smallInputUri, newOutputUri(), new ObjectMap(VariantStorageOptions.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true), true, true, false);
+        StoragePipelineResult storagePipelineResult = runETL(variantStorageEngine, smallInputUri, newOutputUri(), new ObjectMap(VariantStorageOptions.TRANSFORM_ISOLATE.key(), true), true, true, false);
         VariantFileMetadata expectedFileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(storagePipelineResult.getTransformResult());
 
         // Read and convert the legacy metadata file

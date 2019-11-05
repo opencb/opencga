@@ -52,7 +52,7 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
     @Before
     public void setUp() throws Exception {
         clearDB(DB_NAME);
-        ObjectMap params = new ObjectMap(VariantStorageOptions.CALCULATE_STATS.key(), false)
+        ObjectMap params = new ObjectMap(VariantStorageOptions.STATS_CALCULATE.key(), false)
                 .append(VariantStorageOptions.ANNOTATE.key(), false);
         runDefaultETL(inputUri, variantStorageEngine, newStudyMetadata(), params);
         projectMetadata = new ProjectMetadata("hsapiens", "grch37", 1);

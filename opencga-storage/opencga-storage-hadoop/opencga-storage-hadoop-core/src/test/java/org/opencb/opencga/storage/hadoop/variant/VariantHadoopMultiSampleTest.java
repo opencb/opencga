@@ -366,7 +366,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         options.put(VariantStorageOptions.TRANSFORM_FORMAT.key(), "proto");
 //        options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyMetadata.getStudyId());
         options.put(VariantStorageOptions.STUDY.key(), studyMetadata.getName());
-//        options.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,AD");
+//        options.put(VariantStorageEngine.Options.EXTRA_FORMAT_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,AD");
         options.putAll(extraParams);
         List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
 
@@ -630,7 +630,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     @Test
     public void testPlatinumFilesOneByOne_extraFields() throws Exception {
         testPlatinumFilesOneByOne(new ObjectMap()
-                .append(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ"), 6);
+                .append(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ"), 6);
     }
 
     @Test
@@ -638,7 +638,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         StudyMetadata studyMetadata = testPlatinumFilesOneByOne(new ObjectMap()
                 .append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro")
                 .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
-                /*.append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ")*/, 4);
+                /*.append(VariantStorageEngine.Options.EXTRA_FORMAT_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ")*/, 4);
 
 
         HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();

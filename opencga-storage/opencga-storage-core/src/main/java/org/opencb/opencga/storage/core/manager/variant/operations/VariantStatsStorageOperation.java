@@ -63,8 +63,8 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
     public void calculateStats(String studyStr, List<String> cohorts, String outdirStr, QueryOptions options, String sessionId)
             throws CatalogException, IOException, URISyntaxException, StorageEngineException {
-        boolean overwriteStats = options.getBoolean(VariantStorageOptions.OVERWRITE_STATS.key(), false);
-        boolean updateStats = options.getBoolean(VariantStorageOptions.UPDATE_STATS.key(), false);
+        boolean overwriteStats = options.getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
+        boolean updateStats = options.getBoolean(VariantStorageOptions.STATS_UPDATE.key(), false);
         boolean resume = options.getBoolean(VariantStorageOptions.RESUME.key(), VariantStorageOptions.RESUME.defaultValue());
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
@@ -94,18 +94,18 @@ public class VariantStatsStorageOperation extends StorageOperation {
         QueryOptions calculateStatsOptions = new QueryOptions(options)
 //                .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
 //                .append(VariantStorageEngine.Options.LOAD_THREADS.key(), 6)
-                .append(VariantStorageOptions.AGGREGATED_TYPE.key(), aggregation)
-                .append(VariantStorageOptions.OVERWRITE_STATS.key(), overwriteStats)
-                .append(VariantStorageOptions.UPDATE_STATS.key(), updateStats)
+                .append(VariantStorageOptions.STATS_AGGREGATION.key(), aggregation)
+                .append(VariantStorageOptions.STATS_OVERWRITE.key(), overwriteStats)
+                .append(VariantStorageOptions.STATS_UPDATE.key(), updateStats)
                 .append(VariantStorageOptions.RESUME.key(), resume);
         calculateStatsOptions.putIfNotEmpty(VariantQueryParam.REGION.key(), region);
 
         // if the study is aggregated and a mapping file is provided, pass it to storage
         // and create in catalog the cohorts described in the mapping file
-        String aggregationMappingFile = options.getString(VariantStorageOptions.AGGREGATION_MAPPING_PROPERTIES.key());
+        String aggregationMappingFile = options.getString(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key());
         if (AggregationUtils.isAggregated(aggregation) && StringUtils.isNotEmpty(aggregationMappingFile)) {
             Properties mappingFile = readAggregationMappingFile(aggregationMappingFile);
-            calculateStatsOptions.append(VariantStorageOptions.AGGREGATION_MAPPING_PROPERTIES.key(), mappingFile);
+            calculateStatsOptions.append(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), mappingFile);
         }
 
 
@@ -213,7 +213,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         String studyId = study.getFqn();
 
         // Check aggregation mapping properties
-        String tagMap = options.getString(VariantStorageOptions.AGGREGATION_MAPPING_PROPERTIES.key());
+        String tagMap = options.getString(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key());
         List<String> cohortsByAggregationMapFile = Collections.emptyList();
         if (!isBlank(tagMap)) {
             if (!AggregationUtils.isAggregated(aggregation)) {

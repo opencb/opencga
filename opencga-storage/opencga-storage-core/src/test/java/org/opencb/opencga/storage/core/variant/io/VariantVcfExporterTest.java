@@ -98,7 +98,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
             if (etlResult[i] == null) {
                 etlResult[i] = runDefaultETL(inputUri[i], getVariantStorageEngine(), studyMetadata,
                         new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
-                                .append(VariantStorageOptions.CALCULATE_STATS.key(), false));
+                                .append(VariantStorageOptions.STATS_CALCULATE.key(), false));
             }
         }
         dbAdaptor = getVariantStorageEngine().getDBAdaptor();

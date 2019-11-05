@@ -30,8 +30,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -249,11 +247,11 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         }
         printActiveThreadsNumber();
         variantStorageEngine = getVariantStorageEngine();
-        variantStorageEngine.getOptions().put(VariantStorageOptions.LIMIT_DEFAULT.key(), 10000);
-        variantStorageEngine.getOptions().put(VariantStorageOptions.LIMIT_MAX.key(), 10000);
-        variantStorageEngine.getOptions().put(VariantStorageOptions.SAMPLE_LIMIT_DEFAULT.key(), 10000);
-        variantStorageEngine.getOptions().put(VariantStorageOptions.SAMPLE_LIMIT_MAX.key(), 10000);
-        variantStorageEngine.getOptions().put(DefaultVariantAnnotationManager.NUM_THREADS, 2);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.QUERY_LIMIT_DEFAULT.key(), 10000);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.QUERY_LIMIT_MAX.key(), 10000);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.QUERY_SAMPLE_LIMIT_DEFAULT.key(), 10000);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.QUERY_SAMPLE_LIMIT_MAX.key(), 10000);
+        variantStorageEngine.getOptions().put(VariantStorageOptions.ANNOTATION_NUM_THREADS.key(), 2);
         metadataManager = variantStorageEngine.getMetadataManager();
         variantReaderUtils = variantStorageEngine.getVariantReaderUtils();
         ioConnectorProvider = variantStorageEngine.getIOManagerProvider();
@@ -308,16 +306,16 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         if (studyMetadata == null) {
             newParams.putIfAbsent(VariantStorageOptions.STUDY.key(), STUDY_NAME);
         } else {
-            newParams.putIfAbsent(VariantStorageOptions.AGGREGATED_TYPE.key(), studyMetadata.getAggregation());
+            newParams.putIfAbsent(VariantStorageOptions.STATS_AGGREGATION.key(), studyMetadata.getAggregation());
             newParams.putIfAbsent(VariantStorageOptions.STUDY.key(), studyMetadata.getName());
         }
 //        newParams.putIfAbsent(VariantStorageEngine.Options.FILE_ID.key(), FILE_ID);
         // Default value is already avro
 //        newParams.putIfAbsent(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
         newParams.putIfAbsent(VariantStorageOptions.ANNOTATE.key(), true);
-        newParams.putIfAbsent(VariantAnnotationManager.SPECIES, "hsapiens");
-        newParams.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRch37");
-        newParams.putIfAbsent(VariantStorageOptions.CALCULATE_STATS.key(), true);
+        newParams.putIfAbsent(VariantStorageOptions.SPECIES.key(), "hsapiens");
+        newParams.putIfAbsent(VariantStorageOptions.ASSEMBLY.key(), "GRch37");
+        newParams.putIfAbsent(VariantStorageOptions.STATS_CALCULATE.key(), true);
 
         StoragePipelineResult storagePipelineResult = runETL(variantStorageManager, inputUri, outputUri, newParams, true, doTransform, doLoad);
 

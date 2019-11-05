@@ -34,6 +34,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -129,7 +130,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
             String catalogOutDirId = getCatalogOutdirId(studyStr, options, sessionId);
 
             Query annotationQuery = new Query(query);
-            if (!options.getBoolean(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, false)) {
+            if (!options.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false)) {
                 annotationQuery.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
             }
             if (studyIds != null && !studyIds.isEmpty()) {

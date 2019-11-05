@@ -46,7 +46,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
@@ -487,8 +486,7 @@ public class VariantHbaseTestUtils {
     public static void removeFile(HadoopVariantStorageEngine variantStorageManager, String dbName, int fileId,
                                   StudyMetadata studyMetadata, Map<? extends String, ?> otherParams) throws Exception {
         ObjectMap params = new ObjectMap()
-                .append(VariantStorageOptions.STUDY.key(), studyMetadata.getName())
-                .append(VariantStorageOptions.DB_NAME.key(), dbName);
+                .append(VariantStorageOptions.STUDY.key(), studyMetadata.getName());
         if (otherParams != null) {
             params.putAll(otherParams);
         }
@@ -513,9 +511,9 @@ public class VariantHbaseTestUtils {
 
         ObjectMap params = new ObjectMap(VariantStorageOptions.TRANSFORM_FORMAT.key(), "proto")
                 .append(VariantStorageOptions.STUDY.key(), studyMetadata.getName())
-                .append(VariantStorageOptions.DB_NAME.key(), dbName).append(VariantStorageOptions.ANNOTATE.key(), false)
-                .append(VariantAnnotationManager.SPECIES, "hsapiens").append(VariantAnnotationManager.ASSEMBLY, "GRch37")
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), false);
+                .append(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.SPECIES.key(), "hsapiens").append(VariantStorageOptions.ASSEMBLY.key(), "GRch37")
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
         if (otherParams != null) {
             params.putAll(otherParams);

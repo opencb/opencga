@@ -47,7 +47,7 @@ public abstract class VariantStatisticsManagerMultiFilesTest extends VariantStor
             inputFiles.add(getResourceUri("platinum/" + fileName));
         }
         storageEngine.getOptions().put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
-        storageEngine.getOptions().put(VariantStorageOptions.CALCULATE_STATS.key(), false);
+        storageEngine.getOptions().put(VariantStorageOptions.STATS_CALCULATE.key(), false);
 //        storageEngine.index(inputFiles.subList(0, inputFiles.size()/2), outputUri, true, true, true);
 //        storageEngine.index(inputFiles.subList(inputFiles.size()/2, inputFiles.size()), outputUri, true, true, true);
         storageEngine.index(inputFiles, outputUri, true, true, true);

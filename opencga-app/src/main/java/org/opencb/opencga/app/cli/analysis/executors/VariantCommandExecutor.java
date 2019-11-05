@@ -309,11 +309,11 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         queryOptions.put(VariantStorageOptions.STDOUT.key(), cliOptions.genericVariantIndexOptions.stdout);
         queryOptions.put(VariantStorageOptions.MERGE_MODE.key(), cliOptions.genericVariantIndexOptions.merge);
 
-        queryOptions.put(VariantStorageOptions.CALCULATE_STATS.key(), cliOptions.genericVariantIndexOptions.calculateStats);
-        queryOptions.put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), cliOptions.genericVariantIndexOptions.extraFields);
+        queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), cliOptions.genericVariantIndexOptions.calculateStats);
+        queryOptions.put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), cliOptions.genericVariantIndexOptions.extraFields);
         queryOptions.put(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), cliOptions.genericVariantIndexOptions.excludeGenotype);
-        queryOptions.put(VariantStorageOptions.AGGREGATED_TYPE.key(), cliOptions.genericVariantIndexOptions.aggregated);
-        queryOptions.put(VariantStorageOptions.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.genericVariantIndexOptions.aggregationMappingFile);
+        queryOptions.put(VariantStorageOptions.STATS_AGGREGATION.key(), cliOptions.genericVariantIndexOptions.aggregated);
+        queryOptions.put(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), cliOptions.genericVariantIndexOptions.aggregationMappingFile);
         queryOptions.put(VariantStorageOptions.GVCF.key(), cliOptions.genericVariantIndexOptions.gvcf);
 
         queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
@@ -321,10 +321,10 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
         queryOptions.put(VariantStorageOptions.ANNOTATE.key(), cliOptions.genericVariantIndexOptions.annotate);
         if (cliOptions.genericVariantIndexOptions.annotator != null) {
-            queryOptions.put(VariantAnnotationManager.ANNOTATOR,
+            queryOptions.put(VariantStorageOptions.ANNOTATOR.key(),
                     cliOptions.genericVariantIndexOptions.annotator);
         }
-        queryOptions.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.genericVariantIndexOptions.overwriteAnnotations);
+        queryOptions.put(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), cliOptions.genericVariantIndexOptions.overwriteAnnotations);
         queryOptions.put(VariantStorageOptions.RESUME.key(), cliOptions.genericVariantIndexOptions.resume);
         queryOptions.put(VariantStorageOptions.LOAD_SPLIT_DATA.key(), cliOptions.genericVariantIndexOptions.loadSplitData);
         queryOptions.put(VariantStorageOptions.POST_LOAD_CHECK_SKIP.key(), cliOptions.genericVariantIndexOptions.skipPostLoadCheck);
@@ -376,10 +376,10 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, cliOptions.genericVariantStatsOptions.fileName)
 //                .append(AnalysisFileIndexer.CREATE, cliOptions.create)
 //                .append(AnalysisFileIndexer.LOAD, cliOptions.load)
-                .append(VariantStorageOptions.OVERWRITE_STATS.key(), cliOptions.genericVariantStatsOptions.overwriteStats)
-                .append(VariantStorageOptions.UPDATE_STATS.key(), cliOptions.genericVariantStatsOptions.updateStats)
-                .append(VariantStorageOptions.AGGREGATED_TYPE.key(), cliOptions.genericVariantStatsOptions.aggregated)
-                .append(VariantStorageOptions.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.genericVariantStatsOptions.aggregationMappingFile)
+                .append(VariantStorageOptions.STATS_OVERWRITE.key(), cliOptions.genericVariantStatsOptions.overwriteStats)
+                .append(VariantStorageOptions.STATS_UPDATE.key(), cliOptions.genericVariantStatsOptions.updateStats)
+                .append(VariantStorageOptions.STATS_AGGREGATION.key(), cliOptions.genericVariantStatsOptions.aggregated)
+                .append(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), cliOptions.genericVariantStatsOptions.aggregationMappingFile)
                 .append(VariantStorageOptions.RESUME.key(), cliOptions.genericVariantStatsOptions.resume)
                 .append(VariantQueryParam.REGION.key(), cliOptions.genericVariantStatsOptions.region)
                 .append(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
@@ -503,11 +503,11 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), cliOptions.genericVariantAnnotateOptions.filterAnnotConsequenceType);
 
         QueryOptions options = new QueryOptions();
-        options.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.genericVariantAnnotateOptions.overwriteAnnotations);
+        options.put(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), cliOptions.genericVariantAnnotateOptions.overwriteAnnotations);
         options.put(VariantAnnotationManager.CREATE, cliOptions.genericVariantAnnotateOptions.create);
         options.putIfNotEmpty(VariantAnnotationManager.LOAD_FILE, cliOptions.genericVariantAnnotateOptions.load);
         options.putIfNotEmpty(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, cliOptions.genericVariantAnnotateOptions.customAnnotationKey);
-        options.putIfNotNull(VariantAnnotationManager.ANNOTATOR, cliOptions.genericVariantAnnotateOptions.annotator);
+        options.putIfNotNull(VariantStorageOptions.ANNOTATOR.key(), cliOptions.genericVariantAnnotateOptions.annotator);
         options.putIfNotEmpty(DefaultVariantAnnotationManager.FILE_NAME, cliOptions.genericVariantAnnotateOptions.fileName);
         options.put(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
         options.putAll(cliOptions.commonOptions.params);

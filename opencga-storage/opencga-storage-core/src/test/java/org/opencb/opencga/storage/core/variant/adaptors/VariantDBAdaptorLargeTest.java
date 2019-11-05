@@ -21,7 +21,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
@@ -99,8 +98,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
             studyMetadata3 = metadataManager.createStudy("Study3");
 
             ObjectMap options = getExtraOptions()
-                    .append(VariantStorageOptions.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
-                    .append(VariantStorageOptions.CALCULATE_STATS.key(), true)
+                    .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
                     .append(VariantStorageOptions.ANNOTATE.key(), false);
             //Study1
             URI file1Uri = getResourceUri("1000g_batches/" + fileName1);

@@ -7,36 +7,39 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import java.util.Arrays;
 
 public enum MongoDBVariantStorageOptions implements ConfigurationOption {
-    COLLECTION_VARIANTS("collection.variants", "variants"),
-    COLLECTION_PROJECT("collection.project",  "project"),
-    COLLECTION_STUDIES("collection.studies",  "studies"),
-    COLLECTION_FILES("collection.files", "files"),
-    COLLECTION_SAMPLES("collection.samples",  "samples"),
-    COLLECTION_TASKS("collection.tasks",  "tasks"),
-    COLLECTION_COHORTS("collection.cohorts",  "cohorts"),
-    COLLECTION_STAGE("collection.stage",  "stage"),
-    COLLECTION_ANNOTATION("collection.annotation",  "annot"),
-    COLLECTION_TRASH("collection.trash", "trash"),
-    BULK_SIZE("bulkSize",  100),
-    DEFAULT_GENOTYPE("defaultGenotype", Arrays.asList("0/0", "0|0")),
-    ALREADY_LOADED_VARIANTS("alreadyLoadedVariants", 0),
+    COLLECTION_VARIANTS("mongodb.collection.variants",   "variants"),
+    COLLECTION_PROJECT("mongodb.collection.project",    "project"),
+    COLLECTION_STUDIES("mongodb.collection.studies",    "studies"),
+    COLLECTION_FILES("mongodb.collection.files",      "files"),
+    COLLECTION_SAMPLES("mongodb.collection.samples",    "samples"),
+    COLLECTION_TASKS("mongodb.collection.tasks",      "tasks"),
+    COLLECTION_COHORTS("mongodb.collection.cohorts",    "cohorts"),
+    COLLECTION_STAGE("mongodb.collection.stage",      "stage"),
+    COLLECTION_ANNOTATION("mongodb.collection.annotation", "annot"),
+    COLLECTION_TRASH("mongodb.collection.trash",      "trash"),
 
-    PARALLEL_WRITE("parallel.write", false),
+    ALREADY_LOADED_VARIANTS("mongodb.alreadyLoadedVariants", 0),
 
-    STAGE("stage", false),
-    STAGE_RESUME("stage.resume", false),
-    STAGE_PARALLEL_WRITE("stage.parallel.write", false),
-    STAGE_CLEAN_WHILE_LOAD("stage.clean.while.load", true),
+    PARALLEL_WRITE("mongodb.parallel.write", false),
 
-    DIRECT_LOAD("direct_load", false),
-    DIRECT_LOAD_PARALLEL_WRITE("direct_load.parallel.write", false),
+    STAGE("mongodb.stage", false),
+    STAGE_RESUME("mongodb.stage.resume", false),
+    STAGE_PARALLEL_WRITE("mongodb.stage.parallel.write", false),
+    STAGE_CLEAN_WHILE_LOAD("mongodb.stage.clean.while.load", true),
 
-    MERGE("merge", false),
-    MERGE_SKIP("merge.skip", false), // Internal use only
-    MERGE_RESUME("merge.resume", false),
-    MERGE_IGNORE_OVERLAPPING_VARIANTS("merge.ignore-overlapping-variants", false),   //Do not look for overlapping variants
-    MERGE_PARALLEL_WRITE("merge.parallel.write", false),
-    MERGE_BATCH_SIZE("merge.batch.size", 10);          //Number of files to merge directly from first to second collection
+    DIRECT_LOAD("mongodb.direct_load", false),
+    DIRECT_LOAD_PARALLEL_WRITE("mongodb.direct_load.parallel.write", false),
+
+    MERGE("mongodb.merge", false),
+    MERGE_SKIP("mongodb.merge.skip", false), // Internal use only
+    MERGE_RESUME("mongodb.merge.resume", false),
+    MERGE_IGNORE_OVERLAPPING_VARIANTS("mongodb.merge.ignore-overlapping-variants", false),   //Do not look for overlapping variants
+    MERGE_PARALLEL_WRITE("mongodb.merge.parallel.write", false),
+    MERGE_BATCH_SIZE("mongodb.merge.batch.size", 10),          //Number of files to merge directly from first to second collection
+
+
+    EXTRA_GENOTYPE_FIELDS_COMPRESS("extra-fields.compress", true),    //Compress with gzip other sample information
+    DEFAULT_GENOTYPE("defaultGenotype", Arrays.asList("0/0", "0|0"));
 
     private final String key;
     private final Object value;

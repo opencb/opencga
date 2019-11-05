@@ -158,12 +158,12 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         addParamIfTrue(params, "transform", transform);
         addParamIfTrue(params, "load", load);
         addParamIfNotNull(params, "merge", merge);
-        addParamIfNotNull(params, EXTRA_GENOTYPE_FIELDS.key(), includeExtraFields);
-        addParamIfNotNull(params, AGGREGATED_TYPE.key(), aggregated);
-        addParamIfTrue(params, CALCULATE_STATS.key(), calculateStats);
+        addParamIfNotNull(params, EXTRA_FORMAT_FIELDS.key(), includeExtraFields);
+        addParamIfNotNull(params, STATS_AGGREGATION.key(), aggregated);
+        addParamIfTrue(params, STATS_CALCULATE.key(), calculateStats);
         addParamIfTrue(params, ANNOTATE.key(), annotate);
         addParamIfTrue(params, INDEX_SEARCH.key(), indexSearch);
-        addParamIfTrue(params, VariantAnnotationManager.OVERWRITE_ANNOTATIONS, overwriteAnnotations);
+        addParamIfTrue(params, ANNOTATION_OVERWEITE.key(), overwriteAnnotations);
         addParamIfTrue(params, LOAD_SPLIT_DATA.key(), loadSplitData);
         addParamIfTrue(params, POST_LOAD_CHECK_SKIP.key(), skipPostLoadCheck);
 

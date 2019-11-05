@@ -30,6 +30,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 import org.slf4j.LoggerFactory;
 
@@ -175,8 +176,8 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                 || studyMetadata.getAttributes().getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
                 VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
         boolean compressExtraParams = studyMetadata.getAttributes()
-                .getBoolean(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
-                        VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
+                .getBoolean(MongoDBVariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
+                        MongoDBVariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
         if (sampleIds == null || sampleIds.isEmpty()) {
             fillStudyEntryFields(study, samplesPositionToReturn, Collections.emptyList(), Collections.emptyList(), excludeGenotypes);
             return Collections.emptyList();
@@ -442,8 +443,8 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         boolean excludeGenotypes = studyMetadata.getAttributes().getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
                 VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
         boolean compressExtraParams = studyMetadata.getAttributes()
-                .getBoolean(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
-                        VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
+                .getBoolean(MongoDBVariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
+                        MongoDBVariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
 
         Set<String> defaultGenotype = studyDefaultGenotypeSet.get(studyId).stream().collect(Collectors.toSet());
 
@@ -503,9 +504,9 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         }
 
         List<String> extraFields = studyMetadata.getAttributes()
-                .getAsStringList(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key());
+                .getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key());
         List<String> extraFieldsType = studyMetadata.getAttributes()
-                .getAsStringList(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS_TYPE.key());
+                .getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key());
 
         for (int i = 0; i < extraFields.size(); i++) {
             String extraField = extraFields.get(i);

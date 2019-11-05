@@ -178,8 +178,8 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         //Parse query options
         int batchSize = options.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(), VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue());
         int numTasks = options.getInt(VariantStorageOptions.LOAD_THREADS.key(), VariantStorageOptions.LOAD_THREADS.defaultValue());
-        boolean overwrite = options.getBoolean(VariantStorageOptions.OVERWRITE_STATS.key(), false);
-        boolean updateStats = options.getBoolean(VariantStorageOptions.UPDATE_STATS.key(), false);
+        boolean overwrite = options.getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
+        boolean updateStats = options.getBoolean(VariantStorageOptions.STATS_UPDATE.key(), false);
         Properties tagmap = VariantStatisticsManager.getAggregationMappingProperties(options);
 //            fileId = options.getString(VariantStorageEngine.Options.FILE_ID.key());
         Aggregation aggregation = getAggregation(studyMetadata, options);
@@ -356,7 +356,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         URI sourceStatsUri = UriUtils.replacePath(uri, uri.getPath() + SOURCE_STATS_SUFFIX);
 
         Set<String> cohorts = readCohortsFromStatsFile(variantStatsUri);
-//        boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
+//        boolean updateStats = options.getBoolean(Options.STATS_UPDATE.key(), false);
 //        checkAndUpdateCalculatedCohorts(studyMetadata, variantStatsUri, updateStats);
 
         boolean error = false;

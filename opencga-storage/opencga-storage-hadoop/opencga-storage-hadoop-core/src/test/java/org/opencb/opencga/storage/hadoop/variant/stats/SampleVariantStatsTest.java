@@ -45,7 +45,7 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
             URI outputUri = newOutputUri();
 
             ObjectMap params = new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
-                    .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                    .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                     .append(VariantStorageOptions.STUDY.key(), study);
             runETL(engine, getPlatinumFile(12877), outputUri, params, true, true, true);
             runETL(engine, getPlatinumFile(12878), outputUri, params, true, true, true);

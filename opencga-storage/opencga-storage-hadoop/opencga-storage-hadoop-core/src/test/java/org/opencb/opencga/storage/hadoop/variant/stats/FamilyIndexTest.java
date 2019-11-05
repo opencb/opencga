@@ -56,7 +56,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
             URI outputUri = newOutputUri();
 
             ObjectMap params = new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
-                    .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                    .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                     .append(VariantStorageOptions.STUDY.key(), study);
             runETL(variantStorageEngine, getPlatinumFile(12877), outputUri, params, true, true, true);
             runETL(variantStorageEngine, getPlatinumFile(12878), outputUri, params, true, true, true);

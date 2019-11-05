@@ -303,7 +303,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
 
                 // Annotate only the new indexed variants
                 Query annotationQuery = new Query();
-                if (!options.getBoolean(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, false)) {
+                if (!options.getBoolean(ANNOTATION_OVERWEITE.key(), false)) {
                     annotationQuery.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
                 }
                 annotationQuery.put(VariantQueryParam.STUDY.key(), Collections.singletonList(studyId));
@@ -391,9 +391,9 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param study     Study
      * @param cohorts   Cohorts to calculate stats
      * @param options   Other options
-     *                  {@link VariantStorageOptions#AGGREGATION_MAPPING_PROPERTIES}
-     *                  {@link VariantStorageOptions#OVERWRITE_STATS}
-     *                  {@link VariantStorageOptions#UPDATE_STATS}
+     *                  {@link VariantStorageOptions#STATS_AGGREGATION_MAPPING_FILE}
+     *                  {@link VariantStorageOptions#STATS_OVERWRITE}
+     *                  {@link VariantStorageOptions#STATS_UPDATE}
      *                  {@link VariantStorageOptions#LOAD_THREADS}
      *                  {@link VariantStorageOptions#LOAD_BATCH_SIZE}
      *                  {@link VariantQueryParam#REGION}
@@ -428,7 +428,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     protected void calculateStatsForLoadedFiles(URI output, List<URI> files, List<StoragePipelineResult> results, ObjectMap options)
             throws StoragePipelineException {
         if (files != null && !files.isEmpty() && options != null
-                && options.getBoolean(VariantStorageOptions.CALCULATE_STATS.key(), VariantStorageOptions.CALCULATE_STATS.defaultValue())) {
+                && options.getBoolean(VariantStorageOptions.STATS_CALCULATE.key(), VariantStorageOptions.STATS_CALCULATE.defaultValue())) {
             // TODO add filters
             try {
                 VariantDBAdaptor dbAdaptor = getDBAdaptor();
@@ -448,7 +448,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 CohortMetadata defaultCohort = metadataManager.getCohortMetadata(studyMetadata.getId(), defaultCohortId);
                 if (defaultCohort.isStatsReady()) {
                     logger.debug("Cohort '{}':{} was already calculated. Just update stats.", StudyEntry.DEFAULT_COHORT, defaultCohortId);
-                    statsOptions.append(VariantStorageOptions.UPDATE_STATS.key(), true);
+                    statsOptions.append(VariantStorageOptions.STATS_UPDATE.key(), true);
                 }
                 URI statsOutputUri = output.resolve(VariantStoragePipeline
                         .buildFilename(studyMetadata.getName(), fileIds.get(0)) + "." + TimeUtils.getTime());

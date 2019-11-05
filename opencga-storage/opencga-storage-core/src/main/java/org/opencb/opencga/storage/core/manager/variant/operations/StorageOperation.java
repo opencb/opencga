@@ -318,8 +318,8 @@ public abstract class StorageOperation {
     public Aggregation getAggregation(String studyId, QueryOptions options, String sessionId) throws CatalogException {
         QueryOptions include = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ATTRIBUTES.key());
         Study study = catalogManager.getStudyManager().get(studyId, include, sessionId).first();
-        Aggregation argsAggregation = options.get(VariantStorageOptions.AGGREGATED_TYPE.key(), Aggregation.class, Aggregation.NONE);
-        Object studyAggregationObj = study.getAttributes().get(VariantStorageOptions.AGGREGATED_TYPE.key());
+        Aggregation argsAggregation = options.get(VariantStorageOptions.STATS_AGGREGATION.key(), Aggregation.class, Aggregation.NONE);
+        Object studyAggregationObj = study.getAttributes().get(VariantStorageOptions.STATS_AGGREGATION.key());
         Aggregation studyAggregation = null;
         if (studyAggregationObj != null) {
             studyAggregation = AggregationUtils.valueOf(studyAggregationObj.toString());
@@ -335,7 +335,7 @@ public abstract class StorageOperation {
             // If studyAggregation is not define, update study aggregation
             if (studyAggregation == null) {
                 //update study aggregation
-                Map<String, Aggregation> attributes = Collections.singletonMap(VariantStorageOptions.AGGREGATED_TYPE.key(),
+                Map<String, Aggregation> attributes = Collections.singletonMap(VariantStorageOptions.STATS_AGGREGATION.key(),
                         argsAggregation);
                 ObjectMap parameters = new ObjectMap("attributes", attributes);
                 catalogManager.getStudyManager().update(studyId, parameters, null, sessionId);

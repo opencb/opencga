@@ -145,7 +145,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         String studyFQNByInputFileId = studyInfo.getStudyFQN();
 
         options.put(VariantStorageOptions.STUDY.key(), studyFQNByInputFileId);
-        options.putIfAbsent(VariantStorageOptions.AGGREGATED_TYPE.key(), getAggregation(studyFQNByInputFileId, options, sessionId));
+        options.putIfAbsent(VariantStorageOptions.STATS_AGGREGATION.key(), getAggregation(studyFQNByInputFileId, options, sessionId));
 
 //        Study study = catalogManager.getStudyManager().get(studyUidByInputFileId, new QueryOptions(), sessionId).getResults().get(0);
         Study study = studyInfo.getStudy();
@@ -209,7 +209,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         updateProjectMetadata(variantStorageEngine.getMetadataManager(), studyInfo.getOrganism(), release);
 
         variantStorageEngine.getOptions().putAll(options);
-        boolean calculateStats = options.getBoolean(VariantStorageOptions.CALCULATE_STATS.key())
+        boolean calculateStats = options.getBoolean(VariantStorageOptions.STATS_CALCULATE.key())
                 && (step.equals(Type.LOAD) || step.equals(Type.INDEX));
 
         String fileStatus;
@@ -494,7 +494,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             // Update index status
             fileManager.updateFileIndexStatus(indexedFile, indexStatusName, indexStatusMessage, release, sessionId);
 
-            boolean calculateStats = options.getBoolean(VariantStorageOptions.CALCULATE_STATS.key());
+            boolean calculateStats = options.getBoolean(VariantStorageOptions.STATS_CALCULATE.key());
             if (indexStatusName.equals(FileIndex.IndexStatus.READY) && calculateStats) {
                 Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
                 DataResult<Cohort> queryResult = catalogManager.getCohortManager()

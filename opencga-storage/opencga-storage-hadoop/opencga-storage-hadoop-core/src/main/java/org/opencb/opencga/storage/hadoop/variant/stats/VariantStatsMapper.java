@@ -52,7 +52,7 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         studyMetadata = getStudyMetadata();
 
-        boolean overwrite = context.getConfiguration().getBoolean(VariantStorageOptions.OVERWRITE_STATS.key(), false);
+        boolean overwrite = context.getConfiguration().getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
         calculator = new VariantStatisticsCalculator(overwrite);
         Aggregation aggregation = getAggregation(studyMetadata, context.getConfiguration());
         if (AggregationUtils.isAggregated(aggregation)) {
@@ -165,15 +165,15 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
     }
 
     public static void setAggregation(ObjectMap conf, Aggregation aggregation) {
-        conf.put(VariantStorageOptions.AGGREGATED_TYPE.key(), aggregation.toString());
+        conf.put(VariantStorageOptions.STATS_AGGREGATION.key(), aggregation.toString());
     }
 
     public static Aggregation getAggregation(StudyMetadata studyMetadata, Configuration configuration) {
-        return AggregationUtils.valueOf(configuration.get(VariantStorageOptions.AGGREGATED_TYPE.key(),
+        return AggregationUtils.valueOf(configuration.get(VariantStorageOptions.STATS_AGGREGATION.key(),
                 studyMetadata.getAggregation().name()));
     }
 
     public static Aggregation getAggregation(Configuration configuration) {
-        return AggregationUtils.valueOf(configuration.get(VariantStorageOptions.AGGREGATED_TYPE.key(), Aggregation.NONE.name()));
+        return AggregationUtils.valueOf(configuration.get(VariantStorageOptions.STATS_AGGREGATION.key(), Aggregation.NONE.name()));
     }
 }

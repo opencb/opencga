@@ -71,7 +71,7 @@ public class HBaseToStudyEntryConverterTest {
     @Test
     public void testConvertExtendedFormat() throws Exception {
         mm.updateStudyMetadata(sm.getId(), s -> {
-            s.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), "AD,DP");
+            s.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "AD,DP");
             return s;
         });
 
@@ -93,7 +93,7 @@ public class HBaseToStudyEntryConverterTest {
 
 //    @Test
 //    public void testConvertExtendedFormatFileEntryData() throws Exception {
-//        sc.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "AD,DP");
+//        sc.getAttributes().put(VariantStorageEngine.Options.EXTRA_FORMAT_FIELDS.key(), "AD,DP");
 //        scm.updateStudyConfiguration(sc, null);
 //
 //        List<Pair<Integer, List<String>>> fixedValues = new ArrayList<>();
@@ -124,7 +124,7 @@ public class HBaseToStudyEntryConverterTest {
     @Test
     public void testConvertFileEntryData() throws Exception {
         mm.updateStudyMetadata(sm.getId(), s -> {
-            s.getAttributes().put(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), "AD,DP");
+            s.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "AD,DP");
             s.getAttributes().put(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED);
             return s;
         });

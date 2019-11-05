@@ -51,7 +51,7 @@ public class VariantExporterTest extends VariantStorageBaseTest implements Dummy
     public void setUp() throws Exception {
         runDefaultETL(smallInputUri, variantStorageEngine, newStudyMetadata(),
                 new QueryOptions()
-//                        .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "GL,DS")
+//                        .append(VariantStorageEngine.Options.EXTRA_FORMAT_FIELDS.key(), "GL,DS")
                         .append(VariantStorageOptions.ANNOTATE.key(), false));
     }
 

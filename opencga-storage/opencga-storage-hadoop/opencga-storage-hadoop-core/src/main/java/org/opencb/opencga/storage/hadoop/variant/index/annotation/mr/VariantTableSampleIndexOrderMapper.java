@@ -67,8 +67,6 @@ public abstract class VariantTableSampleIndexOrderMapper<KEYOUT, VALOUT> extends
                         // In event of new chromosome, or new batch, write indices
                         if (!newChromosome.equals(chromosome)
                                 || (position / SampleIndexSchema.BATCH_SIZE) != (newPosition / SampleIndexSchema.BATCH_SIZE)) {
-//                            System.err.println("Write indices from chr " + chromosome + ":" + (position / SampleIndexDBLoader.BATCH_SIZE)
-//                                    +". New pair is " + newChromosome + ":" + (newPosition / SampleIndexDBLoader.BATCH_SIZE));
                             flush(context, chromosome, position);
                         }
                     }

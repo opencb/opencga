@@ -55,9 +55,9 @@ public abstract class VariantStatisticsManager {
      * @param study     Study
      * @param cohorts   Cohorts to calculate stats
      * @param options   Other options
-     *                  {@link VariantStorageOptions#AGGREGATION_MAPPING_PROPERTIES}
-     *                  {@link VariantStorageOptions#OVERWRITE_STATS}
-     *                  {@link VariantStorageOptions#UPDATE_STATS}
+     *                  {@link VariantStorageOptions#STATS_AGGREGATION_MAPPING_FILE}
+     *                  {@link VariantStorageOptions#STATS_OVERWRITE}
+     *                  {@link VariantStorageOptions#STATS_UPDATE}
      *                  {@link VariantStorageOptions#LOAD_THREADS}
      *                  {@link VariantStorageOptions#LOAD_BATCH_SIZE}
      *                  {@link org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam#REGION}
@@ -274,11 +274,11 @@ public abstract class VariantStatisticsManager {
     }
 
     public static Properties getAggregationMappingProperties(QueryOptions options) {
-        return options.get(VariantStorageOptions.AGGREGATION_MAPPING_PROPERTIES.key(), Properties.class, null);
+        return options.get(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), Properties.class, null);
     }
 
     protected static Aggregation getAggregation(StudyMetadata studyMetadata, ObjectMap options) {
-        return AggregationUtils.valueOf(options.getString(VariantStorageOptions.AGGREGATED_TYPE.key(),
+        return AggregationUtils.valueOf(options.getString(VariantStorageOptions.STATS_AGGREGATION.key(),
                 studyMetadata.getAggregation().toString()));
     }
 

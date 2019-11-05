@@ -52,7 +52,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
     public void setUp() throws Exception {
         studyMetadata = newStudyMetadata();
         runDefaultETL(smallInputUri, variantStorageEngine, studyMetadata,
-                new ObjectMap(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), "GL,DS"));
+                new ObjectMap(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "GL,DS"));
     }
 
     @Test

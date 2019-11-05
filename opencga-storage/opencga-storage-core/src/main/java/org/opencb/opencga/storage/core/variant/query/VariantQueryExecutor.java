@@ -12,8 +12,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.DEFAULT_TIMEOUT;
-import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.MAX_TIMEOUT;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.QUERY_DEFAULT_TIMEOUT;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.QUERY_MAX_TIMEOUT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultSampleLimit;
 
@@ -60,8 +60,8 @@ public abstract class VariantQueryExecutor implements VariantIterable {
     }
 
     public static void setDefaultTimeout(QueryOptions queryOptions, ObjectMap config) {
-        int defaultTimeout = config.getInt(DEFAULT_TIMEOUT.key(), DEFAULT_TIMEOUT.defaultValue());
-        int maxTimeout = config.getInt(MAX_TIMEOUT.key(), MAX_TIMEOUT.defaultValue());
+        int defaultTimeout = config.getInt(QUERY_DEFAULT_TIMEOUT.key(), QUERY_DEFAULT_TIMEOUT.defaultValue());
+        int maxTimeout = config.getInt(QUERY_MAX_TIMEOUT.key(), QUERY_MAX_TIMEOUT.defaultValue());
         int timeout = queryOptions.getInt(QueryOptions.TIMEOUT, defaultTimeout);
         if (timeout > maxTimeout) {
             throw new VariantQueryException("Invalid timeout '" + timeout + "'. Max timeout is " + maxTimeout);

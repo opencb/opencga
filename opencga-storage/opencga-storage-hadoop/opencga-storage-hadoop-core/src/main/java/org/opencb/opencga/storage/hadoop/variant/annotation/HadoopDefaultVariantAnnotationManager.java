@@ -32,6 +32,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -158,12 +159,14 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
     private boolean skipDiscoverPendingVariantsToAnnotate(ObjectMap params) {
         // Skip if overwriting annotations, or if specific param
-        return params.getBoolean(OVERWRITE_ANNOTATIONS, false) || params.getBoolean(SKIP_DISCOVER_PENDING_VARIANTS_TO_ANNOTATE, false);
+        return params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false)
+                || params.getBoolean(SKIP_DISCOVER_PENDING_VARIANTS_TO_ANNOTATE, false);
     }
 
     private boolean skipPendingVariantsToAnnotateTable(ObjectMap params) {
         // Skip if overwriting annotations, or if specific param
-        return params.getBoolean(OVERWRITE_ANNOTATIONS, false) || params.getBoolean(SKIP_PENDING_VARIANTS_TO_ANNOTATE_TABLE, false);
+        return params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false)
+                || params.getBoolean(SKIP_PENDING_VARIANTS_TO_ANNOTATE_TABLE, false);
     }
 
     @Override

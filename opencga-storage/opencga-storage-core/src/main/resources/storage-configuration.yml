@@ -100,29 +100,38 @@ alignment:
 variant:
   defaultEngine: "${OPENCGA.STORAGE.DEFAULT_ENGINE}"
   options:
-    annotator: cellbase
-    annotator.cellbase.exclude: "expression"
-    annotator.cellbase.use_cache: true
-    annotator.cellbase.imprecise_variants: true # Imprecise variants supported by cellbase (REST only)
     species: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
     assembly: ${OPENCGA.CLIENT.ORGANISM.ASSEMBLY}
+
     transform.batch.size: 200
     transform.threads: 4
     transform.format: "avro"
+    transform.compression: "gzip"
+    transform.fail.on.malformed: false
+
     load.batch.size: 100
     load.threads: 6
     stats.default-genotype: "0/0"   # Default genotype to be used for calculating stats.
     stats.multiallelic: false       # Include secondary alternates in the variant stats calculation
 
-    dbadaptor.max_timeout: 30000     #(ms) Max allowed timeout for DBAdaptor operations.
-    dbadaptor.default_timeout: 10000 #(ms) Default timeout for DBAdaptor operations. Only used if none is provided.
-    intersect.active: true           # Allow intersect queries with the SearchEngine (Solr)
-    intersect.always: false          # Force intersect queries
-    intersect.params.threshold: 3    # Minimum number of QueryParams in the query to intersect
-    limit.default: 1000              # Default limit in GET operations. To be used only if not defined.
-    limit.max: 5000                  # Maximum limit value in GET operations. If tried to be exceeded, the query will fail.
-    sample.limit.default: 100        # Default sampleLimit in GET operations. To be used only if not defined.
-    sample.limit.max: 1000           # Maximum sampleLimit value in GET operations. If tried to be exceeded, the query will fail.
+    query.max_timeout: 30000     #(ms) Max allowed timeout for DBAdaptor operations.
+    query.default_timeout: 10000 #(ms) Default timeout for DBAdaptor operations. Only used if none is provided.
+    query.limit.default: 1000              # Default limit in GET operations. To be used only if not defined.
+    query.limit.max: 5000                  # Maximum limit value in GET operations. If tried to be exceeded, the query will fail.
+    query.sample.limit.default: 100        # Default sampleLimit in GET operations. To be used only if not defined.
+    query.sample.limit.max: 1000           # Maximum sampleLimit value in GET operations. If tried to be exceeded, the query will fail.
+
+    search.intersect.active: true           # Allow intersect queries with the SearchEngine (Solr)
+    search.intersect.always: false          # Force intersect queries
+    search.intersect.params.threshold: 3    # Minimum number of QueryParams in the query to intersect
+
+    annotation.batch.size: 100
+    annotation.threads: 8
+    annotation.file.format: "json"
+    annotator: "cellbase"
+    annotator.cellbase.exclude: "expression"
+    annotator.cellbase.use_cache: true
+    annotator.cellbase.imprecise_variants: true # Imprecise variants supported by cellbase (REST only)
 
   ## The following section defines all available storage engine plugins installed
   engines:
@@ -139,9 +148,11 @@ variant:
           connectionsPerHost: ${OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST}
           readPreference: "secondaryPreferred"
       options:
-        mongodb.collection.variants: "variants"
-        mongodb.collection.studies: "studies"
-        mongodb.collection.files: "files"
+        mongodb.parallel.write: false
+        mongodb.stage.parallel.write: false
+        mongodb.direct_load.parallel.write: false
+        mongodb.merge.parallel.write: false
+        mongodb.merge.batch.size: 10 #Number of files to merge directly from first to second collection
 
     ## Hadoop Storage Engine
     - id: "hadoop"

@@ -81,16 +81,16 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
                 new ObjectMap()
                         .append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro")
                         .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
-//                        .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DS,GL")
-                        .append(VariantStorageOptions.CALCULATE_STATS.key(), true)
+//                        .append(VariantStorageEngine.Options.EXTRA_FORMAT_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DS,GL")
+                        .append(VariantStorageOptions.STATS_CALCULATE.key(), true)
                         .append(VariantStorageOptions.GVCF.key(), false)
         });
 //        parameters.add(new Object[]{
 //                new ObjectMap()
 //                        .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto")
 //                        .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED)
-////                        .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DS,GL")
-//                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)
+////                        .append(VariantStorageEngine.Options.EXTRA_FORMAT_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DS,GL")
+//                        .append(VariantStorageEngine.Options.STATS_CALCULATE.key(), true)
 //                        .append(VariantStorageEngine.Options.GVCF.key(), false)
 //        });
         return parameters;

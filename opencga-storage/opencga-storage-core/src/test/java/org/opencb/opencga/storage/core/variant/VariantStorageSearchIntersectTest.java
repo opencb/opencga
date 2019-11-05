@@ -22,7 +22,6 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -101,11 +100,11 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         studyMetadata = newStudyMetadata();
 
         clearDB(DB_NAME);
-        ObjectMap params = new ObjectMap(VariantStorageOptions.STUDY_TYPE.key(), SampleSetType.FAMILY)
+        ObjectMap params = new ObjectMap()
                 .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
                 .append(VariantStorageOptions.ANNOTATE.key(), true)
-                .append(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), true);
+                .append(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "DS,GL")
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true);
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
         VariantStorageMetadataManager metadataManager = variantStorageEngine.getMetadataManager();
@@ -115,7 +114,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         Integer indexedFileId = metadataManager.getIndexedFiles(studyMetadata.getId()).iterator().next();
 
         //Calculate stats
-        if (params.getBoolean(VariantStorageOptions.CALCULATE_STATS.key(), true)) {
+        if (params.getBoolean(VariantStorageOptions.STATS_CALCULATE.key(), true)) {
             QueryOptions options = new QueryOptions(VariantStorageOptions.STUDY.key(), STUDY_NAME)
                     .append(VariantStorageOptions.LOAD_BATCH_SIZE.key(), 100)
                     .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)

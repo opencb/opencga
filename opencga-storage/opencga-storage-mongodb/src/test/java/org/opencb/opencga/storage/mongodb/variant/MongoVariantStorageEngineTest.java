@@ -28,7 +28,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -181,7 +180,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 .append(MongoDBVariantStorageOptions.MERGE.key(), true)
                 .append(MongoDBVariantStorageOptions.DIRECT_LOAD.key(), false)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), false), false, true);
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false), false, true);
 
         long count = dbAdaptor.count(null).first();
         assertEquals(stageCount, count);
@@ -312,7 +311,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 runDefaultETL(storagePipelineResult.getTransformResult(), getVariantStorageEngine(), studyMetadata, new ObjectMap()
                         .append(VariantStorageOptions.ANNOTATE.key(), false)
                         .append(MongoDBVariantStorageOptions.DIRECT_LOAD.key(), false)
-                        .append(VariantStorageOptions.CALCULATE_STATS.key(), false), false, true);
+                        .append(VariantStorageOptions.STATS_CALCULATE.key(), false), false, true);
             } catch (StoragePipelineException e) {
                 assertEquals(null, exception.getAndSet(e));
                 return 1;
@@ -468,7 +467,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         mergeResume(f5, studyMetadata, variantStorageManager -> {
             try {
                 ObjectMap objectMap = new ObjectMap()
-                        .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                        .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                         .append(VariantStorageOptions.ANNOTATE.key(), false);
 
                 runETL(variantStorageManager, f1, outputUri, objectMap
@@ -509,7 +508,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
                 try {
                     runETL(variantStorageEngine, storagePipelineResult.getTransformResult(), outputUri, new ObjectMap()
                             .append(VariantStorageOptions.ANNOTATE.key(), false)
-                            .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                            .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                             .append(MongoDBVariantStorageOptions.DIRECT_LOAD.key(), false)
                             .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                             .append(VariantStorageOptions.RESUME.key(), execution > 1)
@@ -564,7 +563,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         setUp.accept(variantStorageManager);
 
         runDefaultETL(file, variantStorageManager, studyMetadata, new ObjectMap()
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                 .append(VariantStorageOptions.ANNOTATE.key(), false));
 
 
@@ -722,7 +721,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         // Stage and merge file1
         runDefaultETL(file1, getVariantStorageEngine(), studyMetadata1, new ObjectMap()
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), true));
         runDefaultETL(file2, getVariantStorageEngine(), studyMetadata1, new ObjectMap()
@@ -738,7 +737,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         // Stage and merge file5
         runDefaultETL(file5, getVariantStorageEngine(), studyMetadata2, new ObjectMap()
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), true));
 
@@ -761,13 +760,13 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         runDefaultETL(file1, getVariantStorageEngine("2"), newStudyMetadata1, new ObjectMap()
 //                .append(VariantStorageEngine.Options.FILE_ID.key(), 1)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), true));
         runDefaultETL(file5, getVariantStorageEngine("2"), newStudyMetadata2, new ObjectMap()
 //                .append(VariantStorageEngine.Options.FILE_ID.key(), 5)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), true));
 
@@ -820,7 +819,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             runDefaultETL(storagePipelineResult3.getTransformResult(), newVariantStorageEngine(), studyMetadata1, new ObjectMap()
 //                    .append(VariantStorageEngine.Options.FILE_ID.key(), 3)
                     .append(VariantStorageOptions.ANNOTATE.key(), false)
-                    .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                    .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                     .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                     .append(MongoDBVariantStorageOptions.MERGE.key(), true), false, true);
             return 0;
@@ -829,7 +828,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
             runDefaultETL(storagePipelineResult5.getTransformResult(), newVariantStorageEngine(), studyMetadata2, new ObjectMap()
 //                    .append(VariantStorageEngine.Options.FILE_ID.key(), 5)
                     .append(VariantStorageOptions.ANNOTATE.key(), false)
-                    .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                    .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                     .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                     .append(MongoDBVariantStorageOptions.MERGE.key(), true), false, true);
             return 0;
@@ -855,13 +854,13 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         runDefaultETL(file3, getVariantStorageEngine("2"), newStudyMetadata1, new ObjectMap()
 //                .append(VariantStorageEngine.Options.FILE_ID.key(), 3)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), true));
         runDefaultETL(file5, getVariantStorageEngine("2"), newStudyMetadata2, new ObjectMap()
 //                .append(VariantStorageEngine.Options.FILE_ID.key(), 5)
                 .append(VariantStorageOptions.ANNOTATE.key(), false)
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                 .append(MongoDBVariantStorageOptions.STAGE.key(), true)
                 .append(MongoDBVariantStorageOptions.MERGE.key(), true));
 
@@ -945,7 +944,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
     @Test
     @Override
     public void multiIndexPlatinum() throws Exception {
-        super.multiIndexPlatinum(new ObjectMap(VariantStorageOptions.EXTRA_GENOTYPE_FIELDS.key(), "DP,AD,PL"));
+        super.multiIndexPlatinum(new ObjectMap(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "DP,AD,PL"));
         checkPlatinumDatabase(d -> ((List) d.get(FILES_FIELD)).size(), Collections.singleton("0/0"));
 
 //        StudyMetadata studyMetadata = variantStorageEngine.getStudyMetadataManager()
@@ -1161,8 +1160,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageEngineTest impl
         StudyMetadata studyMetadata2 = variantStorageEngineExpected.getMetadataManager().createStudy("Study2");
 
         ObjectMap options = new ObjectMap(params)
-                .append(VariantStorageOptions.STUDY_TYPE.key(), SampleSetType.CONTROL_SET)
-                .append(VariantStorageOptions.CALCULATE_STATS.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
                 .append(VariantStorageOptions.ANNOTATE.key(), false);
         //Study1
         runDefaultETL(getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
