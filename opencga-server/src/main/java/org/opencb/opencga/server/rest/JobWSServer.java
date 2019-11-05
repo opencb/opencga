@@ -19,6 +19,7 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -207,6 +208,24 @@ public class JobWSServer extends OpenCGAWSServer {
             DataResult<Job> result = catalogManager.getJobManager().create(studyStr, inputJob.toJob(), queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/execute")
+    @ApiOperation(value = "Execute an analysis using an internal or external tool", response = Job.class)
+    public Response execute(
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study")String studyStr,
+            @ApiParam(value = "Analysis id") @QueryParam("analysisId")String analysisId,
+            @ApiParam(value = "Json containing the execution parameters", required = true) JobExecutionParams params) {
+        try {
+            // TODO: Depending on the analysis id, we will need to obtain the command/subcommand to generate the command line
+
+            DataResult<Job> queryResult = catalogManager.getJobManager().register(studyStr, "", "",  Enums.Priority.MEDIUM, params.params,
+                    token);
+            return createOkResponse(queryResult);
+        } catch(Exception e) {
             return createErrorResponse(e);
         }
     }
@@ -429,6 +448,53 @@ public class JobWSServer extends OpenCGAWSServer {
             return createOkResponse(jobManager.updateAcl(null, idList, memberId, aclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
+        }
+    }
+
+    public class JobExecutionParams {
+        private String id;
+        private String name;
+        private String description;
+
+        private Map<String, String> params;
+
+        public JobExecutionParams() {
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public JobExecutionParams setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public JobExecutionParams setName(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public JobExecutionParams setDescription(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Map<String, String> getParams() {
+            return params;
+        }
+
+        public JobExecutionParams setParams(Map<String, String> params) {
+            this.params = params;
+            return this;
         }
     }
 
