@@ -113,7 +113,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     @Override
     public MongoDBVariantStoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
         VariantMongoDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
-        return new MongoDBVariantStoragePipeline(configuration, STORAGE_ENGINE_ID, dbAdaptor, ioConnectorProvider);
+        return new MongoDBVariantStoragePipeline(configuration, STORAGE_ENGINE_ID, dbAdaptor, ioConnectorProvider, getOptions());
     }
 
     @Override
@@ -171,7 +171,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         TaskMetadata task = preRemoveFiles(study, files);
         List<Integer> fileIds = task.getFileIds();
 
-        ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
+        ObjectMap options = new ObjectMap(getOptions());
 
         VariantStorageMetadataManager scm = getMetadataManager();
         int studyId = scm.getStudyId(study);
@@ -209,7 +209,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         Thread hook = metadataManager.buildShutdownHook(REMOVE_OPERATION_NAME, studyId, taskId);
         try {
             Runtime.getRuntime().addShutdownHook(hook);
-            ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
+            ObjectMap options = new ObjectMap(getOptions());
             getDBAdaptor().removeStudy(studyName, batchFileOperation.get().getTimestamp(), new QueryOptions(options));
 
             LinkedHashSet<Integer> indexedFiles = metadataManager.getIndexedFiles(studyId);
@@ -464,7 +464,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             dbName = getOptions().getString(DB_NAME.key(), DB_NAME.defaultValue());
         }
 
-        DatabaseCredentials database = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getDatabase();
+        DatabaseCredentials database = configuration.getVariantEngine(STORAGE_ENGINE_ID).getDatabase();
 
         try {
             return new MongoCredentials(database, dbName);

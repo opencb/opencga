@@ -77,7 +77,7 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
+import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -354,8 +354,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         Configuration conf = new Configuration(false);
         HBaseConfiguration.merge(conf, HadoopVariantStorageTest.configuration.get());
         StorageConfiguration storageConfiguration = getStorageConfiguration(conf);
-        storageConfiguration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)
-                .getVariant()
+        storageConfiguration.getVariantEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)
                 .getOptions()
                 .putAll(otherStorageConfigurationOptions);
 
@@ -378,8 +377,8 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
     }
 
     static StorageConfiguration updateStorageConfiguration(StorageConfiguration storageConfiguration, Configuration conf) throws IOException {
-        storageConfiguration.setDefaultStorageEngineId(HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
-        StorageEtlConfiguration variantConfiguration = storageConfiguration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getVariant();
+        storageConfiguration.getVariant().setDefaultEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
+        StorageEngineConfiguration variantConfiguration = storageConfiguration.getVariantEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
         ObjectMap options = variantConfiguration.getOptions();
 
         options.put(HadoopVariantStorageOptions.MR_EXECUTOR.key(), TestMRExecutor.class);

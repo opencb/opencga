@@ -35,10 +35,7 @@ import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
-import org.opencb.opencga.storage.core.config.DatabaseCredentials;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
-import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
+import org.opencb.opencga.storage.core.config.*;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.OpenCGATestExternalResource;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
@@ -123,14 +120,15 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         catalogManager = opencga.getCatalogManager();
         StorageEngineFactory factory = opencga.getStorageEngineFactory();
         StorageConfiguration storageConfiguration = factory.getStorageConfiguration();
-        storageConfiguration.setDefaultStorageEngineId(STORAGE_ENGINE_DUMMY);
-        storageConfiguration.getStorageEngines().clear();
-        storageConfiguration.getStorageEngines().add(new StorageEngineConfiguration(
-                STORAGE_ENGINE_DUMMY,
-                new StorageEtlConfiguration(),
-                new StorageEtlConfiguration(DummyVariantStorageEngine.class.getName(), new ObjectMap(), new DatabaseCredentials()),
-                new ObjectMap()
-        ));
+        storageConfiguration.getVariant().setDefaultEngine(STORAGE_ENGINE_DUMMY);
+        storageConfiguration.getVariant().getEngines().clear();
+        storageConfiguration.getVariant().getEngines()
+                .add(new StorageEngineConfiguration()
+                        .setId(STORAGE_ENGINE_DUMMY)
+                        .setEngine(DummyVariantStorageEngine.class.getName())
+                        .setOptions(new ObjectMap())
+                        .setDatabase(new DatabaseCredentials()));
+
         factory.unregisterVariantStorageEngine(DummyVariantStorageEngine.STORAGE_ENGINE_ID);
 
         DummyVariantStorageMetadataDBAdaptorFactory.clear();

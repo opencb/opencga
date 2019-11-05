@@ -85,7 +85,7 @@ public class AnalysisAnnotateMapper extends AbstractHBaseVariantMapper<NullWrita
             // FIXME! This is WRONG. Should read StorageConfigurationFile from client
             StorageConfiguration storageConfiguration = StorageConfiguration.load(
                 StorageConfiguration.class.getClassLoader().getResourceAsStream(configFile));
-            this.variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageEngine, projectMetadata,
+            this.variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, projectMetadata,
                     options);
         } catch (Exception e) {
             throw new IllegalStateException("Problems loading storage configuration from " + configFile, e);

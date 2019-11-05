@@ -61,7 +61,7 @@ public abstract class AbstractStorageServer {
     }
 
     public AbstractStorageServer() {
-        this(storageConfiguration.getServer().getGrpc(), storageConfiguration.getDefaultStorageEngineId());
+        this(storageConfiguration.getServer().getGrpc(), storageConfiguration.getVariant().getDefaultEngine());
     }
 
     public AbstractStorageServer(int port, String defaultStorageEngine) {
@@ -69,7 +69,7 @@ public abstract class AbstractStorageServer {
         if (StringUtils.isNotEmpty(defaultStorageEngine)) {
             this.defaultStorageEngine = defaultStorageEngine;
         } else {
-            this.defaultStorageEngine = storageConfiguration.getDefaultStorageEngineId();
+            this.defaultStorageEngine = storageConfiguration.getVariant().getDefaultEngine();
         }
     }
 

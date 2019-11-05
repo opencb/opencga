@@ -125,7 +125,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
             System.setIn(is);
 
             variantStorageEngine.getConfiguration()
-                    .getStorageEngine(variantStorageEngine.getStorageEngineId()).getVariant().getOptions()
+                    .getVariantEngine(variantStorageEngine.getStorageEngineId()).getOptions()
                     .put(VariantStorageOptions.STDIN.key(), true);
             variantStorageEngine.index(Collections.singletonList(etlResult.getTransformResult()), outputUri, false, false, true);
 
@@ -325,7 +325,7 @@ public abstract class VariantStorageEngineTest extends VariantStorageBaseTest {
         }
 
         variantStorageManager = getVariantStorageEngine();
-        variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions()
+        variantStorageManager.getConfiguration().getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions()
                 .append(VariantStorageOptions.STUDY.key(), studyMetadataBatchFile.getName())
                 .putAll(options);
 

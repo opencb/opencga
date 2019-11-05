@@ -49,7 +49,7 @@ public class GenericGrpcService {
     protected Logger logger;
 
     public GenericGrpcService(StorageConfiguration storageConfiguration) {
-        this(storageConfiguration, storageConfiguration.getDefaultStorageEngineId());
+        this(storageConfiguration, storageConfiguration.getVariant().getDefaultEngine());
     }
 
     public GenericGrpcService(StorageConfiguration storageConfiguration, String defaultStorageEngine) {

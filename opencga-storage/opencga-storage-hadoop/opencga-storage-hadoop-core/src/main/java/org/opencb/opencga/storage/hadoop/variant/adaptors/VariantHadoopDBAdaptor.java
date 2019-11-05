@@ -117,7 +117,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         }
         this.genomeHelper = new GenomeHelper(this.configuration);
         this.variantTable = credentials.getTable();
-        ObjectMap options = configuration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getVariant().getOptions();
+        ObjectMap options = configuration.getVariantEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getOptions();
         HBaseVariantStorageMetadataDBAdaptorFactory factory = new HBaseVariantStorageMetadataDBAdaptorFactory(
                 hBaseManager, tableNameGenerator.getMetaTableName(), conf);
         this.studyConfigurationManager.set(new VariantStorageMetadataManager(factory));

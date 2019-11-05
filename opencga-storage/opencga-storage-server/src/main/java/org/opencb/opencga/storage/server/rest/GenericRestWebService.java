@@ -108,7 +108,7 @@ public class GenericRestWebService {
 
         logger = LoggerFactory.getLogger(this.getClass());
 
-        defaultStorageEngine = storageConfiguration.getDefaultStorageEngineId();
+        defaultStorageEngine = storageConfiguration.getVariant().getDefaultEngine();
 
         // Only one StorageManagerFactory is needed, this acts as a simple Singleton pattern which improves the performance significantly
         if (storageEngineFactory == null) {

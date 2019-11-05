@@ -40,19 +40,18 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 
     public VariantBenchmarkRunner(StorageConfiguration storageConfiguration) throws IllegalAccessException, ClassNotFoundException,
             InstantiationException, StorageEngineException {
-        this(storageConfiguration.getDefaultStorageEngineId(), storageConfiguration);
+        this(storageConfiguration.getVariant().getDefaultEngine(), storageConfiguration);
     }
 
     public VariantBenchmarkRunner(String storageEngine, StorageConfiguration storageConfiguration)
-            throws IllegalAccessException, ClassNotFoundException, InstantiationException, StorageEngineException {
+            throws StorageEngineException {
         this.storageEngine = storageEngine;
         this.storageConfiguration = storageConfiguration;
         logger = LoggerFactory.getLogger(this.getClass());
         init(storageEngine);
     }
 
-    private void init(String storageEngine)
-            throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
+    private void init(String storageEngine) throws StorageEngineException {
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
         VariantStorageEngine variantStorageEngine = storageEngineFactory.getVariantStorageEngine(storageEngine,
                 storageConfiguration.getBenchmark().getDatabaseName());

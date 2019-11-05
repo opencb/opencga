@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
 
 import javax.servlet.http.HttpServletRequest;
@@ -405,7 +406,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
     private List<Region> getRegionsFromGenes(String geneStr, int geneOffset, boolean onlyExons, int exonOffset, List<Region> initialRegions,
                                              String studyStr)
-            throws CatalogException, IllegalAccessException, ClassNotFoundException, InstantiationException, IOException {
+            throws CatalogException, StorageEngineException, IOException {
         Map<String, Region> regionMap = new HashMap<>();
 
         // Process initial regions

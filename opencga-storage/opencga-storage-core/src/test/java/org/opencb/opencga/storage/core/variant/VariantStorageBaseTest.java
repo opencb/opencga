@@ -344,7 +344,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 
 
         variantStorageManager.getConfiguration()
-                .getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(params);
+                .getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions().putAll(params);
         StoragePipelineResult storagePipelineResult =
                 variantStorageManager.index(Collections.singletonList(inputUri), outputUri, doExtract, doTransform, doLoad).get(0);
 

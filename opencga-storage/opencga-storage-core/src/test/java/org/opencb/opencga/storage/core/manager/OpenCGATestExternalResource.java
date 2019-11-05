@@ -141,8 +141,8 @@ public class OpenCGATestExternalResource extends ExternalResource {
         storageConfiguration = StorageConfiguration.load(inputStream, "yml");
 //        if (storageHadoop) {
 //            HadoopVariantStorageTest.updateStorageConfiguration(storageConfiguration, hadoopExternalResource.getConf());
-//            ObjectMap variantHadoopOptions = storageConfiguration.getStorageEngine("hadoop").getVariant().getOptions();
-//            ObjectMap alignmentHadoopOptions = storageConfiguration.getStorageEngine("hadoop").getAlignment().getOptions();
+//            ObjectMap variantHadoopOptions = storageConfiguration.getVariantEngine("hadoop").getVariant().getOptions();
+//            ObjectMap alignmentHadoopOptions = storageConfiguration.getVariantEngine("hadoop").getAlignment().getOptions();
 //            for (Map.Entry<String, String> entry : hadoopExternalResource.getConf()) {
 //                variantHadoopOptions.put(entry.getKey(), entry.getValue());
 //                alignmentHadoopOptions.put(entry.getKey(), entry.getValue());
@@ -197,7 +197,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
     }
 
     public void clearStorageDB(String dbName) {
-        clearStorageDB(getStorageConfiguration().getDefaultStorageEngineId(), dbName);
+        clearStorageDB(getStorageConfiguration().getVariant().getDefaultEngine(), dbName);
     }
 
     public void clearStorageDB(String storageEngine, String dbName) {

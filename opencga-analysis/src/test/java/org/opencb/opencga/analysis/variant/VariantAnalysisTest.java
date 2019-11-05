@@ -103,10 +103,10 @@ public class VariantAnalysisTest {
             opencga.clearStorageDB(DB_NAME);
 
             StorageConfiguration storageConfiguration = opencga.getStorageConfiguration();
-            storageConfiguration.setDefaultStorageEngineId(storageEngine);
+            storageConfiguration.getVariant().setDefaultEngine(storageEngine);
             if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
                 HadoopVariantStorageTest.updateStorageConfiguration(storageConfiguration, hadoopExternalResource.getConf());
-                ObjectMap variantHadoopOptions = storageConfiguration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getVariant().getOptions();
+                ObjectMap variantHadoopOptions = storageConfiguration.getVariantEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getOptions();
                 for (Map.Entry<String, String> entry : hadoopExternalResource.getConf()) {
                     variantHadoopOptions.put(entry.getKey(), entry.getValue());
                 }

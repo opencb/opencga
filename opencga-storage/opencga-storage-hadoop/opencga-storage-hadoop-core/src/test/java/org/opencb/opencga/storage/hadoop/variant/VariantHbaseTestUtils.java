@@ -493,7 +493,7 @@ public class VariantHbaseTestUtils {
             params.putAll(otherParams);
         }
 
-        variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions()
+        variantStorageManager.getConfiguration().getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions()
                 .putAll(params);
         variantStorageManager.removeFile(studyMetadata.getName(), fileId);
 //        studyMetadata.copy(

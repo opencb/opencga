@@ -130,7 +130,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     public VariantStorageEngine() {}
 
     public VariantStorageEngine(StorageConfiguration configuration) {
-        this(configuration.getDefaultStorageEngineId(), configuration);
+        this(configuration.getVariant().getDefaultEngine(), configuration);
     }
 
     public VariantStorageEngine(String storageEngineId, StorageConfiguration configuration) {
@@ -371,7 +371,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
             throws StorageEngineException, VariantAnnotatorException {
         ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata();
         VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(
-                configuration, getStorageEngineId(), projectMetadata, params);
+                configuration, projectMetadata, getMergedOptions(params));
         return newVariantAnnotationManager(annotator);
     }
 
@@ -849,7 +849,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public ObjectMap getOptions() {
-        return configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+        ObjectMap options = configuration.getVariantEngine(storageEngineId).getOptions();
+        // Merge general options
+        configuration.getVariant().getOptions().forEach(options::putIfNotNull);
+        return options;
     }
 
     public final ObjectMap getMergedOptions(Map<? extends String, ?> params) {

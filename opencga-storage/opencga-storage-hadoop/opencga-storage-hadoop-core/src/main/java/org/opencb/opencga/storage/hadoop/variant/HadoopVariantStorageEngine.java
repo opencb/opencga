@@ -33,8 +33,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
+import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
@@ -610,7 +610,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
     @Override
     public void removeFiles(String study, List<String> files) throws StorageEngineException {
-        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+        ObjectMap options = configuration.getVariantEngine(STORAGE_ENGINE_ID).getOptions();
 
         VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
@@ -865,7 +865,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     private HBaseCredentials buildCredentials(String table) throws StorageEngineException {
-        StorageEtlConfiguration vStore = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant();
+        StorageEngineConfiguration vStore = configuration.getVariantEngine(STORAGE_ENGINE_ID);
 
         DatabaseCredentials db = vStore.getDatabase();
         String user = db.getUser();

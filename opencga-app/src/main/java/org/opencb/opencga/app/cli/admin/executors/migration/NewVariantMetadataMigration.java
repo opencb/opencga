@@ -29,15 +29,15 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.storage.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.core.models.DataStore;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
+import org.opencb.opencga.storage.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
+import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.metadata.VariantSourceToVariantFileMetadataConverter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -137,9 +137,10 @@ public class NewVariantMetadataMigration {
             }
         }
 
-        StorageEtlConfiguration etlConfiguration = storageConfiguration.getStorageEngine(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID).getVariant();
-        ObjectMap options = etlConfiguration.getOptions();
-        DatabaseCredentials database = etlConfiguration.getDatabase();
+        StorageEngineConfiguration engineConfiguration =
+                storageConfiguration.getVariantEngine(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
+        ObjectMap options = engineConfiguration.getOptions();
+        DatabaseCredentials database = engineConfiguration.getDatabase();
 
         MongoCredentials credentials;
         try {

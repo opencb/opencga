@@ -104,7 +104,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     @Override
     public URI preTransform(URI input) throws StorageEngineException, IOException, FileFormatException {
         logger.info("PreTransform: " + input);
-//        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+//        ObjectMap options = configuration.getVariantEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         if (!options.containsKey(VariantStorageOptions.TRANSFORM_FORMAT.key())) {
             options.put(VariantStorageOptions.TRANSFORM_FORMAT.key(),
                     VariantStorageOptions.TRANSFORM_FORMAT.defaultValue());

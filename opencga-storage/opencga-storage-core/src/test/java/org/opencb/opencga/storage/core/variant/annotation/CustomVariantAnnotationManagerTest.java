@@ -63,7 +63,7 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
     public void testBedAnnotation() throws Exception {
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
-        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(variantStorageEngine.getConfiguration(), variantStorageEngine.getStorageEngineId(), projectMetadata);
+        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(variantStorageEngine.getConfiguration(), projectMetadata);
         DefaultVariantAnnotationManager annotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor, ioConnectorProvider);
 
 
@@ -108,7 +108,7 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
     public void testGffAnnotation() throws Exception {
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
-        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(variantStorageEngine.getConfiguration(), variantStorageEngine.getStorageEngineId(), projectMetadata);
+        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(variantStorageEngine.getConfiguration(), projectMetadata);
         DefaultVariantAnnotationManager annotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor, ioConnectorProvider);
 
 
@@ -154,7 +154,7 @@ public abstract class CustomVariantAnnotationManagerTest extends VariantStorageB
     public void testVcfAnnotation() throws Exception {
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor();
 
-        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(variantStorageEngine.getConfiguration(), variantStorageEngine.getStorageEngineId(), projectMetadata);
+        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(variantStorageEngine.getConfiguration(), projectMetadata);
         DefaultVariantAnnotationManager annotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor, ioConnectorProvider);
 
         String annotKey = "VCFAnnotation";

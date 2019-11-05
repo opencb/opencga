@@ -44,27 +44,40 @@ public final class VariantAnnotatorFactory {
 
     protected static Logger logger = LoggerFactory.getLogger(VariantAnnotatorFactory.class);
 
-    public static VariantAnnotator buildVariantAnnotator(StorageConfiguration configuration, String storageEngineId,
+    public static VariantAnnotator buildVariantAnnotator(StorageConfiguration configuration,
                                                          ProjectMetadata projectMetadata)
             throws VariantAnnotatorException {
-        return buildVariantAnnotator(configuration, storageEngineId, projectMetadata, null);
+        return buildVariantAnnotator(configuration, projectMetadata, configuration.getVariant().getOptions());
     }
 
-    public static VariantAnnotator buildVariantAnnotator(StorageConfiguration configuration, String storageEngineId,
+    public static VariantAnnotator buildVariantAnnotator(StorageConfiguration configuration,
                                                          ProjectMetadata projectMetadata, ObjectMap options)
             throws VariantAnnotatorException {
-        ObjectMap storageOptions = new ObjectMap(configuration.getStorageEngine(storageEngineId).getVariant().getOptions());
-        if (options != null) {
-            options.forEach(storageOptions::putIfNotNull);
-        }
-        AnnotationSource defaultValue = storageOptions.containsKey(VARIANT_ANNOTATOR_CLASSNAME)
+
+        AnnotationSource defaultValue = options.containsKey(VARIANT_ANNOTATOR_CLASSNAME)
                 ? AnnotationSource.OTHER
                 : AnnotationSource.CELLBASE_REST;
         AnnotationSource annotationSource;
-        if (StringUtils.isNotBlank(storageOptions.getString(ANNOTATOR))) {
-            annotationSource = AnnotationSource.valueOf(storageOptions.getString(ANNOTATOR).toUpperCase());
-        } else if (StringUtils.isNotBlank(storageOptions.getString(ANNOTATION_SOURCE))) {
-            annotationSource = AnnotationSource.valueOf(storageOptions.getString(ANNOTATION_SOURCE).toUpperCase());
+        String annotator = options.getString(ANNOTATOR);
+        if (StringUtils.isNotBlank(annotator)) {
+            if (annotator.equalsIgnoreCase("cellbase")) {
+                String preferred = configuration.getCellbase().getPreferred();
+                switch (preferred.toLowerCase()) {
+                    case "remote":
+                        annotationSource = AnnotationSource.CELLBASE_REST;
+                        break;
+                    case "local":
+                        annotationSource = AnnotationSource.CELLBASE_DB_ADAPTOR;
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown cellbase preferred method '"
+                                + preferred + "'");
+                }
+            } else {
+                annotationSource = AnnotationSource.valueOf(annotator.toUpperCase());
+            }
+        } else if (StringUtils.isNotBlank(options.getString(ANNOTATION_SOURCE))) {
+            annotationSource = AnnotationSource.valueOf(options.getString(ANNOTATION_SOURCE).toUpperCase());
             logger.warn("Using deprecated parameter '" + ANNOTATION_SOURCE + "'. Use '" + ANNOTATOR + "' instead");
         } else {
             annotationSource = defaultValue;
@@ -72,20 +85,20 @@ public final class VariantAnnotatorFactory {
 
         switch (annotationSource) {
             case CELLBASE_DB_ADAPTOR:
-                return new CellBaseDirectVariantAnnotator(configuration, projectMetadata, storageOptions);
+                return new CellBaseDirectVariantAnnotator(configuration, projectMetadata, options);
             case CELLBASE_REST:
-                return new CellBaseRestVariantAnnotator(configuration, projectMetadata, storageOptions);
+                return new CellBaseRestVariantAnnotator(configuration, projectMetadata, options);
             case VEP:
                 return VepVariantAnnotator.buildVepAnnotator();
             case OTHER:
             default:
-                String className = storageOptions.getString(VARIANT_ANNOTATOR_CLASSNAME);
+                String className = options.getString(VARIANT_ANNOTATOR_CLASSNAME);
                 logger.info("Annotating with {} = {}", annotationSource, className);
                 try {
                     Class<?> clazz = Class.forName(className);
                     if (VariantAnnotator.class.isAssignableFrom(clazz)) {
                         return (VariantAnnotator) clazz.getConstructor(StorageConfiguration.class, ProjectMetadata.class, ObjectMap.class)
-                                .newInstance(configuration, projectMetadata, storageOptions);
+                                .newInstance(configuration, projectMetadata, options);
                     } else {
                         throw new VariantAnnotatorException("Invalid VariantAnnotator class: " + className);
                     }

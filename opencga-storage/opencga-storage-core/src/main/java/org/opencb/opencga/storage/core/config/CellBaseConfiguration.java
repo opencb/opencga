@@ -28,6 +28,8 @@ import java.util.List;
  */
 public class CellBaseConfiguration {
 
+    public static final String PREFERRED_LOCAL = "local";
+    public static final String PREFERRED_REMOTE = "remote";
     /*
      * URL to CellBase REST web services, by default official UCam installation is used
      */
@@ -57,7 +59,7 @@ public class CellBaseConfiguration {
         this.version = version;
         this.database = database;
 
-        this.preferred = "local";
+        this.preferred = PREFERRED_LOCAL;
     }
 
     @Override

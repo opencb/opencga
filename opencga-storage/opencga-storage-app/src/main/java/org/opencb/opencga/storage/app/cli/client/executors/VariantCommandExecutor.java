@@ -101,10 +101,10 @@ public class VariantCommandExecutor extends CommandExecutor {
          **/
         this.storageEngine = (storageEngine != null && !storageEngine.isEmpty())
                 ? storageEngine
-                : configuration.getDefaultStorageEngineId();
+                : configuration.getVariant().getDefaultEngine();
         logger.debug("Storage Engine set to '{}'", this.storageEngine);
 
-        this.storageConfiguration = configuration.getStorageEngine(storageEngine);
+        this.storageConfiguration = configuration.getVariantEngine(storageEngine);
 
         // TODO: Start passing catalogManager
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(configuration);
@@ -243,7 +243,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 // indexVariantsCommandOptions.aggregated);
 
         /* Add CLi options to the variant options */
-        ObjectMap params = storageConfiguration.getVariant().getOptions();
+        ObjectMap params = storageConfiguration.getOptions();
         params.put(VariantStorageOptions.MERGE_MODE.key(), indexVariantsCommandOptions.merge);
         params.put(VariantStorageOptions.STUDY.key(), indexVariantsCommandOptions.study);
         params.put(VariantStorageOptions.STUDY_TYPE.key(), indexVariantsCommandOptions.studyType);
@@ -326,7 +326,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 //            return;
 //        }
 
-        storageConfiguration.getVariant().getOptions().putAll(variantQueryCommandOptions.commonOptions.params);
+        storageConfiguration.getOptions().putAll(variantQueryCommandOptions.commonOptions.params);
 
         List<String> studyNames = variantStorageEngine.getMetadataManager().getStudyNames();
 
@@ -376,7 +376,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         /*
          * Create Annotator
          */
-        ObjectMap options = configuration.getStorageEngine(storageEngine).getVariant().getOptions();
+        ObjectMap options = configuration.getVariantEngine(storageEngine).getOptions();
         if (annotateVariantsCommandOptions.annotator != null) {
             options.put(VariantAnnotationManager.ANNOTATOR, annotateVariantsCommandOptions.annotator);
         }
@@ -462,7 +462,7 @@ public class VariantCommandExecutor extends CommandExecutor {
     private void annotationSave() throws VariantAnnotatorException, StorageEngineException {
         StorageVariantCommandOptions.AnnotationSaveCommandOptions cliOptions = variantCommandOptions.annotationSaveCommandOptions;
 
-        ObjectMap options = storageConfiguration.getVariant().getOptions();
+        ObjectMap options = storageConfiguration.getOptions();
         options.putAll(cliOptions.commonOptions.params);
 
         variantStorageEngine.saveAnnotation(cliOptions.annotationId, options);
@@ -471,7 +471,7 @@ public class VariantCommandExecutor extends CommandExecutor {
     private void annotationDelete() throws VariantAnnotatorException, StorageEngineException {
         StorageVariantCommandOptions.AnnotationDeleteCommandOptions cliOptions = variantCommandOptions.annotationDeleteCommandOptions;
 
-        ObjectMap options = storageConfiguration.getVariant().getOptions();
+        ObjectMap options = storageConfiguration.getOptions();
         options.putAll(cliOptions.commonOptions.params);
 
         variantStorageEngine.deleteAnnotation(cliOptions.annotationId, options);
@@ -533,7 +533,7 @@ public class VariantCommandExecutor extends CommandExecutor {
             ClassNotFoundException {
         StorageVariantCommandOptions.VariantStatsCommandOptions statsVariantsCommandOptions = variantCommandOptions.statsVariantsCommandOptions;
 
-        QueryOptions options = new QueryOptions(storageConfiguration.getVariant().getOptions());
+        QueryOptions options = new QueryOptions(storageConfiguration.getOptions());
         options.put(VariantStorageOptions.OVERWRITE_STATS.key(), statsVariantsCommandOptions.overwriteStats);
         options.put(VariantStorageOptions.UPDATE_STATS.key(), statsVariantsCommandOptions.updateStats);
 //        options.putIfNotEmpty(VariantStorageEngine.Options.FILE_ID.key(), statsVariantsCommandOptions.file);
@@ -609,7 +609,7 @@ public class VariantCommandExecutor extends CommandExecutor {
     private void fillGaps() throws StorageEngineException {
         StorageVariantCommandOptions.FillGapsCommandOptions fillGapsCommandOptions = variantCommandOptions.fillGapsCommandOptions;
 
-        ObjectMap options = storageConfiguration.getVariant().getOptions();
+        ObjectMap options = storageConfiguration.getOptions();
         options.put(VariantStorageOptions.RESUME.key(), fillGapsCommandOptions.resume);
         options.putAll(fillGapsCommandOptions.commonOptions.params);
 
@@ -619,7 +619,7 @@ public class VariantCommandExecutor extends CommandExecutor {
     private void fillMissing() throws StorageEngineException {
         StorageVariantCommandOptions.FillMissingCommandOptions cliOptions = variantCommandOptions.fillMissingCommandOptions;
 
-        ObjectMap options = storageConfiguration.getVariant().getOptions();
+        ObjectMap options = storageConfiguration.getOptions();
         options.put(VariantStorageOptions.RESUME.key(), cliOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
 
@@ -629,7 +629,7 @@ public class VariantCommandExecutor extends CommandExecutor {
     private void export() throws URISyntaxException, StorageEngineException, IOException {
         StorageVariantCommandOptions.VariantExportCommandOptions exportVariantsCommandOptions = variantCommandOptions.exportVariantsCommandOptions;
 //
-//        ObjectMap options = storageConfiguration.getVariant().getOptions();
+//        ObjectMap options = storageConfiguration.getOptions();
 //        if (exportVariantsCommandOptions.dbName != null && !exportVariantsCommandOptions.dbName.isEmpty()) {
 //            options.put(VariantStorageEngine.Options.DB_NAME.key(), exportVariantsCommandOptions.dbName);
 //        }
@@ -671,7 +671,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 //                query, queryOptions);
 
 
-//        storageConfiguration.getVariant().getOptions().putAll(exportVariantsCommandOptions.commonOptions.params);
+//        storageConfiguration.getOptions().putAll(exportVariantsCommandOptions.commonOptions.params);
 
 
         List<String> studyNames = variantStorageEngine.getMetadataManager().getStudyNames();

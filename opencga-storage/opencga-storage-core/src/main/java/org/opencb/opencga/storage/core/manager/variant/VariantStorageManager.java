@@ -187,41 +187,39 @@ public class VariantStorageManager extends StorageManager {
     }
 
     public void searchIndexSamples(String study, List<String> samples, QueryOptions queryOptions, String sessionId)
-            throws StorageEngineException, IOException, VariantSearchException,
-            IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
+            throws StorageEngineException, IOException, VariantSearchException, CatalogException {
         DataStore dataStore = getDataStore(study, sessionId);
         VariantStorageEngine variantStorageEngine =
-                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+                getVariantStorageEngine(dataStore);
         variantStorageEngine.getOptions().putAll(queryOptions);
 
         variantStorageEngine.secondaryIndexSamples(study, samples);
     }
 
     public void removeSearchIndexSamples(String study, List<String> samples, QueryOptions queryOptions, String sessionId)
-            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException,
-            StorageEngineException, VariantSearchException {
+            throws CatalogException, StorageEngineException, VariantSearchException {
         DataStore dataStore = getDataStore(study, sessionId);
         VariantStorageEngine variantStorageEngine =
-                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+                getVariantStorageEngine(dataStore);
         variantStorageEngine.getOptions().putAll(queryOptions);
 
         variantStorageEngine.removeSecondaryIndexSamples(study, samples);
 
     }
 
-    public void searchIndex(String study, String sessionId) throws StorageEngineException, IOException, VariantSearchException,
-            IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
+    public void searchIndex(String study, String sessionId)
+            throws StorageEngineException, IOException, VariantSearchException, CatalogException {
         searchIndex(new Query(STUDY.key(), study), new QueryOptions(), false, sessionId);
     }
 
     public void searchIndex(Query query, QueryOptions queryOptions, boolean overwrite, String sessionId) throws StorageEngineException,
-            IOException, VariantSearchException, IllegalAccessException, InstantiationException, ClassNotFoundException, CatalogException {
+            IOException, VariantSearchException, CatalogException {
 //        String userId = catalogManager.getUserManager().getUserId(sessionId);
 //        long studyId = catalogManager.getStudyManager().getId(userId, study);
         String study = catalogUtils.getAnyStudy(query, sessionId);
         DataStore dataStore = getDataStore(study, sessionId);
         VariantStorageEngine variantStorageEngine =
-                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+                getVariantStorageEngine(dataStore);
         catalogUtils.parseQuery(query, sessionId);
         variantStorageEngine.searchIndex(query, queryOptions, overwrite);
     }
@@ -272,12 +270,10 @@ public class VariantStorageManager extends StorageManager {
     }
 
     public void saveAnnotation(String project, String annotationName, ObjectMap params, String sessionId)
-            throws StorageEngineException, VariantAnnotatorException, CatalogException, IllegalAccessException, InstantiationException,
-            ClassNotFoundException {
+            throws StorageEngineException, VariantAnnotatorException, CatalogException {
 
         DataStore dataStore = getDataStoreByProjectId(project, sessionId);
-        VariantStorageEngine variantStorageEngine =
-                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
 
         StorageOperation.updateProjectMetadata(catalogManager, variantStorageEngine.getMetadataManager(), project, sessionId);
 
@@ -285,12 +281,10 @@ public class VariantStorageManager extends StorageManager {
     }
 
     public void deleteAnnotation(String project, String annotationName, ObjectMap params, String sessionId)
-            throws StorageEngineException, VariantAnnotatorException, CatalogException, IllegalAccessException,
-            InstantiationException, ClassNotFoundException {
+            throws StorageEngineException, VariantAnnotatorException, CatalogException {
 
         DataStore dataStore = getDataStoreByProjectId(project, sessionId);
-        VariantStorageEngine variantStorageEngine =
-                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
 
         StorageOperation.updateProjectMetadata(catalogManager, variantStorageEngine.getMetadataManager(), project, sessionId);
 
@@ -298,13 +292,13 @@ public class VariantStorageManager extends StorageManager {
     }
 
     public DataResult<VariantAnnotation> getAnnotation(String name, Query query, QueryOptions options, String sessionId)
-            throws StorageEngineException, CatalogException, IOException {
+            throws StorageEngineException, CatalogException {
         QueryOptions finalOptions = VariantQueryUtils.validateAnnotationQueryOptions(options);
         return secure(query, finalOptions, sessionId, (engine) -> engine.getAnnotation(name, query, finalOptions));
     }
 
     public DataResult<ProjectMetadata.VariantAnnotationMetadata> getAnnotationMetadata(String name, String project, String sessionId)
-            throws StorageEngineException, CatalogException, IOException {
+            throws StorageEngineException, CatalogException {
         Query query = new Query(VariantCatalogQueryUtils.PROJECT.key(), project);
         return secure(query, empty(), sessionId, (engine) -> engine.getAnnotationMetadata(name));
     }
@@ -366,14 +360,13 @@ public class VariantStorageManager extends StorageManager {
     }
 
     public void sampleIndex(String studyStr, List<String> samples, ObjectMap config, String sessionId)
-            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
+            throws CatalogException, StorageEngineException {
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         DataStore dataStore = getDataStore(study.getFqn(), sessionId);
-        VariantStorageEngine engine =
-                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        VariantStorageEngine engine = getVariantStorageEngine(dataStore);
 
         if (CollectionUtils.isEmpty(samples)) {
             throw new IllegalArgumentException("Empty list of samples");
@@ -383,14 +376,13 @@ public class VariantStorageManager extends StorageManager {
     }
 
     public void sampleIndexAnnotate(String studyStr, List<String> samples, ObjectMap config, String sessionId)
-            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
+            throws CatalogException, StorageEngineException {
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         DataStore dataStore = getDataStore(study.getFqn(), sessionId);
-        VariantStorageEngine engine =
-                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        VariantStorageEngine engine = getVariantStorageEngine(dataStore);
 
         if (CollectionUtils.isEmpty(samples)) {
             throw new IllegalArgumentException("Empty list of samples");
@@ -400,14 +392,13 @@ public class VariantStorageManager extends StorageManager {
     }
 
     public void familyIndex(String studyStr, List<String> familiesStr, ObjectMap config, String sessionId)
-            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
+            throws CatalogException, StorageEngineException {
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         DataStore dataStore = getDataStore(study.getFqn(), sessionId);
-        VariantStorageEngine engine =
-                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        VariantStorageEngine engine = getVariantStorageEngine(dataStore);
 
         if (CollectionUtils.isEmpty(familiesStr)) {
             throw new IllegalArgumentException("Empty list of families");
@@ -435,14 +426,13 @@ public class VariantStorageManager extends StorageManager {
     }
 
     public void fillGaps(String studyStr, List<String> samples, ObjectMap config, String sessionId)
-            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
+            throws CatalogException, StorageEngineException {
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         DataStore dataStore = getDataStore(study.getFqn(), sessionId);
-        VariantStorageEngine variantStorageEngine =
-                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
 
         if (samples == null || samples.size() < 2) {
             throw new IllegalArgumentException("Fill gaps operation requires at least two samples!");
@@ -451,13 +441,12 @@ public class VariantStorageManager extends StorageManager {
     }
 
     public void fillMissing(String studyStr, boolean overwrite, ObjectMap config, String sessionId)
-            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
+            throws CatalogException, StorageEngineException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         DataStore dataStore = getDataStore(study.getFqn(), sessionId);
-        VariantStorageEngine variantStorageEngine =
-                storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
 
         variantStorageEngine.fillMissing(study.getFqn(), config, overwrite);
     }
@@ -643,11 +632,7 @@ public class VariantStorageManager extends StorageManager {
     }
 
     protected VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {
-        try {
-            return storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            throw new StorageEngineException("Unable to get VariantDBAdaptor", e);
-        }
+        return storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
     }
 
     public boolean isSolrAvailable() {

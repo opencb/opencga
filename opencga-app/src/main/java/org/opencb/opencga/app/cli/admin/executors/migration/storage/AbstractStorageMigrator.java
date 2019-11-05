@@ -38,8 +38,7 @@ public abstract class AbstractStorageMigrator {
         this.storageConfiguration = storageConfiguration;
     }
 
-    public void migrate(String sessionId)
-            throws IllegalAccessException, InstantiationException, ClassNotFoundException, CatalogException, StorageEngineException {
+    public void migrate(String sessionId) throws CatalogException, StorageEngineException {
 
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
 

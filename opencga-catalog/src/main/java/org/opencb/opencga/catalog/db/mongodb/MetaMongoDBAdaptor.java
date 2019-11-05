@@ -123,6 +123,9 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     }
 
     private void createIndexes(MongoDBCollection mongoCollection, List<Map<String, ObjectMap>> indexes) {
+        if (true) {
+            return;
+        }
         DataResult<Document> index = mongoCollection.getIndex();
         // We store the existing indexes
         Set<String> existingIndexes = index.getResults()

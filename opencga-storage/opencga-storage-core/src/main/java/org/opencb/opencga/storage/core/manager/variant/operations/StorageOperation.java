@@ -253,13 +253,7 @@ public abstract class StorageOperation {
     }
 
     protected VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {
-        VariantStorageEngine variantStorageEngine;
-        try {
-            variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            throw new StorageEngineException("Unable to create StorageEngine", e);
-        }
-        return variantStorageEngine;
+        return storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
     }
 
     public static String buildDatabaseName(String databasePrefix, String userId, String alias) {

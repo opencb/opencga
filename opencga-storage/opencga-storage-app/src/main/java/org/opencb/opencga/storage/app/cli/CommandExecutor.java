@@ -162,22 +162,17 @@ public abstract class CommandExecutor {
 
         // logLevel parameter has preference in CLI over configuration file
         if (this.logLevel == null || this.logLevel.isEmpty()) {
-            this.logLevel = this.configuration.getLogLevel();
-            configureDefaultLog(this.logLevel);
-        } else {
-            if (!this.logLevel.equalsIgnoreCase(this.configuration.getLogLevel())) {
-                this.configuration.setLogLevel(this.logLevel);
-                configureDefaultLog(this.logLevel);
-            }
+            this.logLevel = "info";
         }
+        configureDefaultLog(this.logLevel);
 
         // logFile parameter has preference in CLI over configuration file, we first set the logFile passed
-        if (this.logFile != null && !this.logFile.isEmpty()) {
-            this.configuration.setLogFile(logFile);
-        }
+//        if (this.logFile != null && !this.logFile.isEmpty()) {
+//            this.configuration.setLogFile(logFile);
+//        }
 
         // If user has set up a logFile we redirect logs to it
-        if (this.configuration.getLogFile() != null && !this.configuration.getLogFile().isEmpty()) {
+        if (this.logFile != null && !this.logFile.isEmpty()) {
             org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
 
             // If a log file is used then console log is removed
@@ -185,8 +180,8 @@ public abstract class CommandExecutor {
 
             // Creating a RollingFileAppender to output the log
             RollingFileAppender rollingFileAppender = new RollingFileAppender(new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - "
-                    + "%m%n"), this.configuration.getLogFile(), true);
-            rollingFileAppender.setThreshold(Level.toLevel(configuration.getLogLevel()));
+                    + "%m%n"), this.logFile, true);
+            rollingFileAppender.setThreshold(Level.toLevel(this.logLevel));
             rootLogger.addAppender(rollingFileAppender);
         }
 

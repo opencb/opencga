@@ -99,8 +99,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     private TaskMetadata currentTask;
 
     public MongoDBVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId,
-                                         VariantMongoDBAdaptor dbAdaptor, IOConnectorProvider ioConnectorProvider) {
-        super(configuration, storageEngineId, dbAdaptor, ioConnectorProvider);
+                                         VariantMongoDBAdaptor dbAdaptor, IOConnectorProvider ioConnectorProvider, ObjectMap options) {
+        super(configuration, storageEngineId, dbAdaptor, ioConnectorProvider, options);
         this.dbAdaptor = dbAdaptor;
     }
 

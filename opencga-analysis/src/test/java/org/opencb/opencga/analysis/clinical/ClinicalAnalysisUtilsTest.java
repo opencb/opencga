@@ -53,7 +53,7 @@ public class ClinicalAnalysisUtilsTest {
                 .append(VariantStorageOptions.CALCULATE_STATS.key(), false);
 
         StorageConfiguration configuration = variantStorageEngine.getConfiguration();
-        configuration.setDefaultStorageEngineId(variantStorageEngine.getStorageEngineId());
+        configuration.getVariant().setDefaultEngine(variantStorageEngine.getStorageEngineId());
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(configuration);
         storageEngineFactory.registerVariantStorageEngine(variantStorageEngine);
 

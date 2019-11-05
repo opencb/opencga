@@ -40,8 +40,8 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.datastore.mongodb.MongoPersistentCursor;
 import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -124,10 +124,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         this.metadataManager = variantStorageMetadataManager;
         this.storageConfiguration = storageConfiguration;
         StorageEngineConfiguration storageEngineConfiguration =
-                storageConfiguration.getStorageEngine(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
-        this.configuration = storageEngineConfiguration == null || storageEngineConfiguration.getVariant().getOptions() == null
+                storageConfiguration.getVariantEngine(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
+        this.configuration = storageEngineConfiguration == null || storageEngineConfiguration.getOptions() == null
                 ? new ObjectMap()
-                : storageEngineConfiguration.getVariant().getOptions();
+                : storageEngineConfiguration.getOptions();
 
         queryParser = new VariantMongoDBQueryParser(variantStorageMetadataManager);
         NUMBER_INSTANCES.incrementAndGet();

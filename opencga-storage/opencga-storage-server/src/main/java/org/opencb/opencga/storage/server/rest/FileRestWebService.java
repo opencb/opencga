@@ -84,7 +84,7 @@ public class FileRestWebService extends GenericRestWebService {
                     return createOkResponse(VariantRestWebService.VariantFetcher.getVariants(storageEngine, dbName, histogram, interval,
                             queryOptions));
                 case "bam":
-                    AlignmentStorageEngine sm = StorageEngineFactory.get().getAlignmentStorageEngine(storageEngine, dbName);
+                    AlignmentStorageEngine sm = StorageEngineFactory.get().getAlignmentStorageEngine(dbName);
                     ObjectMap params = new ObjectMap();
                     AlignmentDBAdaptor dbAdaptor = sm.getDBAdaptor();
 

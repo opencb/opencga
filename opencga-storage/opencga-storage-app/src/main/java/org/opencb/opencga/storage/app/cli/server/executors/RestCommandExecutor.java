@@ -17,8 +17,6 @@
 package org.opencb.opencga.storage.app.cli.server.executors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.storage.app.cli.CommandExecutor;
-import org.opencb.opencga.storage.app.cli.server.AdminCliOptionsParser;
 import org.opencb.opencga.storage.app.cli.server.options.ServerCommandOptions;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.server.rest.RestStorageServer;
@@ -91,7 +89,7 @@ public class RestCommandExecutor { // extends CommandExecutor {
         }
 
         if (StringUtils.isNotEmpty(restServerCommandOptions.commonOptions.storageEngine)) {
-            storageConfiguration.setDefaultStorageEngineId(restServerCommandOptions.commonOptions.storageEngine);
+            storageConfiguration.getVariant().setDefaultEngine(restServerCommandOptions.commonOptions.storageEngine);
         }
 
         if (StringUtils.isNotEmpty(restServerCommandOptions.authManager)) {

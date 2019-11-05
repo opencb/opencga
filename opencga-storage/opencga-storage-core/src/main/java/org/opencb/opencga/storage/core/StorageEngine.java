@@ -43,11 +43,6 @@ public abstract class StorageEngine<DBADAPTOR> implements AutoCloseable {
     public StorageEngine() {
     }
 
-    public StorageEngine(StorageConfiguration configuration) {
-        this(configuration.getDefaultStorageEngineId(), configuration);
-//        this.configuration = configuration;
-    }
-
     public StorageEngine(String storageEngineId, StorageConfiguration configuration) {
         setConfiguration(configuration, storageEngineId);
     }

@@ -109,7 +109,7 @@ public class GrpcCommandExecutor {// extends CommandExecutor {
         }
 
         if (StringUtils.isNotEmpty(grpcServerCommandOptions.commonOptions.storageEngine)) {
-            storageConfiguration.setDefaultStorageEngineId(grpcServerCommandOptions.commonOptions.storageEngine);
+            storageConfiguration.getVariant().setDefaultEngine(grpcServerCommandOptions.commonOptions.storageEngine);
         }
 
         if (StringUtils.isNotEmpty(grpcServerCommandOptions.authManager)) {

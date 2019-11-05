@@ -94,13 +94,6 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     protected Integer privateStudyId;
 //    protected StudyMetadata privateStudyMetadata;
 
-
-    public VariantStoragePipeline(StorageConfiguration configuration, String storageEngineId, VariantDBAdaptor dbAdaptor,
-                                  IOConnectorProvider ioConnectorProvider) {
-        this(configuration, storageEngineId, dbAdaptor, ioConnectorProvider,
-                new ObjectMap(configuration.getStorageEngine(storageEngineId).getVariant().getOptions()));
-    }
-
     /**
      * @param configuration     Storage Configuration
      * @param storageEngineId   StorageEngineID

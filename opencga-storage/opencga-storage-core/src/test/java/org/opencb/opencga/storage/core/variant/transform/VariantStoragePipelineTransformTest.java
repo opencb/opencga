@@ -71,7 +71,7 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
         URI outputUri = newOutputUri();
 
         VariantStorageEngine variantStorageManager = getVariantStorageEngine();
-        variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getDatabase()
+        variantStorageManager.getConfiguration().getVariantEngine(variantStorageManager.getStorageEngineId()).getDatabase()
                 .setHosts(Collections.singletonList("1.1.1.1"));
         StoragePipelineResult etlResult = runETL(variantStorageManager, smallInputUri, outputUri, params, true, true, false);
         System.out.println("etlResult = " + etlResult);
@@ -137,9 +137,8 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
         System.setIn(inputStream);
 
 
-
         ObjectMap options = variantStorageManager.getConfiguration()
-                .getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
+                .getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions();
 
         options.append(VariantStorageOptions.STDIN.key(), true);
 
@@ -163,7 +162,7 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
             System.setOut(os);
 
             ObjectMap options = variantStorageManager.getConfiguration()
-                    .getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
+                    .getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions();
 
             options.append(VariantStorageOptions.STDOUT.key(), true);
             options.append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "json");
@@ -187,7 +186,7 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
             System.setOut(os);
 
             ObjectMap options = variantStorageManager.getConfiguration()
-                    .getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
+                    .getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions();
 
             options.append(VariantStorageOptions.STDOUT.key(), true);
             options.append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro");

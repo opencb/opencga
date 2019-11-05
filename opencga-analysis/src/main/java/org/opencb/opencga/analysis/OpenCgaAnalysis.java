@@ -129,11 +129,11 @@ public abstract class OpenCgaAnalysis {
 
         availableFrameworks = new ArrayList<>();
         sourceTypes = new ArrayList<>();
-        if (storageConfiguration.getDefaultStorageEngineId().equals("mongodb")) {
+        if (storageConfiguration.getVariant().getDefaultEngine().equals("mongodb")) {
             if (getAnalysisType().equals(Analysis.AnalysisType.VARIANT)) {
                 sourceTypes.add(AnalysisExecutor.Source.MONGODB);
             }
-        } else if (storageConfiguration.getDefaultStorageEngineId().equals("hadoop")) {
+        } else if (storageConfiguration.getVariant().getDefaultEngine().equals("hadoop")) {
             availableFrameworks.add(AnalysisExecutor.Framework.MAP_REDUCE);
             // TODO: Check from configuration if spark is available
 //            availableFrameworks.add(AnalysisExecutor.Framework.SPARK);

@@ -67,7 +67,7 @@ public class DefaultAlignmentDBAdaptorTest {
         AlignmentStorageEngine defaultAlignmentStorageManager = new LocalAlignmentStorageEngine();
         InputStream is = getClass().getClassLoader().getResourceAsStream("storage-configuration.yml");
         StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
-        storageConfiguration.getStorageEngine().getAlignment().getOptions().put("bigWigWindowsSize", 1000);
+        storageConfiguration.getAlignment().getOptions().put("bigWigWindowsSize", 1000);
         defaultAlignmentStorageManager.setConfiguration(storageConfiguration, "", "");
 
         defaultAlignmentStorageManager.index(Arrays.asList(inputFile.toURI()), getTmpRootDir().toUri(), true, true, true);

@@ -19,13 +19,13 @@ package org.opencb.opencga.storage.core;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Creates StorageManagers by reflexion.
@@ -37,8 +37,8 @@ public final class StorageEngineFactory {
     private static StorageConfiguration storageConfigurationDefault;
     private StorageConfiguration storageConfiguration;
 
-    private Map<String, AlignmentStorageEngine> alignmentStorageManagerMap = new HashMap<>();
-    private Map<String, VariantStorageEngine> variantStorageManagerMap = new HashMap<>();
+    private Map<String, AlignmentStorageEngine> alignmentStorageManagerMap = new ConcurrentHashMap<>();
+    private Map<String, VariantStorageEngine> variantStorageManagerMap = new ConcurrentHashMap<>();
     protected static Logger logger = LoggerFactory.getLogger(StorageConfiguration.class);
 
     private StorageEngineFactory(StorageConfiguration storageConfiguration) {
@@ -78,8 +78,6 @@ public final class StorageEngineFactory {
                 storageConfiguration = storageConfigurationDefault;
             }
             Objects.requireNonNull(storageConfiguration, "Storage configuration needed");
-            // TODO: Uncomment the line below once variantStorageManager starts needing to know catalog
-//            Objects.requireNonNull(catalogManager, "Catalog manager needed");
             storageEngineFactory = new StorageEngineFactory(storageConfiguration);
             return storageEngineFactory;
 
@@ -87,34 +85,23 @@ public final class StorageEngineFactory {
         return storageEngineFactory;
     }
 
-    public AlignmentStorageEngine getAlignmentStorageEngine()
-            throws IllegalAccessException, InstantiationException, ClassNotFoundException {
-        return getAlignmentStorageEngine(null);
+    public AlignmentStorageEngine getAlignmentStorageEngine(String dbName)
+            throws StorageEngineException {
+        return getStorageEngine(Type.ALIGNMENT, null, AlignmentStorageEngine.class, alignmentStorageManagerMap, dbName);
     }
 
-    public AlignmentStorageEngine getAlignmentStorageEngine(String storageEngineName)
-            throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-        return getAlignmentStorageEngine(storageEngineName, "");
-    }
-
-    public AlignmentStorageEngine getAlignmentStorageEngine(String storageEngineName, String dbName)
-            throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-        return getStorageEngine(Type.ALIGNMENT, storageEngineName, alignmentStorageManagerMap, dbName);
-    }
-
-
-    public VariantStorageEngine getVariantStorageEngine() throws IllegalAccessException, InstantiationException, ClassNotFoundException {
+    public VariantStorageEngine getVariantStorageEngine() throws StorageEngineException {
         return getVariantStorageEngine(null, "");
     }
 
     public VariantStorageEngine getVariantStorageEngine(String storageEngineName, String dbName)
-            throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-        return getStorageEngine(Type.VARIANT, storageEngineName, variantStorageManagerMap, dbName);
+            throws StorageEngineException {
+        return getStorageEngine(Type.VARIANT, storageEngineName, VariantStorageEngine.class, variantStorageManagerMap, dbName);
     }
 
-
-    private <T extends StorageEngine> T getStorageEngine(Type type, String storageEngineId, Map<String, T> storageManagerMap, String dbName)
-            throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+    private synchronized <T extends StorageEngine> T getStorageEngine(Type type, String storageEngineId, Class<T> superClass,
+                                                                      Map<String, T> storageManagerMap, String dbName)
+            throws StorageEngineException {
         /*
          * This new block of code use new StorageConfiguration system, it must replace older one
          */
@@ -132,20 +119,24 @@ public final class StorageEngineFactory {
             String clazz;
             switch (type) {
                 case ALIGNMENT:
-                    clazz = this.storageConfiguration.getStorageEngine(storageEngineId).getAlignment().getManager();
+                    clazz = this.storageConfiguration.getAlignment().getEngine();
                     break;
                 case VARIANT:
-                    clazz = this.storageConfiguration.getStorageEngine(storageEngineId).getVariant().getManager();
+                    clazz = this.storageConfiguration.getVariantEngine(storageEngineId).getEngine();
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown type " + type);
             }
 
-            T storageEngine = (T) Class.forName(clazz).newInstance();
-            storageEngine.setConfiguration(this.storageConfiguration, storageEngineId, dbName);
+            try {
+                T storageEngine = Class.forName(clazz).asSubclass(superClass).newInstance();
+                storageEngine.setConfiguration(this.storageConfiguration, storageEngineId, dbName);
 
-            storageManagerMap.put(key, storageEngine);
-            return storageEngine;
+                storageManagerMap.put(key, storageEngine);
+                return storageEngine;
+            } catch (IllegalAccessException | InstantiationException | ClassNotFoundException e) {
+                throw new StorageEngineException("Error instantiating StorageEngine '" + clazz + "'", e);
+            }
         } else {
             return storageManagerMap.get(key);
         }
@@ -156,13 +147,7 @@ public final class StorageEngineFactory {
     }
 
     public String getDefaultStorageEngineId() {
-        return storageConfiguration.getDefaultStorageEngineId();
-    }
-
-    public List<String> getDefaultStorageEngineIds() {
-        return storageConfiguration.getStorageEngines().stream()
-                .map(StorageEngineConfiguration::getId)
-                .collect(Collectors.<String>toList());
+        return storageConfiguration.getVariant().getDefaultEngine();
     }
 
     public StorageConfiguration getStorageConfiguration() {
