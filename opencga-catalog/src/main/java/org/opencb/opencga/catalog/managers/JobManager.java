@@ -317,8 +317,8 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
-    public OpenCGAResult<Job> register(String studyStr, String command, String subcommand, Enums.Priority priority,
-                                       Map<String, String> params, String token) throws CatalogException {
+    public OpenCGAResult<Job> submit(String studyStr, String command, String subcommand, Enums.Priority priority,
+                                     Map<String, String> params, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 

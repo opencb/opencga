@@ -29,8 +29,8 @@ import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.models.Study;
-import org.opencb.oskar.core.config.DatabaseCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
