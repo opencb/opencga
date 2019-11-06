@@ -1,6 +1,4 @@
 ---
-logLevel: "info"
-logFile: ""
 
 ## CellBase client configuration, this is used mainly when annotating variants
 ## This can be set up using maven profiles in your .m2/settings.xml
@@ -17,28 +15,17 @@ cellbase:
       authenticationDatabase: "${OPENCGA.CELLBASE.DB.AUTHENTICATION_DATABASE}"
       readPreference: "${OPENCGA.CELLBASE.DB.READ_PREFERENCE}"
       enableSSL: false
-
   preferred: "remote"   ## This accept two values: 'local' and 'remote' to fetch data
 
 ## Storage Query Server configuration. When CLI is launched in 'server' mode a RESTful web server
-## is launched in the specified port. Only authorized hosts are allowed to query data.
+## is launched in the specified port.
 server:
-  rest: 9090
-  grpc: 9091
-  authManager: "org.opencb.opencga.storage.server.common.DefaultAuthManager"       ## Path to the AuthManager implementation class
-  storageEngine: "mongodb"
-  authorizedHosts: ["0.0.0.0"]
-  options: {}
-
-## Cache Configuration
-cache:
-  host: ${OPENCGA.STORAGE.CACHE.HOST}
-  active: true
-  serialization: "json"
-  slowThreshold: 50
-  allowedTypes: "aln,var"
-  maxResultSize: 5000
-  password: ""
+  rest:
+    port: ${OPENCGA.SERVER.REST.PORT}
+    logFile: null
+  grpc:
+    port: ${OPENCGA.SERVER.GRPC.PORT}
+    logFile: null
 
 ## Solr Search Configuration
 search:
@@ -48,8 +35,6 @@ search:
   hosts:
   - ${OPENCGA.STORAGE.SEARCH.HOST}
   mode: "cloud"
-  user: ""
-  password: ""
   timeout: ${OPENCGA.STORAGE.SEARCH.TIMEOUT}
   insertBatchSize: 10000
 
@@ -61,26 +46,18 @@ clinical:
   hosts:
   - ${OPENCGA.STORAGE.CLINICAL.HOST}    # URL containing host and port, e.g. http://localhost:8983/solr/
   mode: "cloud"
-  user: ""
-  password: ""
   manager: ${OPENCGA.STORAGE.CLINICAL.MANAGER}
   timeout: ${OPENCGA.STORAGE.CLINICAL.TIMEOUT}
   insertBatchSize: 1000
 
 benchmark:
-  numRepetitions: 20
+  numRepetitions: 20           # Number of query repetitions
+  concurrency: 5               # Number of concurrent threads
+  delay: 100                   # Delay between queries
+  connectionType: REST         # Select between REST or DIRECT.
+  mode: FIXED                  # Select between FIXED or RANDOM
   databaseName: "opencga"
-  concurrency: 5
-  delay: 100
-  connectionType: REST
-  mode: FIXED
   rest: "http://localhost:8080/${opencga.war.name}"
-  database:   ## 'local' connection to CellBase MongoDB
-      hosts:
-      - "localhost:27017"
-      user: ""
-      password: ""
-      options: {}         ## This is intended for database specific options such as --authenticationDatabase in MongoDB
 
 io:
   connectors:
@@ -100,9 +77,6 @@ alignment:
 variant:
   defaultEngine: "${OPENCGA.STORAGE.DEFAULT_ENGINE}"
   options:
-    species: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
-    assembly: ${OPENCGA.CLIENT.ORGANISM.ASSEMBLY}
-
     transform.batch.size: 200
     transform.threads: 4
     transform.format: "avro"
@@ -196,3 +170,15 @@ variant:
         # Increase the ScannerTimeoutPeriod from 60000 (1min) to 300000 (5min) to avoid ScannerTimeoutExceptions
         # See opencb/opencga#352 for more info.
         storage.hadoop.mr.scanner.timeout: 300000
+
+
+## PENDING
+## Cache Configuration
+cache:
+  host: ${OPENCGA.STORAGE.CACHE.HOST}
+  active: true
+  serialization: "json"
+  slowThreshold: 50
+  allowedTypes: "aln,var"
+  maxResultSize: 5000
+  password: ""

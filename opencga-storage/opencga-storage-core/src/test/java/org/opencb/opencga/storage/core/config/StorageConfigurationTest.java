@@ -18,13 +18,15 @@ package org.opencb.opencga.storage.core.config;
 
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.config.GrpcServerConfiguration;
+import org.opencb.opencga.core.config.RestServerConfiguration;
+import org.opencb.opencga.core.config.ServerConfiguration;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
 
 /**
  * Created by imedina on 01/05/15.
@@ -58,8 +60,9 @@ public class StorageConfigurationTest {
 
         CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration(Arrays.asList("localhost"), "v3", new DatabaseCredentials
                 (Arrays.asList("localhost"), "user", "password"));
-        ServerConfiguration serverConfiguration =
-                new ServerConfiguration(9090, 9091, "mongodb", Arrays.asList("localhost"), Collections.emptyMap());
+        ServerConfiguration serverConfiguration = new ServerConfiguration()
+                .setRest(new RestServerConfiguration(9090))
+                .setGrpc(new GrpcServerConfiguration(9091));
 
         storageConfiguration.getVariant().setDefaultEngine("mongodb");
 

@@ -105,15 +105,11 @@ public class GrpcCommandExecutor {// extends CommandExecutor {
 
         // Setting CLI params in the StorageConfiguration
         if (grpcServerCommandOptions.port > 0) {
-            storageConfiguration.getServer().setGrpc(grpcServerCommandOptions.port);
+            storageConfiguration.getServer().getGrpc().setPort(grpcServerCommandOptions.port);
         }
 
         if (StringUtils.isNotEmpty(grpcServerCommandOptions.commonOptions.storageEngine)) {
             storageConfiguration.getVariant().setDefaultEngine(grpcServerCommandOptions.commonOptions.storageEngine);
-        }
-
-        if (StringUtils.isNotEmpty(grpcServerCommandOptions.authManager)) {
-            storageConfiguration.getServer().setAuthManager(grpcServerCommandOptions.authManager);
         }
 
         // Server crated and started
@@ -134,7 +130,7 @@ public class GrpcCommandExecutor {// extends CommandExecutor {
         // Connecting to the server host and port
         String grpcServerHost = "localhost";
 
-        int grpcServerPort = configuration.getServer().getGrpc();
+        int grpcServerPort = configuration.getServer().getGrpc().getPort();
         if (grpcServerCommandOptions.port > 0) {
             grpcServerPort = grpcServerCommandOptions.port;
         }

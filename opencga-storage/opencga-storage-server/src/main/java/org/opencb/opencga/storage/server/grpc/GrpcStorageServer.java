@@ -30,7 +30,7 @@ public class GrpcStorageServer extends AbstractStorageServer {
     private Server server;
 
     public GrpcStorageServer() {
-        this(storageConfiguration.getServer().getGrpc(), storageConfiguration.getVariant().getDefaultEngine());
+        this(storageConfiguration.getServer().getGrpc().getPort(), storageConfiguration.getVariant().getDefaultEngine());
     }
 
     public GrpcStorageServer(int port, String defaultStorageEngine) {
@@ -40,7 +40,7 @@ public class GrpcStorageServer extends AbstractStorageServer {
     }
 
     public GrpcStorageServer(StorageConfiguration storageConfiguration) {
-        super(storageConfiguration.getServer().getGrpc(), storageConfiguration.getVariant().getDefaultEngine());
+        super(storageConfiguration.getServer().getGrpc().getPort(), storageConfiguration.getVariant().getDefaultEngine());
         GrpcStorageServer.storageConfiguration = storageConfiguration;
 
         logger = LoggerFactory.getLogger(this.getClass());
