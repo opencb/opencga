@@ -66,7 +66,7 @@ public class ConfigurationTest {
         catalog.setDatabase(databaseCredentials);
         configuration.setCatalog(catalog);
 
-        Audit audit = new Audit(20000000, 100000000000L, "", Collections.emptyList());
+        Audit audit = new Audit("", 20000000, 100);
         configuration.setAudit(audit);
 
         ServerConfiguration serverConfiguration = new ServerConfiguration();
