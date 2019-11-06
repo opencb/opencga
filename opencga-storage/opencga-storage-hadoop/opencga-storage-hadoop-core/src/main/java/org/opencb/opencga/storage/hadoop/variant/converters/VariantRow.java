@@ -61,7 +61,7 @@ public class VariantRow {
 
     public VariantAnnotation getVariantAnnotation() {
         if (variantAnnotation == null) {
-            HBaseToVariantAnnotationConverter c = new HBaseToVariantAnnotationConverter(GenomeHelper.DEFAULT_COLUMN_FAMILY_BYTES, -1);
+            HBaseToVariantAnnotationConverter c = new HBaseToVariantAnnotationConverter(GenomeHelper.COLUMN_FAMILY_BYTES, -1);
             if (result != null) {
                 variantAnnotation = c.convert(result);
             } else {

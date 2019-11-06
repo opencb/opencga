@@ -24,7 +24,6 @@ import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
-import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.DataResult;
@@ -34,8 +33,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
+import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
@@ -46,6 +45,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -111,102 +111,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MERGE_MODE;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.RESUME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.MERGE_MODE;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.RESUME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.convertGenesToRegionsQuery;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isValidParam;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.*;
 
-/**
- * Created by mh719 on 16/06/15.
- */
 public class HadoopVariantStorageEngine extends VariantStorageEngine implements Configurable {
     public static final String STORAGE_ENGINE_ID = "hadoop";
-
-    public static final String OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES = "opencga.storage.hadoop.jar-with-dependencies";
-    @Deprecated
-    public static final String HADOOP_LOAD_ARCHIVE = "hadoop.load.archive";
-    @Deprecated
-    public static final String HADOOP_LOAD_VARIANT = "hadoop.load.variant";
-    // Resume merge variants if the current status is RUNNING or DONE
-    /**
-     * @deprecated use {@link Options#RESUME}
-     */
-    @Deprecated
-    public static final String HADOOP_LOAD_VARIANT_RESUME = "hadoop.load.variant.resume";
-    // Merge variants operation status. Skip merge and run post-load/post-merge step if status is DONE
-    public static final String HADOOP_LOAD_VARIANT_STATUS = "hadoop.load.variant.status";
-    //Other files to be loaded from Archive to Variant
-    @Deprecated
-    public static final String HADOOP_LOAD_VARIANT_PENDING_FILES = "opencga.storage.hadoop.load.pending.files";
-    public static final String INTERMEDIATE_HDFS_DIRECTORY = "opencga.storage.hadoop.intermediate.hdfs.directory";
-
-    public static final String HADOOP_LOAD_ARCHIVE_BATCH_SIZE = "hadoop.load.archive.batch.size";
-    public static final String HADOOP_LOAD_VARIANT_BATCH_SIZE = "hadoop.load.variant.batch.size";
-    @Deprecated
-    public static final String HADOOP_LOAD_DIRECT = "hadoop.load.direct";
-    @Deprecated
-    public static final boolean HADOOP_LOAD_DIRECT_DEFAULT = true;
-
-    @Deprecated
-    public static final String MERGE_ARCHIVE_SCAN_BATCH_SIZE = "opencga.storage.hadoop.hbase.merge.archive.scan.batchsize";
-    @Deprecated
-    public static final int DEFAULT_MERGE_ARCHIVE_SCAN_BATCH_SIZE = 500;
-    @Deprecated
-    public static final String MERGE_COLLAPSE_DELETIONS = "opencga.storage.hadoop.hbase.merge.collapse-deletions";
-    @Deprecated
-    public static final boolean DEFAULT_MERGE_COLLAPSE_DELETIONS = false;
-    @Deprecated
-    public static final String MERGE_LOAD_SPECIFIC_PUT = "opencga.storage.hadoop.hbase.merge.use_specific_put";
-
-    //upload HBase jars and jars for any of the configured job classes via the distributed cache (tmpjars).
-    public static final String MAPREDUCE_ADD_DEPENDENCY_JARS = "opencga.mapreduce.addDependencyJars";
-    public static final String MAPREDUCE_HBASE_SCANNER_TIMEOUT = "opencga.storage.hadoop.mapreduce.scanner.timeout";
-    public static final String MAPREDUCE_HBASE_KEYVALUE_SIZE_MAX = "hadoop.load.variant.hbase.client.keyvalue.maxsize";
-    public static final String MAPREDUCE_HBASE_SCAN_CACHING = "hadoop.load.variant.scan.caching";
-
-    public static final String HBASE_NAMESPACE = "opencga.storage.hadoop.variant.hbase.namespace";
-    public static final String HBASE_COLUMN_FAMILY = "opencga.hbase.column_family";
-    public static final String EXPECTED_FILES_NUMBER = "expected_files_number";
-    public static final int DEFAULT_EXPECTED_FILES_NUMBER = 5000;
-
-    // Variant table configuration
-    public static final String VARIANT_TABLE_COMPRESSION = "opencga.variant.table.compression";
-    public static final String VARIANT_TABLE_PRESPLIT_SIZE = "opencga.variant.table.presplit.size";
-    // Do not create phoenix indexes. Testing purposes only
-    public static final String VARIANT_TABLE_INDEXES_SKIP = "opencga.variant.table.indexes.skip";
-    public static final String VARIANT_TABLE_LOAD_REFERENCE = "opencga.variant.table.load.reference";
-
-    // Archive table configuration
-    public static final String ARCHIVE_TABLE_COMPRESSION = "opencga.archive.table.compression";
-    public static final String ARCHIVE_TABLE_PRESPLIT_SIZE = "opencga.archive.table.presplit.size";
-    public static final int DEFAULT_ARCHIVE_TABLE_PRESPLIT_SIZE = 100;
-    public static final String ARCHIVE_CHUNK_SIZE = "opencga.archive.chunk_size";
-    public static final int DEFAULT_ARCHIVE_CHUNK_SIZE = 1000;
-    public static final String ARCHIVE_ROW_KEY_SEPARATOR = "opencga.archive.row_key_sep";
-    public static final String ARCHIVE_FILE_BATCH_SIZE = "opencga.archive.file_batch_size";
-    public static final int DEFAULT_ARCHIVE_FILE_BATCH_SIZE = 1000;
-    public static final String ARCHIVE_FIELDS = "opencga.archive.fields";
-    public static final String ARCHIVE_NON_REF_FILTER = "opencga.archive.non-ref.filter";
-
-    // Sample index table configuration
-    public static final String SAMPLE_INDEX_TABLE_COMPRESSION = "opencga.sample-index.table.compression";
-    public static final String SAMPLE_INDEX_TABLE_PRESPLIT_SIZE = "opencga.sample-index.table.presplit.size";
-    public static final int DEFAULT_SAMPLE_INDEX_TABLE_PRESPLIT_SIZE = 15;
-
-    // Annotation index table  configuration
-    public static final String ANNOTATION_INDEX_TABLE_COMPRESSION = "opencga.annotation-index.table.compression";
-    public static final String PENDING_ANNOTATION_TABLE_COMPRESSION = "opencga.pending-annotation.table.compression";
-
-    public static final String EXTERNAL_MR_EXECUTOR = "opencga.external.mr.executor";
-
-    public static final String STATS_LOCAL = "stats.local";
-
-    public static final String DBADAPTOR_PHOENIX_FETCH_SIZE = "dbadaptor.phoenix.fetch_size";
-    public static final String MISSING_GENOTYPES_UPDATED = "missing_genotypes_updated";
-    public static final int FILL_GAPS_MAX_SAMPLES = 100;
 
     public static final EnumSet<VariantType> TARGET_VARIANT_TYPE_SET = EnumSet.of(
             VariantType.SNV, VariantType.SNP,
@@ -226,6 +141,12 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     public static final String LAST_LOADED_FILE_TS = "lastLoadedFileTs";
     // Last time (in millis from epoch) that the list of "pendingVariantsToAnnotate" was updated
     public static final String LAST_VARIANTS_TO_ANNOTATE_UPDATE_TS = "lastVariantsToAnnotateUpdateTs";
+
+    // Study attributes
+    // Specify if all missing genotypes from the study are updated. Set to true after fill_missings / aggregation
+    public static final String MISSING_GENOTYPES_UPDATED = "missing_genotypes_updated";
+
+    public static final int FILL_GAPS_MAX_SAMPLES = 100;
 
     protected Configuration conf = null;
     protected MRExecutor mrExecutor;
@@ -254,11 +175,10 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             return super.index(inputFiles, outdirUri, doExtract, doTransform, doLoad);
         }
 
-        final int nThreadArchive = getOptions().getInt(HADOOP_LOAD_ARCHIVE_BATCH_SIZE, 2);
+        final int nThreadArchive = getOptions().getInt(HADOOP_LOAD_FILES_IN_PARALLEL.key(), HADOOP_LOAD_FILES_IN_PARALLEL.defaultValue());
         ObjectMap extraOptions = new ObjectMap();
 
         final List<StoragePipelineResult> concurrResult = new CopyOnWriteArrayList<>();
-        List<VariantStoragePipeline> etlList = new ArrayList<>();
         ExecutorService executorService = Executors.newFixedThreadPool(
                 nThreadArchive,
                 r -> {
@@ -467,7 +387,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     @Override
     public VariantStatisticsManager newVariantStatisticsManager() throws StorageEngineException {
         // By default, execute a MR to calculate statistics
-        if (getOptions().getBoolean(STATS_LOCAL, false)) {
+        if (getOptions().getBoolean(STATS_LOCAL.key(), STATS_LOCAL.defaultValue())) {
             return new HadoopDefaultVariantStatisticsManager(getDBAdaptor(), ioConnectorProvider);
         } else {
             return new HadoopMRVariantStatisticsManager(getDBAdaptor(), getMRExecutor(), getOptions());
@@ -567,7 +487,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         options.put(AbstractVariantsTableDriver.TIMESTAMP, task.getTimestamp());
 
         if (!fillGaps) {
-            URI directory = URI.create(options.getString(INTERMEDIATE_HDFS_DIRECTORY));
+            URI directory = URI.create(options.getString(INTERMEDIATE_HDFS_DIRECTORY.key()));
             if (directory.getScheme() != null && !directory.getScheme().equals("hdfs")) {
                 throw new StorageEngineException("Output must be in HDFS");
             }
@@ -651,14 +571,14 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         VariantHadoopDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
         Configuration hadoopConfiguration = null == dbAdaptor ? null : dbAdaptor.getConfiguration();
         hadoopConfiguration = hadoopConfiguration == null ? getHadoopConfiguration(options) : hadoopConfiguration;
-        hadoopConfiguration.setIfUnset(ARCHIVE_TABLE_COMPRESSION, Algorithm.SNAPPY.getName());
+        hadoopConfiguration.setIfUnset(ARCHIVE_TABLE_COMPRESSION.key(), ARCHIVE_TABLE_COMPRESSION.key());
         for (String key : options.keySet()) {
             hadoopConfiguration.set(key, options.getString(key));
         }
 
         MergeMode mergeMode;
         if (connected) {
-            String study = options.getString(Options.STUDY.key());
+            String study = options.getString(VariantStorageOptions.STUDY.key());
 //            archiveCredentials = buildCredentials(getArchiveTableName(studyId));
             StudyMetadata sm = getMetadataManager().getStudyMetadata(study);
             if (sm == null || !sm.getAttributes().containsKey(MERGE_MODE.key())) {
@@ -690,7 +610,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
     @Override
     public void removeFiles(String study, List<String> files) throws StorageEngineException {
-        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+        ObjectMap options = configuration.getVariantEngine(STORAGE_ENGINE_ID).getOptions();
 
         VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor();
         VariantStorageMetadataManager metadataManager = dbAdaptor.getMetadataManager();
@@ -733,7 +653,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             ExecutorService service = Executors.newFixedThreadPool(options.getBoolean("delete.parallel", true) ? 3 : 1);
             Future<Integer> deleteFromVariants = service.submit(() -> {
                 List<String> variantsColumns = new ArrayList<>();
-                String family = Bytes.toString(dbAdaptor.getGenomeHelper().getColumnFamily());
+                String family = Bytes.toString(GenomeHelper.COLUMN_FAMILY_BYTES);
                 for (Integer fileId : fileIds) {
                     variantsColumns.add(family + ':' + VariantPhoenixHelper.getFileColumn(studyId, fileId).column());
                     for (Integer sampleId : metadataManager.getFileMetadata(sm.getId(), fileId).getSamples()) {
@@ -751,7 +671,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
             // TODO: Remove whole table if removeWholeStudy
             Future<Integer> deleteFromArchive = service.submit(() -> {
                 List<String> archiveColumns = new ArrayList<>();
-                String family = Bytes.toString(dbAdaptor.getGenomeHelper().getColumnFamily());
+                String family = Bytes.toString(GenomeHelper.COLUMN_FAMILY_BYTES);
                 for (Integer fileId : fileIds) {
                     archiveColumns.add(family + ':' + ArchiveTableHelper.getRefColumnName(fileId));
                     archiveColumns.add(family + ':' + ArchiveTableHelper.getNonRefColumnName(fileId));
@@ -945,7 +865,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     private HBaseCredentials buildCredentials(String table) throws StorageEngineException {
-        StorageEtlConfiguration vStore = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant();
+        StorageEngineConfiguration vStore = configuration.getVariantEngine(STORAGE_ENGINE_ID);
 
         DatabaseCredentials db = vStore.getDatabase();
         String user = db.getUser();
@@ -1107,9 +1027,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     public static String getJarWithDependencies(ObjectMap options) throws StorageEngineException {
-        String jar = options.getString(OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
+        String jar = options.getString(MR_JAR_WITH_DEPENDENCIES.key(), null);
         if (jar == null) {
-            throw new StorageEngineException("Missing option " + OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
+            throw new StorageEngineException("Missing option " + MR_JAR_WITH_DEPENDENCIES);
         }
         if (!Paths.get(jar).isAbsolute()) {
             jar = System.getProperty("app.home", "") + "/" + jar;

@@ -50,7 +50,8 @@ public interface ExecutorManager {
         // read execution param
         // String defaultJobExecutor = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_JOB_EXECUTOR, "LOCAL").trim().toUpperC();
         String defaultJobExecutor = "LOCAL";
-        execute(catalogManager, job, sessionId, job.getResourceManagerAttributes().getOrDefault("executor", defaultJobExecutor).toString());
+//        execute(catalogManager, job, sessionId, job.getResourceManagerAttributes().getOrDefault("executor",
+//        defaultJobExecutor).toString());
     }
 
     static DataResult<Job> execute(CatalogManager catalogManager, Job job, String sessionId, String jobExecutor)

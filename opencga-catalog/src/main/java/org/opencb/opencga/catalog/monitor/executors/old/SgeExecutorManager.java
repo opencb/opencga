@@ -17,15 +17,10 @@
 package org.opencb.opencga.catalog.monitor.executors.old;
 
 import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.monitor.executors.SgeManager;
 import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Objects;
 
 /*
  * Created on 26/11/15
@@ -50,28 +45,29 @@ public class SgeExecutorManager implements ExecutorManager {
         // TODO: Lock job before submit. Avoid double submission
 //        SgeManager.queueJob(job.getToolName(), job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME).toString(),
 //                -1, job.getTmpOutDirUri().getPath(), job.getCommandLine(), null, "job." + job.getId());
-        return catalogManager.getJobManager().update(job.getUid(),
-                new ObjectMap(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED), null, sessionId); //TODO: Add query options
-
+//        return catalogManager.getJobManager().update(job.getUid(),
+//                new ObjectMap(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED), null, sessionId);
+        return null;
     }
 
     @Override
     public String status(Job job) throws Exception {
-        String status = SgeManager.status(Objects.toString(job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME)));
-        switch (status) {
-            case SgeManager.ERROR:
-            case SgeManager.EXECUTION_ERROR:
-                return Job.JobStatus.ERROR;
-            case SgeManager.FINISHED:
-                return Job.JobStatus.READY;
-            case SgeManager.QUEUED:
-                return Job.JobStatus.QUEUED;
-            case SgeManager.RUNNING:
-            case SgeManager.TRANSFERRED:
-                return Job.JobStatus.RUNNING;
-            case SgeManager.UNKNOWN:
-            default:
-                return job.getStatus().getName();
-        }
+        return null;
+//        String status = SgeManager.status(Objects.toString(job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME)));
+//        switch (status) {
+//            case SgeManager.ERROR:
+//            case SgeManager.EXECUTION_ERROR:
+//                return Job.JobStatus.ERROR;
+//            case SgeManager.FINISHED:
+//                return Job.JobStatus.READY;
+//            case SgeManager.QUEUED:
+//                return Job.JobStatus.QUEUED;
+//            case SgeManager.RUNNING:
+//            case SgeManager.TRANSFERRED:
+//                return Job.JobStatus.RUNNING;
+//            case SgeManager.UNKNOWN:
+//            default:
+//                return job.getStatus().getName();
+//        }
     }
 }

@@ -20,6 +20,7 @@ package org.opencb.opencga.core.models;
 import org.opencb.opencga.core.common.FieldUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.net.URI;
 import java.util.*;
@@ -131,23 +132,23 @@ public class Study extends PrivateFields {
     }
 
     public enum Entity {
-        SAMPLES(org.opencb.opencga.core.common.Entity.SAMPLE),
-        FILES(org.opencb.opencga.core.common.Entity.FILE),
-        COHORTS(org.opencb.opencga.core.common.Entity.COHORT),
-        INDIVIDUALS(org.opencb.opencga.core.common.Entity.INDIVIDUAL),
-        FAMILIES(org.opencb.opencga.core.common.Entity.FAMILY),
-        JOBS(org.opencb.opencga.core.common.Entity.JOB),
-        CLINICAL_ANALYSES(org.opencb.opencga.core.common.Entity.CLINICAL_ANALYSIS),
-        PANELS(org.opencb.opencga.core.common.Entity.DISEASE_PANEL);
+        SAMPLES(Enums.Resource.SAMPLE),
+        FILES(Enums.Resource.FILE),
+        COHORTS(Enums.Resource.COHORT),
+        INDIVIDUALS(Enums.Resource.INDIVIDUAL),
+        FAMILIES(Enums.Resource.FAMILY),
+        JOBS(Enums.Resource.JOB),
+        CLINICAL_ANALYSES(Enums.Resource.CLINICAL_ANALYSIS),
+        PANELS(Enums.Resource.DISEASE_PANEL);
 
-        private final org.opencb.opencga.core.common.Entity entity;
+        private final Enums.Resource resource;
 
-        Entity(org.opencb.opencga.core.common.Entity entity) {
-            this.entity = entity;
+        Entity(Enums.Resource resource) {
+            this.resource = resource;
         }
 
-        public org.opencb.opencga.core.common.Entity getEntity() {
-            return entity;
+        public Enums.Resource getResource() {
+            return resource;
         }
     }
 

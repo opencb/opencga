@@ -23,6 +23,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.storage.variant.operations.StorageOperation;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -89,7 +90,7 @@ public class CatalogStorageMetadataSynchronizer {
     }
 
     public static void updateProjectMetadata(VariantStorageMetadataManager scm, Project.Organism organism, int release)
-            throws CatalogException, StorageEngineException {
+            throws StorageEngineException {
         String scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(organism.getScientificName());
 
         scm.updateProjectMetadata(projectMetadata -> {

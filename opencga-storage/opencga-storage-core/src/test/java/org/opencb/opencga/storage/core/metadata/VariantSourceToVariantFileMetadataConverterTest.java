@@ -6,7 +6,7 @@ import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageTest;
 
 import java.io.InputStream;
@@ -25,7 +25,7 @@ public class VariantSourceToVariantFileMetadataConverterTest extends VariantStor
     public void testConvert() throws Exception {
 
         // Transform smallInputFile to get the expected meta file with stats
-        StoragePipelineResult storagePipelineResult = runETL(variantStorageEngine, smallInputUri, newOutputUri(), new ObjectMap(VariantStorageEngine.Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true), true, true, false);
+        StoragePipelineResult storagePipelineResult = runETL(variantStorageEngine, smallInputUri, newOutputUri(), new ObjectMap(VariantStorageOptions.TRANSFORM_ISOLATE.key(), true), true, true, false);
         VariantFileMetadata expectedFileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(storagePipelineResult.getTransformResult());
 
         // Read and convert the legacy metadata file

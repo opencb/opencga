@@ -51,7 +51,8 @@ import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
+
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 /**
  * Created by jacobo on 06/03/15.
@@ -83,9 +84,9 @@ public class VariantStatsStorageOperation extends OpenCgaAnalysis {
     protected void check() throws Exception {
         super.check();
 
-        overwriteStats = params.getBoolean(Options.OVERWRITE_STATS.key(), false);
-        updateStats = params.getBoolean(Options.UPDATE_STATS.key(), false);
-        resume = params.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue());
+        overwriteStats = params.getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
+        updateStats = params.getBoolean(VariantStorageOptions.STATS_UPDATE.key(), false);
+        resume = params.getBoolean(VariantStorageOptions.RESUME.key(), VariantStorageOptions.RESUME.defaultValue());
 
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         Study study = catalogManager.getStudyManager().resolveId(studyFqn, userId);
@@ -114,19 +115,17 @@ public class VariantStatsStorageOperation extends OpenCgaAnalysis {
         String outputFileName = buildOutputFileName(cohortIds, params.getString(VariantQueryParam.REGION.key()));
 
         QueryOptions calculateStatsOptions = new QueryOptions(params)
-//                .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
-//                .append(VariantStorageEngine.Options.LOAD_THREADS.key(), 6)
-                .append(Options.AGGREGATED_TYPE.key(), aggregation)
-                .append(Options.OVERWRITE_STATS.key(), overwriteStats)
-                .append(Options.UPDATE_STATS.key(), updateStats)
-                .append(Options.RESUME.key(), resume);
+                .append(VariantStorageOptions.STATS_AGGREGATION.key(), aggregation)
+                .append(VariantStorageOptions.STATS_OVERWRITE.key(), overwriteStats)
+                .append(VariantStorageOptions.STATS_UPDATE.key(), updateStats)
+                .append(VariantStorageOptions.RESUME.key(), resume);
 
         // if the study is aggregated and a mapping file is provided, pass it to storage
         // and create in catalog the cohorts described in the mapping file
-        String aggregationMappingFile = params.getString(Options.AGGREGATION_MAPPING_PROPERTIES.key());
+        String aggregationMappingFile = params.getString(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key());
         if (AggregationUtils.isAggregated(aggregation) && StringUtils.isNotEmpty(aggregationMappingFile)) {
             Properties mappingFile = readAggregationMappingFile(aggregationMappingFile);
-            calculateStatsOptions.append(Options.AGGREGATION_MAPPING_PROPERTIES.key(), mappingFile);
+            calculateStatsOptions.append(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), mappingFile);
         }
 
         // Up to this point, catalog has not been modified
@@ -161,12 +160,8 @@ public class VariantStatsStorageOperation extends OpenCgaAnalysis {
     }
 
     private VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {
-        try {
-            return StorageEngineFactory.get(variantStorageManager.getStorageConfiguration())
-                    .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            throw new StorageEngineException("Unable to create StorageEngine", e);
-        }
+        return StorageEngineFactory.get(variantStorageManager.getStorageConfiguration())
+                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
     }
 
     protected String buildOutputFileName(List<String> cohortIds, String region) {
@@ -206,7 +201,7 @@ public class VariantStatsStorageOperation extends OpenCgaAnalysis {
         List<String> cohortIds;
 
         // Check aggregation mapping properties
-        String tagMap = params.getString(Options.AGGREGATION_MAPPING_PROPERTIES.key());
+        String tagMap = params.getString(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key());
         List<String> cohortsByAggregationMapFile = Collections.emptyList();
         if (!isBlank(tagMap)) {
             if (!AggregationUtils.isAggregated(aggregation)) {
@@ -367,8 +362,8 @@ public class VariantStatsStorageOperation extends OpenCgaAnalysis {
             throws CatalogException {
         QueryOptions include = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ATTRIBUTES.key());
         Study study = catalogManager.getStudyManager().get(studyId, include, sessionId).first();
-        Aggregation argsAggregation = options.get(Options.AGGREGATED_TYPE.key(), Aggregation.class, Aggregation.NONE);
-        Object studyAggregationObj = study.getAttributes().get(Options.AGGREGATED_TYPE.key());
+        Aggregation argsAggregation = options.get(VariantStorageOptions.STATS_AGGREGATION.key(), Aggregation.class, Aggregation.NONE);
+        Object studyAggregationObj = study.getAttributes().get(VariantStorageOptions.STATS_AGGREGATION.key());
         Aggregation studyAggregation = null;
         if (studyAggregationObj != null) {
             studyAggregation = AggregationUtils.valueOf(studyAggregationObj.toString());
@@ -385,7 +380,7 @@ public class VariantStatsStorageOperation extends OpenCgaAnalysis {
             // If studyAggregation is not define, update study aggregation
             if (studyAggregation == null) {
                 //update study aggregation
-                Map<String, Aggregation> attributes = Collections.singletonMap(Options.AGGREGATED_TYPE.key(),
+                Map<String, Aggregation> attributes = Collections.singletonMap(VariantStorageOptions.STATS_AGGREGATION.key(),
                         argsAggregation);
                 ObjectMap parameters = new ObjectMap("attributes", attributes);
                 catalogManager.getStudyManager().update(studyId, parameters, null, sessionId);

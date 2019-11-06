@@ -29,7 +29,7 @@ import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
@@ -97,15 +97,17 @@ public class VariantTableHelper extends GenomeHelper {
             }
         }
 
-        int nsplits = genomeHelper.getConf().getInt(HadoopVariantStorageEngine.VARIANT_TABLE_PRESPLIT_SIZE, 100);
+        int nsplits = genomeHelper.getConf().getInt(
+                HadoopVariantStorageOptions.VARIANT_TABLE_PRESPLIT_SIZE.key(),
+                HadoopVariantStorageOptions.VARIANT_TABLE_PRESPLIT_SIZE.defaultValue());
         List<byte[]> splitList = generateBootPreSplitsHuman(
                 nsplits,
                 VariantPhoenixKeyFactory::generateVariantRowKey);
-        boolean newTable = HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
+        boolean newTable = HBaseManager.createTableIfNeeded(con, tableName, COLUMN_FAMILY_BYTES,
                 splitList, Compression.getCompressionAlgorithmByName(
                         genomeHelper.getConf().get(
-                                HadoopVariantStorageEngine.VARIANT_TABLE_COMPRESSION,
-                                Compression.Algorithm.SNAPPY.getName())));
+                                HadoopVariantStorageOptions.VARIANT_TABLE_COMPRESSION.key(),
+                                HadoopVariantStorageOptions.VARIANT_TABLE_COMPRESSION.defaultValue())));
         if (newTable) {
             try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {
                 variantPhoenixHelper.createTableIfNeeded(jdbcConnection, tableName);

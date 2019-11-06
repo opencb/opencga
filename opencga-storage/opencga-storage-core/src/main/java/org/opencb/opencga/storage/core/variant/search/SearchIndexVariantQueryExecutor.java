@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.ID;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.MODIFIER_QUERY_PARAMS;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.*;

@@ -61,7 +61,7 @@ public class VariantHadoopDBWriter extends AbstractHBaseDataWriter<Variant, Put>
         super(hBaseManager, tableName);
         this.helper = helper;
         int release = metadataManager.getProjectMetadata().getRelease();
-        converter = new StudyEntryToHBaseConverter(helper.getColumnFamily(), studyId, metadataManager, true, release,
+        converter = new StudyEntryToHBaseConverter(GenomeHelper.COLUMN_FAMILY_BYTES, studyId, metadataManager, true, release,
                 includeReferenceVariantsData);
     }
 
@@ -73,7 +73,7 @@ public class VariantHadoopDBWriter extends AbstractHBaseDataWriter<Variant, Put>
                 if (!alreadyLoaded(variant)) {
                     Put put = converter.convert(variant);
                     if (put != null) {
-                        HadoopVariantSearchIndexUtils.addUnknownSyncStatus(put, helper.getColumnFamily());
+                        HadoopVariantSearchIndexUtils.addUnknownSyncStatus(put, GenomeHelper.COLUMN_FAMILY_BYTES);
                         puts.add(put);
                         loadedVariants++;
                     } else {

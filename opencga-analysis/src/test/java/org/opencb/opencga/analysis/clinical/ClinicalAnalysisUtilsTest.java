@@ -6,6 +6,7 @@ import org.opencb.biodata.models.clinical.interpretation.ReportedEvent;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
@@ -13,8 +14,7 @@ import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
@@ -50,11 +50,11 @@ public class ClinicalAnalysisUtilsTest {
                 StandardCopyOption.REPLACE_EXISTING);
 
         ObjectMap storageOptions = new ObjectMap()
-                .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+                .append(VariantStorageOptions.ANNOTATE.key(), true)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
         StorageConfiguration configuration = variantStorageEngine.getConfiguration();
-        configuration.setDefaultStorageEngineId(variantStorageEngine.getStorageEngineId());
+        configuration.getVariant().setDefaultEngine(variantStorageEngine.getStorageEngineId());
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(configuration);
         storageEngineFactory.registerVariantStorageEngine(variantStorageEngine);
 

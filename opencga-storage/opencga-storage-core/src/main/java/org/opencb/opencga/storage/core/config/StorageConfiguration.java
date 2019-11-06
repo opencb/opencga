@@ -17,17 +17,18 @@
 package org.opencb.opencga.storage.core.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.config.SearchConfiguration;
+import org.opencb.opencga.core.config.ServerConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by imedina on 30/04/15.
@@ -35,30 +36,23 @@ import java.util.List;
 @JsonIgnoreProperties({"storageEngine", "studyMetadataManager"})
 public class StorageConfiguration {
 
-    private String defaultStorageEngineId;
-    private String logLevel;
-    private String logFile;
-
     private CellBaseConfiguration cellbase;
     private ServerConfiguration server;
     private CacheConfiguration cache;
     private SearchConfiguration search;
     private SearchConfiguration clinical;
+    private StorageEngineConfiguration alignment;
+    private StorageEnginesConfiguration variant;
     private IOConfiguration io;
 
     private BenchmarkConfiguration benchmark;
-    private List<StorageEngineConfiguration> storageEngines;
+
 
     protected static Logger logger = LoggerFactory.getLogger(StorageConfiguration.class);
 
     public StorageConfiguration() {
-        this("", new ArrayList<>());
-    }
-
-    public StorageConfiguration(String defaultStorageEngineId, List<StorageEngineConfiguration> storageEngines) {
-        this.defaultStorageEngineId = defaultStorageEngineId;
-        this.storageEngines = storageEngines;
-
+        this.alignment = new StorageEngineConfiguration();
+        this.variant = new StorageEnginesConfiguration();
         this.cellbase = new CellBaseConfiguration();
         this.server = new ServerConfiguration();
         this.cache = new CacheConfiguration();
@@ -77,15 +71,16 @@ public class StorageConfiguration {
         switch (format) {
             case "json":
                 objectMapper = new ObjectMapper();
-                storageConfiguration = objectMapper.readValue(configurationInputStream, StorageConfiguration.class);
                 break;
             case "yml":
             case "yaml":
-            default:
                 objectMapper = new ObjectMapper(new YAMLFactory());
-                storageConfiguration = objectMapper.readValue(configurationInputStream, StorageConfiguration.class);
                 break;
+            default:
+                throw new IllegalArgumentException("Unknown format " + format);
         }
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        storageConfiguration = objectMapper.readValue(configurationInputStream, StorageConfiguration.class);
 
         return storageConfiguration;
     }
@@ -95,93 +90,51 @@ public class StorageConfiguration {
         jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOutputStream, this);
     }
 
-    public StorageEngineConfiguration getStorageEngine() {
-        return getStorageEngine(defaultStorageEngineId);
+    public StorageEngineConfiguration getAlignment() {
+        return alignment;
     }
 
-    public StorageEngineConfiguration getStorageEngine(String storageEngine) {
-        StorageEngineConfiguration storageEngineConfiguration = null;
-        for (StorageEngineConfiguration engine : storageEngines) {
+    public StorageConfiguration setAlignment(StorageEngineConfiguration alignment) {
+        this.alignment = alignment;
+        return this;
+    }
+
+    public StorageEnginesConfiguration getVariant() {
+        return variant;
+    }
+
+    public StorageEngineConfiguration getVariantEngine() {
+        return getVariantEngine(variant.getDefaultEngine());
+    }
+
+    public StorageEngineConfiguration getVariantEngine(String storageEngine) {
+        if (variant.getEngines() == null || variant.getEngines().isEmpty()) {
+            throw new IllegalStateException("Variant engines list is empty!");
+        }
+        if (StringUtils.isEmpty(storageEngine)) {
+            return variant.getEngines().get(0);
+        }
+
+        for (StorageEngineConfiguration engine : variant.getEngines()) {
             if (engine.getId().equals(storageEngine)) {
-                storageEngineConfiguration = engine;
-                break;
+                return engine;
             }
         }
 
-        if (storageEngineConfiguration == null && storageEngines.size() > 0) {
-            storageEngineConfiguration = storageEngines.get(0);
-        }
-
-        return storageEngineConfiguration;
-    }
-
-    public void addStorageEngine(InputStream configurationInputStream) throws IOException {
-        addStorageEngine(configurationInputStream, "yaml");
-    }
-
-    public void addStorageEngine(InputStream configurationInputStream, String format) throws IOException {
-        StorageEngineConfiguration storageEngineConfiguration = null;
-        ObjectMapper objectMapper;
-        switch (format) {
-            case "json":
-                objectMapper = new ObjectMapper();
-                storageEngineConfiguration = objectMapper.readValue(configurationInputStream, StorageEngineConfiguration.class);
-                break;
-            case "yml":
-            case "yaml":
-            default:
-                objectMapper = new ObjectMapper(new YAMLFactory());
-                storageEngineConfiguration = objectMapper.readValue(configurationInputStream, StorageEngineConfiguration.class);
-                break;
-        }
-
-        if (storageEngineConfiguration != null) {
-            this.storageEngines.add(storageEngineConfiguration);
-        }
+        throw new IllegalArgumentException("Unknown variant storage engine '" + storageEngine + "'");
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("StorageConfiguration{");
-        sb.append("defaultStorageEngineId='").append(defaultStorageEngineId).append('\'');
-        sb.append(", logLevel='").append(logLevel).append('\'');
-        sb.append(", logFile='").append(logFile).append('\'');
         sb.append(", cellbase=").append(cellbase);
         sb.append(", server=").append(server);
         sb.append(", cache=").append(cache);
         sb.append(", search=").append(search);
         sb.append(", clinical=").append(clinical);
         sb.append(", benchmark=").append(benchmark);
-        sb.append(", storageEngines=").append(storageEngines);
         sb.append('}');
         return sb.toString();
-    }
-
-    public String getDefaultStorageEngineId() {
-        return defaultStorageEngineId;
-    }
-
-    public StorageConfiguration setDefaultStorageEngineId(String defaultStorageEngineId) {
-        this.defaultStorageEngineId = defaultStorageEngineId;
-        return this;
-    }
-
-    public String getLogLevel() {
-        return logLevel;
-    }
-
-    public StorageConfiguration setLogLevel(String logLevel) {
-        this.logLevel = logLevel;
-        return this;
-    }
-
-    public String getLogFile() {
-        return logFile;
-    }
-
-    public StorageConfiguration setLogFile(String logFile) {
-        this.logFile = logFile;
-        return this;
     }
 
     public CellBaseConfiguration getCellbase() {
@@ -247,12 +200,4 @@ public class StorageConfiguration {
         return this;
     }
 
-    public List<StorageEngineConfiguration> getStorageEngines() {
-        return storageEngines;
-    }
-
-    public StorageConfiguration setStorageEngines(List<StorageEngineConfiguration> storageEngines) {
-        this.storageEngines = storageEngines;
-        return this;
-    }
 }

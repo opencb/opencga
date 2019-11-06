@@ -43,7 +43,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -1603,14 +1603,14 @@ public final class VariantQueryUtils {
 
     public static QueryOptions addDefaultLimit(QueryOptions queryOptions, ObjectMap configuration) {
         return addDefaultLimit(QueryOptions.LIMIT, queryOptions == null ? new QueryOptions() : queryOptions,
-                configuration.getInt(LIMIT_MAX.key(), LIMIT_MAX.defaultValue()),
-                configuration.getInt(LIMIT_DEFAULT.key(), LIMIT_DEFAULT.defaultValue()), "variants");
+                configuration.getInt(QUERY_LIMIT_MAX.key(), QUERY_LIMIT_MAX.defaultValue()),
+                configuration.getInt(QUERY_LIMIT_DEFAULT.key(), QUERY_LIMIT_DEFAULT.defaultValue()), "variants");
     }
 
     public static Query addDefaultSampleLimit(Query query, ObjectMap configuration) {
         return addDefaultLimit(SAMPLE_LIMIT.key(), query == null ? new Query() : query,
-                configuration.getInt(SAMPLE_LIMIT_MAX.key(), SAMPLE_LIMIT_MAX.defaultValue()),
-                configuration.getInt(SAMPLE_LIMIT_DEFAULT.key(), SAMPLE_LIMIT_DEFAULT.defaultValue()),
+                configuration.getInt(QUERY_SAMPLE_LIMIT_MAX.key(), QUERY_SAMPLE_LIMIT_MAX.defaultValue()),
+                configuration.getInt(QUERY_SAMPLE_LIMIT_DEFAULT.key(), QUERY_SAMPLE_LIMIT_DEFAULT.defaultValue()),
                 "samples");
     }
 

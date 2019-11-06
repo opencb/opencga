@@ -29,22 +29,23 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.BiFunction;
 
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
+
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk.
  */
 public class GenomeHelper {
     private final Logger logger = LoggerFactory.getLogger(GenomeHelper.class);
 
-    public static final String DEFAULT_ROWKEY_SEPARATOR = "_";
-    public static final String DEFAULT_COLUMN_FAMILY = "0"; // MUST BE UPPER CASE!!!
-    public static final byte[] DEFAULT_COLUMN_FAMILY_BYTES = Bytes.toBytes(DEFAULT_COLUMN_FAMILY);
+    // MUST BE UPPER CASE!!!
+    // Phoenix local indexes fail if the default_column_family is lower case
+    public static final String COLUMN_FAMILY = "0";
+    public static final byte[] COLUMN_FAMILY_BYTES = Bytes.toBytes(COLUMN_FAMILY);
 
     public static final String PHOENIX_LOCK_COLUMN = "PHOENIX_LOCK";
     public static final String PHOENIX_INDEX_LOCK_COLUMN = "PHOENIX_INDEX_LOCK";
 
     private final int chunkSize;
-    private final char separator;
-    private final byte[] columnFamily;
 
     private final Configuration conf;
 
@@ -64,12 +65,10 @@ public class GenomeHelper {
 
     protected GenomeHelper(Configuration conf, int studyId) {
         this.conf = conf;
-        this.separator = conf.get(HadoopVariantStorageEngine.ARCHIVE_ROW_KEY_SEPARATOR, DEFAULT_ROWKEY_SEPARATOR).charAt(0);
         // TODO: Check if columnFamily is upper case
         // Phoenix local indexes fail if the default_column_family is lower case
         // TODO: Report this bug to phoenix JIRA
-        this.columnFamily = Bytes.toBytes(conf.get(HadoopVariantStorageEngine.HBASE_COLUMN_FAMILY, DEFAULT_COLUMN_FAMILY));
-        this.chunkSize = conf.getInt(HadoopVariantStorageEngine.ARCHIVE_CHUNK_SIZE, HadoopVariantStorageEngine.DEFAULT_ARCHIVE_CHUNK_SIZE);
+        this.chunkSize = conf.getInt(ARCHIVE_CHUNK_SIZE.key(), ARCHIVE_CHUNK_SIZE.defaultValue());
         this.studyId = studyId > 0 ? studyId : conf.getInt(HadoopVariantStorageEngine.STUDY_ID, -1);
     }
 
@@ -78,7 +77,7 @@ public class GenomeHelper {
     }
 
     public static void setChunkSize(Configuration conf, Integer size) {
-        conf.setInt(HadoopVariantStorageEngine.ARCHIVE_CHUNK_SIZE, size);
+        conf.setInt(ARCHIVE_CHUNK_SIZE.key(), size);
     }
 
     public static void setStudyId(Configuration conf, Integer studyId) {
@@ -91,14 +90,6 @@ public class GenomeHelper {
 
     public int getStudyId() {
         return this.studyId;
-    }
-
-    public char getSeparator() {
-        return separator;
-    }
-
-    public byte[] getColumnFamily() {
-        return columnFamily;
     }
 
     public int getChunkSize() {
@@ -158,7 +149,7 @@ public class GenomeHelper {
     public <T extends MessageLite> Put wrapAsPut(byte[] column, byte[] row, T meta) {
         byte[] data = meta.toByteArray();
         Put put = new Put(row);
-        put.addColumn(getColumnFamily(), column, data);
+        put.addColumn(COLUMN_FAMILY_BYTES, column, data);
         return put;
     }
 

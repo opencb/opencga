@@ -27,7 +27,6 @@ import org.hamcrest.Matcher;
 import org.hamcrest.core.IsAnything;
 import org.junit.*;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
@@ -45,9 +44,8 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.slf4j.Logger;
@@ -123,18 +121,18 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             studyMetadata = newStudyMetadata();
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
             clearDB(DB_NAME);
-            ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.FAMILY)
-                    .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
-                    .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
-                    .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseRestVariantAnnotator.class.getName())
-                    .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
+            ObjectMap params = new ObjectMap()
+                    .append(VariantStorageOptions.ANNOTATE.key(), true)
+                    .append(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "DS,GL")
+                    .append(VariantStorageOptions.ANNOTATOR_CLASS.key(), CellBaseRestVariantAnnotator.class.getName())
+                    .append(VariantStorageOptions.STATS_CALCULATE.key(), true);
             params.putAll(getOtherParams());
             FORMAT = new HashSet<>();
-            if (!params.getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(),
-                    VariantStorageEngine.Options.EXCLUDE_GENOTYPES.defaultValue())) {
+            if (!params.getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
+                    VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue())) {
                 FORMAT.add("GT");
             }
-            FORMAT.addAll(params.getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key()));
+            FORMAT.addAll(params.getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key()));
 
             StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyMetadata, params);
             fileMetadata = variantStorageEngine.getVariantReaderUtils().readVariantFileMetadata(Paths.get(etlResult.getTransformResult().getPath()).toUri());
@@ -148,9 +146,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             na19685 = metadataManager.getSampleId(studyMetadata.getId(), "NA19685");
 
             //Calculate stats
-            if (getOtherParams().getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)) {
-                QueryOptions options = new QueryOptions(VariantStorageEngine.Options.STUDY.key(), STUDY_NAME)
-                        .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
+            if (getOtherParams().getBoolean(VariantStorageOptions.STATS_CALCULATE.key(), true)) {
+                QueryOptions options = new QueryOptions(VariantStorageOptions.STUDY.key(), STUDY_NAME)
+                        .append(VariantStorageOptions.LOAD_BATCH_SIZE.key(), 100)
                         .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
                         .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "cohort1.cohort2.stats");
                 Iterator<Integer> iterator = metadataManager.getFileMetadata(studyMetadata.getId(), indexedFileId).getSamples().iterator();
@@ -173,7 +171,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                         new ArrayList<>(cohorts.keySet()), options);
 
             }
-            if (params.getBoolean(VariantStorageEngine.Options.ANNOTATE.key())) {
+            if (params.getBoolean(VariantStorageOptions.ANNOTATE.key())) {
                 for (int i = 0; i < 30  ; i++) {
                     allVariants = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true));
                     Long annotated = dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first();

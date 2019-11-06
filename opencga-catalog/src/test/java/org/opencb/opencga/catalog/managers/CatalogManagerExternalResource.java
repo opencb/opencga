@@ -27,14 +27,11 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -68,8 +65,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
         configuration.getAdmin().setAlgorithm("HS256");
         configuration.getAdmin().setSecretKey("dummy");
-        configuration.setDataDir(opencgaHome.resolve("sessions").toUri().toString());
-        configuration.setTempJobsDir(opencgaHome.resolve("jobs").toUri().toString());
+        configuration.setWorkspace(opencgaHome.resolve("sessions").toUri().toString());
 
         catalogManager = new CatalogManager(configuration);
         try {
@@ -135,14 +131,8 @@ public class CatalogManagerExternalResource extends ExternalResource {
 //        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
         mongoManager.close(catalogManager.getCatalogDatabase());
 
-        Path rootdir = Paths.get(UriUtils.createDirectoryUri(configuration.getDataDir()));
+        Path rootdir = Paths.get(UriUtils.createDirectoryUri(configuration.getWorkspace()));
         deleteFolderTree(rootdir.toFile());
-        if (!configuration.getTempJobsDir().isEmpty()) {
-            Path jobsDir = Paths.get(UriUtils.createDirectoryUri(configuration.getTempJobsDir()));
-            if (jobsDir.toFile().exists()) {
-                deleteFolderTree(jobsDir.toFile());
-            }
-        }
     }
 
     public static void deleteFolderTree(java.io.File folder) {

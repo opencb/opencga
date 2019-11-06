@@ -16,12 +16,13 @@
 
 package org.opencb.opencga.catalog.monitor.executors;
 
-import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Objects;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Created by pfurio on 24/08/16.
@@ -31,43 +32,49 @@ public class SGEExecutor implements BatchExecutor {
     private SGEManager sgeManager;
     private static Logger logger;
 
-    public SGEExecutor(Configuration configuration) {
+    public SGEExecutor(Execution execution) {
         logger = LoggerFactory.getLogger(SGEExecutor.class);
-        sgeManager = new SGEManager(configuration.getExecution());
+        sgeManager = new SGEManager(execution);
     }
 
     @Override
     public void execute(Job job, String token) throws Exception {
         ExecutorConfig executorConfig = ExecutorConfig.getExecutorConfig(job);
-        // TODO: Check job name below !
-        sgeManager.queueJob(job.getToolId(), "", -1, getCommandLine(job, token), executorConfig);
+        sgeManager.queueJob(job.getId(), "", -1, getCommandLine(job.getCommandLine(), Paths.get(executorConfig.getStdout()),
+                Paths.get(executorConfig.getStderr()), token), executorConfig);
+    }
+
+    @Override
+    public void execute(String jobId, String commandLine, Path stdout, Path stderr, String token) throws Exception {
+        sgeManager.queueJob(jobId, "", -1, getCommandLine(commandLine, stdout, stderr, token), null);
     }
 
     @Override
     public String getStatus(Job job) {
-        String status;
-        try {
-            status = SgeManager.status(Objects.toString(job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME)));
-        } catch (Exception e) {
-            logger.error("Could not obtain the status of the job {} from SGE. Error: {}", job.getUid(), e.getMessage());
-            return Job.JobStatus.UNKNOWN;
-        }
-
-        switch (status) {
-            case SgeManager.ERROR:
-            case SgeManager.EXECUTION_ERROR:
-                return Job.JobStatus.ERROR;
-            case SgeManager.FINISHED:
-                return Job.JobStatus.READY;
-            case SgeManager.QUEUED:
-                return Job.JobStatus.QUEUED;
-            case SgeManager.RUNNING:
-            case SgeManager.TRANSFERRED:
-                return Job.JobStatus.RUNNING;
-            case SgeManager.UNKNOWN:
-            default:
-                return job.getStatus().getName();
-        }
+        return Job.JobStatus.UNKNOWN;
+//        String status;
+//        try {
+//            status = SgeManager.status(Objects.toString(job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME)));
+//        } catch (Exception e) {
+//            logger.error("Could not obtain the status of the job {} from SGE. Error: {}", job.getUid(), e.getMessage());
+//            return Job.JobStatus.UNKNOWN;
+//        }
+//
+//        switch (status) {
+//            case SgeManager.ERROR:
+//            case SgeManager.EXECUTION_ERROR:
+//                return Job.JobStatus.ERROR;
+//            case SgeManager.FINISHED:
+//                return Job.JobStatus.READY;
+//            case SgeManager.QUEUED:
+//                return Job.JobStatus.QUEUED;
+//            case SgeManager.RUNNING:
+//            case SgeManager.TRANSFERRED:
+//                return Job.JobStatus.RUNNING;
+//            case SgeManager.UNKNOWN:
+//            default:
+//                return job.getStatus().getName();
+//        }
     }
 
     @Override

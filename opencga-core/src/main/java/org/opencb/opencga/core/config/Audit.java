@@ -16,26 +16,41 @@
 
 package org.opencb.opencga.core.config;
 
-import java.util.List;
-
 /**
  * Created by pfurio on 02/06/16.
  */
 public class Audit {
 
+    private String manager;
     private long maxDocuments;
     private long maxSize;
-    private String javaClass;
-    private List<String> exclude;
 
     public Audit() {
     }
 
-    public Audit(long maxDocuments, long maxSize, String javaClass, List<String> exclude) {
+    public Audit(String manager, long maxDocuments, long maxSize) {
+        this.manager = manager;
         this.maxDocuments = maxDocuments;
         this.maxSize = maxSize;
-        this.javaClass = javaClass;
-        this.exclude = exclude;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Audit{");
+        sb.append("manager='").append(manager).append('\'');
+        sb.append(", maxDocuments=").append(maxDocuments);
+        sb.append(", maxSize=").append(maxSize);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public String getManager() {
+        return manager;
+    }
+
+    public Audit setManager(String manager) {
+        this.manager = manager;
+        return this;
     }
 
     public long getMaxDocuments() {
@@ -54,34 +69,5 @@ public class Audit {
     public Audit setMaxSize(long maxSize) {
         this.maxSize = maxSize;
         return this;
-    }
-
-    public String getJavaClass() {
-        return javaClass;
-    }
-
-    public Audit setJavaClass(String javaClass) {
-        this.javaClass = javaClass;
-        return this;
-    }
-
-    public List<String> getExclude() {
-        return exclude;
-    }
-
-    public Audit setExclude(List<String> exclude) {
-        this.exclude = exclude;
-        return this;
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("Audit{");
-        sb.append("maxDocuments=").append(maxDocuments);
-        sb.append(", maxSize=").append(maxSize);
-        sb.append(", javaClass='").append(javaClass).append('\'');
-        sb.append(", exclude=").append(exclude);
-        sb.append('}');
-        return sb.toString();
     }
 }

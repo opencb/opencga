@@ -17,11 +17,11 @@
 package org.opencb.opencga.catalog.auth.authorization;
 
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.models.GroupParams;
 import org.opencb.opencga.core.models.PermissionRule;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.permissions.*;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
 import javax.annotation.Nullable;
@@ -402,32 +402,34 @@ public interface AuthorizationManager {
             throws CatalogException;
 
     default OpenCGAResult<Map<String, List<String>>> setAcls(long studyId, List<Long> ids, List<String> members, List<String> permissions,
-                                                          Entity entity) throws CatalogException {
-        return setAcls(studyId, ids, null, members, permissions, entity, null);
+                                                          Enums.Resource resource) throws CatalogException {
+        return setAcls(studyId, ids, null, members, permissions, resource, null);
     }
 
     OpenCGAResult<Map<String, List<String>>> setAcls(long studyId, List<Long> ids1, List<Long> ids2, List<String> members,
-                                                  List<String> permissions, Entity entity1, Entity entity2) throws CatalogException;
+                                                     List<String> permissions, Enums.Resource resource1, Enums.Resource resource2)
+            throws CatalogException;
 
     default OpenCGAResult<Map<String, List<String>>> addAcls(long studyId, List<Long> ids, List<String> members, List<String> permissions,
-                                                          Entity entity) throws CatalogException {
-        return addAcls(studyId, ids, null, members, permissions, entity, null);
+                                                          Enums.Resource resource) throws CatalogException {
+        return addAcls(studyId, ids, null, members, permissions, resource, null);
     }
 
     OpenCGAResult<Map<String, List<String>>> addAcls(long studyId, List<Long> ids1, List<Long> ids2, List<String> members,
-                                                  List<String> permissions, Entity entity, Entity entity2) throws CatalogException;
+                                                     List<String> permissions, Enums.Resource resource, Enums.Resource resource2)
+            throws CatalogException;
 
     default OpenCGAResult<Map<String, List<String>>> removeAcls(List<Long> ids, List<String> members, @Nullable List<String> permissions,
-                                                             Entity entity) throws CatalogException {
-        return removeAcls(ids, null, members, permissions, entity, null);
+                                                             Enums.Resource resource) throws CatalogException {
+        return removeAcls(ids, null, members, permissions, resource, null);
     }
 
     OpenCGAResult<Map<String, List<String>>> removeAcls(List<Long> ids1, List<Long> ids2, List<String> members,
-                                                     @Nullable List<String> permissions, Entity entity, Entity entity2)
-            throws CatalogException;
+                                                        @Nullable List<String> permissions, Enums.Resource resource,
+                                                        Enums.Resource resource2) throws CatalogException;
 
     OpenCGAResult<Map<String, List<String>>> replicateAcls(long studyId, List<Long> ids, Map<String, List<String>> aclEntries,
-                                                           Entity entity)
+                                                           Enums.Resource resource)
             throws CatalogException;
 
     void resetPermissionsFromAllEntities(long studyId, List<String> members) throws CatalogException;

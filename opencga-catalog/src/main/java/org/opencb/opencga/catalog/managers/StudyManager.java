@@ -43,6 +43,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.*;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.summaries.StudySummary;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
@@ -225,9 +226,9 @@ public class StudyManager extends AbstractManager {
     }
 
     public OpenCGAResult<Study> create(String projectStr, String id, String alias, String name, Study.Type type, String creationDate,
-                                     String description, Status status, String cipher, String uriScheme, URI uri,
-                                     Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
-                                     QueryOptions options, String token) throws CatalogException {
+                                       String description, Status status, String cipher, String uriScheme, URI uri,
+                                       Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
+                                       QueryOptions options, String token) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkObj(type, "type");
@@ -328,14 +329,14 @@ public class StudyManager extends AbstractManager {
                 }
             }
 
-            auditManager.auditCreate(userId, AuditRecord.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
+            auditManager.auditCreate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             userDBAdaptor.updateUserLastModified(userId);
 
             result.setResults(Arrays.asList(study));
             return result;
         } catch (CatalogException e) {
-            auditManager.auditCreate(userId, AuditRecord.Resource.STUDY, id, "", id, "", auditParams,
+            auditManager.auditCreate(userId, Enums.Resource.STUDY, id, "", id, "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -362,37 +363,25 @@ public class StudyManager extends AbstractManager {
         long studyId;
         long variableSetId;
 
-        if (StringUtils.isNumeric(variableStr) && Long.parseLong(variableStr) > configuration.getCatalog().getOffset()) {
-            variableSetId = Long.parseLong(variableStr);
-            Query query = new Query(StudyDBAdaptor.QueryParams.VARIABLE_SET_UID.key(), variableSetId);
-            OpenCGAResult<Study> studyDataResult = studyDBAdaptor.get(query, new QueryOptions(QueryOptions.INCLUDE,
-                    StudyDBAdaptor.QueryParams.UID.key()));
-            if (studyDataResult.getNumResults() == 0) {
-                throw new CatalogException("Variable set " + variableStr + " not found");
-            }
-            studyId = studyDataResult.first().getUid();
-            userId = catalogManager.getUserManager().getUserId(sessionId);
-        } else {
-            if (variableStr.contains(",")) {
-                throw new CatalogException("More than one variable set found. Please, choose just one variable set");
-            }
-
-            userId = catalogManager.getUserManager().getUserId(sessionId);
-            Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-            studyId = study.getUid();
-
-            Query query = new Query()
-                    .append(StudyDBAdaptor.VariableSetParams.STUDY_UID.key(), study.getUid())
-                    .append(StudyDBAdaptor.VariableSetParams.ID.key(), variableStr);
-            QueryOptions queryOptions = new QueryOptions();
-            OpenCGAResult<VariableSet> variableSetDataResult = studyDBAdaptor.getVariableSets(query, queryOptions);
-            if (variableSetDataResult.getNumResults() == 0) {
-                throw new CatalogException("Variable set " + variableStr + " not found in study " + studyStr);
-            } else if (variableSetDataResult.getNumResults() > 1) {
-                throw new CatalogException("More than one variable set found under " + variableStr + " in study " + studyStr);
-            }
-            variableSetId = variableSetDataResult.first().getUid();
+        if (variableStr.contains(",")) {
+            throw new CatalogException("More than one variable set found. Please, choose just one variable set");
         }
+
+        userId = catalogManager.getUserManager().getUserId(sessionId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        studyId = study.getUid();
+
+        Query query = new Query()
+                .append(StudyDBAdaptor.VariableSetParams.STUDY_UID.key(), study.getUid())
+                .append(StudyDBAdaptor.VariableSetParams.ID.key(), variableStr);
+        QueryOptions queryOptions = new QueryOptions();
+        OpenCGAResult<VariableSet> variableSetDataResult = studyDBAdaptor.getVariableSets(query, queryOptions);
+        if (variableSetDataResult.getNumResults() == 0) {
+            throw new CatalogException("Variable set " + variableStr + " not found in study " + studyStr);
+        } else if (variableSetDataResult.getNumResults() > 1) {
+            throw new CatalogException("More than one variable set found under " + variableStr + " in study " + studyStr);
+        }
+        variableSetId = variableSetDataResult.first().getUid();
 
         return new MyResourceId(userId, studyId, variableSetId);
     }
@@ -422,11 +411,11 @@ public class StudyManager extends AbstractManager {
             if (studyDataResult.getNumResults() <= 0) {
                 throw CatalogAuthorizationException.deny(userId, "view", "study", study.getFqn(), "");
             }
-            auditManager.auditInfo(userId, AuditRecord.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
+            auditManager.auditInfo(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return studyDataResult;
         } catch (CatalogException e) {
-            auditManager.auditInfo(userId, AuditRecord.Resource.STUDY, studyStr, "", "", "", auditParams,
+            auditManager.auditInfo(userId, Enums.Resource.STUDY, studyStr, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -514,11 +503,11 @@ public class StudyManager extends AbstractManager {
 
         try {
             OpenCGAResult<Study> studyDataResult = studyDBAdaptor.get(query, qOptions, userId);
-            auditManager.auditSearch(userId, AuditRecord.Resource.STUDY, "", "", auditParams,
+            auditManager.auditSearch(userId, Enums.Resource.STUDY, "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return studyDataResult;
         } catch (CatalogException e) {
-            auditManager.auditSearch(userId, AuditRecord.Resource.STUDY, "", "", auditParams,
+            auditManager.auditSearch(userId, Enums.Resource.STUDY, "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -546,7 +535,7 @@ public class StudyManager extends AbstractManager {
         try {
             study = resolveId(studyId, userId);
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, AuditRecord.Resource.STUDY, studyId, "", "", "", auditParams,
+            auditManager.auditUpdate(userId, Enums.Resource.STUDY, studyId, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -572,7 +561,7 @@ public class StudyManager extends AbstractManager {
             String ownerId = getOwner(study);
             userDBAdaptor.updateUserLastModified(ownerId);
             OpenCGAResult result = studyDBAdaptor.update(study.getUid(), parameters, options);
-            auditManager.auditUpdate(userId, AuditRecord.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
+            auditManager.auditUpdate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             OpenCGAResult<Study> queryResult = studyDBAdaptor.get(study.getUid(), options);
@@ -580,14 +569,14 @@ public class StudyManager extends AbstractManager {
 
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.auditUpdate(userId, AuditRecord.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
+            auditManager.auditUpdate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
     }
 
     public OpenCGAResult<PermissionRule> createPermissionRule(String studyId, Study.Entity entry, PermissionRule permissionRule,
-                                                            String token) throws CatalogException {
+                                                              String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyId, userId);
 
@@ -605,14 +594,14 @@ public class StudyManager extends AbstractManager {
 
             OpenCGAResult<PermissionRule> result = studyDBAdaptor.createPermissionRule(study.getUid(), entry, permissionRule);
 
-            auditManager.audit(userId, AuditRecord.Action.ADD_STUDY_PERMISSION_RULE, AuditRecord.Resource.STUDY, study.getId(),
+            auditManager.audit(userId, Enums.Action.ADD_STUDY_PERMISSION_RULE, Enums.Resource.STUDY, study.getId(),
                     study.getUuid(), study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult<>(result.getTime(), result.getEvents(), 1, Collections.singletonList(permissionRule), 1,
                     result.getNumInserted(), result.getNumUpdated(), result.getNumDeleted(), new ObjectMap());
         } catch (CatalogException e) {
-            auditManager.audit(userId, AuditRecord.Action.ADD_STUDY_PERMISSION_RULE, AuditRecord.Resource.STUDY, study.getId(),
+            auditManager.audit(userId, Enums.Action.ADD_STUDY_PERMISSION_RULE, Enums.Resource.STUDY, study.getId(),
                     study.getUuid(), study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
@@ -638,11 +627,11 @@ public class StudyManager extends AbstractManager {
             authorizationManager.checkCanUpdatePermissionRules(study.getUid(), userId);
             studyDBAdaptor.markDeletedPermissionRule(study.getUid(), entry, permissionRuleId, deleteAction);
 
-            auditManager.audit(userId, AuditRecord.Action.REMOVE_STUDY_PERMISSION_RULE, AuditRecord.Resource.STUDY, study.getId(),
+            auditManager.audit(userId, Enums.Action.REMOVE_STUDY_PERMISSION_RULE, Enums.Resource.STUDY, study.getId(),
                     study.getUuid(), study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
         } catch (CatalogException e) {
-            auditManager.audit(userId, AuditRecord.Action.REMOVE_STUDY_PERMISSION_RULE, AuditRecord.Resource.STUDY, study.getId(),
+            auditManager.audit(userId, Enums.Action.REMOVE_STUDY_PERMISSION_RULE, Enums.Resource.STUDY, study.getId(),
                     study.getUuid(), study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
@@ -661,12 +650,12 @@ public class StudyManager extends AbstractManager {
             authorizationManager.checkCanViewStudy(study.getUid(), userId);
             OpenCGAResult<PermissionRule> result = studyDBAdaptor.getPermissionRules(study.getUid(), entry);
 
-            auditManager.audit(userId, AuditRecord.Action.FETCH_STUDY_PERMISSION_RULES, AuditRecord.Resource.STUDY, study.getId(),
+            auditManager.audit(userId, Enums.Action.FETCH_STUDY_PERMISSION_RULES, Enums.Resource.STUDY, study.getId(),
                     study.getUuid(), study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
         } catch (CatalogException e) {
-            auditManager.audit(userId, AuditRecord.Action.FETCH_STUDY_PERMISSION_RULES, AuditRecord.Resource.STUDY, study.getId(),
+            auditManager.audit(userId, Enums.Action.FETCH_STUDY_PERMISSION_RULES, Enums.Resource.STUDY, study.getId(),
                     study.getUuid(), study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
@@ -842,12 +831,12 @@ public class StudyManager extends AbstractManager {
             OpenCGAResult<Group> queryResult = studyDBAdaptor.getGroup(study.getUid(), group.getId(), null);
             queryResult.setTime(queryResult.getTime() + result.getTime());
 
-            auditManager.audit(userId, AuditRecord.Action.ADD_STUDY_GROUP, AuditRecord.Resource.STUDY, study.getId(), study.getUuid(),
+            auditManager.audit(userId, Enums.Action.ADD_STUDY_GROUP, Enums.Resource.STUDY, study.getId(), study.getUuid(),
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.audit(userId, AuditRecord.Action.ADD_STUDY_GROUP, AuditRecord.Resource.STUDY, study.getId(), study.getUuid(),
+            auditManager.audit(userId, Enums.Action.ADD_STUDY_GROUP, Enums.Resource.STUDY, study.getId(), study.getUuid(),
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -870,11 +859,11 @@ public class StudyManager extends AbstractManager {
             }
 
             OpenCGAResult<Group> result = studyDBAdaptor.getGroup(study.getUid(), groupId, Collections.emptyList());
-            auditManager.audit(userId, AuditRecord.Action.FETCH_STUDY_GROUPS, AuditRecord.Resource.STUDY, study.getId(), study.getUuid(),
+            auditManager.audit(userId, Enums.Action.FETCH_STUDY_GROUPS, Enums.Resource.STUDY, study.getId(), study.getUuid(),
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return result;
         } catch (CatalogException e) {
-            auditManager.audit(userId, AuditRecord.Action.FETCH_STUDY_GROUPS, AuditRecord.Resource.STUDY, study.getId(), study.getUuid(),
+            auditManager.audit(userId, Enums.Action.FETCH_STUDY_GROUPS, Enums.Resource.STUDY, study.getId(), study.getUuid(),
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -951,13 +940,13 @@ public class StudyManager extends AbstractManager {
                     throw new CatalogException("Unknown action " + groupParams.getAction() + " found.");
             }
 
-            auditManager.audit(userId, AuditRecord.Action.UPDATE_USERS_FROM_STUDY_GROUP, AuditRecord.Resource.STUDY, study.getId(),
+            auditManager.audit(userId, Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP, Enums.Resource.STUDY, study.getId(),
                     study.getUuid(), study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return studyDBAdaptor.getGroup(study.getUid(), groupId, Collections.emptyList());
         } catch (CatalogException e) {
-            auditManager.audit(userId, AuditRecord.Action.UPDATE_USERS_FROM_STUDY_GROUP, AuditRecord.Resource.STUDY, study.getId(),
+            auditManager.audit(userId, Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP, Enums.Resource.STUDY, study.getId(),
                     study.getUuid(), study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
@@ -965,7 +954,7 @@ public class StudyManager extends AbstractManager {
     }
 
     public OpenCGAResult<Group> syncGroupWith(String studyStr, String externalGroup, String catalogGroup, String authenticationOriginId,
-                                            boolean force, String token) throws CatalogException {
+                                              boolean force, String token) throws CatalogException {
         if (!ROOT.equals(catalogManager.getUserManager().getUserId(token))) {
             throw new CatalogAuthorizationException("Only the root of OpenCGA can synchronise groups");
         }
@@ -1096,12 +1085,12 @@ public class StudyManager extends AbstractManager {
 
             studyDBAdaptor.deleteGroup(study.getUid(), groupId);
 
-            auditManager.audit(userId, AuditRecord.Action.REMOVE_STUDY_GROUP, AuditRecord.Resource.STUDY, study.getId(), study.getUuid(),
+            auditManager.audit(userId, Enums.Action.REMOVE_STUDY_GROUP, Enums.Resource.STUDY, study.getId(), study.getUuid(),
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return group;
         } catch (CatalogException e) {
-            auditManager.audit(userId, AuditRecord.Action.REMOVE_STUDY_GROUP, AuditRecord.Resource.STUDY, study.getId(), study.getUuid(),
+            auditManager.audit(userId, Enums.Action.REMOVE_STUDY_GROUP, Enums.Resource.STUDY, study.getId(), study.getUuid(),
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1149,8 +1138,8 @@ public class StudyManager extends AbstractManager {
      * Variables Methods
      */
     OpenCGAResult<VariableSet> createVariableSet(Study study, String id, String name, Boolean unique, Boolean confidential,
-                                               String description, Map<String, Object> attributes, List<Variable> variables,
-                                               List<VariableSet.AnnotableDataModels> entities, String sessionId) throws CatalogException {
+                                                 String description, Map<String, Object> attributes, List<Variable> variables,
+                                                 List<VariableSet.AnnotableDataModels> entities, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkObj(variables, "Variables from VariableSet");
         String userId = catalogManager.getUserManager().getUserId(sessionId);
@@ -1192,8 +1181,8 @@ public class StudyManager extends AbstractManager {
     }
 
     public OpenCGAResult<VariableSet> createVariableSet(String studyId, String id, String name, Boolean unique, Boolean confidential,
-                                                      String description, Map<String, Object> attributes, List<Variable> variables,
-                                                      List<VariableSet.AnnotableDataModels> entities, String token)
+                                                        String description, Map<String, Object> attributes, List<Variable> variables,
+                                                        List<VariableSet.AnnotableDataModels> entities, String token)
             throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyId, userId);
@@ -1212,11 +1201,11 @@ public class StudyManager extends AbstractManager {
         try {
             OpenCGAResult<VariableSet> queryResult = createVariableSet(study, id, name, unique, confidential, description, attributes,
                     variables, entities, token);
-            auditManager.audit(userId, AuditRecord.Action.ADD_VARIABLE_SET, AuditRecord.Resource.STUDY, queryResult.first().getId(), "",
+            auditManager.audit(userId, Enums.Action.ADD_VARIABLE_SET, Enums.Resource.STUDY, queryResult.first().getId(), "",
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.audit(userId, AuditRecord.Action.ADD_VARIABLE_SET, AuditRecord.Resource.STUDY, id, "", study.getId(),
+            auditManager.audit(userId, Enums.Action.ADD_VARIABLE_SET, Enums.Resource.STUDY, id, "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1237,12 +1226,12 @@ public class StudyManager extends AbstractManager {
             VariableSet variableSet = extractVariableSet(study, variableSetId, userId);
             OpenCGAResult<VariableSet> result = studyDBAdaptor.getVariableSet(variableSet.getUid(), options, userId);
 
-            auditManager.audit(userId, AuditRecord.Action.FETCH_VARIABLE_SET, AuditRecord.Resource.STUDY, variableSet.getId(), "",
+            auditManager.audit(userId, Enums.Action.FETCH_VARIABLE_SET, Enums.Resource.STUDY, variableSet.getId(), "",
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return result;
         } catch (CatalogException e) {
-            auditManager.audit(userId, AuditRecord.Action.FETCH_VARIABLE_SET, AuditRecord.Resource.STUDY, variableSetId, "", study.getId(),
+            auditManager.audit(userId, Enums.Action.FETCH_VARIABLE_SET, Enums.Resource.STUDY, variableSetId, "", study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1276,12 +1265,12 @@ public class StudyManager extends AbstractManager {
         try {
             authorizationManager.checkCanCreateUpdateDeleteVariableSets(study.getUid(), userId);
             OpenCGAResult writeResult = studyDBAdaptor.deleteVariableSet(variableSet.getUid(), QueryOptions.empty(), userId);
-            auditManager.audit(userId, AuditRecord.Action.DELETE_VARIABLE_SET, AuditRecord.Resource.STUDY, variableSet.getId(), "",
+            auditManager.audit(userId, Enums.Action.DELETE_VARIABLE_SET, Enums.Resource.STUDY, variableSet.getId(), "",
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return writeResult;
         } catch (CatalogException e) {
-            auditManager.audit(userId, AuditRecord.Action.DELETE_VARIABLE_SET, AuditRecord.Resource.STUDY, variableSet.getId(), "",
+            auditManager.audit(userId, Enums.Action.DELETE_VARIABLE_SET, Enums.Resource.STUDY, variableSet.getId(), "",
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1308,14 +1297,14 @@ public class StudyManager extends AbstractManager {
 
             authorizationManager.checkCanCreateUpdateDeleteVariableSets(study.getUid(), userId);
             OpenCGAResult result = studyDBAdaptor.addFieldToVariableSet(variableSet.getUid(), variable, userId);
-            auditManager.audit(userId, AuditRecord.Action.ADD_VARIABLE_TO_VARIABLE_SET, AuditRecord.Resource.STUDY, variableSet.getId(), "",
+            auditManager.audit(userId, Enums.Action.ADD_VARIABLE_TO_VARIABLE_SET, Enums.Resource.STUDY, variableSet.getId(), "",
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             OpenCGAResult<VariableSet> queryResult = studyDBAdaptor.getVariableSet(variableSet.getUid(), QueryOptions.empty());
             queryResult.setTime(queryResult.getTime() + result.getTime());
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.audit(userId, AuditRecord.Action.ADD_VARIABLE_TO_VARIABLE_SET, AuditRecord.Resource.STUDY, variableSet.getId(), "",
+            auditManager.audit(userId, Enums.Action.ADD_VARIABLE_TO_VARIABLE_SET, Enums.Resource.STUDY, variableSet.getId(), "",
                     study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1336,7 +1325,7 @@ public class StudyManager extends AbstractManager {
         try {
             authorizationManager.checkCanCreateUpdateDeleteVariableSets(study.getUid(), userId);
             OpenCGAResult result = studyDBAdaptor.removeFieldFromVariableSet(variableSet.getUid(), variableId, userId);
-            auditManager.audit(userId, AuditRecord.Action.REMOVE_VARIABLE_FROM_VARIABLE_SET, AuditRecord.Resource.STUDY,
+            auditManager.audit(userId, Enums.Action.REMOVE_VARIABLE_FROM_VARIABLE_SET, Enums.Resource.STUDY,
                     variableSet.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -1344,7 +1333,7 @@ public class StudyManager extends AbstractManager {
             queryResult.setTime(queryResult.getTime() + result.getTime());
             return queryResult;
         } catch (CatalogException e) {
-            auditManager.audit(userId, AuditRecord.Action.REMOVE_VARIABLE_FROM_VARIABLE_SET, AuditRecord.Resource.STUDY,
+            auditManager.audit(userId, Enums.Action.REMOVE_VARIABLE_FROM_VARIABLE_SET, Enums.Resource.STUDY,
                     variableSet.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
@@ -1370,7 +1359,7 @@ public class StudyManager extends AbstractManager {
     }
 
     public OpenCGAResult<VariableSet> renameFieldFromVariableSet(String studyStr, String variableSetStr, String oldName, String newName,
-                                                               String sessionId) throws CatalogException {
+                                                                 String sessionId) throws CatalogException {
         throw new UnsupportedOperationException("Operation not yet supported");
 
 //        MyResourceId resource = getVariableSetId(variableSetStr, studyStr, sessionId);
@@ -1410,11 +1399,11 @@ public class StudyManager extends AbstractManager {
                 }
                 studyAclList.append(allStudyAcls);
 
-                auditManager.audit(operationUuid, userId, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.STUDY, study.getId(),
+                auditManager.audit(operationUuid, userId, Enums.Action.FETCH_ACLS, Enums.Resource.STUDY, study.getId(),
                         study.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             } catch (CatalogException e) {
-                auditManager.audit(operationUuid, userId, AuditRecord.Action.FETCH_ACLS, AuditRecord.Resource.STUDY, study.getId(),
+                auditManager.audit(operationUuid, userId, Enums.Action.FETCH_ACLS, Enums.Resource.STUDY, study.getId(),
                         study.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
                 if (ignoreException) {
@@ -1430,7 +1419,7 @@ public class StudyManager extends AbstractManager {
     }
 
     public OpenCGAResult<Map<String, List<String>>> updateAcl(List<String> studyIdList, String memberIds, Study.StudyAclParams aclParams,
-                                                      String token) throws CatalogException {
+                                                              String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         List<Study> studies = resolveIds(studyIdList, userId);
 
@@ -1536,14 +1525,14 @@ public class StudyManager extends AbstractManager {
             }
 
             for (Study study : studies) {
-                auditManager.audit(operationUuid, userId, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.STUDY, study.getId(),
+                auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.STUDY, study.getId(),
                         study.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), new ObjectMap());
             }
             return aclResult;
         } catch (CatalogException e) {
             for (Study study : studies) {
-                auditManager.audit(operationUuid, userId, AuditRecord.Action.UPDATE_ACLS, AuditRecord.Resource.STUDY, study.getId(),
+                auditManager.audit(operationUuid, userId, Enums.Action.UPDATE_ACLS, Enums.Resource.STUDY, study.getId(),
                         study.getUuid(), study.getId(), study.getUuid(), auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()), new ObjectMap());
             }
@@ -1555,50 +1544,41 @@ public class StudyManager extends AbstractManager {
     public boolean indexCatalogIntoSolr(String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
 
-        try {
-            if (authorizationManager.checkIsAdmin(userId)) {
-                // Get all the studies
-                Query query = new Query();
-                QueryOptions options = new QueryOptions()
-                        .append(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.UID.key(),
-                                StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.FQN.key(),
-                                StudyDBAdaptor.QueryParams.VARIABLE_SET.key()))
-                        .append(DBAdaptor.INCLUDE_ACLS, true);
-                OpenCGAResult<Study> studyDataResult = studyDBAdaptor.get(query, options);
-                if (studyDataResult.getNumResults() == 0) {
-                    throw new CatalogException("Could not index catalog into solr. No studies found");
-                }
-
-                CatalogSolrManager catalogSolrManager = new CatalogSolrManager(this.catalogManager);
-                // Create solr collections if they don't exist
-                catalogSolrManager.createSolrCollections();
-
-                ExecutorService threadPool = Executors.newFixedThreadPool(4);
-                for (Study study : studyDataResult.getResults()) {
-                    Map<String, Set<String>> studyAcls = SolrConverterUtil
-                            .parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
-                    // We replace the current studyAcls for the parsed one
-                    study.getAttributes().put("OPENCGA_ACL", studyAcls);
-
-                    threadPool.submit(() -> indexCohort(catalogSolrManager, study));
-                    threadPool.submit(() -> indexFile(catalogSolrManager, study));
-                    threadPool.submit(() -> indexFamily(catalogSolrManager, study));
-                    threadPool.submit(() -> indexIndividual(catalogSolrManager, study));
-                    threadPool.submit(() -> indexSample(catalogSolrManager, study));
-                }
-
-                threadPool.shutdown();
-
-                auditManager.audit(userId, AuditRecord.Action.INDEX, AuditRecord.Resource.CATALOG, "", "", "", "", new ObjectMap(),
-                        new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-                return true;
+        if (authorizationManager.checkIsAdmin(userId)) {
+            // Get all the studies
+            Query query = new Query();
+            QueryOptions options = new QueryOptions()
+                    .append(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.UID.key(),
+                            StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.FQN.key(),
+                            StudyDBAdaptor.QueryParams.VARIABLE_SET.key()))
+                    .append(DBAdaptor.INCLUDE_ACLS, true);
+            OpenCGAResult<Study> studyDataResult = studyDBAdaptor.get(query, options);
+            if (studyDataResult.getNumResults() == 0) {
+                throw new CatalogException("Could not index catalog into solr. No studies found");
             }
-            throw new CatalogException("Only the " + ROOT + " user can index in Solr");
-        } catch (CatalogException e) {
-            auditManager.audit(userId, AuditRecord.Action.INDEX, AuditRecord.Resource.CATALOG, "", "", "", "", new ObjectMap(),
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
+
+            CatalogSolrManager catalogSolrManager = new CatalogSolrManager(this.catalogManager);
+            // Create solr collections if they don't exist
+            catalogSolrManager.createSolrCollections();
+
+            ExecutorService threadPool = Executors.newFixedThreadPool(5);
+            for (Study study : studyDataResult.getResults()) {
+                Map<String, Set<String>> studyAcls = SolrConverterUtil
+                        .parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
+                // We replace the current studyAcls for the parsed one
+                study.getAttributes().put("OPENCGA_ACL", studyAcls);
+
+                threadPool.submit(() -> indexCohort(catalogSolrManager, study));
+                threadPool.submit(() -> indexFile(catalogSolrManager, study));
+                threadPool.submit(() -> indexFamily(catalogSolrManager, study));
+                threadPool.submit(() -> indexIndividual(catalogSolrManager, study));
+                threadPool.submit(() -> indexSample(catalogSolrManager, study));
+            }
+
+            threadPool.shutdown();
+            return true;
         }
+        throw new CatalogException("Only the " + ROOT + " user can index in Solr");
     }
 
     public Map<String, Object> facet(String studyStr, String fileFields, String sampleFields, String individualFields, String cohortFields,
@@ -1626,102 +1606,154 @@ public class StudyManager extends AbstractManager {
 
     // **************************   Private methods  ******************************** //
 
-    private Boolean indexCohort(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
+    private Boolean indexCohort(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
+        ObjectMap auditParams = new ObjectMap("study", study.getFqn());
+        try {
+            Query query = new Query()
+                    .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            QueryOptions cohortQueryOptions = new QueryOptions()
+                    .append(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.ID.key(),
+                            CohortDBAdaptor.QueryParams.NAME.key(),
+                            CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.STATUS.key(),
+                            CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
+                            CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), CohortDBAdaptor.QueryParams.TYPE.key()))
+                    .append(DBAdaptor.INCLUDE_ACLS, true)
+                    .append(Constants.FLATTENED_ANNOTATIONS, true);
 
-        Query query = new Query()
-                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        QueryOptions cohortQueryOptions = new QueryOptions()
-                .append(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.NAME.key(),
-                        CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.STATUS.key(),
-                        CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
-                        CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), CohortDBAdaptor.QueryParams.TYPE.key()))
-                .append(DBAdaptor.INCLUDE_ACLS, true)
-                .append(Constants.FLATTENED_ANNOTATIONS, true);
-
-        catalogSolrManager.insertCatalogCollection(this.cohortDBAdaptor.iterator(query,
-                cohortQueryOptions), new CatalogCohortToSolrCohortConverter(study), CatalogSolrManager.COHORT_SOLR_COLLECTION);
-        return true;
+            catalogSolrManager.insertCatalogCollection(this.cohortDBAdaptor.iterator(query,
+                    cohortQueryOptions), new CatalogCohortToSolrCohortConverter(study), CatalogSolrManager.COHORT_SOLR_COLLECTION);
+            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.COHORT, "", "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return true;
+        } catch (CatalogException e) {
+            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.COHORT, "", "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
     }
 
-    private Boolean indexFile(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        QueryOptions fileQueryOptions = new QueryOptions()
-                .append(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
-                        FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.TYPE.key(), FileDBAdaptor.QueryParams.FORMAT.key(),
-                        FileDBAdaptor.QueryParams.CREATION_DATE.key(), FileDBAdaptor.QueryParams.BIOFORMAT.key(),
-                        FileDBAdaptor.QueryParams.RELEASE.key(), FileDBAdaptor.QueryParams.STATUS.key(),
-                        FileDBAdaptor.QueryParams.EXTERNAL.key(), FileDBAdaptor.QueryParams.SIZE.key(),
-                        FileDBAdaptor.QueryParams.SOFTWARE.key(), FileDBAdaptor.QueryParams.EXPERIMENT_UID.key(),
-                        FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(),
-                        FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
-                .append(DBAdaptor.INCLUDE_ACLS, true)
-                .append(Constants.FLATTENED_ANNOTATIONS, true);
+    private Boolean indexFile(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
+        ObjectMap auditParams = new ObjectMap("study", study.getFqn());
 
-        catalogSolrManager.insertCatalogCollection(this.fileDBAdaptor.iterator(query,
-                fileQueryOptions), new CatalogFileToSolrFileConverter(study), CatalogSolrManager.FILE_SOLR_COLLECTION);
-        return true;
+        try {
+            Query query = new Query()
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            QueryOptions fileQueryOptions = new QueryOptions()
+                    .append(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
+                            FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.TYPE.key(),
+                            FileDBAdaptor.QueryParams.FORMAT.key(),
+                            FileDBAdaptor.QueryParams.CREATION_DATE.key(), FileDBAdaptor.QueryParams.BIOFORMAT.key(),
+                            FileDBAdaptor.QueryParams.RELEASE.key(), FileDBAdaptor.QueryParams.STATUS.key(),
+                            FileDBAdaptor.QueryParams.EXTERNAL.key(), FileDBAdaptor.QueryParams.SIZE.key(),
+                            FileDBAdaptor.QueryParams.SOFTWARE.key(), FileDBAdaptor.QueryParams.EXPERIMENT_UID.key(),
+                            FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(),
+                            FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
+                    .append(DBAdaptor.INCLUDE_ACLS, true)
+                    .append(Constants.FLATTENED_ANNOTATIONS, true);
+
+            catalogSolrManager.insertCatalogCollection(this.fileDBAdaptor.iterator(query,
+                    fileQueryOptions), new CatalogFileToSolrFileConverter(study), CatalogSolrManager.FILE_SOLR_COLLECTION);
+            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.FILE, "", "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return true;
+        } catch (CatalogException e) {
+            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.FILE, "", "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
     }
 
 
-    private Boolean indexFamily(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
-        Query query = new Query()
-                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        QueryOptions familyQueryOptions = new QueryOptions()
-                .append(QueryOptions.INCLUDE, Arrays.asList(FamilyDBAdaptor.QueryParams.ID.key(),
-                        FamilyDBAdaptor.QueryParams.CREATION_DATE.key(), FamilyDBAdaptor.QueryParams.STATUS.key(),
-                        FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(),
-                        FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
-                        FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), FamilyDBAdaptor.QueryParams.EXPECTED_SIZE.key()))
-                .append(DBAdaptor.INCLUDE_ACLS, true)
-                .append(Constants.FLATTENED_ANNOTATIONS, true);
+    private Boolean indexFamily(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
+        ObjectMap auditParams = new ObjectMap("study", study.getFqn());
 
-        catalogSolrManager.insertCatalogCollection(this.familyDBAdaptor.iterator(query,
-                familyQueryOptions), new CatalogFamilyToSolrFamilyConverter(study), CatalogSolrManager.FAMILY_SOLR_COLLECTION);
-        return true;
+        try {
+            Query query = new Query()
+                    .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            QueryOptions familyQueryOptions = new QueryOptions()
+                    .append(QueryOptions.INCLUDE, Arrays.asList(FamilyDBAdaptor.QueryParams.ID.key(),
+                            FamilyDBAdaptor.QueryParams.CREATION_DATE.key(), FamilyDBAdaptor.QueryParams.STATUS.key(),
+                            FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(),
+                            FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
+                            FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), FamilyDBAdaptor.QueryParams.EXPECTED_SIZE.key()))
+                    .append(DBAdaptor.INCLUDE_ACLS, true)
+                    .append(Constants.FLATTENED_ANNOTATIONS, true);
+
+            catalogSolrManager.insertCatalogCollection(this.familyDBAdaptor.iterator(query,
+                    familyQueryOptions), new CatalogFamilyToSolrFamilyConverter(study), CatalogSolrManager.FAMILY_SOLR_COLLECTION);
+            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return true;
+        } catch (CatalogException e) {
+            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
     }
 
 
-    private Boolean indexIndividual(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
-        Query query = new Query()
-                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        QueryOptions individualQueryOptions = new QueryOptions()
-                .append(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
-                        IndividualDBAdaptor.QueryParams.FATHER_UID.key(), IndividualDBAdaptor.QueryParams.MOTHER_UID.key(),
-                        IndividualDBAdaptor.QueryParams.MULTIPLES.key(), IndividualDBAdaptor.QueryParams.SEX.key(),
-                        IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
-                        IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.CREATION_DATE.key(),
-                        IndividualDBAdaptor.QueryParams.VERSION.key(),
-                        IndividualDBAdaptor.QueryParams.STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
-                        IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
-                        IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
-                        IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
-                .append(DBAdaptor.INCLUDE_ACLS, true)
-                .append(Constants.FLATTENED_ANNOTATIONS, true);
+    private Boolean indexIndividual(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
+        ObjectMap auditParams = new ObjectMap("study", study.getFqn());
 
-        catalogSolrManager.insertCatalogCollection(this.individualDBAdaptor.iterator(query,
-                individualQueryOptions), new CatalogIndividualToSolrIndividualConverter(study),
-                CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
-        return true;
+        try {
+            Query query = new Query()
+                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            QueryOptions individualQueryOptions = new QueryOptions()
+                    .append(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
+                            IndividualDBAdaptor.QueryParams.FATHER_UID.key(), IndividualDBAdaptor.QueryParams.MOTHER_UID.key(),
+                            IndividualDBAdaptor.QueryParams.MULTIPLES.key(), IndividualDBAdaptor.QueryParams.SEX.key(),
+                            IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
+                            IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.CREATION_DATE.key(),
+                            IndividualDBAdaptor.QueryParams.VERSION.key(),
+                            IndividualDBAdaptor.QueryParams.STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
+                            IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
+                            IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
+                            IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
+                    .append(DBAdaptor.INCLUDE_ACLS, true)
+                    .append(Constants.FLATTENED_ANNOTATIONS, true);
+
+            catalogSolrManager.insertCatalogCollection(this.individualDBAdaptor.iterator(query,
+                    individualQueryOptions), new CatalogIndividualToSolrIndividualConverter(study),
+                    CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
+            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.INDIVIDUAL, "", "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return true;
+        } catch (CatalogException e) {
+            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.INDIVIDUAL, "", "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
     }
 
-    private Boolean indexSample(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException, IOException {
-        Query query = new Query()
-                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        QueryOptions sampleQueryOptions = new QueryOptions()
-                .append(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(), SampleDBAdaptor.QueryParams.SOURCE.key(),
-                        SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
-                        SampleDBAdaptor.QueryParams.PROCESSING.key(), SampleDBAdaptor.QueryParams.COLLECTION.key(),
-                        SampleDBAdaptor.QueryParams.CREATION_DATE.key(), SampleDBAdaptor.QueryParams.STATUS.key(),
-                        SampleDBAdaptor.QueryParams.TYPE.key(), SampleDBAdaptor.QueryParams.SOMATIC.key(),
-                        SampleDBAdaptor.QueryParams.PHENOTYPES.key(), SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
-                        SampleDBAdaptor.QueryParams.UID.key()))
-                .append(DBAdaptor.INCLUDE_ACLS, true)
-                .append(Constants.FLATTENED_ANNOTATIONS, true);
+    private Boolean indexSample(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
+        ObjectMap auditParams = new ObjectMap("study", study.getFqn());
 
-        catalogSolrManager.insertCatalogCollection(this.sampleDBAdaptor.iterator(query,
-                sampleQueryOptions), new CatalogSampleToSolrSampleConverter(study), CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
-        return true;
+        try {
+            Query query = new Query()
+                    .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            QueryOptions sampleQueryOptions = new QueryOptions()
+                    .append(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(),
+                            SampleDBAdaptor.QueryParams.SOURCE.key(),
+                            SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
+                            SampleDBAdaptor.QueryParams.PROCESSING.key(), SampleDBAdaptor.QueryParams.COLLECTION.key(),
+                            SampleDBAdaptor.QueryParams.CREATION_DATE.key(), SampleDBAdaptor.QueryParams.STATUS.key(),
+                            SampleDBAdaptor.QueryParams.TYPE.key(), SampleDBAdaptor.QueryParams.SOMATIC.key(),
+                            SampleDBAdaptor.QueryParams.PHENOTYPES.key(), SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
+                            SampleDBAdaptor.QueryParams.UID.key()))
+                    .append(DBAdaptor.INCLUDE_ACLS, true)
+                    .append(Constants.FLATTENED_ANNOTATIONS, true);
+
+            catalogSolrManager.insertCatalogCollection(this.sampleDBAdaptor.iterator(query,
+                    sampleQueryOptions), new CatalogSampleToSolrSampleConverter(study), CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
+            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return true;
+        } catch (CatalogException e) {
+            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
     }
 
 

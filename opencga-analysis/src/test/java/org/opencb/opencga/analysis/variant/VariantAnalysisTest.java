@@ -29,6 +29,7 @@ import org.opencb.opencga.analysis.storage.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
@@ -102,10 +103,10 @@ public class VariantAnalysisTest {
             opencga.clearStorageDB(DB_NAME);
 
             StorageConfiguration storageConfiguration = opencga.getStorageConfiguration();
-            storageConfiguration.setDefaultStorageEngineId(storageEngine);
+            storageConfiguration.getVariant().setDefaultEngine(storageEngine);
             if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
                 HadoopVariantStorageTest.updateStorageConfiguration(storageConfiguration, hadoopExternalResource.getConf());
-                ObjectMap variantHadoopOptions = storageConfiguration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getVariant().getOptions();
+                ObjectMap variantHadoopOptions = storageConfiguration.getVariantEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getOptions();
                 for (Map.Entry<String, String> entry : hadoopExternalResource.getConf()) {
                     variantHadoopOptions.put(entry.getKey(), entry.getValue());
                 }
@@ -115,7 +116,7 @@ public class VariantAnalysisTest {
 
 
             file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", sessionId);
-            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), true), sessionId);
+            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), sessionId);
 
             for (int i = 0; i < file.getSamples().size(); i++) {
                 if (i % 2 == 0) {

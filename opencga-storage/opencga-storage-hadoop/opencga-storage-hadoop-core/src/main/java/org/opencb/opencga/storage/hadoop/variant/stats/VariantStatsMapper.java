@@ -11,9 +11,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
@@ -51,7 +52,7 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         studyMetadata = getStudyMetadata();
 
-        boolean overwrite = context.getConfiguration().getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);
+        boolean overwrite = context.getConfiguration().getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
         calculator = new VariantStatisticsCalculator(overwrite);
         Aggregation aggregation = getAggregation(studyMetadata, context.getConfiguration());
         if (AggregationUtils.isAggregated(aggregation)) {
@@ -95,7 +96,7 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
             if (put == null) {
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put.null").increment(1);
             } else {
-                HadoopVariantSearchIndexUtils.addNotSyncStatus(put, helper.getColumnFamily());
+                HadoopVariantSearchIndexUtils.addNotSyncStatus(put, GenomeHelper.COLUMN_FAMILY_BYTES);
                 context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put").increment(1);
                 context.write(new ImmutableBytesWritable(helper.getVariantsTable()), put);
             }
@@ -164,15 +165,15 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
     }
 
     public static void setAggregation(ObjectMap conf, Aggregation aggregation) {
-        conf.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), aggregation.toString());
+        conf.put(VariantStorageOptions.STATS_AGGREGATION.key(), aggregation.toString());
     }
 
     public static Aggregation getAggregation(StudyMetadata studyMetadata, Configuration configuration) {
-        return AggregationUtils.valueOf(configuration.get(VariantStorageEngine.Options.AGGREGATED_TYPE.key(),
+        return AggregationUtils.valueOf(configuration.get(VariantStorageOptions.STATS_AGGREGATION.key(),
                 studyMetadata.getAggregation().name()));
     }
 
     public static Aggregation getAggregation(Configuration configuration) {
-        return AggregationUtils.valueOf(configuration.get(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), Aggregation.NONE.name()));
+        return AggregationUtils.valueOf(configuration.get(VariantStorageOptions.STATS_AGGREGATION.key(), Aggregation.NONE.name()));
     }
 }

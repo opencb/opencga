@@ -63,11 +63,8 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
             responseObserver.onNext(LongResponse.newBuilder().setValue(queryResult.getResults().get(0)).build());
             responseObserver.onCompleted();
             variantDBAdaptor.close();
-        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageEngineException e) {
-            e.printStackTrace();
-//        } catch (NotAuthorizedHostException | NotAuthorizedUserException e) {
-//            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (IOException | StorageEngineException e) {
+            // FIXME!
             e.printStackTrace();
         }
     }
@@ -95,11 +92,8 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
             }
             responseObserver.onCompleted();
             variantDBAdaptor.close();
-        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageEngineException e) {
-            e.printStackTrace();
-//        } catch (NotAuthorizedHostException e) {
-//            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (StorageEngineException | IOException e) {
+            // FIXME!
             e.printStackTrace();
         }
     }
@@ -129,7 +123,7 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
     }
 
     private VariantDBAdaptor getVariantDBAdaptor(Request request)
-            throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
+            throws StorageEngineException {
         // Setting storageEngine and database parameters. If the storageEngine is not provided then the server default is used
         String storageEngine = genericGrpcService.getDefaultStorageEngine();
         if (StringUtils.isNotEmpty(request.getStorageEngine())) {
@@ -137,7 +131,7 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
         }
 
         String database = genericGrpcService
-                .getStorageConfiguration().getStorageEngine(storageEngine).getVariant().getOptions().getString("database.name");
+                .getStorageConfiguration().getVariantEngine(storageEngine).getOptions().getString("database.name");
         if (StringUtils.isNotEmpty(request.getDatabase())) {
             database = request.getDatabase();
         }

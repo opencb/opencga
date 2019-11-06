@@ -113,34 +113,34 @@ public class ExecutorConfig {
     public static ExecutorConfig getExecutorConfig(Job job) {
         ExecutorConfig executorConfig = null;
 
-        if (job != null && job.getResourceManagerAttributes() != null) {
-            executorConfig = new ExecutorConfig();
-
-            if (job.getResourceManagerAttributes().get(BatchExecutor.STDOUT) != null) {
-                executorConfig.setStdout(job.getResourceManagerAttributes().get(BatchExecutor.STDOUT).toString());
-            }
-
-            if (job.getResourceManagerAttributes().get(BatchExecutor.STDERR) != null) {
-                executorConfig.setStderr(job.getResourceManagerAttributes().get(BatchExecutor.STDERR).toString());
-            }
-
-            if (job.getResourceManagerAttributes().get(BatchExecutor.OUTDIR) != null) {
-                executorConfig.setOutdir(job.getResourceManagerAttributes().get(BatchExecutor.OUTDIR).toString());
-            }
-
-            if (job.getResourceManagerAttributes().get(BatchExecutor.TIMEOUT) != null) {
-                executorConfig.setTimeout(Integer.parseInt(job.getResourceManagerAttributes().get(BatchExecutor.TIMEOUT).toString()));
-            }
-
-            if (job.getResourceManagerAttributes().get(BatchExecutor.MAX_MEM) != null) {
-                executorConfig.setMaxMem(Integer.parseInt(job.getResourceManagerAttributes().get(BatchExecutor.MAX_MEM).toString()));
-            }
-
-            if (job.getResourceManagerAttributes().get(BatchExecutor.NUM_THREADS) != null) {
-                executorConfig.setNumThreads(Integer.parseInt(job.getResourceManagerAttributes()
-                        .get(BatchExecutor.NUM_THREADS).toString()));
-            }
-        }
+//        if (job != null && job.getResourceManagerAttributes() != null) {
+//            executorConfig = new ExecutorConfig();
+//
+//            if (job.getResourceManagerAttributes().get(BatchExecutor.STDOUT) != null) {
+//                executorConfig.setStdout(job.getResourceManagerAttributes().get(BatchExecutor.STDOUT).toString());
+//            }
+//
+//            if (job.getResourceManagerAttributes().get(BatchExecutor.STDERR) != null) {
+//                executorConfig.setStderr(job.getResourceManagerAttributes().get(BatchExecutor.STDERR).toString());
+//            }
+//
+//            if (job.getResourceManagerAttributes().get(BatchExecutor.OUTDIR) != null) {
+//                executorConfig.setOutdir(job.getResourceManagerAttributes().get(BatchExecutor.OUTDIR).toString());
+//            }
+//
+//            if (job.getResourceManagerAttributes().get(BatchExecutor.TIMEOUT) != null) {
+//                executorConfig.setTimeout(Integer.parseInt(job.getResourceManagerAttributes().get(BatchExecutor.TIMEOUT).toString()));
+//            }
+//
+//            if (job.getResourceManagerAttributes().get(BatchExecutor.MAX_MEM) != null) {
+//                executorConfig.setMaxMem(Integer.parseInt(job.getResourceManagerAttributes().get(BatchExecutor.MAX_MEM).toString()));
+//            }
+//
+//            if (job.getResourceManagerAttributes().get(BatchExecutor.NUM_THREADS) != null) {
+//                executorConfig.setNumThreads(Integer.parseInt(job.getResourceManagerAttributes()
+//                        .get(BatchExecutor.NUM_THREADS).toString()));
+//            }
+//        }
 
         return executorConfig;
     }

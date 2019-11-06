@@ -27,6 +27,7 @@ import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +64,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
     public VariantHadoopArchiveDBIterator(ResultScanner resultScanner, ArchiveTableHelper archiveHelper, QueryOptions options) {
         this.resultScanner = resultScanner;
         this.iterator = this.resultScanner.iterator();
-        this.columnFamily = archiveHelper.getColumnFamily();
+        this.columnFamily = GenomeHelper.COLUMN_FAMILY_BYTES;
         this.refColumnBytes = archiveHelper.getRefColumnName();
         this.nonRefColumnBytes = archiveHelper.getNonRefColumnName();
         VariantFileMetadata fileMetadata = archiveHelper.getFileMetadata();

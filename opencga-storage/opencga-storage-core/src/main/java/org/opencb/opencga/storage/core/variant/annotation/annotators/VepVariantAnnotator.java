@@ -24,8 +24,8 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
 import org.slf4j.Logger;
@@ -89,8 +89,8 @@ public class VepVariantAnnotator extends VariantAnnotator {
 
     public void loadAnnotation(final VariantDBAdaptor variantDBAdaptor, final URI uri, QueryOptions options) throws IOException {
 
-        final int batchSize = options.getInt(DefaultVariantAnnotationManager.BATCH_SIZE, 100);
-        final int numConsumers = options.getInt(DefaultVariantAnnotationManager.NUM_WRITERS, 6);
+        final int batchSize = options.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(), 100);
+        final int numConsumers = options.getInt(VariantStorageOptions.LOAD_THREADS.key(), 6);
         final int numProducers = 1;
         ExecutorService executor = Executors.newFixedThreadPool(numConsumers + numProducers);
         final BlockingQueue<VariantAnnotation> queue = new ArrayBlockingQueue<>(batchSize * numConsumers * 2);

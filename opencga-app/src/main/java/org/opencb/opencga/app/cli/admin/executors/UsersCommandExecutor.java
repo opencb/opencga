@@ -144,11 +144,9 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 usersCommandOptions.createUserCommandOptions.databasePassword,
                 usersCommandOptions.createUserCommandOptions.commonOptions.adminPassword);
 
-        long userQuota;
+        long userQuota = 0;
         if (usersCommandOptions.createUserCommandOptions.userQuota != null) {
             userQuota = usersCommandOptions.createUserCommandOptions.userQuota;
-        } else {
-            userQuota = configuration.getUserDefaultQuota();
         }
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {

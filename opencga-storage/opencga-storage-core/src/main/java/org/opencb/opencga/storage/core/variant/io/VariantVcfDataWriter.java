@@ -130,7 +130,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
 
         // user tuning
 //        if (options != null) {
-//            batchSize = options.getInt(VariantStorageEngine.BATCH_SIZE, batchSize);
+//            batchSize = options.getInt(VariantStorageEngine.ANNOTATION_BATCH_SIZE, batchSize);
 //        }
 
         // setup

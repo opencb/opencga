@@ -14,6 +14,8 @@ import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper
 import java.io.IOException;
 import java.util.Map;
 
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS;
+
 /**
  * Created on 09/03/18.
  *
@@ -30,8 +32,9 @@ public class FillMissingFromArchiveMapper extends AbstractHBaseVariantMapper<Byt
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         boolean overwrite = FillGapsFromArchiveMapper.isOverwrite(context.getConfiguration());
-        boolean simplifiedNewMultiAllelicVariants = context.getConfiguration()
-                .getBoolean(FillGapsDriver.FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS, false);
+        boolean simplifiedNewMultiAllelicVariants = context.getConfiguration().getBoolean(
+                FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS.key(),
+                FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS.defaultValue());
         task = new FillMissingFromArchiveTask(getStudyMetadata(), metadataManager, helper, overwrite, simplifiedNewMultiAllelicVariants);
         task.setQuiet(true);
         task.pre();

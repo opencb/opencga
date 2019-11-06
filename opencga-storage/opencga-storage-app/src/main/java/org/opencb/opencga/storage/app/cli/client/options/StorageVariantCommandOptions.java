@@ -18,10 +18,10 @@ package org.opencb.opencga.storage.app.cli.client.options;
 
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.CommaParameterSplitter;
-import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
@@ -102,11 +102,7 @@ public class StorageVariantCommandOptions {
         public boolean load;
 
         @Parameter(names = {"--merge"}, description = "Currently two levels of merge are supported: \"basic\" mode merge genotypes of the same variants while \"advanced\" merge multiallelic and overlapping variants.")
-        public VariantStorageEngine.MergeMode merge = VariantStorageEngine.Options.MERGE_MODE.defaultValue();
-
-        @Deprecated
-        @Parameter(names = {"--include-stats"}, description = "Save statistics information available on the input file")
-        public boolean includeStats;
+        public VariantStorageEngine.MergeMode merge = VariantStorageOptions.MERGE_MODE.defaultValue();
 
         @Parameter(names = {"--exclude-genotypes"}, description = "Index excluding the genotype information")
         public boolean excludeGenotype;
@@ -137,7 +133,7 @@ public class StorageVariantCommandOptions {
         public boolean indexSearch;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}", arity = 1)
-        public VariantAnnotatorFactory.AnnotationSource annotator;
+        public VariantAnnotatorFactory.AnnotationEngine annotator;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations;
@@ -168,11 +164,6 @@ public class StorageVariantCommandOptions {
 //        @Deprecated
 //        @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
 //        public String pedigree;
-
-
-        @Parameter(names = {"-t", "--study-type"}, description = "One of the following: FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, " +
-                "PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES", arity = 1, hidden = true)
-        public SampleSetType studyType = SampleSetType.CASE_CONTROL;
 
     }
 
@@ -529,7 +520,7 @@ public class StorageVariantCommandOptions {
         public String customAnnotationKey = null;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
-        public VariantAnnotatorFactory.AnnotationSource annotator;
+        public VariantAnnotatorFactory.AnnotationEngine annotator;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations;

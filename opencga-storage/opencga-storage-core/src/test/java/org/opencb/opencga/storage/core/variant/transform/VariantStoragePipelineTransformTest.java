@@ -28,6 +28,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 import java.io.*;
 import java.net.URI;
@@ -70,7 +71,7 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
         URI outputUri = newOutputUri();
 
         VariantStorageEngine variantStorageManager = getVariantStorageEngine();
-        variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getDatabase()
+        variantStorageManager.getConfiguration().getVariantEngine(variantStorageManager.getStorageEngineId()).getDatabase()
                 .setHosts(Collections.singletonList("1.1.1.1"));
         StoragePipelineResult etlResult = runETL(variantStorageManager, smallInputUri, outputUri, params, true, true, false);
         System.out.println("etlResult = " + etlResult);
@@ -87,7 +88,7 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
     @Test
     public void corruptedTransformNoFailTest() throws Exception {
 
-        ObjectMap params = new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), true);
+        ObjectMap params = new ObjectMap(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), true);
 
         URI outputUri = newOutputUri();
 
@@ -116,7 +117,7 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
     @Test
     public void corruptedTransformTest() throws Exception {
 
-        ObjectMap params = new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), false);
+        ObjectMap params = new ObjectMap(VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), false);
         URI outputUri = newOutputUri();
         StoragePipelineResult result = runETL(getVariantStorageEngine(), corruptedInputUri, outputUri, params, true, true, false);
 
@@ -136,11 +137,10 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
         System.setIn(inputStream);
 
 
-
         ObjectMap options = variantStorageManager.getConfiguration()
-                .getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
+                .getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions();
 
-        options.append(VariantStorageEngine.Options.STDIN.key(), true);
+        options.append(VariantStorageOptions.STDIN.key(), true);
 
         URI inputFile = Paths.get(smallInputUri).getFileName().toUri();
         System.out.println("inputFile = " + inputFile);
@@ -162,10 +162,10 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
             System.setOut(os);
 
             ObjectMap options = variantStorageManager.getConfiguration()
-                    .getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
+                    .getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions();
 
-            options.append(VariantStorageEngine.Options.STDOUT.key(), true);
-            options.append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "json");
+            options.append(VariantStorageOptions.STDOUT.key(), true);
+            options.append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "json");
 
             variantStorageManager.index(Collections.singletonList(smallInputUri), outputUri, true, true, false).get(0);
         } finally {
@@ -186,10 +186,10 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
             System.setOut(os);
 
             ObjectMap options = variantStorageManager.getConfiguration()
-                    .getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
+                    .getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions();
 
-            options.append(VariantStorageEngine.Options.STDOUT.key(), true);
-            options.append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
+            options.append(VariantStorageOptions.STDOUT.key(), true);
+            options.append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro");
 
             variantStorageManager.index(Collections.singletonList(smallInputUri), outputUri, true, true, false).get(0);
         } finally {
@@ -204,7 +204,7 @@ public abstract class VariantStoragePipelineTransformTest extends VariantStorage
         URI outputUri = newOutputUri();
 
         VariantStorageEngine variantStorageManager = getVariantStorageEngine();
-        variantStorageManager.getOptions().put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
+        variantStorageManager.getOptions().put(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro");
 
         URI platinumFile = getPlatinumFile(0);
 

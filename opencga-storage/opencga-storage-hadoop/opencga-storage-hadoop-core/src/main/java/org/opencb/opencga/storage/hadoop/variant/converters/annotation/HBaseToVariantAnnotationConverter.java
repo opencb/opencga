@@ -77,7 +77,7 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
     private boolean includeIndexStatus;
 
     public HBaseToVariantAnnotationConverter(GenomeHelper genomeHelper, long ts) {
-        this(genomeHelper.getColumnFamily(), ts);
+        this(GenomeHelper.COLUMN_FAMILY_BYTES, ts);
     }
 
     public HBaseToVariantAnnotationConverter(byte[] columnFamily, long ts) {

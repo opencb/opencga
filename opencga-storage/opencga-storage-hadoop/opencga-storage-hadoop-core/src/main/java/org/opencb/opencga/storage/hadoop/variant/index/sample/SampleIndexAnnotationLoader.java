@@ -51,7 +51,7 @@ public class SampleIndexAnnotationLoader {
         this.annotationIndexDBAdaptor = new AnnotationIndexDBAdaptor(hBaseManager, tableNameGenerator.getAnnotationIndexTableName());
         this.metadataManager = metadataManager;
         this.sampleDBAdaptor = new SampleIndexDBAdaptor(helper, hBaseManager, tableNameGenerator, this.metadataManager);
-        family = helper.getColumnFamily();
+        family = GenomeHelper.COLUMN_FAMILY_BYTES;
     }
 
     public void updateSampleAnnotation(int studyId, List<Integer> samples, ObjectMap options) throws IOException, StorageEngineException {

@@ -16,7 +16,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 
 import java.net.URI;
@@ -56,12 +55,12 @@ public abstract class VariantStorageEngineSVTest extends VariantStorageBaseTest 
     protected void loadFiles() throws Exception {
         input1 = getResourceUri("variant-test-sv.vcf");
         studyMetadata = new StudyMetadata(1, "s1");
-        variantStorageEngine.getOptions().append(AbstractCellBaseVariantAnnotator.ANNOTATOR_CELLBASE_EXCLUDE, "expression,clinical");
+        variantStorageEngine.getOptions().append(VariantStorageOptions.ANNOTATOR_CELLBASE_EXCLUDE.key(), "expression,clinical");
         pipelineResult1 = runDefaultETL(input1, variantStorageEngine, studyMetadata, new QueryOptions()
-                .append(VariantStorageEngine.Options.ANNOTATE.key(), true));
+                .append(VariantStorageOptions.ANNOTATE.key(), true));
         input2 = getResourceUri("variant-test-sv_2.vcf");
         pipelineResult2 = runDefaultETL(input2, variantStorageEngine, studyMetadata, new QueryOptions()
-                .append(VariantStorageEngine.Options.ANNOTATE.key(), true));
+                .append(VariantStorageOptions.ANNOTATE.key(), true));
     }
 
     @Test

@@ -18,11 +18,15 @@ package org.opencb.opencga.storage.core.config;
 
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.config.GrpcServerConfiguration;
+import org.opencb.opencga.core.config.RestServerConfiguration;
+import org.opencb.opencga.core.config.ServerConfiguration;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
 
 /**
  * Created by imedina on 01/05/15.
@@ -37,35 +41,36 @@ public class StorageConfigurationTest {
         ObjectMap options = new ObjectMap();
         options.put("key", "defaultValue");
 
-        StorageEngineConfiguration storageEngineConfiguration1 = new StorageEngineConfiguration(
-                "mongodb",
-                new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager", new ObjectMap
-                        (), new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password")),
-                new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBVariantStorageManager", new ObjectMap(),
-                        new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password")),
-                options);
-
-        StorageEngineConfiguration storageEngineConfiguration2 = new StorageEngineConfiguration(
-                "hadoop",
-                new StorageEtlConfiguration("org.opencb.opencga.storage.hadoop.alignment.HadoopAlignmentStorageManager", new ObjectMap(),
-                        new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password")),
-                new StorageEtlConfiguration("org.opencb.opencga.storage.hadoop.alignment.HadoopVariantStorageManager", new ObjectMap(),
-                        new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password")),
-                options);
+//        StorageEngineConfiguration storageEngineConfiguration1 = new StorageEngineConfiguration(
+//                "mongodb",
+//                new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager", new ObjectMap
+//                        (), new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password")),
+//                new StorageEtlConfiguration("org.opencb.opencga.storage.mongodb.alignment.MongoDBVariantStorageManager", new ObjectMap(),
+//                        new DatabaseCredentials(Arrays.asList("mongodb-dev:27017"), "user", "password")),
+//                options);
+//
+//        StorageEngineConfiguration storageEngineConfiguration2 = new StorageEngineConfiguration(
+//                "hadoop",
+//                new StorageEtlConfiguration("org.opencb.opencga.storage.hadoop.alignment.HadoopAlignmentStorageManager", new ObjectMap(),
+//                        new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password")),
+//                new StorageEtlConfiguration("org.opencb.opencga.storage.hadoop.alignment.HadoopVariantStorageManager", new ObjectMap(),
+//                        new DatabaseCredentials(Arrays.asList("who-master:60000"), "user", "password")),
+//                options);
 
 
         CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration(Arrays.asList("localhost"), "v3", new DatabaseCredentials
                 (Arrays.asList("localhost"), "user", "password"));
-        ServerConfiguration serverConfiguration =
-                new ServerConfiguration(9090, 9091, "mongodb", Arrays.asList("localhost"), Collections.emptyMap());
+        ServerConfiguration serverConfiguration = new ServerConfiguration()
+                .setRest(new RestServerConfiguration(9090))
+                .setGrpc(new GrpcServerConfiguration(9091));
 
-        storageConfiguration.setDefaultStorageEngineId("mongodb");
+        storageConfiguration.getVariant().setDefaultEngine("mongodb");
 
         storageConfiguration.setCellbase(cellBaseConfiguration);
         storageConfiguration.setServer(serverConfiguration);
 
-        storageConfiguration.getStorageEngines().add(storageEngineConfiguration1);
-        storageConfiguration.getStorageEngines().add(storageEngineConfiguration2);
+//        storageConfiguration.getStorageEngines().add(storageEngineConfiguration1);
+//        storageConfiguration.getStorageEngines().add(storageEngineConfiguration2);
 
         File file = Paths.get("/tmp/storage-configuration-test.yml").toFile();
         try (FileOutputStream os = new FileOutputStream(file)) {

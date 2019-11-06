@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.transform.VariantStoragePipelineTransformTest;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 
@@ -101,7 +102,7 @@ public class HadoopVariantStoragePipelineTransformTest extends VariantStoragePip
 
     private URI transform(URI file, URI outputUri, String format) throws Exception {
         VariantStorageEngine variantStorageManager = getVariantStorageEngine();
-        ObjectMap params = new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), format);
+        ObjectMap params = new ObjectMap(VariantStorageOptions.TRANSFORM_FORMAT.key(), format);
         StoragePipelineResult etlResult = runETL(variantStorageManager, file, outputUri, params, true, true, false);
         System.out.println("etlResult = " + etlResult);
         return etlResult.getTransformResult();

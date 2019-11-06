@@ -145,13 +145,13 @@ public class FillGapsFromVariantTask implements Task<Variant, Put> {
         }
         Get get = new Get(Bytes.toBytes(archiveRowKeyFactory.generateBlockId(variant, anyFileId)));
         for (Integer fileId : fileIds) {
-            get.addColumn(helper.getColumnFamily(), fileToNonRefColumnMap.get(fileId));
+            get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, fileToNonRefColumnMap.get(fileId));
         }
 
         Put put = new Put(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
         Result result = archiveTable.get(get);
         for (Integer fileId : fileIds) {
-            byte[] bytes = result.getValue(helper.getColumnFamily(), fileToNonRefColumnMap.get(fileId));
+            byte[] bytes = result.getValue(GenomeHelper.COLUMN_FAMILY_BYTES, fileToNonRefColumnMap.get(fileId));
             if (bytes != null) {
                 VcfSliceProtos.VcfSlice refVcfSlice = null; // FIXME !!
                 VcfSliceProtos.VcfSlice nonRefVcfSlice = VcfSliceProtos.VcfSlice.parseFrom(bytes);

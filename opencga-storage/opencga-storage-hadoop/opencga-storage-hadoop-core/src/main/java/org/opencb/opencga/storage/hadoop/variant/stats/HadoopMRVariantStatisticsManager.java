@@ -6,7 +6,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
@@ -53,8 +53,8 @@ public class HadoopMRVariantStatisticsManager extends VariantStatisticsManager {
 //            throw new StorageEngineException("Unsupported calculate aggregated statistics with map-reduce. Please, use "
 //                    + HadoopVariantStorageEngine.STATS_LOCAL + '=' + true);
         }
-        boolean updateStats = options.getBoolean(VariantStorageEngine.Options.UPDATE_STATS.key(), false);
-        boolean overwriteStats = options.getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);
+        boolean updateStats = options.getBoolean(VariantStorageOptions.STATS_UPDATE.key(), false);
+        boolean overwriteStats = options.getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
 //
 //        DefaultVariantStatisticsManager.checkAndUpdateStudyConfigurationCohorts(sc, cohorts.stream()
 //                    .collect(Collectors.toMap(c -> c, c -> Collections.emptySet())), null, updateStats, overwriteStats);

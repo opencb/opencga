@@ -21,6 +21,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import static org.apache.hadoop.mapreduce.MRJobConfig.JOB_RUNNING_MAP_LIMIT;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.FILL_MISSING_WRITE_MAPPERS_LIMIT_FACTOR;
 
 /**
  * Created on 09/03/18.
@@ -64,9 +65,10 @@ public class FillMissingHBaseWriterDriver extends AbstractVariantsTableDriver {
         try (HBaseManager hBaseManager = new HBaseManager(getConf())) {
             serversSize = hBaseManager.act(variantTableName, (table, admin) -> admin.getClusterStatus().getServersSize());
         }
-        float factor = getConf().getFloat(FillGapsDriver.FILL_MISSING_WRITE_MAPPERS_LIMIT_FACTOR, 1.5F);
+        float factor = getConf().getFloat(FILL_MISSING_WRITE_MAPPERS_LIMIT_FACTOR.key(),
+                FILL_MISSING_WRITE_MAPPERS_LIMIT_FACTOR.defaultValue());
         if (factor <= 0) {
-            throw new IllegalArgumentException(FillGapsDriver.FILL_MISSING_WRITE_MAPPERS_LIMIT_FACTOR + " must be positive!");
+            throw new IllegalArgumentException(FILL_MISSING_WRITE_MAPPERS_LIMIT_FACTOR + " must be positive!");
         }
         int mapsLimit = Math.round(serversSize * factor);
         if (mapsLimit == 0) {

@@ -42,6 +42,7 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 
 import java.io.IOException;
@@ -154,15 +155,15 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
             transform = params.getBoolean(TRANSFORM, false);
             load = params.getBoolean(LOAD, false);
         }
-        resume = params.getBoolean(VariantStorageEngine.Options.RESUME.key());
+        resume = params.getBoolean(VariantStorageOptions.RESUME.key());
 
         // Obtain the type of analysis (transform, load or index)
         step = getType(load, transform);
 
-        params.put(VariantStorageEngine.Options.STUDY.key(), studyFqn);
+        params.put(VariantStorageOptions.STUDY.key(), studyFqn);
         Aggregation aggregation = VariantStatsStorageOperation.getAggregation(catalogManager, studyFqn, params, sessionId);
-        params.putIfAbsent(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), aggregation);
-        calculateStats = params.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key())
+        params.putIfAbsent(VariantStorageOptions.STATS_AGGREGATION.key(), aggregation);
+        calculateStats = params.getBoolean(VariantStorageOptions.STATS_CALCULATE.key())
                 && (step.equals(Type.LOAD) || step.equals(Type.INDEX));
 
         // Create default cohort if needed.
@@ -346,12 +347,8 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
     }
 
     private VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {
-        try {
-            return StorageEngineFactory.get(variantStorageManager.getStorageConfiguration())
-                    .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            throw new StorageEngineException("Unable to create StorageEngine", e);
-        }
+        return StorageEngineFactory.get(variantStorageManager.getStorageConfiguration())
+                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
     }
 
     private Type getType(Boolean load, Boolean transform) {
@@ -478,7 +475,7 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
             // Update index status
             catalogManager.getFileManager().updateFileIndexStatus(indexedFile, indexStatusName, indexStatusMessage, release, sessionId);
 
-            boolean calculateStats = options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
+            boolean calculateStats = options.getBoolean(VariantStorageOptions.STATS_CALCULATE.key());
             if (indexStatusName.equals(FileIndex.IndexStatus.READY) && calculateStats) {
                 Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), StudyEntry.DEFAULT_COHORT);
                 DataResult<Cohort> queryResult = catalogManager.getCohortManager()
@@ -604,7 +601,7 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
                         if (!resume) {
                             logger.warn("File already being transformed. "
                                             + "We can only transform VCF files not transformed, the status is {}. "
-                                            + "Do '" + VariantStorageEngine.Options.RESUME.key() + "' to continue.",
+                                            + "Do '" + VariantStorageOptions.RESUME.key() + "' to continue.",
                                     indexStatus);
                         } else {
                             filteredFiles.add(file);

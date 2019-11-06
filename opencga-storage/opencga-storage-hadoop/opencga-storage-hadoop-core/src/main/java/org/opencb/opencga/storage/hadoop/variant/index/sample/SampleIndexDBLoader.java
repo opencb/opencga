@@ -9,12 +9,12 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.*;
 
 /**
@@ -73,8 +73,12 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
         super.open();
 
         try {
-            int files = options.getInt(EXPECTED_FILES_NUMBER, DEFAULT_EXPECTED_FILES_NUMBER);
-            int preSplitSize = options.getInt(SAMPLE_INDEX_TABLE_PRESPLIT_SIZE, DEFAULT_SAMPLE_INDEX_TABLE_PRESPLIT_SIZE);
+            int files = options.getInt(
+                    HadoopVariantStorageOptions.EXPECTED_FILES_NUMBER.key(),
+                    HadoopVariantStorageOptions.EXPECTED_FILES_NUMBER.defaultValue());
+            int preSplitSize = options.getInt(
+                    HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.key(),
+                    HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.defaultValue());
 
             int splits = files / preSplitSize;
             ArrayList<byte[]> preSplits = new ArrayList<>(splits);
@@ -83,7 +87,9 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
             }
 
             hBaseManager.createTableIfNeeded(tableName, family, preSplits, Compression.getCompressionAlgorithmByName(
-                    options.getString(SAMPLE_INDEX_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName())));
+                    options.getString(
+                            HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_COMPRESSION.key(),
+                            HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_COMPRESSION.defaultValue())));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

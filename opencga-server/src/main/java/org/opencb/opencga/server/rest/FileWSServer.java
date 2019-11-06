@@ -44,12 +44,11 @@ import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -59,8 +58,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
-
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 
 
 @Path("/{apiVersion}/files")
@@ -559,94 +556,6 @@ public class FileWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-    }
-
-    @Deprecated
-    @GET
-    @Path("/{file}/index")
-    @ApiOperation(value = "Index variant files [DEPRECATED]", position = 14, notes = "Moved to analysis/[variant|alignment]/{file}/index",
-            hidden = true, response = QueryResponse.class)
-    public Response index(@ApiParam("Comma separated list of file ids (files or directories)") @PathParam(value = "file") String fileIdStr,
-                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                          @QueryParam("study") String studyStr,
-                          // Study id is not ingested by the analysis index command line. No longer needed.
-//                          @ApiParam("Study id") @QueryParam("studyId") String studyId,
-                          @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr,
-                          @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false")
-                          @QueryParam("transform") boolean transform,
-                          @ApiParam("Boolean indicating that only the load step will be run") @DefaultValue("false")
-                          @QueryParam("load") boolean load,
-                          @ApiParam("Comma separated list of fields to be include in the index")
-                          @QueryParam("includeExtraFields") String includeExtraFields,
-                          @ApiParam("Type of aggregated VCF file: none, basic, EVS or ExAC") @DefaultValue("none")
-                          @QueryParam("aggregated") String aggregated,
-                          @ApiParam("Calculate indexed variants statistics after the load step") @DefaultValue("false")
-                          @QueryParam("calculateStats") boolean calculateStats,
-                          @ApiParam("Annotate indexed variants after the load step") @DefaultValue("false")
-                          @QueryParam("annotate") boolean annotate,
-                          @ApiParam("Overwrite annotations already present in variants") @DefaultValue("false")
-                          @QueryParam("overwrite") boolean overwriteAnnotations) {
-
-        Map<String, String> params = new LinkedHashMap<>();
-//        addParamIfNotNull(params, "studyId", studyId);
-        addParamIfNotNull(params, "outdir", outDirStr);
-        addParamIfTrue(params, "transform", transform);
-        addParamIfTrue(params, "load", load);
-        addParamIfNotNull(params, EXTRA_GENOTYPE_FIELDS.key(), includeExtraFields);
-        addParamIfNotNull(params, AGGREGATED_TYPE.key(), aggregated);
-        addParamIfTrue(params, CALCULATE_STATS.key(), calculateStats);
-        addParamIfTrue(params, ANNOTATE.key(), annotate);
-        addParamIfTrue(params, VariantAnnotationManager.OVERWRITE_ANNOTATIONS, overwriteAnnotations);
-
-        Set<String> knownParams = new HashSet<>();
-        knownParams.add("outDir");
-        knownParams.add("transform");
-        knownParams.add("load");
-        knownParams.add("includeExtraFields");
-        knownParams.add("aggregated");
-        knownParams.add("calculateStats");
-        knownParams.add("annotate");
-        knownParams.add("overwrite");
-        knownParams.add("sid");
-        knownParams.add("include");
-        knownParams.add("exclude");
-
-        // Add other params
-        query.forEach((key, value) -> {
-            if (!knownParams.contains(key)) {
-                if (value != null) {
-                    params.put(key, value.toString());
-                }
-            }
-        });
-
-        logger.info("ObjectMap: {}", params);
-
-        try {
-            List<String> idList = getIdList(fileIdStr);
-            DataResult queryResult = fileManager.index(studyStr, idList, "VCF", params, token);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-
-
-//        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
-//
-//        try {
-//            long outDirId = catalogManager.getFileId(outDirStr, sessionId);
-//            long fileId = catalogManager.getFileId(fileIdStr, sessionId);
-//            if(outDirId < 0) {
-//                outDirId = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
-//            }
-//            // TODO: Change it to query
-//            queryOptions.add(VariantStorageEngine.Options.CALCULATE_STATS.key(), calculateStats);
-//            queryOptions.add(VariantStorageEngine.Options.ANNOTATE.key(), annotate);
-//            DataResult<Job> queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, new QueryOptions(queryOptions));
-//            return createOkResponse(queryResult);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
     }
 
     @GET

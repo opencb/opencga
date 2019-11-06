@@ -4,7 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 
 /**
  * Created on 02/02/18.
@@ -30,11 +30,11 @@ public class HBaseVariantTableNameGenerator {
 
 
     public HBaseVariantTableNameGenerator(String dbName, ObjectMap options) {
-        this(options.getString(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName);
+        this(options.getString(HadoopVariantStorageOptions.HBASE_NAMESPACE.key(), ""), dbName);
     }
 
     public HBaseVariantTableNameGenerator(String dbName, Configuration conf) {
-        this(conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName);
+        this(conf.get(HadoopVariantStorageOptions.HBASE_NAMESPACE.key(), ""), dbName);
     }
 
     public HBaseVariantTableNameGenerator(String namespace, String dbName) {
@@ -132,7 +132,7 @@ public class HBaseVariantTableNameGenerator {
      */
     public static String getArchiveTableNameFromVariantsTable(String variantsTableName, int studyId, Configuration conf) {
         String dbName = getDBNameFromVariantsTableName(variantsTableName);
-        return getArchiveTableName(conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName, studyId);
+        return getArchiveTableName(conf.get(HadoopVariantStorageOptions.HBASE_NAMESPACE.key(), ""), dbName, studyId);
     }
 
     /**
@@ -144,7 +144,7 @@ public class HBaseVariantTableNameGenerator {
      * @return Table name
      */
     public static String getArchiveTableName(String dbName, int studyId, Configuration conf) {
-        return getArchiveTableName(conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName, studyId);
+        return getArchiveTableName(conf.get(HadoopVariantStorageOptions.HBASE_NAMESPACE.key(), ""), dbName, studyId);
     }
 
     /**
@@ -156,7 +156,7 @@ public class HBaseVariantTableNameGenerator {
      * @return Table name
      */
     public static String getArchiveTableName(String dbName, int studyId, ObjectMap options) {
-        return getArchiveTableName(options.getString(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName, studyId);
+        return getArchiveTableName(options.getString(HadoopVariantStorageOptions.HBASE_NAMESPACE.key(), ""), dbName, studyId);
     }
 
     /**
@@ -184,11 +184,11 @@ public class HBaseVariantTableNameGenerator {
     }
 
     public static String getVariantTableName(String dbName, ObjectMap options) {
-        return getVariantTableName(options.getString(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName);
+        return getVariantTableName(options.getString(HadoopVariantStorageOptions.HBASE_NAMESPACE.key(), ""), dbName);
     }
 
     public static String getVariantTableName(String dbName, Configuration conf) {
-        return getVariantTableName(conf.get(HadoopVariantStorageEngine.HBASE_NAMESPACE, ""), dbName);
+        return getVariantTableName(conf.get(HadoopVariantStorageOptions.HBASE_NAMESPACE.key(), ""), dbName);
     }
 
     public static String getVariantTableName(String namespace, String dbName) {

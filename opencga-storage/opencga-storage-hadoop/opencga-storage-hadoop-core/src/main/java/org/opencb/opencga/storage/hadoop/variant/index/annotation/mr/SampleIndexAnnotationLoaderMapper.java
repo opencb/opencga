@@ -43,7 +43,7 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         helper = new GenomeHelper(context.getConfiguration());
-        family = helper.getColumnFamily();
+        family = GenomeHelper.COLUMN_FAMILY_BYTES;
         hasGenotype = context.getConfiguration().getBoolean(HAS_GENOTYPE, true);
     }
 

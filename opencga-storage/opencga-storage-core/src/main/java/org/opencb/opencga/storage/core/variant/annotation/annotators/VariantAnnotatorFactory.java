@@ -20,6 +20,7 @@ import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +36,7 @@ import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotati
  */
 public final class VariantAnnotatorFactory {
 
-    public enum AnnotationSource {
+    public enum AnnotationEngine {
         CELLBASE_DB_ADAPTOR,
         CELLBASE_REST,
         VEP,
@@ -44,48 +45,61 @@ public final class VariantAnnotatorFactory {
 
     protected static Logger logger = LoggerFactory.getLogger(VariantAnnotatorFactory.class);
 
-    public static VariantAnnotator buildVariantAnnotator(StorageConfiguration configuration, String storageEngineId,
+    public static VariantAnnotator buildVariantAnnotator(StorageConfiguration configuration,
                                                          ProjectMetadata projectMetadata)
             throws VariantAnnotatorException {
-        return buildVariantAnnotator(configuration, storageEngineId, projectMetadata, null);
+        return buildVariantAnnotator(configuration, projectMetadata, configuration.getVariant().getOptions());
     }
 
-    public static VariantAnnotator buildVariantAnnotator(StorageConfiguration configuration, String storageEngineId,
+    public static VariantAnnotator buildVariantAnnotator(StorageConfiguration configuration,
                                                          ProjectMetadata projectMetadata, ObjectMap options)
             throws VariantAnnotatorException {
-        ObjectMap storageOptions = new ObjectMap(configuration.getStorageEngine(storageEngineId).getVariant().getOptions());
-        if (options != null) {
-            options.forEach(storageOptions::putIfNotNull);
-        }
-        AnnotationSource defaultValue = storageOptions.containsKey(VARIANT_ANNOTATOR_CLASSNAME)
-                ? AnnotationSource.OTHER
-                : AnnotationSource.CELLBASE_REST;
-        AnnotationSource annotationSource;
-        if (StringUtils.isNotBlank(storageOptions.getString(ANNOTATOR))) {
-            annotationSource = AnnotationSource.valueOf(storageOptions.getString(ANNOTATOR).toUpperCase());
-        } else if (StringUtils.isNotBlank(storageOptions.getString(ANNOTATION_SOURCE))) {
-            annotationSource = AnnotationSource.valueOf(storageOptions.getString(ANNOTATION_SOURCE).toUpperCase());
-            logger.warn("Using deprecated parameter '" + ANNOTATION_SOURCE + "'. Use '" + ANNOTATOR + "' instead");
+
+        AnnotationEngine defaultValue = options.containsKey(VariantStorageOptions.ANNOTATOR_CLASS.key())
+                ? AnnotationEngine.OTHER
+                : AnnotationEngine.CELLBASE_REST;
+        AnnotationEngine annotationEngine;
+        String annotator = options.getString(VariantStorageOptions.ANNOTATOR.key());
+        if (StringUtils.isNotBlank(annotator)) {
+            if (annotator.equalsIgnoreCase("cellbase")) {
+                String preferred = configuration.getCellbase().getPreferred();
+                switch (preferred.toLowerCase()) {
+                    case "remote":
+                        annotationEngine = AnnotationEngine.CELLBASE_REST;
+                        break;
+                    case "local":
+                        annotationEngine = AnnotationEngine.CELLBASE_DB_ADAPTOR;
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown cellbase preferred method '"
+                                + preferred + "'");
+                }
+            } else {
+                annotationEngine = AnnotationEngine.valueOf(annotator.toUpperCase());
+            }
+        } else if (StringUtils.isNotBlank(options.getString(ANNOTATION_SOURCE))) {
+            annotationEngine = AnnotationEngine.valueOf(options.getString(ANNOTATION_SOURCE).toUpperCase());
+            logger.warn("Using deprecated parameter '" + ANNOTATION_SOURCE + "'. Use '" + VariantStorageOptions.ANNOTATOR + "' instead");
         } else {
-            annotationSource = defaultValue;
+            annotationEngine = defaultValue;
         }
 
-        switch (annotationSource) {
+        switch (annotationEngine) {
             case CELLBASE_DB_ADAPTOR:
-                return new CellBaseDirectVariantAnnotator(configuration, projectMetadata, storageOptions);
+                return new CellBaseDirectVariantAnnotator(configuration, projectMetadata, options);
             case CELLBASE_REST:
-                return new CellBaseRestVariantAnnotator(configuration, projectMetadata, storageOptions);
+                return new CellBaseRestVariantAnnotator(configuration, projectMetadata, options);
             case VEP:
                 return VepVariantAnnotator.buildVepAnnotator();
             case OTHER:
             default:
-                String className = storageOptions.getString(VARIANT_ANNOTATOR_CLASSNAME);
-                logger.info("Annotating with {} = {}", annotationSource, className);
+                String className = options.getString(VariantStorageOptions.ANNOTATOR_CLASS.key());
+                logger.info("Annotating with {} = {}", annotationEngine, className);
                 try {
                     Class<?> clazz = Class.forName(className);
                     if (VariantAnnotator.class.isAssignableFrom(clazz)) {
                         return (VariantAnnotator) clazz.getConstructor(StorageConfiguration.class, ProjectMetadata.class, ObjectMap.class)
-                                .newInstance(configuration, projectMetadata, storageOptions);
+                                .newInstance(configuration, projectMetadata, options);
                     } else {
                         throw new VariantAnnotatorException("Invalid VariantAnnotator class: " + className);
                     }

@@ -63,7 +63,7 @@ public class RestServer extends AbstractStorageServer {
 
     @Deprecated
     public RestServer(StorageConfiguration storageConfiguration) {
-        super(storageConfiguration.getServer().getRest(), storageConfiguration.getDefaultStorageEngineId());
+        super(storageConfiguration.getServer().getRest().getPort(), storageConfiguration.getVariant().getDefaultEngine());
         this.storageConfiguration = storageConfiguration;
 
         logger = LoggerFactory.getLogger(this.getClass());

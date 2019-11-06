@@ -13,6 +13,7 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
@@ -64,9 +65,9 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
             metadataManager.registerFile(studyMetadata.getId(), fileName, Arrays.asList("NA" + fileId));
             if (inputFiles.size() == 4) {
 //                dbAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata, null);
-                options.put(VariantStorageEngine.Options.STUDY.key(), studyId);
+                options.put(VariantStorageOptions.STUDY.key(), studyId);
                 storageEngine.getOptions().putAll(options);
-                storageEngine.getOptions().put(VariantStorageEngine.Options.RELEASE.key(), release++);
+                storageEngine.getOptions().put(VariantStorageOptions.RELEASE.key(), release++);
                 storageEngine.index(inputFiles.subList(0, 2), outputUri, true, true, true);
 
                 Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
@@ -79,7 +80,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
 
                 //////////////////////
                 storageEngine.getOptions().putAll(options);
-                storageEngine.getOptions().put(VariantStorageEngine.Options.RELEASE.key(), release++);
+                storageEngine.getOptions().put(VariantStorageOptions.RELEASE.key(), release++);
                 storageEngine.index(inputFiles.subList(2, 4), outputUri, true, true, true);
 
                 expected = dbAdaptor.count(query.append(VariantQueryParam.FILE.key(),
@@ -96,8 +97,8 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
 
 
                 //////////////////////
-                QueryOptions statsOptions = new QueryOptions(VariantStorageEngine.Options.STUDY.key(), STUDY_NAME)
-                        .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
+                QueryOptions statsOptions = new QueryOptions(VariantStorageOptions.STUDY.key(), STUDY_NAME)
+                        .append(VariantStorageOptions.LOAD_BATCH_SIZE.key(), 100)
                         .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
                         .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "stats");
                 storageEngine.calculateStats(studyMetadata.getName(), Collections.singletonList("ALL"), statsOptions);
@@ -173,7 +174,7 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
         }
 
 //        dbAdaptor.getMetadataManager().updateStudyMetadata(studyMetadata, null);
-        options.put(VariantStorageEngine.Options.STUDY.key(), studyId);
+        options.put(VariantStorageOptions.STUDY.key(), studyId);
         storageEngine.getOptions().putAll(options);
         storageEngine.index(inputFiles, outputUri, true, true, true);
 

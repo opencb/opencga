@@ -133,12 +133,8 @@ public class VariantExportStorageOperation extends OpenCgaAnalysis {
     }
 
     private VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {
-        try {
-            return StorageEngineFactory.get(variantStorageManager.getStorageConfiguration())
-                    .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            throw new StorageEngineException("Unable to create StorageEngine", e);
-        }
+        return StorageEngineFactory.get(variantStorageManager.getStorageConfiguration())
+                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
     }
 
     private String buildOutputFileName(List<String> studyNames, List<Region> regions) {

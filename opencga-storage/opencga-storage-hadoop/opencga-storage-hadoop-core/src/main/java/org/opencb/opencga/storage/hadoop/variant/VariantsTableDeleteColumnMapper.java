@@ -20,7 +20,8 @@ public class VariantsTableDeleteColumnMapper extends DeleteHBaseColumnDriver.Del
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
-        columnFamily = new GenomeHelper(context.getConfiguration()).getColumnFamily();
+        new GenomeHelper(context.getConfiguration());
+        columnFamily = GenomeHelper.COLUMN_FAMILY_BYTES;
     }
 
     @Override

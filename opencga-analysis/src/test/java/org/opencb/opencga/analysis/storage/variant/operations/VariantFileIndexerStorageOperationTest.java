@@ -41,7 +41,7 @@ import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.Logger;
@@ -73,8 +73,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
     @Test
     public void testIndexWithStats() throws Exception {
 
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false);
-        queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false);
+        queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
         queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, outputId);
         variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
@@ -87,7 +87,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         assertEquals(Cohort.CohortStatus.NONE, getDefaultCohort(studyId).getStatus().getName());
         assertNotNull(catalogManager.getFileManager().get(studyId, getFile(1).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
-        queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
+        queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), true);
         variantManager.index(studyId, getFile(2).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(1500, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
@@ -95,13 +95,13 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
                 dbName, sessionId);
         assertNotNull(catalogManager.getFileManager().get(studyId, getFile(2).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
-        queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+        queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), false);
         variantManager.index(studyId, getFile(3).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(2000, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.INVALID, getDefaultCohort(studyId).getStatus().getName());
         assertNotNull(catalogManager.getFileManager().get(studyId, getFile(3).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
 
-        queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
+        queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), true);
         variantManager.index(studyId, getFile(4).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(2504, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
@@ -113,9 +113,9 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
     @Test
     public void testIndexWithStatsLowerCaseAggregationType() throws Exception {
 
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false);
-        queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
-        queryOptions.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), "none");
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false);
+        queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), true);
+        queryOptions.put(VariantStorageOptions.STATS_AGGREGATION.key(), "none");
 
         queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, outputId);
         variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
@@ -127,9 +127,9 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
     @Test
     public void testIndexWithStatsWrongAggregationType() throws Exception {
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false);
-        queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
-        queryOptions.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), "wrong_type");
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false);
+        queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), true);
+        queryOptions.put(VariantStorageOptions.STATS_AGGREGATION.key(), "wrong_type");
 
         queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, outputId);
         try {
@@ -141,7 +141,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
             assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getIndex().getStatus().getName());
             assertNotNull(catalogManager.getFileManager().get(studyId, getFile(0).getId(), null, sessionId).first().getStats().get(FileMetadataReader.VARIANT_FILE_STATS));
         }
-        queryOptions.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), "none");
+        queryOptions.put(VariantStorageOptions.STATS_AGGREGATION.key(), "none");
         // File already transformed
         queryOptions.put(VariantFileIndexerStorageOperation.LOAD, true);
         variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
@@ -157,16 +157,16 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
     @Test
     public void testIndex() throws Exception {
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
         indexFile(getFile(0), queryOptions, outputId);
     }
 
     @Test
     public void testDeleteIndexedFile() throws Exception {
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
         File inputFile = getFile(0);
         indexFile(inputFile, queryOptions, outputId);
@@ -180,8 +180,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
     @Test
     public void testDeleteSampleFromIndexedFile() throws Exception {
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
         File inputFile = getFile(0);
         indexFile(inputFile, queryOptions, outputId);
@@ -193,8 +193,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
     @Test
     public void testIndexFromFolder() throws Exception {
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
         File file = getFile(0);
         Path pathParent = Paths.get(file.getPath()).getParent();
 
@@ -204,8 +204,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
     @Test
     public void testIndexBySteps() throws Exception {
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
         File transformedFile = transformFile(getFile(0), queryOptions);
         loadFile(transformedFile, queryOptions, outputId);
@@ -213,8 +213,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
     @Test
     public void testDeleteTransformedFile() throws Exception {
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
         File inputFile = getFile(0);
         File transformedFile = transformFile(inputFile, queryOptions);
@@ -231,8 +231,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
     @Test
     public void testIndexByStepsWithStats() throws Exception {
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true);
 
         File transformedFile = transformFile(getFile(0), queryOptions);
         loadFile(transformedFile, queryOptions, outputId);
@@ -240,8 +240,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
     @Test
     public void testDeleteCohortWithStats() throws Exception {
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true);
 
         File transformedFile = transformFile(getFile(0), queryOptions);
         loadFile(transformedFile, queryOptions, outputId);
@@ -253,8 +253,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
     @Test
     public void testIndexByStepsSameInput() throws Exception {
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true);
 
         transformFile(getFile(0), queryOptions);
         loadFile(getFile(0), queryOptions, outputId);
@@ -263,8 +263,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
     @Test
     public void testIndexWithTransformError() throws Exception {
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
         DummyVariantStoragePipeline storageETL = mockVariantStorageETL();
         List<File> files = Arrays.asList(getFile(0), getFile(1));
@@ -299,8 +299,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
     @Test
     public void testTransformTransformingFiles() throws Exception {
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
         List<File> files = Arrays.asList(getFile(0), getFile(1));
         catalogManager.getFileManager().updateFileIndexStatus(getFile(1), FileIndex.IndexStatus.TRANSFORMING, "", sessionId);
@@ -311,9 +311,9 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
     @Test
     public void testResumeTransformTransformingFiles() throws Exception {
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
-                .append(VariantStorageEngine.Options.RESUME.key(), true);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
+                .append(VariantStorageOptions.RESUME.key(), true);
 
         List<File> files = Arrays.asList(getFile(0), getFile(1));
         catalogManager.getFileManager().updateFileIndexStatus(getFile(1), FileIndex.IndexStatus.TRANSFORMING, "", sessionId);
@@ -324,8 +324,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
     @Test
     public void testIndexWithLoadErrorExternalOutputFolder() throws Exception {
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
         List<File> files = Arrays.asList(getFile(0), getFile(1));
         queryOptions.put(DummyVariantStoragePipeline.VARIANTS_LOAD_FAIL, files.get(1).getName() + ".variants.avro.gz");
@@ -354,8 +354,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
     @Test
     public void testIndexWithLoadError() throws Exception {
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
         List<File> files = Arrays.asList(getFile(0), getFile(1));
         queryOptions.put(DummyVariantStoragePipeline.VARIANTS_LOAD_FAIL, files.get(1).getName() + ".variants.avro.gz");
@@ -386,7 +386,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
     public void testIndexByStepsExternallyTransformed() throws Exception {
         QueryOptions queryOptions = new QueryOptions(VariantFileIndexerStorageOperation.TRANSFORM, true)
                 // TODO: Should work without isolating transformation?
-                .append(VariantStorageEngine.Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
+                .append(VariantStorageOptions.TRANSFORM_ISOLATE.key(), true);
 
 //        File transformFile = transformFile(getFile(0), queryOptions);
         String outdir = opencga.createTmpOutdir(studyId, "_TRANSFORM_", sessionId);
@@ -405,8 +405,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         assertNotNull(transformFile);
         catalogManager.getFileManager().matchUpVariantFiles(studyId2, singletonList(transformFile), sessionId);
 
-        queryOptions = new QueryOptions().append(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
+        queryOptions = new QueryOptions().append(VariantStorageOptions.ANNOTATE.key(), false)
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true);
         loadFile(transformFile, queryOptions, outputId2);
 
     }

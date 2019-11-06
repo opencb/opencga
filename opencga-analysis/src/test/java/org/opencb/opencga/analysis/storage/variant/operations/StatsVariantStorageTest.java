@@ -36,7 +36,7 @@ import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.slf4j.Logger;
@@ -75,7 +75,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
                     null, null, sessionId).first();
             coh[i] = cohort.getId();
         }
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false);
         variantManager.index(studyId, file.getId(), createTmpOutdir(file), queryOptions, sessionId);
 
         all = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(),
@@ -86,7 +86,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         Map<String, Object> attributes;
         if (aggregation != null) {
-            attributes = Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), aggregation);
+            attributes = Collections.singletonMap(VariantStorageOptions.STATS_AGGREGATION.key(), aggregation);
         } else {
             attributes = Collections.emptyMap();
         }
@@ -96,7 +96,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
 //        coh0 = catalogManager.createCohort(studyId, "coh0", Cohort.Type.CONTROL_SET, "", file1.getSampleIds(), null, sessionId).first().getId();
 
-        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false);
         variantManager.index(studyId, file1.getId(), createTmpOutdir(file1), queryOptions, sessionId);
         return file1;
     }
@@ -302,7 +302,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
             assertThat(actual, hasMessage(is(expected.getMessage())));
         }
 
-        calculateStats(coh[1], new QueryOptions(VariantStorageEngine.Options.RESUME.key(), true));
+        calculateStats(coh[1], new QueryOptions(VariantStorageOptions.RESUME.key(), true));
 
     }
 
@@ -324,11 +324,11 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
     public void testCalculateAggregatedStatsNonAggregatedStudy() throws Exception {
         beforeAggregated("variant-test-aggregated-file.vcf.gz", null);
 
-        calculateAggregatedStats(new QueryOptions(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), Aggregation.BASIC));
+        calculateAggregatedStats(new QueryOptions(VariantStorageOptions.STATS_AGGREGATION.key(), Aggregation.BASIC));
 
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
 
-        String agg = study.getAttributes().get(VariantStorageEngine.Options.AGGREGATED_TYPE.key()).toString();
+        String agg = study.getAttributes().get(VariantStorageOptions.STATS_AGGREGATION.key()).toString();
         assertNotNull(agg);
         assertEquals(Aggregation.BASIC.toString(), agg);
     }
@@ -351,7 +351,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         List<String> cohortIds = createCohorts(sessionId, studyId, tagMap, catalogManager, logger)
                 .stream().map(Cohort::getId).map(Object::toString).collect(Collectors.toList());
 
-        QueryOptions options = new QueryOptions(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
+        QueryOptions options = new QueryOptions(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), tagMap);
         calculateStats(options, cohortIds);
 
         List<Cohort> cohorts = catalogManager.getCohortManager().search(studyId, (Query) null, null, sessionId).getResults();
@@ -372,7 +372,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         String tagMap = getResourceUri("exac-tag-mapping.properties").getPath();
 
-        QueryOptions options = new QueryOptions(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
+        QueryOptions options = new QueryOptions(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), tagMap);
         calculateStats(options, Arrays.asList("AFR", "ALL", "AMR", "EAS", "FIN", "NFE", "OTH", "SAS"));
 
         List<Cohort> cohorts = catalogManager.getCohortManager().search(studyId, (Query) null, null, sessionId).getResults();
@@ -393,7 +393,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         String tagMap = getResourceUri("exac-tag-mapping.properties").getPath();
 
-        QueryOptions options = new QueryOptions(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
+        QueryOptions options = new QueryOptions(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), tagMap);
 
         thrown.expectMessage(VariantStatsStorageOperation.differentCohortsThanMappingFile().getMessage());
         calculateStats(options, Arrays.asList("AFR", "ALL"));
@@ -415,7 +415,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         String tagMap = getResourceUri("exac-tag-mapping.properties").getPath();
 
-        QueryOptions options = new QueryOptions(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
+        QueryOptions options = new QueryOptions(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), tagMap);
 
         thrown.expectMessage(VariantStatsStorageOperation.nonAggregatedWithMappingFile().getMessage());
         calculateStats(options, Arrays.asList("ALL"));
@@ -427,7 +427,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         String tagMap = getResourceUri("exac-tag-mapping.properties").getPath();
 
-        QueryOptions options = new QueryOptions(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
+        QueryOptions options = new QueryOptions(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), tagMap);
         calculateStats(options);
 
         List<Cohort> cohorts = catalogManager.getCohortManager().search(studyId, (Query) null, null, sessionId).getResults();

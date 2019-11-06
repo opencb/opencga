@@ -26,7 +26,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -37,7 +37,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.STATS_DEFAULT_GENOTYPE;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.AND;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.NOT;
 
@@ -55,11 +55,11 @@ public abstract class VariantStatisticsManager {
      * @param study     Study
      * @param cohorts   Cohorts to calculate stats
      * @param options   Other options
-     *                  {@link org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options#AGGREGATION_MAPPING_PROPERTIES}
-     *                  {@link org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options#OVERWRITE_STATS}
-     *                  {@link org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options#UPDATE_STATS}
-     *                  {@link org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options#LOAD_THREADS}
-     *                  {@link org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options#LOAD_BATCH_SIZE}
+     *                  {@link VariantStorageOptions#STATS_AGGREGATION_MAPPING_FILE}
+     *                  {@link VariantStorageOptions#STATS_OVERWRITE}
+     *                  {@link VariantStorageOptions#STATS_UPDATE}
+     *                  {@link VariantStorageOptions#LOAD_THREADS}
+     *                  {@link VariantStorageOptions#LOAD_BATCH_SIZE}
      *                  {@link org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam#REGION}
      *
      * @throws StorageEngineException      If there is any problem related with the StorageEngine
@@ -274,11 +274,11 @@ public abstract class VariantStatisticsManager {
     }
 
     public static Properties getAggregationMappingProperties(QueryOptions options) {
-        return options.get(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), Properties.class, null);
+        return options.get(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), Properties.class, null);
     }
 
     protected static Aggregation getAggregation(StudyMetadata studyMetadata, ObjectMap options) {
-        return AggregationUtils.valueOf(options.getString(VariantStorageEngine.Options.AGGREGATED_TYPE.key(),
+        return AggregationUtils.valueOf(options.getString(VariantStorageOptions.STATS_AGGREGATION.key(),
                 studyMetadata.getAggregation().toString()));
     }
 

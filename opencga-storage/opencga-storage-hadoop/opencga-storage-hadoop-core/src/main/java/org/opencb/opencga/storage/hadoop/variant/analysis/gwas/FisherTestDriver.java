@@ -20,11 +20,12 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -75,7 +76,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
     @Override
     protected Map<String, String> getParams() {
         Map<String, String> params = new HashMap<>();
-        params.put("--" + VariantStorageEngine.Options.STUDY.key(), "<study>*");
+        params.put("--" + VariantStorageOptions.STUDY.key(), "<study>*");
         params.put("--" + OUTDIR, "<outdir>*");
         params.put("--" + CASE_COHORT, "<case-cohort>*");
         params.put("--" + CONTROL_COHORT, "<control-cohort>*");
@@ -248,9 +249,9 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
             VariantStorageMetadataManager metadataManager = getMetadataManager();
             StudyMetadata studyMetadata = getStudyMetadata();
 
-            caseCohortCalculator = new HBaseVariantStatsCalculator(helper.getColumnFamily(),
+            caseCohortCalculator = new HBaseVariantStatsCalculator(GenomeHelper.COLUMN_FAMILY_BYTES,
                     metadataManager, studyMetadata, caseCohortIds, false, "0/0");
-            controlCohortCalculator = new HBaseVariantStatsCalculator(helper.getColumnFamily(),
+            controlCohortCalculator = new HBaseVariantStatsCalculator(GenomeHelper.COLUMN_FAMILY_BYTES,
                     metadataManager, studyMetadata, controlCohortIds, false, "0/0");
         }
 

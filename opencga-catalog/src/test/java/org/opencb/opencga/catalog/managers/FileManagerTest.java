@@ -91,7 +91,7 @@ public class FileManagerTest extends AbstractManagerTest {
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, "analyst");
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "user2", aclParams, sessionIdUser);
         fileManager.create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
-                "data/test/folder/file.txt", "My description", null, 0, null, (long) -1, null, null, true, null, null, sessionIdUser2);
+                "data/test/folder/file.txt", "My description", null, 0, null, (long) -1, null, null, true, "blabla", null, sessionIdUser2);
         assertEquals(1, fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(),
                 "data/test/folder/file.txt"), null, sessionIdUser).getNumResults());
     }
@@ -713,7 +713,7 @@ public class FileManagerTest extends AbstractManagerTest {
         Study.StudyAclParams aclParams = new Study.StudyAclParams("", AclParams.Action.ADD, "analyst");
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "user2", aclParams, sessionIdUser);
         File file = fileManager.create(studyFqn, File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
-                "data/test/folder/file.txt", "My description", null, 0, null, (long) -1, null, null, true, null, null,
+                "data/test/folder/file.txt", "My description", null, 0, null, (long) -1, null, null, true, "blabla", null,
                 sessionIdUser2).first();
         long fileId = fileManager.get(studyFqn, file.getPath(), FileManager.INCLUDE_FILE_IDS, sessionIdUser).first().getUid();
         assertEquals(file.getUid(), fileId);
@@ -1527,46 +1527,47 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(FileIndex.IndexStatus.TRANSFORMED, read.first().getIndex().getStatus().getName());
     }
 
-    @Test
-    public void testIndex() throws Exception {
-        URI uri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
-        File file = fileManager.link(studyFqn, uri, "", null, sessionIdUser).first();
-        assertEquals(4, file.getSamples().size());
-        assertEquals(File.Format.VCF, file.getFormat());
-        assertEquals(File.Bioformat.VARIANT, file.getBioformat());
-
-        Job job = fileManager.index(studyFqn, Collections.singletonList(file.getName()), "VCF", null, sessionIdUser).first();
-        assertEquals(file.getUid(), job.getInput().get(0).getUid());
-    }
-
-    @Test
-    public void testIndexFromAvro() throws Exception {
-        URI uri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
-        File file = fileManager.link(studyFqn, uri, "data", null, sessionIdUser).first();
-        fileManager.create(studyFqn, File.Type.FILE, File.Format.AVRO, null, "data/variant-test-file.vcf.gz.variants.avro.gz",
-                "description", new File.FileStatus(File.FileStatus.READY), 0, Collections.emptyList(), -1, Collections.emptyMap(), Collections.emptyMap(), true, "asdf", new QueryOptions(), sessionIdUser);
-        fileManager.link(studyFqn, getClass().getResource("/biofiles/variant-test-file.vcf.gz.file.json.gz").toURI(), "data", null,
-                sessionIdUser).first();
-
-        Job job = fileManager.index(studyFqn, Collections.singletonList("variant-test-file.vcf.gz.variants.avro.gz"), "VCF", null,
-                sessionIdUser).first();
-        assertEquals(file.getUid(), job.getInput().get(0).getUid());
-    }
-
-    @Test
-    public void testIndexFromAvroIncomplete() throws Exception {
-        URI uri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
-        File file = fileManager.link(studyFqn, uri, "data", null, sessionIdUser).first();
-        fileManager.create(studyFqn, File.Type.FILE, File.Format.AVRO, null, "data/variant-test-file.vcf.gz.variants.avro.gz",
-                "description", new File.FileStatus(File.FileStatus.READY), 0, Collections.emptyList(), -1, Collections.emptyMap(),
-                Collections.emptyMap(), true, "asdf", new QueryOptions(), sessionIdUser);
-//        fileManager.link(getClass().getResource("/biofiles/variant-test-file.vcf.gz.file.json.gz").toURI(), "data", studyUid, null, sessionIdUser).first();
-
-
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("The file variant-test-file.vcf.gz.variants.avro.gz is not a VCF file.");
-        fileManager.index(studyFqn, Collections.singletonList("variant-test-file.vcf.gz.variants.avro.gz"), "VCF", null, sessionIdUser).first();
-    }
+//    @Test
+//    public void testIndex() throws Exception {
+//        URI uri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
+//        File file = fileManager.link(studyFqn, uri, "", null, sessionIdUser).first();
+//        assertEquals(4, file.getSamples().size());
+//        assertEquals(File.Format.VCF, file.getFormat());
+//        assertEquals(File.Bioformat.VARIANT, file.getBioformat());
+//
+//        Job job = fileManager.index(studyFqn, Collections.singletonList(file.getName()), "VCF", null, sessionIdUser).first();
+//        assertEquals(file.getUid(), job.getInput().get(0).getUid());
+//    }
+//
+//    @Test
+//    public void testIndexFromAvro() throws Exception {
+//        URI uri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
+//        File file = fileManager.link(studyFqn, uri, "data", null, sessionIdUser).first();
+//        fileManager.create(studyFqn, File.Type.FILE, File.Format.AVRO, null, "data/variant-test-file.vcf.gz.variants.avro.gz",
+//                "description", new File.FileStatus(File.FileStatus.READY), 0, Collections.emptyList(), -1, Collections.emptyMap(), Collections.emptyMap(), true, "asdf", new QueryOptions(), sessionIdUser);
+//        fileManager.link(studyFqn, getClass().getResource("/biofiles/variant-test-file.vcf.gz.file.json.gz").toURI(), "data", null,
+//                sessionIdUser).first();
+//
+//        Job job = fileManager.index(studyFqn, Collections.singletonList("variant-test-file.vcf.gz.variants.avro.gz"), "VCF", null,
+//                sessionIdUser).first();
+//        assertEquals(file.getUid(), job.getInput().get(0).getUid());
+//    }
+//
+//    @Test
+//    public void testIndexFromAvroIncomplete() throws Exception {
+//        URI uri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
+//        File file = fileManager.link(studyFqn, uri, "data", null, sessionIdUser).first();
+//        fileManager.create(studyFqn, File.Type.FILE, File.Format.AVRO, null, "data/variant-test-file.vcf.gz.variants.avro.gz",
+//                "description", new File.FileStatus(File.FileStatus.READY), 0, Collections.emptyList(), -1, Collections.emptyMap(),
+//                Collections.emptyMap(), true, "asdf", new QueryOptions(), sessionIdUser);
+////        fileManager.link(getClass().getResource("/biofiles/variant-test-file.vcf.gz.file.json.gz").toURI(), "data", studyUid, null, s
+////        essionIdUser).first();
+//
+//
+//        thrown.expect(CatalogException.class);
+//        thrown.expectMessage("The file variant-test-file.vcf.gz.variants.avro.gz is not a VCF file.");
+//        fileManager.index(studyFqn, Collections.singletonList("variant-test-file.vcf.gz.variants.avro.gz"), "VCF", null, sessionIdUser).first();
+//    }
 
 //    @Test
 //    public void testMassiveUpdateFileAcl() throws CatalogException {

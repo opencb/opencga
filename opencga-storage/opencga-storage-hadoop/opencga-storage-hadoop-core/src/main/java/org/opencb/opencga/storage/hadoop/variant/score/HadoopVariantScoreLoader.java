@@ -13,6 +13,7 @@ import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescripto
 import org.opencb.opencga.storage.core.variant.score.VariantScoreLoader;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreParser;
 import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
@@ -40,7 +41,7 @@ public class HadoopVariantScoreLoader extends VariantScoreLoader {
 
         VariantScoreParser parser = newParser(scoreMetadata, descriptor);
         VariantScoreToHBaseConverter converter = new VariantScoreToHBaseConverter(
-                dbAdaptor.getGenomeHelper().getColumnFamily(),
+                GenomeHelper.COLUMN_FAMILY_BYTES,
                 scoreMetadata.getStudyId(),
                 scoreMetadata.getId());
 

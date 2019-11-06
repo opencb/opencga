@@ -14,6 +14,7 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
@@ -42,12 +43,12 @@ public class HBaseToStudyEntryConverterTest {
         mm.addIndexedFiles(sm.getId(), Arrays.asList(1, 2));
 
         mm.updateStudyMetadata(sm.getId(), s -> {
-            s.getAttributes().put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+            s.getAttributes().put(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
             return s;
         });
 
         final GenomeHelper genomeHelper = new GenomeHelper(new Configuration());
-        converter = new HBaseToStudyEntryConverter(genomeHelper.getColumnFamily(), mm, null);
+        converter = new HBaseToStudyEntryConverter(GenomeHelper.COLUMN_FAMILY_BYTES, mm, null);
     }
 
     @Test
@@ -70,7 +71,7 @@ public class HBaseToStudyEntryConverterTest {
     @Test
     public void testConvertExtendedFormat() throws Exception {
         mm.updateStudyMetadata(sm.getId(), s -> {
-            s.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "AD,DP");
+            s.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "AD,DP");
             return s;
         });
 
@@ -92,7 +93,7 @@ public class HBaseToStudyEntryConverterTest {
 
 //    @Test
 //    public void testConvertExtendedFormatFileEntryData() throws Exception {
-//        sc.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "AD,DP");
+//        sc.getAttributes().put(VariantStorageEngine.Options.EXTRA_FORMAT_FIELDS.key(), "AD,DP");
 //        scm.updateStudyConfiguration(sc, null);
 //
 //        List<Pair<Integer, List<String>>> fixedValues = new ArrayList<>();
@@ -123,8 +124,8 @@ public class HBaseToStudyEntryConverterTest {
     @Test
     public void testConvertFileEntryData() throws Exception {
         mm.updateStudyMetadata(sm.getId(), s -> {
-            s.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "AD,DP");
-            s.getAttributes().put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED);
+            s.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "AD,DP");
+            s.getAttributes().put(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.ADVANCED);
             return s;
         });
 

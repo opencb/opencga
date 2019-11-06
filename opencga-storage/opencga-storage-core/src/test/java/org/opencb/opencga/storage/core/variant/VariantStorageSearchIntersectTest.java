@@ -22,7 +22,6 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.opencb.biodata.models.metadata.SampleSetType;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -101,11 +100,11 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         studyMetadata = newStudyMetadata();
 
         clearDB(DB_NAME);
-        ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), SampleSetType.FAMILY)
-                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
-                .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
-                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
+        ObjectMap params = new ObjectMap()
+                .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
+                .append(VariantStorageOptions.ANNOTATE.key(), true)
+                .append(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), "DS,GL")
+                .append(VariantStorageOptions.STATS_CALCULATE.key(), true);
 
         VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
         VariantStorageMetadataManager metadataManager = variantStorageEngine.getMetadataManager();
@@ -115,9 +114,9 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         Integer indexedFileId = metadataManager.getIndexedFiles(studyMetadata.getId()).iterator().next();
 
         //Calculate stats
-        if (params.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)) {
-            QueryOptions options = new QueryOptions(VariantStorageEngine.Options.STUDY.key(), STUDY_NAME)
-                    .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
+        if (params.getBoolean(VariantStorageOptions.STATS_CALCULATE.key(), true)) {
+            QueryOptions options = new QueryOptions(VariantStorageOptions.STUDY.key(), STUDY_NAME)
+                    .append(VariantStorageOptions.LOAD_BATCH_SIZE.key(), 100)
                     .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
                     .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "cohort1.cohort2.stats");
             Iterator<Integer> iterator = metadataManager.getFileMetadata(studyMetadata.getId(), indexedFileId).getSamples().iterator();
@@ -141,7 +140,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
                     new ArrayList<>(cohorts.keySet()), options);
 
         }
-        if (params.getBoolean(VariantStorageEngine.Options.ANNOTATE.key())) {
+        if (params.getBoolean(VariantStorageOptions.ANNOTATE.key())) {
             for (int i = 0; i < 30  ; i++) {
                 allVariants = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true));
                 Long annotated = dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first();
@@ -272,7 +271,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
                 .append(ANNOT_CONSERVATION.key(), "gerp>0.1");
         long realCount = dbAdaptor.count(query).first();
         VariantQueryResult<Long> result = variantQueryExecutor
-                .approximateCount(query, new QueryOptions(VariantStorageEngine.Options.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), realCount * 0.1));
+                .approximateCount(query, new QueryOptions(VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), realCount * 0.1));
         long approxCount = result.first();
         System.out.println("approxCount = " + approxCount);
         System.out.println("realCount = " + realCount);
@@ -287,7 +286,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
                 .append(ANNOT_CONSERVATION.key(), "gerp>0.1");
         long realCount = dbAdaptor.count(query).first();
         VariantQueryResult<Long> result = variantQueryExecutor
-                .approximateCount(query, new QueryOptions(VariantStorageEngine.Options.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), allVariants.getNumResults()));
+                .approximateCount(query, new QueryOptions(VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), allVariants.getNumResults()));
         long approxCount = result.first();
         System.out.println("approxCount = " + approxCount);
         System.out.println("realCount = " + realCount);
@@ -300,7 +299,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         Query query = new Query(ANNOT_CONSERVATION.key(), "gerp>0.1");
         long realCount = dbAdaptor.count(query).first();
         VariantQueryResult<Long> result = variantQueryExecutor
-                .approximateCount(query, new QueryOptions(VariantStorageEngine.Options.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), 2));
+                .approximateCount(query, new QueryOptions(VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), 2));
         long approxCount = result.first();
         System.out.println("approxCount = " + approxCount);
         System.out.println("realCount = " + realCount);

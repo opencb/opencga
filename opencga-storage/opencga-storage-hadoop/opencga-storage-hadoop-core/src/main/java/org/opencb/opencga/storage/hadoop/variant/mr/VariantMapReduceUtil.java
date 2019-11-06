@@ -23,7 +23,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHBaseQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
@@ -86,7 +86,9 @@ public class VariantMapReduceUtil {
     public static void initTableMapperJob(Job job, String inTable, Scan scan, Class<? extends TableMapper> mapperClass,
                                           Class<? extends InputFormat> inputFormatClass)
             throws IOException {
-        boolean addDependencyJar = job.getConfiguration().getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
+        boolean addDependencyJar = job.getConfiguration().getBoolean(
+                HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.key(),
+                HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.defaultValue());
         LOGGER.info("Use table {} as input", inTable);
         TableMapReduceUtil.initTableMapperJob(
                 inTable,      // input table
@@ -106,7 +108,9 @@ public class VariantMapReduceUtil {
         } else if (scans.size() == 1) {
             initTableMapperJob(job, inTable, scans.get(0), mapperClass);
         } else {
-            boolean addDependencyJar = job.getConfiguration().getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
+            boolean addDependencyJar = job.getConfiguration().getBoolean(
+                    HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.key(),
+                    HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.defaultValue());
             LOGGER.info("Use table {} as input", inTable);
             for (Scan scan : scans) {
                 scan.setAttribute(Scan.SCAN_ATTRIBUTES_TABLE_NAME, Bytes.toBytes(inTable));
@@ -359,7 +363,9 @@ public class VariantMapReduceUtil {
     }
 
     public static void setOutputHBaseTable(Job job, String outTable) throws IOException {
-        boolean addDependencyJar = job.getConfiguration().getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
+        boolean addDependencyJar = job.getConfiguration().getBoolean(
+                HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.key(),
+                HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.defaultValue());
         LOGGER.info("Use table {} as output", outTable);
         TableMapReduceUtil.initTableReducerJob(
                 outTable,      // output table
@@ -373,7 +379,9 @@ public class VariantMapReduceUtil {
         job.setOutputFormatClass(MultiTableOutputFormat.class);
         LOGGER.info("Use multi-table as output");
 
-        boolean addDependencyJars = job.getConfiguration().getBoolean(HadoopVariantStorageEngine.MAPREDUCE_ADD_DEPENDENCY_JARS, true);
+        boolean addDependencyJars = job.getConfiguration().getBoolean(
+                HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.key(),
+                HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.defaultValue());
 
         if (addDependencyJars) {
             TableMapReduceUtil.addDependencyJars(job);
@@ -396,6 +404,10 @@ public class VariantMapReduceUtil {
     }
 
     public static void configureVCores(Configuration conf) {
+//        mapreduce.map.cpu.vcores: 1
+//        mapreduce.map.memory.mb: 2560
+//        opencga.variant.table.mapreduce.map.java.opts: -Xmx2048m,-XX:+UseG1GC,-Djava.util.concurrent.ForkJoinPool.common.parallelism=1
+
         // Set parallel pool size
         String fjpKey = "java.util.concurrent.ForkJoinPool.common.parallelism";
         boolean hasForkJoinPool = false;
@@ -456,11 +468,11 @@ public class VariantMapReduceUtil {
     }
 
     public static List<Scan> configureMapReduceScans(List<Scan> scans, Configuration conf) {
-        return configureMapReduceScans(scans, conf, 50);
+        return configureMapReduceScans(scans, conf, HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING.defaultValue());
     }
 
     public static List<Scan> configureMapReduceScans(List<Scan> scans, Configuration conf, int defaultCacheSize) {
-        int caching = conf.getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, defaultCacheSize);
+        int caching = conf.getInt(HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING.key(), defaultCacheSize);
 
         LOGGER.info("Scan set Caching to " + caching);
         for (Scan scan : scans) {

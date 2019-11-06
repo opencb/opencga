@@ -10,7 +10,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantRowMapper;
 import org.slf4j.Logger;
@@ -37,7 +37,7 @@ public abstract class VariantTableAggregationDriver extends AbstractVariantsTabl
     @Override
     protected Map<String, String> getParams() {
         Map<String, String> params = new LinkedHashMap<>();
-        params.put("--" + VariantStorageEngine.Options.STUDY.key(), "<study>*");
+        params.put("--" + VariantStorageOptions.STUDY.key(), "<study>*");
         params.put("--" + OUTPUT, "<output>");
         return params;
     }

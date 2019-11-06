@@ -8,9 +8,8 @@ import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManagerTest;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
@@ -43,8 +42,8 @@ public class HadoopVariantAnnotationManagerTest extends VariantAnnotationManager
         for (int i = 0; i < 3; i++) {
             URI platinumFile = getPlatinumFile(i);
 
-            runDefaultETL(platinumFile, engine, null, new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                    .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false));
+            runDefaultETL(platinumFile, engine, null, new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
+                    .append(VariantStorageOptions.STATS_CALCULATE.key(), false));
 
             // Update pending variants
             new TestMRExecutor().run(DiscoverPendingVariantsToAnnotateDriver.class,
@@ -69,6 +68,6 @@ public class HadoopVariantAnnotationManagerTest extends VariantAnnotationManager
 
         long variants = engine.count(new Query()).first();
         Assert.assertEquals(0L, engine.annotate(new Query(), new ObjectMap()));
-        Assert.assertEquals(variants, engine.annotate(new Query(), new ObjectMap(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, true)));
+        Assert.assertEquals(variants, engine.annotate(new Query(), new ObjectMap(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), true)));
     }
 }
