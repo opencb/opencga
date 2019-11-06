@@ -110,10 +110,10 @@ public class Enums {
     }
 
     public enum Priority {
-        URGENT(4),
-        HIGH(3),
-        MEDIUM(2),
-        LOW(1);
+        URGENT(1),
+        HIGH(2),
+        MEDIUM(3),
+        LOW(4);
 
         private int value;
 

@@ -21,12 +21,14 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.Arrays;
 import java.util.Calendar;
@@ -107,6 +109,50 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
             System.out.println("correct exception: " + e);
         }
 
+    }
+
+    @Test
+    public void testSortResultsPriorityAndCreationDate() throws CatalogDBException {
+        long studyUid = user3.getProjects().get(0).getStudies().get(0).getUid();
+
+        Date startDate = TimeUtils.getDate();
+
+        // Create 100 jobs
+        for (int i = 0; i < 100; i++) {
+            Job job = new Job().setId(String.valueOf(i))
+                    .setStatus(new Job.JobStatus(Job.JobStatus.QUEUED))
+                    .setPriority(Enums.Priority.getPriority((i % 4) + 1))
+                    .setCreationDate(TimeUtils.getTime());
+
+            catalogJobDBAdaptor.insert(studyUid, job, QueryOptions.empty());
+        }
+
+        Query query = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED);
+        QueryOptions options = new QueryOptions()
+                .append(QueryOptions.SORT, Arrays.asList(JobDBAdaptor.QueryParams.PRIORITY.key(),
+                        JobDBAdaptor.QueryParams.CREATION_DATE.key()))
+                .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
+
+        int elems = 0;
+        DBIterator<Job> iterator = catalogJobDBAdaptor.iterator(query, options);
+
+        String creationDate = TimeUtils.getTime(startDate);
+        int priority = 0;
+        while (iterator.hasNext()) {
+            Job job = iterator.next();
+            assertTrue(priority <= job.getPriority().getValue());
+            if (priority < job.getPriority().getValue()) {
+                creationDate = TimeUtils.getTime(startDate);
+            }
+            assertTrue(Long.parseLong(creationDate) <= Long.parseLong(job.getCreationDate()));
+
+            priority = job.getPriority().getValue();
+            creationDate = job.getCreationDate();
+
+            elems ++;
+        }
+
+        assertEquals(100, elems);
     }
 
 //    @Test

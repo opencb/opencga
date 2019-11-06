@@ -735,7 +735,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         catalogManager.getJobManager().create(studyId, new Job().setId("myErrorJob"), null, sessionIdUser);
 
-        DataResult<Job> allJobs = catalogManager.getJobManager().search(studyId, (Query) null, null, sessionIdUser);
+        DataResult<Job> allJobs = catalogManager.getJobManager().search(studyId, null, null, sessionIdUser);
 
         assertEquals(1, allJobs.getNumMatches());
         assertEquals(1, allJobs.getNumResults());
