@@ -20,22 +20,22 @@ public enum MongoDBVariantStorageOptions implements ConfigurationOption {
 
     ALREADY_LOADED_VARIANTS("storage.mongodb.alreadyLoadedVariants", 0),
 
-    PARALLEL_WRITE("storage.mongodb.parallel.write", false),
+    PARALLEL_WRITE("storage.mongodb.parallelWrite", false),
 
     STAGE("storage.mongodb.stage", false),
     STAGE_RESUME("storage.mongodb.stage.resume", false),
-    STAGE_PARALLEL_WRITE("storage.mongodb.stage.parallel.write", false),
+    STAGE_PARALLEL_WRITE("storage.mongodb.stage.parallelWrite", false),
     STAGE_CLEAN_WHILE_LOAD("storage.mongodb.stage.clean.while.load", true),
 
-    DIRECT_LOAD("storage.mongodb.direct_load", false),
-    DIRECT_LOAD_PARALLEL_WRITE("storage.mongodb.direct_load.parallel.write", false),
+    DIRECT_LOAD("storage.mongodb.directLoad", false),
+    DIRECT_LOAD_PARALLEL_WRITE("storage.mongodb.directLoad.parallelWrite", false),
 
     MERGE("storage.mongodb.merge", false),
     MERGE_SKIP("storage.mongodb.merge.skip", false), // Internal use only
     MERGE_RESUME("storage.mongodb.merge.resume", false),
-    MERGE_IGNORE_OVERLAPPING_VARIANTS("storage.mongodb.merge.ignore-overlapping-variants", false),   //Do not look for overlapping variants
-    MERGE_PARALLEL_WRITE("storage.mongodb.merge.parallel.write", false),
-    MERGE_BATCH_SIZE("storage.mongodb.merge.batch.size", 10),          //Number of files to merge directly from first to second collection
+    MERGE_IGNORE_OVERLAPPING_VARIANTS("storage.mongodb.merge.ignoreOverlappingVariants", false),   //Do not look for overlapping variants
+    MERGE_PARALLEL_WRITE("storage.mongodb.merge.parallelWrite", false),
+    MERGE_BATCH_SIZE("storage.mongodb.merge.batchSize", 10),          //Number of files to merge directly from first to second collection
 
 
     EXTRA_GENOTYPE_FIELDS_COMPRESS("extra-fields.compress", true),    //Compress with gzip other sample information

@@ -6,10 +6,10 @@ import org.opencb.opencga.storage.core.config.ConfigurationOption;
 public enum HadoopVariantStorageOptions implements ConfigurationOption {
 
 
-    HADOOP_LOAD_FILES_IN_PARALLEL("storage.hadoop.load.files-in-parallel", 1),
+    HADOOP_LOAD_FILES_IN_PARALLEL("storage.hadoop.load.filesInParallel", 1),
     HBASE_NAMESPACE("storage.hadoop.hbase.namespace"),
     EXPECTED_FILES_NUMBER("expected_files_number", 5000),
-    DBADAPTOR_PHOENIX_FETCH_SIZE("storage.hadoop.phoenix.fetch_size", -1),
+    DBADAPTOR_PHOENIX_FETCH_SIZE("storage.hadoop.phoenix.fetchSize", -1),
 
     /////////////////////////
     // MapReduce configuration
@@ -23,7 +23,7 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     /**
      * Jar with dependencies to run MapReduce jobs.
      */
-    MR_JAR_WITH_DEPENDENCIES("storage.hadoop.mr.jar-with-dependencies"),
+    MR_JAR_WITH_DEPENDENCIES("storage.hadoop.mr.jarWithDependencies"),
     /**
      * upload HBase jars and jars for any of the configured job classes via the distributed cache (tmpjars).
      */
@@ -51,13 +51,13 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
      */
     MR_EXECUTOR_SSH_KEY("storage.hadoop.mr.executor.ssh.key"),
     MR_EXECUTOR_SSH_PASSWORD("storage.hadoop.mr.executor.ssh.password"),
-    MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME("storage.hadoop.mr.executor.ssh.remote_opencga_home"),
+    MR_EXECUTOR_SSH_REMOTE_OPENCGA_HOME("storage.hadoop.mr.executor.ssh.remoteOpenCgaHome"),
 
     /////////////////////////
     // Variant table configuration
     /////////////////////////
     VARIANT_TABLE_COMPRESSION("storage.hadoop.variant.table.compression", Compression.Algorithm.SNAPPY.getName()),
-    VARIANT_TABLE_PRESPLIT_SIZE("storage.hadoop.variant.table.presplit.size", 100),
+    VARIANT_TABLE_PRESPLIT_SIZE("storage.hadoop.variant.table.preSplit.size", 100),
     // Do not create phoenix indexes. Testing purposes only
     VARIANT_TABLE_INDEXES_SKIP("storage.hadoop.variant.table.indexes.skip"),
     VARIANT_TABLE_LOAD_REFERENCE("storage.hadoop.variant.table.load.reference", false),
@@ -66,10 +66,10 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     // Archive table configuration
     /////////////////////////
     ARCHIVE_TABLE_COMPRESSION("storage.hadoop.archive.table.compression", Compression.Algorithm.SNAPPY.getName()),
-    ARCHIVE_TABLE_PRESPLIT_SIZE("storage.hadoop.archive.table.presplit.size", 100),
+    ARCHIVE_TABLE_PRESPLIT_SIZE("storage.hadoop.archive.table.preSplit.size", 100),
 
-    ARCHIVE_CHUNK_SIZE("storage.hadoop.archive.table.chunk_size", 1000),
-    ARCHIVE_FILE_BATCH_SIZE("storage.hadoop.archive.table.file_batch_size", 1000),
+    ARCHIVE_CHUNK_SIZE("storage.hadoop.archive.table.chunkSize", 1000),
+    ARCHIVE_FILE_BATCH_SIZE("storage.hadoop.archive.table.fileBatchSize", 1000),
 
     ARCHIVE_FIELDS("storage.hadoop.archive.fields"),
     ARCHIVE_NON_REF_FILTER("storage.hadoop.archive.non-ref.filter"),
@@ -77,14 +77,14 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     /////////////////////////
     // Sample index table configuration
     /////////////////////////
-    SAMPLE_INDEX_TABLE_COMPRESSION("storage.hadoop.sample-index.table.compression", Compression.Algorithm.SNAPPY.getName()),
-    SAMPLE_INDEX_TABLE_PRESPLIT_SIZE("storage.hadoop.sample-index.table.presplit.size", 15),
+    SAMPLE_INDEX_TABLE_COMPRESSION("storage.hadoop.sampleIndex.table.compression", Compression.Algorithm.SNAPPY.getName()),
+    SAMPLE_INDEX_TABLE_PRESPLIT_SIZE("storage.hadoop.sampleIndex.table.preSplit.size", 15),
 
     /////////////////////////
     // Annotation index table  configuration
     /////////////////////////
-    ANNOTATION_INDEX_TABLE_COMPRESSION("storage.hadoop.annotation-index.table.compression", Compression.Algorithm.SNAPPY.getName()),
-    PENDING_ANNOTATION_TABLE_COMPRESSION("storage.hadoop.pending-annotation.table.compression", Compression.Algorithm.SNAPPY.getName()),
+    ANNOTATION_INDEX_TABLE_COMPRESSION("storage.hadoop.annotationIndex.table.compression", Compression.Algorithm.SNAPPY.getName()),
+    PENDING_ANNOTATION_TABLE_COMPRESSION("storage.hadoop.pendingAnnotation.table.compression", Compression.Algorithm.SNAPPY.getName()),
 
     /////////////////////////
     // Other

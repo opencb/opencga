@@ -16,43 +16,43 @@ public enum VariantStorageOptions implements ConfigurationOption {
     STDIN("stdin", false),
     STDOUT("stdout", false),
 
-    TRANSFORM_BATCH_SIZE("transform.batch.size", 200),
-    TRANSFORM_THREADS("transform.threads", 4),
+    TRANSFORM_BATCH_SIZE("transform.batchSize", 200),
+    TRANSFORM_THREADS("transform.numThreads", 4),
     TRANSFORM_FORMAT("transform.format", "avro"),
-    TRANSFORM_FAIL_ON_MALFORMED_VARIANT("transform.fail.on.malformed", false),
+    TRANSFORM_FAIL_ON_MALFORMED_VARIANT("transform.failOnMalformed", false),
     TRANSFORM_COMPRESSION("transform.compression", "gzip"),
     TRANSFORM_ISOLATE("transform.isolate", false), // Do not store file in metadata
 
-    LOAD_BATCH_SIZE("load.batch.size", 100),
-    LOAD_THREADS("load.threads", 6),
-    LOAD_SPLIT_DATA("load.split-data", false),
-    POST_LOAD_CHECK_SKIP("postLoad.check.skip", false),
+    LOAD_BATCH_SIZE("load.batchSize", 100),
+    LOAD_THREADS("load.numThreads", 6),
+    LOAD_SPLIT_DATA("load.splitData", false),
+    POST_LOAD_CHECK_SKIP("postLoad.skipCheck", false),
 
-    STATS_DEFAULT_GENOTYPE("stats.default-genotype", "0/0"), // Default genotype to be used for calculating stats.
+    STATS_DEFAULT_GENOTYPE("stats.defaultGenotype", "0/0"), // Default genotype to be used for calculating stats.
     STATS_MULTI_ALLELIC("stats.multiallelic", false),  // Include secondary alternates in the variant stats calculation
     STATS_CALCULATE("stats.calculate", false),          //Calculate stats on the postLoad step
     STATS_OVERWRITE("stats.overwrite", false),          //Overwrite stats already present
     STATS_UPDATE("stats.update", false),                //Calculate missing stats
     STATS_AGGREGATION("stats.aggregation.type", Aggregation.NONE),
-    STATS_AGGREGATION_MAPPING_FILE("stats.aggregation.mapping-file"),
+    STATS_AGGREGATION_MAPPING_FILE("stats.aggregation.mappingFile"),
 
     ANNOTATE("annotate", false), // Do annotate after step.
-    ANNOTATION_BATCH_SIZE("annotation.batch.size", 100),
+    ANNOTATION_BATCH_SIZE("annotation.batchSize", 100),
     ANNOTATION_FILE_FORMAT("annotation.file.format", "json"),
-    ANNOTATION_NUM_THREADS("annotation.threads", 8),
+    ANNOTATION_NUM_THREADS("annotation.numThreads", 8),
     ANNOTATION_OVERWEITE("annotation.overwrite"),
 
     ANNOTATOR("annotator"),
     ANNOTATOR_CLASS("annotator.class"),
-    ANNOTATOR_CELLBASE_USE_CACHE("annotator.cellbase.use_cache"),
+    ANNOTATOR_CELLBASE_USE_CACHE("annotator.cellbase.useCache"),
     ANNOTATOR_CELLBASE_INCLUDE("annotator.cellbase.include"),
     ANNOTATOR_CELLBASE_EXCLUDE("annotator.cellbase.exclude"),
-    ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS("annotator.cellbase.imprecise_variants"),
+    ANNOTATOR_CELLBASE_IMPRECISE_VARIANTS("annotator.cellbase.impreciseVariants"),
 
     INDEX_SEARCH("indexSearch", false), // Build secondary indexes using search engine.
 
-    QUERY_DEFAULT_TIMEOUT("query.default_timeout", 10000), // Default timeout for DBAdaptor operations. Only used if none is provided.
-    QUERY_MAX_TIMEOUT("query.max_timeout", 30000),         // Max allowed timeout for DBAdaptor operations
+    QUERY_DEFAULT_TIMEOUT("query.timeout.default", 10000), // Default timeout for DBAdaptor operations. Only used if none is provided.
+    QUERY_MAX_TIMEOUT("query.timeout.max", 30000),         // Max allowed timeout for DBAdaptor operations
     QUERY_LIMIT_DEFAULT("query.limit.default", 1000),
     QUERY_LIMIT_MAX("query.limit.max", 5000),
     QUERY_SAMPLE_LIMIT_DEFAULT("query.sample.limit.default", 100),

@@ -85,15 +85,11 @@ public class RestCommandExecutor { // extends CommandExecutor {
 
         // Setting CLI params in the StorageConfiguration
         if (restServerCommandOptions.port > 0) {
-            storageConfiguration.getServer().setRest(restServerCommandOptions.port);
+            storageConfiguration.getServer().getRest().setPort(restServerCommandOptions.port);
         }
 
         if (StringUtils.isNotEmpty(restServerCommandOptions.commonOptions.storageEngine)) {
             storageConfiguration.getVariant().setDefaultEngine(restServerCommandOptions.commonOptions.storageEngine);
-        }
-
-        if (StringUtils.isNotEmpty(restServerCommandOptions.authManager)) {
-            storageConfiguration.getServer().setAuthManager(restServerCommandOptions.authManager);
         }
 
         // Server crated and started
@@ -104,7 +100,7 @@ public class RestCommandExecutor { // extends CommandExecutor {
     }
 
     public void stop() {
-        int port = configuration.getServer().getRest();
+        int port = configuration.getServer().getRest().getPort();
         if (restServerCommandOptions.port > 0) {
             port = restServerCommandOptions.port;
         }

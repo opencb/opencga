@@ -95,13 +95,49 @@ healthCheck:
 #  options:
 
 
-# Azure Batch Service configuration example
-#    batchAccount : "batchAccount"
-#    batchKey : "batchKey"
-#    batchUri : "https://batchservice.uksouth.batch.azure.com"
-#    batchPoolId : "poolId"
-#    dockerImageName : "openCGADockerImageName"
-#    dockerArgs : "dockerRunOptions"
+analysis:
+  scratchDir: "${OPENCGA.ANALYSIS.SCRATCH.DIR}"    # Scratch folder for the analysis.
+  index:
+    variant:
+      maxConcurrentJobs: 2
+  execution:
+    # Accepted values are "local", "SGE", "azure-batch"
+    # see org.opencb.opencga.catalog.monitor.executors.ExecutorFactory
+    id: "${OPENCGA.EXECUTION.MODE}"
+    defaultQueue: ""            # Default queue to be used to submit jobs
+    availableQueues:            # Other queues for specific applications
+#      - fast:
+#        - "alignmentIndex"
+#      - slow:
+#        - "coverage"
+#        - "alignmentStats"
+    options:
+      local.maxConcurrentJobs: 1    # Max number of concurrent jobs to be executed locally in the master
+     # Azure Batch Service configuration example
+     # azure.batchAccount : "batchAccount"
+     # azure.batchKey : "batchKey"
+     # azure.batchUri : "https://batchservice.uksouth.batch.azure.com"
+     # azure.batchPoolId : "poolId"
+     # azure.dockerImageName : "openCGADockerImageName"
+     # azure.dockerArgs : "dockerRunOptions"
+
+  # List of analysis frameworks
+  frameworks:
+    - id: "local"
+      available: true
+      options: {}
+
+    - id: "spark"
+      available: false
+      queue: "hadoop_queue" # Special executor queue to be used for jobs using this framework.
+      options:     # Spark properties from https://spark.apache.org/docs/latest/configuration.html#viewing-spark-properties
+        spark.executor.memory: "1g"
+
+    - id: "mapreduce"
+      available: false
+      queue: "hadoop_queue" # Special executor queue to be used for jobs using this framework. This is NOT a yarn queue.
+      options:   # MapReduce configuration from https://hadoop.apache.org/docs/r2.7.2/hadoop-mapreduce-client/hadoop-mapreduce-client-core/mapred-default.xml
+        mapreduce.job.queuename: default
 
 email:
   host: ${OPENCGA.MAIL.HOST}

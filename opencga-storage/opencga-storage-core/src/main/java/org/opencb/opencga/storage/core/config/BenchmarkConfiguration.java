@@ -29,12 +29,10 @@ public class BenchmarkConfiguration {
     private List<String> queries;
 
     private String databaseName;
-    @Deprecated
-    private String table;
+
     private String mode;
     private int delay;
     private String connectionType;
-    private DatabaseCredentials database;
     private int concurrency;
     private URI rest;
 
@@ -45,11 +43,9 @@ public class BenchmarkConfiguration {
         sb.append(", load=").append(load);
         sb.append(", queries=").append(queries);
         sb.append(", databaseName='").append(databaseName).append('\'');
-        sb.append(", table='").append(table).append('\'');
         sb.append(", mode='").append(mode).append('\'');
         sb.append(", delay=").append(delay);
         sb.append(", connectionType='").append(connectionType).append('\'');
-        sb.append(", database=").append(database);
         sb.append(", concurrency=").append(concurrency);
         sb.append(", rest=").append(rest);
         sb.append('}');
@@ -97,14 +93,6 @@ public class BenchmarkConfiguration {
         this.databaseName = databaseName;
     }
 
-    public String getTable() {
-        return table;
-    }
-
-    public void setTable(String table) {
-        this.table = table;
-    }
-
     public String getMode() {
         return mode;
     }
@@ -112,14 +100,6 @@ public class BenchmarkConfiguration {
     public BenchmarkConfiguration setMode(String mode) {
         this.mode = mode;
         return this;
-    }
-
-    public DatabaseCredentials getDatabase() {
-        return database;
-    }
-
-    public void setDatabase(DatabaseCredentials database) {
-        this.database = database;
     }
 
     public int getConcurrency() {

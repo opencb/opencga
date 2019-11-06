@@ -16,6 +16,10 @@
 
 package org.opencb.opencga.core.config;
 
+import org.opencb.commons.datastore.core.ObjectMap;
+
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,11 +30,12 @@ public class Execution {
     private String mode;
     private String defaultQueue;
     private String availableQueues;
-    private int maxConcurrentIndexJobs;
-    private Map<String, String> toolsPerQueue;
-    private Map<String, String> options;
+    private Map<String, List<String>> toolsPerQueue;
+    private ObjectMap options;
 
     public Execution() {
+        toolsPerQueue = new HashMap<>();
+        options = new ObjectMap();
     }
 
     @Override
@@ -39,7 +44,6 @@ public class Execution {
         sb.append("mode='").append(mode).append('\'');
         sb.append(", defaultQueue='").append(defaultQueue).append('\'');
         sb.append(", availableQueues='").append(availableQueues).append('\'');
-        sb.append(", maxConcurrentIndexJobs=").append(maxConcurrentIndexJobs);
         sb.append(", toolsPerQueue=").append(toolsPerQueue);
         sb.append(", options=").append(options);
         sb.append('}');
@@ -73,29 +77,20 @@ public class Execution {
         return this;
     }
 
-    public int getMaxConcurrentIndexJobs() {
-        return maxConcurrentIndexJobs;
-    }
-
-    public Execution setMaxConcurrentIndexJobs(int maxConcurrentIndexJobs) {
-        this.maxConcurrentIndexJobs = maxConcurrentIndexJobs;
-        return this;
-    }
-
-    public Map<String, String> getToolsPerQueue() {
+    public Map<String, List<String>> getToolsPerQueue() {
         return toolsPerQueue;
     }
 
-    public Execution setToolsPerQueue(Map<String, String> toolsPerQueue) {
+    public Execution setToolsPerQueue(Map<String, List<String>> toolsPerQueue) {
         this.toolsPerQueue = toolsPerQueue;
         return this;
     }
 
-    public Map<String, String> getOptions() {
+    public ObjectMap getOptions() {
         return options;
     }
 
-    public Execution setOptions(Map<String, String> options) {
+    public Execution setOptions(ObjectMap options) {
         this.options = options;
         return this;
     }

@@ -692,6 +692,7 @@
                 <!-- General -->
                 <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>
                 <OPENCGA.USER.WORKSPACE>/opt/opencga/sessions</OPENCGA.USER.WORKSPACE>
+                <OPENCGA.ANALYSIS.SCRATCH.DIR></OPENCGA.ANALYSIS.SCRATCH.DIR>
                 <OPENCGA.DB.PREFIX>opencga</OPENCGA.DB.PREFIX>
                 <OPENCGA.EXECUTION.MODE>LOCAL</OPENCGA.EXECUTION.MODE>
 

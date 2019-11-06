@@ -35,7 +35,7 @@ public class RestStorageServer extends AbstractStorageServer {
     private boolean exit;
 
     public RestStorageServer() {
-        this(storageConfiguration.getServer().getGrpc(), storageConfiguration.getVariant().getDefaultEngine());
+        this(storageConfiguration.getServer().getRest().getPort(), storageConfiguration.getVariant().getDefaultEngine());
     }
 
     public RestStorageServer(int port, String defaultStorageEngine) {
@@ -45,7 +45,7 @@ public class RestStorageServer extends AbstractStorageServer {
     }
 
     public RestStorageServer(StorageConfiguration storageConfiguration) {
-        super(storageConfiguration.getServer().getRest(), storageConfiguration.getVariant().getDefaultEngine());
+        super(storageConfiguration.getServer().getRest().getPort(), storageConfiguration.getVariant().getDefaultEngine());
         RestStorageServer.storageConfiguration = storageConfiguration;
 
         logger = LoggerFactory.getLogger(this.getClass());
