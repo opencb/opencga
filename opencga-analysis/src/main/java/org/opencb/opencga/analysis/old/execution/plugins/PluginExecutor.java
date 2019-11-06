@@ -44,10 +44,6 @@ public class PluginExecutor {
         this.sessionId = sessionId;
     }
 
-    public int execute(Job job) throws CatalogException, AnalysisExecutionException {
-        return execute(job.getToolId(), job.getExecution(), catalogManager.getJobManager().getStudyId(job.getUid()), job.getParams());
-    }
-
     public int execute(String pluginId, String execution, long studyId, Map<String, String> params)
             throws CatalogException, AnalysisExecutionException {
         return execute(PluginFactory.get().getPlugin(pluginId), execution, studyId, params);

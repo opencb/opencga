@@ -94,43 +94,56 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT, ""),
-        UID("uid", INTEGER_ARRAY, ""),
+        UID("uid", LONG, ""),
         UUID("uuid", TEXT, ""),
-        NAME("name", TEXT_ARRAY, ""),
-        USER_ID("userId", TEXT_ARRAY, ""),
-        TOOL_NAME("toolName", TEXT_ARRAY, ""),
-        TYPE("type", TEXT_ARRAY, ""),
+        NAME("name", TEXT, ""),
+        USER_ID("userId", TEXT, ""),
+        COMMAND_LINE("commandLine", TEXT, ""),
+        PARAMS("params", MAP, ""),
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
+
+        PRIORITY("priority", TEXT, ""),
+
+        STATUS("status", OBJECT, ""),
+        OUT_DIR("outDir", OBJECT, ""),
+        TMP_DIR("tmpDir", OBJECT, ""),
+
+        INPUT("input", OBJECT, ""),
+        OUTPUT("output", OBJECT, ""),
+        TAGS("tags", TEXT_ARRAY, ""),
+
+        RESULT("result", OBJECT, ""),
+
+        LOG("log", OBJECT, ""),
+        ERROR_LOG("errorLog", OBJECT, ""),
+
+        RELEASE("release", INTEGER, ""),
+        ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+
+        // The parameters below this line are under revision
+        TOOL_NAME("toolName", TEXT_ARRAY, ""),
+        TYPE("type", TEXT_ARRAY, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
         START_TIME("startTime", INTEGER_ARRAY, ""),
         END_TIME("endTime", INTEGER_ARRAY, ""),
         OUTPUT_ERROR("outputError", TEXT_ARRAY, ""),
         EXECUTION("execution", TEXT_ARRAY, ""),
         //PARAMS,
-        COMMAND_LINE("commandLine", TEXT_ARRAY, ""),
         VISITED("visited", BOOLEAN, ""),
-        STATUS("status", TEXT_ARRAY, ""),
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         SIZE("size", DECIMAL, ""),
-        RELEASE("release", INTEGER, ""),
-        OUT_DIR("outDir", TEXT_ARRAY, ""),
         OUT_DIR_UID("outDir.uid", INTEGER, ""),
         TMP_OUT_DIR_URI("tmpOutDirUri", TEXT_ARRAY, ""),
-        INPUT("input", TEXT_ARRAY, ""),
-        OUTPUT("output", TEXT_ARRAY, ""),
         INPUT_UID("input.uid", INTEGER_ARRAY, ""),
         OUTPUT_UID("output.uid", INTEGER_ARRAY, ""),
-        TAGS("tags", TEXT_ARRAY, ""),
-        ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         RESOURCE_MANAGER_ATTRIBUTES("resourceManagerAttributes", TEXT_ARRAY, ""),
         ERROR("error", TEXT_ARRAY, ""),
         ERROR_DESCRIPTION("errorDescription", TEXT_ARRAY, ""),
-
         DELETED("deleted", BOOLEAN, ""),
 
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),

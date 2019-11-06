@@ -25,6 +25,7 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.core.exception.AnalysisException;
@@ -371,7 +372,7 @@ public class InterpretationWSService extends AnalysisWSService {
         public String dueDate;
         public List<Comment> comments;
         public List<Alert> alerts;
-        public ClinicalAnalysis.Priority priority;
+        public Enums.Priority priority;
         public List<String> flags;
 
         public Map<String, Object> attributes;
@@ -987,7 +988,7 @@ public class InterpretationWSService extends AnalysisWSService {
             param = FamilyInterpretationAnalysis.MAX_LOW_COVERAGE_PARAM;
             options.put(param, queryOptions.getInt(param, FamilyInterpretationAnalysis.LOW_COVERAGE_DEFAULT));
 
-            String dataDir = configuration.getDataDir();
+            String dataDir = configuration.getWorkspace();
             String opencgaHome = Paths.get(dataDir).getParent().toString();
 
             Object result;
@@ -1019,7 +1020,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(value = "Clinical analysis ID, the proband will be used") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyId) {
         try {
-            String dataDir = configuration.getDataDir();
+            String dataDir = configuration.getWorkspace();
             String opencgaHome = Paths.get(dataDir).getParent().toString();
 
             List<String> sampleNames = new ArrayList<>();

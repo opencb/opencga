@@ -33,8 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by imedina on 16/06/16.
@@ -50,14 +48,14 @@ public abstract class MonitorParentDaemon implements Runnable {
 
     protected boolean exit = false;
 
-    protected String sessionId;
+    protected String token;
 
     protected Logger logger;
 
-    public MonitorParentDaemon(int interval, String sessionId, CatalogManager catalogManager) throws CatalogDBException {
+    public MonitorParentDaemon(int interval, String token, CatalogManager catalogManager) throws CatalogDBException {
         this.interval = interval;
         this.catalogManager = catalogManager;
-        this.sessionId = sessionId;
+        this.token = token;
         logger = LoggerFactory.getLogger(this.getClass());
         dbAdaptorFactory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
         ExecutorFactory executorFactory = new ExecutorFactory(catalogManager.getConfiguration());
@@ -80,11 +78,11 @@ public abstract class MonitorParentDaemon implements Runnable {
         return "J_" + jobId;
     }
 
-    void executeJob(Job job, String token) {
+    void executeJob(String jobId, String commandLine, Path stdout, Path stderr, String token) {
         try {
-            batchExecutor.execute(job, token);
+            batchExecutor.execute(jobId, commandLine, stdout, stderr, token);
         } catch (Exception e) {
-            logger.error("Error executing job {}.", job.getUid(), e);
+            logger.error("Error executing job {}.", jobId, e);
         }
     }
 
@@ -117,46 +115,46 @@ public abstract class MonitorParentDaemon implements Runnable {
         parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_MSG.key(), message);
         dbAdaptorFactory.getCatalogJobDBAdaptor().update(jobId, parameters, QueryOptions.empty());
     }
-
-    void cleanPrivateJobInformation(Job job) {
-        // Remove the session id from the job attributes
-        job.getAttributes().remove(Job.OPENCGA_TMP_DIR);
-        job.getAttributes().remove(Job.OPENCGA_OUTPUT_DIR);
-        job.getAttributes().remove(Job.OPENCGA_STUDY);
-
-        ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
-        try {
-            dbAdaptorFactory.getCatalogJobDBAdaptor().update(job.getUid(), params, QueryOptions.empty());
-        } catch (CatalogException e) {
-            logger.error("Could not remove session id from attributes of job {}. ", job.getUid(), e);
-        }
-    }
-
-    void buildCommandLine(Map<String, String> params, StringBuilder commandLine, Set<String> knownParams) {
-        for (Map.Entry<String, String> param : params.entrySet()) {
-            if (param.getKey().equals("sid")) {
-                continue;
-            }
-            commandLine.append(' ');
-            if (knownParams == null || knownParams.contains(param.getKey())) {
-                if (!("false").equalsIgnoreCase(param.getValue())) {
-                    if (param.getKey().length() == 1) {
-                        commandLine.append('-');
-                    } else {
-                        commandLine.append("--");
-                    }
-                    commandLine.append(param.getKey());
-                    if (!param.getValue().equalsIgnoreCase("true")) {
-                        commandLine.append(' ').append(param.getValue());
-                    }
-                }
-            } else {
-                if (!param.getKey().startsWith("-D")) {
-                    commandLine.append("-D");
-                }
-                commandLine.append(param.getKey()).append('=').append(param.getValue());
-            }
-        }
-    }
+//
+//    void cleanPrivateJobInformation(Job job) {
+//        // Remove the session id from the job attributes
+//        job.getAttributes().remove(Job.OPENCGA_TMP_DIR);
+//        job.getAttributes().remove(Job.OPENCGA_OUTPUT_DIR);
+//        job.getAttributes().remove(Job.OPENCGA_STUDY);
+//
+//        ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
+//        try {
+//            dbAdaptorFactory.getCatalogJobDBAdaptor().update(job.getUid(), params, QueryOptions.empty());
+//        } catch (CatalogException e) {
+//            logger.error("Could not remove session id from attributes of job {}. ", job.getUid(), e);
+//        }
+//    }
+//
+//    void buildCommandLine(Map<String, String> params, StringBuilder commandLine, Set<String> knownParams) {
+//        for (Map.Entry<String, String> param : params.entrySet()) {
+//            if (param.getKey().equals("sid")) {
+//                continue;
+//            }
+//            commandLine.append(' ');
+//            if (knownParams == null || knownParams.contains(param.getKey())) {
+//                if (!("false").equalsIgnoreCase(param.getValue())) {
+//                    if (param.getKey().length() == 1) {
+//                        commandLine.append('-');
+//                    } else {
+//                        commandLine.append("--");
+//                    }
+//                    commandLine.append(param.getKey());
+//                    if (!param.getValue().equalsIgnoreCase("true")) {
+//                        commandLine.append(' ').append(param.getValue());
+//                    }
+//                }
+//            } else {
+//                if (!param.getKey().startsWith("-D")) {
+//                    commandLine.append("-D");
+//                }
+//                commandLine.append(param.getKey()).append('=').append(param.getValue());
+//            }
+//        }
+//    }
 
 }

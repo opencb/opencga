@@ -35,12 +35,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
-import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.PanelAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -324,7 +324,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
         // Get the document query needed to check the permissions as well
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
-                studyPermission.name(), studyPermission.getPanelPermission().name(), Entity.DISEASE_PANEL.name());
+                studyPermission.name(), studyPermission.getPanelPermission().name(), Enums.Resource.DISEASE_PANEL.name());
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
         logger.debug("Panel count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return new OpenCGAResult<>(panelCollection.count(clientSession, bson));
@@ -678,7 +678,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         if (studyDocument != null && user != null) {
             // Get the document query needed to check the permissions as well
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, StudyAclEntry.StudyPermissions.VIEW_PANELS.name(),
-                    PanelAclEntry.PanelPermissions.VIEW.name(), Entity.DISEASE_PANEL.name());
+                    PanelAclEntry.PanelPermissions.VIEW.name(), Enums.Resource.DISEASE_PANEL.name());
         }
 
         Query finalQuery = new Query(query);
@@ -722,7 +722,8 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(null, studyUid);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                StudyAclEntry.StudyPermissions.VIEW_PANELS.name(), PanelAclEntry.PanelPermissions.VIEW.name(), Entity.DISEASE_PANEL.name());
+                StudyAclEntry.StudyPermissions.VIEW_PANELS.name(), PanelAclEntry.PanelPermissions.VIEW.name(),
+                Enums.Resource.DISEASE_PANEL.name());
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(panelCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
@@ -732,7 +733,8 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(null, studyUid);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                StudyAclEntry.StudyPermissions.VIEW_PANELS.name(), PanelAclEntry.PanelPermissions.VIEW.name(), Entity.DISEASE_PANEL.name());
+                StudyAclEntry.StudyPermissions.VIEW_PANELS.name(), PanelAclEntry.PanelPermissions.VIEW.name(),
+                Enums.Resource.DISEASE_PANEL.name());
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(panelCollection, bsonQuery, field, QueryParams.ID.key(), options);
     }

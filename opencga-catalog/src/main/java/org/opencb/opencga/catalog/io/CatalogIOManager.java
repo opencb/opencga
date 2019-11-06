@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.catalog.io;
 
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +51,6 @@ public abstract class CatalogIOManager {
     protected static final String DEFAULT_OPENCGA_JOBS_FOLDER = "jobs/";
     protected static Logger logger;
     protected URI rootDir;
-    protected URI jobsDir;
     protected URI tmp;
     @Deprecated
     protected Properties properties;
@@ -101,12 +100,6 @@ public abstract class CatalogIOManager {
         }
         checkDirectoryUri(rootDir, true);
 
-        if (!exists(jobsDir)) {
-            logger.info("Initializing CatalogIOManager. Creating jobs folder '" + jobsDir + "'");
-            createDirectory(jobsDir);
-        }
-        checkDirectoryUri(jobsDir, true);
-
         if (!exists(rootDir.resolve(OPENCGA_USERS_FOLDER))) {
             createDirectory(rootDir.resolve(OPENCGA_USERS_FOLDER));
         }
@@ -153,7 +146,7 @@ public abstract class CatalogIOManager {
 
     public abstract void copyFile(URI source, URI target) throws IOException, CatalogIOException;
 
-    public abstract void moveFile(URI source, URI target) throws IOException, CatalogIOException;
+    public abstract void moveFile(URI source, URI target) throws CatalogIOException;
 
 
     public URI getUsersUri() throws CatalogIOException {
@@ -214,14 +207,6 @@ public abstract class CatalogIOManager {
             throw CatalogIOException.uriSyntaxException(relativeFilePath, e);
         }
     }
-
-    public URI getJobsUri(String userId) throws CatalogIOException {
-        checkParam(userId);
-        return jobsDir;
-    }
-
-    public abstract URI getTmpUri();    // FIXME Still used?
-
 
     public URI createUser(String userId) throws CatalogIOException {
         checkParam(userId);
@@ -316,31 +301,6 @@ public abstract class CatalogIOManager {
         checkUriExists(studyUri);
 
         deleteDirectory(studyUri);
-    }
-
-    public URI createJobOutDir(String userId, String folderName)
-            throws CatalogIOException {
-        checkParam(folderName);
-
-        URI jobsFolderUri = getJobsUri(userId);
-        checkDirectoryUri(jobsFolderUri, true);
-
-        URI jobUri;
-        try {
-            jobUri = jobsFolderUri.resolve(new URI(null, folderName, null));
-        } catch (URISyntaxException e) {
-            throw CatalogIOException.uriSyntaxException(folderName, e);
-        }
-        if (!exists(jobUri)) {
-            try {
-                jobUri = createDirectory(jobUri, true);
-            } catch (CatalogIOException e) {
-                throw new CatalogIOException("createStudy method: could not create the study folder: " + e.toString(), e);
-            }
-        } else {
-            throw new CatalogIOException("createJobOutDir method: Job folder " + folderName + "already exists.");
-        }
-        return jobUri;
     }
 
     public URI createFolder(URI studyUri, String folderName, boolean parent)

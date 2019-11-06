@@ -29,6 +29,8 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -41,8 +43,8 @@ import org.opencb.opencga.storage.core.variant.analysis.VariantSampleFilter;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
@@ -52,8 +54,8 @@ import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.manager.CatalogUtils.parseSampleAnnotationQuery;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
  * Created by imedina on 17/08/16.
@@ -153,6 +155,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         }
 
         Map<String, String> params = new LinkedHashMap<>();
+        addParamIfNotNull(params, "file", fileIdStr);
         addParamIfNotNull(params, "study", studyStr);
         addParamIfNotNull(params, "outdir", outDirStr);
         addParamIfTrue(params, "transform", transform);
@@ -197,8 +200,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         logger.info("ObjectMap: {}", params);
 
         try {
-            List<String> idList = getIdList(fileIdStr);
-            DataResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "VCF", params, token);
+//            List<String> idList = getIdList(fileIdStr);
+            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().register(studyStr, "variant", "index", Enums.Priority.HIGH,
+                    params, token);
+//            DataResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "VCF", params, token);
             return createOkResponse(queryResult);
         } catch(Exception e) {
             return createErrorResponse(e);
@@ -695,9 +700,9 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             Map<String, String> params = new HashMap<>();
             params.put("input", file);
 
-            DataResult<Job> queryResult = catalogManager.getJobManager().create(studyStr, "", "", "opencga-analysis", "variant validate",
-                    null, params, token);
-            return createOkResponse(queryResult);
+            OpenCGAResult<Job> result = catalogManager.getJobManager().register(studyStr, "variant", "validate", Enums.Priority.HIGH,
+                    params, token);
+            return createOkResponse(result);
         } catch(Exception e) {
             return createErrorResponse(e);
         }

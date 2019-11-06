@@ -6,7 +6,7 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
-import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.common.Enums;
 
 @Parameters(commandNames = {"clinical"}, commandDescription = "Clinical analysis commands")
 public class ClinicalCommandOptions {
@@ -68,7 +68,7 @@ public class ClinicalCommandOptions {
         public String type;
 
         @Parameter(names = {"--priority"}, description = "Priority.", arity = 1)
-        public ClinicalAnalysis.Priority priority;
+        public Enums.Priority priority;
 
         @Parameter(names = {"--status"}, description = "Status.", arity = 1)
         public String status;

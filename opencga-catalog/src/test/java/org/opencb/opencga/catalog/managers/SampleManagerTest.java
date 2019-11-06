@@ -965,10 +965,10 @@ public class SampleManagerTest extends AbstractManagerTest {
     public void getVariableSetSummary() throws CatalogException {
         Study study = catalogManager.getStudyManager().get(studyFqn, null, sessionIdUser).first();
 
-        long variableSetId = study.getVariableSets().get(0).getUid();
+        String variableSetId = study.getVariableSets().get(0).getId();
 
         DataResult<VariableSetSummary> variableSetSummary = catalogManager.getStudyManager()
-                .getVariableSetSummary(studyFqn, Long.toString(variableSetId), sessionIdUser);
+                .getVariableSetSummary(studyFqn, variableSetId, sessionIdUser);
 
         assertEquals(1, variableSetSummary.getNumResults());
         VariableSetSummary summary = variableSetSummary.first();

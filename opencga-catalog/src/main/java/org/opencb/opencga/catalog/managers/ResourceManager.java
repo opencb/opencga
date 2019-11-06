@@ -19,6 +19,7 @@ import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
 import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
 import javax.annotation.Nullable;
@@ -36,7 +37,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
     }
 
-    abstract AuditRecord.Resource getEntity();
+    abstract Enums.Resource getEntity();
 
     OpenCGAResult<R> internalGet(long studyUid, String entry, QueryOptions options, String user) throws CatalogException {
         return internalGet(studyUid, entry, null, options, user);

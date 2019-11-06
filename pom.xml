@@ -40,7 +40,7 @@
         <opencga.version>2.0.0-dev</opencga.version>
         <java.version>1.8</java.version>
         <cellbase.version>4.6.3-SNAPSHOT</cellbase.version>
-        <biodata.version>1.6.0-SNAPSHOT</biodata.version>
+        <biodata.version>2.0.0-SNAPSHOT</biodata.version>
         <oskar.version>0.2.0-SNAPSHOT</oskar.version>
         <java-common-libs.version>4.0.0-SNAPSHOT</java-common-libs.version>
         <hpg-bigdata.version>1.0.0-beta4</hpg-bigdata.version>
@@ -692,8 +692,6 @@
                 <!-- General -->
                 <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>
                 <OPENCGA.USER.WORKSPACE>/opt/opencga/sessions</OPENCGA.USER.WORKSPACE>
-                <OPENCGA.JOBS.DIR>${OPENCGA.USER.WORKSPACE}/jobs</OPENCGA.JOBS.DIR>
-                <OPENCGA.TOOLS.DIR>${OPENCGA.INSTALLATION.DIR}/tools</OPENCGA.TOOLS.DIR>
                 <OPENCGA.DB.PREFIX>opencga</OPENCGA.DB.PREFIX>
                 <OPENCGA.EXECUTION.MODE>LOCAL</OPENCGA.EXECUTION.MODE>
 

@@ -39,11 +39,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
-import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -637,7 +637,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         // Get the document query needed to check the permissions as well
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
-                studyPermission.name(), studyPermission.getFilePermission().name(), Entity.FILE.name());
+                studyPermission.name(), studyPermission.getFilePermission().name(), Enums.Resource.FILE.name());
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
         logger.debug("File count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return new OpenCGAResult<>(fileCollection.count(bson));
@@ -823,7 +823,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (studyDocument != null && user != null) {
             // Get the document query needed to check the permissions as well
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                    StudyAclEntry.StudyPermissions.VIEW_FILES.name(), FileAclEntry.FilePermissions.VIEW.name(), Entity.FILE.name());
+                    StudyAclEntry.StudyPermissions.VIEW_FILES.name(), FileAclEntry.FilePermissions.VIEW.name(), Enums.Resource.FILE.name());
         }
 
         filterOutDeleted(query);
@@ -882,10 +882,10 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (containsAnnotationQuery(query)) {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
-                    FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name(), Entity.FILE.name());
+                    FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.FILE.name());
         } else {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                    StudyAclEntry.StudyPermissions.VIEW_FILES.name(), FileAclEntry.FilePermissions.VIEW.name(), Entity.FILE.name());
+                    StudyAclEntry.StudyPermissions.VIEW_FILES.name(), FileAclEntry.FilePermissions.VIEW.name(), Enums.Resource.FILE.name());
         }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
@@ -900,10 +900,10 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (containsAnnotationQuery(query)) {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
-                    FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name(), Entity.FILE.name());
+                    FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.FILE.name());
         } else {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                    StudyAclEntry.StudyPermissions.VIEW_FILES.name(), FileAclEntry.FilePermissions.VIEW.name(), Entity.FILE.name());
+                    StudyAclEntry.StudyPermissions.VIEW_FILES.name(), FileAclEntry.FilePermissions.VIEW.name(), Enums.Resource.FILE.name());
         }
         filterOutDeleted(query);
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);

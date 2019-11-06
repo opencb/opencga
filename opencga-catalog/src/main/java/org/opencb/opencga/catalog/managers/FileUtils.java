@@ -159,7 +159,7 @@ public class FileUtils {
                 sourceIOManager.moveFile(sourceUri, targetUri);
                 targetChecksum = sourceChecksum;
                 fileMoved = true;
-            } catch (IOException | CatalogIOException e) {
+            } catch (CatalogIOException e) {
                 e.printStackTrace();
                 logger.error("Error moving a file.", e);
             }
@@ -302,7 +302,7 @@ public class FileUtils {
                             + " after moving the file");
                 }
             }
-        } catch (IOException e) {
+        } catch (CatalogIOException e) {
             throw new CatalogIOException("Error moving file from " + sourceUri + " to " + targetUri);
         }
 

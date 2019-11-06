@@ -3,22 +3,18 @@ logLevel: "INFO"
 logFile: null
 
 openRegister: true
-userDefaultQuota: 200000
 
 databasePrefix: "opencga_test"
-dataDir: "/tmp/opencga/sessions"
-tempJobsDir: "/tmp/opencga/sessions/jobs"
-toolDir: "tools"
+workspace: "/tmp/opencga/sessions"
 
 admin:
   password: "admin"
   email: "admin@admin.com"
 
 audit:
-  maxDocuments: 20000000 # Maximum number of documents that will be created in the audit collection.
-  maxSize: 100000000000  # Maximum size that the audit collection will have in bytes.
-  javaClass: ""          # Java class of the audit implementation to be used to audit.
-  exclude: []            # Array of resource:action to select pairwise resource-actions to be excluded for audit purposes.
+  manager: ""             # Java manager of the audit implementation to be used to audit. If empty, catalog database will be used.
+  maxDocuments: 20000000  # Maximum number of documents that will be created in the audit collection.
+  maxSize: 100            # Maximum size that the audit collection will have in Gigabytes (GB).
 
 monitor:
   daysToRemove: 30
@@ -41,9 +37,6 @@ email:
   ssl: false
 
 catalog:
-  # offset: Starting point for the catalog internal ids. Use a big offset number (1000000 for instance) if you plan to use numerical ids
-  #         for names or aliases of any entity.
-  offset: 0
   database:
     hosts:
     - "localhost:27017"

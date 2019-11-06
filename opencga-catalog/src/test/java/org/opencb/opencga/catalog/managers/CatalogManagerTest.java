@@ -705,30 +705,27 @@ public class CatalogManagerTest extends AbstractManagerTest {
         File outDir = catalogManager.getFileManager().createFolder(studyId, Paths.get("jobs", "myJob").toString(),
                 null, true, null, QueryOptions.empty(), sessionIdUser).first();
 
-        catalogManager.getJobManager().create(studyId,new Job().setId("myJob").setToolId("samtool").setDescription("description")
-                        .setOutDir(outDir).setExecution("echo \"Hello world!\"").setStatus(new Job.JobStatus(Job.JobStatus.PREPARED)),
-                null, sessionIdUser);
+        catalogManager.getJobManager().register(studyId, "command", "subcommand", null, Collections.emptyMap(), sessionIdUser);
+        catalogManager.getJobManager().register(studyId, "command", "subcommand2", null, Collections.emptyMap(), sessionIdUser);
 
-        catalogManager.getJobManager().create(studyId, new Job().setId("myReadyJob").setToolId("samtool").setDescription("description")
-                        .setOutDir(outDir).setExecution("echo \"Hello world!\"").setStatus(new Job.JobStatus(Job.JobStatus.READY)), null,
-                sessionIdUser);
+        catalogManager.getJobManager().create(studyId, new Job().setId("job1").setStatus(new Job.JobStatus(Job.JobStatus.DONE)),
+                QueryOptions.empty(), sessionIdUser);
+        catalogManager.getJobManager().create(studyId, new Job().setId("job2").setStatus(new Job.JobStatus(Job.JobStatus.ERROR)),
+                QueryOptions.empty(), sessionIdUser);
+        catalogManager.getJobManager().create(studyId, new Job().setId("job3").setStatus(new Job.JobStatus(Job.JobStatus.UNREGISTERED)),
+                QueryOptions.empty(), sessionIdUser);
 
-        catalogManager.getJobManager().create(studyId, new Job().setId("myQueuedJob").setToolId("samtool").setDescription("description")
-                        .setOutDir(outDir).setExecution("echo \"Hello world!\"").setStatus(new Job.JobStatus(Job.JobStatus.QUEUED)), null,
-                sessionIdUser);
-
-        catalogManager.getJobManager().create(studyId, new Job().setId("myErrorJob").setToolId("samtool").setDescription("description")
-                        .setOutDir(outDir).setExecution("echo \"Hello world!\"").setStatus(new Job.JobStatus(Job.JobStatus.ERROR)), null,
-                sessionIdUser);
-
-        query = new Query()
-                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Arrays.asList(Job.JobStatus.PREPARED, Job.JobStatus.QUEUED,
-                        Job.JobStatus.RUNNING, Job.JobStatus.DONE));
+        query = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.PENDING);
         DataResult<Job> unfinishedJobs = catalogManager.getJobManager().search(String.valueOf(studyId), query, null, sessionIdUser);
         assertEquals(2, unfinishedJobs.getNumResults());
 
         DataResult<Job> allJobs = catalogManager.getJobManager().search(String.valueOf(studyId), (Query) null, null, sessionIdUser);
-        assertEquals(4, allJobs.getNumResults());
+        assertEquals(5, allJobs.getNumResults());
+
+        thrown.expectMessage("status different");
+        thrown.expect(CatalogException.class);
+        catalogManager.getJobManager().create(studyId, new Job().setId("job5").setStatus(new Job.JobStatus(Job.JobStatus.PENDING)),
+                QueryOptions.empty(), sessionIdUser);
     }
 
     @Test
@@ -736,11 +733,11 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
         String studyId = catalogManager.getStudyManager().get(query, null, sessionIdUser).first().getId();
 
-        catalogManager.getJobManager().create(studyId, new Job().setId("myErrorJob").setToolId("samtools"), null, sessionIdUser);
+        catalogManager.getJobManager().create(studyId, new Job().setId("myErrorJob"), null, sessionIdUser);
 
-        DataResult<Job> allJobs = catalogManager.getJobManager().search(studyId, (Query) null, null, sessionIdUser);
+        DataResult<Job> allJobs = catalogManager.getJobManager().search(studyId, null, null, sessionIdUser);
 
-        assertEquals(1, allJobs.getNumTotalResults());
+        assertEquals(1, allJobs.getNumMatches());
         assertEquals(1, allJobs.getNumResults());
     }
 

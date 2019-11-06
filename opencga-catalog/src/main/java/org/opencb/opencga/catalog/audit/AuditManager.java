@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,85 +70,85 @@ public class AuditManager {
         }
     }
 
-    public void auditCreate(String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid, String studyId,
+    public void auditCreate(String userId, Enums.Resource resource, String resourceId, String resourceUuid, String studyId,
                             String studyUuid, ObjectMap params, AuditRecord.Status status) {
-        audit(userId, AuditRecord.Action.CREATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
+        audit(userId, Enums.Action.CREATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    public void auditCreate(String userId, AuditRecord.Action action, AuditRecord.Resource resource, String resourceId, String resourceUuid,
+    public void auditCreate(String userId, Enums.Action action, Enums.Resource resource, String resourceId, String resourceUuid,
                             String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
         String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
         audit(operationUuid, userId, action, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    public void auditUpdate(String operationId, String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid,
+    public void auditUpdate(String operationId, String userId, Enums.Resource resource, String resourceId, String resourceUuid,
                             String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
-        audit(operationId, userId, AuditRecord.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
+        audit(operationId, userId, Enums.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
                 new ObjectMap());
     }
 
-    public void auditUpdate(String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid, String studyId,
+    public void auditUpdate(String userId, Enums.Resource resource, String resourceId, String resourceUuid, String studyId,
                             String studyUuid, ObjectMap params, AuditRecord.Status status) {
-        audit(userId, AuditRecord.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
+        audit(userId, Enums.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    public void auditDelete(String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid, String studyId,
+    public void auditDelete(String userId, Enums.Resource resource, String resourceId, String resourceUuid, String studyId,
                             String studyUuid, ObjectMap params, AuditRecord.Status status) {
-        audit(userId, AuditRecord.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
+        audit(userId, Enums.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    public void auditDelete(String operationId, String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid,
+    public void auditDelete(String operationId, String userId, Enums.Resource resource, String resourceId, String resourceUuid,
                             String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
-        audit(operationId, userId, AuditRecord.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
+        audit(operationId, userId, Enums.Action.UPDATE, resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
                 new ObjectMap());
     }
 
-    public void auditUser(String userId, AuditRecord.Action action, String resourceId, AuditRecord.Status status) {
-        audit(userId, action, AuditRecord.Resource.USER, resourceId, "", "", "", new ObjectMap(), status, new ObjectMap());
+    public void auditUser(String userId, Enums.Action action, String resourceId, AuditRecord.Status status) {
+        audit(userId, action, Enums.Resource.USER, resourceId, "", "", "", new ObjectMap(), status, new ObjectMap());
     }
 
-    public void auditUser(String userId, AuditRecord.Action action, String resourceId, ObjectMap params, AuditRecord.Status status) {
-        audit(userId, action, AuditRecord.Resource.USER, resourceId, "", "", "", params, status, new ObjectMap());
+    public void auditUser(String userId, Enums.Action action, String resourceId, ObjectMap params, AuditRecord.Status status) {
+        audit(userId, action, Enums.Resource.USER, resourceId, "", "", "", params, status, new ObjectMap());
     }
 
-    public void auditInfo(String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid, String studyId,
+    public void auditInfo(String userId, Enums.Resource resource, String resourceId, String resourceUuid, String studyId,
                           String studyUuid, ObjectMap params, AuditRecord.Status status) {
-        audit(userId, AuditRecord.Action.INFO, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
+        audit(userId, Enums.Action.INFO, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    public void auditInfo(String operationId, String userId, AuditRecord.Resource resource, String resourceId, String resourceUuid,
+    public void auditInfo(String operationId, String userId, Enums.Resource resource, String resourceId, String resourceUuid,
                           String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
-        audit(operationId, userId, AuditRecord.Action.INFO, resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
+        audit(operationId, userId, Enums.Action.INFO, resource, resourceId, resourceUuid, studyId, studyUuid, params, status,
                 new ObjectMap());
     }
 
-    public void auditSearch(String userId, AuditRecord.Resource resource, String studyId, String studyUuid, ObjectMap params,
+    public void auditSearch(String userId, Enums.Resource resource, String studyId, String studyUuid, ObjectMap params,
                             AuditRecord.Status status) {
-        audit(userId, AuditRecord.Action.SEARCH, resource, "", "", studyId, studyUuid, params, status, new ObjectMap());
+        audit(userId, Enums.Action.SEARCH, resource, "", "", studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    public void auditCount(String userId, AuditRecord.Resource resource, String studyId, String studyUuid, ObjectMap params,
+    public void auditCount(String userId, Enums.Resource resource, String studyId, String studyUuid, ObjectMap params,
                            AuditRecord.Status status) {
-        audit(userId, AuditRecord.Action.COUNT, resource, "", "", studyId, studyUuid, params, status, new ObjectMap());
+        audit(userId, Enums.Action.COUNT, resource, "", "", studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    public void auditFacet(String userId, AuditRecord.Resource resource, String studyId, String studyUuid, ObjectMap params,
+    public void auditFacet(String userId, Enums.Resource resource, String studyId, String studyUuid, ObjectMap params,
                            AuditRecord.Status status) {
-        audit(userId, AuditRecord.Action.FACET, resource, "", "", studyUuid, studyId, params, status, new ObjectMap());
+        audit(userId, Enums.Action.FACET, resource, "", "", studyUuid, studyId, params, status, new ObjectMap());
     }
 
-    public void audit(String userId, AuditRecord.Action action, AuditRecord.Resource resource, String resourceId, String resourceUuid,
+    public void audit(String userId, Enums.Action action, Enums.Resource resource, String resourceId, String resourceUuid,
                       String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status) {
         audit(userId, action, resource, resourceId, resourceUuid, studyId, studyUuid, params, status, new ObjectMap());
     }
 
-    public void audit(String userId, AuditRecord.Action action, AuditRecord.Resource resource, String resourceId, String resourceUuid,
+    public void audit(String userId, Enums.Action action, Enums.Resource resource, String resourceId, String resourceUuid,
                       String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status, ObjectMap attributes) {
         audit(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT), userId, action, resource, resourceId, resourceUuid, studyId, studyUuid,
                 params, status, attributes);
     }
 
-    public void audit(String operationId, String userId, AuditRecord.Action action, AuditRecord.Resource resource, String resourceId,
+    public void audit(String operationId, String userId, Enums.Action action, Enums.Resource resource, String resourceId,
                       String resourceUuid, String studyId, String studyUuid, ObjectMap params, AuditRecord.Status status,
                       ObjectMap attributes) {
         String apiVersion = GitRepositoryState.get().getBuildVersion();
