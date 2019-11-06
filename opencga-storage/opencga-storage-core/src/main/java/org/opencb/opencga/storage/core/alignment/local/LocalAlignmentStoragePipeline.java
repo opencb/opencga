@@ -38,6 +38,7 @@ import java.nio.file.Paths;
  */
 public class LocalAlignmentStoragePipeline implements StoragePipeline {
 
+    protected static final String BIG_WIG_WINDOWS_SIZE = "bigWigWindowsSize";
     private final StorageEngineConfiguration configuration;
 
     public LocalAlignmentStoragePipeline(StorageEngineConfiguration configuration) {
@@ -84,7 +85,7 @@ public class LocalAlignmentStoragePipeline implements StoragePipeline {
 
         // 3) Create the BigWig file containing the coverage using the bamCoverage from the DeepTools package
         Path bwPath = workspace.resolve(path.getFileName() + BamManager.COVERAGE_BIGWIG_EXTENSION);
-        int windowSize = configuration.getOptions().getInt("bigWigWindowsSize", BamManager.DEFAULT_WINDOW_SIZE);
+        int windowSize = configuration.getOptions().getInt(BIG_WIG_WINDOWS_SIZE, BamManager.DEFAULT_WINDOW_SIZE);
         bamManager.calculateBigWigCoverage(bwPath, windowSize);
 
         return input;
