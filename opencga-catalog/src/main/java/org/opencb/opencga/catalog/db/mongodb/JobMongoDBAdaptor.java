@@ -37,13 +37,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
-import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +60,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     private final MongoDBCollection jobCollection;
     private final MongoDBCollection deletedJobCollection;
     private JobConverter jobConverter;
+
+    private static final String PRIVATE_PRIORITY = "_priority";
 
     public JobMongoDBAdaptor(MongoDBCollection jobCollection, MongoDBCollection deletedJobCollection,
                              MongoDBAdaptorFactory dbAdaptorFactory) {
@@ -131,6 +132,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Document jobObject = jobConverter.convertToStorageType(job);
         jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(job.getCreationDate()));
         jobObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
+        jobObject.put(PRIVATE_PRIORITY, job.getPriority().getValue());
 
         logger.debug("Inserting job '{}' ({})...", job.getId(), job.getUid());
         jobCollection.insert(clientSession, jobObject, null);
@@ -198,7 +200,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         // Get the document query needed to check the permissions as well
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
-                studyPermission.name(), studyPermission.getJobPermission().name(), Entity.JOB.name());
+                studyPermission.name(), studyPermission.getJobPermission().name(), Enums.Resource.JOB.name());
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
         logger.debug("Job count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return new OpenCGAResult<>(jobCollection.count(bson));
@@ -369,36 +371,55 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     private Document getValidatedUpdateParams(ObjectMap parameters) throws CatalogDBException {
         Document jobParameters = new Document();
 
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.USER_ID.key(), QueryParams.TOOL_NAME.key(),
-                QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(), QueryParams.OUTPUT_ERROR.key(),
-                QueryParams.COMMAND_LINE.key(), QueryParams.ERROR.key(), QueryParams.ERROR_DESCRIPTION.key(),
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.USER_ID.key(), QueryParams.DESCRIPTION.key(),
+                QueryParams.COMMAND_LINE.key(),
         };
         filterStringParams(parameters, jobParameters, acceptedParams);
+
+        String[] acceptedStringListParams = {QueryParams.TAGS.key()};
+        filterStringListParams(parameters, jobParameters, acceptedStringListParams);
 
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
             jobParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             jobParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
-        if (parameters.containsKey(QueryParams.STATUS.key()) && parameters.get(QueryParams.STATUS.key()) instanceof Job.JobStatus) {
-            jobParameters.put(QueryParams.STATUS.key(), getMongoDBDocument(parameters.get(QueryParams.STATUS.key()), "Job.JobStatus"));
+        if (parameters.containsKey(QueryParams.STATUS.key())) {
+            if (parameters.get(QueryParams.STATUS.key()) instanceof Job.JobStatus) {
+                jobParameters.put(QueryParams.STATUS.key(), getMongoDBDocument(parameters.get(QueryParams.STATUS.key()), "Job.JobStatus"));
+            } else {
+                jobParameters.put(QueryParams.STATUS.key(), parameters.get(QueryParams.STATUS.key()));
+            }
         }
 
-        String[] acceptedBooleanParams = {QueryParams.VISITED.key(), };
-        filterBooleanParams(parameters, jobParameters, acceptedBooleanParams);
-
-        String[] acceptedLongParams = {QueryParams.START_TIME.key(), QueryParams.END_TIME.key(), QueryParams.SIZE.key(),
-                QueryParams.OUT_DIR_UID.key(), };
-        filterLongParams(parameters, jobParameters, acceptedLongParams);
-
         if (parameters.containsKey(QueryParams.INPUT.key())) {
-            List<File> fileList = parameters.getAsList(QueryParams.INPUT.key(), File.class);
+            List<Object> fileList = parameters.getList(QueryParams.INPUT.key());
             jobParameters.put(QueryParams.INPUT.key(), jobConverter.convertFilesToDocument(fileList));
         }
         if (parameters.containsKey(QueryParams.OUTPUT.key())) {
-            List<File> fileList = parameters.getAsList(QueryParams.OUTPUT.key(), File.class);
+            List<Object> fileList = parameters.getList(QueryParams.OUTPUT.key());
             jobParameters.put(QueryParams.OUTPUT.key(), jobConverter.convertFilesToDocument(fileList));
         }
+        if (parameters.containsKey(QueryParams.OUT_DIR.key())) {
+            jobParameters.put(QueryParams.OUT_DIR.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.OUT_DIR.key())));
+        }
+        if (parameters.containsKey(QueryParams.TMP_DIR.key())) {
+            jobParameters.put(QueryParams.TMP_DIR.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.TMP_DIR.key())));
+        }
+        if (parameters.containsKey(QueryParams.LOG.key())) {
+            jobParameters.put(QueryParams.LOG.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.LOG.key())));
+        }
+        if (parameters.containsKey(QueryParams.ERROR_LOG.key())) {
+            jobParameters.put(QueryParams.ERROR_LOG.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.ERROR_LOG.key())));
+        }
+
+        if (parameters.containsKey(QueryParams.PRIORITY.key())) {
+            jobParameters.put(QueryParams.PRIORITY.key(), parameters.getString(QueryParams.PRIORITY.key()));
+            jobParameters.put(PRIVATE_PRIORITY, Enums.Priority.getPriority(parameters.getString(QueryParams.PRIORITY.key())).getValue());
+        }
+
+        String[] acceptedObjectParams = {QueryParams.RESULT.key()};
+        filterObjectParams(parameters, jobParameters, acceptedObjectParams);
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key()};
         filterMapParams(parameters, jobParameters, acceptedMapParams);
@@ -608,7 +629,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         if (studyDocument != null && user != null) {
             // Get the document query needed to check the permissions as well
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                    StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name(), Entity.JOB.name());
+                    StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name(), Enums.Resource.JOB.name());
         }
 
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
@@ -618,7 +639,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         } else {
             qOptions = new QueryOptions();
         }
-        qOptions = filterOptions(qOptions, FILTER_ROUTE_JOBS);
+        qOptions = fixOptions(qOptions);
 
         logger.debug("Job get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
@@ -626,6 +647,34 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         } else {
             return deletedJobCollection.nativeQuery().find(bson, qOptions).iterator();
         }
+    }
+
+    private QueryOptions fixOptions(QueryOptions queryOptions) {
+        QueryOptions options = new QueryOptions(queryOptions);
+
+        filterOptions(options, FILTER_ROUTE_JOBS);
+        if (options.containsKey(QueryOptions.SORT)) {
+            // If the user is sorting by priority, we will point to the private priority stored as integers to properly sort
+            List<String> sortList = options.getAsStringList(QueryOptions.SORT);
+            List<String> fixedSortList = new ArrayList<>(sortList.size());
+            for (String key : sortList) {
+                if (key.startsWith(QueryParams.PRIORITY.key())) {
+                    String[] priorityArray = key.split(":");
+                    if (priorityArray.length == 1) {
+                        fixedSortList.add(PRIVATE_PRIORITY);
+                    } else {
+                        // The order (ascending or descending) should be in priorityArray[1]
+                        fixedSortList.add(PRIVATE_PRIORITY + ":" + priorityArray[1]);
+                    }
+                } else {
+                    fixedSortList.add(key);
+                }
+            }
+            // Add new fixed sort list
+            options.put(QueryOptions.SORT, fixedSortList);
+        }
+
+        return options;
     }
 
     @Override
@@ -637,13 +686,13 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public OpenCGAResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
-        return groupBy(jobCollection, bsonQuery, field, "name", options);
+        return groupBy(jobCollection, bsonQuery, field, "name", fixOptions(options));
     }
 
     @Override
     public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
         Bson bsonQuery = parseQuery(query);
-        return groupBy(jobCollection, bsonQuery, fields, "name", options);
+        return groupBy(jobCollection, bsonQuery, fields, "name", fixOptions(options));
     }
 
     @Override
@@ -651,9 +700,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(null, studyUid);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name(), Entity.JOB.name());
+                StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name(), Enums.Resource.JOB.name());
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
-        return groupBy(jobCollection, bsonQuery, field, QueryParams.NAME.key(), options);
+        return groupBy(jobCollection, bsonQuery, field, QueryParams.NAME.key(), fixOptions(options));
     }
 
     @Override
@@ -661,9 +710,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(null, studyUid);
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name(), Entity.JOB.name());
+                StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name(), Enums.Resource.JOB.name());
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
-        return groupBy(jobCollection, bsonQuery, fields, QueryParams.NAME.key(), options);
+        return groupBy(jobCollection, bsonQuery, fields, QueryParams.NAME.key(), fixOptions(options));
     }
 
     @Override
@@ -799,6 +848,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case TOOL_NAME:
                     case TYPE:
                     case DESCRIPTION:
+                    case PRIORITY:
                     case START_TIME:
                     case END_TIME:
                     case OUTPUT_ERROR:

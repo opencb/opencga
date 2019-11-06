@@ -125,7 +125,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         });
 
         Path outDirPath = Paths.get(options.outdirId);
-        String opencgaHome = Paths.get(configuration.getDataDir()).getParent().toString();
+        String opencgaHome = Paths.get(configuration.getWorkspace()).getParent().toString();
         String assembly = ClinicalUtils.getAssembly(catalogManager, studyStr, token);
 
         Runtime.getRuntime().addShutdownHook(hook);
@@ -201,7 +201,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         });
 
         Path outDirPath = Paths.get(options.outdirId);
-        String opencgaHome = Paths.get(configuration.getDataDir()).getParent().toString();
+        String opencgaHome = Paths.get(configuration.getWorkspace()).getParent().toString();
         String assembly = ClinicalUtils.getAssembly(catalogManager, studyStr, token);
 
         Runtime.getRuntime().addShutdownHook(hook);

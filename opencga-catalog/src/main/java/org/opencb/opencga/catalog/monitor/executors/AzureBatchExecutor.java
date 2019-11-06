@@ -1,15 +1,14 @@
 package org.opencb.opencga.catalog.monitor.executors;
 
-import com.microsoft.azure.PagedList;
 import com.microsoft.azure.batch.BatchClient;
 import com.microsoft.azure.batch.auth.BatchSharedKeyCredentials;
-import com.microsoft.azure.batch.protocol.models.*;
+import com.microsoft.azure.batch.protocol.models.PoolInformation;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * Created by wasim on 17/12/18.
@@ -44,32 +43,32 @@ public class AzureBatchExecutor implements BatchExecutor {
         this.poolInformation = new PoolInformation().withPoolId(batchPoolId);
     }
 
-    public void submitAzureTask(Job job, String token) throws IOException {
-        String jobId = getOrCreateAzureJob(job.getType());
-        TaskAddParameter taskToAdd = new TaskAddParameter();
-        taskToAdd.withId(job.getId()).withCommandLine(job.getCommandLine()).withContainerSettings(
-                new TaskContainerSettings()
-                        .withImageName(dockerImageName)
-                        .withContainerRunOptions(dockerArgs));
-        taskToAdd.withId(job.getId()).withCommandLine(getCommandLine(job, token));
-        batchClient.taskOperations().createTask(jobId, taskToAdd);
-    }
-
-    private String getOrCreateAzureJob(Job.Type jobType) throws IOException {
-        String job = getAzureJobType(jobType);
-        PagedList<CloudJob> cloudJobs = batchClient.jobOperations().listJobs();
-        for (CloudJob cloudJob : cloudJobs) {
-            if (cloudJob.id().equals(job)) {
-                return job;
-            }
-        }
-        batchClient.jobOperations().createJob(job, this.poolInformation);
-        return job;
-    }
-
-    private String getAzureJobType(Job.Type jobType) {
-        return jobType == Job.Type.ANALYSIS ? VARIANT_ANALYSIS_JOB : VARIANT_INDEX_JOB;
-    }
+//    public void submitAzureTask(Job job, String token) throws IOException {
+//        String jobId = getOrCreateAzureJob(job.getType());
+//        TaskAddParameter taskToAdd = new TaskAddParameter();
+//        taskToAdd.withId(job.getId()).withCommandLine(job.getCommandLine()).withContainerSettings(
+//                new TaskContainerSettings()
+//                        .withImageName(dockerImageName)
+//                        .withContainerRunOptions(dockerArgs));
+//        taskToAdd.withId(job.getId()).withCommandLine(getCommandLine(job, token));
+//        batchClient.taskOperations().createTask(jobId, taskToAdd);
+//    }
+//
+//    private String getOrCreateAzureJob(Job.Type jobType) throws IOException {
+//        String job = getAzureJobType(jobType);
+//        PagedList<CloudJob> cloudJobs = batchClient.jobOperations().listJobs();
+//        for (CloudJob cloudJob : cloudJobs) {
+//            if (cloudJob.id().equals(job)) {
+//                return job;
+//            }
+//        }
+//        batchClient.jobOperations().createJob(job, this.poolInformation);
+//        return job;
+//    }
+//
+//    private String getAzureJobType(Job.Type jobType) {
+//        return jobType == Job.Type.ANALYSIS ? VARIANT_ANALYSIS_JOB : VARIANT_INDEX_JOB;
+//    }
 
     private BatchClient createBatchClient() {
         return BatchClient.open(new BatchSharedKeyCredentials(batchUri, batchAccount, batchKey));
@@ -77,29 +76,34 @@ public class AzureBatchExecutor implements BatchExecutor {
 
     @Override
     public void execute(Job job, String token) throws Exception {
-        submitAzureTask(job, token);
+//        submitAzureTask(job, token);
+    }
+
+    @Override
+    public void execute(String jobId, String commandLine, Path stdout, Path stderr, String token) throws Exception {
     }
 
     @Override
     public String getStatus(Job job) {
-        try {
-            CloudTask cloudTask = batchClient.taskOperations().getTask(getAzureJobType(job.getType()), job.getId());
-            TaskState state = cloudTask.state();
-            switch (state) {
-                case RUNNING:
-                    return Job.JobStatus.RUNNING;
-                case COMPLETED:
-                    return Job.JobStatus.DONE;
-                case ACTIVE:
-                case PREPARING:
-                    return Job.JobStatus.QUEUED;
-                default:
-                    return Job.JobStatus.UNKNOWN;
-            }
-        } catch (BatchErrorException | IOException e) {
-            logger.error("unable to get azure task status {}", job.getId());
-            return Job.JobStatus.UNKNOWN;
-        }
+        return null;
+//        try {
+//            CloudTask cloudTask = batchClient.taskOperations().getTask(getAzureJobType(job.getType()), job.getId());
+//            TaskState state = cloudTask.state();
+//            switch (state) {
+//                case RUNNING:
+//                    return Job.JobStatus.RUNNING;
+//                case COMPLETED:
+//                    return Job.JobStatus.DONE;
+//                case ACTIVE:
+//                case PREPARING:
+//                    return Job.JobStatus.QUEUED;
+//                default:
+//                    return Job.JobStatus.UNKNOWN;
+//            }
+//        } catch (BatchErrorException | IOException e) {
+//            logger.error("unable to get azure task status {}", job.getId());
+//            return Job.JobStatus.UNKNOWN;
+//        }
     }
 
     @Override

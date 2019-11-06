@@ -21,14 +21,19 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.common.Enums;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -61,10 +66,10 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void deleteJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        catalogJobDBAdaptor.insert(studyId, new Job("name", user3.getId(), "", "", "", new File().setUid(4),
-                        Collections.emptyList(), 1), null);
+        catalogJobDBAdaptor.insert(studyId, new Job().setStatus(new Job.JobStatus()).setId("name").setUserId(user3.getId())
+                .setOutDir(new File().setUid(4)), null);
         Job job = getJob(studyId, "name");
-        assertEquals(Job.JobStatus.PREPARED, job.getStatus().getName());
+        assertEquals(Job.JobStatus.PENDING, job.getStatus().getName());
         catalogJobDBAdaptor.delete(job);
 
         Query query = new Query()
@@ -90,7 +95,8 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void getJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        catalogJobDBAdaptor.insert(studyId, new Job("name", user3.getId(), "", "", "", new File().setUid(4), Collections.emptyList(), 1), null);
+        catalogJobDBAdaptor.insert(studyId, new Job().setStatus(new Job.JobStatus()).setId("name").setUserId(user3.getId())
+                .setOutDir(new File().setUid(4)), null);
         Job job = getJob(studyId, "name");
 
         job = catalogJobDBAdaptor.get(job.getUid(), null).first();
@@ -106,19 +112,63 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void SetVisitedJob() throws CatalogException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
-        catalogJobDBAdaptor.insert(studyId, new Job("name", user3.getId(), "", "", "", new File().setUid(4), Collections.emptyList(), 1), null);
-        Job jobBefore = getJob(studyId, "name");
-        long jobId = jobBefore.getUid();
-        assertTrue(!jobBefore.isVisited());
+    public void testSortResultsPriorityAndCreationDate() throws CatalogDBException {
+        long studyUid = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.VISITED.key(), true);
-        catalogJobDBAdaptor.update(jobBefore.getUid(), params, QueryOptions.empty());
+        Date startDate = TimeUtils.getDate();
 
-        Job jobAfter = catalogJobDBAdaptor.get(jobId, null).first();
-        assertTrue(jobAfter.isVisited());
+        // Create 100 jobs
+        for (int i = 0; i < 100; i++) {
+            Job job = new Job().setId(String.valueOf(i))
+                    .setStatus(new Job.JobStatus(Job.JobStatus.QUEUED))
+                    .setPriority(Enums.Priority.getPriority((i % 4) + 1))
+                    .setCreationDate(TimeUtils.getTime());
+
+            catalogJobDBAdaptor.insert(studyUid, job, QueryOptions.empty());
+        }
+
+        Query query = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED);
+        QueryOptions options = new QueryOptions()
+                .append(QueryOptions.SORT, Arrays.asList(JobDBAdaptor.QueryParams.PRIORITY.key(),
+                        JobDBAdaptor.QueryParams.CREATION_DATE.key()))
+                .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
+
+        int elems = 0;
+        DBIterator<Job> iterator = catalogJobDBAdaptor.iterator(query, options);
+
+        String creationDate = TimeUtils.getTime(startDate);
+        int priority = 0;
+        while (iterator.hasNext()) {
+            Job job = iterator.next();
+            assertTrue(priority <= job.getPriority().getValue());
+            if (priority < job.getPriority().getValue()) {
+                creationDate = TimeUtils.getTime(startDate);
+            }
+            assertTrue(Long.parseLong(creationDate) <= Long.parseLong(job.getCreationDate()));
+
+            priority = job.getPriority().getValue();
+            creationDate = job.getCreationDate();
+
+            elems ++;
+        }
+
+        assertEquals(100, elems);
     }
+
+//    @Test
+//    public void SetVisitedJob() throws CatalogException {
+//        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
+//        catalogJobDBAdaptor.insert(studyId, new Job("name", user3.getId(), "", "", "", new File().setUid(4), Collections.emptyList(), 1), null);
+//        Job jobBefore = getJob(studyId, "name");
+//        long jobId = jobBefore.getUid();
+//        assertTrue(!jobBefore.isVisited());
+//
+//        ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.VISITED.key(), true);
+//        catalogJobDBAdaptor.update(jobBefore.getUid(), params, QueryOptions.empty());
+//
+//        Job jobAfter = catalogJobDBAdaptor.get(jobId, null).first();
+//        assertTrue(jobAfter.isVisited());
+//    }
 
     @Test
     public void getJobsOrderedByDate() throws CatalogDBException {

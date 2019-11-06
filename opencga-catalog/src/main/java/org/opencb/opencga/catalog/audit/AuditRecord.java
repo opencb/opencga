@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.audit;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.result.Error;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.Date;
 
@@ -46,12 +47,12 @@ public class AuditRecord {
     /**
      * Action performed (CREATE, SEARCH, DOWNLOAD...).
      */
-    private Action action;
+    private Enums.Action action;
 
     /**
      * Involved resource (User, Study, Sample, File...).
      */
-    private Resource resource;
+    private Enums.Resource resource;
     /**
      * Id of the involved resource.
      */
@@ -92,8 +93,8 @@ public class AuditRecord {
     public AuditRecord() {
     }
 
-    public AuditRecord(String id, String operationId, String userId, String apiVersion, Action action, Resource resource, String resourceId,
-                       String resourceUuid, String studyId, String studyUuid, ObjectMap params, Status status, Date date,
+    public AuditRecord(String id, String operationId, String userId, String apiVersion, Enums.Action action, Enums.Resource resource,
+                       String resourceId, String resourceUuid, String studyId, String studyUuid, ObjectMap params, Status status, Date date,
                        ObjectMap attributes) {
         this.id = id;
         this.operationId = operationId;
@@ -168,20 +169,20 @@ public class AuditRecord {
         return this;
     }
 
-    public Action getAction() {
+    public Enums.Action getAction() {
         return action;
     }
 
-    public AuditRecord setAction(Action action) {
+    public AuditRecord setAction(Enums.Action action) {
         this.action = action;
         return this;
     }
 
-    public Resource getResource() {
+    public Enums.Resource getResource() {
         return resource;
     }
 
-    public AuditRecord setResource(Resource resource) {
+    public AuditRecord setResource(Enums.Resource resource) {
         this.resource = resource;
         return this;
     }
@@ -305,80 +306,6 @@ public class AuditRecord {
             this.error = error;
             return this;
         }
-    }
-
-    public enum Resource {
-        USER,
-        PROJECT,
-        STUDY,
-        FILE,
-        SAMPLE,
-        JOB,
-        INDIVIDUAL,
-        COHORT,
-        PANEL,
-        FAMILY,
-        CLINICAL,
-        INTERPRETATION,
-        VARIANT,
-        ALIGNMENT,
-
-        CATALOG // Goes with Action INDEX for Solr indexing
-    }
-
-    public enum Action {
-        CREATE,
-        UPDATE,
-        INFO,
-        SEARCH,
-        COUNT,
-        DELETE,
-        DOWNLOAD,
-        INDEX,
-        CHANGE_PERMISSION,
-
-        LOGIN,
-        CHANGE_USER_PASSWORD,
-        RESET_USER_PASSWORD,
-        CHANGE_USER_CONFIG,
-        FETCH_USER_CONFIG,
-
-        INCREMENT_PROJECT_RELEASE,
-
-        FETCH_STUDY_GROUPS,
-        ADD_STUDY_GROUP,
-        REMOVE_STUDY_GROUP,
-        UPDATE_USERS_FROM_STUDY_GROUP,
-        FETCH_STUDY_PERMISSION_RULES,
-        ADD_STUDY_PERMISSION_RULE,
-        REMOVE_STUDY_PERMISSION_RULE,
-        FETCH_ACLS,
-        UPDATE_ACLS,
-        FETCH_VARIABLE_SET,
-        ADD_VARIABLE_SET,
-        DELETE_VARIABLE_SET,
-        ADD_VARIABLE_TO_VARIABLE_SET,
-        REMOVE_VARIABLE_FROM_VARIABLE_SET,
-
-        AGGREGATION_STATS,
-
-        UPLOAD,
-        LINK,
-        UNLINK,
-        GREP,
-        TREE,
-
-        VISIT,
-
-        IMPORT,
-
-        IMPORT_EXTERNAL_USERS,
-        IMPORT_EXTERNAL_GROUP_OF_USERS,
-        SYNC_EXTERNAL_GROUP_OF_USERS,
-
-        // Variants
-        SAMPLE_DATA,
-        FACET
     }
 
     public static class Result {

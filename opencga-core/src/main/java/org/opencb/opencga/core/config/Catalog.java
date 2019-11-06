@@ -16,60 +16,60 @@
 
 package org.opencb.opencga.core.config;
 
+import org.opencb.oskar.core.config.DatabaseCredentials;
+
 /**
  * Created by pfurio on 01/02/17.
  */
 public class Catalog {
 
-    @Deprecated
-    private long offset;
-    private CatalogDBCredentials database;
-    private SearchConfiguration search;
+    private DatabaseCredentials database;
+    private DatabaseCredentials searchEngine;
+    private Batch batch;
 
     public Catalog() {
     }
 
-    public Catalog(CatalogDBCredentials database, SearchConfiguration search) {
+    public Catalog(DatabaseCredentials database, DatabaseCredentials searchEngine, Batch batch) {
         this.database = database;
-        this.search = search;
+        this.searchEngine = searchEngine;
+        this.batch = batch;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Catalog{");
-        sb.append("offset=").append(offset);
-        sb.append(", database=").append(database);
-        sb.append(", search=").append(search);
+        sb.append("database=").append(database);
+        sb.append(", searchEngine=").append(searchEngine);
+        sb.append(", batch=").append(batch);
         sb.append('}');
         return sb.toString();
     }
 
-    @Deprecated
-    public long getOffset() {
-        return offset;
-    }
-
-    @Deprecated
-    public Catalog setOffset(long offset) {
-        this.offset = offset;
-        return this;
-    }
-
-    public CatalogDBCredentials getDatabase() {
+    public DatabaseCredentials getDatabase() {
         return database;
     }
 
-    public Catalog setDatabase(CatalogDBCredentials database) {
+    public Catalog setDatabase(DatabaseCredentials database) {
         this.database = database;
         return this;
     }
 
-    public SearchConfiguration getSearch() {
-        return search;
+    public DatabaseCredentials getSearchEngine() {
+        return searchEngine;
     }
 
-    public Catalog setSearch(SearchConfiguration search) {
-        this.search = search;
+    public Catalog setSearchEngine(DatabaseCredentials searchEngine) {
+        this.searchEngine = searchEngine;
+        return this;
+    }
+
+    public Batch getBatch() {
+        return batch;
+    }
+
+    public Catalog setBatch(Batch batch) {
+        this.batch = batch;
         return this;
     }
 }

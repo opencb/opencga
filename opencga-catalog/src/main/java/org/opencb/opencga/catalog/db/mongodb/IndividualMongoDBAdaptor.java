@@ -37,11 +37,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
-import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -262,7 +262,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         // Get the document query needed to check the permissions as well
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
-                studyPermission.name(), studyPermission.getIndividualPermission().name(), Entity.INDIVIDUAL.name());
+                studyPermission.name(), studyPermission.getIndividualPermission().name(), Enums.Resource.INDIVIDUAL.name());
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
         logger.debug("Individual count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class,
                 MongoClient.getDefaultCodecRegistry()));
@@ -1025,7 +1025,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
             // Get the document query needed to check the permissions as well
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS.name(), IndividualAclEntry.IndividualPermissions.VIEW.name(),
-                    Entity.INDIVIDUAL.name());
+                    Enums.Resource.INDIVIDUAL.name());
         }
 
         Bson bson = parseQuery(query, queryForAuthorisedEntries);
@@ -1078,11 +1078,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         if (containsAnnotationQuery(query)) {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
-                    IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name(), Entity.INDIVIDUAL.name());
+                    IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.INDIVIDUAL.name());
         } else {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS.name(), IndividualAclEntry.IndividualPermissions.VIEW.name(),
-                    Entity.INDIVIDUAL.name());
+                    Enums.Resource.INDIVIDUAL.name());
         }
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(individualCollection, bsonQuery, field, QueryParams.ID.key(), options);
@@ -1096,11 +1096,11 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
         if (containsAnnotationQuery(query)) {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS.name(),
-                    IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name(), Entity.INDIVIDUAL.name());
+                    IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.INDIVIDUAL.name());
         } else {
             queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                     StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS.name(), IndividualAclEntry.IndividualPermissions.VIEW.name(),
-                    Entity.INDIVIDUAL.name());
+                    Enums.Resource.INDIVIDUAL.name());
         }
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
         return groupBy(individualCollection, bsonQuery, fields, QueryParams.ID.key(), options);

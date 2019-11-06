@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.Collections;
 
@@ -82,16 +83,16 @@ public class AuditMongoDBAdaptorTest {
     @Test
     public void testInsertAuditRecord() throws Exception {
         auditDbAdaptor.insertAuditRecord(new AuditRecord(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT),
-                UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT), "user", "api", AuditRecord.Action.CREATE,
-                AuditRecord.Resource.SAMPLE, "sampleId", "sampleUuid", "studyId", "studyUuid", new ObjectMap(),
+                UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT), "user", "api", Enums.Action.CREATE,
+                Enums.Resource.SAMPLE, "sampleId", "sampleUuid", "studyId", "studyUuid", new ObjectMap(),
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), TimeUtils.getDate(), new ObjectMap()));
         auditDbAdaptor.insertAuditRecord(new AuditRecord(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT),
-                UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT), "user", "api", AuditRecord.Action.CREATE,
-                AuditRecord.Resource.SAMPLE, "sampleId2", "sampleUuid2", "studyId", "studyUuid", new ObjectMap(),
+                UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT), "user", "api", Enums.Action.CREATE,
+                Enums.Resource.SAMPLE, "sampleId2", "sampleUuid2", "studyId", "studyUuid", new ObjectMap(),
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), TimeUtils.getDate(), new ObjectMap()));
         auditDbAdaptor.insertAuditRecord(new AuditRecord(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT),
-                UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT), "user", "api", AuditRecord.Action.CREATE,
-                AuditRecord.Resource.SAMPLE, "sampleId3", "sampleUuid3", "studyId", "studyUuid", new ObjectMap(),
+                UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT), "user", "api", Enums.Action.CREATE,
+                Enums.Resource.SAMPLE, "sampleId3", "sampleUuid3", "studyId", "studyUuid", new ObjectMap(),
                 new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS), TimeUtils.getDate(), new ObjectMap()));
     }
 

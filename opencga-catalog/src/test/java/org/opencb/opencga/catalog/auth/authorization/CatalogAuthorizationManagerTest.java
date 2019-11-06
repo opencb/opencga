@@ -31,13 +31,13 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.core.common.Entity;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.common.Enums;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -703,7 +703,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         DataResult<Sample> sample = catalogManager.getSampleManager().get(studyFqn, smp1.getId(), null, externalSessionId);
         assertEquals(1, sample.getNumResults());
         catalogManager.getAuthorizationManager().removeAcls(Collections.singletonList(smp1.getUid()),
-                Collections.singletonList(externalUser), null, Entity.SAMPLE);
+                Collections.singletonList(externalUser), null, Enums.Resource.SAMPLE);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getSampleManager().get(studyFqn, smp1.getId(), null, externalSessionId);
     }
@@ -867,7 +867,6 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void getAllJobs() throws CatalogException {
         Job job = new Job()
                 .setId("job1")
-                .setToolId("toolId")
                 .setOutDir(new File().setPath(data_d1_d2));
         long job1 = catalogManager.getJobManager().create(studyFqn, job, null, ownerSessionId).first().getUid();
 

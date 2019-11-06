@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Project;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
@@ -85,6 +86,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         }
 
         Map<String, String> params = new LinkedHashMap<>();
+        params.put("file", fileIdStr);
         addParamIfTrue(params, "transform", transform);
         addParamIfTrue(params, "load", load);
         addParamIfNotNull(params, "outdir", outDirStr);
@@ -92,8 +94,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         logger.info("ObjectMap: {}", params);
 
         try {
-            List<String> idList = getIdList(fileIdStr);
-            DataResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "BAM", params, token);
+            DataResult queryResult = catalogManager.getJobManager().register(studyStr, "alignment", "index", Enums.Priority.HIGH, params,
+                    token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

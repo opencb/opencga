@@ -26,7 +26,6 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.daemons.AuthorizationDaemon;
 import org.opencb.opencga.catalog.monitor.daemons.ExecutionDaemon;
 import org.opencb.opencga.catalog.monitor.daemons.FileDaemon;
-import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
 import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +46,6 @@ public class MonitorService {
     private int port;
 
     private ExecutionDaemon executionDaemon;
-    private IndexDaemon indexDaemon;
     private FileDaemon fileDaemon;
     private AuthorizationDaemon authorizationDaemon;
 
@@ -79,13 +77,10 @@ public class MonitorService {
 
             executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), nonExpiringToken,
                     catalogManager, appHome);
-            indexDaemon = new IndexDaemon(configuration.getMonitor().getExecutionDaemonInterval(), nonExpiringToken, catalogManager,
-                    appHome);
             fileDaemon = new FileDaemon(configuration.getMonitor().getFileDaemonInterval(),
                     configuration.getMonitor().getDaysToRemove(), nonExpiringToken, catalogManager);
 
             executionThread = new Thread(executionDaemon, "execution-thread");
-            indexThread = new Thread(indexDaemon, "index-thread");
             fileThread = new Thread(fileDaemon, "file-thread");
             authorizationThread = new Thread(authorizationDaemon, "authorization-thread");
 
@@ -154,7 +149,6 @@ public class MonitorService {
     public void stop() throws Exception {
         executionDaemon.setExit(true);
         fileDaemon.setExit(true);
-        indexDaemon.setExit(true);
         executionDaemon.setExit(true);
         authorizationDaemon.setExit(true);
 
