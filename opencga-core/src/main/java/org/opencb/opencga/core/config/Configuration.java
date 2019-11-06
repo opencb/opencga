@@ -44,13 +44,13 @@ public class Configuration {
     private Admin admin;
     private Monitor monitor;
     private HealthCheck healthCheck;
-    private Execution execution;
     private Audit audit;
 
     private Map<String, Map<String, List<HookConfiguration>>> hooks;
 
     private Email email;
     private Catalog catalog;
+    private Analysis analysis;
 
     private ServerConfiguration server;
     private Authentication authentication;
@@ -67,11 +67,11 @@ public class Configuration {
         admin = new Admin();
         monitor = new Monitor();
         healthCheck = new HealthCheck();
-        execution = new Execution();
         audit = new Audit();
         hooks = new HashMap<>();
         email = new Email();
         catalog = new Catalog();
+        analysis = new Analysis();
         server = new ServerConfiguration();
         authentication = new Authentication();
     }
@@ -135,7 +135,7 @@ public class Configuration {
                         configuration.getMonitor().setPort(Integer.parseInt(envVariables.get(variable)));
                         break;
                     case "OPENCGA_EXECUTION_MODE":
-                        configuration.getExecution().setMode(envVariables.get(variable));
+                        configuration.getAnalysis().getExecution().setMode(envVariables.get(variable));
                         break;
                     case "OPENCGA_MAIL_HOST":
                         configuration.getEmail().setHost(envVariables.get(variable));
@@ -196,7 +196,6 @@ public class Configuration {
         sb.append(", workspace='").append(workspace).append('\'');
         sb.append(", admin=").append(admin);
         sb.append(", monitor=").append(monitor);
-        sb.append(", execution=").append(execution);
         sb.append(", audit=").append(audit);
         sb.append(", hooks=").append(hooks);
         sb.append(", email=").append(email);
@@ -270,12 +269,14 @@ public class Configuration {
         return this;
     }
 
+    @Deprecated
     public Execution getExecution() {
-        return execution;
+        return getAnalysis().getExecution();
     }
 
+    @Deprecated
     public Configuration setExecution(Execution execution) {
-        this.execution = execution;
+        getAnalysis().setExecution(execution);
         return this;
     }
 
@@ -303,6 +304,15 @@ public class Configuration {
 
     public Configuration setCatalog(Catalog catalog) {
         this.catalog = catalog;
+        return this;
+    }
+
+    public Analysis getAnalysis() {
+        return analysis;
+    }
+
+    public Configuration setAnalysis(Analysis analysis) {
+        this.analysis = analysis;
         return this;
     }
 

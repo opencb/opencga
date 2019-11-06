@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.monitor.executors;
 
-import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,9 +32,9 @@ public class SGEExecutor implements BatchExecutor {
     private SGEManager sgeManager;
     private static Logger logger;
 
-    public SGEExecutor(Configuration configuration) {
+    public SGEExecutor(Execution execution) {
         logger = LoggerFactory.getLogger(SGEExecutor.class);
-        sgeManager = new SGEManager(configuration.getExecution());
+        sgeManager = new SGEManager(execution);
     }
 
     @Override

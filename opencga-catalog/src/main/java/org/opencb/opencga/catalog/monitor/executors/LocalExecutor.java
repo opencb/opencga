@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.monitor.executors;
 
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.RunnableProcess;
+import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,11 +32,15 @@ import java.nio.file.Paths;
  */
 public class LocalExecutor implements BatchExecutor {
 
+    public static final String MAX_CONCURRENT_JOBS = "local.maxConcurrentJobs";
+
     private static int threadInitNumber;
     private static Logger logger;
+    private final int maxConcurrentJobs;
 
-    public LocalExecutor() {
+    public LocalExecutor(Execution execution) {
         logger = LoggerFactory.getLogger(LocalExecutor.class);
+        maxConcurrentJobs = execution.getOptions().getInt(MAX_CONCURRENT_JOBS, 1);
     }
 
     @Override

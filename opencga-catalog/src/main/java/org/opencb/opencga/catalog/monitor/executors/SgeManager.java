@@ -136,8 +136,8 @@ public class SgeManager {
         String selectedQueue = defaultQueue;
         for (String queue : queueList) {
             if (!queue.equalsIgnoreCase(defaultQueue)) {
-                if (configuration.getExecution().getToolsPerQueue().get(queue) != null) {
-                    if (belongsTheToolToQueue(configuration.getExecution().getToolsPerQueue().get(queue), toolName)) {
+                if (configuration.getAnalysis().getExecution().getToolsPerQueue().get(queue) != null) {
+                    if (belongsTheToolToQueue(configuration.getAnalysis().getExecution().getToolsPerQueue().get(queue), toolName)) {
                         selectedQueue = queue;
                     }
                 }
@@ -148,15 +148,15 @@ public class SgeManager {
     }
 
     private static String getDefaultQueue() throws Exception {
-        if (StringUtils.isEmpty(configuration.getExecution().getDefaultQueue())) {
+        if (StringUtils.isEmpty(configuration.getAnalysis().getExecution().getDefaultQueue())) {
             throw new Exception("Execution default queue is not defined!");
         }
-        return configuration.getExecution().getDefaultQueue();
+        return configuration.getAnalysis().getExecution().getDefaultQueue();
     }
 
     private static List<String> getQueueList() {
-        if (configuration.getExecution().getAvailableQueues() != null) {
-            String[] queueArray = configuration.getExecution().getAvailableQueues().split(",");
+        if (configuration.getAnalysis().getExecution().getAvailableQueues() != null) {
+            String[] queueArray = configuration.getAnalysis().getExecution().getAvailableQueues().split(",");
             return Arrays.asList(queueArray);
         } else {
             return new ArrayList<>();
@@ -164,8 +164,11 @@ public class SgeManager {
     }
 
     private static boolean belongsTheToolToQueue(String tools, String toolName) {
-        List<String> toolList = Splitter.on(",").splitToList(tools);
-//        List<String> toolList = StringUtils.toList(tools, ",");
+        return belongsTheToolToQueue(Splitter.on(",").splitToList(tools), toolName);
+    }
+
+    private static boolean belongsTheToolToQueue(List<String> toolList, String toolName) {
+        //        List<String> toolList = StringUtils.toList(tools, ",");
         // System.err.println("Tool list : " + toolList);
         return toolList.contains(toolName);
     }

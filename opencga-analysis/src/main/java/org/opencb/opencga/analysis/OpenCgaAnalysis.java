@@ -53,7 +53,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor.EXECUTOR_ID;
@@ -172,7 +174,26 @@ public abstract class OpenCgaAnalysis {
         Runtime.getRuntime().addShutdownHook(hook);
         try {
             if (scratchDir == null) {
-                Path baseScratchDir = this.outDir; // TODO: Read from configuration
+                Path baseScratchDir = this.outDir;
+                if (StringUtils.isNotEmpty(configuration.getAnalysis().getScratchDir())) {
+                    Path scratch;
+                    try {
+                        scratch = Paths.get(configuration.getAnalysis().getScratchDir());
+                        if (scratch.toFile().isDirectory() && scratch.toFile().canWrite()) {
+                            baseScratchDir = scratch;
+                        } else {
+                            String warn = "Unable to access scratch folder '" + scratch + "'";
+                            privateLogger.warn(warn);
+                            addWarning(warn);
+                        }
+                    } catch (InvalidPathException e) {
+                        String warn = "Unable to access scratch folder '"
+                                + configuration.getAnalysis().getScratchDir() + "'";
+                        privateLogger.warn(warn);
+                        addWarning(warn);
+                    }
+                }
+
                 try {
                     scratchDir = Files.createDirectory(baseScratchDir.resolve("scratch_" + getId() + RandomStringUtils.randomAlphanumeric(10)));
                 } catch (IOException e) {

@@ -3,7 +3,7 @@ package org.opencb.opencga.catalog.monitor.executors;
 import com.microsoft.azure.batch.BatchClient;
 import com.microsoft.azure.batch.auth.BatchSharedKeyCredentials;
 import com.microsoft.azure.batch.protocol.models.PoolInformation;
-import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,17 +28,17 @@ public class AzureBatchExecutor implements BatchExecutor {
 
     private static final String VARIANT_INDEX_JOB = "variant-index-job";
     private static final String VARIANT_ANALYSIS_JOB = "variant-analysis-job";
-    private static final String BATCH_ACCOUNT = "batchAccount";
-    private static final String BATCH_KEY = "batchKey";
-    private static final String BATCH_URI = "batchUri";
-    private static final String BATCH_POOL_ID = "batchPoolId";
-    private static final String DOCKER_IMAGE_NAME = "dockerImageName";
-    private static final String DOCKER_ARGS = "dockerArgs";
+    private static final String BATCH_ACCOUNT = "azure.batchAccount";
+    private static final String BATCH_KEY = "azure.batchKey";
+    private static final String BATCH_URI = "azure.batchUri";
+    private static final String BATCH_POOL_ID = "azure.batchPoolId";
+    private static final String DOCKER_IMAGE_NAME = "azure.dockerImageName";
+    private static final String DOCKER_ARGS = "azure.dockerArgs";
 
 
-    public AzureBatchExecutor(Configuration configuration) {
+    public AzureBatchExecutor(Execution execution) {
         logger = LoggerFactory.getLogger(AzureBatchExecutor.class);
-        populateOptions(configuration);
+        populateOptions(execution);
         this.batchClient = createBatchClient();
         this.poolInformation = new PoolInformation().withPoolId(batchPoolId);
     }
@@ -127,12 +127,12 @@ public class AzureBatchExecutor implements BatchExecutor {
     }
 
     // configuration values from configuration.yml file
-    private void populateOptions(Configuration configuration) {
-        batchAccount = configuration.getExecution().getOptions().get(BATCH_ACCOUNT);
-        batchKey = configuration.getExecution().getOptions().get(BATCH_KEY);
-        batchUri = configuration.getExecution().getOptions().get(BATCH_URI);
-        batchPoolId = configuration.getExecution().getOptions().get(BATCH_POOL_ID);
-        dockerImageName = configuration.getExecution().getOptions().get(DOCKER_IMAGE_NAME);
-        dockerArgs = configuration.getExecution().getOptions().get(DOCKER_ARGS);
+    private void populateOptions(Execution execution) {
+        batchAccount = execution.getOptions().getString(BATCH_ACCOUNT);
+        batchKey = execution.getOptions().getString(BATCH_KEY);
+        batchUri = execution.getOptions().getString(BATCH_URI);
+        batchPoolId = execution.getOptions().getString(BATCH_POOL_ID);
+        dockerImageName = execution.getOptions().getString(DOCKER_IMAGE_NAME);
+        dockerArgs = execution.getOptions().getString(DOCKER_ARGS);
     }
 }
