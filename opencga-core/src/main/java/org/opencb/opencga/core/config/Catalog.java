@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.core.config;
 
-import org.opencb.oskar.core.config.DatabaseCredentials;
-
 /**
  * Created by pfurio on 01/02/17.
  */

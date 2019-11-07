@@ -201,7 +201,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
         try {
 //            List<String> idList = getIdList(fileIdStr);
-            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().register(studyStr, "variant", "index", Enums.Priority.HIGH,
+            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "variant", "index", Enums.Priority.HIGH,
                     params, token);
 //            DataResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "VCF", params, token);
             return createOkResponse(queryResult);
@@ -700,7 +700,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             Map<String, String> params = new HashMap<>();
             params.put("input", file);
 
-            OpenCGAResult<Job> result = catalogManager.getJobManager().register(studyStr, "variant", "validate", Enums.Priority.HIGH,
+            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, "variant", "validate", Enums.Priority.HIGH,
                     params, token);
             return createOkResponse(result);
         } catch(Exception e) {

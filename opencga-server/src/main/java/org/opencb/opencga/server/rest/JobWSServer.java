@@ -19,7 +19,6 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -222,7 +221,7 @@ public class JobWSServer extends OpenCGAWSServer {
         try {
             // TODO: Depending on the analysis id, we will need to obtain the command/subcommand to generate the command line
 
-            DataResult<Job> queryResult = catalogManager.getJobManager().register(studyStr, "", "",  Enums.Priority.MEDIUM, params.params,
+            DataResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "", "",  Enums.Priority.MEDIUM, params.params,
                     token);
             return createOkResponse(queryResult);
         } catch(Exception e) {

@@ -94,7 +94,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         logger.info("ObjectMap: {}", params);
 
         try {
-            DataResult queryResult = catalogManager.getJobManager().register(studyStr, "alignment", "index", Enums.Priority.HIGH, params,
+            DataResult queryResult = catalogManager.getJobManager().submit(studyStr, "alignment", "index", Enums.Priority.HIGH, params,
                     token);
             return createOkResponse(queryResult);
         } catch (Exception e) {

@@ -13,16 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.opencb.opencga.storage.core.config;
+package org.opencb.opencga.core.config;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Created by imedina on 01/05/15.
- */
 public class DatabaseCredentials {
 
     /**

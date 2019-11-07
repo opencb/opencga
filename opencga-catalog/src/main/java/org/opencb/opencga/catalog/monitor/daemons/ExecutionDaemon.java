@@ -347,6 +347,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private int abortJob(Job job, String description) {
+        logger.info("{} - Aborting job...", job.getId());
         return setStatus(job, new Job.JobStatus(Job.JobStatus.ABORTED, description));
     }
 
@@ -417,6 +418,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private int processFinishedJob(Job job) {
+        logger.info("{} - Processing finished job...", job.getId());
+
         Path outDirPath = Paths.get(job.getOutDir().getPath());
         Path outDirUri = Paths.get(job.getOutDir().getUri());
         URI tmpOutdirUri = job.getTmpDir().getUri();

@@ -18,9 +18,11 @@ package org.opencb.opencga.storage.core.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.config.SearchConfiguration;
 import org.opencb.opencga.core.config.ServerConfiguration;
 import org.slf4j.Logger;
@@ -41,7 +43,7 @@ public class StorageConfiguration {
     private CacheConfiguration cache;
     private SearchConfiguration search;
     private SearchConfiguration clinical;
-    private StorageEngineConfiguration alignment;
+    private ObjectMap alignment;
     private StorageEnginesConfiguration variant;
     private IOConfiguration io;
 
@@ -51,7 +53,7 @@ public class StorageConfiguration {
     protected static Logger logger = LoggerFactory.getLogger(StorageConfiguration.class);
 
     public StorageConfiguration() {
-        this.alignment = new StorageEngineConfiguration();
+        this.alignment = new ObjectMap();
         this.variant = new StorageEnginesConfiguration();
         this.cellbase = new CellBaseConfiguration();
         this.server = new ServerConfiguration();
@@ -66,6 +68,10 @@ public class StorageConfiguration {
     }
 
     public static StorageConfiguration load(InputStream configurationInputStream, String format) throws IOException {
+        return load(configurationInputStream, format, false);
+    }
+
+    public static StorageConfiguration load(InputStream configurationInputStream, String format, boolean failOnUnknown) throws IOException {
         StorageConfiguration storageConfiguration;
         ObjectMapper objectMapper;
         switch (format) {
@@ -79,7 +85,7 @@ public class StorageConfiguration {
             default:
                 throw new IllegalArgumentException("Unknown format " + format);
         }
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, failOnUnknown);
         storageConfiguration = objectMapper.readValue(configurationInputStream, StorageConfiguration.class);
 
         return storageConfiguration;
@@ -87,14 +93,15 @@ public class StorageConfiguration {
 
     public void serialize(OutputStream configurationOutputStream) throws IOException {
         ObjectMapper jsonMapper = new ObjectMapper(new YAMLFactory());
+        jsonMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOutputStream, this);
     }
 
-    public StorageEngineConfiguration getAlignment() {
+    public ObjectMap getAlignment() {
         return alignment;
     }
 
-    public StorageConfiguration setAlignment(StorageEngineConfiguration alignment) {
+    public StorageConfiguration setAlignment(ObjectMap alignment) {
         this.alignment = alignment;
         return this;
     }

@@ -194,7 +194,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         ObjectMap attributes = new ObjectMap();
         attributes.putIfNotNull(Job.OPENCGA_STUDY, study.getFqn());
 
-        return catalogManager.getJobManager().register(studyStr, "interpretation", interpretationTool, Enums.Priority.MEDIUM, params,
+        return catalogManager.getJobManager().submit(studyStr, "interpretation", interpretationTool, Enums.Priority.MEDIUM, params,
                 token);
     }
 

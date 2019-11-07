@@ -20,6 +20,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageOptions;
 import org.opencb.opencga.storage.core.alignment.local.LocalAlignmentStorageEngine;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
@@ -67,7 +68,7 @@ public class DefaultAlignmentDBAdaptorTest {
         AlignmentStorageEngine defaultAlignmentStorageManager = new LocalAlignmentStorageEngine();
         InputStream is = getClass().getClassLoader().getResourceAsStream("storage-configuration.yml");
         StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
-        storageConfiguration.getAlignment().getOptions().put("bigWigWindowsSize", 1000);
+        storageConfiguration.getAlignment().put(AlignmentStorageOptions.BIG_WIG_WINDOWS_SIZE.key(), 1000);
         defaultAlignmentStorageManager.setConfiguration(storageConfiguration, "", "");
 
         defaultAlignmentStorageManager.index(Arrays.asList(inputFile.toURI()), getTmpRootDir().toUri(), true, true, true);

@@ -20,7 +20,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
-import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 /**
@@ -46,14 +45,11 @@ public class LocalAlignmentStorageEngine extends AlignmentStorageEngine {
 
     @Override
     public StoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
-        StorageEngineConfiguration alignment;
+        ObjectMap alignment;
         if (getConfiguration() == null || getConfiguration().getAlignment() == null) {
-            alignment = new StorageEngineConfiguration();
+            alignment = new ObjectMap();
         } else {
             alignment = getConfiguration().getAlignment();
-        }
-        if (alignment.getOptions() == null) {
-            alignment.setOptions(new ObjectMap());
         }
         return new LocalAlignmentStoragePipeline(alignment);
     }

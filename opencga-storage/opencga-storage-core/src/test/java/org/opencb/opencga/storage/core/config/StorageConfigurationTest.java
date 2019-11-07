@@ -18,6 +18,8 @@ package org.opencb.opencga.storage.core.config;
 
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.config.GrpcServerConfiguration;
 import org.opencb.opencga.core.config.RestServerConfiguration;
 import org.opencb.opencga.core.config.ServerConfiguration;
@@ -25,6 +27,7 @@ import org.opencb.opencga.core.config.ServerConfiguration;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
@@ -72,7 +75,8 @@ public class StorageConfigurationTest {
 //        storageConfiguration.getStorageEngines().add(storageEngineConfiguration1);
 //        storageConfiguration.getStorageEngines().add(storageEngineConfiguration2);
 
-        File file = Paths.get("/tmp/storage-configuration-test.yml").toFile();
+        Files.createDirectories(Paths.get("target/test-data/"));
+        File file = Paths.get("target/test-data/storage-configuration-test.yml").toFile();
         try (FileOutputStream os = new FileOutputStream(file)) {
             storageConfiguration.serialize(os);
         }
@@ -83,9 +87,9 @@ public class StorageConfigurationTest {
 
     @Test
     public void testLoad() throws Exception {
-        StorageConfiguration storageConfiguration = StorageConfiguration.load(getClass().getResource("/storage-configuration-test.yml")
-                .openStream());
-        System.out.println("storageConfiguration = " + storageConfiguration);
+        StorageConfiguration storageConfiguration =
+                StorageConfiguration.load(getClass().getResource("/storage-configuration.yml").openStream(), "yml", true);
+        System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(storageConfiguration));
     }
 
 
