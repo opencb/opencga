@@ -82,8 +82,13 @@ variant:
     load.batchSize: 100
     load.numThreads: 6
 
-    stats.defaultGenotype: "0/0"   # Default genotype to be used for calculating stats.
+    stats.defaultGenotype: "0/0"    # Default genotype to be used for calculating stats.
     stats.multiAllelic: false       # Include secondary alternates in the variant stats calculation
+    stats.calculate.batchSize: 100
+    stats.calculate.numThreads: 4
+    stats.load.batchSize: 100
+    stats.load.numThreads: 4
+
 
     annotation.batchSize: 100
     annotation.numThreads: 8

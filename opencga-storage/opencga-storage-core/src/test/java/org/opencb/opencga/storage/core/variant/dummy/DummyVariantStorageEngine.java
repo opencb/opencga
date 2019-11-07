@@ -63,7 +63,10 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
 
     @Override
     public DummyVariantStoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
-        return new DummyVariantStoragePipeline(getConfiguration(), STORAGE_ENGINE_ID, getDBAdaptor(), getIOManagerProvider());
+        DummyVariantStoragePipeline pipeline =
+                new DummyVariantStoragePipeline(getConfiguration(), STORAGE_ENGINE_ID, getDBAdaptor(), getIOManagerProvider());
+        pipeline.init(getOptions());
+        return pipeline;
     }
 
     @Override

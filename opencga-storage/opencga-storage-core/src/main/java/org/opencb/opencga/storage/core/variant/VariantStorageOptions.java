@@ -31,6 +31,10 @@ public enum VariantStorageOptions implements ConfigurationOption {
     STATS_DEFAULT_GENOTYPE("stats.defaultGenotype", "0/0"), // Default genotype to be used for calculating stats.
     STATS_MULTI_ALLELIC("stats.multiAllelic", false),  // Include secondary alternates in the variant stats calculation
     STATS_CALCULATE("stats.calculate", false),          //Calculate stats on the postLoad step
+    STATS_CALCULATE_BATCH_SIZE("stats.calculate.batchSize", 100),
+    STATS_CALCULATE_THREADS("stats.calculate.numThreads", 6),
+    STATS_LOAD_THREADS("stats.load.numThreads", 4),
+    STATS_LOAD_BATCH_SIZE("stats.load.batchSize", 100),
     STATS_OVERWRITE("stats.overwrite", false),          //Overwrite stats already present
     STATS_UPDATE("stats.update", false),                //Calculate missing stats
     STATS_AGGREGATION("stats.aggregation.type", Aggregation.NONE),

@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.analysis.storage.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -152,7 +153,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         projectId = catalogManager.getProjectManager().create(projectAlias, projectAlias, "Project 1", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
         Study study = catalogManager.getStudyManager().create(projectId, "s1", "s1", "s1", Study.Type.CASE_CONTROL, null,
-                "Study 1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)), null, Collections.singletonMap(VariantStorageOptions.STATS_AGGREGATION.key(), getAggregation()), null, sessionId)
+                "Study 1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)), null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId)
                 .first();
         studyId = study.getId();
         studyFqn = study.getFqn();
@@ -160,7 +161,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
                 QueryOptions.empty(), sessionId).first().getId();
         outputPath = "data/index/";
         studyId2 = catalogManager.getStudyManager().create(projectId, "s2", "s2", "s2", Study.Type.CASE_CONTROL, null, "Study " +
-                "2", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)), null, Collections.singletonMap(VariantStorageOptions.STATS_AGGREGATION.key(), getAggregation()), null, sessionId).first().getId();
+                "2", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)), null, Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, getAggregation()), null, sessionId).first().getId();
         outputId2 = catalogManager.getFileManager().createFolder(studyId2, Paths.get("data", "index").toString(), null,
                 true, null, QueryOptions.empty(), sessionId).first().getId();
 

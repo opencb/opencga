@@ -35,6 +35,7 @@ import org.opencb.opencga.analysis.storage.models.StudyInfo;
 import org.opencb.opencga.analysis.storage.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.analysis.storage.variant.metadata.CatalogVariantMetadataFactory;
 import org.opencb.opencga.analysis.storage.variant.operations.*;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
@@ -43,7 +44,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.analysis.result.AnalysisResult;
-import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.common.Enums;
@@ -63,7 +63,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
-import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
@@ -333,11 +332,20 @@ public class VariantStorageManager extends StorageManager {
         return secure(query, empty(), sessionId, (engine) -> engine.getAnnotationMetadata(name));
     }
 
-    public void stats(String study, List<String> cohorts, String outDir, ObjectMap config, String sessionId)
+    public void stats(String study, List<String> cohorts, List<String> samples,
+                      String outDir, boolean index, ObjectMap config, String sessionId)
             throws AnalysisException {
-        new VariantStatsStorageOperation()
-                .setStudyId(study)
+        stats(study, cohorts, new Query(SampleDBAdaptor.QueryParams.ID.key(), samples), outDir, index, config, sessionId);
+    }
+
+    public void stats(String study, List<String> cohorts, Query samplesQuery,
+                      String outDir, boolean index, ObjectMap config, String sessionId)
+            throws AnalysisException {
+        new VariantStatsAnalysis()
+                .setStudy(study)
                 .setCohorts(cohorts)
+                .setSamplesQuery(samplesQuery)
+                .setIndex(index)
                 .setUp(null, catalogManager, this, config, Paths.get(outDir), sessionId)
                 .start();
     }

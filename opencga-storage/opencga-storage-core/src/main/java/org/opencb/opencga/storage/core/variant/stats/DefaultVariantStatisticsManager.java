@@ -69,8 +69,6 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
 
     public static final String OUTPUT_FILE_NAME = "output.file.name";
     public static final String OUTPUT = "output";
-    public static final String STATS_LOAD_PARALLEL = "stats.load.parallel";
-    public static final boolean DEFAULT_STATS_LOAD_PARALLEL = true;
 
     protected static final String VARIANT_STATS_SUFFIX = ".variants.stats.json.gz";
     protected static final String SOURCE_STATS_SUFFIX = ".source.stats.json.gz";
@@ -176,8 +174,12 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         }
 
         //Parse query options
-        int batchSize = options.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(), VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue());
-        int numTasks = options.getInt(VariantStorageOptions.LOAD_THREADS.key(), VariantStorageOptions.LOAD_THREADS.defaultValue());
+        int batchSize = options.getInt(
+                VariantStorageOptions.STATS_CALCULATE_BATCH_SIZE.key(),
+                VariantStorageOptions.STATS_CALCULATE_BATCH_SIZE.defaultValue());
+        int numTasks = options.getInt(
+                VariantStorageOptions.STATS_CALCULATE_THREADS.key(),
+                VariantStorageOptions.STATS_CALCULATE_THREADS.defaultValue());
         boolean overwrite = options.getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
         boolean updateStats = options.getBoolean(VariantStorageOptions.STATS_UPDATE.key(), false);
         Properties tagmap = VariantStatisticsManager.getAggregationMappingProperties(options);
@@ -389,7 +391,11 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         ParallelTaskRunner<VariantStatsWrapper, ?> ptr;
         DataReader<VariantStatsWrapper> dataReader = newVariantStatsWrapperDataReader(variantInputStream);
         List<VariantStatsDBWriter> writers = new ArrayList<>();
-        if (options.getBoolean(STATS_LOAD_PARALLEL, DEFAULT_STATS_LOAD_PARALLEL)) {
+        int threads = options.getInt(VariantStorageOptions.STATS_LOAD_THREADS.key(),
+                VariantStorageOptions.STATS_LOAD_THREADS.defaultValue());
+        int batchSize = options.getInt(VariantStorageOptions.STATS_LOAD_BATCH_SIZE.key(),
+                VariantStorageOptions.STATS_LOAD_BATCH_SIZE.defaultValue());
+        if (threads > 1) {
             ptr = new ParallelTaskRunner<>(
                     dataReader,
                     () -> {
@@ -400,11 +406,8 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
                     },
                     null,
                     ParallelTaskRunner.Config.builder().setAbortOnFail(true)
-                            .setBatchSize(options.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(),
-                                    VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue()))
-                            .setNumTasks(options.getInt(VariantStorageOptions.LOAD_THREADS.key(),
-                                    VariantStorageOptions.LOAD_THREADS.defaultValue())).build()
-
+                            .setBatchSize(batchSize)
+                            .setNumTasks(threads).build()
             );
         } else {
             VariantStatsDBWriter dbWriter = newVariantStatisticsDBWriter(dbAdaptor, studyMetadata, options);
@@ -415,11 +418,8 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
                     batch -> batch,
                     dbWriter,
                     ParallelTaskRunner.Config.builder().setAbortOnFail(true)
-                            .setBatchSize(options.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(),
-                                    VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue()))
-                            .setNumTasks(options.getInt(VariantStorageOptions.LOAD_THREADS.key(),
-                                    VariantStorageOptions.LOAD_THREADS.defaultValue())).build()
-
+                            .setBatchSize(batchSize)
+                            .setNumTasks(4).build()
             );
         }
 

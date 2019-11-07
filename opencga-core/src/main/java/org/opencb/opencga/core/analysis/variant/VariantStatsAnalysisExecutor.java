@@ -1,30 +1,24 @@
 package org.opencb.opencga.core.analysis.variant;
 
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
+import org.opencb.opencga.core.exception.AnalysisExecutorException;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 public abstract class VariantStatsAnalysisExecutor extends OpenCgaAnalysisExecutor {
 
     private Path outputFile;
     private String study;
-    private String cohort;
-    private List<String> samples;
+    private Map<String, List<String>> cohorts;
     private Query variantsQuery;
+    private boolean index;
 
     public VariantStatsAnalysisExecutor() {
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("VariantStatsAnalysisExecutor{");
-        sb.append("cohort='").append(cohort).append('\'');
-        sb.append(", executorParams=").append(executorParams);
-        sb.append(", outDir=").append(outDir);
-        sb.append('}');
-        return sb.toString();
     }
 
     public String getStudy() {
@@ -36,21 +30,12 @@ public abstract class VariantStatsAnalysisExecutor extends OpenCgaAnalysisExecut
         return this;
     }
 
-    public String getCohort() {
-        return cohort;
+    public Map<String, List<String>> getCohorts() {
+        return cohorts;
     }
 
-    public VariantStatsAnalysisExecutor setCohort(String cohort) {
-        this.cohort = cohort;
-        return this;
-    }
-
-    public List<String> getSamples() {
-        return samples;
-    }
-
-    public VariantStatsAnalysisExecutor setSamples(List<String> samples) {
-        this.samples = samples;
+    public VariantStatsAnalysisExecutor setCohorts(Map<String, List<String>> cohorts) {
+        this.cohorts = cohorts;
         return this;
     }
 
@@ -70,5 +55,14 @@ public abstract class VariantStatsAnalysisExecutor extends OpenCgaAnalysisExecut
 
     public Query getVariantsQuery() {
         return variantsQuery;
+    }
+
+    public boolean isIndex() {
+        return index;
+    }
+
+    public VariantStatsAnalysisExecutor setIndex(boolean index) {
+        this.index = index;
+        return this;
     }
 }

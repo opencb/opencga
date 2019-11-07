@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -86,11 +87,12 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         Map<String, Object> attributes;
         if (aggregation != null) {
-            attributes = Collections.singletonMap(VariantStorageOptions.STATS_AGGREGATION.key(), aggregation);
+            attributes = Collections.singletonMap(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG, aggregation);
         } else {
             attributes = Collections.emptyMap();
         }
-        catalogManager.getStudyManager().update(studyId, new ObjectMap(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes), null, sessionId);
+        ObjectMap parameters = new ObjectMap(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
+        catalogManager.getStudyManager().update(studyId, parameters, null, sessionId);
 
         File file1 = opencga.createFile(studyId, fileName, sessionId);
 
@@ -181,7 +183,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
     public void calculateStats(String cohortId, QueryOptions options) throws Exception {
         String tmpOutdir = createTmpOutdir("_STATS_" + cohortId);
         List<String> cohortIds = Collections.singletonList(cohortId);
-        variantManager.stats(studyId, cohortIds, tmpOutdir, options, sessionId);
+        variantManager.stats(studyId, cohortIds, new Query(), tmpOutdir, true, options, sessionId);
     }
 
     public void calculateStats(QueryOptions options, String... cohortIds) throws Exception {
@@ -190,7 +192,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
     public void calculateStats(QueryOptions options, List<String> cohorts) throws Exception {
         String tmpOutdir = createTmpOutdir("_STATS_" + cohorts.stream().collect(Collectors.joining("_")));
-        variantManager.stats(studyId, cohorts, tmpOutdir, options, sessionId);
+        variantManager.stats(studyId, cohorts, new Query(), tmpOutdir, true, options, sessionId);
     }
 
     @Test
@@ -292,12 +294,13 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         catalogManager.getCohortManager().setStatus(studyId, coh[1], Cohort.CohortStatus.CALCULATING, "", sessionId);
         Cohort coh1 = catalogManager.getCohortManager().get(studyId, coh[1], null, sessionId).first();
-        Exception expected = VariantStatsStorageOperation.unableToCalculateCohortCalculating(coh1);
+        Exception expected = VariantStatsAnalysis.unableToCalculateCohortCalculating(coh1);
         try {
             calculateStats(coh[1]);
             fail();
         } catch (AnalysisException e) {
-            Throwable actual = e.getCause();
+            e.printStackTrace();
+            Throwable actual = e;
             assertThat(actual, instanceOf(expected.getClass()));
             assertThat(actual, hasMessage(is(expected.getMessage())));
         }
@@ -328,7 +331,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         Study study = catalogManager.getStudyManager().get(studyId, null, sessionId).first();
 
-        String agg = study.getAttributes().get(VariantStorageOptions.STATS_AGGREGATION.key()).toString();
+        String agg = study.getAttributes().get(VariantStatsAnalysis.STATS_AGGREGATION_CATALOG).toString();
         assertNotNull(agg);
         assertEquals(Aggregation.BASIC.toString(), agg);
     }
@@ -395,7 +398,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         QueryOptions options = new QueryOptions(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), tagMap);
 
-        thrown.expectMessage(VariantStatsStorageOperation.differentCohortsThanMappingFile().getMessage());
+        thrown.expectMessage(VariantStatsAnalysis.differentCohortsThanMappingFile().getMessage());
         calculateStats(options, Arrays.asList("AFR", "ALL"));
     }
 
@@ -405,7 +408,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         QueryOptions options = new QueryOptions();
 
-        thrown.expectMessage(VariantStatsStorageOperation.missingAggregationMappingFile(Aggregation.EXAC).getMessage());
+        thrown.expectMessage(VariantStatsAnalysis.missingAggregationMappingFile(Aggregation.EXAC).getMessage());
         calculateStats(options, Collections.emptyList());
     }
 
@@ -417,7 +420,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         QueryOptions options = new QueryOptions(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), tagMap);
 
-        thrown.expectMessage(VariantStatsStorageOperation.nonAggregatedWithMappingFile().getMessage());
+        thrown.expectMessage(VariantStatsAnalysis.nonAggregatedWithMappingFile().getMessage());
         calculateStats(options, Arrays.asList("ALL"));
     }
 

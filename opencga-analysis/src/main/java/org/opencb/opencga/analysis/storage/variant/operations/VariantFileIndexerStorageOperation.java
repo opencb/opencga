@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
 import org.opencb.opencga.analysis.storage.variant.metadata.CatalogStorageMetadataSynchronizer;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -161,7 +162,7 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
         step = getType(load, transform);
 
         params.put(VariantStorageOptions.STUDY.key(), studyFqn);
-        Aggregation aggregation = VariantStatsStorageOperation.getAggregation(catalogManager, studyFqn, params, sessionId);
+        Aggregation aggregation = VariantStatsAnalysis.getAggregation(catalogManager, studyFqn, params, sessionId);
         params.putIfAbsent(VariantStorageOptions.STATS_AGGREGATION.key(), aggregation);
         calculateStats = params.getBoolean(VariantStorageOptions.STATS_CALCULATE.key())
                 && (step.equals(Type.LOAD) || step.equals(Type.INDEX));

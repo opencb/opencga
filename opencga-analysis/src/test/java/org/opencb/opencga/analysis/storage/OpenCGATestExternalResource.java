@@ -17,15 +17,15 @@
 package org.opencb.opencga.analysis.storage;
 
 import org.junit.rules.ExternalResource;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
-import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -174,12 +174,20 @@ public class OpenCGATestExternalResource extends ExternalResource {
     }
 
     public File createFile(String studyId, String resourceName, String sessionId) throws IOException, CatalogException {
-        File file;
         URI uri = getResourceUri(resourceName);
         CatalogManager catalogManager = getCatalogManager();
-        file = new FileMetadataReader(catalogManager).create(studyId, uri, "data/vcfs/", "", true, null, sessionId).first();
-        new FileUtils(catalogManager).upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
-        return catalogManager.getFileManager().get(studyId, file.getId(), null, sessionId).first();
+        String folder = "data/";
+        if (resourceName.contains("/")) {
+            int idx = resourceName.lastIndexOf("/");
+            folder += resourceName.substring(0, idx);
+            resourceName = resourceName.substring(idx + 1);
+        }
+        catalogManager.getFileManager().createFolder(studyId, folder, null, true, "", new QueryOptions(), sessionId);
+        catalogManager.getFileManager().link(studyId, uri, folder, new ObjectMap(), sessionId);
+//        System.out.println("resourceName = " + resourceName);
+//        file = new FileMetadataReader(catalogManager).create(studyId, uri, "data/vcfs/", "", true, null, sessionId).first();
+//        new FileUtils(catalogManager).upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
+        return catalogManager.getFileManager().get(studyId, resourceName, null, sessionId).first();
     }
 
     public static Job runStorageJob(CatalogManager catalogManager, Job job, Logger logger, String sessionId)
@@ -221,7 +229,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         }
         String folder = "I_tmp_" + new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss.SSS").format(new Date()) + suffix;
         Path tmpOutDir = opencgaHome.resolve("jobs").resolve(folder);
-        Files.createDirectory(tmpOutDir);
+        Files.createDirectories(tmpOutDir);
         return tmpOutDir.toString();
 //        return getCatalogManager().getJobManager().createJobOutDir(studyId, "I_tmp_" + date + sufix, sessionId).toString();
     }

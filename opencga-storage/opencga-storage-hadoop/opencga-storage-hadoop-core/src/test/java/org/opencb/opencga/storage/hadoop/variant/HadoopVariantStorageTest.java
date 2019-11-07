@@ -380,7 +380,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         StorageEngineConfiguration variantConfiguration = storageConfiguration.getVariantEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
         ObjectMap options = variantConfiguration.getOptions();
 
-        options.put(HadoopVariantStorageOptions.MR_EXECUTOR.key(), TestMRExecutor.class);
+        options.put(HadoopVariantStorageOptions.MR_EXECUTOR.key(), TestMRExecutor.class.getName());
         TestMRExecutor.setStaticConfiguration(conf);
 
         options.put(HadoopVariantStorageOptions.MR_ADD_DEPENDENCY_JARS.key(), false);

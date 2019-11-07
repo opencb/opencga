@@ -747,7 +747,7 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--overwrite-stats"}, description = "Overwrite stats in variants already present")
         public boolean overwriteStats = false;
 
-        @Parameter(names = {"--region"}, description = "[PENDING] Region to calculate.")
+        @Parameter(names = {"--region"}, description = "Region to calculate.")
         public String region;
 
         @Parameter(names = {"--update-stats"}, description = "Calculate stats just for missing positions. Assumes that existing stats are" +

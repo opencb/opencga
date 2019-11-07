@@ -230,8 +230,10 @@ public abstract class OpenCgaAnalysis {
                 privateLogger.warn(warningMessage, e);
                 arm.addWarning(warningMessage);
             }
+            arm.setParams(params);
             return arm.close();
         } catch (RuntimeException | AnalysisException e) {
+            arm.setParams(params);
             arm.close(e);
             throw e;
         } finally {
@@ -295,6 +297,10 @@ public abstract class OpenCgaAnalysis {
      */
     public final Path getScratchDir() {
         return scratchDir;
+    }
+
+    protected final String getSessionId() {
+        return sessionId;
     }
 
     public final OpenCgaAnalysis addSource(AnalysisExecutor.Source source) {
