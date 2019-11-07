@@ -23,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 
 public class WrapperAnalysisTest extends VariantStorageBaseTest implements MongoDBVariantStorageTest {

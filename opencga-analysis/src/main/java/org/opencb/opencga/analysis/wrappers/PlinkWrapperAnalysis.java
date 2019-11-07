@@ -90,7 +90,7 @@ public class PlinkWrapperAnalysis extends OpenCgaWrapperAnalysis {
                     sb.append(" --out ").append(" ").append(DOCKER_OUTPUT_PATH).append("/").append(value);
                 } else {
                     sb.append(" --").append(key);
-                    if (!StringUtils.isEmpty(value)) {
+                    if (StringUtils.isNotEmpty(value)) {
                         sb.append(" ").append(value);
                     }
                 }

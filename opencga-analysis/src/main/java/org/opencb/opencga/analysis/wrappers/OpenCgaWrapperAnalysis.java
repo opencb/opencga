@@ -1,6 +1,6 @@
 package org.opencb.opencga.analysis.wrappers;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
 
 import java.io.IOException;
@@ -31,7 +31,7 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaAnalysis {
         for (String key : params.keySet()) {
             String value = params.getString(key);
             sb.append(" ").append(prefix).append(key);
-            if (!StringUtils.isEmpty(value)) {
+            if (StringUtils.isNotEmpty(value)) {
                 sb.append(" ").append(value);
             }
         }
