@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.executors.BatchExecutor;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -112,7 +113,7 @@ public class VariantExportStorageOperation extends StorageOperation {
                 outdirMustBeEmpty(outdir, options);
 
                 hook = buildHook(outdir);
-                writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
+                writeJobStatus(outdir, new Enums.ExecutionStatus(Enums.ExecutionStatus.RUNNING, "Job has just started"));
                 Runtime.getRuntime().addShutdownHook(hook);
             } else {
                 outdir = null;
@@ -161,13 +162,13 @@ public class VariantExportStorageOperation extends StorageOperation {
             }
 
             if (outdir != null) {
-                writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.DONE, "Job completed"));
+                writeJobStatus(outdir, new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE, "Job completed"));
             }
         } catch (Exception e) {
             // Error!
             logger.error("Error exporting variants.", e);
             if (outdir != null) {
-                writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job with error : " + e.getMessage()));
+                writeJobStatus(outdir, new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job with error : " + e.getMessage()));
             }
             throw new StorageEngineException("Error exporting variants.", e);
         } finally {

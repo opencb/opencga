@@ -20,6 +20,7 @@ import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.RunnableProcess;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.common.Enums;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -154,21 +155,21 @@ public class LocalExecutor implements BatchExecutor {
 
     @Override
     public String getStatus(Job job) {
-        return Job.JobStatus.UNKNOWN;
+        return Enums.ExecutionStatus.UNKNOWN;
     }
 
     @Override
-    public boolean stop(Job job) throws Exception {
+    public boolean stop(String jobId) throws Exception {
         return false;
     }
 
     @Override
-    public boolean resume(Job job) throws Exception {
+    public boolean resume(String jobId) throws Exception {
         return false;
     }
 
     @Override
-    public boolean kill(Job job) throws Exception {
+    public boolean kill(String jobId) throws Exception {
         return false;
     }
 

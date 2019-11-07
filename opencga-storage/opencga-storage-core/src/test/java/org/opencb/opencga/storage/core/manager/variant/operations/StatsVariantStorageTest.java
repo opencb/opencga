@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.update.CohortUpdateParams;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
@@ -493,7 +494,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
     private Job runStorageJob(Job storageJob, String sessionId) throws IOException, CatalogException {
 //        storageJob.setCommandLine(storageJob.getCommandLine() + " --job-id " + storageJob.getId());
         Job job = opencga.runStorageJob(storageJob, sessionId);
-        assertEquals(Job.JobStatus.READY, job.getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.READY, job.getStatus().getName());
         return job;
     }
 

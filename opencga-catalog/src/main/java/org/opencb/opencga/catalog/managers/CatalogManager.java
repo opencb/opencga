@@ -64,6 +64,8 @@ public class CatalogManager implements AutoCloseable {
     private InterpretationManager interpretationManager;
     private PanelManager panelManager;
 
+    private TaskManager taskManager;
+
     private AuditManager auditManager;
     private AuthorizationManager authorizationManager;
 
@@ -92,14 +94,17 @@ public class CatalogManager implements AutoCloseable {
         this.initializeAdmin();
         authorizationManager = new CatalogAuthorizationManager(this.catalogDBAdaptorFactory, this.configuration);
         auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, this.configuration);
+
+        taskManager = new TaskManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManagerFactory,
+                configuration);
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
         projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
         studyManager = new StudyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
-        fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, configuration);
+        fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManagerFactory,
+                configuration);
         jobManager = new JobManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, this.configuration);
         sampleManager = new SampleManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
@@ -286,6 +291,10 @@ public class CatalogManager implements AutoCloseable {
 
     public PanelManager getPanelManager() {
         return panelManager;
+    }
+
+    public TaskManager getTaskManager() {
+        return taskManager;
     }
 
     public Configuration getConfiguration() {

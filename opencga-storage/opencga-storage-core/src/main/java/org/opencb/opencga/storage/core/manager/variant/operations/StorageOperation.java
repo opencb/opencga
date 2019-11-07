@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.monitor.executors.BatchExecutor;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.metadata.CatalogStorageMetadataSynchronizer;
@@ -157,9 +158,9 @@ public abstract class StorageOperation {
         return new Thread(() -> {
                 try {
                     // If the status has not been changed by the method and is still running, we assume that the execution failed.
-                    Job.JobStatus status = readJobStatus(outdir);
-                    if (status.getName().equalsIgnoreCase(Job.JobStatus.RUNNING)) {
-                        writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job finished with an error."));
+                    Enums.ExecutionStatus status = readJobStatus(outdir);
+                    if (status.getName().equalsIgnoreCase(Enums.ExecutionStatus.RUNNING)) {
+                        writeJobStatus(outdir, new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job finished with an error."));
                         if (onError != null) {
                             onError.run();
                         }
@@ -203,12 +204,12 @@ public abstract class StorageOperation {
         return files;
     }
 
-    public Job.JobStatus readJobStatus(Path outdir) throws IOException {
-        return objectMapper.readerFor(Job.JobStatus.class).readValue(outdir.resolve(JOB_STATUS_FILE).toFile());
+    public Enums.ExecutionStatus readJobStatus(Path outdir) throws IOException {
+        return objectMapper.readerFor(Enums.ExecutionStatus.class).readValue(outdir.resolve(JOB_STATUS_FILE).toFile());
     }
 
-    public void writeJobStatus(Path outdir, Job.JobStatus jobStatus) throws IOException {
-        objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), jobStatus);
+    public void writeJobStatus(Path outdir, Enums.ExecutionStatus executionStatus) throws IOException {
+        objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), executionStatus);
     }
 
     public static DataStore getDataStore(CatalogManager catalogManager, String studyStr, File.Bioformat bioformat, String sessionId)

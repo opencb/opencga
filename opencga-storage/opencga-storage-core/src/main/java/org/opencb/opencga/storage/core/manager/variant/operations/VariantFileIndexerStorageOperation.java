@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -117,7 +118,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         // Outdir must be empty
         outdirMustBeEmpty(outdir, options);
 
-        writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
+        writeJobStatus(outdir, new Enums.ExecutionStatus(Enums.ExecutionStatus.RUNNING, "Job has just started"));
 
         // TODO: This hook should #updateFileInfo
         Thread hook = buildHook(outdir);
@@ -311,9 +312,9 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         }
 
         if (exception == null) {
-            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.DONE, "Job completed"));
+            writeJobStatus(outdir, new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE, "Job completed"));
         } else {
-            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job with errors: " + exception.getMessage()));
+            writeJobStatus(outdir, new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job with errors: " + exception.getMessage()));
         }
         Runtime.getRuntime().removeShutdownHook(hook);
 

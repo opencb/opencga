@@ -29,6 +29,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.TaskDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Admin;
@@ -59,6 +60,8 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
             FAMILY_COLLECTION,
             CLINICAL_ANALYSIS_COLLECTION,
             INTERPRETATION_COLLECTION,
+            TASK_COLLECTION,
+
             DELETED_USER_COLLECTION,
             DELETED_STUDY_COLLECTION,
             DELETED_FILE_COLLECTION,
@@ -85,6 +88,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     public static final String PANEL_COLLECTION = "panel";
     public static final String CLINICAL_ANALYSIS_COLLECTION = "clinical";
     public static final String INTERPRETATION_COLLECTION = "interpretation";
+    public static final String TASK_COLLECTION = "task";
 
     public static final String DELETED_USER_COLLECTION = "deleted_user";
     public static final String DELETED_STUDY_COLLECTION = "deleted_study";
@@ -120,6 +124,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     private PanelMongoDBAdaptor panelDBAdaptor;
     private ClinicalAnalysisMongoDBAdaptor clinicalDBAdaptor;
     private InterpretationMongoDBAdaptor interpretationDBAdaptor;
+    private TaskDBAdaptor taskDBAdaptor;
     private AuditMongoDBAdaptor auditDBAdaptor;
     private MetaMongoDBAdaptor metaDBAdaptor;
 
@@ -318,6 +323,11 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
     }
 
     @Override
+    public TaskDBAdaptor getTaskDBAdaptor() {
+        return taskDBAdaptor;
+    }
+
+    @Override
     public Map<String, MongoDBCollection> getMongoDBCollectionMap() {
         return collections;
     }
@@ -350,6 +360,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         MongoDBCollection familyCollection = mongoDataStore.getCollection(FAMILY_COLLECTION);
         MongoDBCollection clinicalCollection = mongoDataStore.getCollection(CLINICAL_ANALYSIS_COLLECTION);
         MongoDBCollection interpretationCollection = mongoDataStore.getCollection(INTERPRETATION_COLLECTION);
+        MongoDBCollection taskCollection = mongoDataStore.getCollection(TASK_COLLECTION);
 
         MongoDBCollection deletedUserCollection = mongoDataStore.getCollection(DELETED_USER_COLLECTION);
         MongoDBCollection deletedStudyCollection = mongoDataStore.getCollection(DELETED_STUDY_COLLECTION);
@@ -379,6 +390,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         collections.put(FAMILY_COLLECTION, familyCollection);
         collections.put(CLINICAL_ANALYSIS_COLLECTION, clinicalCollection);
         collections.put(INTERPRETATION_COLLECTION, interpretationCollection);
+        collections.put(TASK_COLLECTION, taskCollection);
 
         collections.put(DELETED_USER_COLLECTION, deletedUserCollection);
         collections.put(DELETED_STUDY_COLLECTION, deletedStudyCollection);
@@ -406,6 +418,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         familyDBAdaptor = new FamilyMongoDBAdaptor(familyCollection, deletedFamilyCollection, this);
         clinicalDBAdaptor = new ClinicalAnalysisMongoDBAdaptor(clinicalCollection, deletedClinicalCollection, this);
         interpretationDBAdaptor = new InterpretationMongoDBAdaptor(interpretationCollection, deletedInterpretationCollection, this);
+        taskDBAdaptor = new TaskMongoDBAdaptor(taskCollection, this);
         metaDBAdaptor = new MetaMongoDBAdaptor(metaCollection, this);
         auditDBAdaptor = new AuditMongoDBAdaptor(auditCollection);
     }

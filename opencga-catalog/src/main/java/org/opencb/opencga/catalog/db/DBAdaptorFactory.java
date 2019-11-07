@@ -100,5 +100,7 @@ public interface DBAdaptorFactory {
 
     InterpretationDBAdaptor getInterpretationDBAdaptor();
 
+    TaskDBAdaptor getTaskDBAdaptor();
+
     Map<String, MongoDBCollection> getMongoDBCollectionMap();
 }

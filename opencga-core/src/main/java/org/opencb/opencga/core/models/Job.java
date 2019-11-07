@@ -19,7 +19,6 @@ package org.opencb.opencga.core.models;
 import org.opencb.opencga.core.analysis.result.AnalysisResult;
 import org.opencb.opencga.core.models.common.Enums;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -43,7 +42,7 @@ public class Job extends PrivateStudyUid {
 
     private Enums.Priority priority;
 
-    private JobStatus status;
+    private Enums.ExecutionStatus status;
 
     private File outDir;
     private File tmpDir;
@@ -87,7 +86,7 @@ public class Job extends PrivateStudyUid {
     }
 
     public Job(String id, String uuid, String name, String description, String userId, String commandLine, Map<String, String> params,
-               String creationDate, String modificationDate, Enums.Priority priority, JobStatus status, File outDir, File tmpDir,
+               String creationDate, String modificationDate, Enums.Priority priority, Enums.ExecutionStatus status, File outDir, File tmpDir,
                List<File> input, List<File> output, List<String> tags, AnalysisResult result, File log, File errorLog, int release,
                Map<String, Object> attributes) {
         this.id = id;
@@ -111,77 +110,6 @@ public class Job extends PrivateStudyUid {
         this.errorLog = errorLog;
         this.release = release;
         this.attributes = attributes;
-    }
-
-    public static class JobStatus extends Status {
-
-        /**
-         * PENDING status means that the job is ready to be put into the queue.
-         */
-        public static final String PENDING = "PENDING";
-        /**
-         * QUEUED status means that the job is waiting on the queue to have an available slot for execution.
-         */
-        public static final String QUEUED = "QUEUED";
-        /**
-         * RUNNING status means that the job is running.
-         */
-        public static final String RUNNING = "RUNNING";
-        /**
-         * DONE status means that the job has finished the execution and everything finished successfully.
-         */
-        public static final String DONE = "DONE";
-        /**
-         * ERROR status means that the job finished with an error.
-         */
-        public static final String ERROR = "ERROR";
-        /**
-         * UNKNOWN status means that the job status could not be obtained.
-         */
-        public static final String UNKNOWN = "UNKNOWN";
-        /**
-         * ABORTED status means that the job was aborted and could not be executed.
-         */
-        public static final String ABORTED = "ABORTED";
-        /**
-         * REGISTERING status means that the job status could not be obtained.
-         */
-        public static final String REGISTERING = "REGISTERING";
-        /**
-         * UNREGISTERED status means that the job status could not be obtained.
-         */
-        public static final String UNREGISTERED = "UNREGISTERED";
-
-
-        public static final List<String> STATUS_LIST = Arrays.asList(PENDING, QUEUED, RUNNING, DONE, ERROR, UNKNOWN, REGISTERING,
-                UNREGISTERED, ABORTED, DELETED);
-
-        public JobStatus(String status, String message) {
-            if (isValid(status)) {
-                init(status, message);
-            } else {
-                throw new IllegalArgumentException("Unknown status " + status);
-            }
-        }
-
-        public JobStatus(String status) {
-            this(status, "");
-        }
-
-        public JobStatus() {
-            this(PENDING, "");
-        }
-
-
-        public static boolean isValid(String status) {
-            if (Status.isValid(status)) {
-                return true;
-            }
-            if (status != null && STATUS_LIST.contains(status)) {
-                return true;
-            }
-            return false;
-        }
     }
 
     @Override
@@ -317,11 +245,11 @@ public class Job extends PrivateStudyUid {
         return this;
     }
 
-    public JobStatus getStatus() {
+    public Enums.ExecutionStatus getStatus() {
         return status;
     }
 
-    public Job setStatus(JobStatus status) {
+    public Job setStatus(Enums.ExecutionStatus status) {
         this.status = status;
         return this;
     }

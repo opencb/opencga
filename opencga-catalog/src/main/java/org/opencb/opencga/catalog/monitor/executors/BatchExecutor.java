@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.monitor.executors;
 
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -46,11 +47,11 @@ public interface BatchExecutor {
 
     String getStatus(Job job);
 
-    boolean stop(Job job) throws Exception;
+    boolean stop(String jobId) throws Exception;
 
-    boolean resume(Job job) throws Exception;
+    boolean resume(String jobId) throws Exception;
 
-    boolean kill(Job job) throws Exception;
+    boolean kill(String jobId) throws Exception;
 
     boolean isExecutorAlive();
 
@@ -74,15 +75,15 @@ public interface BatchExecutor {
     }
 
     default String status(Path jobOutput, Job job) {
-        ObjectReader objectReader = getDefaultObjectMapper().reader(Job.JobStatus.class);
+        ObjectReader objectReader = getDefaultObjectMapper().reader(Enums.ExecutionStatus.class);
         Path jobStatusFilePath = jobOutput.resolve(JOB_STATUS_FILE);
         if (!jobStatusFilePath.toFile().exists()) {
             return getStatus(job);
         }
         // File exists
         try {
-            Job.JobStatus jobStatus = objectReader.readValue(jobStatusFilePath.toFile());
-            return jobStatus.getName();
+            Enums.ExecutionStatus executionStatus = objectReader.readValue(jobStatusFilePath.toFile());
+            return executionStatus.getName();
         } catch (IOException e) {
             return getStatus(job);
         }

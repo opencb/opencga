@@ -1,7 +1,9 @@
 package org.opencb.opencga.core.models.common;
 
+import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.*;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -24,6 +26,7 @@ public class Enums {
         INTERPRETATION,
         VARIANT,
         ALIGNMENT,
+        TASK,
         CATALOG;
 
         public List<String> getFullPermissionList() {
@@ -144,5 +147,76 @@ public class Enums {
             return this.value;
         }
 
+    }
+
+    public static class ExecutionStatus extends Status {
+
+        /**
+         * PENDING status means that the job is ready to be put into the queue.
+         */
+        public static final String PENDING = "PENDING";
+        /**
+         * QUEUED status means that the job is waiting on the queue to have an available slot for execution.
+         */
+        public static final String QUEUED = "QUEUED";
+        /**
+         * RUNNING status means that the job is running.
+         */
+        public static final String RUNNING = "RUNNING";
+        /**
+         * DONE status means that the job has finished the execution and everything finished successfully.
+         */
+        public static final String DONE = "DONE";
+        /**
+         * ERROR status means that the job finished with an error.
+         */
+        public static final String ERROR = "ERROR";
+        /**
+         * UNKNOWN status means that the job status could not be obtained.
+         */
+        public static final String UNKNOWN = "UNKNOWN";
+        /**
+         * ABORTED status means that the job was aborted and could not be executed.
+         */
+        public static final String ABORTED = "ABORTED";
+        /**
+         * REGISTERING status means that the job status could not be obtained.
+         */
+        public static final String REGISTERING = "REGISTERING";
+        /**
+         * UNREGISTERED status means that the job status could not be obtained.
+         */
+        public static final String UNREGISTERED = "UNREGISTERED";
+
+
+        public static final List<String> STATUS_LIST = Arrays.asList(PENDING, QUEUED, RUNNING, DONE, ERROR, UNKNOWN, REGISTERING,
+                UNREGISTERED, ABORTED, DELETED);
+
+        public ExecutionStatus(String status, String message) {
+            if (isValid(status)) {
+                init(status, message);
+            } else {
+                throw new IllegalArgumentException("Unknown status " + status);
+            }
+        }
+
+        public ExecutionStatus(String status) {
+            this(status, "");
+        }
+
+        public ExecutionStatus() {
+            this(PENDING, "");
+        }
+
+
+        public static boolean isValid(String status) {
+            if (Status.isValid(status)) {
+                return true;
+            }
+            if (status != null && STATUS_LIST.contains(status)) {
+                return true;
+            }
+            return false;
+        }
     }
 }

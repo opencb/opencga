@@ -107,17 +107,17 @@ public class AzureBatchExecutor implements BatchExecutor {
     }
 
     @Override
-    public boolean stop(Job job) throws Exception {
+    public boolean stop(String jobId) throws Exception {
         return false;
     }
 
     @Override
-    public boolean resume(Job job) throws Exception {
+    public boolean resume(String jobId) throws Exception {
         return false;
     }
 
     @Override
-    public boolean kill(Job job) throws Exception {
+    public boolean kill(String jobId) throws Exception {
         return false;
     }
 

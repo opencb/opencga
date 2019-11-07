@@ -385,7 +385,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         }
 
         if (parameters.containsKey(QueryParams.STATUS.key())) {
-            if (parameters.get(QueryParams.STATUS.key()) instanceof Job.JobStatus) {
+            if (parameters.get(QueryParams.STATUS.key()) instanceof Enums.ExecutionStatus) {
                 jobParameters.put(QueryParams.STATUS.key(), getMongoDBDocument(parameters.get(QueryParams.STATUS.key()), "Job.JobStatus"));
             } else {
                 jobParameters.put(QueryParams.STATUS.key(), parameters.get(QueryParams.STATUS.key()));
@@ -838,7 +838,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case STATUS_NAME:
                         // Convert the status to a positive status
                         queryCopy.put(queryParam.key(),
-                                Status.getPositiveStatus(Job.JobStatus.STATUS_LIST, queryCopy.getString(queryParam.key())));
+                                Status.getPositiveStatus(Enums.ExecutionStatus.STATUS_LIST, queryCopy.getString(queryParam.key())));
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case ID:

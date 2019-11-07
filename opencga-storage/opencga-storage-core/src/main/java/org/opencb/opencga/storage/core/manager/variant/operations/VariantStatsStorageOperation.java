@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -110,7 +111,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
 
         Thread hook = buildHook(studyFqn, cohortIds, sessionId, outdir);
-        writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
+        writeJobStatus(outdir, new Enums.ExecutionStatus(Enums.ExecutionStatus.RUNNING, "Job has just started"));
         Runtime.getRuntime().addShutdownHook(hook);
         // Up to this point, catalog has not been modified
         try {
@@ -146,13 +147,13 @@ public class VariantStatsStorageOperation extends StorageOperation {
                 copyResults(Paths.get(outdirUri), studyStr, catalogOutDirId, sessionId);
             }
 
-            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.DONE, "Job completed"));
+            writeJobStatus(outdir, new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE, "Job completed"));
             // Modify cohort status to "READY"
             updateCohorts(studyFqn, cohortIds, sessionId, Cohort.CohortStatus.READY, "");
         } catch (Exception e) {
             // Error!
             logger.error("Error executing stats. Set cohorts status to " + Cohort.CohortStatus.INVALID, e);
-            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job with error : " + e.getMessage()));
+            writeJobStatus(outdir, new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job with error : " + e.getMessage()));
             // Modify to "INVALID"
             updateCohorts(studyFqn, cohortIds, sessionId, Cohort.CohortStatus.INVALID, "Error calculating stats: " + e.getMessage());
             throw new StorageEngineException("Error calculating statistics.", e);

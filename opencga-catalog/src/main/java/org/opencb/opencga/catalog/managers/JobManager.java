@@ -70,8 +70,7 @@ public class JobManager extends ResourceManager<Job> {
                     JobDBAdaptor.QueryParams.STUDY_UID.key()));
 
     JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-               DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-               Configuration configuration) {
+               DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
 
         this.userManager = catalogManager.getUserManager();
@@ -236,7 +235,7 @@ public class JobManager extends ResourceManager<Job> {
             job.setDescription(ParamUtils.defaultString(job.getDescription(), ""));
             job.setCommandLine(ParamUtils.defaultString(job.getCommandLine(), ""));
             job.setCreationDate(ParamUtils.defaultString(job.getCreationDate(), TimeUtils.getTime()));
-            job.setStatus(ParamUtils.defaultObject(job.getStatus(), new Job.JobStatus(Job.JobStatus.DONE)));
+            job.setStatus(ParamUtils.defaultObject(job.getStatus(), new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE)));
             job.setPriority(ParamUtils.defaultObject(job.getPriority(), Enums.Priority.MEDIUM));
             job.setInput(ParamUtils.defaultObject(job.getInput(), Collections.emptyList()));
             job.setOutput(ParamUtils.defaultObject(job.getOutput(), Collections.emptyList()));
@@ -246,8 +245,8 @@ public class JobManager extends ResourceManager<Job> {
             job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
             job.setOutDir(job.getOutDir() != null && StringUtils.isNotEmpty(job.getOutDir().getPath()) ? job.getOutDir() : null);
 
-            if (!Arrays.asList(Job.JobStatus.ABORTED, Job.JobStatus.DONE, Job.JobStatus.UNREGISTERED, Job.JobStatus.ERROR)
-                    .contains(job.getStatus().getName())) {
+            if (!Arrays.asList(Enums.ExecutionStatus.ABORTED, Enums.ExecutionStatus.DONE, Enums.ExecutionStatus.UNREGISTERED,
+                    Enums.ExecutionStatus.ERROR).contains(job.getStatus().getName())) {
                 throw new CatalogException("Cannot create a job in a status different from one of the final ones.");
             }
 
@@ -313,7 +312,7 @@ public class JobManager extends ResourceManager<Job> {
         job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
 
         if (job.getStatus() == null || StringUtils.isEmpty(job.getStatus().getName())) {
-            job.setStatus(new Job.JobStatus(Job.JobStatus.PENDING));
+            job.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.PENDING));
         }
     }
 
@@ -355,7 +354,7 @@ public class JobManager extends ResourceManager<Job> {
             auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
-            job.setStatus(new Job.JobStatus(Job.JobStatus.ABORTED));
+            job.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED));
             jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
 
             throw e;
@@ -626,11 +625,11 @@ public class JobManager extends ResourceManager<Job> {
 
     private void checkJobCanBeDeleted(Job job) throws CatalogException {
         switch (job.getStatus().getName()) {
-            case Job.JobStatus.DELETED:
+            case Enums.ExecutionStatus.DELETED:
                 throw new CatalogException("Job already deleted.");
-            case Job.JobStatus.PENDING:
-            case Job.JobStatus.RUNNING:
-            case Job.JobStatus.QUEUED:
+            case Enums.ExecutionStatus.PENDING:
+            case Enums.ExecutionStatus.RUNNING:
+            case Enums.ExecutionStatus.QUEUED:
                 throw new CatalogException("The status of the job is " + job.getStatus().getName()
                         + ". Please, stop the job before deleting it.");
             default:
