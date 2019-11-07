@@ -35,7 +35,7 @@ import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.auth.IllegalOpenCGACredentialsException;
-import org.opencb.opencga.storage.core.config.DatabaseCredentials;
+import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;

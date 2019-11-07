@@ -29,7 +29,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     POST_LOAD_CHECK_SKIP("postLoad.skipCheck", false),
 
     STATS_DEFAULT_GENOTYPE("stats.defaultGenotype", "0/0"), // Default genotype to be used for calculating stats.
-    STATS_MULTI_ALLELIC("stats.multiallelic", false),  // Include secondary alternates in the variant stats calculation
+    STATS_MULTI_ALLELIC("stats.multiAllelic", false),  // Include secondary alternates in the variant stats calculation
     STATS_CALCULATE("stats.calculate", false),          //Calculate stats on the postLoad step
     STATS_OVERWRITE("stats.overwrite", false),          //Overwrite stats already present
     STATS_UPDATE("stats.update", false),                //Calculate missing stats

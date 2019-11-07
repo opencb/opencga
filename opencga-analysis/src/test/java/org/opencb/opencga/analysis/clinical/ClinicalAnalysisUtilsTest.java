@@ -44,7 +44,7 @@ public class ClinicalAnalysisUtilsTest {
                 new FileOutputStream(catalogManagerResource.getOpencgaHome().resolve("conf").resolve("configuration.yml").toString()));
 
         InputStream storageConfigurationStream = MongoDBVariantStorageTest.class.getClassLoader()
-                .getResourceAsStream("storage-configuration-test.yml");
+                .getResourceAsStream("storage-configuration.yml");
         Files.copy(storageConfigurationStream, catalogManagerResource.getOpencgaHome().resolve("conf").resolve("storage-configuration.yml"),
                 StandardCopyOption.REPLACE_EXISTING);
 

@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
+import org.opencb.opencga.storage.core.alignment.local.LocalAlignmentStorageEngine;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -28,7 +29,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Creates StorageManagers by reflexion.
+ * Creates StorageEngines by reflexion.
  * The StorageEngine's className is read from <opencga-home>/conf/storage-configuration.yml
  */
 public final class StorageEngineFactory {
@@ -37,8 +38,8 @@ public final class StorageEngineFactory {
     private static StorageConfiguration storageConfigurationDefault;
     private StorageConfiguration storageConfiguration;
 
-    private Map<String, AlignmentStorageEngine> alignmentStorageManagerMap = new ConcurrentHashMap<>();
-    private Map<String, VariantStorageEngine> variantStorageManagerMap = new ConcurrentHashMap<>();
+    private Map<String, AlignmentStorageEngine> alignmentStorageEngineMap = new ConcurrentHashMap<>();
+    private Map<String, VariantStorageEngine> variantStorageEngineMap = new ConcurrentHashMap<>();
     protected static Logger logger = LoggerFactory.getLogger(StorageConfiguration.class);
 
     private StorageEngineFactory(StorageConfiguration storageConfiguration) {
@@ -87,7 +88,7 @@ public final class StorageEngineFactory {
 
     public AlignmentStorageEngine getAlignmentStorageEngine(String dbName)
             throws StorageEngineException {
-        return getStorageEngine(Type.ALIGNMENT, null, AlignmentStorageEngine.class, alignmentStorageManagerMap, dbName);
+        return getStorageEngine(Type.ALIGNMENT, null, AlignmentStorageEngine.class, alignmentStorageEngineMap, dbName);
     }
 
     public VariantStorageEngine getVariantStorageEngine() throws StorageEngineException {
@@ -96,11 +97,11 @@ public final class StorageEngineFactory {
 
     public VariantStorageEngine getVariantStorageEngine(String storageEngineName, String dbName)
             throws StorageEngineException {
-        return getStorageEngine(Type.VARIANT, storageEngineName, VariantStorageEngine.class, variantStorageManagerMap, dbName);
+        return getStorageEngine(Type.VARIANT, storageEngineName, VariantStorageEngine.class, variantStorageEngineMap, dbName);
     }
 
     private synchronized <T extends StorageEngine> T getStorageEngine(Type type, String storageEngineId, Class<T> superClass,
-                                                                      Map<String, T> storageManagerMap, String dbName)
+                                                                      Map<String, T> storageEnginesMap, String dbName)
             throws StorageEngineException {
         /*
          * This new block of code use new StorageConfiguration system, it must replace older one
@@ -115,11 +116,11 @@ public final class StorageEngineFactory {
             dbName = "";
         }
         String key = buildStorageEngineKey(storageEngineId, dbName);
-        if (!storageManagerMap.containsKey(key)) {
+        if (!storageEnginesMap.containsKey(key)) {
             String clazz;
             switch (type) {
                 case ALIGNMENT:
-                    clazz = this.storageConfiguration.getAlignment().getEngine();
+                    clazz = LocalAlignmentStorageEngine.class.getName();
                     break;
                 case VARIANT:
                     clazz = this.storageConfiguration.getVariantEngine(storageEngineId).getEngine();
@@ -132,13 +133,13 @@ public final class StorageEngineFactory {
                 T storageEngine = Class.forName(clazz).asSubclass(superClass).newInstance();
                 storageEngine.setConfiguration(this.storageConfiguration, storageEngineId, dbName);
 
-                storageManagerMap.put(key, storageEngine);
+                storageEnginesMap.put(key, storageEngine);
                 return storageEngine;
             } catch (IllegalAccessException | InstantiationException | ClassNotFoundException e) {
                 throw new StorageEngineException("Error instantiating StorageEngine '" + clazz + "'", e);
             }
         } else {
-            return storageManagerMap.get(key);
+            return storageEnginesMap.get(key);
         }
     }
 
@@ -156,21 +157,21 @@ public final class StorageEngineFactory {
 
     public void registerVariantStorageEngine(VariantStorageEngine variantStorageEngine) {
         String key = buildStorageEngineKey(variantStorageEngine.getStorageEngineId(), variantStorageEngine.dbName);
-        variantStorageManagerMap.put(key, variantStorageEngine);
+        variantStorageEngineMap.put(key, variantStorageEngine);
     }
 
     public void unregisterVariantStorageEngine(String storageEngineId) {
-        Map<String, VariantStorageEngine> map = this.variantStorageManagerMap;
+        Map<String, VariantStorageEngine> map = this.variantStorageEngineMap;
         unregister(storageEngineId, map);
     }
 
     public void registerAlignmentStorageEngine(AlignmentStorageEngine alignmentStorageEngine) {
         String key = buildStorageEngineKey(alignmentStorageEngine.getStorageEngineId(), alignmentStorageEngine.dbName);
-        alignmentStorageManagerMap.put(key, alignmentStorageEngine);
+        alignmentStorageEngineMap.put(key, alignmentStorageEngine);
     }
 
     public void unregisterAlignmentStorageManager(String storageEngineId) {
-        unregister(storageEngineId, alignmentStorageManagerMap);
+        unregister(storageEngineId, alignmentStorageEngineMap);
     }
 
     private <T extends StorageEngine> void unregister(String storageEngineId, Map<String, T> map) {
