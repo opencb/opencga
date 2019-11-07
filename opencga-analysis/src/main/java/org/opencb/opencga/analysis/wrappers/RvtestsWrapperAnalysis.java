@@ -1,7 +1,7 @@
 package org.opencb.opencga.analysis.wrappers;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.core.analysis.result.FileResult;
 import org.opencb.opencga.core.annotations.Analysis;
@@ -15,12 +15,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-@Analysis(id = PlinkWrapperAnalysis.ID, type = Analysis.AnalysisType.VARIANT)
-public class PlinkWrapperAnalysis extends OpenCgaWrapperAnalysis {
+@Analysis(id = RvtestsWrapperAnalysis.ID, type = Analysis.AnalysisType.VARIANT)
+public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
-    public final static String ID = "plink";
-    public final static String PLINK_DOCKER_IMAGE = "gelog/plink";
-    public final static String OUT_NAME = "plink";
+    public final static String ID = "rvtests";
+    public final static String RVTESTS_DOCKER_IMAGE = "zhanxw/rvtests-docker";
+    public final static String OUT_NAME = "out";
 
     protected void check() throws Exception {
         super.check();
@@ -30,7 +30,7 @@ public class PlinkWrapperAnalysis extends OpenCgaWrapperAnalysis {
     protected void run() throws Exception {
         step(() -> {
             String commandLine = getCommandLine();
-            logger.info("Plink command line:" + commandLine);
+            logger.info("Rvtests command line:" + commandLine);
             try {
                 Set<String> beforeNames = new HashSet<>(getFilenames(getOutDir()));
                 beforeNames.add("status.json");
@@ -55,10 +55,20 @@ public class PlinkWrapperAnalysis extends OpenCgaWrapperAnalysis {
                         }
                     }
                 }
-                // Check Plink errors by reading the stderr file
-                File stderrFile = new File(getOutDir() + "/" + STDERR_FILENAME);
-                if (FileUtils.sizeOf(stderrFile) > 0) {
-                    throw new AnalysisException(StringUtils.join(FileUtils.readLines(stderrFile, Charset.defaultCharset()), ". "));
+                // Check Rvtests errors by reading the stdout and stderr files
+                boolean success = false;
+                File file = new File(getOutDir() + "/" + STDOUT_FILENAME);
+                List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+                if (lines.get(lines.size() - 1).contains("successfully")) {
+                    success = true;
+                }
+                if (!success) {
+                    file = new File(getOutDir() + "/" + STDERR_FILENAME);
+                    String msg = "Something wrong executing Rvtests";
+                    if (file.exists()) {
+                        msg = StringUtils.join(FileUtils.readLines(file, Charset.defaultCharset()), ". ");
+                    }
+                    throw new AnalysisException(msg);
                 }
             } catch (Exception e) {
                 throw new AnalysisException(e);
@@ -68,7 +78,7 @@ public class PlinkWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     @Override
     public String getDockerImageName() {
-        return PLINK_DOCKER_IMAGE;
+        return RVTESTS_DOCKER_IMAGE;
     }
 
     @Override
@@ -76,15 +86,19 @@ public class PlinkWrapperAnalysis extends OpenCgaWrapperAnalysis {
         StringBuilder sb = new StringBuilder("docker run ").append("--mount type=bind,source=\"").append(getOutDir().toAbsolutePath())
                 .append("\",target=\"").append(DOCKER_INPUT_PATH).append("\" ").append("--mount type=bind,source=\"")
                 .append(getOutDir().toAbsolutePath()).append("\",target=\"").append(DOCKER_OUTPUT_PATH).append("\" ")
-                .append(PLINK_DOCKER_IMAGE);
+                .append(RVTESTS_DOCKER_IMAGE);
         if (params.containsKey(DOCKER_IMAGE_VERSION_PARAM)) {
             sb.append(":").append(params.getString(DOCKER_IMAGE_VERSION_PARAM));
         }
 
+        // TODO: support for rvtests commands, e.g.: rvtest, vcf2kinship
+        sb.append(" rvtest ");
+//        sb.append(" vcf2kinship ");
+
         for (String key : params.keySet()) {
-            if (!key.equals(DOCKER_IMAGE_VERSION_PARAM) && !key.equals("noweb")) {
+            if (!key.equals(DOCKER_IMAGE_VERSION_PARAM)) {
                 String value = params.getString(key);
-                if (key.equals("file") || key.equals("bfile")) {
+                if (key.equals("inVcf") || key.equals("pheno")) {
                     sb.append(" --").append(key).append(" ").append(DOCKER_INPUT_PATH).append("/").append(value);
                 } else if (key.equals("out")) {
                     sb.append(" --out ").append(" ").append(DOCKER_OUTPUT_PATH).append("/").append(value);

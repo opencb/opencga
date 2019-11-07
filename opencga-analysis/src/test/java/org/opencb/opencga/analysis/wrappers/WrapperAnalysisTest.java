@@ -3,6 +3,7 @@ package org.opencb.opencga.analysis.wrappers;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
+import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.analysis.clinical.ClinicalAnalysisUtilsTest;
@@ -22,9 +23,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 
-public class PlinkWrapperAnalysisTest extends VariantStorageBaseTest implements MongoDBVariantStorageTest {
+public class WrapperAnalysisTest extends VariantStorageBaseTest implements MongoDBVariantStorageTest {
 
     private AbstractClinicalManagerTest clinicalTest;
 
@@ -46,9 +48,9 @@ public class PlinkWrapperAnalysisTest extends VariantStorageBaseTest implements 
     public void plinkFisher() throws AnalysisException, IOException {
         outDir = Paths.get(opencga.createTmpOutdir("_plink"));
 
-        InputStream testMap = PlinkWrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.map");
+        InputStream testMap = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.map");
         Files.copy(testMap, outDir.resolve("test.map"), StandardCopyOption.REPLACE_EXISTING);
-        InputStream testPed = PlinkWrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.ped");
+        InputStream testPed = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.ped");
         Files.copy(testPed, outDir.resolve("test.ped"), StandardCopyOption.REPLACE_EXISTING);
 
         System.out.println("======> out dir = " + outDir.toAbsolutePath());
@@ -65,7 +67,31 @@ public class PlinkWrapperAnalysisTest extends VariantStorageBaseTest implements 
         System.out.println(result);
     }
 
-//    @Test
+    @Test
+    public void rvtestsWaldAndScore() throws AnalysisException, IOException {
+        outDir = Paths.get(opencga.createTmpOutdir("_rvtests"));
+
+        InputStream testMap = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("example.vcf");
+        Files.copy(testMap, outDir.resolve("example.vcf"), StandardCopyOption.REPLACE_EXISTING);
+        InputStream testPed = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("pheno");
+        Files.copy(testPed, outDir.resolve("pheno"), StandardCopyOption.REPLACE_EXISTING);
+
+        System.out.println("======> out dir = " + outDir.toAbsolutePath());
+
+        ObjectMap rvtestsParams = new ObjectMap();
+        rvtestsParams.put("inVcf", "example.vcf");
+        rvtestsParams.put("pheno", "pheno");
+        rvtestsParams.put("single", "wald,score");
+        rvtestsParams.put("out", "rvtests-output");
+
+        RvtestsWrapperAnalysis rvtests = new RvtestsWrapperAnalysis();
+        rvtests.setUp(opencga.getOpencgaHome().toString(), rvtestsParams, outDir, clinicalTest.token);
+
+        AnalysisResult result = rvtests.start();
+        System.out.println(result);
+    }
+
+    //    @Test
     public void commandTest() throws IOException {
         outDir = Paths.get(opencga.createTmpOutdir("_docker"));
 
