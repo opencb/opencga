@@ -33,8 +33,8 @@ public class ExecutorFactory {
     }
 
     public ExecutorFactory(Execution execution) {
-        String mode = StringUtils.isEmpty(execution.getMode())
-                ? "local" : execution.getMode().toLowerCase();
+        String mode = StringUtils.isEmpty(execution.getId())
+                ? "local" : execution.getId().toLowerCase();
 
         switch (mode) {
             case "local":

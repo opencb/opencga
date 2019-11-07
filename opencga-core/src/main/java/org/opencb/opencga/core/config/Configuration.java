@@ -135,7 +135,8 @@ public class Configuration {
                         configuration.getMonitor().setPort(Integer.parseInt(envVariables.get(variable)));
                         break;
                     case "OPENCGA_EXECUTION_MODE":
-                        configuration.getAnalysis().getExecution().setMode(envVariables.get(variable));
+                    case "OPENCGA_EXECUTION_ID":
+                        configuration.getAnalysis().getExecution().setId(envVariables.get(variable));
                         break;
                     case "OPENCGA_MAIL_HOST":
                         configuration.getEmail().setHost(envVariables.get(variable));
