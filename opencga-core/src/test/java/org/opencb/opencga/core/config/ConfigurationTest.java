@@ -41,7 +41,7 @@ public class ConfigurationTest {
         configuration.setAuthentication(authentication);
 
         configuration.setMonitor(new Monitor());
-        configuration.setExecution(new Execution());
+        configuration.getAnalysis().setExecution(new Execution());
 
         configuration.setHooks(Collections.singletonMap("user@project:study", Collections.singletonMap("file",
                 Collections.singletonList(

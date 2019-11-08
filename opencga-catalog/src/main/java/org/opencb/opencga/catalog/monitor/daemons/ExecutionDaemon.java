@@ -34,14 +34,15 @@ import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.models.update.JobUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.analysis.result.AnalysisResult;
+import org.opencb.opencga.core.analysis.result.AnalysisResultManager;
 import org.opencb.opencga.core.analysis.result.Status;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -161,7 +162,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         Enums.ExecutionStatus executionStatus = getCurrentStatus(job);
 
         if (Enums.ExecutionStatus.RUNNING.equals(executionStatus.getName())) {
-            AnalysisResult result = readAnalysisResult(Paths.get(job.getTmpDir().getUri()));
+            String analysisId = String.valueOf(job.getAttributes().get(Job.OPENCGA_COMMAND));
+            AnalysisResult result = readAnalysisResult(analysisId, Paths.get(job.getTmpDir().getUri()));
             if (result != null) {
                 // Update the result of the job
                 JobUpdateParams updateParams = new JobUpdateParams().setResult(result);
@@ -380,7 +382,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         // Check if analysis result file is there
         if (Files.exists(tmpOutdirPath.resolve(ANALYSIS_RESULT_FILE))) {
-            AnalysisResult analysisResult = readAnalysisResult(tmpOutdirPath);
+            String analysisId = String.valueOf(job.getAttributes().get(Job.OPENCGA_COMMAND));
+            AnalysisResult analysisResult = readAnalysisResult(analysisId, tmpOutdirPath);
             if (analysisResult != null) {
                 return new Enums.ExecutionStatus(analysisResult.getStatus().getName().name());
             } else {
@@ -400,21 +403,25 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
     }
 
-    private AnalysisResult readAnalysisResult(Path directory) {
-        Path analysisResultFile = directory.resolve(ANALYSIS_RESULT_FILE);
-
-        AnalysisResult analysisResult = null;
+    private AnalysisResult readAnalysisResult(String analysisId, Path directory) {
+        AnalysisResultManager manager;
         int maxAttempts = 0;
-        while (analysisResult == null || maxAttempts < 2) {
+        try {
+            manager = new AnalysisResultManager(analysisId, directory);
+        } catch (AnalysisException e) {
+            logger.error("Could not initialise AnalysisResultManager {}", e.getMessage(), e);
+            return null;
+        }
+        while (maxAttempts < 2) {
             try {
-                analysisResult = AnalysisResult.load(analysisResultFile);
-            } catch (IOException e) {
+                return manager.read();
+            } catch (AnalysisException e) {
                 logger.warn("Could not load AnalysisResult file. {}", e.getMessage(), e);
                 maxAttempts++;
             }
         }
 
-        return analysisResult;
+        return null;
     }
 
     private int processFinishedJob(Job job) {
@@ -523,7 +530,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         // Register the job information
         JobUpdateParams updateParams = new JobUpdateParams();
-        AnalysisResult analysisResult = readAnalysisResult(Paths.get(tmpOutdirUri));
+        String analysisId = String.valueOf(job.getAttributes().get(Job.OPENCGA_COMMAND));
+        AnalysisResult analysisResult = readAnalysisResult(analysisId, Paths.get(tmpOutdirUri));
 
         updateParams.setResult(analysisResult);
         updateParams.setOutput(outputFiles);

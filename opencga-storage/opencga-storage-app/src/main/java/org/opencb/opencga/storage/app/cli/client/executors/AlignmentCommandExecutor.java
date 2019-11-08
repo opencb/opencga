@@ -34,7 +34,6 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
-import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import java.io.IOException;
@@ -48,7 +47,7 @@ import java.util.List;
  */
 public class AlignmentCommandExecutor extends CommandExecutor {
 
-    private StorageEngineConfiguration storageConfiguration;
+    private ObjectMap alignmentOptions;
     private AlignmentStorageEngine alignmentStorageManager;
 
     private StorageAlignmentCommandOptions alignmentCommandOptions;
@@ -62,7 +61,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
 
         this.logFile = commonOptions.logFile;
 
-        this.storageConfiguration = configuration.getAlignment();
+        this.alignmentOptions = configuration.getAlignment();
 
         // TODO: Start passing catalogManager
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(configuration);
@@ -113,7 +112,6 @@ public class AlignmentCommandExecutor extends CommandExecutor {
             /*
              * Add CLI options to the alignmentOptions
              */
-        ObjectMap alignmentOptions = storageConfiguration.getOptions();
 //        if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
 //            alignmentOptions.put(AlignmentStorageEngineOld.Options.FILE_ID.key(), indexAlignmentsCommandOptions.fileId);
 //        }

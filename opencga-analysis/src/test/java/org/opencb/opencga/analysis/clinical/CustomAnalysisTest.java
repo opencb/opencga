@@ -4,10 +4,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.ReportedEvent;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
-import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationAnalysis;
@@ -22,7 +18,6 @@ import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class CustomAnalysisTest extends VariantStorageBaseTest implements MongoDBVariantStorageTest {
 

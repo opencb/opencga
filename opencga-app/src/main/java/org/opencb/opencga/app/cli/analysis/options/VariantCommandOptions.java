@@ -61,7 +61,7 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.*;
+import static org.opencb.opencga.analysis.storage.variant.VariantCatalogQueryUtils.*;
 
 /**
  * Created by pfurio on 23/11/16.
@@ -156,10 +156,6 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
         public String outdir = null;
-
-        @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
-                + "transformed files will not be registered in catalog.", arity = 1)
-        public String catalogPath = null;
     }
 
     @Parameters(commandNames = {SECONDARY_INDEX_COMMAND}, commandDescription = "Creates a secondary index using a search engine")
@@ -230,10 +226,6 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
         public String outdir = null;
-
-        @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
-                + "transformed files will not be registered in catalog.", arity = 1)
-        public String catalogPath = null;
 
 
         //////
@@ -523,15 +515,22 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be calculated.")
+        @Parameter(names = {"--cohorts"}, description = "Cohort Ids for the cohorts to be calculated.")
         public String cohortIds;
+
+        @Parameter(names = {"--cohort-ids"}, hidden = true)
+        public void setCohortIds(String cohortIds) {
+            this.cohortIds = cohortIds;
+        }
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
         public String outdir = null;
 
-        @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
-                + "transformed files will not be registered in catalog.", arity = 1)
-        public String catalogPath = null;
+        @Parameter(names = {"--index"}, description = "Index stats in the variant storage database", arity = 0)
+        public boolean index;
+
+        @Parameter(names = {"--samples"}, description = "List of samples to use as cohort to calculate stats")
+        public String samples;
     }
 
     @Parameters(commandNames = {VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND}, commandDescription = VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND_DESCRIPTION)
@@ -663,10 +662,6 @@ public class VariantCommandOptions {
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
         public String outdir = null;
 
-        @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
-                + "transformed files will not be registered in catalog.", arity = 1)
-        public String catalogPath = null;
-
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
         public Aggregation aggregated = Aggregation.NONE;
 
@@ -694,10 +689,6 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
         public String outdir;
-
-        @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
-                + "transformed files will not be registered in catalog.", arity = 1)
-        public String catalogPath;
     }
 
     @Parameters(commandNames = {ANNOTATION_SAVE_COMMAND}, commandDescription = ANNOTATION_SAVE_COMMAND_DESCRIPTION)
@@ -767,10 +758,6 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
         public String outdir = null;
-
-        @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
-                + "transformed files will not be registered in catalog.", arity = 1)
-        public String catalogPath;
 
         /////////
         // Generic

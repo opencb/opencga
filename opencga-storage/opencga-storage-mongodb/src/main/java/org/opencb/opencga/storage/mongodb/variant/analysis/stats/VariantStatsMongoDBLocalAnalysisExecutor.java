@@ -16,9 +16,11 @@ import org.opencb.opencga.core.analysis.variant.VariantStatsAnalysisExecutor;
 import org.opencb.opencga.core.annotations.AnalysisExecutor;
 import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.exception.AnalysisExecutorException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -30,39 +32,65 @@ import org.opencb.opencga.storage.mongodb.variant.stats.MongoDBVariantStatsCalcu
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 @AnalysisExecutor(id = "mongodb-local", analysis = "variant-stats",
         framework = AnalysisExecutor.Framework.LOCAL,
         source = AnalysisExecutor.Source.MONGODB)
 public class VariantStatsMongoDBLocalAnalysisExecutor extends VariantStatsAnalysisExecutor implements MongoDBAnalysisExecutor {
+
     @Override
     public void run() throws AnalysisException {
+        if (isIndex()) {
+            calculateAndIndex();
+        } else {
+            calculate();
+        }
+    }
+
+    private void calculateAndIndex() throws AnalysisExecutorException {
+        QueryOptions calculateStatsOptions = new QueryOptions(executorParams);
+
+        VariantStorageEngine variantStorageEngine = getMongoDBVariantStorageEngine();
+        try {
+            calculateStatsOptions.putAll(getVariantsQuery());
+
+            variantStorageEngine.calculateStats(getStudy(), getCohorts(), calculateStatsOptions);
+            variantStorageEngine.close();
+        } catch (IOException | StorageEngineException e) {
+            throw new AnalysisExecutorException(e);
+        }
+    }
+
+    public void calculate() throws AnalysisException {
         MongoDBVariantStorageEngine engine = getMongoDBVariantStorageEngine();
+
+        VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
+        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(getStudy());
+
+        Map<String, List<String>> cohortsMap = getCohorts();
+        List<CohortMetadata> cohorts = new ArrayList<>();
+        Set<String> allSamples = new HashSet<>();
+        for (Map.Entry<String, List<String>> entry : cohortsMap.entrySet()) {
+            allSamples.addAll(entry.getValue());
+            List<Integer> sampleIds = new ArrayList<>(entry.getValue().size());
+            for (String sample : entry.getValue()) {
+                Integer sampleId = metadataManager.getSampleId(studyMetadata.getId(), sample);
+                if (sampleId == null) {
+                    throw VariantQueryException.sampleNotFound(sample, getStudy());
+                }
+                sampleIds.add(sampleId);
+            }
+            cohorts.add(new CohortMetadata(studyMetadata.getId(), -(cohorts.size() + 1), entry.getKey(), sampleIds));
+        }
 
         Query query = new Query(getVariantsQuery())
                 .append(VariantQueryParam.STUDY.key(), getStudy())
-                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), getSamples());
+                .append(VariantQueryParam.INCLUDE_SAMPLE.key(), allSamples);
 
         QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE,
                 Arrays.asList(VariantField.STUDIES_STATS, VariantField.ANNOTATION));
-        VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
-        StudyMetadata studyMetadata = metadataManager.getStudyMetadata(getStudy());
-        List<Integer> sampleIds = new ArrayList<>(getSamples().size());
-        for (String sample : getSamples()) {
-            Integer sampleId = metadataManager.getSampleId(studyMetadata.getId(), sample);
-            if (sampleId == null) {
-                throw VariantQueryException.sampleNotFound(sample, getStudy());
-            }
-            sampleIds.add(sampleId);
-        }
-
-        String cohort = getCohort();
-
         try (MongoCursor<Document> cursor = engine.getDBAdaptor().nativeIterator(query, queryOptions, true);
              OutputStream os = new BufferedOutputStream(FileUtils.openOutputStream(getOutputFile().toFile()))) {
             // reader
@@ -74,7 +102,6 @@ public class VariantStatsMongoDBLocalAnalysisExecutor extends VariantStatsAnalys
                 return documents;
             };
 
-            List<CohortMetadata> cohorts = Collections.singletonList(new CohortMetadata(studyMetadata.getId(), -1, cohort, sampleIds));
             MongoDBVariantStatsCalculator calculator = new MongoDBVariantStatsCalculator(studyMetadata, cohorts, "0/0");
 
             ProgressLogger progressLogger = new ProgressLogger("Variants processed:");
@@ -92,7 +119,7 @@ public class VariantStatsMongoDBLocalAnalysisExecutor extends VariantStatsAnalys
             });
 
 
-            VariantStatsTsvExporter writer = new VariantStatsTsvExporter(os, getStudy(), Collections.singletonList(cohort));
+            VariantStatsTsvExporter writer = new VariantStatsTsvExporter(os, getStudy(), new ArrayList<>(cohortsMap.keySet()));
 
             ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().build();
             ParallelTaskRunner<Document, Variant> ptr = new ParallelTaskRunner<>(reader, task, writer, config);

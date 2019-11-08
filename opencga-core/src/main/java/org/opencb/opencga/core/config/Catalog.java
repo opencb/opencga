@@ -23,15 +23,15 @@ public class Catalog {
 
     private DatabaseCredentials database;
     private DatabaseCredentials searchEngine;
-    private Batch batch;
+    private Execution execution;
 
     public Catalog() {
     }
 
-    public Catalog(DatabaseCredentials database, DatabaseCredentials searchEngine, Batch batch) {
+    public Catalog(DatabaseCredentials database, DatabaseCredentials searchEngine, Execution execution) {
         this.database = database;
         this.searchEngine = searchEngine;
-        this.batch = batch;
+        this.execution = execution;
     }
 
     @Override
@@ -39,7 +39,7 @@ public class Catalog {
         final StringBuilder sb = new StringBuilder("Catalog{");
         sb.append("database=").append(database);
         sb.append(", searchEngine=").append(searchEngine);
-        sb.append(", batch=").append(batch);
+        sb.append(", execution=").append(execution);
         sb.append('}');
         return sb.toString();
     }
@@ -62,12 +62,12 @@ public class Catalog {
         return this;
     }
 
-    public Batch getBatch() {
-        return batch;
+    public Execution getExecution() {
+        return execution;
     }
 
-    public Catalog setBatch(Batch batch) {
-        this.batch = batch;
+    public Catalog setExecution(Execution execution) {
+        this.execution = execution;
         return this;
     }
 }

@@ -68,8 +68,7 @@ io:
 #        accountKey: "<accountKey>"
 
 alignment:
-  options:
-    bigWigWindowsSize: 1
+  bigWigWindowsSize: 1
 
 variant:
   defaultEngine: "${OPENCGA.STORAGE.DEFAULT_ENGINE}"
@@ -83,8 +82,13 @@ variant:
     load.batchSize: 100
     load.numThreads: 6
 
-    stats.defaultGenotype: "0/0"   # Default genotype to be used for calculating stats.
-    stats.multiallelic: false       # Include secondary alternates in the variant stats calculation
+    stats.defaultGenotype: "0/0"    # Default genotype to be used for calculating stats.
+    stats.multiAllelic: false       # Include secondary alternates in the variant stats calculation
+    stats.calculate.batchSize: 100
+    stats.calculate.numThreads: 4
+    stats.load.batchSize: 100
+    stats.load.numThreads: 4
+
 
     annotation.batchSize: 100
     annotation.numThreads: 8
@@ -131,19 +135,19 @@ variant:
     - id: "hadoop"
       engine: "org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine"
       database:
-        hosts:
-          - "${OPENCGA.STORAGE.HADOOP.VARIANT.DB.HOSTS}"
+        # PENDING Kerberos authentication support:
+        # See https://github.com/opencb/opencga/issues/1292
         user: "${OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER}"
         password: "${OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD}"
       options:
         storage.hadoop.hbase.namespace: "${OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE}"
-        storage.hadoop.archive.table.preSplit.size: 500
-        storage.hadoop.archive.table.compression: "gz"                # Allowed values: none, snappy, gz
+        storage.hadoop.archive.table.preSplit.splitsPerBatch: 500
+        storage.hadoop.archive.table.compression: "gz"               # Allowed values: none, snappy, gz
         storage.hadoop.archive.table.chunkSize: 1000
         storage.hadoop.archive.table.fileBatchSize: 1000
-        storage.hadoop.variant.table.preSplit.size: 500
-        storage.hadoop.variant.table.compression: "snappy"            # Allowed values: none, snappy, gz
-        storage.hadoop.sampleIndex.table.preSplit.size: 15
+        storage.hadoop.variant.table.preSplit.numSplits: 500
+        storage.hadoop.variant.table.compression: "snappy"           # Allowed values: none, snappy, gz
+        storage.hadoop.sampleIndex.table.preSplit.samplesPerSplit: 15
         storage.hadoop.sampleIndex.table.compression: "snappy"       # Allowed values: none, snappy, gz
         storage.hadoop.annotationIndex.table.compression: "snappy"   # Allowed values: none, snappy, gz
         storage.hadoop.pendingAnnotation.table.compression: "snappy" # Allowed values: none, snappy, gz

@@ -57,7 +57,7 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     // Variant table configuration
     /////////////////////////
     VARIANT_TABLE_COMPRESSION("storage.hadoop.variant.table.compression", Compression.Algorithm.SNAPPY.getName()),
-    VARIANT_TABLE_PRESPLIT_SIZE("storage.hadoop.variant.table.preSplit.size", 100),
+    VARIANT_TABLE_PRESPLIT_SIZE("storage.hadoop.variant.table.preSplit.numSplits", 500),
     // Do not create phoenix indexes. Testing purposes only
     VARIANT_TABLE_INDEXES_SKIP("storage.hadoop.variant.table.indexes.skip"),
     VARIANT_TABLE_LOAD_REFERENCE("storage.hadoop.variant.table.load.reference", false),
@@ -65,8 +65,8 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     /////////////////////////
     // Archive table configuration
     /////////////////////////
-    ARCHIVE_TABLE_COMPRESSION("storage.hadoop.archive.table.compression", Compression.Algorithm.SNAPPY.getName()),
-    ARCHIVE_TABLE_PRESPLIT_SIZE("storage.hadoop.archive.table.preSplit.size", 100),
+    ARCHIVE_TABLE_COMPRESSION("storage.hadoop.archive.table.compression", Compression.Algorithm.GZ.getName()),
+    ARCHIVE_TABLE_PRESPLIT_SIZE("storage.hadoop.archive.table.preSplit.splitsPerBatch", 500),
 
     ARCHIVE_CHUNK_SIZE("storage.hadoop.archive.table.chunkSize", 1000),
     ARCHIVE_FILE_BATCH_SIZE("storage.hadoop.archive.table.fileBatchSize", 1000),
@@ -78,7 +78,7 @@ public enum HadoopVariantStorageOptions implements ConfigurationOption {
     // Sample index table configuration
     /////////////////////////
     SAMPLE_INDEX_TABLE_COMPRESSION("storage.hadoop.sampleIndex.table.compression", Compression.Algorithm.SNAPPY.getName()),
-    SAMPLE_INDEX_TABLE_PRESPLIT_SIZE("storage.hadoop.sampleIndex.table.preSplit.size", 15),
+    SAMPLE_INDEX_TABLE_PRESPLIT_SIZE("storage.hadoop.sampleIndex.table.preSplit.samplesPerSplit", 15),
 
     /////////////////////////
     // Annotation index table  configuration

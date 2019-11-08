@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.config;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.config.DatabaseCredentials;
 
 public class StorageEngineConfiguration {
 

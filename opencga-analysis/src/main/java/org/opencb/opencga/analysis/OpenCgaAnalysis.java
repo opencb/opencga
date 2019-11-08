@@ -41,7 +41,7 @@ import org.opencb.opencga.core.models.DataStore;
 import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
@@ -101,6 +101,7 @@ public abstract class OpenCgaAnalysis {
         this.params = params == null ? new ObjectMap() : new ObjectMap(params);
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
+        this.params.put("outDir", outDir.toAbsolutePath().toString());
 
         return setUpFrameworksAndSource();
     }
@@ -109,9 +110,10 @@ public abstract class OpenCgaAnalysis {
             throws AnalysisException {
         this.opencgaHome = opencgaHome;
         this.sessionId = sessionId;
-        this.params = params;
+        this.params = params == null ? new ObjectMap() : new ObjectMap(params);
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
+        this.params.put("outDir", outDir.toAbsolutePath().toString());
 
         try {
             loadConfiguration();
@@ -162,10 +164,19 @@ public abstract class OpenCgaAnalysis {
         arm = new AnalysisResultManager(getId(), outDir);
         arm.init(params, executorParams);
         Thread hook = new Thread(() -> {
+            Exception exception = null;
+            try {
+                onShutdown();
+            } catch (Exception e) {
+                exception = e;
+            }
             if (!arm.isClosed()) {
                 privateLogger.error("Unexpected system shutdown!");
                 try {
-                    arm.close(new RuntimeException("Unexpected system shutdown"));
+                    if (exception == null) {
+                        exception = new RuntimeException("Unexpected system shutdown");
+                    }
+                    arm.close(exception);
                 } catch (AnalysisException e) {
                     privateLogger.error("Error closing AnalysisResult", e);
                 }
@@ -219,8 +230,10 @@ public abstract class OpenCgaAnalysis {
                 privateLogger.warn(warningMessage, e);
                 arm.addWarning(warningMessage);
             }
+            arm.setParams(params);
             return arm.close();
         } catch (RuntimeException | AnalysisException e) {
+            arm.setParams(params);
             arm.close(e);
             throw e;
         } finally {
@@ -242,6 +255,12 @@ public abstract class OpenCgaAnalysis {
      * @throws Exception on error
      */
     protected abstract void run() throws Exception;
+
+    /**
+     * Method to be called by the Runtime shutdownHook in case of an unexpected system shutdown.
+     */
+    protected void onShutdown() {
+    }
 
     /**
      * @return the analysis id
@@ -280,6 +299,10 @@ public abstract class OpenCgaAnalysis {
         return scratchDir;
     }
 
+    protected final String getSessionId() {
+        return sessionId;
+    }
+
     public final OpenCgaAnalysis addSource(AnalysisExecutor.Source source) {
         if (sourceTypes == null) {
             sourceTypes = new ArrayList<>();
@@ -298,7 +321,7 @@ public abstract class OpenCgaAnalysis {
 
     @FunctionalInterface
     protected interface StepRunnable {
-        void run() throws AnalysisException;
+        void run() throws Exception;
     }
 
     protected final void step(StepRunnable step) throws AnalysisException {
@@ -309,7 +332,9 @@ public abstract class OpenCgaAnalysis {
         if (checkStep(stepId)) {
             try {
                 step.run();
-            } catch (RuntimeException e) {
+            } catch (AnalysisException e) {
+                throw e;
+            } catch (Exception e) {
                 throw new AnalysisException("Exception from step " + stepId, e);
             }
         }

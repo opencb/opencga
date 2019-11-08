@@ -6,13 +6,14 @@ import org.opencb.biodata.models.clinical.interpretation.ReportedEvent;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
 public class ClinicalAnalysisUtilsTest {
 
     public static AbstractClinicalManagerTest getClinicalTest(CatalogManagerExternalResource catalogManagerResource,
-                                                              MongoDBVariantStorageEngine variantStorageEngine) throws IOException, CatalogException, URISyntaxException, StorageEngineException {
+                                                              MongoDBVariantStorageEngine variantStorageEngine) throws IOException, CatalogException, URISyntaxException, StorageEngineException, AnalysisException {
 
         AbstractClinicalManagerTest clinicalTest = new AbstractClinicalManagerTest();
 
@@ -44,7 +45,7 @@ public class ClinicalAnalysisUtilsTest {
                 new FileOutputStream(catalogManagerResource.getOpencgaHome().resolve("conf").resolve("configuration.yml").toString()));
 
         InputStream storageConfigurationStream = MongoDBVariantStorageTest.class.getClassLoader()
-                .getResourceAsStream("storage-configuration-test.yml");
+                .getResourceAsStream("storage-configuration.yml");
         Files.copy(storageConfigurationStream, catalogManagerResource.getOpencgaHome().resolve("conf").resolve("storage-configuration.yml"),
                 StandardCopyOption.REPLACE_EXISTING);
 

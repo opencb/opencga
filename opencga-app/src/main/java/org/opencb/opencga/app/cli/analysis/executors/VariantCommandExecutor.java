@@ -33,6 +33,9 @@ import org.opencb.opencga.analysis.old.AnalysisExecutionException;
 import org.opencb.opencga.analysis.old.execution.plugins.PluginExecutor;
 import org.opencb.opencga.analysis.old.execution.plugins.hist.VariantHistogramAnalysis;
 import org.opencb.opencga.analysis.old.execution.plugins.ibs.IbsAnalysis;
+import org.opencb.opencga.analysis.storage.variant.VariantCatalogQueryUtils;
+import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.storage.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -40,13 +43,10 @@ import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
-import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
-import org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -67,6 +67,8 @@ import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static org.opencb.opencga.analysis.storage.variant.operations.VariantFileIndexerStorageOperation.LOAD;
+import static org.opencb.opencga.analysis.storage.variant.operations.VariantFileIndexerStorageOperation.TRANSFORM;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
@@ -82,8 +84,6 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
-import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.LOAD;
-import static org.opencb.opencga.storage.core.manager.variant.operations.VariantFileIndexerStorageOperation.TRANSFORM;
 
 /**
  * Created by imedina on 02/03/15.
@@ -298,8 +298,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         }
     }
 
-    private void index() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageEngineException,
-            InstantiationException, IllegalAccessException, URISyntaxException {
+    private void index() throws AnalysisException {
         VariantCommandOptions.VariantIndexCommandOptions cliOptions = variantCommandOptions.indexVariantCommandOptions;
 
         QueryOptions queryOptions = new QueryOptions();
@@ -316,7 +315,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         queryOptions.put(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), cliOptions.genericVariantIndexOptions.aggregationMappingFile);
         queryOptions.put(VariantStorageOptions.GVCF.key(), cliOptions.genericVariantIndexOptions.gvcf);
 
-        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
         queryOptions.putIfNotNull(VariantFileIndexerStorageOperation.TRANSFORMED_FILES, cliOptions.transformedPaths);
 
         queryOptions.put(VariantStorageOptions.ANNOTATE.key(), cliOptions.genericVariantIndexOptions.annotate);
@@ -367,7 +365,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         variantManager.removeSearchIndexSamples(cliOptions.study, Arrays.asList(cliOptions.sample.split(",")), queryOptions, sessionId);
     }
 
-    private void stats() throws CatalogException, IOException, StorageEngineException, URISyntaxException {
+    private void stats() throws AnalysisException {
         VariantCommandOptions.VariantStatsCommandOptions cliOptions = variantCommandOptions.statsVariantCommandOptions;
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
@@ -381,8 +379,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 .append(VariantStorageOptions.STATS_AGGREGATION.key(), cliOptions.genericVariantStatsOptions.aggregated)
                 .append(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), cliOptions.genericVariantStatsOptions.aggregationMappingFile)
                 .append(VariantStorageOptions.RESUME.key(), cliOptions.genericVariantStatsOptions.resume)
-                .append(VariantQueryParam.REGION.key(), cliOptions.genericVariantStatsOptions.region)
-                .append(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
+                .append(VariantQueryParam.REGION.key(), cliOptions.genericVariantStatsOptions.region);
 
         options.putAll(cliOptions.commonOptions.params);
 
@@ -392,8 +389,13 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         } else {
             cohorts = Collections.emptyList();
         }
-
-        variantManager.stats(cliOptions.study, cohorts, cliOptions.outdir, options, sessionId);
+        List<String> samples;
+        if (StringUtils.isNotBlank(cliOptions.samples)) {
+            samples = Arrays.asList(cliOptions.samples.split(","));
+        } else {
+            samples = Collections.emptyList();
+        }
+        variantManager.stats(cliOptions.study, cohorts, samples, cliOptions.outdir, cliOptions.index, options, sessionId);
     }
 
     private void scoreLoad() throws CatalogException, URISyntaxException, StorageEngineException {
@@ -509,7 +511,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         options.putIfNotEmpty(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, cliOptions.genericVariantAnnotateOptions.customAnnotationKey);
         options.putIfNotNull(VariantStorageOptions.ANNOTATOR.key(), cliOptions.genericVariantAnnotateOptions.annotator);
         options.putIfNotEmpty(DefaultVariantAnnotationManager.FILE_NAME, cliOptions.genericVariantAnnotateOptions.fileName);
-        options.put(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
         options.putAll(cliOptions.commonOptions.params);
 
         variantManager.annotate(cliOptions.project, cliOptions.study, query, cliOptions.outdir, options, sessionId);

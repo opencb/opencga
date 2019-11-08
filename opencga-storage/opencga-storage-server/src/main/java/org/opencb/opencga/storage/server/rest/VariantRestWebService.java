@@ -24,7 +24,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -32,6 +31,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
@@ -64,7 +64,7 @@ public class VariantRestWebService extends GenericRestWebService {
                           @QueryParam("histogram_interval") @DefaultValue("2000") int interval
     ) {
         try {
-            Query query = VariantStorageManager.getVariantQuery(params);
+            Query query = getVariantQuery(params);
             VariantQueryResult<Variant> queryResult = StorageEngineFactory.get().getVariantStorageEngine(storageEngine,
                     dbName).get(query, queryOptions);
             return createOkResponse(queryResult);
@@ -72,6 +72,17 @@ public class VariantRestWebService extends GenericRestWebService {
             e.printStackTrace();
             return createErrorResponse(e.toString());
         }
+    }
+
+    private Query getVariantQuery(MultivaluedMap<String, ?> params) {
+        Query query = new Query();
+
+        for (VariantQueryParam queryParams : VariantQueryParam.values()) {
+            if (params.containsKey(queryParams.key())) {
+                query.put(queryParams.key(), params.get(queryParams.key()));
+            }
+        }
+        return query;
     }
 
     public static class VariantFetcher {

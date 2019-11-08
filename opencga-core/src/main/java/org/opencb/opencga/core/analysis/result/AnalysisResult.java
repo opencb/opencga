@@ -1,14 +1,8 @@
 package org.opencb.opencga.core.analysis.result;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.utils.FileUtils;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Path;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,8 +21,6 @@ public class AnalysisResult {
     private ObjectMap params;
     private ObjectMap attributes;
 
-    private static final String DEFAULT_ANALYSIS_RESULT_FORMAT = "yaml";
-
     public AnalysisResult() {
         executor = new ExecutorInfo();
         status = new Status();
@@ -36,41 +28,6 @@ public class AnalysisResult {
         outputFiles = new LinkedList<>();
         steps = new LinkedList<>();
         attributes = new ObjectMap();
-    }
-
-    public static AnalysisResult load(Path resultPath) throws IOException {
-        InputStream inputStream = FileUtils.newInputStream(resultPath);
-        return load(inputStream, DEFAULT_ANALYSIS_RESULT_FORMAT);
-    }
-
-    public static AnalysisResult load(InputStream resultInputStream) throws IOException {
-        return load(resultInputStream, DEFAULT_ANALYSIS_RESULT_FORMAT);
-    }
-
-    public static AnalysisResult load(InputStream resultInputStream, String format) throws IOException {
-        if (resultInputStream == null) {
-            throw new IOException("AnalysisResult file not found");
-        }
-        AnalysisResult analysisResult;
-        ObjectMapper objectMapper;
-        try {
-            switch (format) {
-                case "json":
-                    objectMapper = new ObjectMapper();
-                    analysisResult = objectMapper.readValue(resultInputStream, AnalysisResult.class);
-                    break;
-                case "yml":
-                case "yaml":
-                default:
-                    objectMapper = new ObjectMapper(new YAMLFactory());
-                    analysisResult = objectMapper.readValue(resultInputStream, AnalysisResult.class);
-                    break;
-            }
-        } catch (IOException e) {
-            throw new IOException("AnalysisResult file could not be parsed: " + e.getMessage(), e);
-        }
-
-        return analysisResult;
     }
 
     @Override

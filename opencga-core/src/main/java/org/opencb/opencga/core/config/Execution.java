@@ -27,7 +27,7 @@ import java.util.Map;
  */
 public class Execution {
 
-    private String mode;
+    private String id;
     private String defaultQueue;
     private String availableQueues;
     private Map<String, List<String>> toolsPerQueue;
@@ -41,7 +41,7 @@ public class Execution {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Execution{");
-        sb.append("mode='").append(mode).append('\'');
+        sb.append("id='").append(id).append('\'');
         sb.append(", defaultQueue='").append(defaultQueue).append('\'');
         sb.append(", availableQueues='").append(availableQueues).append('\'');
         sb.append(", toolsPerQueue=").append(toolsPerQueue);
@@ -50,12 +50,12 @@ public class Execution {
         return sb.toString();
     }
 
-    public String getMode() {
-        return mode;
+    public String getId() {
+        return id;
     }
 
-    public Execution setMode(String mode) {
-        this.mode = mode;
+    public Execution setId(String id) {
+        this.id = id;
         return this;
     }
 

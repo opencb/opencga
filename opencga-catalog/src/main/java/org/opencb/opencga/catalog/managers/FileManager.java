@@ -107,6 +107,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.STUDY_UID.key(), FileDBAdaptor.QueryParams.TYPE.key()));
         INCLUDE_FILE_URI_PATH = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
                 FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.UID.key(), FileDBAdaptor.QueryParams.UUID.key(),
+                FileDBAdaptor.QueryParams.STATUS.key(),
                 FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.EXTERNAL.key(),
                 FileDBAdaptor.QueryParams.STUDY_UID.key(), FileDBAdaptor.QueryParams.TYPE.key()));
         EXCLUDE_FILE_ATTRIBUTES = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ATTRIBUTES.key(),
@@ -1374,7 +1375,7 @@ public class FileManager extends AnnotationSetManager<File> {
             // If the user is the owner or the admin, we won't check if he has permissions for every single entry
             checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
 
-            fileIterator = fileDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_FILE_IDS, userId);
+            fileIterator = fileDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_FILE_URI_PATH, userId);
         } catch (CatalogException e) {
             auditManager.auditDelete(operationUuid, userId, Enums.Resource.FILE, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
