@@ -39,7 +39,7 @@ public class AnalysisResultManager {
     private final Logger logger = LoggerFactory.getLogger(AnalysisResultManager.class);
     private int monitorThreadPeriod = 5000;
 
-    public AnalysisResultManager(String analysisId, Path outDir) {
+    public AnalysisResultManager(String analysisId, Path outDir) throws AnalysisException {
         this.analysisId = analysisId;
         this.outDir = outDir.toAbsolutePath();
         ObjectMapper objectMapper = new ObjectMapper();
@@ -48,13 +48,7 @@ public class AnalysisResultManager {
         objectReader = objectMapper.readerFor(AnalysisResult.class);
         initialized = false;
         closed = false;
-    }
 
-    public synchronized AnalysisResultManager init(ObjectMap params, ObjectMap executorParams) throws AnalysisException {
-        if (initialized) {
-            throw new AnalysisException("AnalysisResultManager already initialized!");
-        }
-        initialized = true;
         file = outDir.toFile();
 
         if (!file.exists()) {
@@ -66,12 +60,19 @@ public class AnalysisResultManager {
         if (!file.canWrite()) {
             throw new AnalysisException("Write permission denied for output directory '" + outDir + "'");
         }
-
         if (!StringUtils.isAlphanumeric(analysisId.replaceAll("[-_]", ""))) {
             throw new AnalysisException("Invalid AnalysisID. The analysis id can only contain alphanumeric characters, ',' and '_'.");
         }
 
         file = outDir.resolve(analysisId + FILE_EXTENSION).toFile();
+    }
+
+    public synchronized AnalysisResultManager init(ObjectMap params, ObjectMap executorParams) throws AnalysisException {
+        if (initialized) {
+            throw new AnalysisException("AnalysisResultManager already initialized!");
+        }
+        initialized = true;
+
         Date now = now();
         AnalysisResult analysisResult = new AnalysisResult()
                 .setId(analysisId)
