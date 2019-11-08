@@ -48,14 +48,14 @@ public class TaskMongoDBAdaptor extends MongoDBAdaptor implements TaskDBAdaptor 
     }
 
     @Override
-    public OpenCGAResult insert(long studyId, Task task, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult insert(long studyUid, Task task, QueryOptions options) throws CatalogDBException {
         try {
             return runTransaction(clientSession -> {
                 long tmpStartTime = startQuery();
                 logger.debug("Starting task insert transaction for task id '{}'", task.getId());
 
-                dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyId);
-                insert(clientSession, studyId, task);
+                dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(clientSession, studyUid);
+                insert(clientSession, studyUid, task);
                 return endWrite(tmpStartTime, 1, 1, 0, 0, null);
             });
         } catch (Exception e) {
@@ -88,6 +88,7 @@ public class TaskMongoDBAdaptor extends MongoDBAdaptor implements TaskDBAdaptor 
 
         Document jobObject = taskConverter.convertToStorageType(task);
         jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(task.getCreationDate()));
+        jobObject.put(PRIVATE_MODIFICATION_DATE, TimeUtils.toDate(task.getCreationDate()));
 
         logger.debug("Inserting task '{}' ({})...", task.getId(), task.getUid());
         taskCollection.insert(clientSession, jobObject, null);

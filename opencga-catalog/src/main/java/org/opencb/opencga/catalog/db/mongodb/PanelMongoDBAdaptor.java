@@ -156,6 +156,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         panelDocument.put(LAST_OF_VERSION, true);
         panelDocument.put(LAST_OF_RELEASE, true);
         panelDocument.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(panel.getCreationDate()));
+        panelDocument.put(PRIVATE_MODIFICATION_DATE, panelDocument.get(PRIVATE_CREATION_DATE));
         panelDocument.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
         return panelDocument;
     }

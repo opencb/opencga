@@ -131,6 +131,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         Document jobObject = jobConverter.convertToStorageType(job);
         jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(job.getCreationDate()));
+        jobObject.put(PRIVATE_MODIFICATION_DATE, jobObject.get(PRIVATE_CREATION_DATE));
         jobObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
         jobObject.put(PRIVATE_PRIORITY, job.getPriority().getValue());
 
