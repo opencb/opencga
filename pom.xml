@@ -30,6 +30,7 @@
         <module>opencga-core</module>
         <module>opencga-app</module>
         <module>opencga-catalog</module>
+        <module>opencga-master</module>
         <module>opencga-analysis</module>
         <module>opencga-storage</module>
         <module>opencga-client</module>
