@@ -7,10 +7,8 @@ import org.opencb.opencga.core.exception.AnalysisExecutorException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.DataStore;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 

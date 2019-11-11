@@ -25,7 +25,7 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.analysis.storage.variant.VariantCatalogQueryUtils;
+import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.core.exception.AnalysisException;

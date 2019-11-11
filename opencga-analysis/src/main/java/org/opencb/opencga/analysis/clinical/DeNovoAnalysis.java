@@ -18,7 +18,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.analysis.storage.variant.VariantCatalogQueryUtils;
+import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;

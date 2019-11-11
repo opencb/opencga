@@ -26,7 +26,7 @@ import org.opencb.opencga.analysis.old.execution.plugins.OpenCGAAnalysis;
 import org.opencb.opencga.catalog.old.models.tool.Execution;
 import org.opencb.opencga.catalog.old.models.tool.Manifest;
 import org.opencb.opencga.catalog.old.models.tool.Option;
-import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
 import java.io.BufferedOutputStream;

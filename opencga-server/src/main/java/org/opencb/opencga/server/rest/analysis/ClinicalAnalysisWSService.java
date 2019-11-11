@@ -18,8 +18,7 @@ package org.opencb.opencga.server.rest.analysis;
 
 import io.swagger.annotations.*;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.analysis.storage.clinical.ClinicalInterpretationManager;
-import org.opencb.opencga.analysis.storage.variant.VariantCatalogQueryUtils;
+import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Path;
