@@ -35,12 +35,12 @@ import org.opencb.opencga.catalog.models.update.JobUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.analysis.result.AnalysisResult;
 import org.opencb.opencga.core.analysis.result.AnalysisResultManager;
-import org.opencb.opencga.core.analysis.result.Status;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.analysis.result.Status;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.net.URI;

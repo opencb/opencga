@@ -35,8 +35,6 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-catalog</artifactId>
             <version>${opencga.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
