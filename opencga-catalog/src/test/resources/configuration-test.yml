@@ -22,11 +22,11 @@ monitor:
   fileDaemonInterval: 8000      # number of milliseconds between checks
   port: 9092
 
-execution:
-  mode: "local"
-  defaultQueue: ""
-  availableQueues: ""
-  toolsPerQueue: {}
+#execution:
+#  mode: "local"
+#  defaultQueue: ""
+#  availableQueues: ""
+#  toolsPerQueue: {}
 
 email:
   host: "localhost"
