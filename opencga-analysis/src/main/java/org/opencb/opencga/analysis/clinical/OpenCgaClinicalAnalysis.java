@@ -20,8 +20,8 @@ import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.analysis.storage.AlignmentStorageManager;
-import org.opencb.opencga.analysis.storage.variant.VariantCatalogQueryUtils;
+import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
+import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.core.exception.AnalysisException;
 

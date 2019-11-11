@@ -7,7 +7,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.analysis.AnalysisResult;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 

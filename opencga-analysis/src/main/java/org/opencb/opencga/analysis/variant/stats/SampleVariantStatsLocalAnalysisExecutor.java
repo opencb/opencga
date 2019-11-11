@@ -12,7 +12,7 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.analysis.variant.VariantStorageAnalysisExecutor;
 import org.opencb.opencga.core.analysis.variant.SampleVariantStatsAnalysisExecutor;
 import org.opencb.opencga.core.annotations.AnalysisExecutor;
-import org.opencb.opencga.analysis.storage.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
