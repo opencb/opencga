@@ -62,7 +62,15 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaAnalysisExecuto
         List<ReportedVariant> reportedVariants;
 
         studyId = query.getString(VariantQueryParam.STUDY.key());
-        reportedVariantCreator = createReportedVariantCreator();
+
+        String assembly;
+        try {
+            assembly = clinicalInterpretationManager.getAssembly(studyId, sessionId);
+        } catch (CatalogException e) {
+            throw new AnalysisException(e);
+        }
+        reportedVariantCreator = clinicalInterpretationManager.createReportedVariantCreator(query,
+                assembly, queryOptions.getBoolean(ClinicalUtils.SKIP_UNTIERED_VARIANTS_PARAM), sessionId);
 
         ClinicalProperty.ModeOfInheritance moi = ClinicalProperty.ModeOfInheritance.UNKNOWN;
         if (query.containsKey(FAMILY_SEGREGATION.key())) {
@@ -107,44 +115,6 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaAnalysisExecuto
         // Write secondary findings
         ClinicalUtils.writeReportedVariants(reportedVariants, Paths.get(outDir + "/"
                 + InterpretationAnalysis.SECONDARY_FINDINGS_FILENAME));
-    }
-
-    private DefaultReportedVariantCreator createReportedVariantCreator() throws AnalysisException {
-        // Reported variant creator
-        ClinicalProperty.ModeOfInheritance moi = ClinicalProperty.ModeOfInheritance.valueOf(query.getString(FAMILY_SEGREGATION.key(),
-                ClinicalProperty.ModeOfInheritance.UNKNOWN.name()));
-        String assembly;
-        try {
-            assembly = clinicalInterpretationManager.getAssembly(studyId, sessionId);
-        } catch (CatalogException e) {
-            throw new AnalysisException("Error retrieving assembly", e);
-        }
-        List<String> biotypes = query.getAsStringList(VariantQueryParam.ANNOT_BIOTYPE.key());
-        List<String> soNames = new ArrayList<>();
-        List<String>  consequenceTypes = query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());
-        if (CollectionUtils.isNotEmpty(consequenceTypes)) {
-            for (String soName : consequenceTypes) {
-                if (soName.startsWith("SO:")) {
-                    try {
-                        int soAcc = Integer.valueOf(soName.replace("SO:", ""));
-                        soNames.add(ConsequenceTypeMappings.accessionToTerm.get(soAcc));
-                    } catch (NumberFormatException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    soNames.add(soName);
-                }
-            }
-        }
-        try {
-            Disorder disorder = new Disorder().setId(query.getString(VariantCatalogQueryUtils.FAMILY_DISORDER.key()));
-            List<DiseasePanel> diseasePanels = clinicalInterpretationManager.getDiseasePanels(query, sessionId);
-            return new DefaultReportedVariantCreator(clinicalInterpretationManager.getRoleInCancerManager().getRoleInCancer(),
-                    clinicalInterpretationManager.getActionableVariantManager().getActionableVariants(assembly), disorder, moi,
-                    ClinicalProperty.Penetrance.COMPLETE, diseasePanels, biotypes, soNames, !config.isSkipUntieredVariants());
-        } catch (IOException e) {
-            throw new AnalysisException("Error creating reported variant creator", e);
-        }
     }
 
     public String getClinicalAnalysisId() {

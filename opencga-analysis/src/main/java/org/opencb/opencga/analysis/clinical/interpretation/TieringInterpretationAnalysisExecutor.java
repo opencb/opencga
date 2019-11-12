@@ -203,8 +203,8 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecut
         try {
             creator = new TieringReportedVariantCreator(diseasePanels,
                     clinicalInterpretationManager.getRoleInCancerManager().getRoleInCancer(),
-                    clinicalInterpretationManager.getActionableVariantManager().getActionableVariants(assembly), clinicalAnalysis.getDisorder(),
-                    null, penetrance, assembly);
+                    clinicalInterpretationManager.getActionableVariantManager().getActionableVariants(assembly),
+                    clinicalAnalysis.getDisorder(), null, penetrance, assembly);
             primaryFindings = creator.create(variantList, variantMoIMap);
         } catch (InterpretationAnalysisException | IOException e) {
             throw new AnalysisException(e.getMessage(), e);

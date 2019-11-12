@@ -20,18 +20,19 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.alignment.RegionCoverage;
-import org.opencb.biodata.models.clinical.interpretation.Comment;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
-import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
-import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
+import org.opencb.biodata.models.clinical.interpretation.*;
+import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
 import org.opencb.biodata.models.clinical.pedigree.Pedigree;
 import org.opencb.biodata.models.commons.Analyst;
+import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.biodata.models.core.Exon;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
+import org.opencb.biodata.tools.clinical.DefaultReportedVariantCreator;
 import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
 import org.opencb.cellbase.client.rest.CellBaseClient;
@@ -46,6 +47,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -55,6 +57,7 @@ import org.opencb.opencga.storage.core.clinical.ReportedVariantIterator;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.manager.StorageManager;
+import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -360,6 +363,39 @@ public class ClinicalInterpretationManager extends StorageManager {
         return ModeOfInheritance.compoundHeterozygous(iterator, probandSampleIdx, motherSampleIdx, fatherSampleIdx);
     }
 
+    public DefaultReportedVariantCreator createReportedVariantCreator(Query query, String assembly, boolean skipUntieredVariants,
+                                                                      String sessionId) throws AnalysisException {
+        // Reported variant creator
+        ClinicalProperty.ModeOfInheritance moi = ClinicalProperty.ModeOfInheritance.valueOf(query.getString(FAMILY_SEGREGATION.key(),
+                ClinicalProperty.ModeOfInheritance.UNKNOWN.name()));
+        List<String> biotypes = query.getAsStringList(VariantQueryParam.ANNOT_BIOTYPE.key());
+        List<String> soNames = new ArrayList<>();
+        List<String>  consequenceTypes = query.getAsStringList(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key());
+        if (CollectionUtils.isNotEmpty(consequenceTypes)) {
+            for (String soName : consequenceTypes) {
+                if (soName.startsWith("SO:")) {
+                    try {
+                        int soAcc = Integer.valueOf(soName.replace("SO:", ""));
+                        soNames.add(ConsequenceTypeMappings.accessionToTerm.get(soAcc));
+                    } catch (NumberFormatException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    soNames.add(soName);
+                }
+            }
+        }
+        try {
+            Disorder disorder = new Disorder().setId(query.getString(VariantCatalogQueryUtils.FAMILY_DISORDER.key()));
+            List<DiseasePanel> diseasePanels = getDiseasePanels(query, sessionId);
+            return new DefaultReportedVariantCreator(getRoleInCancerManager().getRoleInCancer(),
+                    getActionableVariantManager().getActionableVariants(assembly), disorder, moi, ClinicalProperty.Penetrance.COMPLETE,
+                    diseasePanels, biotypes, soNames, !skipUntieredVariants);
+        } catch (IOException e) {
+            throw new AnalysisException("Error creating reported variant creator", e);
+        }
+    }
+
     public ClinicalAnalysis getClinicalAnalysis(String studyId, String clinicalAnalysisId, String sessionId)
             throws AnalysisException, CatalogException {
         OpenCGAResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
@@ -410,6 +446,94 @@ public class ClinicalInterpretationManager extends StorageManager {
             }
         }
         return diseasePanels;
+    }
+
+    public List<ReportedVariant> getPrimaryFindings(Query query, QueryOptions queryOptions, ReportedVariantCreator reportedVariantCreator,
+                                                    String sessionId) throws AnalysisException {
+        try {
+            VariantQueryResult<Variant> variantQueryResult = getVariantStorageManager().get(query, queryOptions, sessionId);
+            List<Variant> variants = variantQueryResult.getResults();
+            return reportedVariantCreator.create(variants);
+        } catch (InterpretationAnalysisException | CatalogException | StorageEngineException | IOException e) {
+            throw new AnalysisException(e);
+        }
+    }
+
+    public List<ReportedVariant> getPrimaryFindings(String clinicalAnalysisId, Query query, QueryOptions queryOptions,
+                                                    ReportedVariantCreator reportedVariantCreator, String sessionId)
+            throws AnalysisException {
+        List<Variant> variants;
+        List<ReportedVariant> reportedVariants;
+
+        String studyId = query.getString(VariantQueryParam.STUDY.key());
+
+        ClinicalProperty.ModeOfInheritance moi = ClinicalProperty.ModeOfInheritance.UNKNOWN;
+        if (query.containsKey(FAMILY_SEGREGATION.key())) {
+            moi = ClinicalProperty.ModeOfInheritance.valueOf(query.getString(FAMILY_SEGREGATION.key()));
+        }
+        try {
+            switch (moi) {
+                case DE_NOVO:
+                    variants = getDeNovoVariants(clinicalAnalysisId, studyId, query, queryOptions, sessionId);
+                    reportedVariants = reportedVariantCreator.create(variants);
+                    break;
+                case COMPOUND_HETEROZYGOUS:
+                    Map<String, List<Variant>> chVariants;
+                    chVariants = getCompoundHeterozigousVariants(clinicalAnalysisId, studyId, query,
+                            queryOptions, sessionId);
+                    reportedVariants = ClinicalUtils.getCompoundHeterozygousReportedVariants(chVariants, reportedVariantCreator);
+                    break;
+                default:
+                    VariantQueryResult<Variant> variantQueryResult = getVariantStorageManager().get(query, queryOptions, sessionId);
+                    variants = variantQueryResult.getResults();
+                    reportedVariants = reportedVariantCreator.create(variants);
+                    break;
+            }
+        } catch (Exception e) {
+            throw new AnalysisException("Error retrieving primary findings variants", e);
+        }
+
+        return reportedVariants;
+    }
+
+    public List<ReportedVariant> getSecondaryFindings(String studyId, String sampleId, ReportedVariantCreator reportedVariantCreator,
+                                                      String sessionId) throws AnalysisException {
+        try {
+            List<Variant> variants = new ArrayList<>();
+
+            // Prepare query object
+            Query query = new Query();
+            query.put(STUDY.key(), studyId);
+            query.put(VariantQueryParam.SAMPLE.key(), sampleId);
+
+            // Get the correct actionable variants for the assembly
+            String assembly = getAssembly(studyId, sessionId);
+            Map<String, List<String>> actionableVariants = actionableVariantManager.getActionableVariants(assembly);
+            if (actionableVariants != null) {
+                Iterator<String> iterator = actionableVariants.keySet().iterator();
+                List<String> variantIds = new ArrayList<>();
+                while (iterator.hasNext()) {
+                    String id = iterator.next();
+                    variantIds.add(id);
+                    if (variantIds.size() >= 1000) {
+                        query.put(VariantQueryParam.ID.key(), variantIds);
+                        VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
+                        variants.addAll(result.getResults());
+                        variantIds.clear();
+                    }
+                }
+
+                if (variantIds.size() > 0) {
+                    query.put(VariantQueryParam.ID.key(), variantIds);
+                    VariantQueryResult<Variant> result = variantStorageManager.get(query, QueryOptions.empty(), sessionId);
+                    variants.addAll(result.getResults());
+                }
+            }
+
+            return reportedVariantCreator.create(variants);
+        } catch (InterpretationAnalysisException | IOException | CatalogException | StorageEngineException e) {
+            throw new AnalysisException(e);
+        }
     }
 
     public List<Variant> getSecondaryFindings(String inputSampleId, String clinicalAnalysisId, String studyId, String sessionId)
