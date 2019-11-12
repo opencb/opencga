@@ -2,13 +2,13 @@ package org.opencb.opencga.analysis.clinical.interpretation;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.ConfigurationUtils;
+import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.AnalysisExecutorException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.manager.clinical.ClinicalInterpretationManager;
 
 import java.io.IOException;
 import java.nio.file.Paths;

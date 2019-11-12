@@ -26,10 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by imedina on 16/03/16.
@@ -40,23 +37,20 @@ public class Configuration {
     private String logFile;
 
     private boolean openRegister;
-    private int userDefaultQuota;
 
     private String databasePrefix;
-    private String dataDir;
-    private String tempJobsDir;
-    private String toolDir;
+    private String workspace;
 
     private Admin admin;
     private Monitor monitor;
     private HealthCheck healthCheck;
-    private Execution execution;
     private Audit audit;
 
     private Map<String, Map<String, List<HookConfiguration>>> hooks;
 
     private Email email;
     private Catalog catalog;
+    private Analysis analysis;
 
     private ServerConfiguration server;
     private Authentication authentication;
@@ -73,11 +67,11 @@ public class Configuration {
         admin = new Admin();
         monitor = new Monitor();
         healthCheck = new HealthCheck();
-        execution = new Execution();
         audit = new Audit();
         hooks = new HashMap<>();
         email = new Email();
         catalog = new Catalog();
+        analysis = new Analysis();
         server = new ServerConfiguration();
         authentication = new Authentication();
     }
@@ -135,19 +129,14 @@ public class Configuration {
                         configuration.setDatabasePrefix(envVariables.get(variable));
                         break;
                     case "OPENCGA_USER_WORKSPACE":
-                        configuration.setDataDir(envVariables.get(variable));
-                        break;
-                    case "OPENCGA_JOBS_DIR":
-                        configuration.setTempJobsDir(envVariables.get(variable));
-                        break;
-                    case "OPENCGA_TOOLS_DIR":
-                        configuration.setToolDir(envVariables.get(variable));
+                        configuration.setWorkspace(envVariables.get(variable));
                         break;
                     case "OPENCGA_MONITOR_PORT":
                         configuration.getMonitor().setPort(Integer.parseInt(envVariables.get(variable)));
                         break;
                     case "OPENCGA_EXECUTION_MODE":
-                        configuration.getExecution().setMode(envVariables.get(variable));
+                    case "OPENCGA_EXECUTION_ID":
+                        configuration.getAnalysis().getExecution().setId(envVariables.get(variable));
                         break;
                     case "OPENCGA_MAIL_HOST":
                         configuration.getEmail().setHost(envVariables.get(variable));
@@ -177,13 +166,13 @@ public class Configuration {
                         configuration.getCatalog().getDatabase().getOptions().put("connectionsPerHost", envVariables.get(variable));
                         break;
                     case "OPENCGA_CATALOG_SEARCH_HOST":
-                        configuration.getCatalog().getSearch().setHost(envVariables.get(variable));
+                        configuration.getCatalog().getSearchEngine().setHosts(Collections.singletonList(envVariables.get(variable)));
                         break;
                     case "OPENCGA_CATALOG_SEARCH_TIMEOUT":
-                        configuration.getCatalog().getSearch().setTimeout(Integer.parseInt(envVariables.get(variable)));
+                        configuration.getCatalog().getSearchEngine().getOptions().put("timeout", envVariables.get(variable));
                         break;
                     case "OPENCGA_CATALOG_SEARCH_BATCH":
-                        configuration.getCatalog().getSearch().setInsertBatchSize(Integer.parseInt(envVariables.get(variable)));
+                        configuration.getCatalog().getSearchEngine().getOptions().put("insertBatchSize", envVariables.get(variable));
                         break;
                     case "OPENCGA_SERVER_REST_PORT":
                         configuration.getServer().getRest().setPort(Integer.parseInt(envVariables.get(variable)));
@@ -204,14 +193,10 @@ public class Configuration {
         sb.append("logLevel='").append(logLevel).append('\'');
         sb.append(", logFile='").append(logFile).append('\'');
         sb.append(", openRegister=").append(openRegister);
-        sb.append(", userDefaultQuota=").append(userDefaultQuota);
         sb.append(", databasePrefix='").append(databasePrefix).append('\'');
-        sb.append(", dataDir='").append(dataDir).append('\'');
-        sb.append(", tempJobsDir='").append(tempJobsDir).append('\'');
-        sb.append(", toolDir='").append(toolDir).append('\'');
+        sb.append(", workspace='").append(workspace).append('\'');
         sb.append(", admin=").append(admin);
         sb.append(", monitor=").append(monitor);
-        sb.append(", execution=").append(execution);
         sb.append(", audit=").append(audit);
         sb.append(", hooks=").append(hooks);
         sb.append(", email=").append(email);
@@ -249,15 +234,6 @@ public class Configuration {
         return this;
     }
 
-    public int getUserDefaultQuota() {
-        return userDefaultQuota;
-    }
-
-    public Configuration setUserDefaultQuota(int userDefaultQuota) {
-        this.userDefaultQuota = userDefaultQuota;
-        return this;
-    }
-
     public String getDatabasePrefix() {
         return databasePrefix;
     }
@@ -267,30 +243,12 @@ public class Configuration {
         return this;
     }
 
-    public String getDataDir() {
-        return dataDir;
+    public String getWorkspace() {
+        return workspace;
     }
 
-    public Configuration setDataDir(String dataDir) {
-        this.dataDir = dataDir;
-        return this;
-    }
-
-    public String getTempJobsDir() {
-        return tempJobsDir;
-    }
-
-    public Configuration setTempJobsDir(String tempJobsDir) {
-        this.tempJobsDir = tempJobsDir;
-        return this;
-    }
-
-    public String getToolDir() {
-        return toolDir;
-    }
-
-    public Configuration setToolDir(String toolDir) {
-        this.toolDir = toolDir;
+    public Configuration setWorkspace(String workspace) {
+        this.workspace = workspace;
         return this;
     }
 
@@ -312,12 +270,14 @@ public class Configuration {
         return this;
     }
 
+    @Deprecated
     public Execution getExecution() {
-        return execution;
+        return getAnalysis().getExecution();
     }
 
+    @Deprecated
     public Configuration setExecution(Execution execution) {
-        this.execution = execution;
+        getAnalysis().setExecution(execution);
         return this;
     }
 
@@ -345,6 +305,15 @@ public class Configuration {
 
     public Configuration setCatalog(Catalog catalog) {
         this.catalog = catalog;
+        return this;
+    }
+
+    public Analysis getAnalysis() {
+        return analysis;
+    }
+
+    public Configuration setAnalysis(Analysis analysis) {
+        this.analysis = analysis;
         return this;
     }
 

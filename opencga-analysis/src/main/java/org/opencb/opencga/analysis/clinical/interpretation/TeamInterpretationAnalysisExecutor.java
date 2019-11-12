@@ -10,6 +10,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.TeamReportedVariantCreator;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
+import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
 import org.opencb.opencga.core.annotations.AnalysisExecutor;
@@ -17,8 +19,6 @@ import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.manager.clinical.ClinicalInterpretationManager;
-import org.opencb.opencga.storage.core.manager.clinical.ClinicalUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 

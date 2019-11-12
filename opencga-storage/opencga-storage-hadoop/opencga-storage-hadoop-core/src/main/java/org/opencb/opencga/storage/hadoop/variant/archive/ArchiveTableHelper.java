@@ -32,8 +32,8 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseFileMetadataDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +41,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk.
@@ -190,20 +192,17 @@ public class ArchiveTableHelper extends GenomeHelper {
 
     public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con) throws IOException {
         Compression.Algorithm compression = Compression.getCompressionAlgorithmByName(
-                genomeHelper.getConf().get(HadoopVariantStorageEngine.ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName()));
+                genomeHelper.getConf().get(ARCHIVE_TABLE_COMPRESSION.key(), ARCHIVE_TABLE_COMPRESSION.defaultValue()));
         final List<byte[]> preSplits = generateArchiveTableBootPreSplitHuman(genomeHelper.getConf());
-        return HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(), preSplits, compression);
+        return HBaseManager.createTableIfNeeded(con, tableName, COLUMN_FAMILY_BYTES, preSplits, compression);
     }
 
     public static List<byte[]> generateArchiveTableBootPreSplitHuman(Configuration conf) {
         ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(conf);
 
-        int nSplits = conf.getInt(
-                HadoopVariantStorageEngine.ARCHIVE_TABLE_PRESPLIT_SIZE,
-                HadoopVariantStorageEngine.DEFAULT_ARCHIVE_TABLE_PRESPLIT_SIZE);
-        int expectedNumBatches = rowKeyFactory.getFileBatch(conf.getInt(
-                HadoopVariantStorageEngine.EXPECTED_FILES_NUMBER,
-                HadoopVariantStorageEngine.DEFAULT_EXPECTED_FILES_NUMBER));
+        int nSplits = conf.getInt(ARCHIVE_TABLE_PRESPLIT_SIZE.key(), ARCHIVE_TABLE_PRESPLIT_SIZE.defaultValue());
+        int expectedNumBatches = rowKeyFactory.getFileBatch(
+                conf.getInt(EXPECTED_FILES_NUMBER.key(), EXPECTED_FILES_NUMBER.defaultValue()));
 
         final List<byte[]> preSplits = new ArrayList<>(nSplits * expectedNumBatches);
         for (int batch = 0; batch <= expectedNumBatches; batch++) {

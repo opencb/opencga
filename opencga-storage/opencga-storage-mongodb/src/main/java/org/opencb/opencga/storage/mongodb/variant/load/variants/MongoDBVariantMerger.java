@@ -36,7 +36,7 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -139,7 +139,7 @@ import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVaria
  *
  * So, in case of no filling gaps (i.e. default-chromosome is ?/?) none of this scenarios applies.
  * The only problem may be to load overlapping data, which may corrupt the database.
- * @see VariantStorageEngine.Options#LOAD_SPLIT_DATA
+ * @see VariantStorageOptions#LOAD_SPLIT_DATA
  *
  * The data can came split by chromosomes and/or by batches of samples. For the
  * next tables, columns are batches of samples, and the rows are different regions,
@@ -1312,7 +1312,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         if (!excludeGenotypes) {
             format.add(VariantMerger.GT_KEY);
         }
-        format.addAll(studyMetadata.getAttributes().getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key()));
+        format.addAll(studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key()));
         return format;
     }
 
@@ -1321,7 +1321,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     }
 
     public static boolean getExcludeGenotypes(StudyMetadata studyMetadata) {
-        return studyMetadata.getAttributes().getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(),
-                VariantStorageEngine.Options.EXCLUDE_GENOTYPES.defaultValue());
+        return studyMetadata.getAttributes().getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
+                VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
     }
 }

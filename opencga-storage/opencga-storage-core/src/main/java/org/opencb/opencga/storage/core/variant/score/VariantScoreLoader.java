@@ -9,7 +9,7 @@ import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 
 import java.io.IOException;
@@ -69,7 +69,7 @@ public abstract class VariantScoreLoader {
             }
         }
 
-        boolean resume = options.getBoolean(VariantStorageEngine.Options.RESUME.key(), false);
+        boolean resume = options.getBoolean(VariantStorageOptions.RESUME.key(), false);
 
         VariantScoreMetadata variantScoreMetadata =
                 metadataManager.getOrCreateVariantScoreMetadata(studyId, scoreName, cohortId1, cohortId2);

@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
@@ -29,6 +29,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.SampleData;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
@@ -125,7 +126,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                 if (!includeAllSamples) {
                     for (Integer sampleId : includeSampleIds) {
                         byte[] column = VariantPhoenixHelper.buildSampleColumnKey(studyId, sampleId);
-                        get.addColumn(dbAdaptor.getGenomeHelper().getColumnFamily(), column);
+                        get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, column);
                     }
                 }
                 sampleGets.add(get);
@@ -174,13 +175,13 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                 Get get = new Get(VariantPhoenixKeyFactory.generateVariantRowKey(variant));
                 // Add file columns
                 for (Integer fileId : fileIdsFromSampleIds) {
-                    get.addColumn(dbAdaptor.getGenomeHelper().getColumnFamily(), VariantPhoenixHelper.buildFileColumnKey(studyId, fileId));
+                    get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.buildFileColumnKey(studyId, fileId));
                 }
 
                 // Add Stats column
                 Integer cohortId = metadataManager.getCohortId(studyId, StudyEntry.DEFAULT_COHORT);
                 PhoenixHelper.Column statsColumn = VariantPhoenixHelper.getStatsColumn(studyId, cohortId);
-                get.addColumn(dbAdaptor.getGenomeHelper().getColumnFamily(), statsColumn.bytes());
+                get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, statsColumn.bytes());
 
                 // Get
                 Result result = table.get(get);
@@ -213,7 +214,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
 
             // Convert to VariantSampleData
             HBaseToStudyEntryConverter converter = new HBaseToStudyEntryConverter(
-                    dbAdaptor.getGenomeHelper().getColumnFamily(), metadataManager,
+                    GenomeHelper.COLUMN_FAMILY_BYTES, metadataManager,
                     statsConverter);
             converter.setSelectVariantElements(
                     new VariantQueryFields(metadataManager.getStudyMetadata(studyId), samples, new ArrayList<>(fileIdsFromSampleIds)));
@@ -256,7 +257,7 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
     protected Map<String, Collection<String>> getGenotypeGroups(int studyId, Set<String> genotypes, boolean merge) {
         Map<String, Collection<String>> gtGroups = new LinkedHashMap<>(genotypes.size());
         List<String> loadedGts = metadataManager.getStudyMetadata(studyId).getAttributes()
-                .getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key());
+                .getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key());
         if (merge) {
             List<String> allGts = new LinkedList<>();
             for (String genotypeStr : genotypes) {

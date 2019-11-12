@@ -89,7 +89,7 @@ public class VariantStatsToHBaseConverterTest {
         statsWrapper.setCohortStats(map);
         Put put = toHbase.convert(statsWrapper);
 
-        List<Cell> cells = put.getFamilyCellMap().get(genomeHelper.getColumnFamily());
+        List<Cell> cells = put.getFamilyCellMap().get(GenomeHelper.COLUMN_FAMILY_BYTES);
 
         VariantStats convert = null;
         for (Cell cell : cells) {

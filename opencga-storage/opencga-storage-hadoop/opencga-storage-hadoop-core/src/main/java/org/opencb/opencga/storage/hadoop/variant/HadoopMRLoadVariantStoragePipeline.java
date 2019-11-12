@@ -34,8 +34,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 
-import static org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor.HADOOP_BIN;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.INTERMEDIATE_HDFS_DIRECTORY;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.MR_HADOOP_BIN;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.INTERMEDIATE_HDFS_DIRECTORY;
 
 /**
  * Created on 31/03/16.
@@ -61,8 +61,8 @@ public class HadoopMRLoadVariantStoragePipeline extends HadoopVariantStoragePipe
     public URI preLoad(URI input, URI output) throws StorageEngineException {
 
         if (!input.getScheme().equals("hdfs")) {
-            if (!StringUtils.isEmpty(options.getString(INTERMEDIATE_HDFS_DIRECTORY))) {
-                output = URI.create(options.getString(INTERMEDIATE_HDFS_DIRECTORY));
+            if (StringUtils.isNotEmpty(options.getString(INTERMEDIATE_HDFS_DIRECTORY.key()))) {
+                output = URI.create(options.getString(INTERMEDIATE_HDFS_DIRECTORY.key()));
             }
             if (output.getScheme() != null && !output.getScheme().equals("hdfs")) {
                 throw new StorageEngineException("Output must be in HDFS");
@@ -96,7 +96,7 @@ public class HadoopMRLoadVariantStoragePipeline extends HadoopVariantStoragePipe
     protected void load(URI input, int studyId, int fileId) throws StorageEngineException {
         URI vcfMeta = URI.create(VariantReaderUtils.getMetaFromTransformedFile(input.toString()));
 
-        String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
+        String hadoopRoute = options.getString(MR_HADOOP_BIN.key(), MR_HADOOP_BIN.defaultValue());
         String jar = MRExecutor.getJarWithDependencies(getOptions());
 
         Class execClass = ArchiveDriver.class;

@@ -5,7 +5,7 @@ import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
@@ -21,7 +21,7 @@ import java.util.List;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public final class PendingVariantsToAnnotateUtils {
-    public static final byte[] FAMILY = Bytes.toBytes(GenomeHelper.DEFAULT_COLUMN_FAMILY);
+    public static final byte[] FAMILY = GenomeHelper.COLUMN_FAMILY_BYTES;
     public static final byte[] COLUMN = Bytes.toBytes("v");
     public static final byte[] VALUE = new byte[0];
 
@@ -38,12 +38,13 @@ public final class PendingVariantsToAnnotateUtils {
             preSplits.add(VariantPhoenixKeyFactory.generateVariantRowKey(String.valueOf(i), 0));
         }
         preSplits.add(VariantPhoenixKeyFactory.generateVariantRowKey("X", 0));
+        new GenomeHelper(conf);
         return hBaseManager.createTableIfNeeded(pendingAnnotationTableName,
-                new GenomeHelper(conf).getColumnFamily(), preSplits,
+                GenomeHelper.COLUMN_FAMILY_BYTES, preSplits,
                 Compression.getCompressionAlgorithmByName(
                         conf.get(
-                                HadoopVariantStorageEngine.PENDING_ANNOTATION_TABLE_COMPRESSION,
-                                Compression.Algorithm.SNAPPY.getName())));
+                                HadoopVariantStorageOptions.PENDING_ANNOTATION_TABLE_COMPRESSION.key(),
+                                HadoopVariantStorageOptions.PENDING_ANNOTATION_TABLE_COMPRESSION.defaultValue())));
     }
 
 }

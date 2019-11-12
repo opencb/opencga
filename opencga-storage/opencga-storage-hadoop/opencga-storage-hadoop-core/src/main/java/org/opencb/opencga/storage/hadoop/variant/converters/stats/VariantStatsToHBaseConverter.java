@@ -49,7 +49,7 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
     private final Map<String, Integer> cohortIds;
 
     public VariantStatsToHBaseConverter(GenomeHelper genomeHelper, StudyMetadata studyMetadata, Map<String, Integer> cohortIds) {
-        super(genomeHelper.getColumnFamily());
+        super(GenomeHelper.COLUMN_FAMILY_BYTES);
         this.genomeHelper = genomeHelper;
         this.studyMetadata = studyMetadata;
         this.studyId = studyMetadata.getId();

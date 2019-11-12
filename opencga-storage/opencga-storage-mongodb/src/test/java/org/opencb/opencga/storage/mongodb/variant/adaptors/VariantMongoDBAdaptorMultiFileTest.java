@@ -3,9 +3,9 @@ package org.opencb.opencga.storage.mongodb.variant.adaptors;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorMultiFileTest;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
@@ -28,7 +28,7 @@ public class VariantMongoDBAdaptorMultiFileTest extends VariantDBAdaptorMultiFil
 
     @Override
     public ObjectMap getOptions() {
-        return new ObjectMap(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+        return new ObjectMap(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
     }
 
     @Override

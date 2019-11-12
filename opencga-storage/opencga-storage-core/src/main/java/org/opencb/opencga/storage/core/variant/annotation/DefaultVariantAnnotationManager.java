@@ -45,6 +45,7 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -84,9 +85,6 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
 
     public static final String FILE_NAME = "fileName";
     public static final String OUT_DIR = "outDir";
-    public static final String BATCH_SIZE = "batchSize";
-    public static final String NUM_WRITERS = "numWriters";
-    public static final String NUM_THREADS = "numThreads";
 
     protected VariantDBAdaptor dbAdaptor;
     protected VariantAnnotator variantAnnotator;
@@ -116,7 +114,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             doCreate = true;
             doLoad = true;
         }
-        boolean overwrite = params.getBoolean(OVERWRITE_ANNOTATIONS, false);
+        boolean overwrite = params.getBoolean(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), false);
         if (!overwrite) {
             query.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);
         }
@@ -174,34 +172,38 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
      * @throws VariantAnnotatorException IOException thrown
      */
     public URI createAnnotation(URI outDir, String fileName, Query query, ObjectMap params) throws VariantAnnotatorException {
+        if (params == null) {
+            params = new ObjectMap();
+        }
 
-        boolean gzip = params == null || params.getBoolean("gzip", true);
-        boolean avro = params == null || params.getBoolean("annotation.file.avro", false);
+        boolean avro = params.getString(VariantStorageOptions.ANNOTATION_FILE_FORMAT.key(),
+                VariantStorageOptions.ANNOTATION_FILE_FORMAT.defaultValue()).equalsIgnoreCase("avro");
 
-        URI fileUri = outDir.resolve(fileName + ".annot" + (avro ? ".avro" : ".json") + (gzip ? ".gz" : ""));
+        URI fileUri = outDir.resolve(fileName + ".annot" + (avro ? ".avro" : ".json") + (".gz"));
 
         /** Getting iterator from OpenCGA Variant database. **/
         QueryOptions iteratorQueryOptions = getIteratorQueryOptions(query, params);
 
-        int batchSize = 200;
-        int numThreads = 8;
-        if (params != null) { //Parse query options
-            batchSize = params.getInt(BATCH_SIZE, batchSize);
-            numThreads = params.getInt(NUM_THREADS, numThreads);
-        }
+        int batchSize = params.getInt(
+                VariantStorageOptions.ANNOTATION_BATCH_SIZE.key(),
+                VariantStorageOptions.ANNOTATION_BATCH_SIZE.defaultValue());
+        int numThreads = params.getInt(
+                VariantStorageOptions.ANNOTATION_NUM_THREADS.key(),
+                VariantStorageOptions.ANNOTATION_NUM_THREADS.defaultValue());
 
         try {
             DataReader<Variant> variantDataReader = getVariantDataReader(query, iteratorQueryOptions, params);
             ProgressLogger progressLogger;
-            if (params != null && params.getBoolean(QueryOptions.SKIP_COUNT, false)) {
+            if (params.getBoolean(QueryOptions.SKIP_COUNT, false)) {
                 progressLogger = new ProgressLogger("Annotated variants:", iteratorQueryOptions.getLong(QueryOptions.LIMIT, 0), 200);
             } else {
+                ObjectMap finalParams = params;
                 progressLogger = new ProgressLogger("Annotated variants:", () -> {
                     long limit = iteratorQueryOptions.getLong(QueryOptions.LIMIT, 0);
                     if (limit > 0) {
                         return limit;
                     }
-                    return countVariantsToAnnotate(query, params);
+                    return countVariantsToAnnotate(query, finalParams);
                 }, 200);
             }
             Task<Variant, VariantAnnotation> annotationTask = variantList -> {
@@ -221,7 +223,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             final DataWriter<VariantAnnotation> variantAnnotationDataWriter;
             if (avro) {
                 //FIXME
-                variantAnnotationDataWriter = new AvroDataWriter<>(null, gzip, VariantAnnotation.getClassSchema());
+                variantAnnotationDataWriter = new AvroDataWriter<>(null, true, VariantAnnotation.getClassSchema());
             } else {
                 try {
                     variantAnnotationDataWriter = new VariantAnnotationJsonDataWriter(ioConnectorProvider.newOutputStream(fileUri));
@@ -289,8 +291,10 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
      */
     public void loadVariantAnnotation(URI uri, ObjectMap params) throws IOException, StorageEngineException {
 
-        final int batchSize = params.getInt(DefaultVariantAnnotationManager.BATCH_SIZE, 100);
-        final int numConsumers = params.getInt(DefaultVariantAnnotationManager.NUM_WRITERS, 6);
+        final int batchSize = params.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(),
+                VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue());
+        final int numConsumers = params.getInt(VariantStorageOptions.LOAD_THREADS.key(),
+                VariantStorageOptions.LOAD_THREADS.defaultValue());
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                 .setNumTasks(numConsumers)
@@ -450,8 +454,10 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
      */
     public void loadCustomAnnotation(URI uri, ObjectMap params) throws IOException, StorageEngineException {
 
-        final int batchSize = params.getInt(BATCH_SIZE, 100);
-        final int numConsumers = params.getInt(NUM_WRITERS, 6);
+        final int batchSize = params.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(),
+                VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue());
+        final int numConsumers = params.getInt(VariantStorageOptions.LOAD_THREADS.key(),
+                VariantStorageOptions.LOAD_THREADS.defaultValue());
         final String key = params.getString(CUSTOM_ANNOTATION_KEY, "default");
         long ts = System.currentTimeMillis();
 

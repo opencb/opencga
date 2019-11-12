@@ -25,16 +25,22 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.JobManager;
+import org.opencb.opencga.core.analysis.result.AnalysisResult;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.common.Enums;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Path("/{apiVersion}/jobs")
 @Produces(MediaType.APPLICATION_JSON)
@@ -51,49 +57,132 @@ public class JobWSServer extends OpenCGAWSServer {
 
 
     public static class InputJob {
+
         public InputJob() {
         }
 
-        public InputJob(String id, String name, String toolName, String description, long startTime, long endTime, String commandLine,
-                        Status status, String outDirId, List<String> input, Map<String, Object> attributes, Map<String, Object>
-                                resourceManagerAttributes) {
+        public InputJob(String id, String name, String description, String commandLine, Map<String, String> params, Job.JobStatus status) {
             this.id = id;
             this.name = name;
-            this.toolName = toolName;
             this.description = description;
-            this.startTime = startTime;
-            this.endTime = endTime;
             this.commandLine = commandLine;
+            this.params = params;
             this.status = status;
-            this.outDir = outDirId;
-            this.input = input;
-            this.attributes = attributes;
-            this.resourceManagerAttributes = resourceManagerAttributes;
         }
 
-        enum Status {READY, ERROR}
+        private String id;
+        private String name;
+        private String description;
 
-        @ApiModelProperty(required = true)
-        public String id;
-        public String name;
-        @ApiModelProperty(required = true)
-        public String toolName;
-        public String description;
-        public String execution;
-        public Map<String, String> params;
-        public long startTime;
-        public long endTime;
-        @ApiModelProperty(required = true)
-        public String commandLine;
-        public Status status = Status.READY;
-        public String statusMessage;
-        public String outDirId;
-        @ApiModelProperty(required = true)
-        public String outDir;
-        public List<String> input;
-        public List<String> output;
-        public Map<String, Object> attributes;
-        public Map<String, Object> resourceManagerAttributes;
+        private Enums.Priority priority;
+
+        private String commandLine;
+
+        private Map<String, String> params;
+
+        private String creationDate;
+        private Job.JobStatus status;
+
+        private TinyFile outDir;
+        private TinyFile tmpDir;
+        private List<TinyFile> input;    // input files to this job
+        private List<TinyFile> output;   // output files of this job
+        private List<String> tags;
+
+        private AnalysisResult result;
+
+        private TinyFile log;
+        private TinyFile errorLog;
+
+        private Map<String, Object> attributes;
+
+        public String getId() {
+            return id;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public String getCommandLine() {
+            return commandLine;
+        }
+
+        public Map<String, String> getParams() {
+            return params;
+        }
+
+        public String getCreationDate() {
+            return creationDate;
+        }
+
+        public Job.JobStatus getStatus() {
+            return status;
+        }
+
+        public TinyFile getOutDir() {
+            return outDir;
+        }
+
+        public TinyFile getTmpDir() {
+            return tmpDir;
+        }
+
+        public List<TinyFile> getInput() {
+            return input != null ? input : Collections.emptyList();
+        }
+
+        public List<TinyFile> getOutput() {
+            return output != null ? output : Collections.emptyList();
+        }
+
+        public List<String> getTags() {
+            return tags;
+        }
+
+        public AnalysisResult getResult() {
+            return result;
+        }
+
+        public TinyFile getLog() {
+            return log;
+        }
+
+        public TinyFile getErrorLog() {
+            return errorLog;
+        }
+
+        public Map<String, Object> getAttributes() {
+            return attributes;
+        }
+
+        public Job toJob() {
+            return new Job(id, null, name, description, null, commandLine, params, creationDate, null, priority, status,
+                    outDir != null ? outDir.toFile() : null, tmpDir != null ? tmpDir.toFile() : null,
+                    getInput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
+                    getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()), tags, result,
+                    log != null ? log.toFile() : null, errorLog != null ? errorLog.toFile() : null, 1, attributes);
+        }
+
+    }
+
+    public class TinyFile {
+        private String path;
+
+        public TinyFile() {
+        }
+
+        public String getPath() {
+            return path;
+        }
+
+        public File toFile() {
+            return new File().setPath(path);
+        }
 
     }
 
@@ -102,7 +191,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @POST
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Register an executed job with POST method", position = 1,
+    @ApiOperation(value = "Register an executed job with POST method",
             notes = "Registers a job that has been previously run outside catalog into catalog. <br>"
                     + "Required values: [name, toolName, commandLine, outDirId]", response = Job.class)
     public Response createJobPOST(
@@ -111,47 +200,33 @@ public class JobWSServer extends OpenCGAWSServer {
             @QueryParam("study") String studyStr,
             @ApiParam(value = "job", required = true) InputJob inputJob) {
         try {
-            inputJob = ObjectUtils.defaultIfNull(inputJob, new InputJob());
-
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            if (StringUtils.isNotEmpty(inputJob.outDirId) && StringUtils.isEmpty(inputJob.outDir)) {
-                inputJob.outDir = inputJob.outDirId;
-            }
 
-            Job.JobStatus jobStatus;
-            if (Job.JobStatus.isValid(inputJob.status.toString())) {
-                jobStatus = new Job.JobStatus(inputJob.status.toString(), inputJob.statusMessage);
-            } else {
-                jobStatus = new Job.JobStatus();
-                jobStatus.setMessage(inputJob.statusMessage);
-            }
-
-            String jobId = StringUtils.isEmpty(inputJob.id) ? inputJob.name : inputJob.id;
-            String jobName = StringUtils.isEmpty(inputJob.name) ? jobId : inputJob.name;
-            Job job = new Job(-1, jobId, jobName, "", inputJob.toolName, null, "", inputJob.description, inputJob.startTime,
-                    inputJob.endTime, inputJob.execution, "", inputJob.commandLine, false, jobStatus, -1,
-                    new File().setPath(inputJob.outDir), parseToListOfFiles(inputJob.input),
-                    parseToListOfFiles(inputJob.output), Collections.emptyList(), inputJob.params, -1, inputJob.attributes,
-                    inputJob.resourceManagerAttributes);
-
-            DataResult<Job> result = catalogManager.getJobManager().create(studyStr, job, queryOptions, token);
+            DataResult<Job> result = catalogManager.getJobManager().create(studyStr, inputJob.toJob(), queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
-    private List<File> parseToListOfFiles(List<String> longList) {
-        if (longList == null || longList.isEmpty()) {
-            return Collections.emptyList();
+    @POST
+    @Path("/execute")
+    @ApiOperation(value = "Execute an analysis using an internal or external tool", response = Job.class)
+    public Response execute(
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study")String studyStr,
+            @ApiParam(value = "Analysis id") @QueryParam("analysisId")String analysisId,
+            @ApiParam(value = "Json containing the execution parameters", required = true) JobExecutionParams params) {
+        try {
+            // TODO: Depending on the analysis id, we will need to obtain the command/subcommand to generate the command line
+
+            DataResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "", "",  Enums.Priority.MEDIUM, params.params,
+                    token);
+            return createOkResponse(queryResult);
+        } catch(Exception e) {
+            return createErrorResponse(e);
         }
-        List<File> fileList = new ArrayList<>(longList.size());
-        for (String myLong : longList) {
-            fileList.add(new File().setPath(myLong));
-        }
-        return fileList;
     }
 
     @GET
@@ -372,6 +447,53 @@ public class JobWSServer extends OpenCGAWSServer {
             return createOkResponse(jobManager.updateAcl(null, idList, memberId, aclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
+        }
+    }
+
+    public class JobExecutionParams {
+        private String id;
+        private String name;
+        private String description;
+
+        private Map<String, String> params;
+
+        public JobExecutionParams() {
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public JobExecutionParams setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public JobExecutionParams setName(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public JobExecutionParams setDescription(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Map<String, String> getParams() {
+            return params;
+        }
+
+        public JobExecutionParams setParams(Map<String, String> params) {
+            this.params = params;
+            return this;
         }
     }
 

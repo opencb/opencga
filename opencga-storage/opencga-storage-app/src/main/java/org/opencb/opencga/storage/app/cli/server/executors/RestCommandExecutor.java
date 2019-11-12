@@ -17,8 +17,6 @@
 package org.opencb.opencga.storage.app.cli.server.executors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.storage.app.cli.CommandExecutor;
-import org.opencb.opencga.storage.app.cli.server.AdminCliOptionsParser;
 import org.opencb.opencga.storage.app.cli.server.options.ServerCommandOptions;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.server.rest.RestStorageServer;
@@ -87,15 +85,11 @@ public class RestCommandExecutor { // extends CommandExecutor {
 
         // Setting CLI params in the StorageConfiguration
         if (restServerCommandOptions.port > 0) {
-            storageConfiguration.getServer().setRest(restServerCommandOptions.port);
+            storageConfiguration.getServer().getRest().setPort(restServerCommandOptions.port);
         }
 
         if (StringUtils.isNotEmpty(restServerCommandOptions.commonOptions.storageEngine)) {
-            storageConfiguration.setDefaultStorageEngineId(restServerCommandOptions.commonOptions.storageEngine);
-        }
-
-        if (StringUtils.isNotEmpty(restServerCommandOptions.authManager)) {
-            storageConfiguration.getServer().setAuthManager(restServerCommandOptions.authManager);
+            storageConfiguration.getVariant().setDefaultEngine(restServerCommandOptions.commonOptions.storageEngine);
         }
 
         // Server crated and started
@@ -106,7 +100,7 @@ public class RestCommandExecutor { // extends CommandExecutor {
     }
 
     public void stop() {
-        int port = configuration.getServer().getRest();
+        int port = configuration.getServer().getRest().getPort();
         if (restServerCommandOptions.port > 0) {
             port = restServerCommandOptions.port;
         }

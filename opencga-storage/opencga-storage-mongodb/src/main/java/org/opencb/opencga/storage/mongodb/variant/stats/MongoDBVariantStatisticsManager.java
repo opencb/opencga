@@ -16,7 +16,7 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
@@ -58,10 +58,14 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
         }
 
         //Parse query options
-        int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
-        int numTasks = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
-        boolean overwrite = options.getBoolean(Options.OVERWRITE_STATS.key(), false);
-        boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
+        int batchSize = options.getInt(
+                VariantStorageOptions.STATS_CALCULATE_BATCH_SIZE.key(),
+                VariantStorageOptions.STATS_CALCULATE_BATCH_SIZE.defaultValue());
+        int numTasks = options.getInt(
+                VariantStorageOptions.STATS_CALCULATE_THREADS.key(),
+                VariantStorageOptions.STATS_CALCULATE_THREADS.defaultValue());
+        boolean overwrite = options.getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
+        boolean updateStats = options.getBoolean(VariantStorageOptions.STATS_UPDATE.key(), false);
 
         if (cohorts == null) {
             cohorts = new LinkedHashMap<>();

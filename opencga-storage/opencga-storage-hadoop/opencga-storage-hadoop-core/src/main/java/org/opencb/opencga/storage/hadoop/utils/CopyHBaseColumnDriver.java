@@ -11,7 +11,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +50,7 @@ public class CopyHBaseColumnDriver extends AbstractHBaseDriver {
     @Override
     protected void setupJob(Job job, String table) throws IOException {
         Scan scan = new Scan();
-        int caching = job.getConfiguration().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 100);
+        int caching = job.getConfiguration().getInt(HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING.key(), 100);
 
         LOGGER.info("Scan set Caching to " + caching);
         scan.setCaching(caching);        // 1 is the default in Scan

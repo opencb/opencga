@@ -17,7 +17,7 @@
 package org.opencb.opencga.storage.mongodb.variant.exceptions;
 
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 import java.util.List;
 
@@ -39,12 +39,12 @@ public class MongoVariantStorageEngineException extends StorageEngineException {
     public static MongoVariantStorageEngineException filesBeingMergedException(List<Integer> fileIds) {
         return new MongoVariantStorageEngineException(
                 "Files " + fileIds + " are already being loaded in the variants collection "
-                        + "right now. To ignore this, relaunch with " + VariantStorageEngine.Options.RESUME.key() + "=true");
+                        + "right now. To ignore this, relaunch with " + VariantStorageOptions.RESUME.key() + "=true");
     }
 
     public static MongoVariantStorageEngineException fileBeingStagedException(int fileId, String fileName) {
         return new MongoVariantStorageEngineException(
                 "File \"" + fileName + "\" (" + fileId + ") is already being loaded in the stage collection "
-                        + "right now. To ignore this, relaunch with " + VariantStorageEngine.Options.RESUME.key() + "=true");
+                        + "right now. To ignore this, relaunch with " + VariantStorageOptions.RESUME.key() + "=true");
     }
 }

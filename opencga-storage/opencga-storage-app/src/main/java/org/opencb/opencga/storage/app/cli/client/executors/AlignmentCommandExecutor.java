@@ -34,7 +34,6 @@ import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
-import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import java.io.IOException;
@@ -48,7 +47,7 @@ import java.util.List;
  */
 public class AlignmentCommandExecutor extends CommandExecutor {
 
-    private StorageEngineConfiguration storageConfiguration;
+    private ObjectMap alignmentOptions;
     private AlignmentStorageEngine alignmentStorageManager;
 
     private StorageAlignmentCommandOptions alignmentCommandOptions;
@@ -62,25 +61,11 @@ public class AlignmentCommandExecutor extends CommandExecutor {
 
         this.logFile = commonOptions.logFile;
 
-        /**
-         * Getting VariantStorageEngine
-         * We need to find out the Storage Engine Id to be used
-         * If not storage engine is passed then the default is taken from storage-configuration.yml file
-         **/
-        this.storageEngine = (storageEngine != null && !storageEngine.isEmpty())
-                ? storageEngine
-                : configuration.getDefaultStorageEngineId();
-        logger.debug("Storage Engine set to '{}'", this.storageEngine);
-
-        this.storageConfiguration = configuration.getStorageEngine(storageEngine);
+        this.alignmentOptions = configuration.getAlignment();
 
         // TODO: Start passing catalogManager
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(configuration);
-        if (storageEngine == null || storageEngine.isEmpty()) {
-            this.alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine(null, dbName);
-        } else {
-            this.alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine(storageEngine, dbName);
-        }
+        this.alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine(dbName);
     }
 
 
@@ -127,7 +112,6 @@ public class AlignmentCommandExecutor extends CommandExecutor {
             /*
              * Add CLI options to the alignmentOptions
              */
-        ObjectMap alignmentOptions = storageConfiguration.getAlignment().getOptions();
 //        if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
 //            alignmentOptions.put(AlignmentStorageEngineOld.Options.FILE_ID.key(), indexAlignmentsCommandOptions.fileId);
 //        }

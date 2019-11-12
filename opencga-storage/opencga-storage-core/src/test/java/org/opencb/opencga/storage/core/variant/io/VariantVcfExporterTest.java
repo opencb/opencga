@@ -35,7 +35,7 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -97,8 +97,8 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
         for (int i = 0; i < VCF_TEST_FILE_NAMES.length; i++) {
             if (etlResult[i] == null) {
                 etlResult[i] = runDefaultETL(inputUri[i], getVariantStorageEngine(), studyMetadata,
-                        new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false));
+                        new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
+                                .append(VariantStorageOptions.STATS_CALCULATE.key(), false));
             }
         }
         dbAdaptor = getVariantStorageEngine().getDBAdaptor();

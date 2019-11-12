@@ -33,8 +33,7 @@ public class ConfigurationTest {
 
         configuration.setLogLevel("INFO");
 
-        configuration.setDataDir("/opt/opencga/sessions");
-        configuration.setTempJobsDir("/opt/opencga/sessions/jobs");
+        configuration.setWorkspace("/opt/opencga/sessions");
 
         configuration.setAdmin(new Admin("password", "admin@admin.com"));
 
@@ -42,7 +41,7 @@ public class ConfigurationTest {
         configuration.setAuthentication(authentication);
 
         configuration.setMonitor(new Monitor());
-        configuration.setExecution(new Execution());
+        configuration.getAnalysis().setExecution(new Execution());
 
         configuration.setHooks(Collections.singletonMap("user@project:study", Collections.singletonMap("file",
                 Collections.singletonList(
@@ -61,13 +60,12 @@ public class ConfigurationTest {
         Email emailServer = new Email("localhost", "", "", "", "", false);
         configuration.setEmail(emailServer);
 
-        CatalogDBCredentials databaseCredentials = new CatalogDBCredentials(Arrays.asList("localhost"), "opencga_catalog", "admin", "");
+        DatabaseCredentials databaseCredentials = new DatabaseCredentials(Arrays.asList("localhost"), "admin", "");
         Catalog catalog = new Catalog();
-        catalog.setOffset(1000000);
         catalog.setDatabase(databaseCredentials);
         configuration.setCatalog(catalog);
 
-        Audit audit = new Audit(20000000, 100000000000L, "", Collections.emptyList());
+        Audit audit = new Audit("", 20000000, 100);
         configuration.setAudit(audit);
 
         ServerConfiguration serverConfiguration = new ServerConfiguration();

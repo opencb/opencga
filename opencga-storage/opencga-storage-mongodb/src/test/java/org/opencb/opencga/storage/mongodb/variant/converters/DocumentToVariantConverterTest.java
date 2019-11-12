@@ -30,7 +30,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 
 import java.util.*;
@@ -61,7 +61,7 @@ public class DocumentToVariantConverterTest {
         // Java native class
         studyId = metadataManager.createStudy("1").getId();
         metadataManager.updateStudyMetadata(studyId, studyMetadata -> {
-            studyMetadata.getAttributes().put(MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE.key(), "0/0");
+            studyMetadata.getAttributes().put(MongoDBVariantStorageOptions.DEFAULT_GENOTYPE.key(), "0/0");
             return studyMetadata;
         });
         fileId = metadataManager.registerFile(studyId, "1", Arrays.asList("NA001", "NA002"));
@@ -144,7 +144,7 @@ public class DocumentToVariantConverterTest {
 //        studyConfiguration.getSampleIds().put("NA001", 0);
 //        studyConfiguration.getSampleIds().put("NA002", 1);
 //        studyConfiguration.getAttributes().put(MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE.key(), "0/0");
-//        studyConfiguration.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), Collections.singletonList("DP"));
+//        studyConfiguration.getAttributes().put(VariantStorageEngine.Options.EXTRA_FORMAT_FIELDS.key(), Collections.singletonList("DP"));
 
         DocumentToVariantConverter converter = new DocumentToVariantConverter(
                 new DocumentToStudyVariantEntryConverter(

@@ -40,8 +40,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Project;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
-import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
+import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -84,6 +86,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         }
 
         Map<String, String> params = new LinkedHashMap<>();
+        params.put("file", fileIdStr);
         addParamIfTrue(params, "transform", transform);
         addParamIfTrue(params, "load", load);
         addParamIfNotNull(params, "outdir", outDirStr);
@@ -91,8 +94,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         logger.info("ObjectMap: {}", params);
 
         try {
-            List<String> idList = getIdList(fileIdStr);
-            DataResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "BAM", params, token);
+            DataResult queryResult = catalogManager.getJobManager().submit(studyStr, "alignment", "index", Enums.Priority.HIGH, params,
+                    token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -405,7 +408,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
     private List<Region> getRegionsFromGenes(String geneStr, int geneOffset, boolean onlyExons, int exonOffset, List<Region> initialRegions,
                                              String studyStr)
-            throws CatalogException, IllegalAccessException, ClassNotFoundException, InstantiationException, IOException {
+            throws CatalogException, StorageEngineException, IOException {
         Map<String, Region> regionMap = new HashMap<>();
 
         // Process initial regions

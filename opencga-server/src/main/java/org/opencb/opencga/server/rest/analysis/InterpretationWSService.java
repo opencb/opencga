@@ -2,7 +2,6 @@ package org.opencb.opencga.server.rest.analysis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.annotations.*;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -11,13 +10,15 @@ import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Software;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.DefaultReportedVariantCreator;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
+import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.analysis.clinical.interpretation.*;
+import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
@@ -26,16 +27,11 @@ import org.opencb.opencga.catalog.models.update.ClinicalUpdateParams;
 import org.opencb.opencga.catalog.models.update.InterpretationUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.analysis.result.AnalysisResult;
-import org.opencb.opencga.core.analysis.result.FileResult;
-import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.storage.core.manager.clinical.ClinicalInterpretationManager;
-import org.opencb.opencga.storage.core.manager.clinical.ClinicalUtils;
-import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
 import javax.servlet.http.HttpServletRequest;
@@ -48,6 +44,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import static org.opencb.bionetdb.core.api.query.VariantQueryParam.PANEL;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.clinical.ReportedVariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -384,7 +381,7 @@ public class InterpretationWSService extends AnalysisWSService {
         public String dueDate;
         public List<Comment> comments;
         public List<Alert> alerts;
-        public ClinicalAnalysis.Priority priority;
+        public Enums.Priority priority;
         public List<String> flags;
 
         public Map<String, Object> attributes;
@@ -783,45 +780,21 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
             @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
             @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds,
-            @ApiParam(value= VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR) @QueryParam("familySegregation") String segregation,
-            @ApiParam(value = "Save interpretation in Catalog") @QueryParam("save") boolean save) {
+            @ApiParam(value= VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR) @QueryParam("familySegregation") String segregation) {
         try {
             // Get analysis options from query
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            ObjectMap teamAnalysisOptions = getAnalysisOptions(queryOptions);
+            ObjectMap analysisOptions = getAnalysisOptions(queryOptions);
 
             List<String> panelList = null;
             if (StringUtils.isNotEmpty(panelIds)) {
                 panelList = Arrays.asList(panelIds.split(","));
             }
 
-            java.nio.file.Path outDir = getOutDir(TeamInterpretationAnalysis.ID);
+            // Queue job
+            Object result = catalogInterpretationManager.queue(studyStr, TeamInterpretationAnalysis.ID, clinicalAnalysisId, panelList,
+                    analysisOptions, token);
 
-            Object result;
-            if (save) {
-                // Queue job
-                result = catalogInterpretationManager.queue(studyStr, "team", clinicalAnalysisId, panelList, teamAnalysisOptions, token);
-            } else {
-                ClinicalProperty.ModeOfInheritance moi;
-                try {
-                    moi = ClinicalProperty.ModeOfInheritance.valueOf(segregation);
-                } catch (IllegalArgumentException e) {
-                    return createErrorResponse(new AnalysisException("Unknown 'familySegregation' value: " + segregation));
-                }
-
-                TeamInterpretationConfiguration config = new TeamInterpretationConfiguration();
-                setInterpretationConfiguration(uriInfo.getQueryParameters(), config);
-
-                // Execute TEAM analysis
-                TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis();
-                teamAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
-                teamAnalysis.setStudyId(studyStr)
-                        .setClinicalAnalysisId(clinicalAnalysisId)
-                        .setDiseasePanelIds(panelList)
-                        .setMoi(moi)
-                        .setConfig(config);
-                result = readInterpretation(teamAnalysis.start(), outDir);
-            }
             return createAnalysisOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -845,36 +818,20 @@ public class InterpretationWSService extends AnalysisWSService {
         try {
             // Get analysis options from query
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            ObjectMap analysisOptions = getAnalysisOptions(queryOptions);
 
-            if (penetrance == null) {
-                penetrance = ClinicalProperty.Penetrance.COMPLETE;
-            }
+//            if (penetrance == null) {
+//                penetrance = ClinicalProperty.Penetrance.COMPLETE;
+//            }
 
             List<String> panelList = null;
             if (StringUtils.isNotEmpty(panelIds)) {
                 panelList = Arrays.asList(panelIds.split(","));
             }
 
-            java.nio.file.Path outDir = getOutDir(TieringInterpretationAnalysis.ID);
-
-            Object result;
-            if (save) {
-                // Queue job
-                result = catalogInterpretationManager.queue(studyId, "tiering", clinicalAnalysisId, panelList, null, token);
-            } else {
-                // Execute tiering analysis
-                TieringInterpretationConfiguration config = new TieringInterpretationConfiguration();
-                setInterpretationConfiguration(uriInfo.getQueryParameters(), config);
-
-                TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis();
-                tieringAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
-                tieringAnalysis.setStudyId(studyId)
-                        .setClinicalAnalysisId(clinicalAnalysisId)
-                        .setDiseasePanelIds(panelList)
-                        .setPenetrance(penetrance)
-                        .setConfig(config);
-                result = readInterpretation(tieringAnalysis.start(), outDir);
-            }
+            // Queue job
+            Object result = catalogInterpretationManager.queue(studyId, TieringInterpretationAnalysis.ID, clinicalAnalysisId, panelList,
+                    analysisOptions, token);
 
             return createAnalysisOkResponse(result);
         } catch (Exception e) {
@@ -981,22 +938,18 @@ public class InterpretationWSService extends AnalysisWSService {
         try {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            ObjectMap analysisOptions = getAnalysisOptions(queryOptions);
 
-            java.nio.file.Path outDir = getOutDir(CustomInterpretationAnalysis.ID);
+            List<String> panelList = null;
+            if (query.containsKey(PANEL.key())) {
+                panelList = query.getAsStringList(PANEL.key());
+            }
 
-            CustomInterpretationConfiguration config = new CustomInterpretationConfiguration();
-            setInterpretationConfiguration(uriInfo.getQueryParameters(), config);
+            // Queue job
+            Object result = catalogInterpretationManager.queue(studyId, CustomInterpretationAnalysis.ID, clinicalAnalysisId, panelList,
+                    analysisOptions, token);
 
-            // Execute custom analysis
-            CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis();
-            customAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
-            customAnalysis.setStudyId(studyId)
-                    .setClinicalAnalysisId(clinicalAnalysisId)
-                    .setQuery(query)
-                    .setQueryOptions(queryOptions)
-                    .setConfig(config);
-            AnalysisResult result = customAnalysis.start();
-            return createAnalysisOkResponse(readInterpretation(result, outDir));
+            return createAnalysisOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1014,22 +967,15 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyId,
             @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId) { //},
         try {
-            java.nio.file.Path outDir = getOutDir(CancerTieringInterpretationAnalysis.ID);
+            // Get all query options
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            ObjectMap analysisOptions = getAnalysisOptions(queryOptions);
 
-            // Execute cancer tiering analysis
-            CancerTieringInterpretationConfiguration config = new CancerTieringInterpretationConfiguration();
-            setInterpretationConfiguration(uriInfo.getQueryParameters(), config);
+            // Queue job
+            Object result = catalogInterpretationManager.queue(studyId, CancerTieringInterpretationAnalysis.ID, clinicalAnalysisId, null,
+                    analysisOptions, token);
 
-            List<String> variantsIdsToDiscard = null;
-
-            CancerTieringInterpretationAnalysis cancerAnalysis = new CancerTieringInterpretationAnalysis();
-            cancerAnalysis.setUp(opencgaHome.toString(), new ObjectMap(), outDir, token);
-            cancerAnalysis.setStudyId(studyId)
-                    .setClinicalAnalysisId(clinicalAnalysisId)
-                    .setVariantIdsToDiscard(variantsIdsToDiscard)
-                    .setConfig(config);
-            AnalysisResult result = cancerAnalysis.start();
-            return createAnalysisOkResponse(readInterpretation(result, outDir));
+            return createAnalysisOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1133,10 +1079,12 @@ public class InterpretationWSService extends AnalysisWSService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             ObjectMap options = getAnalysisOptions(queryOptions);
 
+            // Create reported variant creator
             String assembly = clinicalInterpretationManager.getAssembly(studyId, token);
             DefaultReportedVariantCreator reportedVariantCreator = clinicalInterpretationManager.createReportedVariantCreator(query,
                     assembly, options.getBoolean(ClinicalUtils.SKIP_UNTIERED_VARIANTS_PARAM), token);
 
+            // Retrieve primary findings
             List<ReportedVariant> primaryFindings = clinicalInterpretationManager.getPrimaryFindings(query, queryOptions,
                     reportedVariantCreator, token);
 
@@ -1157,10 +1105,12 @@ public class InterpretationWSService extends AnalysisWSService {
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             ObjectMap options = getAnalysisOptions(queryOptions);
 
+            // Create reported variant creator
             String assembly = clinicalInterpretationManager.getAssembly(studyId, token);
             DefaultReportedVariantCreator reportedVariantCreator = clinicalInterpretationManager.createReportedVariantCreator(query,
                     assembly, options.getBoolean(ClinicalUtils.SKIP_UNTIERED_VARIANTS_PARAM), token);
 
+            // Retrieve secondary findings
             List<ReportedVariant> secondaryFindings = clinicalInterpretationManager.getSecondaryFindings(studyId, sampleId,
                     reportedVariantCreator, token);
 
@@ -1224,21 +1174,6 @@ public class InterpretationWSService extends AnalysisWSService {
     }
 
     private java.nio.file.Path getOutDir(String name) throws IOException {
-        // TODO: set outDir = scratchDir (by reading Configuration)
-        return Files.createDirectory(Paths.get(configuration.getTempJobsDir()).resolve(name + RandomStringUtils.random(10)));
-    }
-
-    private org.opencb.biodata.models.clinical.interpretation.Interpretation readInterpretation(AnalysisResult result,
-                                                                                                java.nio.file.Path outDir)
-            throws AnalysisException {
-        java.io.File file = new java.io.File(outDir + "/" + InterpretationAnalysis.INTERPRETATION_FILENAME);
-        if (file.exists()) {
-            return ClinicalUtils.readInterpretation(file.toPath());
-        }
-        String msg = "Interpretation file not found for " + result.getId() + " analysis";
-        if (CollectionUtils.isNotEmpty(result.getEvents())) {
-            msg += (": " + StringUtils.join(result.getEvents(), ". "));
-        }
-        throw new AnalysisException(msg);
+        return Files.createDirectory(Paths.get(configuration.getAnalysis().getScratchDir()).resolve(name + RandomStringUtils.random(10)));
     }
 }

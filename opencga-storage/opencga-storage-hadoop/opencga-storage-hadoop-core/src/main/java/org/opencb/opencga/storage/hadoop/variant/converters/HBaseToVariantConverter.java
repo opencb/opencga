@@ -33,7 +33,7 @@ import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -53,7 +53,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.SEARCH_INDEX_LAST_TIMESTAMP;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.SEARCH_INDEX_LAST_TIMESTAMP;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.extractVariantFromResultSet;
 import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory.extractVariantFromVariantRowKey;
 
@@ -87,7 +87,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         this.annotationConverter = new HBaseToVariantAnnotationConverter(genomeHelper, ts)
                 .setAnnotationIds(scm.getProjectMetadata().getAnnotation());
         HBaseToVariantStatsConverter statsConverter = new HBaseToVariantStatsConverter(genomeHelper);
-        this.studyEntryConverter = new HBaseToStudyEntryConverter(genomeHelper.getColumnFamily(), scm, statsConverter);
+        this.studyEntryConverter = new HBaseToStudyEntryConverter(GenomeHelper.COLUMN_FAMILY_BYTES, scm, statsConverter);
     }
 
     /**
@@ -97,13 +97,13 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
      */
     public static List<String> getFixedFormat(ObjectMap attributes) {
         List<String> format;
-        List<String> extraFields = attributes.getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
+        List<String> extraFields = attributes.getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key());
         if (extraFields.isEmpty()) {
             extraFields = Collections.singletonList(VariantMerger.GENOTYPE_FILTER_KEY);
         }
 
         boolean excludeGenotypes = attributes
-                .getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
+                .getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
 
         if (excludeGenotypes) {
             format = extraFields;
@@ -292,7 +292,7 @@ public abstract class HBaseToVariantConverter<T> implements Converter<T, Variant
         public Variant convert(Result result) {
             Variant variant = extractVariantFromVariantRowKey(result.getRow());
             try {
-                Cell cell = result.getColumnLatestCell(genomeHelper.getColumnFamily(), VariantPhoenixHelper.VariantColumn.TYPE.bytes());
+                Cell cell = result.getColumnLatestCell(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.VariantColumn.TYPE.bytes());
                 if (cell != null && cell.getValueLength() > 0) {
                     String string = Bytes.toString(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                     variant.setType(VariantType.valueOf(string));

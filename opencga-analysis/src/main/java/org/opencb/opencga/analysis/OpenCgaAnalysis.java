@@ -41,7 +41,7 @@ import org.opencb.opencga.core.models.DataStore;
 import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
@@ -53,7 +53,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 import static org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor.EXECUTOR_ID;
@@ -99,6 +101,7 @@ public abstract class OpenCgaAnalysis {
         this.params = params == null ? new ObjectMap() : new ObjectMap(params);
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
+        this.params.put("outDir", outDir.toAbsolutePath().toString());
 
         setUpFrameworksAndSource();
     }
@@ -107,9 +110,10 @@ public abstract class OpenCgaAnalysis {
             throws AnalysisException {
         this.opencgaHome = opencgaHome;
         this.sessionId = sessionId;
-        this.params = params;
+        this.params = params == null ? new ObjectMap() : new ObjectMap(params);
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
+        this.params.put("outDir", outDir.toAbsolutePath().toString());
 
         try {
             loadConfiguration();
@@ -129,11 +133,11 @@ public abstract class OpenCgaAnalysis {
 
         availableFrameworks = new ArrayList<>();
         sourceTypes = new ArrayList<>();
-        if (storageConfiguration.getDefaultStorageEngineId().equals("mongodb")) {
+        if (storageConfiguration.getVariant().getDefaultEngine().equals("mongodb")) {
             if (getAnalysisType().equals(Analysis.AnalysisType.VARIANT)) {
                 sourceTypes.add(AnalysisExecutor.Source.MONGODB);
             }
-        } else if (storageConfiguration.getDefaultStorageEngineId().equals("hadoop")) {
+        } else if (storageConfiguration.getVariant().getDefaultEngine().equals("hadoop")) {
             availableFrameworks.add(AnalysisExecutor.Framework.MAP_REDUCE);
             // TODO: Check from configuration if spark is available
 //            availableFrameworks.add(AnalysisExecutor.Framework.SPARK);
@@ -160,10 +164,19 @@ public abstract class OpenCgaAnalysis {
         arm = new AnalysisResultManager(getId(), outDir);
         arm.init(params, executorParams);
         Thread hook = new Thread(() -> {
+            Exception exception = null;
+            try {
+                onShutdown();
+            } catch (Exception e) {
+                exception = e;
+            }
             if (!arm.isClosed()) {
                 privateLogger.error("Unexpected system shutdown!");
                 try {
-                    arm.close(new RuntimeException("Unexpected system shutdown"));
+                    if (exception == null) {
+                        exception = new RuntimeException("Unexpected system shutdown");
+                    }
+                    arm.close(exception);
                 } catch (AnalysisException e) {
                     privateLogger.error("Error closing AnalysisResult", e);
                 }
@@ -172,7 +185,26 @@ public abstract class OpenCgaAnalysis {
         Runtime.getRuntime().addShutdownHook(hook);
         try {
             if (scratchDir == null) {
-                Path baseScratchDir = this.outDir; // TODO: Read from configuration
+                Path baseScratchDir = this.outDir;
+                if (StringUtils.isNotEmpty(configuration.getAnalysis().getScratchDir())) {
+                    Path scratch;
+                    try {
+                        scratch = Paths.get(configuration.getAnalysis().getScratchDir());
+                        if (scratch.toFile().isDirectory() && scratch.toFile().canWrite()) {
+                            baseScratchDir = scratch;
+                        } else {
+                            String warn = "Unable to access scratch folder '" + scratch + "'";
+                            privateLogger.warn(warn);
+                            addWarning(warn);
+                        }
+                    } catch (InvalidPathException e) {
+                        String warn = "Unable to access scratch folder '"
+                                + configuration.getAnalysis().getScratchDir() + "'";
+                        privateLogger.warn(warn);
+                        addWarning(warn);
+                    }
+                }
+
                 try {
                     scratchDir = Files.createDirectory(baseScratchDir.resolve("scratch_" + getId() + RandomStringUtils.randomAlphanumeric(10)));
                 } catch (IOException e) {
@@ -198,8 +230,10 @@ public abstract class OpenCgaAnalysis {
                 privateLogger.warn(warningMessage, e);
                 arm.addWarning(warningMessage);
             }
+            arm.setParams(params);
             return arm.close();
         } catch (RuntimeException | AnalysisException e) {
+            arm.setParams(params);
             arm.close(e);
             throw e;
         } finally {
@@ -221,6 +255,12 @@ public abstract class OpenCgaAnalysis {
      * @throws Exception on error
      */
     protected abstract void run() throws Exception;
+
+    /**
+     * Method to be called by the Runtime shutdownHook in case of an unexpected system shutdown.
+     */
+    protected void onShutdown() {
+    }
 
     /**
      * @return the analysis id
@@ -259,6 +299,10 @@ public abstract class OpenCgaAnalysis {
         return scratchDir;
     }
 
+    protected final String getSessionId() {
+        return sessionId;
+    }
+
     public final OpenCgaAnalysis addSource(AnalysisExecutor.Source source) {
         if (sourceTypes == null) {
             sourceTypes = new ArrayList<>();
@@ -277,7 +321,7 @@ public abstract class OpenCgaAnalysis {
 
     @FunctionalInterface
     protected interface StepRunnable {
-        void run() throws AnalysisException;
+        void run() throws Exception;
     }
 
     protected final void step(StepRunnable step) throws AnalysisException {
@@ -288,7 +332,9 @@ public abstract class OpenCgaAnalysis {
         if (checkStep(stepId)) {
             try {
                 step.run();
-            } catch (RuntimeException e) {
+            } catch (AnalysisException e) {
+                throw e;
+            } catch (Exception e) {
                 throw new AnalysisException("Exception from step " + stepId, e);
             }
         }

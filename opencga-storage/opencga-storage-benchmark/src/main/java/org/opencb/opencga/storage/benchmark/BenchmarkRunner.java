@@ -75,7 +75,7 @@ public class BenchmarkRunner {
         StorageEngineFactory.configure(storageConfiguration);
         this.storageConfiguration = storageConfiguration;
 
-        storageEngine = storageConfiguration.getDefaultStorageEngineId();
+        storageEngine = storageConfiguration.getVariant().getDefaultEngine();
         dbName = storageConfiguration.getBenchmark().getDatabaseName();
         this.jmeterHome = jmeterHome;
         this.outdir = outdir;

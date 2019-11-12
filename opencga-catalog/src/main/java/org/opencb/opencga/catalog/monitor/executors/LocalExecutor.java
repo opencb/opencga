@@ -18,70 +18,75 @@ package org.opencb.opencga.catalog.monitor.executors;
 
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.RunnableProcess;
+import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataOutputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Created by pfurio on 22/08/16.
  */
 public class LocalExecutor implements BatchExecutor {
 
+    public static final String MAX_CONCURRENT_JOBS = "local.maxConcurrentJobs";
+
     private static int threadInitNumber;
     private static Logger logger;
+    private final int maxConcurrentJobs;
 
-    public LocalExecutor() {
+    public LocalExecutor(Execution execution) {
         logger = LoggerFactory.getLogger(LocalExecutor.class);
+        maxConcurrentJobs = execution.getOptions().getInt(MAX_CONCURRENT_JOBS, 1);
     }
 
     @Override
     public void execute(Job job, String token) throws Exception {
         Runnable runnable = () -> {
-            try {
-                ExecutorConfig executorConfig = ExecutorConfig.getExecutorConfig(job);
+//            try {
+            ExecutorConfig executorConfig = ExecutorConfig.getExecutorConfig(job);
 
-                logger.info("Ready to run {}", job.getCommandLine());
-                Command com = new Command(getCommandLine(job, token));
+            logger.info("Ready to run {}", job.getCommandLine());
+            Command com = new Command(getCommandLine(job.getCommandLine(), Paths.get(executorConfig.getStdout()),
+                    Paths.get(executorConfig.getStderr()), token));
 
-                DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStdout()));
-                com.setOutputOutputStream(dataOutputStream);
+//                DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStdout()));
+//                com.setOutputOutputStream(dataOutputStream);
+//
+//                dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStderr()));
+//                com.setErrorOutputStream(dataOutputStream);
 
-                dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStderr()));
-                com.setErrorOutputStream(dataOutputStream);
+            final long jobId = job.getUid();
 
-                final long jobId = job.getUid();
-
-                Thread hook = new Thread(() -> {
-                    logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
-                    com.setStatus(RunnableProcess.Status.KILLED);
-                    com.setExitValue(-2);
-                    closeOutputStreams(com);
-                });
-
-                logger.info("==========================================");
-                logger.info("Executing job {}({})", job.getName(), job.getUid());
-                logger.debug("Executing commandLine {}", job.getCommandLine());
-                logger.info("==========================================");
-                System.err.println();
-
-                Runtime.getRuntime().addShutdownHook(hook);
-                com.run();
-                Runtime.getRuntime().removeShutdownHook(hook);
-
-                System.err.println();
-                logger.info("==========================================");
-                logger.info("Finished job {}({})", job.getName(), job.getUid());
-                logger.info("==========================================");
-
+            Thread hook = new Thread(() -> {
+                logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
+                com.setStatus(RunnableProcess.Status.KILLED);
+                com.setExitValue(-2);
                 closeOutputStreams(com);
-            } catch (FileNotFoundException e) {
-                logger.error("Could not create the output/error files", e);
-            }
+            });
+
+            logger.info("==========================================");
+            logger.info("Executing job {}({})", job.getName(), job.getUid());
+            logger.debug("Executing commandLine {}", job.getCommandLine());
+            logger.info("==========================================");
+            System.err.println();
+
+            Runtime.getRuntime().addShutdownHook(hook);
+            com.run();
+            Runtime.getRuntime().removeShutdownHook(hook);
+
+            System.err.println();
+            logger.info("==========================================");
+            logger.info("Finished job {}({})", job.getName(), job.getUid());
+            logger.info("==========================================");
+
+            closeOutputStreams(com);
+//            } catch (FileNotFoundException e) {
+//                logger.error("Could not create the output/error files", e);
+//            }
 //            finally {
 //                if (executorConfig != null) {
 //                    Path outdir = Paths.get(executorConfig.getOutdir());
@@ -104,6 +109,40 @@ public class LocalExecutor implements BatchExecutor {
 //                    }
 //                }
 //            }
+        };
+        Thread thread = new Thread(runnable, "LocalExecutor-" + nextThreadNum());
+        thread.start();
+    }
+
+    @Override
+    public void execute(String jobId, String commandLine, Path stdout, Path stderr, String token) throws Exception {
+        Runnable runnable = () -> {
+            logger.info("Ready to run {}", commandLine);
+            Command com = new Command(getCommandLine(commandLine, stdout, stderr, token));
+
+            Thread hook = new Thread(() -> {
+                logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
+                com.setStatus(RunnableProcess.Status.KILLED);
+                com.setExitValue(-2);
+                closeOutputStreams(com);
+            });
+
+            logger.info("==========================================");
+            logger.info("Executing job {}", jobId);
+            logger.debug("Executing commandLine {}", commandLine);
+            logger.info("==========================================");
+            System.err.println();
+
+            Runtime.getRuntime().addShutdownHook(hook);
+            com.run();
+            Runtime.getRuntime().removeShutdownHook(hook);
+
+            System.err.println();
+            logger.info("==========================================");
+            logger.info("Finished job {}", jobId);
+            logger.info("==========================================");
+
+            closeOutputStreams(com);
         };
         Thread thread = new Thread(runnable, "LocalExecutor-" + nextThreadNum());
         thread.start();

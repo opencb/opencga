@@ -13,6 +13,8 @@ import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
+import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.annotations.AnalysisExecutor;
@@ -24,9 +26,6 @@ import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.manager.clinical.ClinicalInterpretationManager;
-import org.opencb.opencga.storage.core.manager.clinical.ClinicalUtils;
-import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.IOException;
@@ -35,6 +34,7 @@ import java.util.*;
 
 import static org.opencb.biodata.formats.variant.clinvar.v24jaxb.ReviewStatusType.*;
 import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.*;
+import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.PANEL;
 
 @AnalysisExecutor(id = "opencga-local",
         analysis = CancerTieringInterpretationAnalysis.ID,
@@ -573,8 +573,8 @@ public class CancerTieringInterpretationAnalysisExecutor extends org.opencb.open
     }
 
     private void addPanels(Query query, List<DiseasePanel> panels) throws CatalogException {
-        if (query.containsKey(VariantCatalogQueryUtils.PANEL)) {
-            List<String> panelsIds = query.getAsStringList(VariantCatalogQueryUtils.PANEL.key());
+        if (query.containsKey(PANEL)) {
+            List<String> panelsIds = query.getAsStringList(PANEL.key());
             OpenCGAResult<Panel> panelQueryResult = clinicalInterpretationManager.getCatalogManager().getPanelManager().get(studyId,
                     panelsIds, QueryOptions.empty(), sessionId);
             for (Panel panel : panelQueryResult.getResults()) {

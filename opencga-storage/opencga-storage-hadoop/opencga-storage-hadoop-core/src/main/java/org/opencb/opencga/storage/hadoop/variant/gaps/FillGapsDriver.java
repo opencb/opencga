@@ -18,7 +18,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
 import org.slf4j.Logger;
@@ -45,8 +45,6 @@ public class FillGapsDriver extends AbstractVariantsTableDriver {
     public static final String FILL_GAPS_INPUT = "fill-gaps.input";
     public static final String FILL_GAPS_INPUT_DEFAULT = "archive";
     public static final String FILL_MISSING_INTERMEDIATE_FILE = "fill_missing.intermediate.file";
-    public static final String FILL_MISSING_WRITE_MAPPERS_LIMIT_FACTOR = "fill_missing.write.mappers.limit.factor";
-    public static final String FILL_MISSING_SIMPLIFIED_MULTIALLELIC_VARIANTS = "fill_missing.simplifiedMultiAllelicVariants";
     private Collection<Integer> samples;
     private final Logger logger = LoggerFactory.getLogger(FillGapsDriver.class);
     private String input;
@@ -85,7 +83,7 @@ public class FillGapsDriver extends AbstractVariantsTableDriver {
                 scans = FillMissingFromArchiveTask.buildScan(getFiles(), regionStr, getConf());
             }
 
-            int caching = getConf().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 50);
+            int caching = getConf().getInt(HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING.key(), 50);
             logger.info("Scan set Caching to " + caching);
             for (int i = 0; i < scans.size(); i++) {
                 Scan scan = scans.get(i);

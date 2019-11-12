@@ -67,7 +67,7 @@ public class VariantAnnotationRebuilderDriver extends AbstractVariantsTableDrive
             logger.info("Regenerate annotations for region " + region);
             VariantHBaseQueryParser.addRegionFilter(scan, new Region(region));
         }
-        scan.addColumn(getHelper().getColumnFamily(), VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
+        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes());
 
         VariantMapReduceUtil.configureMapReduceScan(scan, getConf());
         VariantMapReduceUtil.initTableMapperJob(job, variantTable, variantTable, scan, getMapperClass());

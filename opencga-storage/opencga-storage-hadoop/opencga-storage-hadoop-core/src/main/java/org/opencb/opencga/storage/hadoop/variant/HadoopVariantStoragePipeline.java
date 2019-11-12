@@ -39,7 +39,7 @@ import org.opencb.opencga.storage.core.io.proto.ProtoFileWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
@@ -67,7 +67,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MERGE_MODE;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.MERGE_MODE;
 import static org.opencb.opencga.storage.hadoop.variant.GenomeHelper.PHOENIX_INDEX_LOCK_COLUMN;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
 
@@ -104,12 +104,12 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
     @Override
     public URI preTransform(URI input) throws StorageEngineException, IOException, FileFormatException {
         logger.info("PreTransform: " + input);
-//        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
-        if (!options.containsKey(VariantStorageEngine.Options.TRANSFORM_FORMAT.key())) {
-            options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(),
-                    VariantStorageEngine.Options.TRANSFORM_FORMAT.defaultValue());
+//        ObjectMap options = configuration.getVariantEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+        if (!options.containsKey(VariantStorageOptions.TRANSFORM_FORMAT.key())) {
+            options.put(VariantStorageOptions.TRANSFORM_FORMAT.key(),
+                    VariantStorageOptions.TRANSFORM_FORMAT.defaultValue());
         }
-        String transVal = options.getString(VariantStorageEngine.Options.TRANSFORM_FORMAT.key());
+        String transVal = options.getString(VariantStorageOptions.TRANSFORM_FORMAT.key());
         switch (transVal){
             case "avro":
             case "proto":
@@ -156,7 +156,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         Supplier<Task<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice>> supplier = VariantToVcfSliceConverterTask::new;
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
-                .setNumTasks(options.getInt(Options.TRANSFORM_THREADS.key(), 1))
+                .setNumTasks(options.getInt(VariantStorageOptions.TRANSFORM_THREADS.key(), 1))
                 .setBatchSize(1)
                 .setAbortOnFail(true)
                 .setSorted(true)
@@ -193,9 +193,9 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         super.securePreLoad(studyMetadata, fileMetadata);
 
         MergeMode mergeMode;
-        if (!studyMetadata.getAttributes().containsKey(Options.MERGE_MODE.key())) {
+        if (!studyMetadata.getAttributes().containsKey(VariantStorageOptions.MERGE_MODE.key())) {
             mergeMode = MergeMode.from(options);
-            studyMetadata.getAttributes().put(Options.MERGE_MODE.key(), mergeMode);
+            studyMetadata.getAttributes().put(VariantStorageOptions.MERGE_MODE.key(), mergeMode);
         } else {
             options.put(MERGE_MODE.key(), MergeMode.from(studyMetadata.getAttributes()));
         }
@@ -212,7 +212,9 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         int studyId = getStudyId();
         int fileId = getFileId();
 
-        ArchiveTableHelper.setChunkSize(conf, getOptions().getInt(ARCHIVE_CHUNK_SIZE, DEFAULT_ARCHIVE_CHUNK_SIZE));
+        int chunkSize = getOptions().getInt(HadoopVariantStorageOptions.ARCHIVE_CHUNK_SIZE.key(),
+                HadoopVariantStorageOptions.ARCHIVE_CHUNK_SIZE.defaultValue());
+        ArchiveTableHelper.setChunkSize(conf, chunkSize);
         ArchiveTableHelper.setStudyId(conf, studyId);
 
         FileMetadata fileMetadata = getMetadataManager().getFileMetadata(studyId, fileId);
@@ -351,7 +353,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
 
         if (VariantPhoenixHelper.DEFAULT_TABLE_TYPE == PTableType.VIEW) {
             logger.debug("Skip create indexes for VIEW table");
-        } else if (options.getBoolean(VARIANT_TABLE_INDEXES_SKIP, false)) {
+        } else if (options.getBoolean(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), false)) {
             logger.info("Skip create indexes!!");
         } else {
             lock = null;

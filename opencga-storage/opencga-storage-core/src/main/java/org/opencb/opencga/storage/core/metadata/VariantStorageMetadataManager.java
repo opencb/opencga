@@ -32,10 +32,9 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.*;
 import org.opencb.opencga.storage.core.metadata.models.*;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -485,22 +484,22 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public ProjectMetadata getProjectMetadata(ObjectMap options) throws StorageEngineException {
         ProjectMetadata projectMetadata = getProjectMetadata();
         if (options != null && (projectMetadata == null
-                || StringUtils.isEmpty(projectMetadata.getSpecies()) && options.containsKey(VariantAnnotationManager.SPECIES)
-                || StringUtils.isEmpty(projectMetadata.getAssembly()) && options.containsKey(VariantAnnotationManager.ASSEMBLY))) {
+                || StringUtils.isEmpty(projectMetadata.getSpecies()) && options.containsKey(VariantStorageOptions.SPECIES.key())
+                || StringUtils.isEmpty(projectMetadata.getAssembly()) && options.containsKey(VariantStorageOptions.ASSEMBLY.key()))) {
 
             projectMetadata = updateProjectMetadata(pm -> {
                 if (pm == null) {
                     pm = new ProjectMetadata();
                 }
                 if (pm.getRelease() <= 0) {
-                    pm.setRelease(options.getInt(VariantStorageEngine.Options.RELEASE.key(),
-                            VariantStorageEngine.Options.RELEASE.defaultValue()));
+                    pm.setRelease(options.getInt(VariantStorageOptions.RELEASE.key(),
+                            VariantStorageOptions.RELEASE.defaultValue()));
                 }
                 if (StringUtils.isEmpty(pm.getSpecies())) {
-                    pm.setSpecies(toCellBaseSpeciesName(options.getString(VariantAnnotationManager.SPECIES)));
+                    pm.setSpecies(toCellBaseSpeciesName(options.getString(VariantStorageOptions.SPECIES.key())));
                 }
                 if (StringUtils.isEmpty(pm.getAssembly())) {
-                    pm.setAssembly(options.getString(VariantAnnotationManager.ASSEMBLY));
+                    pm.setAssembly(options.getString(VariantStorageOptions.ASSEMBLY.key()));
                 }
 
                 return pm;

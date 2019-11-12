@@ -2,6 +2,7 @@ package org.opencb.opencga.app.cli.admin.executors.migration.storage;
 
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -12,7 +13,6 @@ import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,8 +38,7 @@ public abstract class AbstractStorageMigrator {
         this.storageConfiguration = storageConfiguration;
     }
 
-    public void migrate(String sessionId)
-            throws IllegalAccessException, InstantiationException, ClassNotFoundException, CatalogException, StorageEngineException {
+    public void migrate(String sessionId) throws CatalogException, StorageEngineException {
 
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
 
@@ -59,7 +58,7 @@ public abstract class AbstractStorageMigrator {
             for (Study study : project.getStudies()) {
                 logger.info("Migrating study " + study.getName());
 
-                DataStore dataStore = StorageOperation.getDataStore(catalogManager, study.getFqn(), File.Bioformat.VARIANT, sessionId);
+                DataStore dataStore = VariantStorageManager.getDataStore(catalogManager, study.getFqn(), File.Bioformat.VARIANT, sessionId);
                 // Check only once per datastore
                 if (dataStores.add(dataStore)) {
                     VariantStorageEngine variantStorageEngine =

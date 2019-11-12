@@ -39,7 +39,10 @@ public interface BatchExecutor {
     String OUT_LOG_EXTENSION = ".out";
     String ERR_LOG_EXTENSION = ".err";
 
+    @Deprecated
     void execute(Job job, String token) throws Exception;
+
+    void execute(String jobId, String commandLine, Path stdout, Path stderr, String token) throws Exception;
 
     String getStatus(Job job);
 
@@ -53,12 +56,21 @@ public interface BatchExecutor {
 
     /**
      * We do it this way to avoid writing the session id in the command line (avoid display/monitor/logs) attribute of Job.
-     * @param job Job to generate CLI from
+     * @param commandLine Basic command line
+     * @param stdout File where the standard output will be redirected
+     * @param stderr File where the standard error will be redirected
      * @param token A valid session token
-     * @return The command line
+     * @return The complete command line
      */
-    default String getCommandLine(Job job, String token) {
-        return job.getCommandLine() + " --session-id " + token;
+    default String getCommandLine(String commandLine, Path stdout, Path stderr, String token) {
+        String cli = commandLine + " --session-id " + token;
+        if (stderr != null) {
+            cli = cli + " 2> " + stderr.toString();
+        }
+        if (stdout != null) {
+            cli = cli + " > " + stdout.toString();
+        }
+        return cli;
     }
 
     default String status(Path jobOutput, Job job) {

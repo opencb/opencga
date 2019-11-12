@@ -1,36 +1,28 @@
 package org.opencb.opencga.analysis.clinical.interpretation;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
-import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.tools.clinical.DefaultReportedVariantCreator;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
+import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
 import org.opencb.opencga.core.annotations.AnalysisExecutor;
 import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.manager.clinical.ClinicalInterpretationManager;
-import org.opencb.opencga.storage.core.manager.clinical.ClinicalUtils;
-import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.valueOf;
-import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.FAMILY_DISORDER;
-import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.FAMILY_SEGREGATION;
+import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.FAMILY_SEGREGATION;
 
 @AnalysisExecutor(id = "opencga-local",
         analysis = CustomInterpretationAnalysis.ID,

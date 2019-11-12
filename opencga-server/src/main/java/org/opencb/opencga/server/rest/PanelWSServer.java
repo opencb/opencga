@@ -25,7 +25,7 @@ import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.*;
 
 @Path("/{apiVersion}/panels")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Panels", position = 4, description = "Methods for working with 'panels' endpoint")
+@Api(value = "Disease Panels", position = 4, description = "Methods for working with 'panels' endpoint")
 public class PanelWSServer extends OpenCGAWSServer {
 
     private PanelManager panelManager;

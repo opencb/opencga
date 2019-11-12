@@ -11,8 +11,9 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
@@ -51,7 +52,7 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
             study = studyMetadata.getName();
 
 
-    //        boolean overwrite = context.getConfiguration().getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);
+    //        boolean overwrite = context.getConfiguration().getBoolean(VariantStorageEngine.Options.STATS_OVERWRITE.key(), false);
     //        calculator = new VariantStatisticsCalculator(overwrite);
     //        Properties tagmap = getAggregationMappingProperties(context.getConfiguration());
     //        calculator.setAggregationType(studyConfiguration.getAggregation(), tagmap);
@@ -70,18 +71,15 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
 
         calculators = new HashMap<>(cohorts.size());
         String unknownGenotype = context.getConfiguration().get(
-                VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE.key(),
-                VariantStorageEngine.Options.STATS_DEFAULT_GENOTYPE.defaultValue());
+                VariantStorageOptions.STATS_DEFAULT_GENOTYPE.key(),
+                VariantStorageOptions.STATS_DEFAULT_GENOTYPE.defaultValue());
         boolean statsMultiAllelic = context.getConfiguration().getBoolean(
-                VariantStorageEngine.Options.STATS_MULTI_ALLELIC.key(),
-                VariantStorageEngine.Options.STATS_MULTI_ALLELIC.defaultValue());
+                VariantStorageOptions.STATS_MULTI_ALLELIC.key(),
+                VariantStorageOptions.STATS_MULTI_ALLELIC.defaultValue());
         try (VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(
                 new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
-            samples.forEach((cohort, samples) -> {
-                calculators.put(cohort,
-                        new HBaseVariantStatsCalculator(
-                                helper.getColumnFamily(), metadataManager, studyMetadata, samples, statsMultiAllelic, unknownGenotype));
-            });
+            samples.forEach((cohort, samples) -> calculators.put(cohort, new HBaseVariantStatsCalculator(
+                    GenomeHelper.COLUMN_FAMILY_BYTES, metadataManager, studyMetadata, samples, statsMultiAllelic, unknownGenotype)));
         }
     }
 
@@ -161,7 +159,7 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
         if (put == null) {
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put.null").increment(1);
         } else {
-            HadoopVariantSearchIndexUtils.addNotSyncStatus(put, helper.getColumnFamily());
+            HadoopVariantSearchIndexUtils.addNotSyncStatus(put, GenomeHelper.COLUMN_FAMILY_BYTES);
             context.getCounter(VariantsTableMapReduceHelper.COUNTER_GROUP_NAME, "stats.put").increment(1);
             context.write(new ImmutableBytesWritable(helper.getVariantsTable()), put);
         }

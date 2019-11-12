@@ -67,9 +67,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
-import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.*;
 import static org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBQueryParser.OVERLAPPED_FILES_ONLY;
 
 /**
@@ -99,8 +99,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
     private TaskMetadata currentTask;
 
     public MongoDBVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId,
-                                         VariantMongoDBAdaptor dbAdaptor, IOConnectorProvider ioConnectorProvider) {
-        super(configuration, storageEngineId, dbAdaptor, ioConnectorProvider);
+                                         VariantMongoDBAdaptor dbAdaptor, IOConnectorProvider ioConnectorProvider, ObjectMap options) {
+        super(configuration, storageEngineId, dbAdaptor, ioConnectorProvider, options);
         this.dbAdaptor = dbAdaptor;
     }
 
@@ -119,19 +119,19 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         int fileId = getFileId();
 
         // 1) Determine merge mode
-        if (studyMetadata.getAttributes().containsKey(Options.MERGE_MODE.key())
+        if (studyMetadata.getAttributes().containsKey(VariantStorageOptions.MERGE_MODE.key())
                 || studyMetadata.getAttributes().containsKey(MERGE_IGNORE_OVERLAPPING_VARIANTS.key())) {
             if (studyMetadata.getAttributes().getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key())) {
-                studyMetadata.getAttributes().put(Options.MERGE_MODE.key(), MergeMode.BASIC);
+                studyMetadata.getAttributes().put(VariantStorageOptions.MERGE_MODE.key(), MergeMode.BASIC);
                 logger.debug("Do not merge overlapping variants, as said in the StudyMetadata");
             } else {
-                studyMetadata.getAttributes().put(Options.MERGE_MODE.key(), MergeMode.ADVANCED);
+                studyMetadata.getAttributes().put(VariantStorageOptions.MERGE_MODE.key(), MergeMode.ADVANCED);
                 logger.debug("Merge overlapping variants, as said in the StudyMetadata");
             }
-            options.put(Options.MERGE_MODE.key(), studyMetadata.getAttributes().get(Options.MERGE_MODE.key()));
+            options.put(VariantStorageOptions.MERGE_MODE.key(), studyMetadata.getAttributes().get(VariantStorageOptions.MERGE_MODE.key()));
         } else {
             MergeMode mergeMode = MergeMode.from(options);
-            studyMetadata.getAttributes().put(Options.MERGE_MODE.key(), mergeMode);
+            studyMetadata.getAttributes().put(VariantStorageOptions.MERGE_MODE.key(), mergeMode);
             switch (mergeMode) {
                 case BASIC:
                     studyMetadata.getAttributes().put(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(), true);
@@ -167,7 +167,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             studyMetadata.getAttributes().put(DEFAULT_GENOTYPE.key(), defaultGenotype);
         }
 
-        boolean loadSplitData = options.getBoolean(Options.LOAD_SPLIT_DATA.key(), Options.LOAD_SPLIT_DATA.defaultValue());
+        boolean loadSplitData = options.getBoolean(VariantStorageOptions.LOAD_SPLIT_DATA.key(),
+                VariantStorageOptions.LOAD_SPLIT_DATA.defaultValue());
         boolean newSampleBatch = checkCanLoadSampleBatch(getMetadataManager(), studyMetadata, fileId, loadSplitData);
 
         if (newSampleBatch) {
@@ -214,7 +215,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     isResume(options),
                     TaskMetadata.Type.LOAD);
             if (currentTask.getStatus().size() > 1) {
-                options.put(Options.RESUME.key(), true);
+                options.put(VariantStorageOptions.RESUME.key(), true);
                 options.put(STAGE_RESUME.key(), true);
                 options.put(MERGE_RESUME.key(), true);
             }
@@ -279,8 +280,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         VariantFileMetadata fileMetadata = readVariantFileMetadata(inputUri);
         VariantStudyMetadata metadata = fileMetadata.toVariantStudyMetadata(String.valueOf(studyId));
         int numRecords = fileMetadata.getStats().getNumVariants();
-        int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
-        int loadThreads = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
+        int batchSize = options.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(), VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue());
+        int loadThreads = options.getInt(VariantStorageOptions.LOAD_THREADS.key(), VariantStorageOptions.LOAD_THREADS.defaultValue());
         final int numReaders = 1;
         boolean resume = isResume(options);
         StudyMetadata studyMetadata = getStudyMetadata();
@@ -311,7 +312,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             //TaskMetadata -- MongoDBVariantMerger
             ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", numRecords, 200);
 
-            int release = options.getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
+            int release = options.getInt(VariantStorageOptions.RELEASE.key(), VariantStorageOptions.RELEASE.defaultValue());
             boolean ignoreOverlapping = studyMetadata.getAttributes().getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(),
                     MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue());
 
@@ -381,9 +382,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
         VariantStudyMetadata metadata = fileMetadata.toVariantStudyMetadata(String.valueOf(getStudyId()));
         int numRecords = fileMetadata.getStats().getNumVariants();
-        int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
-        int bulkSize = options.getInt(BULK_SIZE.key(), batchSize);
-        int loadThreads = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
+        int batchSize = options.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(), VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue());
+        int loadThreads = options.getInt(VariantStorageOptions.LOAD_THREADS.key(), VariantStorageOptions.LOAD_THREADS.defaultValue());
         final int numReaders = 1;
 //        final int numTasks = loadThreads == 1 ? 1 : loadThreads - numReaders; //Subtract the reader thread
         boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
@@ -561,8 +561,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         //Stage collection where files are loaded.
         MongoDBCollection stageCollection = dbAdaptor.getStageCollection(studyMetadata.getId());
 
-        int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
-        int loadThreads = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
+        int batchSize = options.getInt(VariantStorageOptions.LOAD_BATCH_SIZE.key(), VariantStorageOptions.LOAD_BATCH_SIZE.defaultValue());
+        int loadThreads = options.getInt(VariantStorageOptions.LOAD_THREADS.key(), VariantStorageOptions.LOAD_THREADS.defaultValue());
         int capacity = options.getInt("blockingQueueCapacity", loadThreads * 2);
 
         if (options.getBoolean(MERGE_SKIP.key())) {
@@ -652,7 +652,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         boolean ignoreOverlapping = studyMetadata.getAttributes().getBoolean(MERGE_IGNORE_OVERLAPPING_VARIANTS.key(),
                 MERGE_IGNORE_OVERLAPPING_VARIANTS.defaultValue());
-        int release = options.getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
+        int release = options.getInt(VariantStorageOptions.RELEASE.key(), VariantStorageOptions.RELEASE.defaultValue());
         MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyMetadata, fileIds, resume,
                 ignoreOverlapping, release);
         MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(

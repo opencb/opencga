@@ -16,21 +16,13 @@
 
 package org.opencb.opencga.storage.server.grpc;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.server.common.AuthManager;
-import org.opencb.opencga.storage.server.common.DefaultAuthManager;
-import org.opencb.opencga.storage.server.common.exceptions.NotAuthorizedHostException;
-import org.opencb.opencga.storage.server.common.exceptions.NotAuthorizedUserException;
 import org.opencb.opencga.storage.server.grpc.GenericServiceModel.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Created by imedina on 16/12/15.
@@ -42,14 +34,11 @@ public class GenericGrpcService {
 
     protected static StorageEngineFactory storageEngineFactory;
 
-    protected AuthManager authManager;
-    protected Set<String> authorizedHosts;
-
     private Logger privLogger;
     protected Logger logger;
 
     public GenericGrpcService(StorageConfiguration storageConfiguration) {
-        this(storageConfiguration, storageConfiguration.getDefaultStorageEngineId());
+        this(storageConfiguration, storageConfiguration.getVariant().getDefaultEngine());
     }
 
     public GenericGrpcService(StorageConfiguration storageConfiguration, String defaultStorageEngine) {
@@ -65,31 +54,6 @@ public class GenericGrpcService {
             privLogger.debug("Creating the StorageManagerFactory object");
             // TODO: We will need to pass catalog manager once storage starts doing things over catalog
             storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
-        }
-
-        if (authorizedHosts == null) {
-            privLogger.debug("Creating the authorizedHost HashSet");
-            authorizedHosts = new HashSet<>(storageConfiguration.getServer().getAuthorizedHosts());
-        }
-
-        try {
-            if (StringUtils.isNotEmpty(storageConfiguration.getServer().getAuthManager())) {
-                privLogger.debug("Loading AuthManager in {} from {}", this.getClass(), storageConfiguration.getServer().getAuthManager());
-                authManager = (AuthManager) Class.forName(storageConfiguration.getServer().getAuthManager()).newInstance();
-            } else {
-                privLogger.debug("Loading DefaultAuthManager in {} from {}", this.getClass(), DefaultAuthManager.class);
-                authManager = new DefaultAuthManager();
-            }
-        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-    }
-
-    protected void checkAuthorizedHosts(Query query, String ip) throws NotAuthorizedHostException, NotAuthorizedUserException {
-        if (authorizedHosts.contains("0.0.0.0") || authorizedHosts.contains("*") || authorizedHosts.contains(ip)) {
-            authManager.checkPermission(query, "");
-        } else {
-            throw new NotAuthorizedHostException("No queries are allowed from " + ip);
         }
     }
 

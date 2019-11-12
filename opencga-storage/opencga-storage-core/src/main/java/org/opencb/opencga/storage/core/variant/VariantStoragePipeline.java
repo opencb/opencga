@@ -53,7 +53,6 @@ import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -73,7 +72,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
+import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 
 /**
  * Created on 30/03/16.
@@ -95,13 +94,6 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     protected Integer privateStudyId;
 //    protected StudyMetadata privateStudyMetadata;
 
-
-    public VariantStoragePipeline(StorageConfiguration configuration, String storageEngineId, VariantDBAdaptor dbAdaptor,
-                                  IOConnectorProvider ioConnectorProvider) {
-        this(configuration, storageEngineId, dbAdaptor, ioConnectorProvider,
-                new ObjectMap(configuration.getStorageEngine(storageEngineId).getVariant().getOptions()));
-    }
-
     /**
      * @param configuration     Storage Configuration
      * @param storageEngineId   StorageEngineID
@@ -118,7 +110,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         this.ioConnectorProvider = ioConnectorProvider;
         this.options = options;
         if (dbAdaptor == null) {
-            options.put(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
+            options.put(VariantStorageOptions.TRANSFORM_ISOLATE.key(), true);
         }
     }
 
@@ -135,22 +127,22 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     @Override
     public URI preTransform(URI input) throws StorageEngineException, IOException, FileFormatException {
         String fileName = VariantReaderUtils.getFileName(input);
-        String study = options.getString(Options.STUDY.key());
+        String study = options.getString(VariantStorageOptions.STUDY.key());
 
         if (VariantReaderUtils.isGvcf(fileName)) {
             logger.info("Detected gVCF input file.");
-            options.put(Options.GVCF.key(), true);
+            options.put(VariantStorageOptions.GVCF.key(), true);
         }
 
-        boolean isolate = options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(),
-                Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.defaultValue());
+        boolean isolate = options.getBoolean(VariantStorageOptions.TRANSFORM_ISOLATE.key(),
+                VariantStorageOptions.TRANSFORM_ISOLATE.defaultValue());
         StudyMetadata metadata;
         if (isolate) {
             logger.debug("Isolated study configuration");
             metadata = new StudyMetadata(-1, "unknown");
-            metadata.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
-                    Options.AGGREGATED_TYPE.defaultValue().toString()));
-            options.put(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
+            metadata.setAggregationStr(options.getString(VariantStorageOptions.STATS_AGGREGATION.key(),
+                    VariantStorageOptions.STATS_AGGREGATION.defaultValue().toString()));
+            options.put(VariantStorageOptions.TRANSFORM_ISOLATE.key(), true);
             privateStudyId = -1;
         } else {
             VariantStorageMetadataManager smm = dbAdaptor.getMetadataManager();
@@ -158,8 +150,8 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
             StudyMetadata studyMetadata = smm.updateStudyMetadata(study, existingStudyMetadata -> {
                 if (existingStudyMetadata.getAggregation() == null) {
-                    existingStudyMetadata.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
-                            Options.AGGREGATED_TYPE.defaultValue().toString()));
+                    existingStudyMetadata.setAggregationStr(options.getString(VariantStorageOptions.STATS_AGGREGATION.key(),
+                            VariantStorageOptions.STATS_AGGREGATION.defaultValue().toString()));
                 }
                 return existingStudyMetadata;
             });
@@ -172,7 +164,8 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     protected VariantFileMetadata createEmptyVariantFileMetadata(URI input) {
         VariantFileMetadata fileMetadata = VariantReaderUtils.createEmptyVariantFileMetadata(input);
         int fileId;
-        if (options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION
+        if (options.getBoolean(VariantStorageOptions.TRANSFORM_ISOLATE.key(),
+                VariantStorageOptions.TRANSFORM_ISOLATE
                 .defaultValue())) {
             fileId = -1;
         } else {
@@ -194,13 +187,13 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         // input: VcfReader
         // output: JsonWriter
 
-//        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key(), false);
-        boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), false);
-//        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), Options.INCLUDE_SRC.defaultValue());
-        boolean includeSrc = false;
-        boolean failOnError = options.getBoolean(Options.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(),
-                Options.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.defaultValue());
-        String format = options.getString(Options.TRANSFORM_FORMAT.key(), Options.TRANSFORM_FORMAT.defaultValue());
+
+        boolean failOnError = options.getBoolean(
+                VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(),
+                VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.defaultValue());
+        String format = options.getString(
+                VariantStorageOptions.TRANSFORM_FORMAT.key(),
+                VariantStorageOptions.TRANSFORM_FORMAT.defaultValue());
         String parser = options.getString("transform.parser", HTSJDK_PARSER);
 
         boolean stdin = options.getBoolean(STDIN.key(), STDIN.defaultValue());
@@ -213,15 +206,21 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
         String fileName = UriUtils.fileName(input);
         String studyId = String.valueOf(getStudyId());
-        boolean generateReferenceBlocks = options.getBoolean(Options.GVCF.key(), false);
+        boolean generateReferenceBlocks = options.getBoolean(VariantStorageOptions.GVCF.key(), false);
         // Do not run parallelParse when generating reference blocks, as the task is stateful
         boolean parallelParse = !generateReferenceBlocks;
 
-        int batchSize = options.getInt(Options.TRANSFORM_BATCH_SIZE.key(), Options.TRANSFORM_BATCH_SIZE.defaultValue());
+        int batchSize = options.getInt(
+                VariantStorageOptions.TRANSFORM_BATCH_SIZE.key(),
+                VariantStorageOptions.TRANSFORM_BATCH_SIZE.defaultValue());
 
-        String compression = options.getString(Options.COMPRESS_METHOD.key(), Options.COMPRESS_METHOD.defaultValue());
+        String compression = options.getString(
+                VariantStorageOptions.TRANSFORM_COMPRESSION.key(),
+                VariantStorageOptions.TRANSFORM_COMPRESSION.defaultValue());
         String extension = "";
-        int numTasks = options.getInt(Options.TRANSFORM_THREADS.key(), Options.TRANSFORM_THREADS.defaultValue());
+        int numTasks = options.getInt(
+                VariantStorageOptions.TRANSFORM_THREADS.key(),
+                VariantStorageOptions.TRANSFORM_THREADS.defaultValue());
         int capacity = options.getInt("blockingQueueCapacity", numTasks * 2);
 
         if ("gzip".equalsIgnoreCase(compression) || "gz".equalsIgnoreCase(compression)) {
@@ -441,28 +440,30 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         if (getMetadataManager().getIndexedFiles(studyId).isEmpty()) {
             // First indexed file
             // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyMetadata.attributes
-            excludeGenotypes = options.getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
-            studyMetadata.setAggregationStr(options.getString(Options.AGGREGATED_TYPE.key(),
-                    Options.AGGREGATED_TYPE.defaultValue().toString()));
-            studyMetadata.getAttributes().put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
+            excludeGenotypes = options.getBoolean(
+                    VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
+                    VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
+            studyMetadata.setAggregationStr(options.getString(VariantStorageOptions.STATS_AGGREGATION.key(),
+                    VariantStorageOptions.STATS_AGGREGATION.defaultValue().toString()));
+            studyMetadata.getAttributes().put(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
         } else {
             // Not first indexed file
             // Use the EXCLUDE_GENOTYPES value from StudyMetadata. Ignore CLI value
             excludeGenotypes = studyMetadata.getAttributes()
-                    .getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
-            options.put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
+                    .getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
+            options.put(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
         }
 
         // Get Extra genotype fields
         Stream<String> stream;
-        if (StringUtils.isNotEmpty(options.getString(Options.EXTRA_GENOTYPE_FIELDS.key()))
-                && !options.getString(Options.EXTRA_GENOTYPE_FIELDS.key()).equals(VariantQueryUtils.ALL)) {
+        if (StringUtils.isNotEmpty(options.getString(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key()))
+                && !options.getString(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key()).equals(VariantQueryUtils.ALL)) {
             // If ExtraGenotypeFields are provided by command line, check that those fields are going to be loaded.
 
-            if (options.getString(Options.EXTRA_GENOTYPE_FIELDS.key()).equals(VariantQueryUtils.NONE)) {
+            if (options.getString(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key()).equals(VariantQueryUtils.NONE)) {
                 stream = Stream.empty();
             } else {
-                stream = options.getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key()).stream();
+                stream = options.getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key()).stream();
             }
         } else {
             // Otherwise, add all format fields
@@ -472,16 +473,16 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                     .map(VariantFileHeaderComplexLine::getId);
 
         }
-        List<String> extraGenotypeFields = studyMetadata.getAttributes().getAsStringList(EXTRA_GENOTYPE_FIELDS.key());
+        List<String> extraGenotypeFields = studyMetadata.getAttributes().getAsStringList(EXTRA_FORMAT_FIELDS.key());
         stream.forEach(format -> {
             if (!extraGenotypeFields.contains(format) && !format.equals(VariantMerger.GT_KEY)) {
                 extraGenotypeFields.add(format);
             }
         });
-        studyMetadata.getAttributes().put(EXTRA_GENOTYPE_FIELDS.key(), extraGenotypeFields);
-        getOptions().put(EXTRA_GENOTYPE_FIELDS.key(), extraGenotypeFields);
+        studyMetadata.getAttributes().put(EXTRA_FORMAT_FIELDS.key(), extraGenotypeFields);
+        getOptions().put(EXTRA_FORMAT_FIELDS.key(), extraGenotypeFields);
 
-        List<String> extraFormatFields = studyMetadata.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
+        List<String> extraFormatFields = studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key());
 
         List<String> formatsFields;
         if (excludeGenotypes) {
@@ -494,8 +495,8 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         studyMetadata.addVariantFileHeader(fileMetadata.getHeader(), formatsFields);
 
 
-        // Check if EXTRA_GENOTYPE_FIELDS_TYPE is filled
-        if (!studyMetadata.getAttributes().containsKey(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key())) {
+        // Check if EXTRA_FORMAT_FIELDS_TYPE is filled
+        if (!studyMetadata.getAttributes().containsKey(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key())) {
             List<String> extraFieldsType = new ArrayList<>(extraFormatFields.size());
             Map<String, VariantFileHeaderComplexLine> formatsMap = studyMetadata.getVariantHeaderLines("FORMAT");
             for (String extraFormatField : extraFormatFields) {
@@ -541,12 +542,12 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 logger.debug(extraFormatField + " : " + type);
             }
 
-            studyMetadata.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), extraFieldsType);
+            studyMetadata.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key(), extraFieldsType);
         }
 
         int currentRelease = getMetadataManager().getProjectMetadata(options).getRelease();
-        if (options.containsKey(Options.RELEASE.key())) {
-            int release = options.getInt(Options.RELEASE.key(), Options.RELEASE.defaultValue());
+        if (options.containsKey(VariantStorageOptions.RELEASE.key())) {
+            int release = options.getInt(VariantStorageOptions.RELEASE.key(), VariantStorageOptions.RELEASE.defaultValue());
             // Update current release
             if (currentRelease != release) {
                 getMetadataManager().updateProjectMetadata(pm -> {
@@ -562,7 +563,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                 });
             }
         } else {
-            options.put(Options.RELEASE.key(), currentRelease);
+            options.put(VariantStorageOptions.RELEASE.key(), currentRelease);
         }
     }
 
@@ -669,7 +670,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         if (studyMetadata == null) {
             studyMetadata = getStudyMetadata();
             if (studyMetadata == null) {
-                String studyName = options.getString(Options.STUDY.key(), Options.STUDY.defaultValue());
+                String studyName = options.getString(VariantStorageOptions.STUDY.key(), VariantStorageOptions.STUDY.defaultValue());
                 logger.info("Creating a new StudyMetadata '{}'", studyName);
                 studyMetadata = getMetadataManager().createStudy(studyName);
             }
@@ -688,7 +689,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
     public final StudyMetadata getStudyMetadata() throws StorageEngineException {
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         final StudyMetadata studyMetadata;
-        String study = options.getString(Options.STUDY.key());
+        String study = options.getString(VariantStorageOptions.STUDY.key());
         if (!StringUtils.isEmpty(study)) {
             studyMetadata = metadataManager.getStudyMetadata(study);
         } else if (privateStudyId != null) {

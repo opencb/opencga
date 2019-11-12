@@ -42,13 +42,8 @@ import java.util.stream.Collectors;
  */
 public abstract class VariantAnnotationManager {
 
-    public static final String SPECIES = "species";
-    public static final String ASSEMBLY = "assembly";
-    public static final String ANNOTATOR = "annotator";
     @Deprecated
     public static final String ANNOTATION_SOURCE = "annotationSource";
-    public static final String OVERWRITE_ANNOTATIONS = "overwriteAnnotations";
-    public static final String VARIANT_ANNOTATOR_CLASSNAME = "variant.annotator.classname";
     // File to load.
     public static final String CREATE = "annotation.create";
     public static final String LOAD_FILE = "annotation.load.file";

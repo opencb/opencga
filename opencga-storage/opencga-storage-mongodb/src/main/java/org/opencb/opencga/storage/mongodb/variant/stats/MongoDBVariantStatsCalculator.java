@@ -17,7 +17,7 @@ import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantCo
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions.DEFAULT_GENOTYPE;
 
 /**
  * Created on 18/04/18.

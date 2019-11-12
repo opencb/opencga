@@ -40,14 +40,14 @@ import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
@@ -98,7 +98,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     @Override
     public Map<String, ?> getOtherStorageConfigurationOptions() {
-        return new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_INDEXES_SKIP, true).append(VariantStorageEngine.Options.ANNOTATE.key(), false);
+        return new ObjectMap(HadoopVariantStorageOptions.VARIANT_TABLE_INDEXES_SKIP.key(), true).append(VariantStorageOptions.ANNOTATE.key(), false);
     }
 
     public VariantFileMetadata loadFile(String resourceName, StudyMetadata studyMetadata) throws Exception {
@@ -138,9 +138,8 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     @Test
     public void testTwoFilesBasicFillMissing() throws Exception {
         ObjectMap params = new ObjectMap();
-        params.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
-        params.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
-        params.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
+        params.put(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+        params.put(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro");
 
         StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
@@ -164,10 +163,9 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     @Test
     public void testTwoFilesBasicAggregateLimitArchiveRefFields() throws Exception {
         ObjectMap params = new ObjectMap();
-        params.put(HadoopVariantStorageEngine.ARCHIVE_FIELDS, "QUAL,FORMAT:DP,INFO:DP");
-        params.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
-        params.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
-        params.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
+        params.put(HadoopVariantStorageOptions.ARCHIVE_FIELDS.key(), "QUAL,FORMAT:DP,INFO:DP");
+        params.put(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+        params.put(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro");
 
         StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
@@ -188,7 +186,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         dbAdaptor.getHBaseManager().act(dbAdaptor.getArchiveTableName(1), table -> {
             for (Result r : table.getScanner(new Scan())) {
-                for (Map.Entry<byte[], byte[]> entry : r.getFamilyMap(dbAdaptor.getGenomeHelper().getColumnFamily()).entrySet()) {
+                for (Map.Entry<byte[], byte[]> entry : r.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES).entrySet()) {
                     if (Bytes.toString(entry.getKey()).endsWith(ArchiveTableHelper.REF_COLUMN_SUFIX)) {
                         VcfSliceProtos.VcfSlice vcfSlice = VcfSliceProtos.VcfSlice.parseFrom(entry.getValue());
                         List<String> formats = vcfSlice.getFields().getFormatsList();
@@ -206,10 +204,9 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     @Test
     public void testTwoFilesBasicAggregateNoneArchiveRefFields() throws Exception {
         ObjectMap params = new ObjectMap();
-        params.put(HadoopVariantStorageEngine.ARCHIVE_FIELDS, VariantQueryUtils.NONE);
-        params.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
-        params.put(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
-        params.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
+        params.put(HadoopVariantStorageOptions.ARCHIVE_FIELDS.key(), VariantQueryUtils.NONE);
+        params.put(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC);
+        params.put(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro");
 
         StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
@@ -228,7 +225,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         dbAdaptor.getHBaseManager().act(dbAdaptor.getArchiveTableName(1), table -> {
             for (Result r : table.getScanner(new Scan())) {
-                for (Map.Entry<byte[], byte[]> entry : r.getFamilyMap(dbAdaptor.getGenomeHelper().getColumnFamily()).entrySet()) {
+                for (Map.Entry<byte[], byte[]> entry : r.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES).entrySet()) {
                     assertFalse(Bytes.toString(entry.getKey()).endsWith(ArchiveTableHelper.REF_COLUMN_SUFIX));
                 }
             }
@@ -259,10 +256,9 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
-        ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
-        options.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
-        options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto");
-        options.put(VariantStorageEngine.Options.STUDY.key(), studyMetadata.getName());
+        ObjectMap options = variantStorageManager.getConfiguration().getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions();
+        options.put(VariantStorageOptions.TRANSFORM_FORMAT.key(), "proto");
+        options.put(VariantStorageOptions.STUDY.key(), studyMetadata.getName());
 
         List<URI> inputFiles = Arrays.asList(getResourceUri("s1.genome.vcf"), getResourceUri("s2.genome.vcf"));
         List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
@@ -291,9 +287,9 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         List<URI> protoFiles = new LinkedList<>();
 
         HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
-        ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
-        options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto");
-        options.put(VariantStorageEngine.Options.STUDY.key(), STUDY_NAME);
+        ObjectMap options = variantStorageManager.getConfiguration().getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions();
+        options.put(VariantStorageOptions.TRANSFORM_FORMAT.key(), "proto");
+        options.put(VariantStorageOptions.STUDY.key(), STUDY_NAME);
 
         List<URI> inputFiles = new LinkedList<>();
 
@@ -318,30 +314,28 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     @Test
     public void testMultipleFilesConcurrentMergeBasic() throws Exception {
-        testMultipleFilesConcurrent(new ObjectMap(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
-                .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
-                .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_BATCH_SIZE, 5)
-                .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE_BATCH_SIZE, 5));
+        testMultipleFilesConcurrent(new ObjectMap(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
+                .append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro")
+                .append(HadoopVariantStorageOptions.HADOOP_LOAD_FILES_IN_PARALLEL.key(), 5));
     }
 
     @Test
     public void testMultipleFilesConcurrentMergeBasicMultipleBatches() throws Exception {
-        testMultipleFilesConcurrent(new ObjectMap(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
-                .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
-                .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_BATCH_SIZE, 5)
-                .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE_BATCH_SIZE, 5)
-                .append(HadoopVariantStorageEngine.ARCHIVE_FILE_BATCH_SIZE, 5));
+        testMultipleFilesConcurrent(new ObjectMap(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
+                .append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro")
+                .append(HadoopVariantStorageOptions.HADOOP_LOAD_FILES_IN_PARALLEL.key(), 5)
+                .append(HadoopVariantStorageOptions.ARCHIVE_FILE_BATCH_SIZE.key(), 5));
 
-        ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(1000, '_', 5);
+        ArchiveRowKeyFactory rowKeyFactory = new ArchiveRowKeyFactory(1000, 5);
 
         HadoopVariantStorageEngine engine = getVariantStorageEngine();
         VariantHadoopDBAdaptor dbAdaptor = engine.getDBAdaptor();
         Integer count = dbAdaptor.getHBaseManager().act(engine.getArchiveTableName(STUDY_ID), table -> {
             int numBlocks = 0;
-            for (Result result : table.getScanner(dbAdaptor.getGenomeHelper().getColumnFamily())) {
+            for (Result result : table.getScanner(GenomeHelper.COLUMN_FAMILY_BYTES)) {
                 numBlocks++;
                 int batch = rowKeyFactory.extractFileBatchFromBlockId(Bytes.toString(result.getRow()));
-                for (byte[] column : result.getFamilyMap(dbAdaptor.getGenomeHelper().getColumnFamily()).keySet()) {
+                for (byte[] column : result.getFamilyMap(GenomeHelper.COLUMN_FAMILY_BYTES).keySet()) {
                     if (!Bytes.startsWith(column, VARIANT_COLUMN_B_PREFIX)) {
                         int fileId = ArchiveTableHelper.getFileIdFromNonRefColumnName(column);
                         int expectedBatch = rowKeyFactory.getFileBatch(fileId);
@@ -368,11 +362,11 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
             inputFiles.add(getResourceUri(fileName));
         }
 
-        ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
-        options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto");
+        ObjectMap options = variantStorageManager.getConfiguration().getVariantEngine(variantStorageManager.getStorageEngineId()).getOptions();
+        options.put(VariantStorageOptions.TRANSFORM_FORMAT.key(), "proto");
 //        options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyMetadata.getStudyId());
-        options.put(VariantStorageEngine.Options.STUDY.key(), studyMetadata.getName());
-//        options.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,AD");
+        options.put(VariantStorageOptions.STUDY.key(), studyMetadata.getName());
+//        options.put(VariantStorageEngine.Options.EXTRA_FORMAT_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,AD");
         options.putAll(extraParams);
         List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
 
@@ -607,7 +601,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         StudyMetadata studyMetadata = VariantStorageBaseTest.newStudyMetadata();
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor();
-        loadFile("s1_s2.genome.vcf", studyMetadata, new ObjectMap(HadoopVariantStorageEngine.VARIANT_TABLE_LOAD_REFERENCE, true));
+        loadFile("s1_s2.genome.vcf", studyMetadata, new ObjectMap(HadoopVariantStorageOptions.VARIANT_TABLE_LOAD_REFERENCE.key(), true));
         checkArchiveTableTimeStamp(dbAdaptor);
 
 
@@ -636,16 +630,15 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     @Test
     public void testPlatinumFilesOneByOne_extraFields() throws Exception {
         testPlatinumFilesOneByOne(new ObjectMap()
-                .append(HadoopVariantStorageEngine.MERGE_ARCHIVE_SCAN_BATCH_SIZE, 2)
-                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ"), 6);
+                .append(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ"), 6);
     }
 
     @Test
     public void testPlatinumFilesOneByOne_MergeBasic() throws Exception {
         StudyMetadata studyMetadata = testPlatinumFilesOneByOne(new ObjectMap()
-                .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
-                .append(VariantStorageEngine.Options.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
-                /*.append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ")*/, 4);
+                .append(VariantStorageOptions.TRANSFORM_FORMAT.key(), "avro")
+                .append(VariantStorageOptions.MERGE_MODE.key(), VariantStorageEngine.MergeMode.BASIC)
+                /*.append(VariantStorageEngine.Options.EXTRA_FORMAT_FIELDS.key(), VariantMerger.GENOTYPE_FILTER_KEY + ",DP,GQX,MQ")*/, 4);
 
 
         HadoopVariantStorageEngine variantStorageEngine = getVariantStorageEngine();

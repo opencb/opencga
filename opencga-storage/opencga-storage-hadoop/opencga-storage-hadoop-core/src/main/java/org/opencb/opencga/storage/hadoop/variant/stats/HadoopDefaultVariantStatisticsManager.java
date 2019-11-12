@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.db.VariantStatsDBWriter;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
@@ -65,7 +66,7 @@ public class HadoopDefaultVariantStatisticsManager extends DefaultVariantStatist
     @Override
     public void loadVariantStats(URI uri, StudyMetadata studyMetadata, QueryOptions options) throws IOException, StorageEngineException {
         options = new QueryOptions(options);
-        options.add(STATS_LOAD_PARALLEL, false);
+        options.add(VariantStorageOptions.STATS_LOAD_THREADS.key(), 1);
         super.loadVariantStats(uri, studyMetadata, options);
     }
 

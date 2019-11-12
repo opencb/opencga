@@ -34,7 +34,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
@@ -909,9 +909,9 @@ public class VariantSqlQueryParser {
 
         List<String> loadedGenotypes;
         if (defaultStudyMetadata != null
-                && defaultStudyMetadata.getAttributes().containsKey(VariantStorageEngine.Options.LOADED_GENOTYPES.key())) {
+                && defaultStudyMetadata.getAttributes().containsKey(VariantStorageOptions.LOADED_GENOTYPES.key())) {
             loadedGenotypes = defaultStudyMetadata.getAttributes()
-                    .getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key());
+                    .getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key());
         } else {
             loadedGenotypes = DEFAULT_LOADED_GENOTYPES;
         }

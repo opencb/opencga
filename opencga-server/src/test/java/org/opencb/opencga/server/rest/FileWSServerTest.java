@@ -29,7 +29,7 @@ import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
@@ -327,7 +327,7 @@ public class FileWSServerTest {
         System.out.println("\nINPUT PARAMS");
         System.out.println("\tsid: " + sessionId);
         System.out.println("\tfileId: " + fileId);
-        System.out.println("\t" + VariantStorageEngine.Options.ANNOTATE.key() + ": " + true);
+        System.out.println("\t" + VariantStorageOptions.ANNOTATE.key() + ": " + true);
 
         String json = webTarget.path("files").path(String.valueOf(fileId)).path("index")
                 .queryParam("sid", sessionId)

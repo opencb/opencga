@@ -23,13 +23,13 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.storage.core.manager.OpenCGATestExternalResource;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,7 +92,7 @@ public class AnalysisMainTest {
     private void createStudy(Map<File.Bioformat, DataStore> datastores, String studyName) throws CatalogException {
         Study study = catalogManager.getStudyManager().create(projectId, studyName, studyName, studyName, Study.Type.CASE_CONTROL, null,
                 "Study " +
-                        "1", null, null, null, null, datastores, null, Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(),
+                        "1", null, null, null, null, datastores, null, Collections.singletonMap(VariantStorageOptions.STATS_AGGREGATION.key(),
                         Aggregation.NONE), null, sessionId).first();
         studyId = study.getId();
         outdirId = catalogManager.getFileManager().createFolder(studyId, Paths.get("data", "index").toString(), null,

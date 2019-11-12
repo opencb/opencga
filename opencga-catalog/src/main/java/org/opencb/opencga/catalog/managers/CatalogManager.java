@@ -21,7 +21,6 @@ import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
@@ -31,7 +30,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
@@ -40,7 +38,6 @@ import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -176,17 +173,6 @@ public class CatalogManager implements AutoCloseable {
         configuration.getAdmin().setPassword(password);
         configuration.getAdmin().setSecretKey(secretKey);
 
-        // Check jobs folder is empty
-        URI jobsURI;
-        try {
-            jobsURI = UriUtils.createDirectoryUri(configuration.getTempJobsDir());
-        } catch (URISyntaxException e) {
-            throw new CatalogException("Failed to create a directory URI from " + configuration.getTempJobsDir());
-        }
-        CatalogIOManager ioManager = getCatalogIOManagerFactory().get(jobsURI);
-        if (!ioManager.isDirectory(jobsURI) || CollectionUtils.isNotEmpty(ioManager.listFiles(jobsURI))) {
-            throw new CatalogException("Cannot install openCGA. Jobs folder is not empty.\nPlease, empty it first.");
-        }
         catalogDBAdaptorFactory.installCatalogDB(configuration);
     }
 
@@ -223,14 +209,8 @@ public class CatalogManager implements AutoCloseable {
 //        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
         mongoManager.close(getCatalogDatabase());
 
-        Path rootdir = Paths.get(UriUtils.createDirectoryUri(configuration.getDataDir()));
+        Path rootdir = Paths.get(UriUtils.createDirectoryUri(configuration.getWorkspace()));
         deleteFolderTree(rootdir.toFile());
-        if (!configuration.getTempJobsDir().isEmpty()) {
-            Path jobsDir = Paths.get(UriUtils.createDirectoryUri(configuration.getTempJobsDir()));
-            if (jobsDir.toFile().exists()) {
-                deleteFolderTree(jobsDir.toFile());
-            }
-        }
     }
 
     private void deleteFolderTree(java.io.File folder) {

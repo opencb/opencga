@@ -26,10 +26,9 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageOptions;
 
 import java.util.*;
 
@@ -59,7 +58,7 @@ public class DocumentToStudyVariantEntryConverterTest {
         // Java native class
         studyId = metadataManager.createStudy("1").getId();
         metadataManager.updateStudyMetadata(studyId, studyMetadata -> {
-            studyMetadata.getAttributes().put(MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE.key(), "0/0");
+            studyMetadata.getAttributes().put(MongoDBVariantStorageOptions.DEFAULT_GENOTYPE.key(), "0/0");
             return studyMetadata;
         });
         fileId = metadataManager.registerFile(studyId, "1", Arrays.asList("NA001", "NA002", "NA003"));

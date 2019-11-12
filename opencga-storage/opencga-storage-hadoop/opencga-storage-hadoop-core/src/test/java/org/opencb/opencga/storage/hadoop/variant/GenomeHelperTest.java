@@ -48,7 +48,7 @@ public class GenomeHelperTest {
         GenomeHelper.setChunkSize(conf, CHUNK_SIZE);
         genomeHelper = new GenomeHelper(conf);
 
-        keyFactory = new ArchiveRowKeyFactory(CHUNK_SIZE, '_', 100);
+        keyFactory = new ArchiveRowKeyFactory(CHUNK_SIZE, 100);
     }
 
     @Test
@@ -73,9 +73,9 @@ public class GenomeHelperTest {
     @Test
     public void testGenerateSplitArchiveMultipleBatches() throws Exception {
         Configuration conf = new Configuration();
-        conf.setInt(HadoopVariantStorageEngine.ARCHIVE_TABLE_PRESPLIT_SIZE, 10);
-        conf.setInt(HadoopVariantStorageEngine.EXPECTED_FILES_NUMBER, 4500);
-        conf.setInt(HadoopVariantStorageEngine.ARCHIVE_FILE_BATCH_SIZE, 1000);
+        conf.setInt(HadoopVariantStorageOptions.ARCHIVE_TABLE_PRESPLIT_SIZE.key(), 10);
+        conf.setInt(HadoopVariantStorageOptions.EXPECTED_FILES_NUMBER.key(), 4500);
+        conf.setInt(HadoopVariantStorageOptions.ARCHIVE_FILE_BATCH_SIZE.key(), 1000);
         assertOrder(ArchiveTableHelper.generateArchiveTableBootPreSplitHuman(conf), 50);
     }
 

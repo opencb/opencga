@@ -11,10 +11,10 @@ import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsFromArchiveMapper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantsTableMapReduceHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantMapReduceUtil;
@@ -69,7 +69,7 @@ public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
     protected Job setupJob(Job job, String archiveTable, String variantTable) throws IOException {
         List<Scan> scans = new ArrayList<>();
 
-        int caching = job.getConfiguration().getInt(HadoopVariantStorageEngine.MAPREDUCE_HBASE_SCAN_CACHING, 100);
+        int caching = job.getConfiguration().getInt(HadoopVariantStorageOptions.MR_HBASE_SCAN_CACHING.key(), 100);
         LOG.info("Scan set Caching to " + caching);
         Scan templateScan = new Scan();
         templateScan.setCaching(caching);        // 1 is the default in Scan
@@ -112,8 +112,8 @@ public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
             }
             if (!gts.isEmpty()) {
                 getMetadataManager().updateStudyMetadata(getStudyId(), sm -> {
-                    gts.addAll(sm.getAttributes().getAsStringList(VariantStorageEngine.Options.LOADED_GENOTYPES.key()));
-                    sm.getAttributes().put(VariantStorageEngine.Options.LOADED_GENOTYPES.key(), gts);
+                    gts.addAll(sm.getAttributes().getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key()));
+                    sm.getAttributes().put(VariantStorageOptions.LOADED_GENOTYPES.key(), gts);
                     return sm;
                 });
             }
@@ -132,7 +132,8 @@ public class SampleIndexConsolidationDrive extends AbstractVariantsTableDriver {
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
+            new GenomeHelper(context.getConfiguration());
+            family = GenomeHelper.COLUMN_FAMILY_BYTES;
             converter = new SampleIndexVariantBiConverter();
         }
 

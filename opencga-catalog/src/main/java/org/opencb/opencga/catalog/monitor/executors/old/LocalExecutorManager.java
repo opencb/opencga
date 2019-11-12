@@ -23,7 +23,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.RunnableProcess;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -33,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
@@ -106,14 +104,14 @@ public class LocalExecutorManager implements ExecutorManager {
 //        URI serr = tmpOutDir.resolve(job.getName() + "." + job.getId() + ".err.txt");
 //        com.setErrorOutputStream(ioManager.createOutputStream(serr, false));
 
-        if (job.getResourceManagerAttributes().containsKey("STDOUT")) {
-            URI sout = Paths.get((String) job.getResourceManagerAttributes().get("STDOUT")).toUri();
-            com.setOutputOutputStream(ioManager.createOutputStream(sout, false));
-        }
-        if (job.getResourceManagerAttributes().containsKey("STDERR")) {
-            URI serr = Paths.get((String) job.getResourceManagerAttributes().get("STDERR")).toUri();
-            com.setErrorOutputStream(ioManager.createOutputStream(serr, false));
-        }
+//        if (job.getResourceManagerAttributes().containsKey("STDOUT")) {
+//            URI sout = Paths.get((String) job.getResourceManagerAttributes().get("STDOUT")).toUri();
+//            com.setOutputOutputStream(ioManager.createOutputStream(sout, false));
+//        }
+//        if (job.getResourceManagerAttributes().containsKey("STDERR")) {
+//            URI serr = Paths.get((String) job.getResourceManagerAttributes().get("STDERR")).toUri();
+//            com.setErrorOutputStream(ioManager.createOutputStream(serr, false));
+//        }
 
         final long jobId = job.getUid();
 
@@ -238,7 +236,7 @@ public class LocalExecutorManager implements ExecutorManager {
             parameters.put("resourceManagerAttributes", new ObjectMap("executionInfo", executionInfo));
         }
 //        parameters.put(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.DONE);
-        catalogManager.getJobManager().update(job.getUid(), parameters, null, sessionId);
+//        catalogManager.getJobManager().update(job.getUid(), parameters, null, sessionId);
 
 //        /** Record output **/
 //        ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
@@ -251,20 +249,21 @@ public class LocalExecutorManager implements ExecutorManager {
         if (exitValue == 0 && StringUtils.isEmpty(error)) {
             objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), new Job.JobStatus(Job.JobStatus.DONE,
                     "Job finished."));
+        }
 //            catalogManager.modifyJob(job.getId(), new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.READY),
 //                    sessionId);
-        } else {
-            if (error == null) {
-                error = Job.ERRNO_FINISH_ERROR;
-            }
-            parameters = new ObjectMap();
-//            parameters.put(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.ERROR);
-            parameters.put(JobDBAdaptor.QueryParams.ERROR.key(), error);
-            parameters.put(JobDBAdaptor.QueryParams.ERROR_DESCRIPTION.key(), Job.ERROR_DESCRIPTIONS.get(error));
-            catalogManager.getJobManager().update(job.getUid(), parameters, null, sessionId);
-            objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), new Job.JobStatus(Job.JobStatus.ERROR,
-                    "Job finished with error."));
-        }
+//        } else {
+//            if (error == null) {
+//                error = Job.ERRNO_FINISH_ERROR;
+//            }
+//            parameters = new ObjectMap();
+////            parameters.put(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.ERROR);
+//            parameters.put(JobDBAdaptor.QueryParams.ERROR.key(), error);
+//            parameters.put(JobDBAdaptor.QueryParams.ERROR_DESCRIPTION.key(), Job.ERROR_DESCRIPTIONS.get(error));
+//            catalogManager.getJobManager().update(job.getUid(), parameters, null, sessionId);
+//            objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), new Job.JobStatus(Job.JobStatus.ERROR,
+//                    "Job finished with error."));
+//        }
 
         return catalogManager.getJobManager().get(job.getUid(), new QueryOptions(), sessionId);
     }

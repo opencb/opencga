@@ -31,10 +31,6 @@ public abstract class AlignmentStorageEngine extends StorageEngine<AlignmentDBAd
     public AlignmentStorageEngine() {
     }
 
-    public AlignmentStorageEngine(StorageConfiguration configuration) {
-        super(configuration);
-    }
-
     public AlignmentStorageEngine(String storageEngineId, StorageConfiguration configuration) {
         super(storageEngineId, configuration);
     }

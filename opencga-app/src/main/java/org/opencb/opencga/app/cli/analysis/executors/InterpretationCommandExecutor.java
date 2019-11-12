@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.app.cli.analysis.executors;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.commons.datastore.core.DataResult;
@@ -24,10 +25,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.hpg.bigdata.analysis.tools.ExecutorMonitor;
 import org.opencb.hpg.bigdata.analysis.tools.Status;
-import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationConfiguration;
-import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationAnalysis;
-import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationConfiguration;
+import org.opencb.opencga.analysis.clinical.ClinicalUtils;
+import org.opencb.opencga.analysis.clinical.interpretation.*;
 import org.opencb.opencga.app.cli.analysis.options.InterpretationCommandOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.core.analysis.result.AnalysisResult;
@@ -124,7 +123,12 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         });
 
         Path outDir = Paths.get(options.outdirId);
-        Path opencgaHome = Paths.get(configuration.getDataDir()).getParent();
+        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
+
+//        Path outDirPath = Paths.get(options.outdirId);
+//        String opencgaHome = Paths.get(configuration.getWorkspace()).getParent().toString();
+//        String assembly = ClinicalUtils.getAssembly(catalogManager, studyStr, token);
+
 
         Runtime.getRuntime().addShutdownHook(hook);
         monitor.start(outDir);
@@ -146,8 +150,10 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
                 .setConfig(config);
         AnalysisResult result = teamAnalysis.start();
 
+        // Read interpretation from the output dir
+        org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = readInterpretation(result, outDir);
+
         // Store team analysis in DB
-        org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = null;
         catalogManager.getInterpretationManager().create(studyStr, clinicalAnalysisId, new Interpretation(interpretation),
                 QueryOptions.empty(), token);
 
@@ -202,7 +208,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         });
 
         Path outDir = Paths.get(options.outdirId);
-        Path opencgaHome = Paths.get(configuration.getDataDir()).getParent();
+        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         Runtime.getRuntime().addShutdownHook(hook);
         monitor.start(outDir);
@@ -218,8 +224,10 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
                 .setConfig(config);
         AnalysisResult result = tieringAnalysis.start();
 
+        // Read interpretation from the output dir
+        org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = readInterpretation(result, outDir);
+
         // Store tiering analysis in DB
-        org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = null;
         if (options.commonOptions.params.getOrDefault("skipSave", "false").equals("true")) {
             logger.info("Skip save");
             System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter()
@@ -234,4 +242,17 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         monitor.stop(new Status(Status.DONE));
     }
 
+    private org.opencb.biodata.models.clinical.interpretation.Interpretation readInterpretation(AnalysisResult result,
+                                                                                                java.nio.file.Path outDir)
+            throws AnalysisException {
+        java.io.File file = new java.io.File(outDir + "/" + InterpretationAnalysis.INTERPRETATION_FILENAME);
+        if (file.exists()) {
+            return ClinicalUtils.readInterpretation(file.toPath());
+        }
+        String msg = "Interpretation file not found for " + result.getId() + " analysis";
+        if (CollectionUtils.isNotEmpty(result.getEvents())) {
+            msg += (": " + StringUtils.join(result.getEvents(), ". "));
+        }
+        throw new AnalysisException(msg);
+    }
 }

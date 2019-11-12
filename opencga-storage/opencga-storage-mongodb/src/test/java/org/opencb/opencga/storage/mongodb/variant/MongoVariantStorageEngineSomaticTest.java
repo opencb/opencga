@@ -2,9 +2,11 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import org.bson.Document;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineSomaticTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 
@@ -23,7 +25,9 @@ public class MongoVariantStorageEngineSomaticTest extends VariantStorageEngineSo
     @Test
     @Override
     public void indexWithOtherFieldsExcludeGT() throws Exception {
-        super.indexWithOtherFieldsExcludeGT();
+        super.indexWithOtherFieldsExcludeGT(
+                new ObjectMap(MongoDBVariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(), false),
+                new ObjectMap(MongoDBVariantStorageOptions.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(), true));
 
         try (VariantMongoDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor()) {
             MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();

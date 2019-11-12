@@ -17,7 +17,7 @@
 package org.opencb.opencga.storage.core.exceptions;
 
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 import java.io.IOException;
 import java.util.List;
@@ -70,7 +70,7 @@ public class StorageEngineException extends Exception {
         return new StorageEngineException("Operation \"" + opInProgress.getName() + "\" "
                 + "for files " + opInProgress.getFileIds() + ' '
                 + "in status \"" + opInProgress.currentStatus() + "\". "
-                + "Relaunch with " + VariantStorageEngine.Options.RESUME.key() + "=true to finish the operation.");
+                + "Relaunch with " + VariantStorageOptions.RESUME.key() + "=true to finish the operation.");
     }
 
     public static StorageEngineException unableToExecute(String message, int fileId, String fileName) {
@@ -94,7 +94,7 @@ public class StorageEngineException extends Exception {
                 + "This variant storage does not allow to load multiple files from the same sample in the same study. "
                 + "If the variants of the new file does not overlap with the already loaded variants, "
                 + "because they are from a different chromosome, or a different variant type, repeat the operation with the option ")
-                .append("-D").append(VariantStorageEngine.Options.LOAD_SPLIT_DATA.key()).append("=true . ")
+                .append("-D").append(VariantStorageOptions.LOAD_SPLIT_DATA.key()).append("=true . ")
                 .append("WARNING: Wrong usage of this option may cause a data corruption in the database!");
         return new StorageEngineException(sb.toString());
     }

@@ -13,7 +13,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
@@ -44,9 +44,9 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
             loaded = true;
             URI outputUri = newOutputUri();
 
-            ObjectMap params = new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                    .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
-                    .append(VariantStorageEngine.Options.STUDY.key(), study);
+            ObjectMap params = new ObjectMap(VariantStorageOptions.ANNOTATE.key(), false)
+                    .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
+                    .append(VariantStorageOptions.STUDY.key(), study);
             runETL(engine, getPlatinumFile(12877), outputUri, params, true, true, true);
             runETL(engine, getPlatinumFile(12878), outputUri, params, true, true, true);
             runETL(engine, getPlatinumFile(12879), outputUri, params, true, true, true);

@@ -58,8 +58,6 @@ public class ServerCommandOptions {
         @Parameter(names = {"--port"}, description = "Port number.", arity = 1)
         public int port;
 
-        @Parameter(names = {"--auth-manager"}, description = "Authentication manager.", arity = 1)
-        public String authManager;
     }
 
     /**

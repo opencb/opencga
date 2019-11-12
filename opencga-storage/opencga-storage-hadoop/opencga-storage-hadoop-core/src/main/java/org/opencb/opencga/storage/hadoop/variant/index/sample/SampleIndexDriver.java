@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -107,7 +107,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     protected Map<String, String> getParams() {
         Map<String, String> params = new LinkedHashMap<>();
         params.put("--" + SAMPLES, "<samples>*");
-        params.put("--" + VariantStorageEngine.Options.STUDY.key(), "<study>");
+        params.put("--" + VariantStorageOptions.STUDY.key(), "<study>");
         params.put("--" + OUTPUT, "<output-table>");
         params.put("--" + SECONDARY_ONLY, "<true|false>");
 //        params.put("--" + MAIN_ONLY, "<main-alternate-only>");
@@ -227,10 +227,10 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                     scans.add(scan);
                 }
                 byte[] sampleColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample);
-                scan.addColumn(getHelper().getColumnFamily(), sampleColumn);
+                scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, sampleColumn);
                 for (Integer fileId : sampleIdToFileIdMap.get(sample)) {
                     byte[] fileColumn = VariantPhoenixHelper.buildFileColumnKey(study, fileId);
-                    scan.addColumn(getHelper().getColumnFamily(), fileColumn);
+                    scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, fileColumn);
                 }
                 samplesCount++;
             }
@@ -250,10 +250,10 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             if (sampleIds.size() < 6000) {
                 for (Integer sample : sampleIds) {
                     byte[] sampleColumn = VariantPhoenixHelper.buildSampleColumnKey(study, sample);
-                    scan.addColumn(getHelper().getColumnFamily(), sampleColumn);
+                    scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, sampleColumn);
                     for (Integer fileId : sampleIdToFileIdMap.get(sample)) {
                         byte[] fileColumn = VariantPhoenixHelper.buildFileColumnKey(study, fileId);
-                        scan.addColumn(getHelper().getColumnFamily(), fileColumn);
+                        scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, fileColumn);
                     }
                 }
             }
@@ -332,7 +332,8 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
+            new GenomeHelper(context.getConfiguration());
+            family = GenomeHelper.COLUMN_FAMILY_BYTES;
             hasGenotype = context.getConfiguration().getBoolean(HAS_GENOTYPE, true);
 
             int[] samples = context.getConfiguration().getInts(SAMPLES);
@@ -351,7 +352,8 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                     samplesToCount.add(samples[i]);
                 }
             }
-            byte[] family = new GenomeHelper(context.getConfiguration()).getColumnFamily();
+            new GenomeHelper(context.getConfiguration());
+            byte[] family = GenomeHelper.COLUMN_FAMILY_BYTES;
             putConverter = new SampleIndexToHBaseConverter(family);
             variantsConverter = new SampleIndexVariantBiConverter();
 

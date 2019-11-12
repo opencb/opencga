@@ -4,7 +4,7 @@ import java.util.Date;
 
 public class Status {
 
-    enum Type {
+    public enum Type {
         /**
          * PENDING status: The job or step has not started yet.
          */

@@ -24,7 +24,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.server.grpc.GenericServiceModel.Request;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +48,7 @@ public class GenericGrpcService {
     protected Logger logger;
 
     public GenericGrpcService(Configuration configuration, StorageConfiguration storageConfiguration) {
-        this(configuration, storageConfiguration, storageConfiguration.getDefaultStorageEngineId());
+        this(configuration, storageConfiguration, storageConfiguration.getVariant().getDefaultEngine());
     }
 
     public GenericGrpcService(Configuration configuration, StorageConfiguration storageConfiguration, String defaultStorageEngine) {

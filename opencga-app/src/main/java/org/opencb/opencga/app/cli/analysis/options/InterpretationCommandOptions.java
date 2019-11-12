@@ -22,7 +22,7 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils;
+import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
 
 @Parameters(commandNames = {"interpretation"}, commandDescription = "Implement several interpretation analysis")
 public class InterpretationCommandOptions {

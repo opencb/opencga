@@ -88,7 +88,7 @@ public class AnalysisDemo {
 ////                .append(ExecutorFactory.EXECUTE, !queue)
 ////                .append(AnalysisFileIndexer.TRANSFORM, doTransform)
 ////                .append(AnalysisFileIndexer.LOAD, doLoad)
-////                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), calculateStats)
+////                .append(VariantStorageEngine.Options.STATS_CALCULATE.key(), calculateStats)
 ////                .append(VariantStorageEngine.Options.ANNOTATE.key(), annotate)
 ////                .append(AnalysisFileIndexer.LOG_LEVEL, logLevel);
 //

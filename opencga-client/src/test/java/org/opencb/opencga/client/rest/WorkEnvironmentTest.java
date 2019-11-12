@@ -57,9 +57,7 @@ public class WorkEnvironmentTest extends ExternalResource {
         Files.createDirectories(opencgaHome);
         storageConfiguration = StorageConfiguration.load(getClass().getResource("/storage-configuration.yml").openStream());
         configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
-        configuration.setDataDir(opencgaHome.resolve("sessions").toUri().toString());
-        configuration.setTempJobsDir(opencgaHome.resolve("jobs").toUri().toString());
-        configuration.getCatalog().getDatabase().setDatabase("opencga_client_test");
+        configuration.setWorkspace(opencgaHome.resolve("sessions").toUri().toString());
 
         // Copy the conf files
         Files.createDirectories(opencgaHome.resolve("conf"));

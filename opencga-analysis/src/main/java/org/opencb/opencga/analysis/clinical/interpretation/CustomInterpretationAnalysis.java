@@ -26,12 +26,17 @@ import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Panel;
+import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.util.List;
 
-import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.FAMILY;
-import static org.opencb.opencga.storage.core.manager.variant.VariantCatalogQueryUtils.FAMILY_DISORDER;
+import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.FAMILY;
+import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.FAMILY_DISORDER;
 
 @Analysis(id = CustomInterpretationAnalysis.ID, type = Analysis.AnalysisType.CLINICAL)
 public class CustomInterpretationAnalysis extends InterpretationAnalysis {

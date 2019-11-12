@@ -18,13 +18,11 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by pfurio on 19/01/16.
@@ -38,31 +36,41 @@ public class JobConverter extends GenericDocumentComplexConverter<Job> {
     @Override
     public Document convertToStorageType(Job object) {
         Document document = super.convertToStorageType(object);
-        document.put("uid", object.getUid());
-        document.put("studyUid", object.getStudyUid());
-        document.put("outDir", convertFileToDocument(object.getOutDir()));
-        document.put("input", convertFilesToDocument(object.getInput()));
-        document.put("output", convertFilesToDocument(object.getOutput()));
+        document.put(JobDBAdaptor.QueryParams.UID.key(), object.getUid());
+        document.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), object.getStudyUid());
+        document.put(JobDBAdaptor.QueryParams.OUT_DIR.key(), convertFileToDocument(object.getOutDir()));
+        document.put(JobDBAdaptor.QueryParams.TMP_DIR.key(), convertFileToDocument(object.getTmpDir()));
+        document.put(JobDBAdaptor.QueryParams.INPUT.key(), convertFilesToDocument(object.getInput()));
+        document.put(JobDBAdaptor.QueryParams.OUTPUT.key(), convertFilesToDocument(object.getOutput()));
+        document.put(JobDBAdaptor.QueryParams.LOG.key(), convertFileToDocument(object.getLog()));
+        document.put(JobDBAdaptor.QueryParams.ERROR_LOG.key(), convertFileToDocument(object.getErrorLog()));
         return document;
     }
 
-    private Document convertFileToDocument(File file) {
+    public Document convertFileToDocument(Object file) {
         if (file == null) {
-            return new Document("uid", -1L);
+            return new Document(JobDBAdaptor.QueryParams.UID.key(), -1L);
         }
-        return convertFilesToDocument(Arrays.asList(file)).get(0);
+        if (file instanceof File) {
+            return new Document(JobDBAdaptor.QueryParams.UID.key(), ((File) file).getUid());
+        } else if (file instanceof Map) {
+            return new Document(JobDBAdaptor.QueryParams.UID.key(), ((Map) file).get(JobDBAdaptor.QueryParams.UID.key()));
+        } else {
+            return new Document(JobDBAdaptor.QueryParams.UID.key(), -1L);
+        }
     }
 
-    public List<Document> convertFilesToDocument(List<File> fileList) {
-        if (fileList == null || fileList.isEmpty()) {
+    public List<Document> convertFilesToDocument(Object fileList) {
+        if (!(fileList instanceof Collection)) {
             return Collections.emptyList();
         }
-        List<Document> files = new ArrayList(fileList.size());
-        for (File file : fileList) {
-            long fileId = file != null ? (file.getUid() == 0 ? -1L : file.getUid()) : -1L;
-            if (fileId > 0) {
-                files.add(new Document("uid", fileId));
-            }
+        List<Object> myList = (List<Object>) fileList;
+        if (myList.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Document> files = new ArrayList(myList.size());
+        for (Object file : myList) {
+            files.add(convertFileToDocument(file));
         }
         return files;
     }

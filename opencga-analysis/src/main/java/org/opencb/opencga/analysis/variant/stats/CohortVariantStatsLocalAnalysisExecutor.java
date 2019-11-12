@@ -14,7 +14,7 @@ import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.exception.AnalysisExecutorException;
 import org.opencb.opencga.analysis.variant.VariantStorageAnalysisExecutor;
 import org.opencb.opencga.core.annotations.AnalysisExecutor;
-import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;

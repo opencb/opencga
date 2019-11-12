@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
@@ -61,8 +62,6 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
-
 /**
  * Created by jmmut on 12/02/15.
  */
@@ -70,8 +69,6 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
 
     public static final String OUTPUT_FILE_NAME = "output.file.name";
     public static final String OUTPUT = "output";
-    public static final String STATS_LOAD_PARALLEL = "stats.load.parallel";
-    public static final boolean DEFAULT_STATS_LOAD_PARALLEL = true;
 
     protected static final String VARIANT_STATS_SUFFIX = ".variants.stats.json.gz";
     protected static final String SOURCE_STATS_SUFFIX = ".source.stats.json.gz";
@@ -177,10 +174,14 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         }
 
         //Parse query options
-        int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
-        int numTasks = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
-        boolean overwrite = options.getBoolean(Options.OVERWRITE_STATS.key(), false);
-        boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
+        int batchSize = options.getInt(
+                VariantStorageOptions.STATS_CALCULATE_BATCH_SIZE.key(),
+                VariantStorageOptions.STATS_CALCULATE_BATCH_SIZE.defaultValue());
+        int numTasks = options.getInt(
+                VariantStorageOptions.STATS_CALCULATE_THREADS.key(),
+                VariantStorageOptions.STATS_CALCULATE_THREADS.defaultValue());
+        boolean overwrite = options.getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
+        boolean updateStats = options.getBoolean(VariantStorageOptions.STATS_UPDATE.key(), false);
         Properties tagmap = VariantStatisticsManager.getAggregationMappingProperties(options);
 //            fileId = options.getString(VariantStorageEngine.Options.FILE_ID.key());
         Aggregation aggregation = getAggregation(studyMetadata, options);
@@ -357,7 +358,7 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         URI sourceStatsUri = UriUtils.replacePath(uri, uri.getPath() + SOURCE_STATS_SUFFIX);
 
         Set<String> cohorts = readCohortsFromStatsFile(variantStatsUri);
-//        boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
+//        boolean updateStats = options.getBoolean(Options.STATS_UPDATE.key(), false);
 //        checkAndUpdateCalculatedCohorts(studyMetadata, variantStatsUri, updateStats);
 
         boolean error = false;
@@ -390,7 +391,11 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
         ParallelTaskRunner<VariantStatsWrapper, ?> ptr;
         DataReader<VariantStatsWrapper> dataReader = newVariantStatsWrapperDataReader(variantInputStream);
         List<VariantStatsDBWriter> writers = new ArrayList<>();
-        if (options.getBoolean(STATS_LOAD_PARALLEL, DEFAULT_STATS_LOAD_PARALLEL)) {
+        int threads = options.getInt(VariantStorageOptions.STATS_LOAD_THREADS.key(),
+                VariantStorageOptions.STATS_LOAD_THREADS.defaultValue());
+        int batchSize = options.getInt(VariantStorageOptions.STATS_LOAD_BATCH_SIZE.key(),
+                VariantStorageOptions.STATS_LOAD_BATCH_SIZE.defaultValue());
+        if (threads > 1) {
             ptr = new ParallelTaskRunner<>(
                     dataReader,
                     () -> {
@@ -401,9 +406,8 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
                     },
                     null,
                     ParallelTaskRunner.Config.builder().setAbortOnFail(true)
-                            .setBatchSize(options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue()))
-                            .setNumTasks(options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue())).build()
-
+                            .setBatchSize(batchSize)
+                            .setNumTasks(threads).build()
             );
         } else {
             VariantStatsDBWriter dbWriter = newVariantStatisticsDBWriter(dbAdaptor, studyMetadata, options);
@@ -414,9 +418,8 @@ public class DefaultVariantStatisticsManager extends VariantStatisticsManager {
                     batch -> batch,
                     dbWriter,
                     ParallelTaskRunner.Config.builder().setAbortOnFail(true)
-                            .setBatchSize(options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue()))
-                            .setNumTasks(options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue())).build()
-
+                            .setBatchSize(batchSize)
+                            .setNumTasks(4).build()
             );
         }
 

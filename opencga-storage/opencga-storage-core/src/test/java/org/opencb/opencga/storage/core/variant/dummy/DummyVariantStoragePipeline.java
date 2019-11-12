@@ -46,7 +46,7 @@ public class DummyVariantStoragePipeline extends VariantStoragePipeline {
     private final Logger logger = LoggerFactory.getLogger(DummyVariantStoragePipeline.class);
 
     public DummyVariantStoragePipeline(StorageConfiguration configuration, String storageEngineId, VariantDBAdaptor dbAdaptor, IOConnectorProvider ioConnectorProvider) {
-        super(configuration, storageEngineId, dbAdaptor, ioConnectorProvider);
+        super(configuration, storageEngineId, dbAdaptor, ioConnectorProvider, new ObjectMap());
     }
 
     public void init(ObjectMap options) {

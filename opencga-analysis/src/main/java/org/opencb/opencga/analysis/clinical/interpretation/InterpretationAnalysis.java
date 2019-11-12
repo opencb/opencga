@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.analysis.result.FileResult;
@@ -37,16 +38,13 @@ import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.manager.clinical.ClinicalInterpretationManager;
-import org.opencb.opencga.storage.core.manager.clinical.ClinicalUtils;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-import static org.opencb.opencga.storage.core.manager.clinical.ClinicalUtils.*;
-
+import static org.opencb.opencga.analysis.clinical.ClinicalUtils.readReportedVariants;
 
 public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
 

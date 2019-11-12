@@ -13,7 +13,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
@@ -59,20 +59,20 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         URI inputUri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
 
         VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageEngine, new StudyMetadata(0, study1),
-                new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), true)
-                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true)
+                        .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
         );
 
         inputUri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz");
         VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageEngine, new StudyMetadata(0, study1),
-                new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), true)
-                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true)
+                        .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
         );
 
         inputUri = VariantStorageBaseTest.getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA12878_S1.genome.vcf.gz");
         VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageEngine, new StudyMetadata(0, study2),
-                new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), true)
-                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
+                new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true)
+                        .append(VariantStorageOptions.STATS_CALCULATE.key(), false)
         );
 
         VariantHbaseTestUtils.printVariants(variantStorageEngine.getDBAdaptor(), newOutputUri());

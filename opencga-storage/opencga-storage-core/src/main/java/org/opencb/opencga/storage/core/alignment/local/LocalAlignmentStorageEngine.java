@@ -20,7 +20,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
-import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 /**
@@ -46,18 +45,13 @@ public class LocalAlignmentStorageEngine extends AlignmentStorageEngine {
 
     @Override
     public StoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
-        StorageEtlConfiguration etlConfiguration;
-        if (getConfiguration() == null
-                || getConfiguration().getStorageEngine() == null
-                || getConfiguration().getStorageEngine().getAlignment() == null) {
-            etlConfiguration = new StorageEtlConfiguration();
+        ObjectMap alignment;
+        if (getConfiguration() == null || getConfiguration().getAlignment() == null) {
+            alignment = new ObjectMap();
         } else {
-            etlConfiguration = getConfiguration().getStorageEngine().getAlignment();
+            alignment = getConfiguration().getAlignment();
         }
-        if (etlConfiguration.getOptions() == null) {
-            etlConfiguration.setOptions(new ObjectMap());
-        }
-        return new LocalAlignmentStoragePipeline(etlConfiguration);
+        return new LocalAlignmentStoragePipeline(alignment);
     }
 
 }

@@ -115,8 +115,8 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
                     String otherRowKey = rowKeyFactory.generateBlockIdFromSliceAndBatch(fileBatch, chromosome, slice);
                     Get get = new Get(Bytes.toBytes(otherRowKey));
                     for (Integer fileId : entry.getValue()) {
-                        get.addColumn(helper.getColumnFamily(), fileToNonRefColumnMap.get(fileId));
-                        get.addColumn(helper.getColumnFamily(), fileToRefColumnMap.get(fileId));
+                        get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, fileToNonRefColumnMap.get(fileId));
+                        get.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, fileToRefColumnMap.get(fileId));
                     }
                     gets.add(get);
                 }
@@ -169,9 +169,9 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
 
         protected VcfSlicePair getVcfSlicePairFromResult(Integer fileId, Result result) throws IOException {
             VcfSliceProtos.VcfSlice nonRefVcfSlice = parseVcfSlice(
-                    result.getValue(helper.getColumnFamily(), fileToNonRefColumnMap.get(fileId)));
+                    result.getValue(GenomeHelper.COLUMN_FAMILY_BYTES, fileToNonRefColumnMap.get(fileId)));
             VcfSliceProtos.VcfSlice refVcfSlice = parseVcfSlice(
-                    result.getValue(helper.getColumnFamily(), fileToRefColumnMap.get(fileId)));
+                    result.getValue(GenomeHelper.COLUMN_FAMILY_BYTES, fileToRefColumnMap.get(fileId)));
 
             if (nonRefVcfSlice == null && refVcfSlice == null) {
                 return null;
@@ -193,8 +193,8 @@ public class FillGapsFromArchiveTask extends AbstractFillFromArchiveTask {
         for (Integer fileId : fileIds) {
             // Scan files only from the main file batch
             if (mainFileBatch == archiveRowKeyFactory.getFileBatch(fileId)) {
-                scan.addColumn(helper.getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
-                scan.addColumn(helper.getColumnFamily(), Bytes.toBytes(ArchiveTableHelper.getRefColumnName(fileId)));
+                scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, Bytes.toBytes(ArchiveTableHelper.getNonRefColumnName(fileId)));
+                scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, Bytes.toBytes(ArchiveTableHelper.getRefColumnName(fileId)));
             }
         }
         return scan;

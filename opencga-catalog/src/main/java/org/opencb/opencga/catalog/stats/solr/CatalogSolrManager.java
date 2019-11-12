@@ -29,7 +29,7 @@ import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.config.SearchConfiguration;
+import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,10 +68,13 @@ public class CatalogSolrManager {
 
     public CatalogSolrManager(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
-        SearchConfiguration searchConfiguration = catalogManager.getConfiguration().getCatalog().getSearch();
-        this.solrManager = new SolrManager(searchConfiguration.getHosts(), searchConfiguration.getMode(), searchConfiguration.getTimeout());
-        insertBatchSize = searchConfiguration.getInsertBatchSize() > 0
-                ? searchConfiguration.getInsertBatchSize() : DEFAULT_INSERT_BATCH_SIZE;
+        DatabaseCredentials searchConfiguration = catalogManager.getConfiguration().getCatalog().getSearchEngine();
+        String mode = searchConfiguration.getOptions().getOrDefault("mode", "cloud");
+        int timeout = Integer.parseInt(searchConfiguration.getOptions().getOrDefault("timeout", "30000"));
+        int tmpInsertBatchSize = Integer.parseInt(searchConfiguration.getOptions().getOrDefault("insertBatchSize",
+                String.valueOf(DEFAULT_INSERT_BATCH_SIZE)));
+        insertBatchSize = tmpInsertBatchSize > 0 ? tmpInsertBatchSize : DEFAULT_INSERT_BATCH_SIZE;
+        this.solrManager = new SolrManager(searchConfiguration.getHosts(), mode, timeout);
 
         DATABASE_PREFIX = catalogManager.getConfiguration().getDatabasePrefix() + "_";
 
@@ -109,7 +112,7 @@ public class CatalogSolrManager {
     }
 
     public void createSolrCollections() {
-        if (catalogManager.getConfiguration().getCatalog().getSearch().getMode().equals("cloud")) {
+        if (catalogManager.getConfiguration().getCatalog().getSearchEngine().getOptions().getOrDefault("mode", "cloud").equals("cloud")) {
             createCatalogSolrCollections();
         } else {
             createCatalogSolrCores();
@@ -133,7 +136,7 @@ public class CatalogSolrManager {
     }
 
     public <T> void insertCatalogCollection(DBIterator<T> iterator, ComplexTypeConverter converter,
-                                            String collectionName) throws IOException, CatalogException {
+                                            String collectionName) throws CatalogException {
 
         int count = 0;
         List<T> records = new ArrayList<>(insertBatchSize);
@@ -153,7 +156,7 @@ public class CatalogSolrManager {
     }
 
     public <T, M> void insertCatalogCollection(List<T> records, ComplexTypeConverter converter,
-                                               String collectionName) throws IOException, CatalogException {
+                                               String collectionName) throws CatalogException {
         List<M> solrModels = new ArrayList<>();
 
         for (T record : records) {
@@ -166,7 +169,7 @@ public class CatalogSolrManager {
             if (updateResponse.getStatus() == 0) {
                 solrManager.getSolrClient().commit(DATABASE_PREFIX + collectionName);
             }
-        } catch (SolrServerException e) {
+        } catch (IOException | SolrServerException e) {
             throw new CatalogException(e.getMessage(), e);
         }
     }
@@ -205,11 +208,10 @@ public class CatalogSolrManager {
      * @param queryOptions Query options (contains the facet and facetRange options)
      * @param userId       User performing the facet query.
      * @return Facet results
-     * @throws IOException   IOException
      * @throws CatalogException CatalogException
      */
     public DataResult<FacetField> facetedQuery(Study study, String collection, Query query, QueryOptions queryOptions, String userId)
-            throws IOException, CatalogException {
+            throws CatalogException {
         StopWatch stopWatch = StopWatch.createStarted();
 
         Query queryCopy = query == null ? new Query() : new Query(query);
@@ -245,7 +247,7 @@ public class CatalogSolrManager {
         SolrCollection solrCollection = solrManager.getCollection(DATABASE_PREFIX + collection);
         try {
             return solrCollection.facet(solrQuery, catalogSolrQueryParser.getAliasMap());
-        } catch (SolrServerException e) {
+        } catch (SolrServerException | IOException e) {
             throw new CatalogException(e.getMessage(), e);
         }
     }

@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
+import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 
 /**
  * Created by pfurio on 26/10/16.

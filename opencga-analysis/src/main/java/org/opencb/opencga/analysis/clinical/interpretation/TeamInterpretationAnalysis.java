@@ -27,7 +27,6 @@ import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
-import java.util.Collection;
 import java.util.List;
 
 @Analysis(id = TeamInterpretationAnalysis.ID, type = Analysis.AnalysisType.CLINICAL)
