@@ -641,7 +641,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         public String annotationId;
     }
 
-    @POST
+    @DELETE
     @Path("/annotation/delete")
     @ApiOperation(value = "Deletes a saved copy of variant annotation")
     public Response annotationDelete(

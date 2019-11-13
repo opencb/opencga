@@ -153,25 +153,25 @@ class Test_init_script(unittest.TestCase):
         self.assertEqual(
             config["catalog"]["search"]["password"], "test-catalog-search-password"
         )
-        self.assertEqual(config["execution"]["mode"], "test-batch-execution-mode")
-        self.assertEqual(config["execution"]["maxConcurrentIndexJobs"], 25)
+        self.assertEqual(config["analysis"]["execution"]["id"], "test-batch-execution-mode")
+        # self.assertEqual(config["execution"]["maxConcurrentIndexJobs"], 25)
         self.assertEqual(
-            config["execution"]["options"]["batchAccount"], "test-batch-account-name"
+            config["analysis"]["execution"]["options"]["azure.batchAccount"], "test-batch-account-name"
         )
         self.assertEqual(
-            config["execution"]["options"]["batchKey"], "test-batch-account-key"
+            config["analysis"]["execution"]["options"]["azure.batchKey"], "test-batch-account-key"
         )
         self.assertEqual(
-            config["execution"]["options"]["batchUri"], "test-batch-endpoint"
+            config["analysis"]["execution"]["options"]["azure.batchUri"], "test-batch-endpoint"
         )
         self.assertEqual(
-            config["execution"]["options"]["batchPoolId"], "test-batch-pool-id"
+            config["analysis"]["execution"]["options"]["azure.batchPoolId"], "test-batch-pool-id"
         )
         self.assertEqual(
-            config["execution"]["options"]["dockerImageName"], "test-batch-docker-image"
+            config["analysis"]["execution"]["options"]["azure.dockerImageName"], "test-batch-docker-image"
         )
         self.assertEqual(
-            config["execution"]["options"]["dockerArgs"], "test-batch-docker-args"
+            config["analysis"]["execution"]["options"]["azure.dockerArgs"], "test-batch-docker-args"
         )
         self.assertEqual(client_config["rest"]["host"], "test-rest-host")
         self.assertEqual(client_config["grpc"]["host"], "test-grpc-host")

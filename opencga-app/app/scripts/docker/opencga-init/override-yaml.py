@@ -98,12 +98,12 @@ for _, storage_engine in enumerate(storage_config["storageEngines"]):
         storage_engine["variant"]["options"]["annotator"] = "cellbase_db_adaptor"
 
     if storage_engine["id"] == "hadoop": 
-        storage_engine["variant"]["options"]["opencga.mr.executor"] = "ssh"
-        storage_engine["variant"]["options"]["opencga.mr.executor.ssh.host"] = args.hbase_ssh_dns
-        storage_engine["variant"]["options"]["opencga.mr.executor.ssh.user"] = args.hbase_ssh_user
-        storage_engine["variant"]["options"]["opencga.mr.executor.ssh.password"] = args.hbase_ssh_pass
-        #storage_engine["variant"]["options"]["opencga.mr.executor.ssh.key"] = args.hadoop_ssh_key # TODO instead of password
-        storage_engine["variant"]["options"]["opencga.mr.executor.ssh.remote_opencga_home"] = args.hbase_ssh_remote_opencga_home
+        storage_engine["variant"]["options"]["storage.hadoop.mr.executor"] = "ssh"
+        storage_engine["variant"]["options"]["storage.hadoop.mr.executor.ssh.host"] = args.hbase_ssh_dns
+        storage_engine["variant"]["options"]["storage.hadoop.mr.executor.ssh.user"] = args.hbase_ssh_user
+        storage_engine["variant"]["options"]["storage.hadoop.mr.executor.ssh.password"] = args.hbase_ssh_pass
+        #storage_engine["variant"]["options"]["storage.hadoop.mr.executor.ssh.key"] = args.hadoop_ssh_key # TODO instead of password
+        storage_engine["variant"]["options"]["storage.hadoop.mr.executor.ssh.remoteOpenCgaHome"] = args.hbase_ssh_remote_opencga_home
 
 ##############################################################################################################
 # Load configuration yaml
@@ -138,15 +138,18 @@ config["catalog"]["search"]["user"] = args.catalog_search_user
 config["catalog"]["search"]["password"] = args.catalog_search_password
 
 # Inject execution settings
-config["execution"]["mode"] = args.batch_execution_mode
-config["execution"]["maxConcurrentIndexJobs"] = int(args.batch_max_concurrent_jobs)
-config["execution"]["options"] = {}
-config["execution"]["options"]["batchAccount"] = args.batch_account_name
-config["execution"]["options"]["batchKey"] = args.batch_account_key
-config["execution"]["options"]["batchUri"] = args.batch_endpoint
-config["execution"]["options"]["batchPoolId"] = args.batch_pool_id
-config["execution"]["options"]["dockerImageName"] = args.batch_docker_image
-config["execution"]["options"]["dockerArgs"] = args.batch_docker_args
+config["analysis"] = {}
+config["analysis"]["index"] = {}
+config["analysis"]["index"]["variant"] = {}
+config["analysis"]["index"]["variant"]["maxConcurrentJobs"] = int(args.batch_max_concurrent_jobs)
+config["analysis"]["execution"]["id"] = args.batch_execution_id
+config["analysis"]["execution"]["options"] = {}
+config["analysis"]["execution"]["options"]["azure.batchAccount"] = args.batch_account_name
+config["analysis"]["execution"]["options"]["azure.batchKey"] = args.batch_account_key
+config["analysis"]["execution"]["options"]["azure.batchUri"] = args.batch_endpoint
+config["analysis"]["execution"]["options"]["azure.batchPoolId"] = args.batch_pool_id
+config["analysis"]["execution"]["options"]["azure.dockerImageName"] = args.batch_docker_image
+config["analysis"]["execution"]["options"]["azure.dockerArgs"] = args.batch_docker_args
 
 # Inject healthCheck interval
 config["healthCheck"]["interval"] = args.health_check_interval
