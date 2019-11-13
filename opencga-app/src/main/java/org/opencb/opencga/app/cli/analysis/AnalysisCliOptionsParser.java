@@ -27,6 +27,7 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.analysis.options.InterpretationCommandOptions;
 import org.opencb.opencga.app.cli.analysis.options.ToolsCommandOptions;
+import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.List;
@@ -56,6 +57,8 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
     private final GeneralCliOptions.DataModelOptions dataModelOptions;
     private final GeneralCliOptions.NumericOptions numericOptions;
 
+    private final VariantCommandOptions.VariantQueryCommandOptions variantQueryCommandOptions;
+
     private ExpressionCommandOptions expressionCommandOptions;
     private FunctionalCommandOptions functionalCommandOptions;
     private org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions variantCommandOptions;
@@ -71,6 +74,9 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
         commonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
         dataModelOptions = new GeneralCliOptions.DataModelOptions();
         numericOptions = new GeneralCliOptions.NumericOptions();
+
+        variantQueryCommandOptions = new VariantCommandOptions(commonCommandOptions, dataModelOptions, numericOptions, jCommander)
+                .new VariantQueryCommandOptions();
 
         expressionCommandOptions = new ExpressionCommandOptions();
         jCommander.addCommand("expression", expressionCommandOptions);
@@ -130,7 +136,7 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
         toolsSubCommands.addCommand("show", toolsCommandOptions.showToolCommandOptions);
         toolsSubCommands.addCommand("execute", toolsCommandOptions.executeToolCommandOptions);
 
-        interpretationCommandOptions = new InterpretationCommandOptions(commonCommandOptions, jCommander);
+        interpretationCommandOptions = new InterpretationCommandOptions(commonCommandOptions, variantQueryCommandOptions, jCommander);
         jCommander.addCommand("interpretation", interpretationCommandOptions);
         JCommander interpretationSubCommands = jCommander.getCommands().get("interpretation");
         interpretationSubCommands.addCommand("team", interpretationCommandOptions.teamCommandOptions);

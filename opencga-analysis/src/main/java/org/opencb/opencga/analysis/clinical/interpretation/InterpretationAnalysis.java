@@ -53,17 +53,16 @@ public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
     public static String SECONDARY_FINDINGS_FILENAME = "secondary-findings.json";
     public static String INTERPRETATION_FILENAME = "interpretation.json";
 
-    public final static String STUDY_PARAM_NAME = "study";
-    public final static String CLINICAL_ANALYISIS_PARAM_NAME = "clinicalAnalsys";
-    public final static String VARIANTS_TO_DISCARD_PARAM_NAME = "variantsToDiscard";
-
-
-    public final static String MAX_LOW_COVERAGE_PARAM_NAME = "maxLowCoverage";
-    public final static String INCLUDE_LOW_COVERAGE_PARAM_NAME = "includeLowCoverage";
-    public final static String SKIP_UNTIERED_VARIANTS_PARAM_NAME = "skipUntieredVariants";
-    public static final String PANELS_PARAM_NAME = "panels";
-    public static final String FAMILY_SEGREGATION_PARAM_NAME = "familySegregation";
+    public final static String STUDY_PARAM_NAME = "study-id";
+    public final static String CLINICAL_ANALYISIS_PARAM_NAME = "clinical-analysis-id";
+    public static final String PANELS_PARAM_NAME = "panel-ids";
+    public static final String FAMILY_SEGREGATION_PARAM_NAME = "family-segregation";
     public static final String PENETRANCE_PARAM_NAME = "penetrance";
+    public final static String VARIANTS_TO_DISCARD_PARAM_NAME = "variant-ids-to-discard";
+
+    public final static String MAX_LOW_COVERAGE_PARAM_NAME = "max-low-coverage";
+    public final static String INCLUDE_LOW_COVERAGE_PARAM_NAME = "include-low-coverage";
+    public final static String INCLUDE_UNTIERED_VARIANTS_PARAM_NAME = "include-untiered-variants";
 
     protected ClinicalInterpretationManager clinicalInterpretationManager;
 

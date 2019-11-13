@@ -42,7 +42,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.clinical.interpretation.InterpretationAnalysis.*;
@@ -1150,8 +1149,8 @@ public class InterpretationWSService extends AnalysisWSService {
         if (queryParameters.containsKey(INCLUDE_LOW_COVERAGE_PARAM_NAME)) {
             params.put(INCLUDE_LOW_COVERAGE_PARAM_NAME, queryParameters.getFirst(INCLUDE_LOW_COVERAGE_PARAM_NAME));
         }
-        if (queryParameters.containsKey(SKIP_UNTIERED_VARIANTS_PARAM_NAME)) {
-            params.put(SKIP_UNTIERED_VARIANTS_PARAM_NAME, queryParameters.getFirst(SKIP_UNTIERED_VARIANTS_PARAM_NAME));
+        if (queryParameters.containsKey(INCLUDE_UNTIERED_VARIANTS_PARAM_NAME)) {
+            params.put(INCLUDE_UNTIERED_VARIANTS_PARAM_NAME, queryParameters.getFirst(INCLUDE_UNTIERED_VARIANTS_PARAM_NAME));
         }
     }
 }
