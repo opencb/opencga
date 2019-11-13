@@ -9,11 +9,11 @@
 !3 OpenCGA Status
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/meta/status ||  Content-Type: application/json ||
-|let||js|response.jsonbody.response[0].result[0].CatalogMongoDB|OK|
-|let||js|response.jsonbody.response[0].result[0].VariantStorage|OK|
-|let||js|response.jsonbody.response[0].result[0].Solr|KO|
+|let||js.responses.jsonbody.responses[0].results[0].CatalogMongoDB|OK|
+|let||js.responses.jsonbody.responses[0].results[0].VariantStorage|OK|
+#|let||js.responses.jsonbody.responses[0].results[0].Solr|KO|
 
 !3 OpenCGA Ping
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/meta/ping |200|  Content-Type: application/json |jsonbody.response[0].id == 'pong'|
+| GET | /v1/meta/ping |200|  Content-Type: application/json |jsonbody.responses[0].id == 'pong'|
 

@@ -33,21 +33,16 @@ public class Execution {
     private Map<String, List<String>> toolsPerQueue;
     private ObjectMap options;
 
+    private String k8sMasterNode;
+    private String imageName;
+    private String namespace;
+    private String cpu;
+    private String memory;
+    private List<K8SVolumesMount> k8SVolumesMount;
+
     public Execution() {
         toolsPerQueue = new HashMap<>();
         options = new ObjectMap();
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("Execution{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", defaultQueue='").append(defaultQueue).append('\'');
-        sb.append(", availableQueues='").append(availableQueues).append('\'');
-        sb.append(", toolsPerQueue=").append(toolsPerQueue);
-        sb.append(", options=").append(options);
-        sb.append('}');
-        return sb.toString();
     }
 
     public String getId() {
@@ -92,6 +87,57 @@ public class Execution {
 
     public Execution setOptions(ObjectMap options) {
         this.options = options;
+        return this;
+    }
+
+    public String getK8sMasterNode() {
+        return k8sMasterNode;
+    }
+
+    public void setK8sMasterNode(String k8sMasterNode) {
+        this.k8sMasterNode = k8sMasterNode;
+    }
+
+    public String getImageName() {
+        return imageName;
+    }
+
+    public void setImageName(String imageName) {
+        this.imageName = imageName;
+    }
+
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
+    }
+
+
+    public List<K8SVolumesMount> getK8SVolumesMount() {
+        return k8SVolumesMount;
+    }
+
+    public void setK8SVolumesMount(List<K8SVolumesMount> k8SVolumesMount) {
+        this.k8SVolumesMount = k8SVolumesMount;
+    }
+
+    public String getCpu() {
+        return cpu;
+    }
+
+    public Execution setCpu(String cpu) {
+        this.cpu = cpu;
+        return this;
+    }
+
+    public String getMemory() {
+        return memory;
+    }
+
+    public Execution setMemory(String memory) {
+        this.memory = memory;
         return this;
     }
 }
