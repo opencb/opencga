@@ -12,21 +12,21 @@ Test
 !|Table: Rest Fixture | $baseURL |
 | setBody |{ "id": "$panelName1", "name" : "DP1"}|
 | POST |  /v1/panels/create?studyId=$study|200|  Content-Type: application/json ||
-|let|panelId|js|response.jsonbody.response[0].result[0].id||
+|let|panelId|js.responses.jsonbody.responses[0].results[0].id||
 
 !3 Create Second Disease Panel 
 !|Table: Rest Fixture | $baseURL |
 | setBody |{ "id": "$panelName2", "name" : "DP2"}|
 | POST |  /v1/panels/create?studyId=$study |200|  Content-Type: application/json ||
-|let|panelId2|js|response.jsonbody.response[0].result[0].id||
+|let|panelId2|js.responses.jsonbody.responses[0].results[0].id||
 
 !3 Get Disease Panel Info 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/panels/$panelId/info?study=$study&id=$panelName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$panelId'|
+| GET | /v1/panels/$panelId/info?study=$study&id=$panelName1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.responses[0].results[0].id == '$panelId'|
 
 !3 Get Study ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/acl|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0.0'|
+| GET | /v1/studies/$studyId/acl|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.responses[0].results.length == '0.0'|
 
 !3 Get Study Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
@@ -42,12 +42,12 @@ Test
 !3 Create VIEW_PANELS ACL For Study
 !|Table: Rest Fixture | $baseURL |
 | setBody | {  "permissions" : "VIEW_PANELS",  "action": "SET",  "study": "$studyId"}|
-| POST | /v1/studies/acl/*/update|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW_PANELS'|
+| POST | /v1/studies/acl/*/update|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.responses[0].results[0].permissions[0] == 'VIEW_PANELS'|
 
 !3 Get Disease Panel Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
 | setHeader | Authorization : Bearer |
-| GET | /v1/panels/$panelId/info?study=$study |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$panelId'|
+| GET | /v1/panels/$panelId/info?study=$study |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.responses[0].results[0].id == '$panelId'|
 
 !3 Delete Anonymous User For Study
 !|Table: Rest Fixture | $baseURL |
@@ -56,11 +56,11 @@ Test
 
 !3 Get Disease Panel ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/panels/$panelId/acl|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0.0'|
+| GET | /v1/panels/$panelId/acl|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.responses[0].results.length == '0.0'|
 
 !3 Get Study ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/acl|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0.0'|
+| GET | /v1/studies/$studyId/acl|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.responses[0].results.length == '0.0'|
 
 !3 Get Study Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
@@ -75,21 +75,21 @@ Test
 !3 Create Disease Panel ACL For Anonymous
 !|Table: Rest Fixture | $baseURL |
 |setBody|{"permissions": "VIEW", "action":"SET", "panel": "$panelId"}|
-|POST| /v1/panels/acl/*/update?study=$study |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].permissions[0] == 'VIEW'|
+|POST| /v1/panels/acl/*/update?study=$study |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.responses[0].results[0].permissions[0] == 'VIEW'|
 
 !3 Get Disease Panel ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/panels/$panelId/acl|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '1.0'|
+| GET | /v1/panels/$panelId/acl|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.responses[0].results.length == '1.0'|
 
 !3 Get Disease Panel Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
 | setHeader | Authorization : Bearer |
-| GET | /v1/panels/$panelId/info?study=$study |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$panelId'|
+| GET | /v1/panels/$panelId/info?study=$study |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.responses[0].results[0].id == '$panelId'|
 
 !3 Delete Disease Panel ACL For Anonymous
 !|Table: Rest Fixture | $baseURL |
 |setBody|{ "action":"RESET", "panel": "$panelId"}|
-|POST| /v1/panels/acl/*/update?study=$study |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0.0'|
+|POST| /v1/panels/acl/*/update?study=$study |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.responses[0].results.length == '0.0'|
 
 !3 Get Disease Panel Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
@@ -98,7 +98,7 @@ Test
 
 !3 Get Disease Panel ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/panels/$panelId/acl|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0.0'|
+| GET | /v1/panels/$panelId/acl|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.responses[0].results.length == '0.0'|
 
 !3 Search A Disease Panel
 !|Table: Rest Fixture | $baseURL |
@@ -106,11 +106,11 @@ Test
 
 !3 Find Two diseasePanels
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/panels/$panelId,$panelId2/info?study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$panelId' && jsonbody.response[1].result[0].id == '$panelId2'|
+| GET | /v1/panels/$panelId,$panelId2/info?study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.responses[0].results[0].id == '$panelId' && jsonbody.responses[1].results[0].id == '$panelId2'|
 
 !3 Find Two Disease Panels In Reverse Order
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/panels/$panelId2,$panelId/info?study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$panelId2' && jsonbody.response[1].result[0].id == '$panelId'|
+| GET | /v1/panels/$panelId2,$panelId/info?study=$study|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.responses[0].results[0].id == '$panelId2' && jsonbody.responses[1].results[0].id == '$panelId'|
 
 !3 Find Multiple Disease Panels With One Invalid Entry Silent False
 !|Table: Rest Fixture | $baseURL |
@@ -118,7 +118,7 @@ Test
 
 !3 Find Multiple Disease Panels With One Invalid Entry Silent True
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/panels/$panelId2,$panelId,0000/info?study=$study&silent=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$panelId2' && jsonbody.response[2].errorMsg == "Not found or user does not have permissions."|
+| GET | /v1/panels/$panelId2,$panelId,0000/info?study=$study&silent=true|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.responses[0].results[0].id == '$panelId2' && jsonbody.responses[2].errorMsg == "Not found or user does not have permissions."|
 
 !3 Delete First Disease Panel
 !|Table: Rest Fixture | $baseURL |
@@ -126,7 +126,7 @@ Test
 
 !3 Search Deleted Disease Panel
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/panels/search?study=$study&name=DP1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+| GET | /v1/panels/search?study=$study&name=DP1|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.responses[0].results.length == '0'|
 
 !3 Delete Second Disease Panel
 !|Table: Rest Fixture | $baseURL |
@@ -134,8 +134,8 @@ Test
 
 !3 Search Deleted Disease Panel By Name
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/panels/search?study=$study&name=DP2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+| GET | /v1/panels/search?study=$study&name=DP2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.responses[0].results.length == '0'|
 
 !3 Search Deleted Disease Panel By Id
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/panels/search?study=$study&id=$panelId2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+| GET | /v1/panels/search?study=$study&id=$panelId2|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.responses[0].results.length == '0'|

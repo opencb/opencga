@@ -39,9 +39,6 @@ public interface BatchExecutor {
     String OUT_LOG_EXTENSION = ".out";
     String ERR_LOG_EXTENSION = ".err";
 
-    @Deprecated
-    void execute(Job job, String token) throws Exception;
-
     void execute(String jobId, String commandLine, Path stdout, Path stderr, String token) throws Exception;
 
     String getStatus(Job job);

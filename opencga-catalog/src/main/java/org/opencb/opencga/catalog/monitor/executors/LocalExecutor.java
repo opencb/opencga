@@ -43,7 +43,7 @@ public class LocalExecutor implements BatchExecutor {
         maxConcurrentJobs = execution.getOptions().getInt(MAX_CONCURRENT_JOBS, 1);
     }
 
-    @Override
+    @Deprecated
     public void execute(Job job, String token) throws Exception {
         Runnable runnable = () -> {
 //            try {
