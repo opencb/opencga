@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.*;
 import org.opencb.biodata.models.commons.Analyst;
@@ -38,13 +37,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import static org.opencb.bionetdb.core.api.query.VariantQueryParam.PANEL;
+import static org.opencb.opencga.analysis.clinical.interpretation.InterpretationAnalysis.*;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.clinical.ReportedVariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -57,10 +58,6 @@ public class InterpretationWSService extends AnalysisWSService {
     private final ClinicalAnalysisManager clinicalManager;
     private final InterpretationManager catalogInterpretationManager;
     private final ClinicalInterpretationManager clinicalInterpretationManager;
-
-    protected static AtomicBoolean externalFilesLoaded;
-    private static Map<String, Map<String, List<String>>> actionableVariantsByAssembly = null;
-    private static Map<String, ClinicalProperty.RoleInCancer> roleInCancer = null;
 
     public InterpretationWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
                                    @Context HttpHeaders httpHeaders) throws IOException, VersionException {
@@ -769,7 +766,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
 
     @GET
-    @Path("/interpretation/tools/team")
+    @Path("/interpretation/team/run")
     @ApiOperation(value = "TEAM interpretation analysis", position = 14, response = QueryResponse.class)
     @ApiImplicitParams({
             // Interpretation filters
@@ -777,23 +774,24 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = ClinicalUtils.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + ClinicalUtils.LOW_COVERAGE_DEFAULT),
     })
     public Response team(
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyId,
             @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
             @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds,
             @ApiParam(value= VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR) @QueryParam("familySegregation") String segregation) {
         try {
-            // Get analysis options from query
-            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            ObjectMap analysisOptions = getAnalysisOptions(queryOptions);
+            // Get analysis params and config from query
+            Map<String, String> params = new HashMap<>();
 
-            List<String> panelList = null;
-            if (StringUtils.isNotEmpty(panelIds)) {
-                panelList = Arrays.asList(panelIds.split(","));
-            }
+            params.put(InterpretationAnalysis.STUDY_PARAM_NAME, studyId);
+            params.put(InterpretationAnalysis.CLINICAL_ANALYISIS_PARAM_NAME, clinicalAnalysisId);
+            params.put(InterpretationAnalysis.PANELS_PARAM_NAME, panelIds);
+            params.put(InterpretationAnalysis.FAMILY_SEGREGATION_PARAM_NAME, segregation);
+
+            setConfigParams(params, uriInfo.getQueryParameters());
 
             // Queue job
-            Object result = catalogInterpretationManager.queue(studyStr, TeamInterpretationAnalysis.ID, clinicalAnalysisId, panelList,
-                    analysisOptions, token);
+            Object result = catalogInterpretationManager.queue(studyId, TeamInterpretationAnalysis.ID, clinicalAnalysisId, params,
+                    token);
 
             return createAnalysisOkResponse(result);
         } catch (Exception e) {
@@ -802,7 +800,7 @@ public class InterpretationWSService extends AnalysisWSService {
     }
 
     @GET
-    @Path("/interpretation/tools/tiering")
+    @Path("/interpretation/tiering/run")
     @ApiOperation(value = "GEL Tiering interpretation analysis", position = 14, response = QueryResponse.class)
     @ApiImplicitParams({
             // Interpretation filters
@@ -813,25 +811,21 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyId,
             @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
             @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds,
-            @ApiParam(value = "Penetrance", defaultValue = "COMPLETE") @QueryParam("penetrance") ClinicalProperty.Penetrance penetrance,
-            @ApiParam(value = "Save interpretation in Catalog") @QueryParam("save") boolean save) {
+            @ApiParam(value = "Penetrance", defaultValue = "COMPLETE") @QueryParam("penetrance") ClinicalProperty.Penetrance penetrance) {
         try {
-            // Get analysis options from query
-            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            ObjectMap analysisOptions = getAnalysisOptions(queryOptions);
+            // Get analysis params and config from query
+            Map<String, String> params = new HashMap<>();
 
-//            if (penetrance == null) {
-//                penetrance = ClinicalProperty.Penetrance.COMPLETE;
-//            }
+            params.put(InterpretationAnalysis.STUDY_PARAM_NAME, studyId);
+            params.put(InterpretationAnalysis.CLINICAL_ANALYISIS_PARAM_NAME, clinicalAnalysisId);
+            params.put(InterpretationAnalysis.PANELS_PARAM_NAME, panelIds);
+            params.put(InterpretationAnalysis.PENETRANCE_PARAM_NAME, penetrance.toString());
 
-            List<String> panelList = null;
-            if (StringUtils.isNotEmpty(panelIds)) {
-                panelList = Arrays.asList(panelIds.split(","));
-            }
+            setConfigParams(params, uriInfo.getQueryParameters());
 
             // Queue job
-            Object result = catalogInterpretationManager.queue(studyId, TieringInterpretationAnalysis.ID, clinicalAnalysisId, panelList,
-                    analysisOptions, token);
+            Object result = catalogInterpretationManager.queue(studyId, TieringInterpretationAnalysis.ID, clinicalAnalysisId, params,
+                    token);
 
             return createAnalysisOkResponse(result);
         } catch (Exception e) {
@@ -840,7 +834,7 @@ public class InterpretationWSService extends AnalysisWSService {
     }
 
     @GET
-    @Path("/interpretation/tools/custom")
+    @Path("/interpretation/custom/run")
     @ApiOperation(value = "Interpretation custom analysis", position = 15, response = QueryResponse.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
@@ -854,7 +848,6 @@ public class InterpretationWSService extends AnalysisWSService {
             // Interpretation filters
             @ApiImplicitParam(name = ClinicalUtils.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
             @ApiImplicitParam(name = ClinicalUtils.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + ClinicalUtils.LOW_COVERAGE_DEFAULT),
-            @ApiImplicitParam(name = ClinicalUtils.SKIP_DIAGNOSTIC_VARIANTS_PARAM, value = "Skip diagnostic variants", dataType = "boolean", paramType = "query", defaultValue = "false"),
             @ApiImplicitParam(name = ClinicalUtils.SKIP_UNTIERED_VARIANTS_PARAM, value = "Skip variants without tier assigned", dataType = "boolean", paramType = "query", defaultValue = "false"),
 
             // Variant filters
@@ -936,18 +929,19 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyId) {
         try {
-            // Get all query options
-            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            ObjectMap analysisOptions = getAnalysisOptions(queryOptions);
+            // Get analysis params and config from query
+            Map<String, String> params = new HashMap<>();
 
-            List<String> panelList = null;
-            if (query.containsKey(PANEL.key())) {
-                panelList = query.getAsStringList(PANEL.key());
-            }
+            query.keySet().forEach(k -> params.put(k, query.getString(k)));
+
+            params.put(InterpretationAnalysis.STUDY_PARAM_NAME, studyId);
+            params.put(InterpretationAnalysis.CLINICAL_ANALYISIS_PARAM_NAME, clinicalAnalysisId);
+
+            setConfigParams(params, uriInfo.getQueryParameters());
 
             // Queue job
-            Object result = catalogInterpretationManager.queue(studyId, CustomInterpretationAnalysis.ID, clinicalAnalysisId, panelList,
-                    analysisOptions, token);
+            Object result = catalogInterpretationManager.queue(studyId, CustomInterpretationAnalysis.ID, clinicalAnalysisId, params,
+                    token);
 
             return createAnalysisOkResponse(result);
         } catch (Exception e) {
@@ -956,7 +950,7 @@ public class InterpretationWSService extends AnalysisWSService {
     }
 
     @GET
-    @Path("/interpretation/tools/cancerTiering")
+    @Path("/interpretation/cancerTiering/run")
     @ApiOperation(value = "Cancer Tiering interpretation analysis", position = 14, response = QueryResponse.class)
     @ApiImplicitParams({
             // Interpretation filters
@@ -965,15 +959,21 @@ public class InterpretationWSService extends AnalysisWSService {
     })
     public Response cancerTiering(
             @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyId,
-            @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId) { //},
+            @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
+            @ApiParam(value = "Comma separated list of variant IDs to discard") @QueryParam("panelIds") String variantIdsToDiscard) {
         try {
-            // Get all query options
-            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            ObjectMap analysisOptions = getAnalysisOptions(queryOptions);
+            // Get analysis params and config from query
+            Map<String, String> params = new HashMap<>();
+
+            params.put(InterpretationAnalysis.STUDY_PARAM_NAME, studyId);
+            params.put(InterpretationAnalysis.CLINICAL_ANALYISIS_PARAM_NAME, clinicalAnalysisId);
+            params.put(InterpretationAnalysis.VARIANTS_TO_DISCARD_PARAM_NAME, variantIdsToDiscard);
+
+            setConfigParams(params, uriInfo.getQueryParameters());
 
             // Queue job
-            Object result = catalogInterpretationManager.queue(studyId, CancerTieringInterpretationAnalysis.ID, clinicalAnalysisId, null,
-                    analysisOptions, token);
+            Object result = catalogInterpretationManager.queue(studyId, CancerTieringInterpretationAnalysis.ID, clinicalAnalysisId,
+                    params, token);
 
             return createAnalysisOkResponse(result);
         } catch (Exception e) {
@@ -994,7 +994,6 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = VariantField.SUMMARY, value = "Fast fetch of main variant parameters", dataType = "boolean", paramType = "query"),
 
             // Interpretation filters
-            @ApiImplicitParam(name = ClinicalUtils.SKIP_DIAGNOSTIC_VARIANTS_PARAM, value = "Skip diagnostic variants", dataType = "boolean", paramType = "query", defaultValue = "false"),
             @ApiImplicitParam(name = ClinicalUtils.SKIP_UNTIERED_VARIANTS_PARAM, value = "Skip variants without tier assigned", dataType = "boolean", paramType = "query", defaultValue = "false"),
 
             // Variant filters
@@ -1077,12 +1076,11 @@ public class InterpretationWSService extends AnalysisWSService {
         try {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            ObjectMap options = getAnalysisOptions(queryOptions);
 
             // Create reported variant creator
             String assembly = clinicalInterpretationManager.getAssembly(studyId, token);
             DefaultReportedVariantCreator reportedVariantCreator = clinicalInterpretationManager.createReportedVariantCreator(query,
-                    assembly, options.getBoolean(ClinicalUtils.SKIP_UNTIERED_VARIANTS_PARAM), token);
+                    assembly, true, token);
 
             // Retrieve primary findings
             List<ReportedVariant> primaryFindings = clinicalInterpretationManager.getPrimaryFindings(query, queryOptions,
@@ -1103,12 +1101,11 @@ public class InterpretationWSService extends AnalysisWSService {
         try {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            ObjectMap options = getAnalysisOptions(queryOptions);
 
             // Create reported variant creator
             String assembly = clinicalInterpretationManager.getAssembly(studyId, token);
             DefaultReportedVariantCreator reportedVariantCreator = clinicalInterpretationManager.createReportedVariantCreator(query,
-                    assembly, options.getBoolean(ClinicalUtils.SKIP_UNTIERED_VARIANTS_PARAM), token);
+                    assembly, true, token);
 
             // Retrieve secondary findings
             List<ReportedVariant> secondaryFindings = clinicalInterpretationManager.getSecondaryFindings(studyId, sampleId,
@@ -1146,34 +1143,15 @@ public class InterpretationWSService extends AnalysisWSService {
         }
     }
 
-    private ObjectMap getAnalysisOptions(QueryOptions queryOptions) {
-        // Get all query options
-        String param;
-        ObjectMap analysisOptions = new ObjectMap(queryOptions);
-
-        param = ClinicalUtils.INCLUDE_LOW_COVERAGE_PARAM;
-        analysisOptions.put(param, queryOptions.getBoolean(param, false));
-
-        param = ClinicalUtils.MAX_LOW_COVERAGE_PARAM;
-        analysisOptions.put(param, queryOptions.getInt(param, ClinicalUtils.LOW_COVERAGE_DEFAULT));
-
-        param = ClinicalUtils.SKIP_DIAGNOSTIC_VARIANTS_PARAM;
-        analysisOptions.put(param, queryOptions.getBoolean(param, true));
-
-        param = ClinicalUtils.SKIP_UNTIERED_VARIANTS_PARAM;
-        analysisOptions.put(param, queryOptions.getBoolean(param, true));
-
-        return analysisOptions;
-    }
-
-    private void setInterpretationConfiguration(MultivaluedMap<String, String> params, InterpretationAnalysisConfiguration config) {
-        config.setMaxLowCoverage(Integer.parseInt(params.getFirst(ClinicalUtils.MAX_LOW_COVERAGE_PARAM)));
-        config.setIncludeLowCoverage(Boolean.parseBoolean(params.getFirst(ClinicalUtils.MAX_LOW_COVERAGE_PARAM)));
-        config.setSkipDiagnosticVariants(Boolean.parseBoolean(params.getFirst(ClinicalUtils.MAX_LOW_COVERAGE_PARAM)));
-        config.setSkipUntieredVariants(Boolean.parseBoolean(params.getFirst(ClinicalUtils.MAX_LOW_COVERAGE_PARAM)));
-    }
-
-    private java.nio.file.Path getOutDir(String name) throws IOException {
-        return Files.createDirectory(Paths.get(configuration.getAnalysis().getScratchDir()).resolve(name + RandomStringUtils.random(10)));
+    private void setConfigParams(Map<String, String> params, MultivaluedMap<String, String> queryParameters) {
+        if (queryParameters.containsKey(MAX_LOW_COVERAGE_PARAM_NAME)) {
+            params.put(MAX_LOW_COVERAGE_PARAM_NAME, queryParameters.getFirst(MAX_LOW_COVERAGE_PARAM_NAME));
+        }
+        if (queryParameters.containsKey(INCLUDE_LOW_COVERAGE_PARAM_NAME)) {
+            params.put(INCLUDE_LOW_COVERAGE_PARAM_NAME, queryParameters.getFirst(INCLUDE_LOW_COVERAGE_PARAM_NAME));
+        }
+        if (queryParameters.containsKey(SKIP_UNTIERED_VARIANTS_PARAM_NAME)) {
+            params.put(SKIP_UNTIERED_VARIANTS_PARAM_NAME, queryParameters.getFirst(SKIP_UNTIERED_VARIANTS_PARAM_NAME));
+        }
     }
 }

@@ -48,9 +48,22 @@ import static org.opencb.opencga.analysis.clinical.ClinicalUtils.readReportedVar
 
 public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
 
+
     public static String PRIMARY_FINDINGS_FILENAME = "primary-findings.json";
     public static String SECONDARY_FINDINGS_FILENAME = "secondary-findings.json";
     public static String INTERPRETATION_FILENAME = "interpretation.json";
+
+    public final static String STUDY_PARAM_NAME = "study";
+    public final static String CLINICAL_ANALYISIS_PARAM_NAME = "clinicalAnalsys";
+    public final static String VARIANTS_TO_DISCARD_PARAM_NAME = "variantsToDiscard";
+
+
+    public final static String MAX_LOW_COVERAGE_PARAM_NAME = "maxLowCoverage";
+    public final static String INCLUDE_LOW_COVERAGE_PARAM_NAME = "includeLowCoverage";
+    public final static String SKIP_UNTIERED_VARIANTS_PARAM_NAME = "skipUntieredVariants";
+    public static final String PANELS_PARAM_NAME = "panels";
+    public static final String FAMILY_SEGREGATION_PARAM_NAME = "familySegregation";
+    public static final String PENETRANCE_PARAM_NAME = "penetrance";
 
     protected ClinicalInterpretationManager clinicalInterpretationManager;
 

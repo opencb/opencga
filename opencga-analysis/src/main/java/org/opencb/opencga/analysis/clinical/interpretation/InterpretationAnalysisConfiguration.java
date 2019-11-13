@@ -3,7 +3,6 @@ package org.opencb.opencga.analysis.clinical.interpretation;
 public class InterpretationAnalysisConfiguration {
     private int maxLowCoverage;
     private boolean includeLowCoverage;
-    private boolean skipDiagnosticVariants;
     private boolean skipUntieredVariants;
 
     public int getMaxLowCoverage() {
@@ -21,15 +20,6 @@ public class InterpretationAnalysisConfiguration {
 
     public InterpretationAnalysisConfiguration setIncludeLowCoverage(boolean includeLowCoverage) {
         this.includeLowCoverage = includeLowCoverage;
-        return this;
-    }
-
-    public boolean isSkipDiagnosticVariants() {
-        return skipDiagnosticVariants;
-    }
-
-    public InterpretationAnalysisConfiguration setSkipDiagnosticVariants(boolean skipDiagnosticVariants) {
-        this.skipDiagnosticVariants = skipDiagnosticVariants;
         return this;
     }
 
