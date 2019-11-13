@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.app.cli.client.executors;
 
-import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -248,7 +247,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         params.put(VariantStorageOptions.STUDY.key(), indexVariantsCommandOptions.study);
         params.put(VariantStorageOptions.STATS_CALCULATE.key(), indexVariantsCommandOptions.calculateStats);
         params.put(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), indexVariantsCommandOptions.excludeGenotype);
-        params.put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), indexVariantsCommandOptions.extraFields);
+        params.put(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key(), indexVariantsCommandOptions.includeExtraFields);
 //        variantOptions.put(VariantStorageEngine.Options.INCLUDE_SRC.key(), indexVariantsCommandOptions.includeSrc);
 //        variantOptions.put(VariantStorageEngine.Options.COMPRESS_GENOTYPES.key(), indexVariantsCommandOptions.compressGenotypes);
         params.put(VariantStorageOptions.STATS_AGGREGATION.key(), indexVariantsCommandOptions.aggregated);
@@ -404,15 +403,8 @@ public class VariantCommandExecutor extends CommandExecutor {
          * Annotation options
          */
         Query query = new Query();
-        if (annotateVariantsCommandOptions.filterRegion != null) {
-            query.put(VariantQueryParam.REGION.key(), annotateVariantsCommandOptions.filterRegion);
-        }
-        if (annotateVariantsCommandOptions.filterGene != null) {
-            query.put(VariantQueryParam.GENE.key(), annotateVariantsCommandOptions.filterGene);
-        }
-        if (annotateVariantsCommandOptions.filterAnnotConsequenceType != null) {
-            query.put(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(),
-                    annotateVariantsCommandOptions.filterAnnotConsequenceType);
+        if (annotateVariantsCommandOptions.region != null) {
+            query.put(VariantQueryParam.REGION.key(), annotateVariantsCommandOptions.region);
         }
         if (!annotateVariantsCommandOptions.overwriteAnnotations) {
             query.put(VariantQueryParam.ANNOTATION_EXISTS.key(), false);

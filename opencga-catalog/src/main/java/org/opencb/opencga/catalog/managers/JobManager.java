@@ -319,6 +319,12 @@ public class JobManager extends ResourceManager<Job> {
 
     public OpenCGAResult<Job> submit(String studyStr, String command, String subcommand, Enums.Priority priority,
                                      Map<String, String> params, String token) throws CatalogException {
+        return submit(studyStr, command, subcommand, priority, params, null, null, null, null, token);
+    }
+
+    public OpenCGAResult<Job> submit(String studyStr, String command, String subcommand, Enums.Priority priority,
+                Map<String, String> params, String jobId, String jobName, String jobDescription, List<String> jobTags, String token)
+            throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
@@ -331,6 +337,10 @@ public class JobManager extends ResourceManager<Job> {
                 .append("token", token);
 
         Job job = new Job();
+        job.setId(jobId);
+        job.setName(jobName);
+        job.setDescription(jobDescription);
+        job.setTags(jobTags);
 
         try {
             Map<String, Object> attributes = new HashMap<>();

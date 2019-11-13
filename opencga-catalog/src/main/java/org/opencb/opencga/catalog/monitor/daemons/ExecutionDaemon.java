@@ -313,6 +313,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 cliBuilder
                         .append(" --").append(CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, entry.getKey()))
                         .append(" ").append(file.getUri().getPath());
+            } if (entry.getKey().startsWith("-D")) {
+                cliBuilder
+                        .append(" ").append(entry.getKey())
+                        .append("=").append(entry.getValue());
             } else {
                 cliBuilder
                         .append(" --").append(CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, entry.getKey()))

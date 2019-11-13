@@ -43,6 +43,10 @@
             <groupId>org.opencb.bionetdb</groupId>
             <artifactId>bionetdb-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-datastore-core</artifactId>
+        </dependency>
 
 <!--        <dependency>-->
 <!--            <groupId>org.reflections</groupId>-->
@@ -109,10 +113,6 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.commons</groupId>
-            <artifactId>commons-datastore-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
