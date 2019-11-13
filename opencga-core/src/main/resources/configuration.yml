@@ -112,7 +112,7 @@ analysis:
     variant:
       maxConcurrentJobs: 2
   execution:
-    # Accepted values are "local", "SGE", "azure-batch"
+    # Accepted values are "local", "SGE", "azure-batch", "k8s"
     # see org.opencb.opencga.catalog.monitor.executors.ExecutorFactory
     id: "${OPENCGA.EXECUTION.MODE}"
     defaultQueue: ""            # Default queue to be used to submit jobs
@@ -122,25 +122,28 @@ analysis:
 #      - slow:
 #        - "coverage"
 #        - "alignmentStats"
-    k8sMasterNode: "https://192.168.99.100:8443/"
-    imageName: "opencb/opencga-next:1.4.X"
-    cpu: "1"
-    memory: "2048Mi"
-    namespace: "default"
-    k8SVolumesMount:
-      - name: "conf"
-        mountPath: "/opt/opencga/conf"
-      - name: "opencga-shared"
-        mountPath: "/opt/opencga/sessions"
     options:
+     ## Local executor configuration
       local.maxConcurrentJobs: 1    # Max number of concurrent jobs to be executed locally in the master
-     # Azure Batch Service configuration example
+     ## Azure Batch Service configuration example
      # azure.batchAccount : "batchAccount"
      # azure.batchKey : "batchKey"
      # azure.batchUri : "https://batchservice.uksouth.batch.azure.com"
      # azure.batchPoolId : "poolId"
      # azure.dockerImageName : "openCGADockerImageName"
      # azure.dockerArgs : "dockerRunOptions"
+     ## Kubernetes executor configuration example
+     # k8s.masterNode: "https://192.168.99.100:8443/"
+     # k8s.imageName: "opencb/opencga-next:1.4.X"
+     # k8s.cpu: "1"
+     # k8s.memory: "2048Mi"
+     # k8s.namespace: "default"
+     # k8S.volumesMount:
+     #   - name: "conf"
+     #     mountPath: "/opt/opencga/conf"
+     #     readOnly: true
+     #   - name: "opencga-shared"
+     #     mountPath: "/opt/opencga/sessions"
 
   # List of analysis frameworks
   frameworks:

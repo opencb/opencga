@@ -48,6 +48,7 @@ public class ExecutorFactory {
                 this.executor = new AzureBatchExecutor(execution);
                 break;
             case "k8s":
+            case "kubernetes":
                 this.executor = new K8SExecutor(execution);
                 break;
             default:

@@ -22,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Created by pfurio on 24/08/16.
@@ -35,13 +34,6 @@ public class SGEExecutor implements BatchExecutor {
     public SGEExecutor(Execution execution) {
         logger = LoggerFactory.getLogger(SGEExecutor.class);
         sgeManager = new SGEManager(execution);
-    }
-
-    @Override
-    public void execute(Job job, String token) throws Exception {
-        ExecutorConfig executorConfig = ExecutorConfig.getExecutorConfig(job);
-        sgeManager.queueJob(job.getId(), "", -1, getCommandLine(job.getCommandLine(), Paths.get(executorConfig.getStdout()),
-                Paths.get(executorConfig.getStderr()), token), executorConfig);
     }
 
     @Override
