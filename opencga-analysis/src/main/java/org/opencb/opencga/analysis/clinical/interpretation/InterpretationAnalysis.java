@@ -24,6 +24,7 @@ import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
@@ -84,7 +85,6 @@ public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
         // Analyst
         Analyst analyst = clinicalInterpretationManager.getAnalyst(sessionId);
 
-
         List<ReportedLowCoverage> reportedLowCoverages = null;
         if (config.isIncludeLowCoverage() && CollectionUtils.isNotEmpty(diseasePanels)) {
             reportedLowCoverages = (clinicalInterpretationManager.getReportedLowCoverage(config.getMaxLowCoverage(), clinicalAnalysis,
@@ -108,6 +108,15 @@ public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
                 .setFilters(query)
                 .setSoftware(software);
 
+        // Store interpretation analysis in DB
+        try {
+            catalogManager.getInterpretationManager().create(studyId, clinicalAnalysis.getId(), new Interpretation(interpretation),
+                    QueryOptions.empty(), sessionId);
+        } catch (CatalogException e) {
+            throw new AnalysisException("Error saving interpretation into database", e);
+        }
+
+        // Save interpretation analysis in JSON file
         Path path = Paths.get(getOutDir().toAbsolutePath() + "/" + INTERPRETATION_FILENAME);
         try {
             JacksonUtils.getDefaultObjectMapper().writer().writeValue(path.toFile(), interpretation);
@@ -115,7 +124,6 @@ public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
         } catch (IOException e) {
             throw new AnalysisException(e);
         }
-
     }
 
     public static ClinicalInterpretationManager getClinicalInterpretationManager(String opencgaHome) throws AnalysisException {

@@ -87,7 +87,7 @@ public class InterpretationCommandOptions {
 
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
-        public String outdirId;
+        public String outDir;
     }
 
     @Parameters(commandNames = {TieringInterpretationAnalysis.ID}, commandDescription = "Tiering interpretation analysis")
@@ -119,7 +119,7 @@ public class InterpretationCommandOptions {
 
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
-        public String outdirId;
+        public String outDir;
     }
 
     @Parameters(commandNames = {CancerTieringInterpretationAnalysis.ID}, commandDescription = "Cancer tiering interpretation analysis")
@@ -143,7 +143,7 @@ public class InterpretationCommandOptions {
 
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
-        public String outdirId;
+        public String outDir;
     }
 
     @Parameters(commandNames = {CustomInterpretationAnalysis.ID}, commandDescription = "Custom interpretation analysis")
@@ -177,6 +177,6 @@ public class InterpretationCommandOptions {
 
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
-        public String outdirId;
+        public String outDir;
     }
 }

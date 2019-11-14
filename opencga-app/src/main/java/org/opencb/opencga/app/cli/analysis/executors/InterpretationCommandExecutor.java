@@ -16,29 +16,21 @@
 
 package org.opencb.opencga.app.cli.analysis.executors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.hpg.bigdata.analysis.tools.ExecutorMonitor;
-import org.opencb.hpg.bigdata.analysis.tools.Status;
-import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.analysis.clinical.interpretation.*;
 import org.opencb.opencga.app.cli.analysis.options.InterpretationCommandOptions;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.analysis.result.AnalysisResult;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exception.AnalysisException;
-import org.opencb.opencga.core.models.Interpretation;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
-
-import static org.opencb.opencga.analysis.clinical.interpretation.InterpretationAnalysis.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 
 public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
@@ -79,6 +71,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
     private void team() throws Exception {
         InterpretationCommandOptions.TeamCommandOptions options = interpretationCommandOptions.teamCommandOptions;
 
+        // Prepare analysis parameters and config
         String token = options.commonOptions.sessionId;
 
         String studyId = options.studyId;
@@ -101,18 +94,8 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         config.setMaxLowCoverage(options.maxLowCoverage);
         config.setSkipUntieredVariants(!options.includeUntieredVariants);
 
-        // Initialize monitor
-        ExecutorMonitor monitor = new ExecutorMonitor();
-        Thread hook = new Thread(() -> {
-            monitor.stop(new Status(Status.ERROR));
-            logger.info("Running ShutdownHook. Tool execution has being aborted.");
-        });
-
-        Path outDir = Paths.get(options.outdirId);
+        Path outDir = Paths.get(options.outDir);
         Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
-
-        Runtime.getRuntime().addShutdownHook(hook);
-        monitor.start(outDir);
 
         // Execute TEAM analysis
         TeamInterpretationAnalysis teamAnalysis = new TeamInterpretationAnalysis();
@@ -122,27 +105,13 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
                 .setDiseasePanelIds(panelList)
                 .setMoi(moi)
                 .setConfig(config);
-        AnalysisResult result = teamAnalysis.start();
-
-        // Read interpretation from the output dir
-        org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = readInterpretation(result, outDir);
-
-        // Store interpretation analysis in DB
-        try {
-            catalogManager.getInterpretationManager().create(studyId, clinicalAnalysisId, new Interpretation(interpretation),
-                    QueryOptions.empty(), token);
-        } catch (CatalogException e) {
-            throw new AnalysisException("Error saving interpretation into database", e);
-        }
-
-        // Stop monitor
-        Runtime.getRuntime().removeShutdownHook(hook);
-        monitor.stop(new Status(Status.DONE));
+        teamAnalysis.start();
     }
 
     private void tiering() throws Exception {
         InterpretationCommandOptions.TieringCommandOptions options = interpretationCommandOptions.tieringCommandOptions;
 
+        // Prepare analysis parameters and config
         String token = options.commonOptions.sessionId;
 
         String studyId = options.studyId;
@@ -160,18 +129,8 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         config.setMaxLowCoverage(options.maxLowCoverage);
         config.setSkipUntieredVariants(!options.includeUntieredVariants);
 
-        // Initialize monitor
-        ExecutorMonitor monitor = new ExecutorMonitor();
-        Thread hook = new Thread(() -> {
-            monitor.stop(new Status(Status.ERROR));
-            logger.info("Running ShutdownHook. Tool execution has being aborted.");
-        });
-
-        Path outDir = Paths.get(options.outdirId);
+        Path outDir = Paths.get(options.outDir);
         Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
-
-        Runtime.getRuntime().addShutdownHook(hook);
-        monitor.start(outDir);
 
         // Execute tiering analysis
         TieringInterpretationAnalysis tieringAnalysis = new TieringInterpretationAnalysis();
@@ -181,27 +140,13 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
                 .setDiseasePanelIds(panelList)
                 .setPenetrance(penetrance)
                 .setConfig(config);
-        AnalysisResult result = tieringAnalysis.start();
-
-        // Read interpretation from the output dir
-        org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = readInterpretation(result, outDir);
-
-        // Store interpretation analysis in DB
-        try {
-            catalogManager.getInterpretationManager().create(studyId, clinicalAnalysisId, new Interpretation(interpretation),
-                    QueryOptions.empty(), token);
-        } catch (CatalogException e) {
-            throw new AnalysisException("Error saving interpretation into database", e);
-        }
-
-        // Stop monitor
-        Runtime.getRuntime().removeShutdownHook(hook);
-        monitor.stop(new Status(Status.DONE));
+        tieringAnalysis.start();
     }
 
     private void cancerTiering() throws Exception {
         InterpretationCommandOptions.CancerTieringCommandOptions options = interpretationCommandOptions.cancerTieringCommandOptions;
 
+        // Prepare analysis parameters and config
         String token = options.commonOptions.sessionId;
 
         String studyId = options.studyId;
@@ -215,18 +160,8 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         CancerTieringInterpretationConfiguration config = new CancerTieringInterpretationConfiguration();
         config.setSkipUntieredVariants(!options.includeUntieredVariants);
 
-        // Initialize monitor
-        ExecutorMonitor monitor = new ExecutorMonitor();
-        Thread hook = new Thread(() -> {
-            monitor.stop(new Status(Status.ERROR));
-            logger.info("Running ShutdownHook. Tool execution has being aborted.");
-        });
-
-        Path outDir = Paths.get(options.outdirId);
+        Path outDir = Paths.get(options.outDir);
         Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
-
-        Runtime.getRuntime().addShutdownHook(hook);
-        monitor.start(outDir);
 
         // Execute cancer tiering analysis
         CancerTieringInterpretationAnalysis cancerTieringAnalysis = new CancerTieringInterpretationAnalysis();
@@ -235,27 +170,13 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
                 .setClinicalAnalysisId(clinicalAnalysisId)
                 .setVariantIdsToDiscard(variantIdsToDiscard)
                 .setConfig(config);
-        AnalysisResult result = cancerTieringAnalysis.start();
-
-        // Read interpretation from the output dir
-        org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = readInterpretation(result, outDir);
-
-        // Store interpretation analysis in DB
-        try {
-            catalogManager.getInterpretationManager().create(studyId, clinicalAnalysisId, new Interpretation(interpretation),
-                    QueryOptions.empty(), token);
-        } catch (CatalogException e) {
-            throw new AnalysisException("Error saving interpretation into database", e);
-        }
-
-        // Stop monitor
-        Runtime.getRuntime().removeShutdownHook(hook);
-        monitor.stop(new Status(Status.DONE));
+        cancerTieringAnalysis.start();
     }
 
     private void custom() throws Exception {
         InterpretationCommandOptions.CustomCommandOptions options = interpretationCommandOptions.customCommandOptions;
 
+        // Prepare analysis parameters and config
         String token = options.commonOptions.sessionId;
 
         String studyId = options.studyId;
@@ -270,18 +191,8 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         config.setMaxLowCoverage(options.maxLowCoverage);
         config.setSkipUntieredVariants(!options.includeUntieredVariants);
 
-        // Initialize monitor
-        ExecutorMonitor monitor = new ExecutorMonitor();
-        Thread hook = new Thread(() -> {
-            monitor.stop(new Status(Status.ERROR));
-            logger.info("Running ShutdownHook. Tool execution has being aborted.");
-        });
-
-        Path outDir = Paths.get(options.outdirId);
+        Path outDir = Paths.get(options.outDir);
         Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
-
-        Runtime.getRuntime().addShutdownHook(hook);
-        monitor.start(outDir);
 
         // Execute custom interpretation analysis
         CustomInterpretationAnalysis customAnalysis = new CustomInterpretationAnalysis();
@@ -291,35 +202,6 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
                 .setQuery(query)
                 .setQueryOptions(queryOptions)
                 .setConfig(config);
-        AnalysisResult result = customAnalysis.start();
-
-        // Read interpretation from the output dir
-        org.opencb.biodata.models.clinical.interpretation.Interpretation interpretation = readInterpretation(result, outDir);
-
-        // Store interpretation analysis in DB
-        try {
-            catalogManager.getInterpretationManager().create(studyId, clinicalAnalysisId, new Interpretation(interpretation),
-                    QueryOptions.empty(), token);
-        } catch (CatalogException e) {
-            throw new AnalysisException("Error saving interpretation into database", e);
-        }
-
-        // Stop monitor
-        Runtime.getRuntime().removeShutdownHook(hook);
-        monitor.stop(new Status(Status.DONE));
-    }
-
-    private org.opencb.biodata.models.clinical.interpretation.Interpretation readInterpretation(AnalysisResult result,
-                                                                                                java.nio.file.Path outDir)
-            throws AnalysisException {
-        java.io.File file = new java.io.File(outDir + "/" + INTERPRETATION_FILENAME);
-        if (file.exists()) {
-            return ClinicalUtils.readInterpretation(file.toPath());
-        }
-        String msg = "Interpretation file not found for " + result.getId() + " analysis";
-        if (CollectionUtils.isNotEmpty(result.getEvents())) {
-            msg += (": " + StringUtils.join(result.getEvents(), ". "));
-        }
-        throw new AnalysisException(msg);
+        customAnalysis.start();
     }
 }
