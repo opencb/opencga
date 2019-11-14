@@ -5,6 +5,7 @@ public class FileResult {
         IMAGE,
         JSON,
         AVRO,
+        PLAIN_TEXT,
         TAB_SEPARATED // First line starts with # and contains the header
     }
 
