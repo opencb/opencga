@@ -91,36 +91,36 @@ class Test_init_script(unittest.TestCase):
             storage_config["cellbase"]["database"]["options"]["enableSSL"], True
         )
         self.assertEqual(
-            storage_config["storageEngines"][1]["variant"]["options"]["annotator"],
+            storage_config["variant"]["options"]["annotator"],
             "cellbase_db_adaptor",
         )
         self.assertEqual(
-            storage_config["storageEngines"][1]["variant"]["options"][
-                "opencga.mr.executor"
+            storage_config["variant"]["engines"][1]["options"][
+                "storage.hadoop.mr.executor"
             ],
             "ssh",
         )
         self.assertEqual(
-            storage_config["storageEngines"][1]["variant"]["options"][
-                "opencga.mr.executor.ssh.host"
+            storage_config["variant"]["engines"][1]["options"][
+                "storage.hadoop.mr.executor.ssh.host"
             ],
             "test-hadoop-ssh-host",
         )
         self.assertEqual(
-            storage_config["storageEngines"][1]["variant"]["options"][
-                "opencga.mr.executor.ssh.user"
+            storage_config["variant"]["engines"][1]["options"][
+                "storage.hadoop.mr.executor.ssh.user"
             ],
             "test-hadoop-ssh-user",
         )
         self.assertEqual(
-            storage_config["storageEngines"][1]["variant"]["options"][
-                "opencga.mr.executor.ssh.password"
+            storage_config["variant"]["engines"][1]["options"][
+                "storage.hadoop.mr.executor.ssh.password"
             ],
             "test-hadoop-ssh-password",
         )
         self.assertEqual(
-            storage_config["storageEngines"][1]["variant"]["options"][
-                "opencga.mr.executor.ssh.remote_opencga_home"
+            storage_config["variant"]["engines"][1]["options"][
+                "storage.hadoop.mr.executor.ssh.remoteOpenCgaHome"
             ],
             "test-hadoop-ssh-remote-opencga-home",
         )
@@ -142,16 +142,16 @@ class Test_init_script(unittest.TestCase):
         )
         self.assertEqual(config["catalog"]["database"]["options"]["enableSSL"], True)
         self.assertEqual(
-            config["catalog"]["search"]["hosts"][0], "test-catalog-search-host1"
+            config["catalog"]["searchEngine"]["hosts"][0], "test-catalog-search-host1"
         )
         self.assertEqual(
-            config["catalog"]["search"]["hosts"][1], "test-catalog-search-host2"
+            config["catalog"]["searchEngine"]["hosts"][1], "test-catalog-search-host2"
         )
         self.assertEqual(
-            config["catalog"]["search"]["user"], "test-catalog-search-user"
+            config["catalog"]["searchEngine"]["user"], "test-catalog-search-user"
         )
         self.assertEqual(
-            config["catalog"]["search"]["password"], "test-catalog-search-password"
+            config["catalog"]["searchEngine"]["password"], "test-catalog-search-password"
         )
         self.assertEqual(config["analysis"]["execution"]["id"], "test-batch-execution-mode")
         # self.assertEqual(config["execution"]["maxConcurrentIndexJobs"], 25)
@@ -256,7 +256,7 @@ class Test_init_script(unittest.TestCase):
         storage_config = configs[0]
 
         self.assertEqual(
-            storage_config["storageEngines"][0]["variant"]["options"]["annotator"],
+            storage_config["variant"]["options"]["annotator"],
             "cellbase_rest",
         )
 
@@ -338,7 +338,7 @@ class Test_init_script(unittest.TestCase):
         storage_config = configs[0]
 
         self.assertEqual(
-            storage_config["storageEngines"][0]["variant"]["options"]["annotator"],
+            storage_config["variant"]["options"]["annotator"],
             "cellbase_rest",
         )
 
@@ -424,7 +424,7 @@ class Test_init_script(unittest.TestCase):
         storage_config = configs[0]
 
         self.assertEqual(
-            storage_config["storageEngines"][0]["variant"]["options"]["annotator"],
+            storage_config["variant"]["options"]["annotator"],
             "cellbase_rest",
         )
         self.assertEqual(
@@ -514,7 +514,7 @@ class Test_init_script(unittest.TestCase):
         storage_config = configs[0]
 
         self.assertEqual(
-            storage_config["storageEngines"][0]["variant"]["options"]["annotator"],
+            storage_config["variant"]["options"]["annotator"],
             "cellbase_rest",
         )
         self.assertEqual(
@@ -600,7 +600,7 @@ class Test_init_script(unittest.TestCase):
         storage_config = configs[0]
 
         self.assertEqual(
-            storage_config["storageEngines"][0]["variant"]["options"]["annotator"],
+            storage_config["variant"]["options"]["annotator"],
             "cellbase_rest",
         )
         self.assertEqual(
