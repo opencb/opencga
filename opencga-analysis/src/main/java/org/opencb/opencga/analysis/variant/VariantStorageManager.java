@@ -181,13 +181,14 @@ public class VariantStorageManager extends StorageManager {
                 outDir = Paths.get("");
             }
         }
-        AnalysisResult result = new VariantExportStorageOperation()
+        VariantExportStorageOperation operation = new VariantExportStorageOperation()
                 .setQuery(query)
                 .setOutputFormat(outputFormat)
                 .setVariantsFile(variantsFile)
-                .setOutputFile(outputFile)
-                .setUp(null, catalogManager, this, queryOptions, outDir, sessionId)
-                .start();
+                .setOutputFile(outputFile);
+        operation.setUp(null, catalogManager, this, queryOptions, outDir, sessionId);
+
+        AnalysisResult result = operation.start();
 
         return result.getOutputFiles()
                 .stream()
@@ -206,11 +207,11 @@ public class VariantStorageManager extends StorageManager {
 
     public List<StoragePipelineResult> index(String study, List<String> files, String outDir, ObjectMap config, String sessionId)
             throws AnalysisException {
-        VariantFileIndexerStorageOperation operation = new VariantFileIndexerStorageOperation();
-        operation.setStudyId(study)
-                .setFiles(files)
-                .setUp(null, catalogManager, this, config, Paths.get(outDir), sessionId)
-                .start();
+        VariantFileIndexerStorageOperation operation = new VariantFileIndexerStorageOperation()
+                .setStudyId(study)
+                .setFiles(files);
+        operation.setUp(null, catalogManager, this, config, Paths.get(outDir), sessionId);
+        operation.start();
 
         return operation.getStoragePipelineResults();
     }
@@ -339,13 +340,13 @@ public class VariantStorageManager extends StorageManager {
     public void stats(String study, List<String> cohorts, Query samplesQuery,
                       String outDir, boolean index, ObjectMap config, String sessionId)
             throws AnalysisException {
-        new VariantStatsAnalysis()
+        VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
                 .setStudy(study)
                 .setCohorts(cohorts)
                 .setSamplesQuery(samplesQuery)
-                .setIndex(index)
-                .setUp(null, catalogManager, this, config, Paths.get(outDir), sessionId)
-                .start();
+                .setIndex(index);
+        variantStatsAnalysis.setUp(null, catalogManager, this, config, Paths.get(outDir), sessionId);
+        variantStatsAnalysis.start();
     }
 
     public void deleteStats(List<String> cohorts, String studyId, String sessionId) {
@@ -837,7 +838,7 @@ public class VariantStorageManager extends StorageManager {
                 List<String> includeSamples = new LinkedList<>();
                 for (Study study : studies) {
                     DataResult<Sample> samplesQueryResult = catalogManager.getSampleManager().search(study.getFqn(), new Query(),
-                                    new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()).append("lazy", true), sessionId);
+                            new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()).append("lazy", true), sessionId);
                     samplesQueryResult.getResults().sort(Comparator.comparing(Sample::getId));
                     samplesMap.put(study.getFqn(), samplesQueryResult.getResults());
                     int studyId = mm.getStudyId(study.getFqn());

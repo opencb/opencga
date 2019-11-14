@@ -17,32 +17,26 @@
 package org.opencb.opencga.analysis.clinical.interpretation;
 
 import org.opencb.bionetdb.core.BioNetDbManager;
-import org.opencb.bionetdb.core.config.BioNetDBConfiguration;
-import org.opencb.bionetdb.core.exceptions.BioNetDBException;
-import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.exception.AnalysisException;
 
 import java.util.List;
 
-public class XQueryInterpretationAnalysis extends FamilyInterpretationAnalysis {
+@Analysis(id = XQueryInterpretationAnalysis.ID, type = Analysis.AnalysisType.CLINICAL)
+public class XQueryInterpretationAnalysis extends InterpretationAnalysis {
 
+    public final static String ID = "bionet-interpretation";
+
+    private List<String> diseasePanelIds;
     private BioNetDbManager bioNetDbManager;
+    private BionetInterpretationConfiguration config;
 
-    private final static String XQUERY_ANALYSIS_NAME = "BioNetInterpretation";
-
-    public XQueryInterpretationAnalysis(String clinicalAnalysisId, String studyId, List<String> diseasePanelIds,
-                                        BioNetDBConfiguration configuration, ObjectMap options, String opencgaHome, String sessionId)
-            throws BioNetDBException {
-        super(clinicalAnalysisId, studyId, diseasePanelIds, options, opencgaHome, sessionId);
-        this.bioNetDbManager = new BioNetDbManager(configuration);
-    }
+//    private List<DiseasePanel> diseasePanels;
+//    private ClinicalAnalysis clinicalAnalysis;
 
     @Override
     protected void run() throws AnalysisException {
-
-    }
-
-    public InterpretationResult compute() throws Exception {
+        throw new AnalysisException("Not yet implemented!");
 /*
         StopWatch watcher = StopWatch.createStarted();
         // Sanity check
@@ -154,20 +148,7 @@ public class XQueryInterpretationAnalysis extends FamilyInterpretationAnalysis {
 //        if (ListUtils.isNotEmpty(reportedLowCoverages)) {
 //            interpretation.setReportedLowCoverages(reportedLowCoverages);
 //        }
-
-        // Return interpretation result
-        return new InterpretationResult(
-                interpretation,
-                Math.toIntExact(watcher.getTime()),
-                new HashMap<>(),
-                (int) dbTime,
-                numResults,
-                numResults,
-                "", // warning message
-                ""); // error message
-                */
-
-        throw new UnsupportedOperationException("XQuery not yet supported");
+*/
     }
 
 /*

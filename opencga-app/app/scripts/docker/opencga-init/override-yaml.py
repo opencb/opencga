@@ -90,20 +90,22 @@ if args.cellbase_rest_urls is not None and args.cellbase_rest_urls != "":
                 storage_config["cellbase"]["hosts"].clear()
             storage_config["cellbase"]["hosts"].insert(i, cellbase_url.strip())
 
+# If we have cellbase hosts set the annotator to the DB Adaptor
+if has_cellbase_mongo_hosts:
+    storage_config["variant"]["options"]["annotator"] = "cellbase_db_adaptor"
+else :
+    storage_config["variant"]["options"]["annotator"] = "cellbase_rest"
 
 # Inject Hadoop ssh configuration
-for _, storage_engine in enumerate(storage_config["storageEngines"]):
-    # If we have cellbase hosts set the annotator to the DB Adaptor
-    if has_cellbase_mongo_hosts:
-        storage_engine["variant"]["options"]["annotator"] = "cellbase_db_adaptor"
+for _, storage_engine in enumerate(storage_config["variant"]["engines"]):
 
     if storage_engine["id"] == "hadoop": 
-        storage_engine["variant"]["options"]["storage.hadoop.mr.executor"] = "ssh"
-        storage_engine["variant"]["options"]["storage.hadoop.mr.executor.ssh.host"] = args.hbase_ssh_dns
-        storage_engine["variant"]["options"]["storage.hadoop.mr.executor.ssh.user"] = args.hbase_ssh_user
-        storage_engine["variant"]["options"]["storage.hadoop.mr.executor.ssh.password"] = args.hbase_ssh_pass
-        #storage_engine["variant"]["options"]["storage.hadoop.mr.executor.ssh.key"] = args.hadoop_ssh_key # TODO instead of password
-        storage_engine["variant"]["options"]["storage.hadoop.mr.executor.ssh.remoteOpenCgaHome"] = args.hbase_ssh_remote_opencga_home
+        storage_engine["options"]["storage.hadoop.mr.executor"] = "ssh"
+        storage_engine["options"]["storage.hadoop.mr.executor.ssh.host"] = args.hbase_ssh_dns
+        storage_engine["options"]["storage.hadoop.mr.executor.ssh.user"] = args.hbase_ssh_user
+        storage_engine["options"]["storage.hadoop.mr.executor.ssh.password"] = args.hbase_ssh_pass
+        #storage_engine["options"]["storage.hadoop.mr.executor.ssh.key"] = args.hadoop_ssh_key # TODO instead of password
+        storage_engine["options"]["storage.hadoop.mr.executor.ssh.remoteOpenCgaHome"] = args.hbase_ssh_remote_opencga_home
 
 ##############################################################################################################
 # Load configuration yaml
@@ -132,17 +134,14 @@ for i, catalog_search_host in enumerate(catalog_search_hosts):
     if i == 0:
         # If we are overriding the default hosts,
         # clear them only on the first iteration
-        config["catalog"]["search"]["hosts"].clear()
-    config["catalog"]["search"]["hosts"].insert(i, catalog_search_host.strip())
-config["catalog"]["search"]["user"] = args.catalog_search_user
-config["catalog"]["search"]["password"] = args.catalog_search_password
+        config["catalog"]["searchEngine"]["hosts"].clear()
+    config["catalog"]["searchEngine"]["hosts"].insert(i, catalog_search_host.strip())
+config["catalog"]["searchEngine"]["user"] = args.catalog_search_user
+config["catalog"]["searchEngine"]["password"] = args.catalog_search_password
 
 # Inject execution settings
-config["analysis"] = {}
-config["analysis"]["index"] = {}
-config["analysis"]["index"]["variant"] = {}
 config["analysis"]["index"]["variant"]["maxConcurrentJobs"] = int(args.batch_max_concurrent_jobs)
-config["analysis"]["execution"]["id"] = args.batch_execution_id
+config["analysis"]["execution"]["id"] = args.batch_execution_mode
 config["analysis"]["execution"]["options"] = {}
 config["analysis"]["execution"]["options"]["azure.batchAccount"] = args.batch_account_name
 config["analysis"]["execution"]["options"]["azure.batchKey"] = args.batch_account_key
