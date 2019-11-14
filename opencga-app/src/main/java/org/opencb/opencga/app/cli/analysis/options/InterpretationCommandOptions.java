@@ -21,92 +21,160 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.analysis.clinical.interpretation.CancerTieringInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAnalysis;
+import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
+
+import static org.opencb.opencga.analysis.clinical.interpretation.InterpretationAnalysis.*;
+import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.*;
+import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.PANEL_DESC;
 
 @Parameters(commandNames = {"interpretation"}, commandDescription = "Implement several interpretation analysis")
 public class InterpretationCommandOptions {
 
     public TeamCommandOptions teamCommandOptions;
     public TieringCommandOptions tieringCommandOptions;
+    public CancerTieringCommandOptions cancerTieringCommandOptions;
+    public CustomCommandOptions customCommandOptions;
 
     public GeneralCliOptions.CommonCommandOptions analysisCommonOptions;
+    public VariantCommandOptions.VariantQueryCommandOptions variantQueryOptions;
     public JCommander jCommander;
 
-    public InterpretationCommandOptions(GeneralCliOptions.CommonCommandOptions analysisCommonCommandOptions, JCommander jCommander) {
+    public InterpretationCommandOptions(GeneralCliOptions.CommonCommandOptions analysisCommonCommandOptions,
+                                        VariantCommandOptions.VariantQueryCommandOptions variantQueryCommandOptions,
+                                        JCommander jCommander) {
         this.analysisCommonOptions = analysisCommonCommandOptions;
+        this.variantQueryOptions =  variantQueryCommandOptions;
         this.jCommander = jCommander;
 
         this.teamCommandOptions = new TeamCommandOptions();
         this.tieringCommandOptions = new TieringCommandOptions();
+        this.cancerTieringCommandOptions = new CancerTieringCommandOptions();
+        this.customCommandOptions = new CustomCommandOptions();
     }
 
-    @Parameters(commandNames = {"team"}, commandDescription = "Team interpretation analysis")
+    @Parameters(commandNames = {TeamInterpretationAnalysis.ID}, commandDescription = "Team interpretation analysis")
     public class TeamCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
-        @Parameter(names = {"-j", "--job"}, description = "Job id containing the team interpretation parameters", arity = 1)
-        public String job;
+        @Parameter(names = {"-s", "--" + STUDY_PARAM_NAME}, description = "Study [[user@]project:]study.", required = true, arity = 1)
+        public String studyId;
 
-
-        @Parameter(names = {"--include-low-coverage"}, description = "Include low coverage regions", arity = 1)
-        public boolean includeLowCoverage;
-
-        @Parameter(names = {"--max-low-coverage"}, description = "Max. low coverage", arity = 1)
-        public boolean maxLowCoverage;
-
-        @Parameter(names = {"--include-no-tier"}, description = "Reported variants without tier", arity = 1)
-        public boolean includeNoTier;
-
-        @Parameter(names = {"--clinical-analysis-id"}, description = "Clinical Analysis ID", arity = 1)
+        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical Analysis ID", arity = 1)
         public String clinicalAnalysisId;
 
-        @Parameter(names = {"--panel-ids"}, description = "Comma separated list of disease panel IDs", arity = 1)
+        @Parameter(names = {"--" + PANELS_PARAM_NAME}, description = "Comma separated list of disease panel IDs", arity = 1)
         public String panelIds;
 
-        @Parameter(names = {"--family-segregation"}, description = VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR, arity = 1)
-        public String segregation;
+        @Parameter(names = {"--" + FAMILY_SEGREGATION_PARAM_NAME}, description = VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR, arity = 1)
+        public String familySegregation;
 
+        @Parameter(names = {"--" + INCLUDE_LOW_COVERAGE_PARAM_NAME}, description = "Include low coverage regions", arity = 1)
+        public boolean includeLowCoverage;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", required = true, arity = 1)
-        public String study;
+        @Parameter(names = {"--" + MAX_LOW_COVERAGE_PARAM_NAME}, description = "Maximum low coverage", arity = 1)
+        public int maxLowCoverage;
+
+        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
+        public boolean includeUntieredVariants;
+
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
         public String outdirId;
     }
 
-    @Parameters(commandNames = {"tiering"}, commandDescription = "Tiering interpretation analysis")
+    @Parameters(commandNames = {TieringInterpretationAnalysis.ID}, commandDescription = "Tiering interpretation analysis")
     public class TieringCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
-        @Parameter(names = {"-j", "--job"}, description = "Job id containing the team interpretation parameters", arity = 1)
-        public String job;
+        @Parameter(names = {"-s", "--" + STUDY_PARAM_NAME}, description = "Study [[user@]project:]study.", required = true, arity = 1)
+        public String studyId;
 
-
-        @Parameter(names = {"--include-low-coverage"}, description = "Include low coverage regions", arity = 1)
-        public boolean includeLowCoverage;
-
-        @Parameter(names = {"--max-low-coverage"}, description = "Max. low coverage", arity = 1)
-        public boolean maxLowCoverage;
-
-        @Parameter(names = {"--include-no-tier"}, description = "Reported variants without tier", arity = 1)
-        public boolean includeNoTier;
-
-        @Parameter(names = {"--clinical-analysis-id"}, description = "Clinical Analysis ID", arity = 1)
+        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical Analysis ID", arity = 1)
         public String clinicalAnalysisId;
 
-        @Parameter(names = {"--panel-ids"}, description = "Comma separated list of disease panel IDs", arity = 1)
+        @Parameter(names = {"--" + PANELS_PARAM_NAME}, description = "Comma separated list of disease panel IDs", arity = 1)
         public String panelIds;
 
-        @Parameter(names = {"--penetrance"}, description = "Penetrance. Accepted values: COMPLETE, INCOMPLETE", arity = 1)
+        @Parameter(names = {"--" + PENETRANCE_PARAM_NAME}, description = "Penetrance. Accepted values: COMPLETE, INCOMPLETE", arity = 1)
         public ClinicalProperty.Penetrance penetrance = ClinicalProperty.Penetrance.COMPLETE;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", required = true, arity = 1)
-        public String study;
+        @Parameter(names = {"--" + INCLUDE_LOW_COVERAGE_PARAM_NAME}, description = "Include low coverage regions", arity = 1)
+        public boolean includeLowCoverage;
+
+        @Parameter(names = {"--" + MAX_LOW_COVERAGE_PARAM_NAME}, description = "Maximum low coverage", arity = 1)
+        public int maxLowCoverage;
+
+        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
+        public boolean includeUntieredVariants;
+
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
+        public String outdirId;
+    }
+
+    @Parameters(commandNames = {CancerTieringInterpretationAnalysis.ID}, commandDescription = "Cancer tiering interpretation analysis")
+    public class CancerTieringCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @Parameter(names = {"-s", "--" + STUDY_PARAM_NAME}, description = "Study [[user@]project:]study.", required = true, arity = 1)
+        public String studyId;
+
+        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical Analysis ID", arity = 1)
+        public String clinicalAnalysisId;
+
+        @Parameter(names = {"--" + VARIANTS_TO_DISCARD_PARAM_NAME}, description = "Comma separated list of variant IDs to discard",
+                arity = 1)
+        public String variantIdsToDiscard;
+
+        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
+        public boolean includeUntieredVariants;
+
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
+        public String outdirId;
+    }
+
+    @Parameters(commandNames = {CustomInterpretationAnalysis.ID}, commandDescription = "Custom interpretation analysis")
+    public class CustomCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @ParametersDelegate
+        public VariantCommandOptions.VariantQueryCommandOptions variantQueryCommandOptions = variantQueryOptions;
+
+
+        @Parameter(names = {"-s", "--" + STUDY_PARAM_NAME}, description = "Study [[user@]project:]study.", required = true, arity = 1)
+        public String studyId;
+
+        @Parameter(names = {"--" + CLINICAL_ANALYISIS_PARAM_NAME}, description = "Clinical Analysis ID", arity = 1)
+        public String clinicalAnalysisId;
+
+        @Parameter(names = {"--" + VARIANTS_TO_DISCARD_PARAM_NAME}, description = "Comma separated list of variant IDs to discard",
+                arity = 1)
+        public String variantIdsToDiscard;
+
+        @Parameter(names = {"--" + INCLUDE_LOW_COVERAGE_PARAM_NAME}, description = "Include low coverage regions", arity = 1)
+        public boolean includeLowCoverage;
+
+        @Parameter(names = {"--" + MAX_LOW_COVERAGE_PARAM_NAME}, description = "Maximum low coverage", arity = 1)
+        public int maxLowCoverage;
+
+        @Parameter(names = {"--" + INCLUDE_UNTIERED_VARIANTS_PARAM_NAME}, description = "Reported variants without tier", arity = 1)
+        public boolean includeUntieredVariants;
+
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved", required = true, arity = 1)
         public String outdirId;

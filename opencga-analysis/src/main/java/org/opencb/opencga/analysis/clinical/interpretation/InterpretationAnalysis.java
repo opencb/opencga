@@ -17,63 +17,122 @@
 package org.opencb.opencga.analysis.clinical.interpretation;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
+import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
+import org.opencb.biodata.models.commons.Analyst;
+import org.opencb.biodata.models.commons.Software;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.clinical.OpenCgaClinicalAnalysis;
-import org.opencb.opencga.analysis.clinical.SecondaryFindingsAnalysis;
+import org.opencb.opencga.analysis.ConfigurationUtils;
+import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.analysis.result.FileResult;
+import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.ClinicalConsent;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.core.models.Interpretation;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
-public abstract class InterpretationAnalysis extends OpenCgaClinicalAnalysis {
+import static org.opencb.opencga.analysis.clinical.ClinicalUtils.readReportedVariants;
 
-    public InterpretationAnalysis(String clinicalAnalysisId, String studyId, ObjectMap options, String opencgaHome, String sessionId) {
-        super(clinicalAnalysisId, studyId, options, opencgaHome, sessionId);
+public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
+
+
+    public static String PRIMARY_FINDINGS_FILENAME = "primary-findings.json";
+    public static String SECONDARY_FINDINGS_FILENAME = "secondary-findings.json";
+    public static String INTERPRETATION_FILENAME = "interpretation.json";
+
+    public final static String STUDY_PARAM_NAME = "study-id";
+    public final static String CLINICAL_ANALYISIS_PARAM_NAME = "clinical-analysis-id";
+    public static final String PANELS_PARAM_NAME = "panel-ids";
+    public static final String FAMILY_SEGREGATION_PARAM_NAME = "family-segregation";
+    public static final String PENETRANCE_PARAM_NAME = "penetrance";
+    public final static String VARIANTS_TO_DISCARD_PARAM_NAME = "variant-ids-to-discard";
+
+    public final static String MAX_LOW_COVERAGE_PARAM_NAME = "max-low-coverage";
+    public final static String INCLUDE_LOW_COVERAGE_PARAM_NAME = "include-low-coverage";
+    public final static String INCLUDE_UNTIERED_VARIANTS_PARAM_NAME = "include-untiered-variants";
+
+    protected ClinicalInterpretationManager clinicalInterpretationManager;
+
+    public InterpretationAnalysis() {
     }
 
-//    @Deprecated
-//    public InterpretationAnalysis(String clinicalAnalysisId, Map<String, ClinicalProperty.RoleInCancer> roleInCancer, Map<String, List<String>> actionableVariants, ObjectMap config, String opencgaHome, String studyStr, String token) {
-//        super(clinicalAnalysisId, roleInCancer, actionableVariants, config, opencgaHome, studyStr, token);
-//    }
+    public void setUp(String opencgaHome, ObjectMap params, Path outDir, String sessionId)
+            throws AnalysisException {
+        super.setUp(opencgaHome, params, outDir, sessionId);
+        this.clinicalInterpretationManager = getClinicalInterpretationManager(opencgaHome);
+    }
+
+    protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis, List<DiseasePanel> diseasePanels, Query query,
+                                      InterpretationAnalysisConfiguration config) throws AnalysisException {
+
+        // Software
+        Software software = new Software().setName(getId());
+
+        // Analyst
+        Analyst analyst = clinicalInterpretationManager.getAnalyst(sessionId);
 
 
-
-    protected List<ReportedVariant> getSecondaryFindings(ClinicalAnalysis clinicalAnalysis, List<String> sampleNames,
-                                                         ReportedVariantCreator creator) throws Exception {
-        List<ReportedVariant> secondaryFindings = null;
-        if (clinicalAnalysis.getConsent() != null
-                && clinicalAnalysis.getConsent().getSecondaryFindings() == ClinicalConsent.ConsentStatus.YES) {
-//            List<Variant> findings = ClinicalUtils.secondaryFindings(studyId, sampleNames, actionableVariants.keySet(),
-//                    excludeIds, variantStorageManager, token);
-            SecondaryFindingsAnalysis secondaryFindingsAnalysis = new SecondaryFindingsAnalysis(sampleNames.get(0), clinicalAnalysisId,
-                    studyId, null, opencgaHome, sessionId);
-            List<Variant> variants = secondaryFindingsAnalysis.compute().getResult();
-            if (CollectionUtils.isNotEmpty(variants)) {
-                secondaryFindings = creator.createSecondaryFindings(variants);
-            }
+        List<ReportedLowCoverage> reportedLowCoverages = null;
+        if (config.isIncludeLowCoverage() && CollectionUtils.isNotEmpty(diseasePanels)) {
+            reportedLowCoverages = (clinicalInterpretationManager.getReportedLowCoverage(config.getMaxLowCoverage(), clinicalAnalysis,
+                    diseasePanels, studyId, sessionId));
         }
-        return secondaryFindings;
+
+        List<ReportedVariant> primaryFindings = readReportedVariants(Paths.get(getOutDir().toString() + "/"
+                + PRIMARY_FINDINGS_FILENAME));
+        List<ReportedVariant> secondaryFindings = readReportedVariants(Paths.get(getOutDir().toString() + "/"
+                + SECONDARY_FINDINGS_FILENAME));
+
+        Interpretation interpretation = new Interpretation()
+                .setId(getId() + "__" + TimeUtils.getTimeMillis())
+                .setPrimaryFindings(primaryFindings)
+                .setSecondaryFindings(secondaryFindings)
+                .setLowCoverageRegions(reportedLowCoverages)
+                .setAnalyst(analyst)
+                .setClinicalAnalysisId(clinicalAnalysis.getId())
+                .setCreationDate(TimeUtils.getTime())
+                .setPanels(diseasePanels)
+                .setFilters(query)
+                .setSoftware(software);
+
+        Path path = Paths.get(getOutDir().toAbsolutePath() + "/" + INTERPRETATION_FILENAME);
+        try {
+            JacksonUtils.getDefaultObjectMapper().writer().writeValue(path.toFile(), interpretation);
+            addFile(path, FileResult.FileType.JSON);
+        } catch (IOException e) {
+            throw new AnalysisException(e);
+        }
+
     }
 
-    protected void addGenotypeFilter(Map<String, List<String>> genotypes, Map<String, String> sampleMap, Query query) {
-        String genotypeString = StringUtils.join(genotypes.entrySet().stream()
-                .filter(entry -> sampleMap.containsKey(entry.getKey()))
-                .filter(entry -> ListUtils.isNotEmpty(entry.getValue()))
-                .map(entry -> sampleMap.get(entry.getKey()) + ":" + StringUtils.join(entry.getValue(), VariantQueryUtils.OR))
-                .collect(Collectors.toList()), ";");
-        if (StringUtils.isNotEmpty(genotypeString)) {
-            query.put(VariantQueryParam.GENOTYPE.key(), genotypeString);
+    public static ClinicalInterpretationManager getClinicalInterpretationManager(String opencgaHome) throws AnalysisException {
+        try {
+            Configuration configuration = ConfigurationUtils.loadConfiguration(opencgaHome);
+            StorageConfiguration storageConfiguration = ConfigurationUtils.loadStorageConfiguration(opencgaHome);
+
+            CatalogManager catalogManager = new CatalogManager(configuration);
+            StorageEngineFactory engineFactory = StorageEngineFactory.get(storageConfiguration);
+
+            return new ClinicalInterpretationManager(catalogManager, engineFactory,
+                    Paths.get(opencgaHome + "/analysis/resources/roleInCancer.txt"),
+                    Paths.get(opencgaHome + "/analysis/resources/"));
+
+        } catch (CatalogException | IOException e) {
+            throw new AnalysisException(e);
         }
-        logger.debug("Query: {}", query.toJson());
     }
+
 }

@@ -163,11 +163,12 @@ public class VariantAnalysisTest {
         System.out.println("output = " + outDir.toAbsolutePath());
         List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
 
-        AnalysisResult ar = new VariantStatsAnalysis()
+        VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
                 .setStudy(STUDY)
-                .setSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(1,3)))
-                .setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId)
-                .start();
+                .setSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(1, 3)));
+        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
+
+        AnalysisResult ar = variantStatsAnalysis.start();
         checkAnalysisResult(ar);
 
         MutableInt count = new MutableInt();
@@ -186,11 +187,12 @@ public class VariantAnalysisTest {
         Path outDir = Paths.get(opencga.createTmpOutdir("_variant_stats_multi_cohort"));
         System.out.println("output = " + outDir.toAbsolutePath());
 
-        AnalysisResult ar = new VariantStatsAnalysis()
+        VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
                 .setStudy(STUDY)
-                .setCohorts(Arrays.asList("c1", "c2"))
-                .setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId)
-                .start();
+                .setCohorts(Arrays.asList("c1", "c2"));
+        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
+
+        AnalysisResult ar = variantStatsAnalysis.start();
         checkAnalysisResult(ar);
 
         MutableInt count = new MutableInt();
@@ -211,12 +213,13 @@ public class VariantAnalysisTest {
         List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
         Query variantsQuery = new Query(VariantQueryParam.REGION.key(), "22");
 
-        AnalysisResult ar = new VariantStatsAnalysis()
+        VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
                 .setStudy(STUDY)
                 .setSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(1, 3)))
-                .setVariantsQuery(variantsQuery)
-                .setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId)
-                .start();
+                .setVariantsQuery(variantsQuery);
+        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
+
+        AnalysisResult ar = variantStatsAnalysis.start();
         checkAnalysisResult(ar);
 
         MutableInt count = new MutableInt();
