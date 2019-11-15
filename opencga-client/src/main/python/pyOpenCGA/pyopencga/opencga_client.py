@@ -1,6 +1,6 @@
 import getpass
 
-from pyopencga.opencga_config import ConfigClient
+from pyopencga.opencga_config import ClientConfiguration
 from pyopencga.rest_clients.admin_client import Admin
 from pyopencga.rest_clients.alignment_client import Alignment
 from pyopencga.rest_clients.clinical_client import Clinical
@@ -27,7 +27,7 @@ class OpenCGAClient(object):
             It must accept parameters: client, exc_type, exc_val, exc_tb, call
         """
 
-        if not isinstance(configuration, ConfigClient):
+        if not isinstance(configuration, ClientConfiguration):
             raise ValueError('Expected ConfigClient configuration instance')
 
         self.configuration = configuration
@@ -116,7 +116,7 @@ class OpenCGAClient(object):
 
         return login_handler
 
-    def _login(self, user=None, password=None):
+    def login(self, user=None, password=None):
         if user is not None:
             if password is None:
                 password = getpass.getpass()

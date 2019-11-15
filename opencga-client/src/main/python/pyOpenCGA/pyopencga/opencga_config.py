@@ -4,15 +4,14 @@ import requests
 import yaml
 
 
-class ConfigClient(object):
+class ClientConfiguration(object):
     """
     Configuration class shared between OpenCGA python clients
 
     usage:     
-        >>> from pyopencga.opencga_config import ConfigClient
+        >>> from pyopencga.opencga_config import ClientConfiguration
         >>> config_file = "/opt/opencga/conf/client-configuration.yml" # it can accept .json
-        >>> ConfigClient(configuration)
-
+        >>> ClientConfiguration(configuration)
     """
     
     def __init__(self, config_input):
