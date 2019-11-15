@@ -37,6 +37,8 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
 
+import static org.opencb.opencga.core.models.common.Enums.Priority.MEDIUM;
+
 public class InterpretationManager extends ResourceManager<Interpretation> {
 
     protected static Logger logger = LoggerFactory.getLogger(InterpretationManager.class);
@@ -172,8 +174,8 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         return keepOriginalOrder(uniqueList, interpretationStringFunction, interpretationDataResult, ignoreException, false);
     }
 
-    public OpenCGAResult<Job> queue(String studyStr, String interpretationTool, String clinicalAnalysisId, List<String> panelIds,
-                                 ObjectMap analysisOptions, String token) throws CatalogException {
+    public OpenCGAResult<Job> queue(String interpretationTool, String studyStr, String clinicalAnalysisId, Map<String, String> params,
+                                    String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
@@ -184,18 +186,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
 
         // Queue job
-        Map<String, String> params = new HashMap<>();
-        params.put("includeLowCoverage", analysisOptions.getString("includeLowCoverage"));
-        params.put("maxLowCoverage", analysisOptions.getString("maxLowCoverage"));
-        params.put("includeNoTier", analysisOptions.getString("includeNoTier"));
-        params.put("clinicalAnalysisId", clinicalAnalysisId);
-        params.put("panelIds", StringUtils.join(panelIds, ","));
-
-        ObjectMap attributes = new ObjectMap();
-        attributes.putIfNotNull(Job.OPENCGA_STUDY, study.getFqn());
-
-        return catalogManager.getJobManager().submit(studyStr, "interpretation", interpretationTool, Enums.Priority.MEDIUM, params,
-                token);
+        return catalogManager.getJobManager().submit(studyStr, "interpretation", interpretationTool, MEDIUM, params, token);
     }
 
     public OpenCGAResult<Interpretation> create(String studyStr, Interpretation entry, QueryOptions options, String sessionId)
