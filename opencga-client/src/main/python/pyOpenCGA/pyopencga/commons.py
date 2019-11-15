@@ -15,7 +15,7 @@ _CALL_BATCH_SIZE = 2000
 _NUM_THREADS_DEFAULT = 4
 
 
-class QueryResponse:
+class RestResponse:
     def __init__(self, response):
         self.time = response.get('time')
         self.apiVersion = response.get('apiVersion')
@@ -24,44 +24,33 @@ class QueryResponse:
         self.error = response.get('error')
         self.response = response.get('response')
 
-    def first(self):
-        return self.response[0]
+        # Add responses for future compatibility with next OpenCGA v2.0.0
+        self.responses = self.response
 
-    def result(self, position=None):
-        """
-        Return the first result of the QueryResult in the position 'position'.
-        If no position is passed, it will return the one from the first
-        QueryResult
-        """
-        pos = 0
-        if position is not None:
-            pos = position
-        if isinstance(self.response[pos]['result'], list):
-            return self.response[pos]['result'][0]
-        else:
-            # This is a special scenario that only happens in AnalysisResults
-            # where result is not array
-            return self.response[pos]['result']
+        for query_result in self.responses:
+            # Add results for future compatibility with next OpenCGA v2.0.0
+            query_result['results'] = query_result['result']
+
 
     def results(self):
         """
         Iterates over all the results of all the QueryResults
         """
-        for query_result in self.response:
-            if isinstance(query_result['result'], list):
-                for result in query_result['result']:
+        for query_result in self.responses:
+            if isinstance(query_result['results'], list):
+                for result in query_result['results']:
                     yield result
             else:
                 # This is a special scenario that only happens in AnalysisResults
                 # where result is not array
-                yield query_result['result']
+                yield query_result['results']
 
     def num_total_results(self):
         """
         Return the total number of results taking into account the whole list of QueryResults
         """
         num_results = 0
-        for query_result in self.response:
+        for query_result in self.responses:
             num_results += query_result['numResults']
         return num_results
 

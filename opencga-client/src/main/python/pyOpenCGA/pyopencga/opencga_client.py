@@ -28,7 +28,7 @@ class OpenCGAClient(object):
         """
 
         if not isinstance(configuration, ClientConfiguration):
-            raise ValueError('Expected ConfigClient configuration instance')
+            raise ValueError('Expected ClientConfiguration instance')
 
         self.configuration = configuration
         self.auto_refresh = auto_refresh
@@ -106,9 +106,9 @@ class OpenCGAClient(object):
         def login_handler(refresh=False):
             self.user_id = user
             if refresh:
-                self.session_id = Users(self.configuration, session_id=self.session_id).refresh_token(user=user).result()['token']
+                self.session_id = Users(self.configuration, session_id=self.session_id).refresh_token(user=user).responses[0]['results'][0]['token']
             else:
-                self.session_id = Users(self.configuration).login(user=user, pwd=pwd).result()['token']
+                self.session_id = Users(self.configuration).login(user=user, pwd=pwd).responses[0]['results'][0]['token']
 
             for client in self.clients:
                 client.session_id = self.session_id  # renew the client's session id
