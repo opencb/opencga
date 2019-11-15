@@ -71,7 +71,7 @@ class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotatio
         :param annotationsetName: DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}
         :param variableSet: DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}
         :param annotation: annotation, e.g: key1=value(;key2=value)
-        :param skipCount: skip count (Bool, deafult=false)
+        :param skipCount: skip count (Bool, deafult=true)
         :param release: release value (Current release from the moment the individuals were first created)
         :param snapshot: snapshot value (Latest version of individuals in the specified release)
         :param include: fields included in the response, whole JSON path must be provided
@@ -81,5 +81,8 @@ class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotatio
         :param count: total number of results (Bool, deafult=false)
         :param flattenAnnotations: flatten the annotations? (Bool, default=false)
         """
+
+        if 'skipCount' not in options and ('count' not in options or options['count'] is False):
+            options['skipCount'] = True
 
         return self._get('search', **options)

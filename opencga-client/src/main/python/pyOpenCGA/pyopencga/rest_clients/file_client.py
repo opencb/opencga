@@ -79,7 +79,7 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRe
         :param annotation: annotation, e.g: key1=value(;key2=value)
         :param attributes: text attributes (Format: sex=male,age>20 ...)
         :param nattributes: numerical attributes (Format: sex=male,age>20 ...)
-        :param skipCount: skip count (default = false)
+        :param skipCount: skip count (default = true)
         :param release: release value
         :param include: fields included in the response, whole JSON path must be provided
         :param exclude: fields excluded in the response, whole JSON path must be provided
@@ -89,6 +89,9 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRe
         :param lazy: false to return entire job and experiment object (default = true)
         :param flattenAnnotations: flatten the annotations? (default = false)
         """
+
+        if 'skipCount' not in options and ('count' not in options or options['count'] is False):
+            options['skipCount'] = True
 
         return self._get('search', **options)
 

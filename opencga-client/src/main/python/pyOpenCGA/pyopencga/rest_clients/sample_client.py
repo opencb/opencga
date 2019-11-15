@@ -54,7 +54,7 @@ class Samples(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSet
         :param annotation: Annotation, e.g: key1=value(;key2=value)
         :param attributes: Text attributes (Format: sex=male,age>20 ...)
         :param nattributes: Numerical attributes (Format: sex=male,age>20 ...)
-        :param skipCount: Skip count (Boolean, False as default)
+        :param skipCount: Skip count (Boolean, True as default)
         :param release: Release value (Current release from the moment the samples were first created)
         :param snapshot: Snapshot value (Latest version of samples in the specified release)
         :param include: Fields included in the response, whole JSON path must be provided
@@ -65,6 +65,9 @@ class Samples(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSet
         :param includeIndividual: Include Individual object as an attribute (this replaces old lazy parameter) (Boolean, False as default)
         :param flattenAnnotations: Flatten the annotations? (Boolean, False as default)
         """
+
+        if 'skipCount' not in options and ('count' not in options or options['count'] is False):
+            options['skipCount'] = True
 
         return self._get('search', **options)
 
