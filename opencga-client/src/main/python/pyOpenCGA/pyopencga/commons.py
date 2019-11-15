@@ -15,7 +15,7 @@ _CALL_BATCH_SIZE = 2000
 _NUM_THREADS_DEFAULT = 4
 
 
-class RestResponse:
+class RESTResponse:
     def __init__(self, response):
         self.time = response.get('time')
         self.apiVersion = response.get('apiVersion')
@@ -45,9 +45,18 @@ class RestResponse:
                 # where result is not array
                 yield query_result['results']
 
-    def num_total_results(self):
+    def num_matches(self):
         """
-        Return the total number of results taking into account the whole list of QueryResults
+        Return the total number of matches taking of all the DataResponses
+        """
+        num_matches = 0
+        for query_result in self.responses:
+            num_matches += query_result['numTotalResults']
+        return num_matches
+
+    def num_results(self):
+        """
+        Return the total number of results taking of all the DataResponses
         """
         num_results = 0
         for query_result in self.responses:
