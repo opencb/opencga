@@ -37,6 +37,7 @@ class OpenCGAClient(object):
         self.user_id = None  # if user and session_id are supplied, we can log out
         self._login_handler = None
         self.session_id = token
+        self.token = token
         self._create_clients()
 
     def __enter__(self):
@@ -110,9 +111,12 @@ class OpenCGAClient(object):
             else:
                 self.session_id = Users(self.configuration).login(user=user, pwd=pwd).responses[0]['results'][0]['token']
 
+            self.token = self.session_id
+
             for client in self.clients:
-                client.session_id = self.session_id  # renew the client's session id
-            return self.session_id
+                client.session_id = self.session_id  # renew the client's token
+                client.token = self.token  # renew the client's token
+            return self.token
 
         return login_handler
 
@@ -127,4 +131,5 @@ class OpenCGAClient(object):
 
     def logout(self):
         self.session_id = None
+        self.token = None
 
