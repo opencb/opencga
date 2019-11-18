@@ -193,7 +193,7 @@
                             </jvmSettings>
                         </program>
                         <program>
-                            <id>opencga-analysis.sh</id>
+                            <id>opencga-internal.sh</id>
                             <mainClass>org.opencb.opencga.app.cli.analysis.AnalysisMain</mainClass>
                             <platforms>
                                 <platform>unix</platform>
@@ -275,7 +275,7 @@
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga.sh"/>
                                     <arg value="${project.basedir}/target/appassembler/bin/opencga-admin.sh"/>
-                                    <arg value="${project.basedir}/target/appassembler/bin/opencga-analysis.sh"/>
+                                    <arg value="${project.basedir}/target/appassembler/bin/opencga-internal.sh"/>
                                     <arg value="${build.dir}/bin"/>
                                 </exec>
 
