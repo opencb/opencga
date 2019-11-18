@@ -339,7 +339,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (parameters.containsKey(QueryParams.PATH.key())) {
             // Check the path is not in use
             Query query = new Query(QueryParams.PATH.key(), parameters.getString(QueryParams.PATH.key()));
-            if (count(clientSession, query).first() > 0) {
+            if (count(clientSession, query).getNumMatches() > 0) {
                 throw new CatalogDBException("Path " + parameters.getString(QueryParams.PATH.key()) + " already in use");
             }
 
@@ -673,7 +673,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(query);
-            queryResult.setNumTotalResults(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -707,7 +707,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(studyUid, query, user, StudyAclEntry.StudyPermissions.VIEW_FILES);
-            queryResult.setNumMatches(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -731,7 +731,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(query);
-            queryResult.setNumTotalResults(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -756,7 +756,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(query);
-            queryResult.setNumTotalResults(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -1079,7 +1079,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     private boolean filePathExists(ClientSession clientSession, long studyId, String path) {
         Document query = new Document(PRIVATE_STUDY_UID, studyId).append(QueryParams.PATH.key(), path);
         DataResult<Long> count = fileCollection.count(clientSession, query);
-        return count.getResults().get(0) != 0;
+        return count.getNumMatches() != 0;
     }
 
     @Override

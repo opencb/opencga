@@ -76,7 +76,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     @Override
     public boolean exists(long projectId) {
         DataResult<Long> count = userCollection.count(new Document(UserDBAdaptor.QueryParams.PROJECTS_UID.key(), projectId));
-        return count.getResults().get(0) != 0;
+        return count.getNumMatches() != 0;
     }
 
     @Override
@@ -114,7 +114,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         Bson countQuery = Filters.and(Filters.eq(UserDBAdaptor.QueryParams.ID.key(), userId),
                 Filters.eq(UserDBAdaptor.QueryParams.PROJECTS_ID.key(), project.getId()));
         DataResult<Long> count = userCollection.count(clientSession, countQuery);
-        if (count.getResults().get(0) != 0) {
+        if (count.getNumMatches() != 0) {
             throw new CatalogDBException("Project {id:\"" + project.getId() + "\"} already exists for this user");
         }
 
@@ -520,7 +520,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         // Check if the cohort is active
         Query query = new Query(QueryParams.UID.key(), id)
                 .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        if (count(query).first() == 0) {
+        if (count(query).getNumMatches() == 0) {
             throw new CatalogDBException("The project {" + id + "} is not deleted");
         }
 
@@ -700,7 +700,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             // It might be that the owner of the study is asking for its own projects but no studies have been created yet. Just in case,
             // we check if any study matches the query. If that's the case, the user does not have proper permissions. Otherwise, he might
             // be the owner...
-            if (dbAdaptorFactory.getCatalogStudyDBAdaptor().count(studyQuery).first() == 0) {
+            if (dbAdaptorFactory.getCatalogStudyDBAdaptor().count(studyQuery).getNumMatches() == 0) {
                 if (!StringUtils.isEmpty(query.getString(QueryParams.USER_ID.key()))
                         && !user.equals(query.getString(QueryParams.USER_ID.key()))) {
                     // User does not have proper permissions
@@ -893,7 +893,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         checkId(projectId);
         Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId)
                 .append(StudyDBAdaptor.QueryParams.STATUS_NAME.key(), Status.READY);
-        Long count = dbAdaptorFactory.getCatalogStudyDBAdaptor().count(query).first();
+        Long count = dbAdaptorFactory.getCatalogStudyDBAdaptor().count(query).getNumMatches();
         if (count > 0) {
             throw new CatalogDBException("The project {" + projectId + "} cannot be deleted. The project has " + count
                     + " studies in use.");

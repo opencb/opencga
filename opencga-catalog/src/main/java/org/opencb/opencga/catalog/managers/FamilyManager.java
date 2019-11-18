@@ -224,7 +224,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             Query query = new Query()
                     .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                     .append(FamilyDBAdaptor.QueryParams.ID.key(), family.getId());
-            if (familyDBAdaptor.count(query).first() > 0) {
+            if (familyDBAdaptor.count(query).getNumMatches() > 0) {
                 throw new CatalogException("Family '" + family.getId() + "' already exists.");
             }
 
@@ -359,7 +359,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
-                    queryResultAux.first());
+                    queryResultAux.getNumMatches());
         } catch (CatalogException e) {
             auditManager.auditCount(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

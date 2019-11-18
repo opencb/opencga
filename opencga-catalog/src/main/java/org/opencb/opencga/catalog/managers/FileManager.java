@@ -756,7 +756,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath())
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + File.FileStatus.DELETED
                             + ";!=" + File.FileStatus.DELETING + ";!=" + File.FileStatus.PENDING_DELETE + ";!=" + File.FileStatus.REMOVED);
-            if (fileDBAdaptor.count(query).first() > 0) {
+            if (fileDBAdaptor.count(query).getNumMatches() > 0) {
                 logger.warn("The file '{}' already exists in catalog", file.getPath());
                 throw new CatalogException("The file '" + file.getPath() + "' already exists in catalog");
             }
@@ -1250,7 +1250,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
-                    queryResultAux.first());
+                    queryResultAux.getNumMatches());
         } catch (CatalogException e) {
             auditManager.auditCount(userId, Enums.Resource.FILE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -3211,7 +3211,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                 .append(FileDBAdaptor.QueryParams.PATH.key(), stringPath);
 
-        if (fileDBAdaptor.count(query).first() == 0) {
+        if (fileDBAdaptor.count(query).getNumMatches() == 0) {
             createParents(study, userId, studyURI, path.getParent(), checkPermissions);
         } else {
             if (checkPermissions) {
@@ -3288,7 +3288,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         + File.FileStatus.REMOVED)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), externalPathDestinyStr)
                 .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), false);
-        if (fileDBAdaptor.count(query).first() > 0) {
+        if (fileDBAdaptor.count(query).getNumMatches() > 0) {
             throw new CatalogException("Cannot link to " + externalPathDestinyStr + ". The path already existed and is not external.");
         }
 
@@ -3302,7 +3302,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true);
 
 
-        if (fileDBAdaptor.count(query).first() > 0) {
+        if (fileDBAdaptor.count(query).getNumMatches() > 0) {
             // Create a regular expression on URI to return everything linked from that URI
             query.put(FileDBAdaptor.QueryParams.URI.key(), "~^" + normalizedUri);
             query.remove(FileDBAdaptor.QueryParams.PATH.key());
@@ -3321,7 +3321,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + Status.DELETED + ";!="
                         + File.FileStatus.REMOVED)
                 .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true);
-        if (fileDBAdaptor.count(query).first() > 0) {
+        if (fileDBAdaptor.count(query).getNumMatches() > 0) {
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.PATH.key());
             String path = fileDBAdaptor.get(query, queryOptions).first().getPath();
             throw new CatalogException(normalizedUri + " was already linked to other path: " + path);
@@ -3352,7 +3352,7 @@ public class FileManager extends AnnotationSetManager<File> {
             query = new Query()
                     .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                     .append(FileDBAdaptor.QueryParams.PATH.key(), pathDestiny);
-            if (fileDBAdaptor.count(query).first() == 0) {
+            if (fileDBAdaptor.count(query).getNumMatches() == 0) {
                 if (parents) {
                     // Get the base URI where the files are located in the study
                     URI studyURI = study.getUri();
@@ -3380,7 +3380,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     .append(FileDBAdaptor.QueryParams.PATH.key(), externalPathDestinyStr);
 
             // Create the file
-            if (fileDBAdaptor.count(query).first() == 0) {
+            if (fileDBAdaptor.count(query).getNumMatches() == 0) {
                 long size = Files.size(Paths.get(normalizedUri));
 
                 String parentPath = getParentPath(externalPathDestinyStr);
@@ -3450,7 +3450,7 @@ public class FileManager extends AnnotationSetManager<File> {
                                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), destinyPath);
 
-                        if (fileDBAdaptor.count(query).first() == 0) {
+                        if (fileDBAdaptor.count(query).getNumMatches() == 0) {
                             // If the folder does not exist, we create it
 
                             String parentPath = getParentPath(destinyPath);
@@ -3502,7 +3502,7 @@ public class FileManager extends AnnotationSetManager<File> {
                                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), destinyPath);
 
-                        if (fileDBAdaptor.count(query).first() == 0) {
+                        if (fileDBAdaptor.count(query).getNumMatches() == 0) {
                             long size = Files.size(filePath);
                             // If the file does not exist, we create it
                             String parentPath = getParentPath(destinyPath);
@@ -3860,7 +3860,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), myPath);
         OpenCGAResult<Long> fileDataResult = fileDBAdaptor.count(query);
-        if (fileDataResult.first() > 0) {
+        if (fileDataResult.getNumMatches() > 0) {
             return CheckPath.FILE_EXISTS;
         }
 
@@ -3869,6 +3869,6 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append(FileDBAdaptor.QueryParams.PATH.key(), myPath + "/");
         fileDataResult = fileDBAdaptor.count(query);
 
-        return fileDataResult.first() > 0 ? CheckPath.DIRECTORY_EXISTS : CheckPath.FREE_PATH;
+        return fileDataResult.getNumMatches() > 0 ? CheckPath.DIRECTORY_EXISTS : CheckPath.FREE_PATH;
     }
 }

@@ -122,7 +122,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
     }
 
     default boolean exists(long sampleId) throws CatalogDBException {
-        return count(new Query(QueryParams.UID.key(), sampleId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), sampleId)).getNumMatches() > 0;
     }
 
     default void checkId(long sampleId) throws CatalogDBException {

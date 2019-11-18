@@ -243,7 +243,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                             .map(Sample::getUid)
                             .collect(Collectors.toList()));
             OpenCGAResult<Long> count = sampleDBAdaptor.count(query);
-            if (count.first() != cohort.getSamples().size()) {
+            if (count.getNumMatches() != cohort.getSamples().size()) {
                 throw new CatalogException("Error: Some samples do not exist in the study " + study.getFqn());
             }
         }
@@ -372,7 +372,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
-                    queryResultAux.first());
+                    queryResultAux.getNumMatches());
         } catch (CatalogException e) {
             auditManager.auditCount(userId, Enums.Resource.COHORT, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

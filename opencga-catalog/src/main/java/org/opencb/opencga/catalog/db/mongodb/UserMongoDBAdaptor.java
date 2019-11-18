@@ -75,7 +75,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
      */
 
     boolean exists(ClientSession clientSession, String userId) throws CatalogDBException {
-        return count(clientSession, new Query(QueryParams.ID.key(), userId)).getResults().get(0) > 0;
+        return count(clientSession, new Query(QueryParams.ID.key(), userId)).getNumMatches() > 0;
     }
 
     @Override
@@ -431,7 +431,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         // Check the user is active or banned
         Query query = new Query(QueryParams.ID.key(), id)
                 .append(QueryParams.STATUS_NAME.key(), User.UserStatus.READY + "," + User.UserStatus.BANNED);
-        if (count(query).first() == 0) {
+        if (count(query).getNumMatches() == 0) {
             query.put(QueryParams.STATUS_NAME.key(), User.UserStatus.DELETED);
             QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_NAME.key());
             User user = get(query, options).first();
@@ -463,7 +463,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         checkId(userId);
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
                 .append(ProjectDBAdaptor.QueryParams.STATUS_NAME.key(), Status.READY);
-        Long count = dbAdaptorFactory.getCatalogProjectDbAdaptor().count(query).first();
+        Long count = dbAdaptorFactory.getCatalogProjectDbAdaptor().count(query).getNumMatches();
         if (count > 0) {
             throw new CatalogDBException("The user {" + userId + "} cannot be deleted. The user has " + count + " projects in use.");
         }
@@ -500,7 +500,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         checkId(id);
         Query query = new Query(QueryParams.ID.key(), id)
                 .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        if (count(query).first() == 0) {
+        if (count(query).getNumMatches() == 0) {
             throw new CatalogDBException("The user {" + id + "} is not deleted");
         }
 

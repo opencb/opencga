@@ -36,7 +36,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface JobDBAdaptor extends DBAdaptor<Job> {
 
     default boolean exists(long jobId) throws CatalogDBException {
-        return count(new Query(QueryParams.UID.key(), jobId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), jobId)).getNumMatches() > 0;
     }
 
     default void checkId(long jobId) throws CatalogDBException {

@@ -140,7 +140,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                 new Document()
                         .append(AnnotationSetParams.ANNOTATION_SET_NAME.key(), annotationSet.getId())
                         .append("_id", id));
-        if (count.first() > 0) {
+        if (count.getNumMatches() > 0) {
             throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getId());
         }
 
@@ -150,7 +150,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
                     new Document()
                             .append(AnnotationSetParams.ANNOTATION_SETS_VARIABLE_SET_ID.key(), annotationSet.getVariableSetId())
                             .append("_id", id));
-            if (count.first() > 0) {
+            if (count.getNumMatches() > 0) {
                 throw new CatalogDBException("Repeated annotation for a unique VariableSet");
             }
         }
@@ -511,7 +511,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
             }
 
             DataResult<Long> count = getCollection().count(clientSession, query);
-            if (count.first() > 0) {
+            if (count.getNumMatches() > 0) {
                 throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
             }
 
@@ -526,7 +526,7 @@ public abstract class AnnotationMongoDBAdaptor<T> extends MongoDBAdaptor impleme
 
                 // Check if the variableSet has been already annotated with a different annotation set
                 count = getCollection().count(clientSession, query);
-                if (count.first() > 0) {
+                if (count.getNumMatches() > 0) {
                     throw new CatalogDBException("Repeated annotation for a unique VariableSet");
                 }
             }

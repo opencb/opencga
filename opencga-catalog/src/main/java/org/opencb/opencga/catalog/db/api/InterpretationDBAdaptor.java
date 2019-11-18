@@ -85,7 +85,7 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
     }
 
     default boolean exists(long interpretationId) throws CatalogDBException {
-        return count(new Query(QueryParams.UID.key(), interpretationId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), interpretationId)).getNumMatches() > 0;
     }
 
     default void checkId(long interpretationId) throws CatalogDBException {
