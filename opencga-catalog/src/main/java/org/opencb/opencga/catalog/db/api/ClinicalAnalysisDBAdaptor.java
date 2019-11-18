@@ -121,7 +121,7 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
     }
 
     default boolean exists(long clinicalAnalysisId) throws CatalogDBException {
-        return count(new Query(QueryParams.UID.key(), clinicalAnalysisId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), clinicalAnalysisId)).getNumMatches() > 0;
     }
 
     default void checkId(long clinicalAnalysisId) throws CatalogDBException {

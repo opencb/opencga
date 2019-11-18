@@ -135,7 +135,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 .append(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId)
                 .append(StudyDBAdaptor.QueryParams.GROUP_USER_IDS.key(), userId);
 
-        if (studyDBAdaptor.count(query).first() > 0) {
+        if (studyDBAdaptor.count(query).getNumMatches() > 0) {
             return;
         }
 
@@ -353,7 +353,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 return true;
             }
         } else {
-            if ((Long) dbAdaptor.count(studyUid, query, userId, studyPermission).first() == 1) {
+            if (dbAdaptor.count(studyUid, query, userId, studyPermission).getNumMatches() == 1) {
                 return true;
             }
         }

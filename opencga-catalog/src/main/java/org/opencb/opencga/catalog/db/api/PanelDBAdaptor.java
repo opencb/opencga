@@ -130,7 +130,7 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
     }
 
     default boolean exists(long panelUid) throws CatalogDBException {
-        return count(new Query(QueryParams.UID.key(), panelUid)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), panelUid)).getNumMatches() > 0;
     }
 
     default void checkUid(long panelUid) throws CatalogDBException {

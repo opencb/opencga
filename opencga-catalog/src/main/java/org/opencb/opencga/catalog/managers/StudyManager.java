@@ -734,19 +734,20 @@ public class StudyManager extends AbstractManager {
                         .append(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.FILE)
                         .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
                                 + File.FileStatus.DELETED))
-                .first();
+                .getNumMatches();
         studySummary.setFiles(nFiles);
 
-        Long nSamples = sampleDBAdaptor.count(new Query(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())).first();
+        Long nSamples = sampleDBAdaptor.count(new Query(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())).getNumMatches();
         studySummary.setSamples(nSamples);
 
-        Long nJobs = jobDBAdaptor.count(new Query(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())).first();
+        Long nJobs = jobDBAdaptor.count(new Query(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())).getNumMatches();
         studySummary.setJobs(nJobs);
 
-        Long nCohorts = cohortDBAdaptor.count(new Query(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())).first();
+        Long nCohorts = cohortDBAdaptor.count(new Query(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())).getNumMatches();
         studySummary.setCohorts(nCohorts);
 
-        Long nIndividuals = individualDBAdaptor.count(new Query(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())).first();
+        Long nIndividuals = individualDBAdaptor.count(new Query(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid()))
+                .getNumMatches();
         studySummary.setIndividuals(nIndividuals);
 
         return new OpenCGAResult<>((int) (System.currentTimeMillis() - startTime), Collections.emptyList(), 1,
@@ -1048,7 +1049,7 @@ public class StudyManager extends AbstractManager {
         Query query = new Query()
                 .append(StudyDBAdaptor.QueryParams.UID.key(), study.getUid())
                 .append(StudyDBAdaptor.QueryParams.GROUP_ID.key(), groupId);
-        if (studyDBAdaptor.count(query).first() == 0) {
+        if (studyDBAdaptor.count(query).getNumMatches() == 0) {
             throw new CatalogException("The group " + groupId + " does not exist.");
         }
 
@@ -1770,7 +1771,7 @@ public class StudyManager extends AbstractManager {
         Query query = new Query()
                 .append(StudyDBAdaptor.QueryParams.UID.key(), studyId)
                 .append(StudyDBAdaptor.QueryParams.GROUP_ID.key(), groupId);
-        return studyDBAdaptor.count(query).first() > 0;
+        return studyDBAdaptor.count(query).getNumMatches() > 0;
     }
 
     private void validatePermissionRules(long studyId, Study.Entity entry, PermissionRule permissionRule) throws CatalogException {

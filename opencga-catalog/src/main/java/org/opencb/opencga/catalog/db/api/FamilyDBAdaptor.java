@@ -121,7 +121,7 @@ public interface FamilyDBAdaptor extends AnnotationSetDBAdaptor<Family> {
     }
 
     default boolean exists(long familyId) throws CatalogDBException {
-        return count(new Query(QueryParams.UID.key(), familyId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), familyId)).getNumMatches() > 0;
     }
 
     default void checkId(long familyId) throws CatalogDBException {
