@@ -10,11 +10,13 @@ import org.opencb.opencga.core.models.mixin.*;
 public class JacksonUtils {
 
     private static ObjectMapper defaultObjectMapper;
+    private static ObjectMapper defaultNonNullObjectMapper;
     private static ObjectMapper externalOpencgaObjectMapper;
     private static ObjectMapper updateObjectMapper;
 
     static {
         defaultObjectMapper = generateDefaultObjectMapper();
+        defaultNonNullObjectMapper = generateDefaultNonNullObjectMapper();
         externalOpencgaObjectMapper = generateOpenCGAObjectMapper();
         updateObjectMapper = generateUpdateObjectMapper();
     }
@@ -50,6 +52,12 @@ public class JacksonUtils {
         return objectMapper;
     }
 
+    private static ObjectMapper generateDefaultNonNullObjectMapper() {
+        ObjectMapper objectMapper = generateDefaultObjectMapper();
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        return objectMapper;
+    }
+
     private static ObjectMapper generateOpenCGAObjectMapper() {
         ObjectMapper objectMapper = generateDefaultObjectMapper();
         objectMapper.addMixIn(Individual.class, PrivateUidMixin.class);
@@ -72,6 +80,10 @@ public class JacksonUtils {
 
     public static ObjectMapper getDefaultObjectMapper() {
         return defaultObjectMapper;
+    }
+
+    public static ObjectMapper getDefaultNonNullObjectMapper() {
+        return defaultNonNullObjectMapper;
     }
 
     public static ObjectMapper getExternalOpencgaObjectMapper() {
