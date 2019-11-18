@@ -663,7 +663,7 @@ public class FileManager extends AnnotationSetManager<File> {
             }
 
             if (!path.toFile().isFile()) {
-                throw new CatalogException("Operation 'register' is only supported for files.");
+                throw new CatalogException("Operation 'register' is only supported for files. Unable to register '" + path + "'");
             }
 
             URI parentUri = UriUtils.createUri(path.getParent().toString());
@@ -1298,7 +1298,7 @@ public class FileManager extends AnnotationSetManager<File> {
             String fileUuid = "";
 
             try {
-                OpenCGAResult<File> internalResult = internalGet(study.getUid(), id, INCLUDE_FILE_IDS, userId);
+                OpenCGAResult<File> internalResult = internalGet(study.getUid(), id, INCLUDE_FILE_URI_PATH, userId);
                 if (internalResult.getNumResults() == 0) {
                     throw new CatalogException("File '" + id + "' not found");
                 }

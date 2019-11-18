@@ -51,6 +51,8 @@ public class AbstractManagerTest extends GenericTest {
     protected String s_7;
     protected String s_8;
     protected String s_9;
+    protected String testFile1;
+    protected String testFile2;
 
 
     @Before
@@ -98,8 +100,9 @@ public class AbstractManagerTest extends GenericTest {
         catalogManager.getFileManager().update(studyFqn, testFolder.getPath(),
                 new FileUpdateParams().setAttributes(attributes), new QueryOptions(), sessionIdUser);
 
+        testFile1 = testFolder.getPath() + "test_1K.txt.gz";
         DataResult<File> queryResult2 = catalogManager.getFileManager().create(studyFqn,
-                new File().setPath(testFolder.getPath() + "test_1K.txt.gz"), false, StringUtils.randomString(1000), null, sessionIdUser);
+                new File().setPath(testFile1), false, StringUtils.randomString(1000), null, sessionIdUser);
 
         File fileTest1k = catalogManager.getFileManager().get(studyFqn, queryResult2.first().getPath(), null, sessionIdUser).first();
         attributes = new ObjectMap();
@@ -110,8 +113,9 @@ public class AbstractManagerTest extends GenericTest {
         catalogManager.getFileManager().update(studyFqn, fileTest1k.getPath(),
                 new FileUpdateParams().setAttributes(attributes), new QueryOptions(), sessionIdUser);
 
+        testFile2 = testFolder.getPath() + "test_0.5K.txt";
         DataResult<File> queryResult1 = catalogManager.getFileManager().create(studyFqn,
-                new File().setPath(testFolder.getPath() + "test_0.5K.txt").setBioformat(File.Bioformat.DATAMATRIX_EXPRESSION), false,
+                new File().setPath(testFile2).setBioformat(File.Bioformat.DATAMATRIX_EXPRESSION), false,
                 StringUtils.randomString(500), null, sessionIdUser);
 
         File fileTest05k = catalogManager.getFileManager().get(studyFqn, queryResult1.first().getPath(), null, sessionIdUser).first();

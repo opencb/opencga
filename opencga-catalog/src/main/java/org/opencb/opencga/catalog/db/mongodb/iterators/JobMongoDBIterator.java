@@ -58,6 +58,7 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
             getFile(fileUids, job, JobDBAdaptor.QueryParams.TMP_DIR);
             getFile(fileUids, job, JobDBAdaptor.QueryParams.LOG);
             getFile(fileUids, job, JobDBAdaptor.QueryParams.ERROR_LOG);
+            getFiles(fileUids, job, JobDBAdaptor.QueryParams.INPUT);
         }
 
         if (!fileUids.isEmpty()) {
@@ -84,6 +85,7 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
                 setFile(fileMap, job, JobDBAdaptor.QueryParams.TMP_DIR);
                 setFile(fileMap, job, JobDBAdaptor.QueryParams.LOG);
                 setFile(fileMap, job, JobDBAdaptor.QueryParams.ERROR_LOG);
+                setFiles(fileMap, job, JobDBAdaptor.QueryParams.INPUT);
             });
         }
     }
@@ -105,6 +107,32 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
             if (fileUid != null && fileUid.longValue() > 0) {
                 job.put(param.key(), fileMap.get(fileUid.longValue()));
             }
+        }
+    }
+
+    private void getFiles(Set<Long> fileUids, Document job, JobDBAdaptor.QueryParams param) {
+        Object files = job.get(param.key());
+        if (files != null) {
+            for (Object file : ((Collection) files)) {
+                Number fileUid = ((Number) ((Document) file).get(FileDBAdaptor.QueryParams.UID.key()));
+                if (fileUid != null && fileUid.longValue() > 0) {
+                    fileUids.add(fileUid.longValue());
+                }
+            }
+        }
+    }
+
+    private void setFiles(Map<Long, Document> fileMap, Document job, JobDBAdaptor.QueryParams param) {
+        Object files = job.get(param.key());
+        if (files != null) {
+            List<Document> updatedfiles = new ArrayList<>(((Collection) files).size());
+            for (Object file : ((Collection) files)) {
+                Number fileUid = ((Number) ((Document) file).get(FileDBAdaptor.QueryParams.UID.key()));
+                if (fileUid != null && fileUid.longValue() > 0) {
+                    updatedfiles.add(fileMap.get(fileUid.longValue()));
+                }
+            }
+            job.put(param.key(), updatedfiles);
         }
     }
 }

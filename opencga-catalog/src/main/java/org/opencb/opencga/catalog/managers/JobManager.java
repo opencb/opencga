@@ -355,7 +355,8 @@ public class JobManager extends ResourceManager<Job> {
 
             autoCompleteNewJob(study, job);
 
-            OpenCGAResult<Job> jobResult = jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
+            OpenCGAResult insertResult = jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
+            OpenCGAResult<Job> jobResult = jobDBAdaptor.get(job.getUid(), new QueryOptions());
 
             auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
