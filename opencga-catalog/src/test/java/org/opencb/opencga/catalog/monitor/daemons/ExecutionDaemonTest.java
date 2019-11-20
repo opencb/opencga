@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -155,6 +156,57 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         daemon.checkJobs();
 
         assertEquals(Job.JobStatus.DONE, getJob(jobId).getStatus().getName());
+    }
+
+    @Test
+    public void testRegisterFilesSuccessfully() throws Exception {
+        HashMap<String, String> params = new HashMap<>();
+        params.put(ExecutionDaemon.OUTDIR_PARAM, "outDir");
+        org.opencb.opencga.core.models.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, sessionIdUser).first();
+        params.put("myFile", inputFile.getPath());
+        Job job = catalogManager.getJobManager().submit(studyFqn, "variant", "index", Enums.Priority.MEDIUM, params, sessionIdUser).first();
+        String jobId = job.getId();
+
+        daemon.checkJobs();
+
+        String[] cli = getJob(jobId).getCommandLine().split(" ");
+        int i = Arrays.binarySearch(cli, "--my-file");
+        assertEquals(inputFile.getUri().getPath(), cli[i + 1]);
+        assertEquals(1, getJob(jobId).getInput().size());
+        assertEquals(inputFile.getPath(), getJob(jobId).getInput().get(0).getPath());
+        assertEquals(Job.JobStatus.QUEUED, getJob(jobId).getStatus().getName());
+        executor.jobStatus.put(jobId, Job.JobStatus.RUNNING);
+
+        daemon.checkJobs();
+
+        assertEquals(Job.JobStatus.RUNNING, getJob(jobId).getStatus().getName());
+        createAnalysisResult(jobId, "myTest", ar -> ar.setStatus(new Status(Status.Type.DONE, null, null)));
+        executor.jobStatus.put(jobId, Job.JobStatus.READY);
+
+        job = catalogManager.getJobManager().get(studyFqn, job.getId(), QueryOptions.empty(), sessionIdUser).first();
+        Files.createFile(Paths.get(job.getOutDir().getUri()).resolve("file1.txt"));
+        Files.createFile(Paths.get(job.getOutDir().getUri()).resolve("file2.txt"));
+        Files.createDirectory(Paths.get(job.getOutDir().getUri()).resolve("A"));
+        Files.createFile(Paths.get(job.getOutDir().getUri()).resolve("A/file3.txt"));
+
+        Files.createFile(Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log"));
+        Files.createFile(Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".err"));
+
+        daemon.checkJobs();
+
+        assertEquals(Job.JobStatus.DONE, getJob(jobId).getStatus().getName());
+
+        job = catalogManager.getJobManager().get(studyFqn, job.getId(), QueryOptions.empty(), sessionIdUser).first();
+
+        assertEquals(4, job.getOutput().size());
+        for (org.opencb.opencga.core.models.File file : job.getOutput()) {
+            assertTrue(Arrays.asList("outDir/file1.txt", "outDir/file2.txt", "outDir/A/", "outDir/A/file3.txt").contains(file.getPath()));
+        }
+        assertEquals(0, job.getOutput().stream().filter(f -> f.getName().endsWith(AnalysisResultManager.FILE_EXTENSION))
+                .collect(Collectors.toList()).size());
+
+        assertEquals(job.getId() + ".log", job.getLog().getName());
+        assertEquals(job.getId() + ".err", job.getErrorLog().getName());
     }
 
     @Test

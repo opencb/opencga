@@ -165,7 +165,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         OpenCGAResult<Document> queryResult = nativeGet(query, queryOptions);
 
         if (queryResult.getNumResults() != 0) {
-            Object id = queryResult.getResults().get(0).get(PRIVATE_STUDY_UID);
+            Object id = queryResult.first().get(PRIVATE_STUDY_UID);
             return id instanceof Number ? ((Number) id).longValue() : Long.parseLong(id.toString());
         } else {
             throw CatalogDBException.uidNotFound("Job", jobId);
@@ -585,7 +585,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public DBIterator<Job> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new JobMongoDBIterator(mongoCursor, dbAdaptorFactory.getCatalogFileDBAdaptor(), jobConverter, null);
+        return new JobMongoDBIterator(mongoCursor, null, jobConverter, dbAdaptorFactory.getCatalogFileDBAdaptor());
     }
 
     @Override
@@ -594,7 +594,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new JobMongoDBIterator(mongoCursor, dbAdaptorFactory.getCatalogFileDBAdaptor(), null, null);
+        return new JobMongoDBIterator(mongoCursor, null, null, dbAdaptorFactory.getCatalogFileDBAdaptor());
     }
 
     @Override
@@ -602,7 +602,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(null, studyUid);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
-        return new JobMongoDBIterator(mongoCursor, dbAdaptorFactory.getCatalogFileDBAdaptor(), jobConverter, null, user, studyUid);
+        return new JobMongoDBIterator(mongoCursor, null, jobConverter, dbAdaptorFactory.getCatalogFileDBAdaptor(), studyUid, user);
     }
 
     @Override
@@ -613,7 +613,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         Document studyDocument = getStudyDocument(null, studyUid);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, studyDocument, user);
-        return new JobMongoDBIterator(mongoCursor, dbAdaptorFactory.getCatalogFileDBAdaptor(), null, null, user, studyUid);
+        return new JobMongoDBIterator(mongoCursor, null, null, dbAdaptorFactory.getCatalogFileDBAdaptor(), studyUid, user);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {

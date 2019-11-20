@@ -1532,40 +1532,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 }
                 fileList.add(registeredFile);
             } catch (CatalogException e) {
-                // The file is not registered in Catalog, so we will register it
-                long size = ioManager.getFileSize(fileUri);
-
-                String parentPath = getParentPath(finalCatalogPath);
-                File parentFile = internalGet(study.getUid(), parentPath, INCLUDE_FILE_URI_PATH, userId).first();
-                // We obtain the permissions set in the parent folder and set them to the file or folder being created
-                OpenCGAResult<Map<String, List<String>>> allFileAcls = authorizationManager.getAllFileAcls(study.getUid(),
-                        parentFile.getUid(), userId, true);
-
-                File subfile = new File(Paths.get(finalCatalogPath).getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
-                        File.Bioformat.NONE, fileUri, finalCatalogPath, "", TimeUtils.getTime(), TimeUtils.getTime(),
-                        "", new File.FileStatus(File.FileStatus.READY), parentFile.isExternal(), size, null, new Experiment(),
-                        Collections.emptyList(), new Job(), Collections.emptyList(), null, studyManager.getCurrentRelease(study),
-                        Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
-                subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
-                checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
-                fileDBAdaptor.insert(study.getUid(), subfile, Collections.emptyList(), new QueryOptions());
-                File file = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty()).first();
-
-                // Propagate ACLs
-                if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-                    authorizationManager.replicateAcls(study.getUid(), Arrays.asList(file.getUid()), allFileAcls.getResults().get(0),
-                            Enums.Resource.FILE);
-                }
-                file = this.fileMetadataReader.setMetadataInformation(file, file.getUri(), new QueryOptions(), token, false);
-
-                // If it is a transformed file, we will try to link it with the correspondent original file
-                try {
-                    if (isTransformedFile(file.getName())) {
-                        matchUpVariantFiles(study.getFqn(), Arrays.asList(file), token);
-                    }
-                } catch (CatalogException e1) {
-                    logger.warn("Matching avro to variant file: {}", e1.getMessage());
-                }
+                File file = registerFile(study, finalCatalogPath, fileUri, token).first();
 
                 result.setNumInserted(result.getNumInserted() + 1);
                 fileList.add(file);
@@ -3492,44 +3459,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
             // Create the file
             if (fileDBAdaptor.count(query).getNumMatches() == 0) {
-                long size = Files.size(Paths.get(normalizedUri));
-
-                String parentPath = getParentPath(externalPathDestinyStr);
-                long parentFileId = fileDBAdaptor.getId(study.getUid(), parentPath);
-                // We obtain the permissions set in the parent folder and set them to the file or folder being created
-                OpenCGAResult<Map<String, List<String>>> allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId,
-                        userId, true);
-
-                File subfile = new File(externalPathDestiny.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
-                        File.Bioformat.NONE, normalizedUri, externalPathDestinyStr, checksum, TimeUtils.getTime(), TimeUtils.getTime(),
-                        description, new File.FileStatus(File.FileStatus.READY), true, size, null, new Experiment(),
-                        Collections.emptyList(), new Job(), relatedFiles, null, studyManager.getCurrentRelease(study),
-                        Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
-                subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
-                checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
-                fileDBAdaptor.insert(study.getUid(), subfile, Collections.emptyList(), new QueryOptions());
-                OpenCGAResult<File> queryResult = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty());
-
-                // Propagate ACLs
-                if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-                    authorizationManager.replicateAcls(study.getUid(), Arrays.asList(queryResult.first().getUid()),
-                            allFileAcls.getResults().get(0), Enums.Resource.FILE);
-                }
-
-                File file = this.fileMetadataReader.setMetadataInformation(queryResult.first(), queryResult.first().getUri(),
-                        new QueryOptions(), sessionId, false);
-                queryResult.setResults(Arrays.asList(file));
-
-                // If it is a transformed file, we will try to link it with the correspondent original file
-                try {
-                    if (isTransformedFile(file.getName())) {
-                        matchUpVariantFiles(study.getFqn(), Arrays.asList(file), sessionId);
-                    }
-                } catch (CatalogException e) {
-                    logger.warn("Matching avro to variant file: {}", e.getMessage());
-                }
-
-                return queryResult;
+                return registerFile(study, externalPathDestinyStr, normalizedUri, sessionId);
             } else {
                 throw new CatalogException("Cannot link " + externalPathDestiny.getFileName().toString() + ". A file with the same name "
                         + "was found in the same path.");
@@ -3694,6 +3624,50 @@ public class FileManager extends AnnotationSetManager<File> {
                     .append(QueryOptions.LIMIT, 100);
             return fileDBAdaptor.get(query, queryOptions);
         }
+    }
+
+    OpenCGAResult<File> registerFile(Study study, String filePath, URI fileUri, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        CatalogIOManager ioManager = catalogIOManagerFactory.get(fileUri);
+
+        // The file is not registered in Catalog, so we will register it
+        long size = ioManager.getFileSize(fileUri);
+
+        String parentPath = getParentPath(filePath);
+        File parentFile = internalGet(study.getUid(), parentPath, INCLUDE_FILE_URI_PATH, userId).first();
+        // We obtain the permissions set in the parent folder and set them to the file or folder being created
+        OpenCGAResult<Map<String, List<String>>> allFileAcls = authorizationManager.getAllFileAcls(study.getUid(),
+                parentFile.getUid(), userId, true);
+
+        File subfile = new File(Paths.get(filePath).getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
+                File.Bioformat.NONE, fileUri, filePath, "", TimeUtils.getTime(), TimeUtils.getTime(),
+                "", new File.FileStatus(File.FileStatus.READY), parentFile.isExternal(), size, null, new Experiment(),
+                Collections.emptyList(), new Job(), Collections.emptyList(), null, studyManager.getCurrentRelease(study),
+                Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
+        subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+        checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
+        fileDBAdaptor.insert(study.getUid(), subfile, Collections.emptyList(), new QueryOptions());
+        OpenCGAResult<File> result = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty());
+
+        // Propagate ACLs
+        if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
+            authorizationManager.replicateAcls(study.getUid(), Arrays.asList(result.first().getUid()), allFileAcls.getResults().get(0),
+                    Enums.Resource.FILE);
+        }
+        File file = this.fileMetadataReader.setMetadataInformation(result.first(), result.first().getUri(), new QueryOptions(), token,
+                false);
+        result.setResults(Collections.singletonList(file));
+
+        // If it is a transformed file, we will try to link it with the correspondent original file
+        try {
+            if (isTransformedFile(file.getName())) {
+                matchUpVariantFiles(study.getFqn(), Arrays.asList(file), token);
+            }
+        } catch (CatalogException e1) {
+            logger.warn("Matching avro to variant file: {}", e1.getMessage());
+        }
+
+        return result;
     }
 
     private void checkHooks(File file, String fqn, HookConfiguration.Stage stage) throws CatalogException {

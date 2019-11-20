@@ -281,8 +281,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         Path outDirPath = Paths.get(updateParams.getOutDir().getUri());
 
         // Define where the stdout and stderr will be stored
-        Path stderr = outDirPath.resolve(job.getId() + ".err");
-        Path stdout = outDirPath.resolve(job.getId() + ".log");
+        Path stderr = outDirPath.resolve(getErrorLogFileName(job));
+        Path stdout = outDirPath.resolve(getLogFileName(job));
 
         List<File> inputFiles = new ArrayList<>();
         String error = processJobParams(study, params, userToken, outDirPath, inputFiles);
@@ -516,7 +516,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             } else {
                 Path tmpOutdirPath = Paths.get(job.getOutDir().getUri());
                 // Check if the error file is present
-                Path errorLog = tmpOutdirPath.resolve(job.getId() + ".err");
+                Path errorLog = tmpOutdirPath.resolve(getErrorLogFileName(job));
 
                 if (Files.exists(errorLog)) {
                     // There must be some command line error. The job started running but did not finish well, otherwise we would find the
@@ -578,10 +578,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         logger.info("{} - Registering job results from '{}'", job.getId(), outDirUri);
 
-        List<File> outputFiles;
+        List<File> registeredFiles;
         try {
             Predicate<URI> uriPredicate = uri -> !uri.getPath().endsWith(AnalysisResultManager.FILE_EXTENSION);
-            outputFiles = fileManager.syncUntrackedFiles(study, job.getOutDir().getPath(), uriPredicate, token).getResults();
+            registeredFiles = fileManager.syncUntrackedFiles(study, job.getOutDir().getPath(), uriPredicate, token).getResults();
         } catch (CatalogException e) {
             logger.error("Could not registered files in Catalog: {}", e.getMessage(), e);
             return 0;
@@ -589,10 +589,24 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         // Register the job information
         JobUpdateParams updateParams = new JobUpdateParams();
-        AnalysisResult analysisResult = readAnalysisResult(analysisResultPath);
 
-        updateParams.setResult(analysisResult);
+        // Process output and log files
+        List<File> outputFiles = new ArrayList<>(registeredFiles.size());
+        String logFileName = getLogFileName(job);
+        String errorLogFileName = getErrorLogFileName(job);
+        for (File registeredFile : registeredFiles) {
+            if (registeredFile.getName().equals(logFileName)) {
+                updateParams.setLog(registeredFile);
+            } else if (registeredFile.getName().equals(errorLogFileName)) {
+                updateParams.setErrorLog(registeredFile);
+            } else {
+                outputFiles.add(registeredFile);
+            }
+        }
         updateParams.setOutput(outputFiles);
+
+        AnalysisResult analysisResult = readAnalysisResult(analysisResultPath);
+        updateParams.setResult(analysisResult);
 
         // Check status of analysis result or if there are files that could not be moved to outdir to decide the final result
         if (analysisResult == null) {
@@ -614,6 +628,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
 
         return 1;
+    }
+
+    private String getErrorLogFileName(Job job) {
+        return job.getId() + ".err";
+    }
+
+    private String getLogFileName(Job job) {
+        return job.getId() + ".log";
     }
 
 }

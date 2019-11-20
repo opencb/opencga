@@ -271,12 +271,6 @@ public class JobManager extends ResourceManager<Job> {
                     throw new CatalogException("Unexpected outDir type. Expected " + File.Type.DIRECTORY);
                 }
             }
-            if (job.getTmpDir() != null && StringUtils.isNotEmpty(job.getTmpDir().getPath())) {
-                job.setTmpDir(getFile(study.getUid(), job.getTmpDir().getPath(), userId));
-                if (job.getTmpDir().getType() != File.Type.DIRECTORY) {
-                    throw new CatalogException("Unexpected tmpDir type. Expected " + File.Type.DIRECTORY);
-                }
-            }
             if (job.getLog() != null && StringUtils.isNotEmpty(job.getLog().getPath())) {
                 job.setLog(getFile(study.getUid(), job.getLog().getPath(), userId));
             }
@@ -712,15 +706,6 @@ public class JobManager extends ResourceManager<Job> {
 
         if (updateParams.getOutDir() != null && updateParams.getOutDir().getUid() <= 0) {
             updateParams.setOutDir(getFile(study.getUid(), updateParams.getOutDir().getPath(), userId));
-        }
-
-        if (updateParams.getTmpDir() != null && updateParams.getTmpDir().getUid() <= 0) {
-            if (StringUtils.isEmpty(updateParams.getTmpDir().getPath())) {
-                // We set the file uid to -1 because this update means the user wants to remove the reference to the temporal directory
-                job.setTmpDir(updateParams.getTmpDir().setUid(-1));
-            } else {
-                job.setTmpDir(getFile(study.getUid(), updateParams.getOutDir().getPath(), userId));
-            }
         }
 
         if (ListUtils.isNotEmpty(updateParams.getInput())) {
