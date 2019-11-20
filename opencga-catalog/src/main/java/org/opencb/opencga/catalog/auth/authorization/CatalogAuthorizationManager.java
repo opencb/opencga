@@ -256,7 +256,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkCanAssignOrSeePermissions(long studyId, String userId) throws CatalogException {
         String ownerId = studyDBAdaptor.getOwnerId(studyId);
 
-        if (!ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
+        if (!ADMIN.equals(userId) && !ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
             throw new CatalogAuthorizationException("Only owners or administrative users are allowed to assign permissions");
         }
     }

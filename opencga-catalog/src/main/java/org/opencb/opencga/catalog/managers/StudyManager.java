@@ -81,8 +81,9 @@ public class StudyManager extends AbstractManager {
     private static final Pattern PROJECT_STUDY_PATTERN = Pattern.compile("^(" + PROJECT_PATTERN + "):(" + STUDY_PATTERN + ")$");
 
     static final QueryOptions INCLUDE_STUDY_UID = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.UID.key());
-    static final QueryOptions INCLUDE_STUDY_ID = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.UID.key(),
-            StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UUID.key(), StudyDBAdaptor.QueryParams.FQN.key()));
+    public static final QueryOptions INCLUDE_STUDY_ID = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+            StudyDBAdaptor.QueryParams.UID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UUID.key(),
+            StudyDBAdaptor.QueryParams.FQN.key()));
     static final QueryOptions INCLUDE_VARIABLE_SET = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.VARIABLE_SET.key());
 
     protected Logger logger;

@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.catalog.monitor.executors.BatchExecutor;
 import org.opencb.opencga.core.analysis.result.AnalysisResult;
@@ -13,6 +14,7 @@ import org.opencb.opencga.core.analysis.result.Status;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +29,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ExecutionDaemonTest extends AbstractManagerTest {
 
@@ -37,6 +40,13 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     @Before
     public void setUp() throws IOException, CatalogException {
         super.setUp();
+
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().getDefault();
+        URI jobsFolder = Paths.get(catalogManager.getConfiguration().getJobDir()).toUri();
+        if (ioManager.exists(jobsFolder)) {
+            // Delete JOBS folder
+            ioManager.deleteDirectory(jobsFolder);
+        }
 
         String expiringToken = this.catalogManager.getUserManager().login("admin", "admin");
         String nonExpiringToken = this.catalogManager.getUserManager().getSystemTokenForUser("admin", expiringToken);
@@ -60,34 +70,67 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testCreateOutDir() throws Exception {
-
+    public void testCreateDefaultOutDir() throws Exception {
         HashMap<String, String> params = new HashMap<>();
-        params.put("outdir", "data");
         String jobId = catalogManager.getJobManager().submit(studyFqn, "command", "subcommand", Enums.Priority.MEDIUM, params, sessionIdUser).first().getId();
 
         daemon.checkPendingJobs();
 
-        URI uri = getJob(jobId).getTmpDir().getUri();
+        URI uri = getJob(jobId).getOutDir().getUri();
         Assert.assertTrue(Files.exists(Paths.get(uri)));
+        assertTrue(uri.getPath().startsWith("/tmp/opencga/jobs/") && uri.getPath().endsWith(jobId + "/"));
     }
 
     @Test
-    public void testCheckPendingJobEmptyOutdir() throws Exception {
+    public void testCreateOutDir() throws Exception {
         HashMap<String, String> params = new HashMap<>();
-        params.put("other", "data");
+        params.put("outdir", "outputDir/");
         String jobId = catalogManager.getJobManager().submit(studyFqn, "command", "subcommand", Enums.Priority.MEDIUM, params, sessionIdUser).first().getId();
 
         daemon.checkPendingJobs();
 
-        assertEquals(Job.JobStatus.ABORTED, getJob(jobId).getStatus().getName());
-        assertEquals("Missing mandatory outdir directory", getJob(jobId).getStatus().getMessage());
+        URI uri = getJob(jobId).getOutDir().getUri();
+        Assert.assertTrue(Files.exists(Paths.get(uri)));
+        assertTrue(!uri.getPath().startsWith("/tmp/opencga/jobs/") && uri.getPath().endsWith("outputDir/"));
+    }
+
+    @Test
+    public void testUseEmptyDirectory() throws Exception {
+        // Create empty directory that is registered in OpenCGA
+        org.opencb.opencga.core.models.File directory = catalogManager.getFileManager().createFolder(studyFqn, "outputDir/",
+                new org.opencb.opencga.core.models.File.FileStatus(), true, "", QueryOptions.empty(), sessionIdUser).first();
+        catalogManager.getCatalogIOManagerFactory().get(directory.getUri()).createDirectory(directory.getUri(), true);
+
+        HashMap<String, String> params = new HashMap<>();
+        params.put("outdir", "outputDir/");
+        String jobId = catalogManager.getJobManager().submit(studyFqn, "command", "subcommand", Enums.Priority.MEDIUM, params,
+                sessionIdUser).first().getId();
+
+        daemon.checkPendingJobs();
+
+        URI uri = getJob(jobId).getOutDir().getUri();
+        Assert.assertTrue(Files.exists(Paths.get(uri)));
+        assertTrue(!uri.getPath().startsWith("/tmp/opencga/jobs/") && uri.getPath().endsWith("outputDir/"));
+    }
+
+    @Test
+    public void testNotEmptyOutDir() throws Exception {
+        HashMap<String, String> params = new HashMap<>();
+        params.put("outdir", "data/");
+        String jobId = catalogManager.getJobManager().submit(studyFqn, "command", "subcommand", Enums.Priority.MEDIUM, params, sessionIdUser).first().getId();
+
+        daemon.checkPendingJobs();
+
+        OpenCGAResult<Job> jobOpenCGAResult = catalogManager.getJobManager().get(studyFqn, jobId, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, jobOpenCGAResult.getNumResults());
+        assertEquals(Job.JobStatus.ABORTED, jobOpenCGAResult.first().getStatus().getName());
+        assertTrue(jobOpenCGAResult.first().getStatus().getMessage().contains("not an empty directory"));
     }
 
     @Test
     public void testRunJob() throws Exception {
         HashMap<String, String> params = new HashMap<>();
-        params.put(ExecutionDaemon.OUTDIR_PARAM, "data");
+        params.put(ExecutionDaemon.OUTDIR_PARAM, "outDir");
         org.opencb.opencga.core.models.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, sessionIdUser).first();
         params.put("myFile", inputFile.getPath());
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant", "index", Enums.Priority.MEDIUM, params, sessionIdUser).first();
@@ -116,9 +159,8 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
     @Test
     public void testRunJobFail() throws Exception {
-
         HashMap<String, String> params = new HashMap<>();
-        params.put(ExecutionDaemon.OUTDIR_PARAM, "data");
+        params.put(ExecutionDaemon.OUTDIR_PARAM, "outputDir/");
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant", "index", Enums.Priority.MEDIUM, params, sessionIdUser).first();
         String jobId = job.getId();
 
@@ -141,9 +183,8 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
     @Test
     public void testRunJobFailMissingAnalysisResult() throws Exception {
-
         HashMap<String, String> params = new HashMap<>();
-        params.put(ExecutionDaemon.OUTDIR_PARAM, "data");
+        params.put(ExecutionDaemon.OUTDIR_PARAM, "outputDir/");
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant", "index", Enums.Priority.MEDIUM, params, sessionIdUser).first();
         String jobId = job.getId();
 
@@ -171,7 +212,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         AnalysisResult ar = new AnalysisResult();
         ar.setId(analysisId);
         c.accept(ar);
-        File resultFile = Paths.get(getJob(jobId).getTmpDir().getUri()).resolve(analysisId + AnalysisResultManager.FILE_EXTENSION).toFile();
+        File resultFile = Paths.get(getJob(jobId).getOutDir().getUri()).resolve(analysisId + AnalysisResultManager.FILE_EXTENSION).toFile();
         JacksonUtils.getDefaultObjectMapper().writeValue(resultFile, ar);
     }
 

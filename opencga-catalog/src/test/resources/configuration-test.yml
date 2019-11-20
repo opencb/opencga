@@ -7,6 +7,8 @@ openRegister: true
 databasePrefix: "opencga_test"
 workspace: "/tmp/opencga/sessions"
 
+jobDir: "/tmp/opencga/jobs"
+
 admin:
   password: "admin"
   email: "admin@admin.com"

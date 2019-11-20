@@ -63,6 +63,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
@@ -1468,6 +1469,116 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
+    /**
+     * Given a registered folder in OpenCGA, it will scan its contents to register any nested file/folder that might not be registered.
+     *
+     * @param studyId  Study id.
+     * @param folderId Folder id, path or uuid.
+     * @param token    Token of the user. The user will need to have read and write access to the folderId.
+     * @return An OpenCGAResult containing the number of files that have been added and the full list of files registered (old and new).
+     * @throws CatalogException If there is any of the following errors:
+     *                          Study not found, folderId does not exist or user does not have permissions.
+     */
+    public OpenCGAResult<File> syncUntrackedFiles(String studyId, String folderId, String token) throws CatalogException {
+        return syncUntrackedFiles(studyId, folderId, uri -> true, token);
+    }
+
+    public OpenCGAResult<File> syncUntrackedFiles(String studyId, String folderId, Predicate<URI> filter, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, userId);
+
+        File folder = internalGet(study.getUid(), folderId, INCLUDE_FILE_URI_PATH, userId).first();
+
+        if (folder.getType() == File.Type.FILE) {
+            throw new CatalogException("Provided folder '" + folderId + "' is actually a file");
+        }
+
+        authorizationManager.checkFilePermission(study.getUid(), folder.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+
+        CatalogIOManager ioManager = catalogIOManagerFactory.get(folder.getUri());
+        Iterator<URI> iterator = ioManager.listFilesStream(folder.getUri()).iterator();
+
+        if (filter == null) {
+            filter = uri -> true;
+        }
+
+        long numMatches = 0;
+
+        OpenCGAResult<File> result = OpenCGAResult.empty();
+        List<File> fileList = new ArrayList<>();
+        List<Event> eventList = new ArrayList<>();
+        while (iterator.hasNext()) {
+            URI fileUri = iterator.next().normalize();
+
+            numMatches++;
+
+            if (!filter.test(fileUri)) {
+                continue;
+            }
+
+            String relativeFilePath = folder.getUri().relativize(fileUri).getPath();
+            String finalCatalogPath = Paths.get(folder.getPath()).resolve(relativeFilePath).toString();
+            if (relativeFilePath.endsWith("/") && !finalCatalogPath.endsWith("/")) {
+                finalCatalogPath += "/";
+            }
+
+            try {
+                File registeredFile = internalGet(study.getUid(), finalCatalogPath, INCLUDE_FILE_URI_PATH, userId).first();
+                if (!registeredFile.getUri().equals(fileUri)) {
+                    eventList.add(new Event(Event.Type.WARNING, registeredFile.getPath(), "The uri registered in Catalog '"
+                            + registeredFile.getUri().getPath() + "' for the path does not match the uri that would have been synced '"
+                            + fileUri.getPath() + "'"));
+                }
+                fileList.add(registeredFile);
+            } catch (CatalogException e) {
+                // The file is not registered in Catalog, so we will register it
+                long size = ioManager.getFileSize(fileUri);
+
+                String parentPath = getParentPath(finalCatalogPath);
+                File parentFile = internalGet(study.getUid(), parentPath, INCLUDE_FILE_URI_PATH, userId).first();
+                // We obtain the permissions set in the parent folder and set them to the file or folder being created
+                OpenCGAResult<Map<String, List<String>>> allFileAcls = authorizationManager.getAllFileAcls(study.getUid(),
+                        parentFile.getUid(), userId, true);
+
+                File subfile = new File(Paths.get(finalCatalogPath).getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
+                        File.Bioformat.NONE, fileUri, finalCatalogPath, "", TimeUtils.getTime(), TimeUtils.getTime(),
+                        "", new File.FileStatus(File.FileStatus.READY), parentFile.isExternal(), size, null, new Experiment(),
+                        Collections.emptyList(), new Job(), Collections.emptyList(), null, studyManager.getCurrentRelease(study),
+                        Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
+                subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+                checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
+                fileDBAdaptor.insert(study.getUid(), subfile, Collections.emptyList(), new QueryOptions());
+                File file = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty()).first();
+
+                // Propagate ACLs
+                if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
+                    authorizationManager.replicateAcls(study.getUid(), Arrays.asList(file.getUid()), allFileAcls.getResults().get(0),
+                            Enums.Resource.FILE);
+                }
+                file = this.fileMetadataReader.setMetadataInformation(file, file.getUri(), new QueryOptions(), token, false);
+
+                // If it is a transformed file, we will try to link it with the correspondent original file
+                try {
+                    if (isTransformedFile(file.getName())) {
+                        matchUpVariantFiles(study.getFqn(), Arrays.asList(file), token);
+                    }
+                } catch (CatalogException e1) {
+                    logger.warn("Matching avro to variant file: {}", e1.getMessage());
+                }
+
+                result.setNumInserted(result.getNumInserted() + 1);
+                fileList.add(file);
+            }
+        }
+        result.setNumMatches(numMatches);
+        result.setEvents(eventList);
+        result.setResults(fileList);
+        result.setNumResults(fileList.size());
+
+        return result;
+    }
+
     public OpenCGAResult<File> unlink(@Nullable String studyId, String fileId, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId);
@@ -2325,7 +2436,7 @@ public class FileManager extends AnnotationSetManager<File> {
     }
 
     public OpenCGAResult<File> link(String studyStr, URI uriOrigin, String pathDestiny, ObjectMap params, String token)
-            throws CatalogException, IOException {
+            throws CatalogException {
         // We make two attempts to link to ensure the behaviour remains even if it is being called at the same time link from different
         // threads
         String userId = userManager.getUserId(token);
@@ -2354,7 +2465,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 auditManager.auditCreate(userId, Enums.Action.LINK, Enums.Resource.FILE, uriOrigin.toString(), "",
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR,
                                 new Error(0, "", e2.getMessage())));
-                throw e2;
+                throw new CatalogException(e2.getMessage(), e2.getCause());
             }
         }
     }

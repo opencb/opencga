@@ -25,7 +25,7 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
     private final long studyUid;
     private final QueryOptions fileQueryOptions;
 
-    private Logger logger = LoggerFactory.getLogger(FileMongoDBIterator.class);
+    private Logger logger = LoggerFactory.getLogger(JobMongoDBIterator.class);
 
     public JobMongoDBIterator(MongoCursor mongoCursor, FileDBAdaptor fileDBAdaptor, JobConverter converter, QueryOptions fileQueryOptions) {
         super(mongoCursor, converter);
