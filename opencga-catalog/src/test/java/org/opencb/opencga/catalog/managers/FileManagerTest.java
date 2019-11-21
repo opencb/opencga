@@ -395,9 +395,9 @@ public class FileManagerTest extends AbstractManagerTest {
         Set<String> paths = fileManager.search(study.getFqn(), new Query("type", File.Type.DIRECTORY), new
                 QueryOptions(), sessionIdUser2)
                 .getResults().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(1, paths.size());
+        assertEquals(2, paths.size());
         assertTrue(paths.contains(""));             //root
-//        assertTrue(paths.contains("data/"));        //data
+        assertTrue(paths.contains("JOBS/"));        //JOBS
 //        assertTrue(paths.contains("analysis/"));    //analysis
 
         Path folderPath = Paths.get("data", "new", "folder");
@@ -409,7 +409,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         paths = fileManager.search(study.getFqn(), new Query(FileDBAdaptor.QueryParams.TYPE.key(), File.Type
                 .DIRECTORY), new QueryOptions(), sessionIdUser2).getResults().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(4, paths.size());
+        assertEquals(5, paths.size());
         assertTrue(paths.contains("data/new/"));
         assertTrue(paths.contains("data/new/folder/"));
 

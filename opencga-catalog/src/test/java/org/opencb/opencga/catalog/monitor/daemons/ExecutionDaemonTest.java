@@ -42,13 +42,6 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     public void setUp() throws IOException, CatalogException {
         super.setUp();
 
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().getDefault();
-        URI jobsFolder = Paths.get(catalogManager.getConfiguration().getJobDir()).toUri();
-        if (ioManager.exists(jobsFolder)) {
-            // Delete JOBS folder
-            ioManager.deleteDirectory(jobsFolder);
-        }
-
         String expiringToken = this.catalogManager.getUserManager().login("admin", "admin");
         String nonExpiringToken = this.catalogManager.getUserManager().getSystemTokenForUser("admin", expiringToken);
 

@@ -240,7 +240,7 @@ public class ProjectManager extends AbstractManager {
         project = queryResult.getResults().get(0);
 
         try {
-            catalogIOManagerFactory.getDefault().createProject(userId, project.getId());
+            catalogIOManagerFactory.getDefault().createProject(userId, Long.toString(project.getUid()));
         } catch (CatalogIOException e) {
             auditManager.auditCreate(userId, Enums.Resource.PROJECT, id, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

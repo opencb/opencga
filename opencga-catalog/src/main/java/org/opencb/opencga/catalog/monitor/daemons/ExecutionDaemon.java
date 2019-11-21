@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -352,9 +353,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
             // Create main JOBS directory for the study
             Study study = catalogManager.getStudyManager().resolveId(studyStr, "admin");
+            long projectUid = catalogManager.getProjectManager().get(study.getFqn().split(":")[0], new QueryOptions(QueryOptions.INCLUDE,
+                    ProjectDBAdaptor.QueryParams.UID.key()), token).first().getUid();
 
             URI uri = Paths.get(catalogManager.getConfiguration().getJobDir())
-                    .resolve(study.getFqn().replace("@", "/").replace(":", "/"))
+                    .resolve(study.getFqn().split("@")[0]) // user
+                    .resolve(Long.toString(projectUid))
+                    .resolve(Long.toString(study.getUid()))
                     .resolve("JOBS")
                     .toUri();
 

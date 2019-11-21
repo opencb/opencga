@@ -107,7 +107,6 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
 
         STATUS("status", OBJECT, ""),
         OUT_DIR("outDir", OBJECT, ""),
-        TMP_DIR("tmpDir", OBJECT, ""),
 
         INPUT("input", OBJECT, ""),
         OUTPUT("output", OBJECT, ""),

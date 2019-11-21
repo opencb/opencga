@@ -19,6 +19,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.NATIVE_QUERY;
+
 public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
 
     private final long studyUid;
@@ -27,19 +29,22 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
     private final FileMongoDBAdaptor fileDBAdaptor;
     private final QueryOptions fileQueryOptions = FileManager.INCLUDE_FILE_URI_PATH;
 
+    private final QueryOptions options;
+
     private Logger logger = LoggerFactory.getLogger(JobMongoDBIterator.class);
 
     public JobMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, JobConverter converter,
-                              FileMongoDBAdaptor fileDBAdaptor) {
-        this(mongoCursor, clientSession, converter, fileDBAdaptor, 0, null);
+                              FileMongoDBAdaptor fileDBAdaptor, QueryOptions options) {
+        this(mongoCursor, clientSession, converter, fileDBAdaptor, options, 0, null);
     }
 
     public JobMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, JobConverter converter,
-                              FileMongoDBAdaptor fileDBAdaptor, long studyUid, String user) {
+                              FileMongoDBAdaptor fileDBAdaptor, QueryOptions options, long studyUid, String user) {
         super(mongoCursor, clientSession, converter, null);
         this.fileDBAdaptor = fileDBAdaptor;
         this.user = user;
         this.studyUid = studyUid;
+        this.options = options == null ? QueryOptions.empty() : options;
     }
 
     @Override
@@ -49,11 +54,13 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
             Document job = (Document) mongoCursor.next();
             buffer.add(job);
 
-            getFiles(fileUids, job, JobDBAdaptor.QueryParams.INPUT);
-            getFiles(fileUids, job, JobDBAdaptor.QueryParams.OUTPUT);
-            getFile(fileUids, job, JobDBAdaptor.QueryParams.OUT_DIR);
-            getFile(fileUids, job, JobDBAdaptor.QueryParams.LOG);
-            getFile(fileUids, job, JobDBAdaptor.QueryParams.ERROR_LOG);
+            if (!options.getBoolean(NATIVE_QUERY)) {
+                getFiles(fileUids, job, JobDBAdaptor.QueryParams.INPUT);
+                getFiles(fileUids, job, JobDBAdaptor.QueryParams.OUTPUT);
+                getFile(fileUids, job, JobDBAdaptor.QueryParams.OUT_DIR);
+                getFile(fileUids, job, JobDBAdaptor.QueryParams.LOG);
+                getFile(fileUids, job, JobDBAdaptor.QueryParams.ERROR_LOG);
+            }
         }
 
         if (!fileUids.isEmpty()) {

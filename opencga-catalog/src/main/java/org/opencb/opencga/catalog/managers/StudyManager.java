@@ -17,7 +17,10 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Event;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -55,6 +58,7 @@ import javax.annotation.Nullable;
 import javax.naming.NamingException;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -289,22 +293,18 @@ public class StudyManager extends AbstractManager {
                 throw new CatalogException("Permission denied: Only the owner of the project can create studies.");
             }
 
-            if (uri == null) {
-                try {
-                    uri = catalogIOManager.getStudyURI(userId, project.getId(), id);
-                } catch (CatalogIOException e) {
-                    throw new CatalogException("Cannot create study: " + e.getMessage(), e);
-                }
-            }
-
             LinkedList<File> files = new LinkedList<>();
-            File rootFile = new File(".", File.Type.DIRECTORY, null, null, "", uri, "study root folder",
+            File rootFile = new File(".", File.Type.DIRECTORY, null, null, "", null, "study root folder",
                     new File.FileStatus(File.FileStatus.READY), 0, project.getCurrentRelease());
+            File jobsFile = new File("JOBS", File.Type.DIRECTORY, null, null, "JOBS/", null, "Default jobs folder", new File.FileStatus(),
+                    0, project.getCurrentRelease());
+
             files.add(rootFile);
+            files.add(jobsFile);
 
             Study study = new Study(id, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
                     0, cipher, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)),
-                    new Group(ADMINS, Collections.emptyList())), null, files, null, null, null, null, null, null, null, null, uri,
+                    new Group(ADMINS, Collections.emptyList())), null, files, null, null, null, null, null, null, null, null, null,
                     datastores, project.getCurrentRelease(), stats, attributes);
 
             /* CreateStudy */
@@ -313,22 +313,31 @@ public class StudyManager extends AbstractManager {
             OpenCGAResult<Study> result = getStudy(projectId, study.getUuid(), options);
             study = result.getResults().get(0);
 
-            //URI studyUri;
             if (uri == null) {
                 try {
+                    uri = catalogIOManager.getStudyURI(userId, Long.toString(project.getUid()), Long.toString(study.getUid()));
                     catalogIOManager.createStudy(uri);
                 } catch (CatalogIOException e) {
                     try {
                         studyDBAdaptor.delete(study);
                     } catch (Exception e1) {
-                        logger.error("Can't delete study from DB -> {}, after failure creating study directories -> {}", e1.getMessage(),
-                                e.getMessage(), e);
-                        throw new CatalogException("Can't delete study from DB -> " + e1.getMessage() + ", after failure creating study "
-                                + "directories -> " + e.getMessage(), e);
+                        logger.error("Can't delete study after failure creating study", e1);
                     }
                     throw e;
                 }
             }
+
+            // Update uri of study
+            studyDBAdaptor.update(study.getUid(), new ObjectMap("uri", uri), QueryOptions.empty());
+
+            long rootFileId = fileDBAdaptor.getId(study.getUid(), "");    //Set studyUri to the root folder too
+            fileDBAdaptor.update(rootFileId, new ObjectMap("uri", uri), QueryOptions.empty());
+
+            long jobFolder = fileDBAdaptor.getId(study.getUid(), "JOBS/");
+            URI jobUri = Paths.get(configuration.getJobDir()).resolve(userId).resolve(Long.toString(project.getUid()))
+                    .resolve(Long.toString(study.getUid())).resolve("JOBS/").toUri();
+            catalogIOManager.createDirectory(jobUri, true);
+            fileDBAdaptor.update(jobFolder, new ObjectMap("uri", jobUri), QueryOptions.empty());
 
             auditManager.auditCreate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
