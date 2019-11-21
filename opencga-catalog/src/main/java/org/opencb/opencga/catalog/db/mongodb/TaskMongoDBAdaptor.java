@@ -34,6 +34,8 @@ public class TaskMongoDBAdaptor extends MongoDBAdaptor implements TaskDBAdaptor 
     private MongoDBCollection taskCollection;
     private TaskConverter taskConverter;
 
+    private static final String PRIVATE_PRIORITY = "_priority";
+
     public TaskMongoDBAdaptor(MongoDBCollection taskCollection, MongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(TaskMongoDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
@@ -89,6 +91,7 @@ public class TaskMongoDBAdaptor extends MongoDBAdaptor implements TaskDBAdaptor 
         Document jobObject = taskConverter.convertToStorageType(task);
         jobObject.put(PRIVATE_CREATION_DATE, TimeUtils.toDate(task.getCreationDate()));
         jobObject.put(PRIVATE_MODIFICATION_DATE, TimeUtils.toDate(task.getCreationDate()));
+        jobObject.put(PRIVATE_PRIORITY, task.getPriority().getValue());
 
         logger.debug("Inserting task '{}' ({})...", task.getId(), task.getUid());
         taskCollection.insert(clientSession, jobObject, null);
@@ -276,6 +279,11 @@ public class TaskMongoDBAdaptor extends MongoDBAdaptor implements TaskDBAdaptor 
             taskParameters.put(QueryParams.STATUS.key(), getMongoDBDocument(parameters.get(QueryParams.STATUS.key()), "Task.TaskStatus"));
         }
 
+        if (parameters.containsKey(QueryParams.PRIORITY.key())) {
+            taskParameters.put(QueryParams.PRIORITY.key(), parameters.getString(QueryParams.PRIORITY.key()));
+            taskParameters.put(PRIVATE_PRIORITY, Enums.Priority.getPriority(parameters.getString(QueryParams.PRIORITY.key())).getValue());
+        }
+
         String[] acceptedMapParams = {QueryParams.PARAMS.key(), QueryParams.ATTRIBUTES.key(),
                 QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key()};
         filterMapParams(parameters, taskParameters, acceptedMapParams);
@@ -367,6 +375,33 @@ public class TaskMongoDBAdaptor extends MongoDBAdaptor implements TaskDBAdaptor 
 
         logger.debug("Task get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return taskCollection.nativeQuery().find(bson, qOptions).iterator();
+    }
+
+    private QueryOptions fixOptions(QueryOptions queryOptions) {
+        QueryOptions options = new QueryOptions(queryOptions);
+
+        if (options.containsKey(QueryOptions.SORT)) {
+            // If the user is sorting by priority, we will point to the private priority stored as integers to properly sort
+            List<String> sortList = options.getAsStringList(QueryOptions.SORT);
+            List<String> fixedSortList = new ArrayList<>(sortList.size());
+            for (String key : sortList) {
+                if (key.startsWith(QueryParams.PRIORITY.key())) {
+                    String[] priorityArray = key.split(":");
+                    if (priorityArray.length == 1) {
+                        fixedSortList.add(PRIVATE_PRIORITY);
+                    } else {
+                        // The order (ascending or descending) should be in priorityArray[1]
+                        fixedSortList.add(PRIVATE_PRIORITY + ":" + priorityArray[1]);
+                    }
+                } else {
+                    fixedSortList.add(key);
+                }
+            }
+            // Add new fixed sort list
+            options.put(QueryOptions.SORT, fixedSortList);
+        }
+
+        return options;
     }
 
     @Override

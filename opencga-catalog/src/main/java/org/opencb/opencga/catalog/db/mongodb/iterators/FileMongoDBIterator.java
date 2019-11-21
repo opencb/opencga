@@ -1,11 +1,14 @@
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoCursor;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.FileMongoDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.SampleMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -25,8 +28,8 @@ public class FileMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
     private long studyUid;
     private String user;
 
-    private FileDBAdaptor fileDBAdaptor;
-    private SampleDBAdaptor sampleDBAdaptor;
+    private FileMongoDBAdaptor fileDBAdaptor;
+    private SampleMongoDBAdaptor sampleDBAdaptor;
     private QueryOptions sampleQueryOptions;
 
     private Queue<Document> fileListBuffer;
@@ -35,16 +38,16 @@ public class FileMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
 
     private static final int BUFFER_SIZE = 100;
 
-    public FileMongoDBIterator(MongoCursor mongoCursor, AnnotableConverter<? extends Annotable> converter,
-                               Function<Document, Document> filter, FileDBAdaptor fileMongoDBAdaptor, SampleDBAdaptor sampleMongoDBAdaptor,
-                               QueryOptions options) {
-        this(mongoCursor, converter, filter, fileMongoDBAdaptor, sampleMongoDBAdaptor, 0, null, options);
+    public FileMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, AnnotableConverter<? extends Annotable> converter,
+                               Function<Document, Document> filter, FileMongoDBAdaptor fileMongoDBAdaptor,
+                               SampleMongoDBAdaptor sampleMongoDBAdaptor, QueryOptions options) {
+        this(mongoCursor, clientSession, converter, filter, fileMongoDBAdaptor, sampleMongoDBAdaptor, 0, null, options);
     }
 
-    public FileMongoDBIterator(MongoCursor mongoCursor, AnnotableConverter<? extends Annotable> converter,
-                               Function<Document, Document> filter, FileDBAdaptor fileMongoDBAdaptor, SampleDBAdaptor sampleMongoDBAdaptor,
-                               long studyUid, String user, QueryOptions options) {
-        super(mongoCursor, converter, filter, options);
+    public FileMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, AnnotableConverter<? extends Annotable> converter,
+                               Function<Document, Document> filter, FileMongoDBAdaptor fileMongoDBAdaptor,
+                               SampleMongoDBAdaptor sampleMongoDBAdaptor, long studyUid, String user, QueryOptions options) {
+        super(mongoCursor, clientSession, converter, filter, options);
 
         this.user = user;
         this.studyUid = studyUid;
@@ -146,9 +149,9 @@ public class FileMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             List<Document> sampleList;
             try {
                 if (user != null) {
-                    sampleList = sampleDBAdaptor.nativeGet(studyUid, query, sampleQueryOptions, user).getResults();
+                    sampleList = sampleDBAdaptor.nativeGet(clientSession, studyUid, query, sampleQueryOptions, user).getResults();
                 } else {
-                    sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions).getResults();
+                    sampleList = sampleDBAdaptor.nativeGet(clientSession, query, sampleQueryOptions).getResults();
                 }
             } catch (CatalogDBException | CatalogAuthorizationException e) {
                 logger.warn("Could not obtain the samples associated to the files: {}", e.getMessage(), e);
@@ -188,9 +191,9 @@ public class FileMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             List<Document> fileList;
             try {
                 if (user != null) {
-                    fileList = fileDBAdaptor.nativeGet(studyUid, query, fileQueryOptions, user).getResults();
+                    fileList = fileDBAdaptor.nativeGet(clientSession, studyUid, query, fileQueryOptions, user).getResults();
                 } else {
-                    fileList = fileDBAdaptor.nativeGet(query, fileQueryOptions).getResults();
+                    fileList = fileDBAdaptor.nativeGet(clientSession, query, fileQueryOptions).getResults();
                 }
             } catch (CatalogDBException | CatalogAuthorizationException e) {
                 logger.warn("Could not obtain the list of related files: {}", e.getMessage(), e);

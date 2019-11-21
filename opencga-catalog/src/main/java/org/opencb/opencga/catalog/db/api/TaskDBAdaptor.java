@@ -59,6 +59,8 @@ public interface TaskDBAdaptor extends DBAdaptor<Task>  {
         PARAMS("params", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]",
 
+        PRIORITY("priority", TEXT, ""),
+
         STUDY_UID("studyUid", INTEGER_ARRAY, ""),
         STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
 

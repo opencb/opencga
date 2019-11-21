@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
@@ -124,7 +125,7 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testLinkFolder() throws CatalogException, IOException {
 //        // We will link the same folders that are already created in this study into another folder
-        URI uri = Paths.get(getStudyURI()).resolve("data").toUri();
+        URI uri = createExternalDummyData().toUri();
 //        long folderId = catalogManager.searchFile(studyUid, new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/"), null,
 //                sessionIdUser).first().getId();
 //        int numFiles = catalogManager.getAllFilesInFolder(folderId, null, sessionIdUser).getNumResults();
@@ -141,16 +142,16 @@ public class FileManagerTest extends AbstractManagerTest {
         assertTrue(!folderDataResult.first().isExternal());
 
         folderDataResult = fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(),
-                "myDirectory/data/"), null, sessionIdUser);
+                "myDirectory/A/"), null, sessionIdUser);
         assertEquals(1, folderDataResult.getNumResults());
         assertTrue(folderDataResult.first().isExternal());
 
         folderDataResult = fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(),
-                "myDirectory/data/test/"), null, sessionIdUser);
+                "myDirectory/A/C/D"), null, sessionIdUser);
         assertEquals(1, folderDataResult.getNumResults());
         assertTrue(folderDataResult.first().isExternal());
         folderDataResult = fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(),
-                "myDirectory/data/test/folder/"), null, sessionIdUser);
+                "myDirectory/A/B/"), null, sessionIdUser);
         assertEquals(1, folderDataResult.getNumResults());
         assertTrue(folderDataResult.first().isExternal());
 
@@ -216,8 +217,8 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testLinkNormalizedUris() throws CatalogException, IOException, URISyntaxException {
-        Path path = Paths.get(getStudyURI().resolve("data"));
-        URI uri = new URI("file://" + path.toString() + "/../data");
+        Path path = createExternalDummyData();
+        URI uri = UriUtils.createUri(path.toString() + "/../A");
         ObjectMap params = new ObjectMap("parents", true);
         DataResult<File> allFiles = link(uri, "test/myLinkedFolder/", studyFqn, params, sessionIdUser);
         assertEquals(6, allFiles.getNumResults());
@@ -225,6 +226,20 @@ public class FileManagerTest extends AbstractManagerTest {
             assertTrue(file.getUri().isAbsolute());
             assertEquals(file.getUri().normalize(), file.getUri());
         }
+    }
+
+    private Path createExternalDummyData() throws CatalogIOException {
+        Path jUnitDir = Paths.get(catalogManager.getConfiguration().getWorkspace()).getParent();
+
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().getDefault();
+        ioManager.createDirectory(jUnitDir.resolve("A").resolve("B").toUri(), true);
+        ioManager.createDirectory(jUnitDir.resolve("A").resolve("C").resolve("D").toUri(), true);
+        ioManager.createFile(jUnitDir.resolve("A").resolve("C").resolve("file1.txt").toUri(),
+                new ByteArrayInputStream("blablabla".getBytes()));
+        ioManager.createFile(jUnitDir.resolve("A").resolve("C").resolve("D").resolve("file3.txt").toUri(),
+                new ByteArrayInputStream("blablabla".getBytes()));
+
+        return jUnitDir.resolve("A");
     }
 
     @Test
@@ -300,7 +315,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testUnlinkFolder() throws CatalogException, IOException {
-        URI uri = Paths.get(getStudyURI()).resolve("data").toUri();
+        URI uri = createExternalDummyData().toUri();
         link(uri, "myDirectory", studyFqn, new ObjectMap("parents", true), sessionIdUser);
 
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(uri);
@@ -314,20 +329,18 @@ public class FileManagerTest extends AbstractManagerTest {
         System.out.println("Number of files/folders linked = " + fileDataResultLinked.getNumResults());
 
         // Now we try to unlink them
-        fileManager.unlink(studyFqn, "myDirectory/data/", sessionIdUser);
+        fileManager.unlink(studyFqn, "myDirectory/A/", sessionIdUser);
         fileDataResultLinked = fileManager.search(studyFqn, query, null, sessionIdUser);
         assertEquals(1, fileDataResultLinked.getNumResults());
 
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~myDirectory/*")
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
+                .append(FileDBAdaptor.QueryParams.DELETED.key(), true);
         DataResult<File> fileDataResultUnlinked = fileManager.search(studyFqn, query, null, sessionIdUser);
         assertEquals(6, fileDataResultUnlinked.getNumResults());
 
-        String myPath = "myDirectory/data" + AbstractManager.INTERNAL_DELIMITER + "REMOVED";
         for (File file : fileDataResultUnlinked.getResults()) {
-            assertTrue("File name should have been modified", file.getPath().contains(myPath));
             assertEquals("Status should be to REMOVED", File.FileStatus.REMOVED, file.getStatus().getName());
             assertEquals("Name should not have changed", file.getName(), file.getName());
             assertTrue("File uri: " + file.getUri() + " should exist", ioManager.exists(file.getUri()));
@@ -430,7 +443,7 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testCreateFolderAlreadyExists() throws Exception {
         Set<String> paths = fileManager.search(studyFqn3, new Query("type", File.Type.DIRECTORY), new QueryOptions(), sessionIdUser2).getResults().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(1, paths.size());
+        assertEquals(2, paths.size());
         assertTrue(paths.contains(""));             //root
 //        assertTrue(paths.contains("data/"));        //data
 //        assertTrue(paths.contains("analysis/"));    //analysis
@@ -589,11 +602,10 @@ public class FileManagerTest extends AbstractManagerTest {
         // Link the folder in the root
         link(uri, "", studyFqn, new ObjectMap(), sessionIdUser);
 
-        File file = fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat
-                .NONE, "folder_to_link/file.txt", "", null, 0, null, (long) -1, null, null, false, null, null, sessionIdUser).first();
+        File file = fileManager.create(studyFqn, new File(File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder_to_link/file.txt",
+                "", null, 0, null, (long) -1, null, null, null), false, "bla bla", null, sessionIdUser).first();
 
         assertEquals(uri.resolve("file.txt"), file.getUri());
-
     }
 
     @Test
@@ -637,28 +649,26 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testDownloadFile() throws CatalogException, IOException, InterruptedException {
-        String fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
-        int fileSize = 200;
-        byte[] bytesOrig = StringUtils.randomString(fileSize).getBytes();
-        DataResult<File> queryResult = fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN, 
-                File.Bioformat.NONE, "data/" + fileName, "description", new File.FileStatus(File.FileStatus.STAGE), 0, null, -1,
-                null, null, true, null, null, sessionIdUser);
-        new FileUtils(catalogManager).upload(new ByteArrayInputStream(bytesOrig), queryResult.first(), sessionIdUser, false, false, true);
-        File file = fileManager.get(studyFqn, queryResult.first().getPath(), null, sessionIdUser).first();
+    public void testDownloadFile() throws CatalogException, IOException, InterruptedException, URISyntaxException {
+        Path path = Paths.get(fileManager.get(studyFqn, ".", FileManager.INCLUDE_FILE_URI, sessionIdUser).first().getUri());
+        Path sourcePath = Paths.get(getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI());
+        Files.copy(sourcePath, path.resolve("data/" + sourcePath.getFileName()));
+        DataResult<File> fileResult = fileManager.create(studyFqn, File.Type.FILE, File.Format.VCF,
+                File.Bioformat.VARIANT, "data/variant-test-file.vcf.gz", "description", new File.FileStatus(File.FileStatus.STAGE), 0,
+                Collections.emptyList(), -1, Collections.emptyMap(), null, true, null, new QueryOptions(), sessionIdUser);
 
-        DataInputStream dis = fileManager.download(studyFqn, file.getPath(), -1, -1, sessionIdUser);
+        DataInputStream dis = fileManager.download(studyFqn, fileResult.first().getPath(), -1, -1, sessionIdUser);
 
-        byte[] bytes = new byte[fileSize];
-        dis.read(bytes, 0, fileSize);
-        assertTrue(Arrays.equals(bytesOrig, bytes));
+        byte[] bytes = new byte[(int) fileResult.first().getSize()];
+        dis.read(bytes, 0, (int) fileResult.first().getSize());
+        assertTrue(Arrays.equals(Files.readAllBytes(sourcePath), bytes));
     }
 
     @Test
     public void testGetTreeView() throws CatalogException {
         DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", new Query(), new QueryOptions(),
                 5, sessionIdUser);
-        assertEquals(7, fileTree.getNumResults());
+        assertEquals(8, fileTree.getNumResults());
     }
 
     @Test
@@ -670,10 +680,10 @@ public class FileManagerTest extends AbstractManagerTest {
 
         DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", new Query(), new QueryOptions(),
                 5, sessionIdUser);
-        assertEquals(7, fileTree.getNumResults());
+        assertEquals(8, fileTree.getNumResults());
 
         fileTree = fileManager.getTree("user@1000G:phase2", ".", new Query(), new QueryOptions(), 5, sessionIdUser);
-        assertEquals(1, fileTree.getNumResults());
+        assertEquals(2, fileTree.getNumResults());
     }
 
     @Test
@@ -1219,8 +1229,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         result = fileManager.search(studyFqn2, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(), sessionIdUser).getResults();
         for (File file : result) {
-            fileManager.delete(studyFqn2, new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), null,
-                    sessionIdUser);
+            fileManager.delete(studyFqn2, new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), null, sessionIdUser);
         }
         fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(), sessionIdUser).getResults().forEach(f -> {
                     assertEquals(f.getStatus().getName(), File.FileStatus.TRASHED);
@@ -1230,24 +1239,23 @@ public class FileManagerTest extends AbstractManagerTest {
 
     @Test
     public void testDeleteLeafFolder() throws CatalogException, IOException {
-        File deletable = fileManager.get(studyFqn2, "/data/test/folder/", QueryOptions.empty(), sessionIdUser).first();
+        File deletable = fileManager.get(studyFqn, "/data/test/folder/", QueryOptions.empty(), sessionIdUser).first();
         deleteFolderAndCheck(deletable);
     }
 
     @Test
     public void testDeleteMiddleFolder() throws CatalogException, IOException {
-        File deletable = fileManager.get(studyFqn2, "/data/", QueryOptions.empty(), sessionIdUser).first();
+        File deletable = fileManager.get(studyFqn, "/data/", QueryOptions.empty(), sessionIdUser).first();
         deleteFolderAndCheck(deletable);
     }
 
     @Test
     public void testDeleteRootFolder() throws CatalogException {
-        File deletable = fileManager.get(studyFqn2, "/", QueryOptions.empty(), sessionIdUser).first();
+        File deletable = fileManager.get(studyFqn, "/", QueryOptions.empty(), sessionIdUser).first();
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Root directories cannot be deleted");
-        DataResult result = fileManager.delete(studyFqn2,
-                new Query(FileDBAdaptor.QueryParams.PATH.key(), deletable.getPath()), null, sessionIdUser);
+        fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), deletable.getPath()), null, sessionIdUser);
     }
 
     // Cannot delete staged files
@@ -1262,8 +1270,9 @@ public class FileManagerTest extends AbstractManagerTest {
             assertTrue(ioManager.exists(fileManager.getUri(file)));
         }
 
-        fileManager.create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE,
-                "folder/subfolder/subsubfolder/my_staged.txt", null, new File.FileStatus(File.FileStatus.STAGE), (long) 0, null, (long) -1, null, null, true, null, null, sessionIdUser).first();
+        fileManager.create(studyFqn, new File(File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE,
+                "folder/subfolder/subsubfolder/my_staged.txt", null, new File.FileStatus(File.FileStatus.STAGE), (long) 0, null, (long) -1,
+                null, null, null), true, "bla bla", null, sessionIdUser).first();
 
         DataResult deleteResult = fileManager.delete(studyFqn,
                 new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()), null, sessionIdUser);
@@ -1283,7 +1292,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
     // Deleted folders should be all put to TRASHED
     @Test
-    public void deleteFolderTest2() throws CatalogException, IOException {
+    public void deleteFolderTest2() throws CatalogException {
         List<File> folderFiles = new LinkedList<>();
 
         File folder = createBasicDirectoryFileTestEnvironment(folderFiles);
@@ -1298,7 +1307,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), folder.getUid())
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
+                .append(FileDBAdaptor.QueryParams.DELETED.key(), true);
         File fileTmp = fileManager.search(studyFqn, query, QueryOptions.empty(), sessionIdUser).first();
 
         assertEquals("Folder name should not be modified", folder.getPath(), fileTmp.getPath());
@@ -1327,16 +1336,19 @@ public class FileManagerTest extends AbstractManagerTest {
             assertTrue(ioManager.exists(fileManager.getUri(file)));
         }
 
+        Query query = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), folder.getPath());
+        catalogManager.getTaskManager().delete(studyFqn, query, new ObjectMap(), sessionIdUser);
+
         fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()),
                 new ObjectMap(FileManager.SKIP_TRASH, true), sessionIdUser);
-        Query query = new Query()
+        query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), folder.getUid())
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE);
+                .append(FileDBAdaptor.QueryParams.DELETED.key(), true);
         File fileTmp = fileManager.search(studyFqn, query, QueryOptions.empty(), sessionIdUser).first();
 
-        String myPath = Paths.get(folder.getPath()) + AbstractManager.INTERNAL_DELIMITER + "DELETED";
+//        String myPath = Paths.get(folder.getPath()) + AbstractManager.INTERNAL_DELIMITER + "DELETED";
 
-        assertTrue("Folder name should have been modified", fileTmp.getPath().contains(myPath));
+//        assertTrue("Folder name should have been modified", fileTmp.getPath().contains(myPath));
         assertEquals("Status should be to PENDING_DELETE", File.FileStatus.PENDING_DELETE, fileTmp.getStatus().getName());
         assertEquals("Name should not have changed", folder.getName(), fileTmp.getName());
         assertTrue(ioManager.exists(fileTmp.getUri()));
@@ -1344,7 +1356,7 @@ public class FileManagerTest extends AbstractManagerTest {
         for (File file : folderFiles) {
             query.put(FileDBAdaptor.QueryParams.UID.key(), file.getUid());
             fileTmp = fileManager.search(studyFqn, query, QueryOptions.empty(), sessionIdUser).first();
-            assertTrue("Folder name should have been modified", fileTmp.getPath().contains(myPath));
+//            assertTrue("Folder name should have been modified", fileTmp.getPath().contains(myPath));
             assertEquals("Status should be to PENDING_DELETE", File.FileStatus.PENDING_DELETE, fileTmp.getStatus().getName());
             assertEquals("Name should not have changed", file.getName(), fileTmp.getName());
             assertTrue("File uri: " + fileTmp.getUri() + " should exist", ioManager.exists(fileTmp.getUri()));
@@ -1475,12 +1487,11 @@ public class FileManagerTest extends AbstractManagerTest {
         List<File> allFilesInFolder;
         Study study = fileManager.getStudy(deletable, sessionIdUser);
 
-        fileManager.delete(study.getFqn(), new Query(FileDBAdaptor.QueryParams.PATH.key(), deletable.getPath()), null,
-                sessionIdUser);
+        fileManager.delete(study.getFqn(), new Query(FileDBAdaptor.QueryParams.PATH.key(), deletable.getPath()), null, sessionIdUser);
 
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.PATH.key(), deletable.getPath())
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
+                .append(FileDBAdaptor.QueryParams.DELETED.key(), true);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.PATH.key());
         DataResult<File> fileDataResult = fileManager.search(study.getFqn(), query, options, sessionIdUser);
         assertEquals(1, fileDataResult.getNumResults());
@@ -1517,10 +1528,13 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testUpdateIndexStatus() throws CatalogException {
+    public void testUpdateIndexStatus() throws CatalogException, URISyntaxException, IOException {
+        Path path = Paths.get(fileManager.get(studyFqn, ".", FileManager.INCLUDE_FILE_URI, sessionIdUser).first().getUri());
+        Path sourcePath = Paths.get(getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI());
+        Files.copy(sourcePath, path.resolve("data/" + sourcePath.getFileName()));
         DataResult<File> fileResult = fileManager.create(studyFqn, File.Type.FILE, File.Format.VCF,
-                File.Bioformat.VARIANT, "data/test.vcf", "description", new File.FileStatus(File.FileStatus.STAGE), 0,
-                Collections.emptyList(), -1, Collections.emptyMap(), Collections.emptyMap(), true, null, new QueryOptions(), sessionIdUser);
+                File.Bioformat.VARIANT, "data/variant-test-file.vcf.gz", "description", new File.FileStatus(File.FileStatus.STAGE), 0,
+                Collections.emptyList(), -1, Collections.emptyMap(), null, true, null, new QueryOptions(), sessionIdUser);
 
         fileManager.updateFileIndexStatus(fileResult.first(), FileIndex.IndexStatus.TRANSFORMED, null, sessionIdUser);
         DataResult<File> read = fileManager.get(studyFqn, fileResult.first().getPath(), new QueryOptions(), sessionIdUser);
