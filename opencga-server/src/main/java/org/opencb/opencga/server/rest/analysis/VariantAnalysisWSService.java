@@ -17,7 +17,6 @@
 package org.opencb.opencga.server.rest.analysis;
 
 import io.swagger.annotations.*;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.variant.Variant;
@@ -58,7 +57,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
@@ -79,15 +77,6 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     private static final String DEPRECATED = " [DEPRECATED] ";
     public static final String PENDING = " [PENDING] ";
     private static final Map<String, org.opencb.commons.datastore.core.QueryParam> DEPRECATED_VARIANT_QUERY_PARAM;
-
-    private static final String JOB_ID = "jobId";
-    private static final String JOB_ID_DESCRIPTION = "Job Id";
-    private static final String JOB_NAME = "jobName";
-    private static final String JOB_NAME_DESCRIPTION = "Job Name";
-    private static final String JOB_DESCRIPTION = "jobDescription";
-    private static final String JOB_DESCRIPTION_DESCRIPTION = "Job Description";
-    private static final String JOB_TAGS = "jobTags";
-    private static final String JOB_TAGS_DESCRIPTION = "Job Tags";
 
     static {
         Map<String, org.opencb.commons.datastore.core.QueryParam> map = new LinkedHashMap<>();
@@ -141,41 +130,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         super(apiVersion, uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public Response run(Callable<DataResult<?>> c) {
-        try {
-            return createOkResponse(c.call());
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    public Response submitJob(String study, String command, String subcommand, RestBodyParams bodyParams,
-                              String jobId, String jobName, String jobDescription, List<String> jobTags) {
-        return run(() -> {
-            ObjectMap params = new ObjectMap(this.params);
-            params.remove(JOB_ID);
-            params.remove(JOB_NAME);
-            params.remove(JOB_DESCRIPTION);
-            params.remove(JOB_TAGS);
-            Map<String, String> paramsMap = bodyParams.toParams(params);
-            return catalogManager
-                    .getJobManager()
-                    .submit(study, command, subcommand, Enums.Priority.MEDIUM, paramsMap,
-                            jobId,
-                            jobName,
-                            jobDescription,
-                            jobTags, token);
-        });
-
-    }
-
-    private Response createPendingResponse() {
-        return createErrorResponse(new NotImplementedException("Pending " + uriInfo.getPath()));
-    }
-
+    @Deprecated
     @GET
     @Path("/index")
-    @ApiOperation(value = "Index variant files", response = DataResponse.class)
+    @ApiOperation(value = DEPRECATED + "Use /index/run instead", response = DataResponse.class)
     public Response index(@Deprecated @ApiParam(value = "(DEPRECATED) Comma separated list of file ids (files or directories)", hidden = true)
                           @QueryParam (value = "fileId") String fileIdStrOld,
                           @ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
@@ -290,7 +248,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     }
 
     @POST
-    @Path("/index")
+    @Path("/index/run")
     @ApiOperation(value = "Index variant files", response = Job.class)
     public Response index(
             @ApiParam(value = JOB_ID_DESCRIPTION) @QueryParam(JOB_ID) String jobId,
@@ -299,6 +257,25 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
             IndexParams params) {
         return submitJob(params.study, "variant", "index", params, jobId, jobName, jobDescription, jobTags);
+    }
+
+
+    public static class IndexRemoveParams extends RestBodyParams {
+        public String study;
+        public String file;
+        public boolean resume;
+    }
+
+    @POST
+    @Path("/index/remove")
+    @ApiOperation(value = "Remove variant files", response = Job.class)
+    public Response indexRemove(
+            @ApiParam(value = JOB_ID_DESCRIPTION) @QueryParam(JOB_ID) String jobId,
+            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
+            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            IndexRemoveParams params) {
+        return submitJob(params.study, "variant", "remove", params, jobId, jobName, jobDescription, jobTags);
     }
 
     @GET
@@ -562,7 +539,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     }
 
     @POST
-    @Path("/export")
+    @Path("/export/run")
     @ApiOperation(value = "Export variants to a file", response = Job.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
@@ -610,105 +587,6 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     public Response getAnnotationMetadata(@ApiParam(value = "Annotation identifier") @QueryParam("annotationId") String annotationId,
                                           @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam("project") String project) {
         return run(() -> variantManager.getAnnotationMetadata(annotationId, project, token));
-    }
-
-    public static class AnnotationRunParams extends RestBodyParams {
-        public String study;
-        public String outdir;
-        public String annotator;
-        public String overwriteAnnotations;
-        public String region;
-        public boolean create;
-        public String load;
-        public String customName;
-    }
-
-    @POST
-    @Path("/annotation/run")
-    @ApiOperation(value = "Create and load variant annotations into the database", response = Job.class)
-    public Response annotationRun(
-            @ApiParam(value = JOB_ID_DESCRIPTION) @QueryParam(JOB_ID) String jobId,
-            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
-            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
-            AnnotationRunParams params) {
-        return submitJob(params.study, "variant", "annotate", params, jobId, jobName, jobDescription, jobTags);
-    }
-
-    public static class AnnotationDeleteParams extends RestBodyParams {
-        public String study;
-//        @JsonProperty("annotation-id")
-        public String annotationId;
-    }
-
-    @DELETE
-    @Path("/annotation/delete")
-    @ApiOperation(value = "Deletes a saved copy of variant annotation")
-    public Response annotationDelete(
-            @ApiParam(value = JOB_ID_DESCRIPTION) @QueryParam(JOB_ID) String jobId,
-            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
-            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
-            AnnotationDeleteParams params) {
-        return submitJob(params.study, "variant", "annotation-delete", params, jobId, jobName, jobDescription, jobTags);
-    }
-
-    public static class AnnotationSaveParams extends RestBodyParams {
-        public String study;
-        //        @JsonProperty("annotation-id")
-        public String annotationId;
-    }
-
-    @POST
-    @Path("/annotation/save")
-    @ApiOperation(value = "Save a copy of the current variant annotation at the database")
-    public Response annotationSave(
-            @ApiParam(value = JOB_ID_DESCRIPTION) @QueryParam(JOB_ID) String jobId,
-            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
-            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
-            AnnotationSaveParams params) {
-        return submitJob(params.study, "variant", "annotation-save", params, jobId, jobName, jobDescription, jobTags);
-    }
-
-    public static class ScoreIndexParams extends RestBodyParams {
-        public String study;
-        public String cohort1;
-        public String cohort2;
-        public String input;
-        public String inputColumns;
-        public boolean resume;
-    }
-
-    @POST
-    @Path("/score/index")
-    @ApiOperation(value = "Index a variant score in the database.")
-    public Response scoreIndex(
-            @ApiParam(value = JOB_ID_DESCRIPTION) @QueryParam(JOB_ID) String jobId,
-            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
-            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
-            ScoreIndexParams params) {
-        return submitJob(params.study, "variant", "score-index", params, jobId, jobName, jobDescription, jobTags);
-    }
-
-    public static class ScoreDeleteParams extends RestBodyParams {
-        public String study;
-        public String name;
-        public boolean resume;
-        public boolean force;
-    }
-
-    @DELETE
-    @Path("/score/delete")
-    @ApiOperation(value = "Remove a variant score in the database.")
-    public Response scoreDelete(
-            @ApiParam(value = JOB_ID_DESCRIPTION) @QueryParam(JOB_ID) String jobId,
-            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
-            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
-            ScoreDeleteParams params) {
-        return submitJob(params.study, "variant", "score-remove", params, jobId, jobName, jobDescription, jobTags);
     }
 
     public static class StatsRunParams extends RestBodyParams {
@@ -837,23 +715,6 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         return createPendingResponse();
     }
 
-    public static class FamilyIndexParams extends RestBodyParams {
-        public String study;
-        public List<String> family;
-        public boolean overwrite;
-    }
-
-    @POST
-    @Path("/family/index")
-    @ApiOperation(value = "Build the family index.", response = Job.class)
-    public Response familyIndex(
-            @ApiParam(value = JOB_ID_DESCRIPTION) @QueryParam(JOB_ID) String jobId,
-            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
-            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
-            FamilyIndexParams params) {
-        return submitJob(params.study, "variant", "family-index", params, jobId, jobName, jobDescription, jobTags);
-    }
 
     @GET
     @Path("/samples")
@@ -970,23 +831,6 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             queryOptions.putAll(query);
             return variantManager.getSampleData(variant, studyStr, queryOptions, token);
         });
-    }
-
-    public static class SampleIndexParams extends RestBodyParams {
-        public String study;
-        public List<String> sample;
-    }
-
-    @POST
-    @Path("/sample/index")
-    @ApiOperation(value = "Build and annotate the sample index.", response = Job.class)
-    public Response sampleIndex(
-            @ApiParam(value = JOB_ID_DESCRIPTION) @QueryParam(JOB_ID) String jobId,
-            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
-            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
-            FamilyIndexParams params) {
-        return submitJob(params.study, "variant", "sample-index", params, jobId, jobName, jobDescription, jobTags);
     }
 
     public static class SampleStatsRunParams extends RestBodyParams {

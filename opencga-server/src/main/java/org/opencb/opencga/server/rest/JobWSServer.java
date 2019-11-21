@@ -84,7 +84,6 @@ public class JobWSServer extends OpenCGAWSServer {
         private Job.JobStatus status;
 
         private TinyFile outDir;
-        private TinyFile tmpDir;
         private List<TinyFile> input;    // input files to this job
         private List<TinyFile> output;   // output files of this job
         private List<String> tags;
@@ -128,10 +127,6 @@ public class JobWSServer extends OpenCGAWSServer {
             return outDir;
         }
 
-        public TinyFile getTmpDir() {
-            return tmpDir;
-        }
-
         public List<TinyFile> getInput() {
             return input != null ? input : Collections.emptyList();
         }
@@ -162,7 +157,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
         public Job toJob() {
             return new Job(id, null, name, description, null, commandLine, params, creationDate, null, priority, status,
-                    outDir != null ? outDir.toFile() : null, tmpDir != null ? tmpDir.toFile() : null,
+                    outDir != null ? outDir.toFile() : null,
                     getInput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
                     getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()), tags, result,
                     log != null ? log.toFile() : null, errorLog != null ? errorLog.toFile() : null, 1, attributes);

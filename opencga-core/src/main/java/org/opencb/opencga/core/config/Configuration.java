@@ -40,6 +40,7 @@ public class Configuration {
 
     private String databasePrefix;
     private String workspace;
+    private String jobDir;
 
     private Admin admin;
     private Monitor monitor;
@@ -249,6 +250,15 @@ public class Configuration {
 
     public Configuration setWorkspace(String workspace) {
         this.workspace = workspace;
+        return this;
+    }
+
+    public String getJobDir() {
+        return jobDir;
+    }
+
+    public Configuration setJobDir(String jobDir) {
+        this.jobDir = jobDir;
         return this;
     }
 

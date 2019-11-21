@@ -133,7 +133,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
 
         if (ListUtils.isNotEmpty(ldapImportResult.getEvents())) {
             for (Event event : ldapImportResult.getEvents()) {
-                System.out.println(event.getType() + ": " + event.getId() + " " + event.getDescription());
+                System.out.println(event.getType() + ": " + event.getId() + " " + event.getMessage());
             }
         }
     }

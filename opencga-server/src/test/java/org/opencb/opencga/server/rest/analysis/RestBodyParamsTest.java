@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -42,6 +43,24 @@ public class RestBodyParamsTest {
     public void testToParamsExtra() throws IOException {
         Map<String, String> params = p.toParams(new ObjectMap()
                 .append("otherParam", "value").append("myKey", "overwrite"));
+
+        assertEquals("overwrite", params.get("myKey"));
+        assertNull(params.get("myKey2"));
+        assertEquals("", params.get("myBooleanTrue"));
+        assertEquals("true", params.get("myBooleanNullableTrue"));
+        assertNull(params.get("myBoolean"));
+        assertNull(params.get("myBooleanNullable"));
+        assertEquals("0", params.get("myInteger"));
+        assertNull(params.get("myIntegerNullable"));
+        assertEquals("value", params.get("-DotherParam"));
+    }
+
+    @Test
+    public void testToParamsDynamic() throws IOException {
+        p.dynamicParams = new HashMap<>();
+        p.dynamicParams.put("otherParam", "value");
+        p.dynamicParams.put("myKey", "overwrite");
+        Map<String, String> params = p.toParams();
 
         assertEquals("overwrite", params.get("myKey"));
         assertNull(params.get("myKey2"));

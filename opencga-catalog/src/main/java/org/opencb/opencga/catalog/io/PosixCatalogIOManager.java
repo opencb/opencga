@@ -210,7 +210,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
                 Files.move(Paths.get(source), Paths.get(target), StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
                 throw new CatalogIOException("Can't move from " + source.getScheme() + " to " + target.getScheme() + ": " + e.getMessage(),
-                        e.getCause());
+                        e);
             }
         } else {
             throw new CatalogIOException("Can't move from " + source.getScheme() + " to " + target.getScheme());

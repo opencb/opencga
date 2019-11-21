@@ -23,6 +23,7 @@ import com.google.common.base.Splitter;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
@@ -44,8 +45,10 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.server.WebServiceException;
+import org.opencb.opencga.server.rest.analysis.RestBodyParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -67,9 +70,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObjectMapper;
+import static org.opencb.opencga.server.rest.analysis.AnalysisWSService.*;
 
 @ApplicationPath("/")
 @Path("/{apiVersion}")
@@ -693,6 +698,40 @@ public class OpenCGAWSServer {
         for (String id : ids) {
             ParamUtils.checkIsSingleID(id);
         }
+    }
+
+    public Response run(Callable<DataResult<?>> c) {
+        try {
+            return createOkResponse(c.call());
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    public Response submitJob(String study, String command, String subcommand, RestBodyParams bodyParams,
+                              String jobId, String jobName, String jobDescription, List<String> jobTags) {
+        return run(() -> {
+            // Include QueryParams?
+//            ObjectMap params = new ObjectMap(this.params);
+//            params.remove(JOB_ID);
+//            params.remove(JOB_NAME);
+//            params.remove(JOB_DESCRIPTION);
+//            params.remove(JOB_TAGS);
+//            Map<String, String> paramsMap = bodyParams.toParams(params);
+            Map<String, String> paramsMap = bodyParams.toParams();
+            return catalogManager
+                    .getJobManager()
+                    .submit(study, command, subcommand, Enums.Priority.MEDIUM, paramsMap,
+                            jobId,
+                            jobName,
+                            jobDescription,
+                            jobTags, token);
+        });
+
+    }
+
+    public Response createPendingResponse() {
+        return createErrorResponse(new NotImplementedException("Pending " + uriInfo.getPath()));
     }
 
 }

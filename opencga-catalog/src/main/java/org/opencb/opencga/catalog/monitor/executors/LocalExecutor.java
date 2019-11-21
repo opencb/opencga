@@ -26,6 +26,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by pfurio on 22/08/16.
@@ -36,11 +40,19 @@ public class LocalExecutor implements BatchExecutor {
 
     private static int threadInitNumber;
     private static Logger logger;
-    private final int maxConcurrentJobs;
+    private final ExecutorService threadPool;
+    private final Map<String, String> jobStatus;
 
     public LocalExecutor(Execution execution) {
         logger = LoggerFactory.getLogger(LocalExecutor.class);
-        maxConcurrentJobs = execution.getOptions().getInt(MAX_CONCURRENT_JOBS, 1);
+        int maxConcurrentJobs = execution.getOptions().getInt(MAX_CONCURRENT_JOBS, 1);
+        threadPool = Executors.newFixedThreadPool(maxConcurrentJobs);
+        jobStatus = new LinkedHashMap<String, String>(1000) {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
+                return size() > 1000;
+            }
+        };
     }
 
     @Deprecated
@@ -116,8 +128,11 @@ public class LocalExecutor implements BatchExecutor {
 
     @Override
     public void execute(String jobId, String commandLine, Path stdout, Path stderr, String token) throws Exception {
+        jobStatus.put(jobId, Job.JobStatus.QUEUED);
         Runnable runnable = () -> {
-            logger.info("Ready to run {}", commandLine);
+            Thread.currentThread().setName("LocalExecutor-" + nextThreadNum());
+            logger.info("Ready to run - {}", commandLine);
+            jobStatus.put(jobId, Job.JobStatus.RUNNING);
             Command com = new Command(getCommandLine(commandLine, stdout, stderr, token));
 
             Thread hook = new Thread(() -> {
@@ -125,6 +140,7 @@ public class LocalExecutor implements BatchExecutor {
                 com.setStatus(RunnableProcess.Status.KILLED);
                 com.setExitValue(-2);
                 closeOutputStreams(com);
+                jobStatus.put(jobId, Job.JobStatus.ERROR);
             });
 
             logger.info("==========================================");
@@ -143,9 +159,13 @@ public class LocalExecutor implements BatchExecutor {
             logger.info("==========================================");
 
             closeOutputStreams(com);
+            if (com.getStatus().equals(RunnableProcess.Status.DONE)) {
+                jobStatus.put(jobId, Job.JobStatus.DONE);
+            } else {
+                jobStatus.put(jobId, Job.JobStatus.ERROR);
+            }
         };
-        Thread thread = new Thread(runnable, "LocalExecutor-" + nextThreadNum());
-        thread.start();
+        threadPool.submit(runnable);
     }
 
     private static synchronized int nextThreadNum() {
@@ -154,7 +174,7 @@ public class LocalExecutor implements BatchExecutor {
 
     @Override
     public String getStatus(Job job) {
-        return Job.JobStatus.UNKNOWN;
+        return jobStatus.getOrDefault(job.getId(), Job.JobStatus.UNKNOWN);
     }
 
     @Override

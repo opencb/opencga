@@ -23,15 +23,10 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.monitor.daemons.AuthorizationDaemon;
 import org.opencb.opencga.catalog.monitor.daemons.ExecutionDaemon;
-import org.opencb.opencga.catalog.monitor.daemons.FileDaemon;
 import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.net.URISyntaxException;
 
 /**
  * Created by imedina on 16/06/16.
@@ -46,56 +41,52 @@ public class MonitorService {
     private int port;
 
     private ExecutionDaemon executionDaemon;
-    private FileDaemon fileDaemon;
-    private AuthorizationDaemon authorizationDaemon;
+//    private FileDaemon fileDaemon;
+//    private AuthorizationDaemon authorizationDaemon;
 
     private Thread executionThread;
-    private Thread indexThread;
-    private Thread fileThread;
-    private Thread authorizationThread;
+//    private Thread indexThread;
+//    private Thread fileThread;
+//    private Thread authorizationThread;
 
-    private boolean exit;
+    private volatile boolean exit;
 
     protected static Logger logger;
 
 
     public MonitorService(String password, Configuration configuration, String appHome)
-            throws IOException, URISyntaxException {
+            throws CatalogException {
         this.configuration = configuration;
         this.appHome = appHome;
 
         init(password);
     }
 
-    private void init(String password) throws IOException, URISyntaxException {
+    private void init(String password) throws CatalogException {
         logger = LoggerFactory.getLogger(this.getClass());
 
-        try {
-            this.catalogManager = new CatalogManager(this.configuration);
-            String expiringToken = this.catalogManager.getUserManager().login("admin", password);
-            String nonExpiringToken = this.catalogManager.getUserManager().getSystemTokenForUser("admin", expiringToken);
+        this.catalogManager = new CatalogManager(this.configuration);
+        String expiringToken = this.catalogManager.getUserManager().login("admin", password);
+        String nonExpiringToken = this.catalogManager.getUserManager().getSystemTokenForUser("admin", expiringToken);
 
-            executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), nonExpiringToken,
-                    catalogManager, appHome);
-            fileDaemon = new FileDaemon(configuration.getMonitor().getFileDaemonInterval(),
-                    configuration.getMonitor().getDaysToRemove(), nonExpiringToken, catalogManager);
+        executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), nonExpiringToken,
+                catalogManager, appHome);
+//            fileDaemon = new FileDaemon(configuration.getMonitor().getFileDaemonInterval(),
+//                    configuration.getMonitor().getDaysToRemove(), nonExpiringToken, catalogManager);
 
-            executionThread = new Thread(executionDaemon, "execution-thread");
-            fileThread = new Thread(fileDaemon, "file-thread");
-            authorizationThread = new Thread(authorizationDaemon, "authorization-thread");
+        executionThread = new Thread(executionDaemon, "execution-thread");
+//            fileThread = new Thread(fileDaemon, "file-thread");
+//            authorizationThread = new Thread(authorizationDaemon, "authorization-thread");
 
-            this.port = configuration.getMonitor().getPort();
-        } catch (CatalogException e) {
-            e.printStackTrace();
-        }
+        this.port = configuration.getMonitor().getPort();
     }
 
     public void start() throws Exception {
 
         // Launching the two daemons in two different threads
         executionThread.start();
-        indexThread.start();
-        authorizationThread.start();
+//        indexThread.start();
+//        authorizationThread.start();
 //        fileThread.start();
 
         // Preparing the REST server configuration
@@ -114,18 +105,15 @@ public class MonitorService {
         logger.info("REST server started, listening on {}", port);
 
         // A hook is added in case the JVM is shutting down
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                try {
-                    if (server.isRunning()) {
-                        stopRestServer();
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                if (server.isRunning()) {
+                    stopRestServer();
                 }
+            } catch (Exception e) {
+                logger.error("Error while stopping rest", e);
             }
-        });
+        }));
 
         // A separated thread is launched to shut down the server
         new Thread(() -> {
@@ -135,10 +123,15 @@ public class MonitorService {
                         stopRestServer();
                         break;
                     }
-                    Thread.sleep(1000);
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        logger.warn("Catch interruption! Exit");
+                        exit = true;
+                    }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error("Error while stopping rest", e);
             }
         }).start();
 
@@ -148,9 +141,9 @@ public class MonitorService {
 
     public void stop() throws Exception {
         executionDaemon.setExit(true);
-        fileDaemon.setExit(true);
-        executionDaemon.setExit(true);
-        authorizationDaemon.setExit(true);
+//        fileDaemon.setExit(true);
+//        executionDaemon.setExit(true);
+//        authorizationDaemon.setExit(true);
 
         // By setting exit to true the monitor thread will close the Jetty server
         exit = true;

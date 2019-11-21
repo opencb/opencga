@@ -42,7 +42,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
      * User methods
      */
     default boolean exists(String userId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), userId)).getResults().get(0) > 0;
+        return count(new Query(QueryParams.ID.key(), userId)).getNumMatches() > 0;
     }
 
     default void checkId(String userId) throws CatalogDBException {
@@ -63,7 +63,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         Set<String> userSet = new HashSet<>(userIds);
 
         Query query = new Query(QueryParams.ID.key(), userSet);
-        if (count(query).first() < userSet.size()) {
+        if (count(query).getNumMatches() < userSet.size()) {
             throw CatalogDBException.newInstance("Some users do not exist.");
         }
     }

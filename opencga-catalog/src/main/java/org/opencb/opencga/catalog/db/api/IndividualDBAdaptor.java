@@ -134,7 +134,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
     }
 
     default boolean exists(long individualId) throws CatalogDBException {
-        return count(new Query(QueryParams.UID.key(), individualId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), individualId)).getNumMatches() > 0;
     }
 
     default void checkId(long individualId) throws CatalogDBException {

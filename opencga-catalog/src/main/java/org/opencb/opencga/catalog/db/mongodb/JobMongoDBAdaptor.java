@@ -31,7 +31,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.JobMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -81,7 +81,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     public boolean exists(ClientSession clientSession, long jobUid) throws CatalogDBException {
-        return count(clientSession, new Query(QueryParams.UID.key(), jobUid)).first() > 0;
+        return count(clientSession, new Query(QueryParams.UID.key(), jobUid)).getNumMatches() > 0;
     }
 
     @Override
@@ -115,7 +115,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Bson bson = Filters.and(filterList);
         DataResult<Long> count = jobCollection.count(clientSession, bson);
 
-        if (count.first() > 0) {
+        if (count.getNumMatches() > 0) {
             throw new CatalogDBException("Job { id: '" + job.getId() + "'} already exists.");
         }
 
@@ -127,6 +127,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         }
         if (StringUtils.isEmpty(job.getCreationDate())) {
             job.setCreationDate(TimeUtils.getTime());
+        }
+        if (job.getPriority() == null) {
+            job.setPriority(Enums.Priority.LOW);
         }
 
         Document jobObject = jobConverter.convertToStorageType(job);
@@ -162,7 +165,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         OpenCGAResult<Document> queryResult = nativeGet(query, queryOptions);
 
         if (queryResult.getNumResults() != 0) {
-            Object id = queryResult.getResults().get(0).get(PRIVATE_STUDY_UID);
+            Object id = queryResult.first().get(PRIVATE_STUDY_UID);
             return id instanceof Number ? ((Number) id).longValue() : Long.parseLong(id.toString());
         } else {
             throw CatalogDBException.uidNotFound("Job", jobId);
@@ -239,7 +242,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         if (parameters.containsKey(QueryParams.ID.key())) {
             // We need to check that the update is only performed over 1 single job
-            if (count(query).first() != 1) {
+            if (count(query).getNumMatches() != 1) {
                 throw new CatalogDBException("Operation not supported: '" + QueryParams.ID.key() + "' can only be updated for one job");
             }
         }
@@ -403,9 +406,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         if (parameters.containsKey(QueryParams.OUT_DIR.key())) {
             jobParameters.put(QueryParams.OUT_DIR.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.OUT_DIR.key())));
         }
-        if (parameters.containsKey(QueryParams.TMP_DIR.key())) {
-            jobParameters.put(QueryParams.TMP_DIR.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.TMP_DIR.key())));
-        }
         if (parameters.containsKey(QueryParams.LOG.key())) {
             jobParameters.put(QueryParams.LOG.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.LOG.key())));
         }
@@ -501,7 +501,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(studyUid, query, user, StudyAclEntry.StudyPermissions.VIEW_JOBS);
-            queryResult.setNumMatches(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -525,7 +525,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(query);
-            queryResult.setNumMatches(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -549,7 +549,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(query);
-            queryResult.setNumTotalResults(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -574,7 +574,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(query);
-            queryResult.setNumTotalResults(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -582,7 +582,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public DBIterator<Job> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new MongoDBIterator<>(mongoCursor, jobConverter);
+        return new JobMongoDBIterator(mongoCursor, null, jobConverter, dbAdaptorFactory.getCatalogFileDBAdaptor(), options);
     }
 
     @Override
@@ -591,7 +591,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new MongoDBIterator<>(mongoCursor);
+        return new JobMongoDBIterator(mongoCursor, null, null, dbAdaptorFactory.getCatalogFileDBAdaptor(), options);
     }
 
     @Override
@@ -599,7 +599,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             throws CatalogDBException, CatalogAuthorizationException {
         Document studyDocument = getStudyDocument(null, studyUid);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
-        return new MongoDBIterator<>(mongoCursor, jobConverter);
+        return new JobMongoDBIterator(mongoCursor, null, jobConverter, dbAdaptorFactory.getCatalogFileDBAdaptor(), options, studyUid, user);
     }
 
     @Override
@@ -610,7 +610,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         Document studyDocument = getStudyDocument(null, studyUid);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, studyDocument, user);
-        return new MongoDBIterator<>(mongoCursor);
+        return new JobMongoDBIterator(mongoCursor, null, null, dbAdaptorFactory.getCatalogFileDBAdaptor(), options, studyUid, user);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {

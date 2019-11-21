@@ -220,7 +220,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                 .append(IndividualDBAdaptor.QueryParams.ID.key(), individual.getId());
-        if (individualDBAdaptor.count(query).first() > 0) {
+        if (individualDBAdaptor.count(query).getNumMatches() > 0) {
             throw new CatalogException("Individual '" + individual.getId() + "' already exists.");
         }
 
@@ -425,7 +425,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
-                    queryResultAux.first());
+                    queryResultAux.getNumMatches());
         } catch (CatalogException e) {
             auditManager.auditCount(userId, Enums.Resource.INDIVIDUAL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -890,7 +890,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
             Query query = new Query()
                     .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                     .append(IndividualDBAdaptor.QueryParams.ID.key(), updateParams.getId());
-            if (individualDBAdaptor.count(query).first() > 0) {
+            if (individualDBAdaptor.count(query).getNumMatches() > 0) {
                 throw new CatalogException("Individual name " + updateParams.getId() + " already in use");
             }
         }

@@ -46,7 +46,6 @@ public class Job extends PrivateStudyUid {
     private JobStatus status;
 
     private File outDir;
-    private File tmpDir;
     private List<File> input;    // input files to this job
     private List<File> output;   // output files of this job
     private List<String> tags;
@@ -87,7 +86,7 @@ public class Job extends PrivateStudyUid {
     }
 
     public Job(String id, String uuid, String name, String description, String userId, String commandLine, Map<String, String> params,
-               String creationDate, String modificationDate, Enums.Priority priority, JobStatus status, File outDir, File tmpDir,
+               String creationDate, String modificationDate, Enums.Priority priority, JobStatus status, File outDir,
                List<File> input, List<File> output, List<String> tags, AnalysisResult result, File log, File errorLog, int release,
                Map<String, Object> attributes) {
         this.id = id;
@@ -102,7 +101,6 @@ public class Job extends PrivateStudyUid {
         this.priority = priority;
         this.status = status;
         this.outDir = outDir;
-        this.tmpDir = tmpDir;
         this.input = input;
         this.output = output;
         this.tags = tags;
@@ -199,7 +197,6 @@ public class Job extends PrivateStudyUid {
         sb.append(", priority='").append(priority).append('\'');
         sb.append(", status=").append(status);
         sb.append(", outDir=").append(outDir);
-        sb.append(", tmpDir=").append(tmpDir);
         sb.append(", input=").append(input);
         sb.append(", output=").append(output);
         sb.append(", tags=").append(tags);
@@ -332,15 +329,6 @@ public class Job extends PrivateStudyUid {
 
     public Job setOutDir(File outDir) {
         this.outDir = outDir;
-        return this;
-    }
-
-    public File getTmpDir() {
-        return tmpDir;
-    }
-
-    public Job setTmpDir(File tmpDir) {
-        this.tmpDir = tmpDir;
         return this;
     }
 

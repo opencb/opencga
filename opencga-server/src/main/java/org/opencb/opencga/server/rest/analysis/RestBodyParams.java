@@ -14,7 +14,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 public class RestBodyParams {
 
-    public String logLevel;
+    public Map<String, String> dynamicParams;
     private final Map<String, Field> knownParams;
 
     public RestBodyParams() {
@@ -27,6 +27,11 @@ public class RestBodyParams {
         ObjectMap objectMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(this));
         HashMap<String, String> map = new HashMap<>(objectMap.size());
         addParams(map, objectMap);
+        if (dynamicParams != null) {
+            ObjectMap dynamicParams = new ObjectMap();
+            dynamicParams.putAll(this.dynamicParams);
+            addParams(map, dynamicParams);
+        }
         return map;
     }
 

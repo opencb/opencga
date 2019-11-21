@@ -178,14 +178,14 @@ public interface StudyDBAdaptor extends Iterable<Study> {
     void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException;
 
     default boolean exists(long studyId) throws CatalogDBException {
-        return count(new Query(QueryParams.UID.key(), studyId)).first() == 1;
+        return count(new Query(QueryParams.UID.key(), studyId)).getNumMatches() == 1;
     }
 
     default void checkId(long studyId) throws CatalogDBException {
         if (studyId < 0) {
             throw CatalogDBException.newInstance("Study id '{}' is not valid: ", studyId);
         }
-        long count = count(new Query(QueryParams.UID.key(), studyId)).first();
+        long count = count(new Query(QueryParams.UID.key(), studyId)).getNumMatches();
         if (count <= 0) {
             throw CatalogDBException.newInstance("Study id '{}' does not exist", studyId);
         } else if (count > 1) {
@@ -340,7 +340,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
 
     default Long variableSetExists(String variableSetName, long studyId) throws CatalogDBException {
         Query query = new Query(QueryParams.VARIABLE_SET_NAME.key(), variableSetName).append(QueryParams.UID.key(), studyId);
-        return count(query).first();
+        return count(query).getNumMatches();
     }
 
     default void checkVariableSetExists(long variableSetId) throws CatalogDBException {

@@ -35,6 +35,7 @@ public interface BatchExecutor {
     String OUTDIR = "outdir";
     String NUM_THREADS = "num_threads";
     String MAX_MEM = "max_mem";
+    @Deprecated
     String JOB_STATUS_FILE = "status.json";
     String OUT_LOG_EXTENSION = ".out";
     String ERR_LOG_EXTENSION = ".err";
