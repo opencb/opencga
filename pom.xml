@@ -25,7 +25,7 @@
     <version>2.0.0-dev</version>
     <packaging>pom</packaging>
     <name>OpenCGA</name>
-    
+
     <modules>
         <module>opencga-core</module>
         <module>opencga-app</module>
@@ -93,39 +93,14 @@
             <email>pedrofurio@gmail.com</email>
         </developer>
         <developer>
-            <id>mh11</id>
-            <name>Matthias</name>
-            <email>mh719+git@cam.ac.uk</email>
+            <id>jtarraga</id>
+            <name>Joaquin</name>
+            <email>joaquintarraga@gmail.com</email>
         </developer>
         <developer>
-            <id>Antonio26</id>
-            <name>Antonio</name>
-            <email>aruemar@gmail.com</email>
-        </developer>
-        <developer>
-            <id>cyenyxe</id>
-            <name>Cristina</name>
-            <email>cristina.yenyxe@gmail.com</email>
-        </developer>
-        <developer>
-            <id>jmmut</id>
-            <name>Josemi</name>
-            <email>jomutlo@gmail.com</email>
-        </developer>
-        <developer>
-            <id>frasator</id>
-            <name>Francisco</name>
-            <email>frasator@gmail.com</email>
-        </developer>
-        <developer>
-            <id>aaleman</id>
-            <name>Alejandro</name>
-            <email>alejandro.aleman.ramos@gmail.com</email>
-        </developer>
-        <developer>
-            <id>roalva1</id>
-            <name>Roberto</name>
-            <email>roalva1@gmail.com</email>
+            <id>wbari</id>
+            <name>Wasim</name>
+            <email>wasimbari@gmail.com</email>
         </developer>
     </developers>
 
