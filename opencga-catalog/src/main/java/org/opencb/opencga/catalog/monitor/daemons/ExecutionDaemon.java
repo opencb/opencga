@@ -43,7 +43,10 @@ import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -51,6 +54,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by imedina on 16/06/16.
@@ -108,7 +112,12 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     e.printStackTrace();
                 }
             }
-            checkJobs();
+
+            try {
+                checkJobs();
+            } catch (Exception e) {
+                logger.error("Catch exception " + e.getMessage(), e);
+            }
         }
     }
 
@@ -293,8 +302,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         // Create cli
         String commandLine = buildCli(internalCli, command, subcommand, params);
+        String authenticatedCommandLine = commandLine + " --session-id " + userToken;
+        String shadedCommandLine = commandLine + " --session-id xxxxxxxxxxxxxxxxxxxxx";
 
-        updateParams.setCommandLine(commandLine);
+        updateParams.setCommandLine(shadedCommandLine);
         updateParams.setInput(inputFiles);
 
         logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.PENDING, Job.JobStatus.QUEUED);
@@ -305,8 +316,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             logger.error("Could not update job {}. {}", job.getId(), e.getMessage(), e);
             return 0;
         }
-        executeJob(job.getId(), updateParams.getCommandLine(), stdout, stderr, userToken);
 
+        try {
+            batchExecutor.execute(job.getId(), authenticatedCommandLine, stdout, stderr, token);
+        } catch (Exception e) {
+            logger.error("Error executing job {}.", job.getId(), e);
+            return abortJob(job, "Error executing job. " + e.getMessage());
+        }
         return 1;
     }
 
@@ -512,38 +528,50 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             if (analysisResult != null) {
                 return new Job.JobStatus(analysisResult.getStatus().getName().name());
             } else {
-                return new Job.JobStatus(Job.JobStatus.ERROR, "File '" + resultJson + "' seems corrupted.");
-            }
-        } else {
-            String status = batchExecutor.getStatus(job);
-            if (!StringUtils.isEmpty(status) && !status.equals(Job.JobStatus.UNKNOWN)) {
-                return new Job.JobStatus(status);
-            } else {
-                Path tmpOutdirPath = Paths.get(job.getOutDir().getUri());
-                // Check if the error file is present
-                Path errorLog = tmpOutdirPath.resolve(getErrorLogFileName(job));
-
-                if (Files.exists(errorLog)) {
-                    // There must be some command line error. The job started running but did not finish well, otherwise we would find the
-                    // analysis-result.yml file
-                    return new Job.JobStatus(Job.JobStatus.ERROR, "Command line error");
+                if (Files.exists(resultJson)) {
+                    logger.warn("File '" + resultJson + "' seems corrupted.");
                 } else {
-                    return new Job.JobStatus(Job.JobStatus.QUEUED);
+                    logger.warn("Could not find file '" + resultJson + "'.");
                 }
+//                return new Job.JobStatus(Job.JobStatus.ERROR, "File '" + resultJson + "' seems corrupted.");
             }
         }
+
+        String status = batchExecutor.getStatus(job);
+        if (!StringUtils.isEmpty(status) && !status.equals(Job.JobStatus.UNKNOWN)) {
+            return new Job.JobStatus(status);
+        } else {
+            Path tmpOutdirPath = Paths.get(job.getOutDir().getUri());
+            // Check if the error file is present
+            Path errorLog = tmpOutdirPath.resolve(getErrorLogFileName(job));
+
+            if (Files.exists(errorLog)) {
+                // FIXME: This may not be true. There is a delay between job starts (i.e. error log appears) and
+                //  the analysis result creation
+
+                // There must be some command line error. The job started running but did not finish well, otherwise we would find the
+                // analysis-result.yml file
+                return new Job.JobStatus(Job.JobStatus.ERROR, "Command line error");
+            } else {
+                return new Job.JobStatus(Job.JobStatus.QUEUED);
+            }
+        }
+
     }
 
     private Path getAnalysisResultPath(Job job) {
         Path resultJson = null;
-        try {
-            resultJson = Files.list(Paths.get(job.getOutDir().getUri()))
-                    .filter(path -> path.toString()
-                            .endsWith(AnalysisResultManager.FILE_EXTENSION))
+        try (Stream<Path> stream = Files.list(Paths.get(job.getOutDir().getUri()))) {
+            resultJson = stream
+                    .filter(path -> {
+                        String str = path.toString();
+                        return str.endsWith(AnalysisResultManager.FILE_EXTENSION)
+                                && !str.endsWith(AnalysisResultManager.SWAP_FILE_EXTENSION);
+                    })
                     .findFirst()
                     .orElse(null);
         } catch (IOException e) {
-            logger.warn("Could not load AnalysisResult file. {}", e.getMessage(), e);
+            logger.warn("Could not find AnalysisResult file", e);
         }
         return resultJson;
     }
@@ -560,13 +588,29 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         if (file == null) {
             return null;
         }
-        int maxAttempts = 0;
-        while (maxAttempts < 2) {
+        int attempts = 0;
+        int maxAttempts = 3;
+        while (attempts < maxAttempts) {
+            attempts++;
             try {
-                return JacksonUtils.getDefaultObjectMapper().readValue(file.toFile(), AnalysisResult.class);
+                try (InputStream is = new BufferedInputStream(new FileInputStream(file.toFile()))) {
+                    return JacksonUtils.getDefaultObjectMapper().readValue(is, AnalysisResult.class);
+                }
             } catch (IOException e) {
-                logger.warn("Could not load AnalysisResult file. {}", e.getMessage(), e);
-                maxAttempts++;
+                if (attempts == maxAttempts) {
+                    logger.error("Could not load AnalysisResult file: " + file.toAbsolutePath(), e);
+                } else {
+                    logger.warn("Could not load AnalysisResult file: " + file.toAbsolutePath()
+                            + ". Retry " + attempts + "/" + maxAttempts
+                            + ". " + e.getMessage()
+                    );
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException interruption) {
+                        // Ignore interruption
+                        Thread.currentThread().interrupt();
+                    }
+                }
             }
         }
 
@@ -583,9 +627,28 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         logger.info("{} - Registering job results from '{}'", job.getId(), outDirUri);
 
+        AnalysisResult analysisResult;
+        if (analysisResultPath != null) {
+            analysisResult = readAnalysisResult(analysisResultPath);
+            if (analysisResult != null) {
+                JobUpdateParams updateParams = new JobUpdateParams().setResult(analysisResult);
+                try {
+                    jobManager.update(study, job.getId(), updateParams, QueryOptions.empty(), token);
+                } catch (CatalogException e) {
+                    logger.error("{} - Catastrophic error. Could not update job information with final result {}: {}", job.getId(),
+                            updateParams.toString(), e.getMessage(), e);
+                    return 0;
+                }
+            }
+        } else {
+            analysisResult = null;
+        }
+
         List<File> registeredFiles;
         try {
-            Predicate<URI> uriPredicate = uri -> !uri.getPath().endsWith(AnalysisResultManager.FILE_EXTENSION);
+            Predicate<URI> uriPredicate = uri -> !uri.getPath().endsWith(AnalysisResultManager.FILE_EXTENSION)
+                    && !uri.getPath().endsWith(AnalysisResultManager.SWAP_FILE_EXTENSION)
+                    && !uri.getPath().contains("/scratch_");
             registeredFiles = fileManager.syncUntrackedFiles(study, job.getOutDir().getPath(), uriPredicate, token).getResults();
         } catch (CatalogException e) {
             logger.error("Could not registered files in Catalog: {}", e.getMessage(), e);
@@ -610,8 +673,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
         updateParams.setOutput(outputFiles);
 
-        AnalysisResult analysisResult = readAnalysisResult(analysisResultPath);
-        updateParams.setResult(analysisResult);
 
         // Check status of analysis result or if there are files that could not be moved to outdir to decide the final result
         if (analysisResult == null) {
@@ -622,7 +683,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             updateParams.setStatus(new Job.JobStatus(Job.JobStatus.DONE));
         }
 
-        logger.info("{} - Updating job information: {}", job.getId(), updateParams.toString());
+        logger.info("{} - Updating job information", job.getId());
         // We update the job information
         try {
             jobManager.update(study, job.getId(), updateParams, QueryOptions.empty(), token);

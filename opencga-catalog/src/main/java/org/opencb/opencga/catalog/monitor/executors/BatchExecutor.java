@@ -57,18 +57,16 @@ public interface BatchExecutor {
      * @param commandLine Basic command line
      * @param stdout File where the standard output will be redirected
      * @param stderr File where the standard error will be redirected
-     * @param token A valid session token
      * @return The complete command line
      */
-    default String getCommandLine(String commandLine, Path stdout, Path stderr, String token) {
-        String cli = commandLine + " --session-id " + token;
+    default String getCommandLine(String commandLine, Path stdout, Path stderr) {
         if (stderr != null) {
-            cli = cli + " 2> " + stderr.toString();
+            commandLine = commandLine + " 2>> " + stderr.toString();
         }
         if (stdout != null) {
-            cli = cli + " > " + stdout.toString();
+            commandLine = commandLine + " >> " + stdout.toString();
         }
-        return cli;
+        return commandLine;
     }
 
     default String status(Path jobOutput, Job job) {

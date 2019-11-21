@@ -664,7 +664,8 @@ public class FileManager extends AnnotationSetManager<File> {
             }
 
             if (!path.toFile().isFile()) {
-                throw new CatalogException("Operation 'register' is only supported for files. Unable to register '" + path + "'");
+                throw new CatalogException("Operation 'register' is only supported for files. "
+                        + "Unable to register '" + path.toAbsolutePath() + "'");
             }
 
             URI parentUri = UriUtils.createUri(path.getParent().toString());

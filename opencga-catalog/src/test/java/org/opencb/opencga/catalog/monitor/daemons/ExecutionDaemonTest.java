@@ -133,7 +133,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         daemon.checkJobs();
 
         String[] cli = getJob(jobId).getCommandLine().split(" ");
-        int i = Arrays.binarySearch(cli, "--my-file");
+        int i = Arrays.asList(cli).indexOf("--my-file");
         assertEquals(inputFile.getUri().getPath(), cli[i + 1]);
         assertEquals(1, getJob(jobId).getInput().size());
         assertEquals(inputFile.getPath(), getJob(jobId).getInput().get(0).getPath());
@@ -163,7 +163,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         daemon.checkJobs();
 
         String[] cli = getJob(jobId).getCommandLine().split(" ");
-        int i = Arrays.binarySearch(cli, "--my-file");
+        int i = Arrays.asList(cli).indexOf("--my-file");
         assertEquals(inputFile.getUri().getPath(), cli[i + 1]);
         assertEquals(1, getJob(jobId).getInput().size());
         assertEquals(inputFile.getPath(), getJob(jobId).getInput().get(0).getPath());
