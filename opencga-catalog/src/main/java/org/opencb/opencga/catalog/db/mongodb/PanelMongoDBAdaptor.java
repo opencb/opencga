@@ -84,7 +84,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                     .append(QueryParams.STUDY_UID.key(), -1)
                     .append(QueryParams.ID.key(), panel.getId());
 
-            if (count(clientSession, query).first() > 0) {
+            if (count(clientSession, query).getNumMatches() > 0) {
                 if (overwrite) {
                     // Delete the panel id
                     logger.debug("Global panel '" + panel.getId() + "' already existed. Replacing panel...");
@@ -126,7 +126,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         Bson bson = Filters.and(filterList);
         DataResult<Long> count = panelCollection.count(bson);
 
-        if (count.first() > 0) {
+        if (count.getNumMatches() > 0) {
             throw CatalogDBException.alreadyExists("panel", QueryParams.ID.key(), panel.getId());
         }
 
@@ -194,7 +194,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(clientSession, studyUid, query, user, StudyAclEntry.StudyPermissions.VIEW_PANELS);
-            queryResult.setNumMatches(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -221,7 +221,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(clientSession, query);
-            queryResult.setNumTotalResults(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -249,7 +249,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(clientSession, query);
-            queryResult.setNumTotalResults(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -274,7 +274,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(query);
-            queryResult.setNumTotalResults(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -363,7 +363,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
         if (parameters.containsKey(QueryParams.ID.key())) {
             // We need to check that the update is only performed over 1 single panel
-            if (count(query).first() != 1) {
+            if (count(query).getNumMatches() != 1) {
                 throw new CatalogDBException("Operation not supported: '" + QueryParams.ID.key() + "' can only be updated for one panel");
             }
         }
@@ -481,7 +481,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_UID.key(), studyId);
             OpenCGAResult<Long> count = count(clientSession, tmpQuery);
-            if (count.getResults().get(0) > 0) {
+            if (count.getNumMatches() > 0) {
                 throw new CatalogDBException("Cannot update the " + QueryParams.ID.key() + ". Panel "
                         + parameters.get(QueryParams.ID.key()) + " already exists.");
             }

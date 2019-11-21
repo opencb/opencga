@@ -184,7 +184,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
     }
 
     default boolean exists(long fileId) throws CatalogDBException {
-        return count(new Query(QueryParams.UID.key(), fileId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), fileId)).getNumMatches() > 0;
     }
 
     default void checkId(long fileId) throws CatalogDBException {
@@ -192,7 +192,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
             throw CatalogDBException.newInstance("File id '{}' is not valid: ", fileId);
         }
 
-        long count = count(new Query(QueryParams.UID.key(), fileId)).first();
+        long count = count(new Query(QueryParams.UID.key(), fileId)).getNumMatches();
         if (count <= 0) {
             throw CatalogDBException.newInstance("File id '{}' does not exist", fileId);
         } else if (count > 1) {

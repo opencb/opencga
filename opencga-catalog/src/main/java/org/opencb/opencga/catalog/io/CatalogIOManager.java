@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -149,63 +150,37 @@ public abstract class CatalogIOManager {
     public abstract void moveFile(URI source, URI target) throws CatalogIOException;
 
 
-    public URI getUsersUri() throws CatalogIOException {
-        return rootDir.resolve(OPENCGA_USERS_FOLDER);
+    public URI getUsersUri() {
+        return Paths.get(rootDir).resolve(OPENCGA_USERS_FOLDER).toUri();
     }
 
-    public URI getAnonymousUsersUri() throws CatalogIOException {
-        return rootDir.resolve(OPENCGA_ANONYMOUS_USERS_FOLDER);
+    public URI getAnonymousUsersUri() {
+        return Paths.get(rootDir).resolve(OPENCGA_ANONYMOUS_USERS_FOLDER).toUri();
     }
 
     public URI getUserUri(String userId) throws CatalogIOException {
         checkParam(userId);
-        try {
-            return getUsersUri().resolve(new URI(null, userId.endsWith("/") ? userId : (userId + "/"), null));
-        } catch (URISyntaxException e) {
-            throw CatalogIOException.uriSyntaxException(userId, e);
-        }
-    }
-
-    public URI getAnonymousUserUri(String userId) throws CatalogIOException { // FIXME: Should replicate to getAnonymousPojectUri,
-        // ...Study..., etc ?
-        checkParam(userId);
-        try {
-            return getAnonymousUsersUri().resolve(new URI(null, userId.endsWith("/") ? userId : (userId + "/"), null));
-        } catch (URISyntaxException e) {
-            throw CatalogIOException.uriSyntaxException(userId, e);
-        }
+        return Paths.get(getUsersUri()).resolve(userId.endsWith("/") ? userId : (userId + "/")).toUri();
     }
 
     public URI getProjectsUri(String userId) throws CatalogIOException {
-        return getUserUri(userId).resolve(USER_PROJECTS_FOLDER);
+        return Paths.get(getUserUri(userId)).resolve(USER_PROJECTS_FOLDER).toUri();
     }
 
     public URI getProjectUri(String userId, String projectId) throws CatalogIOException {
-        try {
-            return getProjectsUri(userId).resolve(new URI(null, projectId.endsWith("/") ? projectId : (projectId + "/"), null));
-        } catch (URISyntaxException e) {
-            throw CatalogIOException.uriSyntaxException(userId, e);
-        }
+        return Paths.get(getProjectsUri(userId)).resolve(projectId.endsWith("/") ? projectId : (projectId + "/")).toUri();
     }
 
     private URI getStudyUri(String userId, String projectId, String studyId) throws CatalogIOException {
         checkParam(studyId);
-        try {
-            return getProjectUri(userId, projectId).resolve(new URI(null, studyId.endsWith("/") ? studyId : (studyId + "/"), null));
-        } catch (URISyntaxException e) {
-            throw CatalogIOException.uriSyntaxException(studyId, e);
-        }
+        return Paths.get(getProjectUri(userId, projectId)).resolve(studyId.endsWith("/") ? studyId : (studyId + "/")).toUri();
     }
 
     public URI getFileUri(URI studyUri, String relativeFilePath)
             throws CatalogIOException {
         checkUriExists(studyUri);
         checkParam(relativeFilePath);
-        try {
-            return studyUri.resolve(new URI(null, relativeFilePath, null));
-        } catch (URISyntaxException e) {
-            throw CatalogIOException.uriSyntaxException(relativeFilePath, e);
-        }
+        return Paths.get(studyUri).resolve(relativeFilePath).toUri();
     }
 
     public URI createUser(String userId) throws CatalogIOException {
@@ -218,8 +193,8 @@ public abstract class CatalogIOManager {
         try {
             if (!exists(userPath)) {
                 createDirectory(userPath);
-                createDirectory(userPath.resolve(CatalogIOManager.USER_PROJECTS_FOLDER));
-                createDirectory(userPath.resolve(CatalogIOManager.USER_BIN_FOLDER));
+                createDirectory(Paths.get(userPath).resolve(CatalogIOManager.USER_PROJECTS_FOLDER).toUri());
+                createDirectory(Paths.get(userPath).resolve(CatalogIOManager.USER_BIN_FOLDER).toUri());
 
                 return userPath;
             }

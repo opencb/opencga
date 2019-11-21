@@ -21,7 +21,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DuplicateKeyException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
@@ -174,7 +173,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         if (!isCatalogDBReady()) {
             /* Check all collections are empty */
             for (Map.Entry<String, MongoDBCollection> entry : collections.entrySet()) {
-                if (entry.getValue().count().first() != 0L) {
+                if (entry.getValue().count().getNumMatches() != 0L) {
                     throw new CatalogDBException("Fail to initialize Catalog Database in MongoDB. Collection " + entry.getKey()
                             + " is not empty.");
                 }
@@ -248,8 +247,7 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
     @Override
     public boolean isCatalogDBReady() {
-        DataResult<Long> queryResult = metaCollection.count(new BasicDBObject("id", METADATA_OBJECT_ID));
-        return queryResult.getResults().get(0) == 1;
+        return metaCollection.count(new BasicDBObject("id", METADATA_OBJECT_ID)).getNumMatches() == 1;
     }
 
     @Override

@@ -174,7 +174,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_UID.key(), studyId);
             OpenCGAResult<Long> count = count(tmpQuery);
-            if (count.getResults().get(0) > 0) {
+            if (count.getNumMatches() > 0) {
                 throw new CatalogDBException("Cannot set id for clinical analysis. A clinical analysis with { id: '"
                         + parameters.get(QueryParams.ID.key()) + "'} already exists.");
             }
@@ -291,7 +291,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(query);
-            queryResult.setNumTotalResults(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -315,7 +315,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(query);
-            queryResult.setNumTotalResults(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -340,7 +340,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(query);
-            queryResult.setNumMatches(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -492,7 +492,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
 
         Bson bson = Filters.and(filterList);
         DataResult<Long> count = clinicalCollection.count(bson);
-        if (count.getResults().get(0) > 0) {
+        if (count.getNumMatches() > 0) {
             throw new CatalogDBException("Cannot create clinical analysis. A clinical analysis with { id: '"
                     + clinicalAnalysis.getId() + "'} already exists.");
         }
@@ -549,7 +549,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(studyUid, query, user, StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS);
-            queryResult.setNumMatches(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }

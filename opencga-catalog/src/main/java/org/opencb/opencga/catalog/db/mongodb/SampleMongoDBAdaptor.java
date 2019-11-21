@@ -93,7 +93,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
      */
 
     public boolean exists(ClientSession clientSession, long sampleUid) throws CatalogDBException {
-        return count(clientSession, new Query(QueryParams.UID.key(), sampleUid)).first() > 0;
+        return count(clientSession, new Query(QueryParams.UID.key(), sampleUid)).getNumMatches() > 0;
     }
 
     @Override
@@ -132,7 +132,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
         Bson bson = Filters.and(filterList);
         DataResult<Long> count = sampleCollection.count(clientSession, bson);
-        if (count.getResults().get(0) > 0) {
+        if (count.getNumMatches() > 0) {
             throw new CatalogDBException("Sample { id: '" + sample.getId() + "'} already exists.");
         }
 
@@ -249,7 +249,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             throws CatalogDBException {
         if (parameters.containsKey(QueryParams.ID.key())) {
             // We need to check that the update is only performed over 1 single sample
-            if (count(query).first() != 1) {
+            if (count(query).getNumMatches() != 1) {
                 throw new CatalogDBException("Operation not supported: '" + QueryParams.ID.key() + "' can only be updated for one sample");
             }
         }
@@ -418,7 +418,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_UID.key(), studyId);
             OpenCGAResult<Long> count = count(clientSession, tmpQuery);
-            if (count.getResults().get(0) > 0) {
+            if (count.getNumMatches() > 0) {
                 throw new CatalogDBException("Cannot update the " + QueryParams.ID.key() + ". Sample "
                         + parameters.get(QueryParams.ID.key()) + " already exists.");
             }
@@ -537,7 +537,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
      */
     private void checkCanDelete(long sampleId) throws CatalogDBException {
         Query query = new Query(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId);
-        if (dbAdaptorFactory.getCatalogCohortDBAdaptor().count(query).first() > 0) {
+        if (dbAdaptorFactory.getCatalogCohortDBAdaptor().count(query).getNumMatches() > 0) {
             List<Cohort> cohorts = dbAdaptorFactory.getCatalogCohortDBAdaptor()
                     .get(query, new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.UID.key())).getResults();
             throw new CatalogDBException("The sample {" + sampleId + "} cannot be deleted/removed. It is being used in "
@@ -762,7 +762,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(studyUid, query, user, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
-            queryResult.setNumMatches(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -789,7 +789,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults() && !isQueryingIndividualFields(query)) {
             OpenCGAResult<Long> count = count(clientSession, query);
-            queryResult.setNumTotalResults(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -817,7 +817,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(clientSession, query);
-            queryResult.setNumTotalResults(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -847,7 +847,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(clientSession, query);
-            queryResult.setNumTotalResults(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }

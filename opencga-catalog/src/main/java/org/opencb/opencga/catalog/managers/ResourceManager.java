@@ -272,7 +272,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
                 List<String> errors = new ArrayList<>();
                 for (Event event : result.getEvents()) {
                     if (event.getType() == Event.Type.ERROR) {
-                        errors.add(event.getDescription());
+                        errors.add(event.getMessage());
                     }
                 }
                 if (!errors.isEmpty()) {

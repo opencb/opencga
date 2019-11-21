@@ -68,7 +68,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
 
         Bson bson = Filters.and(filterList);
         DataResult<Long> count = interpretationCollection.count(bson);
-        if (count.getResults().get(0) > 0) {
+        if (count.getNumMatches() > 0) {
             throw new CatalogDBException("Cannot create interpretation. An interpretation with { id: '"
                     + interpretation.getId() + "'} already exists.");
         }
@@ -158,7 +158,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(query);
-            queryResult.setNumTotalResults(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -188,7 +188,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(query);
-            queryResult.setNumTotalResults(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -221,7 +221,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_UID.key(), studyId);
             OpenCGAResult<Long> count = count(tmpQuery);
-            if (count.getResults().get(0) > 0) {
+            if (count.getNumMatches() > 0) {
                 throw new CatalogDBException("Cannot set id for interpretation. A interpretation with { id: '"
                         + parameters.get(QueryParams.ID.key()) + "'} already exists.");
             }

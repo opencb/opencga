@@ -150,7 +150,7 @@ public class ProjectManager extends AbstractManager {
         } else {
             if (StringUtils.isNotEmpty(projectStr)) {
                 // Check if it is a matter of permissions
-                if (studyDBAdaptor.count(query).first() == 0) {
+                if (studyDBAdaptor.count(query).getNumMatches() == 0) {
                     throw new CatalogException("Project " + projectStr + " not found");
                 } else {
                     throw CatalogAuthorizationException.deny(userId, "view", "project", projectStr, null);
@@ -240,7 +240,7 @@ public class ProjectManager extends AbstractManager {
         project = queryResult.getResults().get(0);
 
         try {
-            catalogIOManagerFactory.getDefault().createProject(userId, project.getId());
+            catalogIOManagerFactory.getDefault().createProject(userId, Long.toString(project.getUid()));
         } catch (CatalogIOException e) {
             auditManager.auditCreate(userId, Enums.Resource.PROJECT, id, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -1058,28 +1058,28 @@ public class ProjectManager extends AbstractManager {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyIds)
                 .append(FileDBAdaptor.QueryParams.RELEASE.key(), currentRelease);
-        if (fileDBAdaptor.count(query).first() > 0) {
+        if (fileDBAdaptor.count(query).getNumMatches() > 0) {
             return true;
         }
-        if (sampleDBAdaptor.count(query).first() > 0) {
+        if (sampleDBAdaptor.count(query).getNumMatches() > 0) {
             return true;
         }
-        if (individualDBAdaptor.count(query).first() > 0) {
+        if (individualDBAdaptor.count(query).getNumMatches() > 0) {
             return true;
         }
-        if (cohortDBAdaptor.count(query).first() > 0) {
+        if (cohortDBAdaptor.count(query).getNumMatches() > 0) {
             return true;
         }
-        if (familyDBAdaptor.count(query).first() > 0) {
+        if (familyDBAdaptor.count(query).getNumMatches() > 0) {
             return true;
         }
-        if (jobDBAdaptor.count(query).first() > 0) {
+        if (jobDBAdaptor.count(query).getNumMatches() > 0) {
             return true;
         }
-//        if (diseasePanelDBAdaptor.count(query).first() > 0) {
+//        if (diseasePanelDBAdaptor.count(query).getNumMatches() > 0) {
 //            return true;
 //        }
-        if (clinicalDBAdaptor.count(query).first() > 0) {
+        if (clinicalDBAdaptor.count(query).getNumMatches() > 0) {
             return true;
         }
 

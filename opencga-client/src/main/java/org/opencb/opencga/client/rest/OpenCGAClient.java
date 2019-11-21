@@ -110,8 +110,8 @@ public class OpenCGAClient {
     }
 
     public ClinicalAnalysisClient getClinicalAnalysisClient() {
-        clients.putIfAbsent("CLINICAL_ANALYSIS", new ClinicalAnalysisClient(userId, sessionId, clientConfiguration));
-        return (ClinicalAnalysisClient) clients.get("CLINICAL_ANALYSIS");
+        clients.putIfAbsent("CLINICAL_ANALYSIS_ID", new ClinicalAnalysisClient(userId, sessionId, clientConfiguration));
+        return (ClinicalAnalysisClient) clients.get("CLINICAL_ANALYSIS_ID");
     }
 
     public PanelClient getPanelClient() {

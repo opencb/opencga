@@ -255,7 +255,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
             throws CatalogDBException {
         if (parameters.containsKey(QueryParams.ID.key())) {
             // We need to check that the update is only performed over 1 single family
-            if (count(query).first() != 1) {
+            if (count(query).getNumMatches() != 1) {
                 throw new CatalogDBException("Operation not supported: '" + QueryParams.ID.key() + "' can only be updated for one cohort");
             }
         }
@@ -341,7 +341,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                     .append(QueryParams.ID.key(), parameters.get(QueryParams.ID.key()))
                     .append(QueryParams.STUDY_UID.key(), studyId);
             OpenCGAResult<Long> count = count(clientSession, tmpQuery);
-            if (count.getResults().get(0) > 0) {
+            if (count.getNumMatches() > 0) {
                 throw new CatalogDBException("Cannot update the " + QueryParams.ID.key() + ". Cohort "
                         + parameters.get(QueryParams.ID.key()) + " already exists.");
             }
@@ -540,7 +540,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(clientSession, studyUid, query, user, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
-            queryResult.setNumMatches(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -567,7 +567,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(clientSession, query);
-            queryResult.setNumTotalResults(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -591,7 +591,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(query);
-            queryResult.setNumTotalResults(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -616,7 +616,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(query);
-            queryResult.setNumMatches(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -790,7 +790,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     private void checkCohortIdExists(ClientSession clientSession, long studyId, String cohortId) throws CatalogDBException {
         DataResult<Long> count = cohortCollection.count(clientSession, Filters.and(
                 Filters.eq(PRIVATE_STUDY_UID, studyId), Filters.eq(QueryParams.ID.key(), cohortId)));
-        if (count.getResults().get(0) > 0) {
+        if (count.getNumMatches() > 0) {
             throw CatalogDBException.alreadyExists("Cohort", "id", cohortId);
         }
     }

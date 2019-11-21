@@ -38,18 +38,6 @@ public class Execution {
         options = new ObjectMap();
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("Execution{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", defaultQueue='").append(defaultQueue).append('\'');
-        sb.append(", availableQueues='").append(availableQueues).append('\'');
-        sb.append(", toolsPerQueue=").append(toolsPerQueue);
-        sb.append(", options=").append(options);
-        sb.append('}');
-        return sb.toString();
-    }
-
     public String getId() {
         return id;
     }
@@ -93,5 +81,17 @@ public class Execution {
     public Execution setOptions(ObjectMap options) {
         this.options = options;
         return this;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Execution{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", defaultQueue='").append(defaultQueue).append('\'');
+        sb.append(", availableQueues='").append(availableQueues).append('\'');
+        sb.append(", toolsPerQueue=").append(toolsPerQueue);
+        sb.append(", options=").append(options);
+        sb.append('}');
+        return sb.toString();
     }
 }

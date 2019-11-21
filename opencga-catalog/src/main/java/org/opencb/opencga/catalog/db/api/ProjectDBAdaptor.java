@@ -116,7 +116,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
 
 
     default boolean exists(long projectId) throws CatalogDBException {
-        return count(new Query(QueryParams.UID.key(), projectId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), projectId)).getNumMatches() > 0;
     }
 
     default void checkId(long projectId) throws CatalogDBException {

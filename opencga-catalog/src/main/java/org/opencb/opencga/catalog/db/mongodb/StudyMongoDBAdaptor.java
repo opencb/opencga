@@ -82,7 +82,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         if (studyId < 0) {
             throw CatalogDBException.newInstance("Study id '{}' is not valid: ", studyId);
         }
-        Long count = count(clientSession, new Query(QueryParams.UID.key(), studyId)).first();
+        Long count = count(clientSession, new Query(QueryParams.UID.key(), studyId)).getNumMatches();
         if (count <= 0) {
             throw CatalogDBException.newInstance("Study id '{}' does not exist", studyId);
         } else if (count > 1) {
@@ -97,7 +97,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         Query query = new Query(QueryParams.PROJECT_ID.key(), projectId).append(QueryParams.ID.key(), studyId);
         OpenCGAResult<Long> count = count(clientSession, query);
-        return count.first() != 0;
+        return count.getNumMatches() != 0;
     }
 
     @Override

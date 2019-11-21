@@ -823,7 +823,7 @@ public class UserManager extends AbstractManager {
             Query queryExists = new Query()
                     .append(UserDBAdaptor.QueryParams.ID.key(), userId)
                     .append(UserDBAdaptor.QueryParams.CONFIGS_FILTERS_NAME.key(), name);
-            if (userDBAdaptor.count(queryExists).first() > 0) {
+            if (userDBAdaptor.count(queryExists).getNumMatches() > 0) {
                 throw new CatalogException("There already exists a filter called " + name + " for user " + userId);
             }
 
@@ -870,7 +870,7 @@ public class UserManager extends AbstractManager {
             Query queryExists = new Query()
                     .append(UserDBAdaptor.QueryParams.ID.key(), userId)
                     .append(UserDBAdaptor.QueryParams.CONFIGS_FILTERS_NAME.key(), name);
-            if (userDBAdaptor.count(queryExists).first() == 0) {
+            if (userDBAdaptor.count(queryExists).getNumMatches() == 0) {
                 throw new CatalogException("There is no filter called " + name + " for user " + userId);
             }
 

@@ -84,14 +84,14 @@ public abstract class OpenCgaAnalysis {
     public OpenCgaAnalysis() {
     }
 
-    public final OpenCgaAnalysis setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
-                                       ObjectMap params, Path outDir, String sessionId) {
+    public void setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
+                      ObjectMap params, Path outDir, String sessionId) {
         VariantStorageManager manager = new VariantStorageManager(catalogManager, engineFactory);
-        return setUp(opencgaHome, catalogManager, manager, params, outDir, sessionId);
+        setUp(opencgaHome, catalogManager, manager, params, outDir, sessionId);
     }
 
-    public final OpenCgaAnalysis setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
-                                       ObjectMap params, Path outDir, String sessionId) {
+    public void setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
+                      ObjectMap params, Path outDir, String sessionId) {
         this.opencgaHome = opencgaHome;
         this.catalogManager = catalogManager;
         this.configuration = catalogManager.getConfiguration();
@@ -101,19 +101,19 @@ public abstract class OpenCgaAnalysis {
         this.params = params == null ? new ObjectMap() : new ObjectMap(params);
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
-        this.params.put("outDir", outDir.toAbsolutePath().toString());
+        //this.params.put("outDir", outDir.toAbsolutePath().toString());
 
-        return setUpFrameworksAndSource();
+        setUpFrameworksAndSource();
     }
 
-    public final OpenCgaAnalysis setUp(String opencgaHome, ObjectMap params, Path outDir, String sessionId)
+    public void setUp(String opencgaHome, ObjectMap params, Path outDir, String sessionId)
             throws AnalysisException {
         this.opencgaHome = opencgaHome;
         this.sessionId = sessionId;
         this.params = params == null ? new ObjectMap() : new ObjectMap(params);
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
-        this.params.put("outDir", outDir.toAbsolutePath().toString());
+        //this.params.put("outDir", outDir.toAbsolutePath().toString());
 
         try {
             loadConfiguration();
@@ -125,10 +125,10 @@ public abstract class OpenCgaAnalysis {
             throw new AnalysisException(e);
         }
 
-        return setUpFrameworksAndSource();
+        setUpFrameworksAndSource();
     }
 
-    private OpenCgaAnalysis setUpFrameworksAndSource() {
+    private void setUpFrameworksAndSource() {
         logger = LoggerFactory.getLogger(this.getClass().toString());
 
         availableFrameworks = new ArrayList<>();
@@ -148,7 +148,7 @@ public abstract class OpenCgaAnalysis {
 
         availableFrameworks.add(AnalysisExecutor.Framework.LOCAL);
         sourceTypes.add(AnalysisExecutor.Source.STORAGE);
-        return this;
+//        return this;
     }
 
     /**
@@ -213,9 +213,9 @@ public abstract class OpenCgaAnalysis {
             }
             try {
                 check();
+                arm.setSteps(getSteps());
 
                 arm.setParams(params); // params may be modified after check method
-                arm.setSteps(getSteps());
 
                 run();
             } catch (AnalysisException e) {
@@ -536,5 +536,4 @@ public abstract class OpenCgaAnalysis {
             throw new AnalysisException(e.getMessage(), e);
         }
     }
-
 }

@@ -194,7 +194,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                 .append(SampleDBAdaptor.QueryParams.ID.key(), sample.getId());
-        if (sampleDBAdaptor.count(query).first() > 0) {
+        if (sampleDBAdaptor.count(query).getNumMatches() > 0) {
             throw new CatalogException("Sample '" + sample.getId() + "' already exists.");
         }
 
@@ -328,7 +328,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
-                    queryResultAux.first());
+                    queryResultAux.getNumMatches());
         } catch (CatalogException e) {
             auditManager.auditCount(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

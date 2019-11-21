@@ -270,12 +270,6 @@ public class JobManager extends ResourceManager<Job> {
                     throw new CatalogException("Unexpected outDir type. Expected " + File.Type.DIRECTORY);
                 }
             }
-            if (job.getTmpDir() != null && StringUtils.isNotEmpty(job.getTmpDir().getPath())) {
-                job.setTmpDir(getFile(study.getUid(), job.getTmpDir().getPath(), userId));
-                if (job.getTmpDir().getType() != File.Type.DIRECTORY) {
-                    throw new CatalogException("Unexpected tmpDir type. Expected " + File.Type.DIRECTORY);
-                }
-            }
             if (job.getLog() != null && StringUtils.isNotEmpty(job.getLog().getPath())) {
                 job.setLog(getFile(study.getUid(), job.getLog().getPath(), userId));
             }
@@ -318,6 +312,12 @@ public class JobManager extends ResourceManager<Job> {
 
     public OpenCGAResult<Job> submit(String studyStr, String command, String subcommand, Enums.Priority priority,
                                      Map<String, String> params, String token) throws CatalogException {
+        return submit(studyStr, command, subcommand, priority, params, null, null, null, null, token);
+    }
+
+    public OpenCGAResult<Job> submit(String studyStr, String command, String subcommand, Enums.Priority priority,
+                Map<String, String> params, String jobId, String jobName, String jobDescription, List<String> jobTags, String token)
+            throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
@@ -330,6 +330,10 @@ public class JobManager extends ResourceManager<Job> {
                 .append("token", token);
 
         Job job = new Job();
+        job.setId(jobId);
+        job.setName(jobName);
+        job.setDescription(jobDescription);
+        job.setTags(jobTags);
 
         try {
             Map<String, Object> attributes = new HashMap<>();
@@ -344,7 +348,8 @@ public class JobManager extends ResourceManager<Job> {
 
             autoCompleteNewJob(study, job);
 
-            OpenCGAResult<Job> jobResult = jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
+            jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
+            OpenCGAResult<Job> jobResult = jobDBAdaptor.get(job.getUid(), new QueryOptions());
 
             auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -475,7 +480,7 @@ public class JobManager extends ResourceManager<Job> {
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return new OpenCGAResult<>(queryResultAux.getTime(), queryResultAux.getEvents(), 0, Collections.emptyList(),
-                    queryResultAux.first());
+                    queryResultAux.getNumMatches());
         } catch (CatalogException e) {
             auditManager.auditCount(userId, Enums.Resource.JOB, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
@@ -700,15 +705,6 @@ public class JobManager extends ResourceManager<Job> {
 
         if (updateParams.getOutDir() != null && updateParams.getOutDir().getUid() <= 0) {
             updateParams.setOutDir(getFile(study.getUid(), updateParams.getOutDir().getPath(), userId));
-        }
-
-        if (updateParams.getTmpDir() != null && updateParams.getTmpDir().getUid() <= 0) {
-            if (StringUtils.isEmpty(updateParams.getTmpDir().getPath())) {
-                // We set the file uid to -1 because this update means the user wants to remove the reference to the temporal directory
-                job.setTmpDir(updateParams.getTmpDir().setUid(-1));
-            } else {
-                job.setTmpDir(getFile(study.getUid(), updateParams.getOutDir().getPath(), userId));
-            }
         }
 
         if (ListUtils.isNotEmpty(updateParams.getInput())) {

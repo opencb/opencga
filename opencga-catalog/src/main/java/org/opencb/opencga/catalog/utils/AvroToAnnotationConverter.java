@@ -32,11 +32,38 @@ public class AvroToAnnotationConverter {
         String s = JacksonUtils.getDefaultObjectMapper().writer().writeValueAsString(annotationSet.getAnnotations());
         return JacksonUtils.getDefaultObjectMapper().readerFor(clazz).readValue(s);
     }
-//
-//    public static <T extends GenericRecord> AnnotationSet convertAnnotationToAvro(AnnotationSet annotationSet, Schema schema) {
-//
-//        new GenericRecordBuilder(schema).build();
-//
+
+//    public static GenericRecord convertAnnotationToAvro(AnnotationSet annotationSet, Schema schema) throws IOException {
+//        GenericRecordBuilder builder = new GenericRecordBuilder(schema);
+//        for (Map.Entry<String, Object> entry : annotationSet.getAnnotations().entrySet()) {
+//            Schema.Field field = schema.getField(entry.getKey());
+//            if (field == null) {
+//                continue;
+//            } else {
+//                switch (field.schema().getType()) {
+//                    case STRING:
+//                    case BYTES:
+//                    case FIXED:
+//                    case INT:
+//                    case LONG:
+//                    case FLOAT:
+//                    case DOUBLE:
+//                    case BOOLEAN:
+//                        builder.set(field, entry.getValue());
+//                        break;
+//                    case ENUM:
+//                        builder.set(field, entry.getValue());
+//                        break;
+//                    case ARRAY:
+//                    case UNION:
+//                    case MAP:
+//                    case RECORD:
+//                    case NULL:
+//                    default:
+//                }
+//            }
+//        }
+//        return builder.build();
 //    }
 
     private static Variable getVariable(Schema.Field field, Schema schema) {

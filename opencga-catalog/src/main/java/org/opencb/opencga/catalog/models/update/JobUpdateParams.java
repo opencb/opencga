@@ -10,7 +10,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
+import static org.opencb.opencga.core.common.JacksonUtils.*;
 
 public class JobUpdateParams {
 
@@ -41,7 +41,7 @@ public class JobUpdateParams {
 
     public ObjectMap getUpdateMap() throws CatalogException {
         try {
-            return new ObjectMap(getUpdateObjectMapper().writeValueAsString(this));
+            return new ObjectMap(getDefaultNonNullObjectMapper().writeValueAsString(this));
         } catch (JsonProcessingException e) {
             throw new CatalogException(e);
         }

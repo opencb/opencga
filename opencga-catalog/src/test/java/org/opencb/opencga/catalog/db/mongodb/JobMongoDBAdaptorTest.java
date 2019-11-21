@@ -244,7 +244,8 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         DataResult result = catalogJobDBAdaptor.update(job.getUid(), params, QueryOptions.empty());
         assertEquals(1, result.getNumUpdated());
 
-        DataResult<Job> queryResult = catalogJobDBAdaptor.get(job.getUid(), QueryOptions.empty());
+        QueryOptions options = new QueryOptions(MongoDBAdaptor.NATIVE_QUERY, true);
+        DataResult<Job> queryResult = catalogJobDBAdaptor.get(job.getUid(), options);
         assertEquals(3, queryResult.first().getInput().size());
         assertEquals(3, queryResult.first().getOutput().size());
 

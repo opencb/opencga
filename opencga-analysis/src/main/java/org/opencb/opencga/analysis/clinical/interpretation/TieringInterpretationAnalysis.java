@@ -16,394 +16,126 @@
 
 package org.opencb.opencga.analysis.clinical.interpretation;
 
-import htsjdk.variant.vcf.VCFConstants;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.biodata.models.clinical.interpretation.*;
-import org.opencb.biodata.models.clinical.interpretation.exceptions.InterpretationAnalysisException;
-import org.opencb.biodata.models.clinical.pedigree.Pedigree;
-import org.opencb.biodata.models.commons.Disorder;
-import org.opencb.biodata.models.commons.Software;
-import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.clinical.TieringReportedVariantCreator;
-import org.opencb.biodata.tools.pedigree.ModeOfInheritance;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
+import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.AnalysisResult;
-import org.opencb.opencga.analysis.clinical.ClinicalUtils;
-import org.opencb.opencga.analysis.clinical.CompoundHeterozygousAnalysis;
-import org.opencb.opencga.analysis.clinical.DeNovoAnalysis;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.FamilyManager;
-import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Project;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.stream.Collectors;
+import java.util.List;
 
-import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.*;
+@Analysis(id = TieringInterpretationAnalysis.ID, type = Analysis.AnalysisType.CLINICAL)
+public class TieringInterpretationAnalysis extends InterpretationAnalysis {
 
-public class TieringInterpretationAnalysis extends FamilyInterpretationAnalysis {
+    public final static String ID = "tiering-interpretation";
 
-    protected ClinicalProperty.Penetrance penetrance;
+    private String studyId;
+    private String clinicalAnalysisId;
+    private List<String> diseasePanelIds;
+    private ClinicalProperty.Penetrance penetrance;
+    private TieringInterpretationConfiguration config;
 
-    private final static Query dominantQuery;
-    private final static Query recessiveQuery;
-    private final static Query mitochondrialQuery;
+    private ClinicalAnalysis clinicalAnalysis;
+    private List<DiseasePanel> diseasePanels;
 
-    static {
-        recessiveQuery = new Query()
-                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), ModeOfInheritance.proteinCoding)
-                .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:AFR<0.01;1kG_phase3:AMR<0.01;"
-                        + "1kG_phase3:EAS<0.01;1kG_phase3:EUR<0.01;1kG_phase3:SAS<0.01;GNOMAD_EXOMES:AFR<0.01;GNOMAD_EXOMES:AMR<0.01;"
-                        + "GNOMAD_EXOMES:EAS<0.01;GNOMAD_EXOMES:FIN<0.01;GNOMAD_EXOMES:NFE<0.01;GNOMAD_EXOMES:ASJ<0.01;"
-                        + "GNOMAD_EXOMES:OTH<0.01")
-                .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.01")
-                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof);
+    @Override
+    protected void check() throws Exception {
+        super.check();
 
-        dominantQuery = new Query()
-                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), ModeOfInheritance.proteinCoding)
-                .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:AFR<0.002;1kG_phase3:AMR<0.002;"
-                        + "1kG_phase3:EAS<0.002;1kG_phase3:EUR<0.002;1kG_phase3:SAS<0.002;GNOMAD_EXOMES:AFR<0.001;GNOMAD_EXOMES:AMR<0.001;"
-                        + "GNOMAD_EXOMES:EAS<0.001;GNOMAD_EXOMES:FIN<0.001;GNOMAD_EXOMES:NFE<0.001;GNOMAD_EXOMES:ASJ<0.001;"
-                        + "GNOMAD_EXOMES:OTH<0.002")
-                .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.001")
-                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof);
+        // Check study
+        if (StringUtils.isEmpty(studyId)) {
+            // Missing study
+            throw new AnalysisException("Missing study ID");
+        }
 
-        mitochondrialQuery = new Query()
-                .append(VariantQueryParam.ANNOT_BIOTYPE.key(), ModeOfInheritance.proteinCoding)
-                .append(VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1kG_phase3:AFR<0.002;1kG_phase3:AMR<0.002;"
-                        + "1kG_phase3:EAS<0.002;1kG_phase3:EUR<0.002;1kG_phase3:SAS<0.002;")
-                .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), ModeOfInheritance.extendedLof)
-                .append(VariantQueryParam.STATS_MAF.key(), "ALL<0.01")
-                .append(VariantQueryParam.REGION.key(), "M,Mt,mt,m,MT");
-    }
+        // Check clinical analysis
+        if (StringUtils.isEmpty(clinicalAnalysisId)) {
+            throw new AnalysisException("Missing clinical analysis ID");
+        }
 
+        // Get clinical analysis to ckeck proband sample ID, family ID
+        OpenCGAResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
+        try {
+            clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),
+                    sessionId);
+        } catch (
+                CatalogException e) {
+            throw new AnalysisException(e);
+        }
+        if (clinicalAnalysisQueryResult.getNumResults() != 1) {
+            throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyId);
+        }
 
-    public TieringInterpretationAnalysis(String clinicalAnalysisId, String studyId, List<String> diseasePanelIds,
-                                         ClinicalProperty.Penetrance penetrance, ObjectMap options, String opencgaHome, String sessionId) {
-        super(clinicalAnalysisId, studyId, diseasePanelIds, options, opencgaHome, sessionId);
-        this.penetrance = penetrance;
+        clinicalAnalysis = clinicalAnalysisQueryResult.first();
+
+        // Check disease panels
+        diseasePanels = clinicalInterpretationManager.getDiseasePanels(studyId, diseasePanelIds, sessionId);
+
+        // Update executor params with OpenCGA home and session ID
+        setUpStorageEngineExecutor(studyId);
     }
 
     @Override
     protected void run() throws AnalysisException {
+        step(() -> {
+            getAnalysisExecutor(TieringInterpretationAnalysisExecutor.class)
+                    .setStudyId(studyId)
+                    .setClinicalAnalysisId(clinicalAnalysisId)
+                    .setDiseasePanels(diseasePanels)
+                    .setPenetrance(penetrance)
+                    .setConfig(config)
+                    .execute();
+
+            saveInterpretation(studyId, clinicalAnalysis, diseasePanels, null, config);
+        });
     }
 
-    public InterpretationResult compute() throws Exception {
-        StopWatch watcher = StopWatch.createStarted();
-
-        Query query = new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyId);
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key());
-        DataResult<Project> projectQueryResult = catalogManager.getProjectManager().get(query, options, sessionId);
-
-        if (projectQueryResult.getNumResults() != 1) {
-            throw new CatalogException("Project not found for study " + studyId + ". Found " + projectQueryResult.getNumResults()
-                    + " projects.");
-        }
-        String assembly = projectQueryResult.first().getOrganism().getAssembly();
-
-        // Get and check clinical analysis and proband
-        ClinicalAnalysis clinicalAnalysis = getClinicalAnalysis();
-        Individual proband = getProband(clinicalAnalysis);
-
-        // Get disease panels from IDs
-        List<DiseasePanel> diseasePanels = getDiseasePanelsFromIds(diseasePanelIds);
-
-        // Get pedigree
-        Pedigree pedigree = FamilyManager.getPedigreeFromFamily(clinicalAnalysis.getFamily(), proband.getId());
-
-        // Discard members from the pedigree that do not have any samples. If we don't do this, we will always assume
-        ClinicalUtils.removeMembersWithoutSamples(pedigree, clinicalAnalysis.getFamily());
-
-        // Get the map of individual - sample id and update proband information (to be able to navigate to the parents and their
-        // samples easily)
-        Map<String, String> sampleMap = getSampleMap(clinicalAnalysis, proband);
-
-        Map<ClinicalProperty.ModeOfInheritance, List<Variant>> resultMap = new HashMap<>();
-        Map<String, List<Variant>> chVariantMap = new HashMap<>();
-
-        List<Variant> regionVariants = new ArrayList<>();
-
-        ExecutorService threadPool = Executors.newFixedThreadPool(8);
-
-        List<Future<Boolean>> futureList = new ArrayList<>(8);
-        futureList.add(threadPool.submit(getNamedThread(MONOALLELIC.name(),
-                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, MONOALLELIC, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(XLINKED_MONOALLELIC.name(),
-                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, XLINKED_MONOALLELIC, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(YLINKED.name(),
-                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, YLINKED, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(BIALLELIC.name(),
-                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, BIALLELIC, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(XLINKED_BIALLELIC.name(),
-                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, XLINKED_BIALLELIC, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(MITOCHONDRIAL.name(),
-                () -> query(pedigree, clinicalAnalysis.getDisorder(), sampleMap, MITOCHONDRIAL, resultMap))));
-        futureList.add(threadPool.submit(getNamedThread(COMPOUND_HETEROZYGOUS.name(), () -> compoundHeterozygous(chVariantMap))));
-        futureList.add(threadPool.submit(getNamedThread(DE_NOVO.name(), () -> deNovo(resultMap))));
-        futureList.add(threadPool.submit(getNamedThread("REGION", () -> region(diseasePanels, sampleMap.values(),
-                assembly, regionVariants))));
-        threadPool.shutdown();
-
-        threadPool.awaitTermination(2, TimeUnit.MINUTES);
-        if (!threadPool.isTerminated()) {
-            for (Future<Boolean> future : futureList) {
-                future.cancel(true);
-            }
-        }
-
-        List<Variant> variantList = new ArrayList<>();
-        Map<String, List<ClinicalProperty.ModeOfInheritance>> variantMoIMap = new HashMap<>();
-
-        for (Map.Entry<ClinicalProperty.ModeOfInheritance, List<Variant>> entry : resultMap.entrySet()) {
-            logger.debug("MOI: {}; variant size: {}; variant ids: {}", entry.getKey(), entry.getValue().size(),
-                    entry.getValue().stream().map(Variant::toString).collect(Collectors.joining(",")));
-
-            for (Variant variant : entry.getValue()) {
-                if (!variantMoIMap.containsKey(variant.getId())) {
-                    variantMoIMap.put(variant.getId(), new ArrayList<>());
-                    variantList.add(variant);
-                }
-                variantMoIMap.get(variant.getId()).add(entry.getKey());
-            }
-        }
-
-        // Add region variants to variantList and variantMoIMap
-        for (Variant variant : regionVariants) {
-            if (!variantMoIMap.containsKey(variant.getId())) {
-                variantMoIMap.put(variant.getId(), new ArrayList<>());
-                variantList.add(variant);
-            }
-            // We add these variants with the ModeOfInheritance UNKNOWN
-            variantMoIMap.get(variant.getId()).add(UNKNOWN);
-        }
-
-        // Primary findings,
-        List<ReportedVariant> primaryFindings;
-        TieringReportedVariantCreator creator = new TieringReportedVariantCreator(diseasePanels, roleInCancerManager.getRoleInCancer(),
-                actionableVariantManager.getActionableVariants(assembly), clinicalAnalysis.getDisorder(), null, penetrance,
-                assembly);
-        try {
-            primaryFindings = creator.create(variantList, variantMoIMap);
-        } catch (InterpretationAnalysisException e) {
-            throw new AnalysisException(e.getMessage(), e);
-        }
-
-        // Add compound heterozyous variants
-        primaryFindings.addAll(getCompoundHeterozygousReportedVariants(chVariantMap, creator));
-        primaryFindings = creator.mergeReportedVariants(primaryFindings);
-
-
-        // Secondary findings, if clinical consent is TRUE
-        List<ReportedVariant> secondaryFindings = getSecondaryFindings(clinicalAnalysis, new ArrayList<>(sampleMap.keySet()), creator);
-
-        logger.debug("Reported variant size: {}", primaryFindings.size());
-
-        // Reported low coverage
-        List<ReportedLowCoverage> reportedLowCoverages = new ArrayList<>();
-        if (options.getBoolean("lowRegionCoverage", false)) {
-            reportedLowCoverages = getReportedLowCoverage(clinicalAnalysis, diseasePanels);
-        }
-
-        // Create Interpretation
-        Interpretation interpretation = new Interpretation()
-                .setId("OpenCGA-Tiering-" + TimeUtils.getTime())
-                .setAnalyst(getAnalyst(sessionId))
-                .setClinicalAnalysisId(clinicalAnalysisId)
-                .setCreationDate(TimeUtils.getTime())
-                .setPanels(diseasePanels)
-                .setFilters(null) //TODO
-                .setSoftware(new Software().setName("Tiering"))
-                .setPrimaryFindings(primaryFindings)
-                .setSecondaryFindings(secondaryFindings)
-                .setLowCoverageRegions(reportedLowCoverages);
-
-        // Return interpretation result
-        int numResults = CollectionUtils.isEmpty(primaryFindings) ? 0 : primaryFindings.size();
-        return new InterpretationResult(
-                interpretation,
-                Math.toIntExact(watcher.getTime()),
-                new HashMap<>(),
-                Math.toIntExact(watcher.getTime()), // DB time
-                numResults,
-                numResults,
-                "", // warning message
-                ""); // error message
+    public String getStudyId() {
+        return studyId;
     }
 
-    private <T> Callable<T> getNamedThread(String name, Callable<T> c) {
-        String parentThreadName = Thread.currentThread().getName();
-        return () -> {
-            Thread.currentThread().setName(parentThreadName + "-" + name);
-            return c.call();
-        };
+    public TieringInterpretationAnalysis setStudyId(String studyId) {
+        this.studyId = studyId;
+        return this;
     }
 
-    private Boolean compoundHeterozygous(Map<String, List<Variant>> resultMap) {
-        Query query = new Query(recessiveQuery);
-        CompoundHeterozygousAnalysis analysis = new CompoundHeterozygousAnalysis(clinicalAnalysisId, studyId, query, options, opencgaHome,
-                sessionId);
-        try {
-            AnalysisResult<Map<String, List<Variant>>> execute = analysis.compute();
-            if (MapUtils.isNotEmpty(execute.getResult())) {
-                resultMap.putAll(execute.getResult());
-            }
-        } catch (Exception e) {
-            logger.error("{}", e.getMessage(), e);
-            return false;
-        }
-
-        return true;
+    public String getClinicalAnalysisId() {
+        return clinicalAnalysisId;
     }
 
-    private Boolean deNovo(Map<ClinicalProperty.ModeOfInheritance, List<Variant>> resultMap) {
-        Query query = new Query(dominantQuery);
-        DeNovoAnalysis analysis = new DeNovoAnalysis(clinicalAnalysisId, studyId, query, options, opencgaHome, sessionId);
-        try {
-            AnalysisResult<List<Variant>> execute = analysis.compute();
-            if (ListUtils.isNotEmpty(execute.getResult())) {
-                resultMap.put(DE_NOVO, execute.getResult());
-            }
-        } catch (Exception e) {
-            logger.error("{}", e.getMessage(), e);
-            return false;
-        }
-
-        return true;
+    public TieringInterpretationAnalysis setClinicalAnalysisId(String clinicalAnalysisId) {
+        this.clinicalAnalysisId = clinicalAnalysisId;
+        return this;
     }
 
-    private Boolean region(List<DiseasePanel> diseasePanelList, Collection<String> samples, String assembly, List<Variant> result) {
-        List<Region> regions = new ArrayList<>();
-        if (diseasePanelList == null || diseasePanelList.isEmpty()) {
-            return true;
-        }
-
-        for (DiseasePanel diseasePanel : diseasePanelList) {
-            if (diseasePanel.getRegions() != null) {
-                for (DiseasePanel.RegionPanel region : diseasePanel.getRegions()) {
-                    for (DiseasePanel.Coordinate coordinate : region.getCoordinates()) {
-                        if (coordinate.getAssembly().equalsIgnoreCase(assembly)) {
-                            regions.add(Region.parseRegion(coordinate.getLocation()));
-                        }
-                    }
-                }
-            }
-        }
-
-        if (regions.isEmpty()) {
-            logger.debug("Panel doesn't have any regions. Skipping region query.");
-            return true;
-        }
-
-        Query query = new Query()
-                .append(VariantQueryParam.REGION.key(), regions)
-                .append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
-                .append(VariantQueryParam.STUDY.key(), studyId)
-                .append(VariantQueryParam.FILTER.key(), VCFConstants.PASSES_FILTERS_v4)
-                .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.")
-                .append(VariantQueryParam.SAMPLE.key(), samples);
-
-        logger.debug("Region query: {}", query.safeToString());
-
-        try {
-            result.addAll(variantStorageManager.get(query, QueryOptions.empty(), sessionId).getResults());
-        } catch (Exception e) {
-            logger.error("{}", e.getMessage(), e);
-            return false;
-        }
-
-        return true;
+    public List<String> getDiseasePanelIds() {
+        return diseasePanelIds;
     }
 
-    private Boolean query(Pedigree pedigree, Disorder disorder, Map<String, String> sampleMap, ClinicalProperty.ModeOfInheritance moi,
-                          Map<ClinicalProperty.ModeOfInheritance, List<Variant>> resultMap) {
-        Query query;
-        Map<String, List<String>> genotypes;
-        switch (moi) {
-            case MONOALLELIC:
-                query = new Query(dominantQuery);
-                genotypes = ModeOfInheritance.dominant(pedigree, disorder, penetrance);
-                break;
-            case YLINKED:
-                query = new Query(dominantQuery)
-                        .append(VariantQueryParam.REGION.key(), "Y");
-                genotypes = ModeOfInheritance.yLinked(pedigree, disorder, penetrance);
-                break;
-            case XLINKED_MONOALLELIC:
-                query = new Query(dominantQuery)
-                        .append(VariantQueryParam.REGION.key(), "X");
-                genotypes = ModeOfInheritance.xLinked(pedigree, disorder, true, penetrance);
-                break;
-            case BIALLELIC:
-                query = new Query(recessiveQuery);
-                genotypes = ModeOfInheritance.recessive(pedigree, disorder, penetrance);
-                break;
-            case XLINKED_BIALLELIC:
-                query = new Query(recessiveQuery)
-                        .append(VariantQueryParam.REGION.key(), "X");
-                genotypes = ModeOfInheritance.xLinked(pedigree, disorder, false, penetrance);
-                break;
-            case MITOCHONDRIAL:
-                query = new Query(mitochondrialQuery);
-                genotypes = ModeOfInheritance.mitochondrial(pedigree, disorder, penetrance);
-                filterOutHealthyGenotypes(genotypes);
-                break;
-            default:
-                logger.error("Mode of inheritance not yet supported: {}", moi);
-                return false;
-        }
-        query.append(VariantQueryParam.INCLUDE_GENOTYPE.key(), true)
-                .append(VariantQueryParam.STUDY.key(), studyId)
-                .append(VariantQueryParam.FILTER.key(), VCFConstants.PASSES_FILTERS_v4)
-                .append(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
-
-        if (ModeOfInheritance.isEmptyMapOfGenotypes(genotypes)) {
-            logger.warn("Map of genotypes is empty for {}", moi);
-            return false;
-        }
-        addGenotypeFilter(genotypes, sampleMap, query);
-
-        logger.debug("MoI: {}; Query: {}", moi, query.safeToString());
-        try {
-            resultMap.put(moi, variantStorageManager.get(query, QueryOptions.empty(), sessionId).getResults());
-        } catch (CatalogException | StorageEngineException | IOException e) {
-            logger.error(e.getMessage(), e);
-            return false;
-        }
-        return true;
+    public TieringInterpretationAnalysis setDiseasePanelIds(List<String> diseasePanelIds) {
+        this.diseasePanelIds = diseasePanelIds;
+        return this;
     }
 
-    private void filterOutHealthyGenotypes(Map<String, List<String>> genotypes) {
-        List<String> filterOutKeys = new ArrayList<>();
-        for (String key : genotypes.keySet()) {
-            List<String> gts = genotypes.get(key);
-            boolean filterOut = true;
-            for (String gt : gts) {
-                if (gt.contains("1")) {
-                    filterOut = false;
-                }
-            }
-            if (filterOut) {
-                filterOutKeys.add(key);
-            }
-        }
-        for (String filterOutKey : filterOutKeys) {
-            genotypes.remove(filterOutKey);
-        }
+    public ClinicalProperty.Penetrance getPenetrance() {
+        return penetrance;
     }
 
+    public TieringInterpretationAnalysis setPenetrance(ClinicalProperty.Penetrance penetrance) {
+        this.penetrance = penetrance;
+        return this;
+    }
+
+    public TieringInterpretationConfiguration getConfig() {
+        return config;
+    }
+
+    public TieringInterpretationAnalysis setConfig(TieringInterpretationConfiguration config) {
+        this.config = config;
+        return this;
+    }
 }

@@ -15,20 +15,20 @@
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "$sName",  "alias" : "$sAlias", "type" : "CASE_CONTROL"}|
 | POST | /v1/studies/create?projectId=$projectId |200|  Content-Type: application/json ||
-|let|lStudyId|js|response.jsonbody.response[0].result[0].id||
+|let|lStudyId|js.responsess.jsonbody.responsess[0].results[0].id||
 
 !3 Get Study 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId/info|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id == '$lStudyId'|
+| GET | /v1/studies/$lStudyId/info|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.responsess[0].results[0].id == '$lStudyId'|
 
 !3 Update Study 
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "newName"}|
-| POST | /v1/studies/$lStudyId/update |200|  Content-Type: application/json |jsonbody.response[0].result[0].name == 'newName'|
+| POST | /v1/studies/$lStudyId/update |200|  Content-Type: application/json |jsonbody.responsess[0].results[0].name == 'newName'|
 
 !3 Get Study 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId/info|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == 'newName'|
+| GET | /v1/studies/$lStudyId/info|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.responsess[0].results[0].name == 'newName'|
 
 !3 Delete Anonymous User For Study
 !|Table: Rest Fixture | $baseURL |
@@ -48,7 +48,7 @@
 !3 Get Study Info As Anonymous
 !|Table: Rest Fixture | $baseURL |
 | setHeader | Authorization : Bearer |
-| GET | /v1/studies/$studyId/info |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.response[0].result[0].id == '$studyId'|
+| GET | /v1/studies/$studyId/info |200|Content-Type: application/json|jsonbody.error === ''  && jsonbody.responsess[0].results[0].id == '$studyId'|
 
 !3 Delete Anonymous User For Study
 !|Table: Rest Fixture | $baseURL |
@@ -62,23 +62,23 @@
 
 !3 Get Studies Info
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId,$studyId/info|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == 'newName' && jsonbody.response[1].result[0].id == '$studyId'|
+| GET | /v1/studies/$lStudyId,$studyId/info|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.responsess[0].results[0].name == 'newName' && jsonbody.responsess[1].results[0].id == '$studyId'|
 
 !3 Get Studies Info In Reverse Order
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId,$studyId/info|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].name == 'newName' && jsonbody.response[1].result[0].id == '$studyId'|
+| GET | /v1/studies/$lStudyId,$studyId/info|200|Content-Type: application/json |jsonbody.error == '' && jsonbody.responsess[0].results[0].name == 'newName' && jsonbody.responsess[1].results[0].id == '$studyId'|
 
 !3 Get Studies Info With One Invalid Entry And Silent False
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId,$studyId,000/info|500|Content-Type: application/json |jsonbody.response[0].errorMsg == "DEPRECATED: org.opencb.opencga.catalog.exceptions.CatalogException: No study found given '000' or the user '$user'  does not have permissions to view any."|
+| GET | /v1/studies/$lStudyId,$studyId,000/info|500|Content-Type: application/json |jsonbody.responsess[0].errorMsg == "DEPRECATED: org.opencb.opencga.catalog.exceptions.CatalogException: No study found given '000' or the user '$user'  does not have permissions to view any."|
 
 !3 Get Studies Info With One Invalid Entry And Silent True
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/11111,$lStudyId,$studyId/info?silent=true|200|Content-Type: application/json |jsonbody.response[0].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogException: No study found given '11111' or the user '$user'  does not have permissions to view any."|
+| GET | /v1/studies/11111,$lStudyId,$studyId/info?silent=true|200|Content-Type: application/json |jsonbody.responsess[0].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogException: No study found given '11111' or the user '$user'  does not have permissions to view any."|
 
 !3 Get Study ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId/acl|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result ==''|
+| GET | /v1/studies/$lStudyId/acl|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.responsess[0].results ==''|
 
 !3 Get Studies ACL 
 !|Table: Rest Fixture | $baseURL |
@@ -92,21 +92,21 @@
 !3 Update Study ACL (add)
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"add" : "WRITE_FILES" }|
-| POST |/v1/studies/$lStudyId/acl/$userA/update|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2'|
+| POST |/v1/studies/$lStudyId/acl/$userA/update|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.responsess[0].results[0].member == '$userA' && jsonbody.responsess[0].results[0].permissions.length == '2'|
 
 !3 Update Study ACL (remove)
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"remove" : "WRITE_FILES" }|
-| POST |/v1/studies/$lStudyId/acl/$userA/update|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions[0] == 'VIEW_FILES'|
+| POST |/v1/studies/$lStudyId/acl/$userA/update|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.responsess[0].results[0].member == '$userA' && jsonbody.responsess[0].results[0].permissions[0] == 'VIEW_FILES'|
 
 !3 Update Study ACL (set)
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"set" : "VIEW_FILES,WRITE_FILES" }|
-| POST |/v1/studies/$lStudyId/acl/$userA/update|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
+| POST |/v1/studies/$lStudyId/acl/$userA/update|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.responsess[0].results[0].member == '$userA' && jsonbody.responsess[0].results[0].permissions.length == '2.0'|
 
 !3 Get Member ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId/acl?$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].member == '$userA' && jsonbody.response[0].result[0].permissions.length == '2.0'|
+| GET | /v1/studies/$lStudyId/acl?$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.responsess[0].results[0].member == '$userA' && jsonbody.responsess[0].results[0].permissions.length == '2.0'|
 
 !3 Delete Member ACL
 !|Table: Rest Fixture | $baseURL |
@@ -115,7 +115,7 @@
 
 !3 Get Member ACL
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId/acl?$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result.length == '0'|
+| GET | /v1/studies/$lStudyId/acl?$userA|200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.responsess[0].results.length == '0'|
 
 #deprecated
 
@@ -131,7 +131,7 @@
 
 !3 Get Removed Group 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId/groups?name=$groupId|200|  Content-Type: application/json |jsonbody.response[0].result.length == 0|
+| GET | /v1/studies/$lStudyId/groups?name=$groupId|200|  Content-Type: application/json |jsonbody.responsess[0].results.length == 0|
 
 
 !3 Create Group
@@ -147,21 +147,21 @@
 !3 Create Group With @ in Name
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "name" : "@XYZ", "users" : "$userA,$userB"}|
-| POST | /v1/studies/$lStudyId/groups/update |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == "@XYZ" && jsonbody.response[0].result[0].id == "@XYZ" |
+| POST | /v1/studies/$lStudyId/groups/update |200|  Content-Type: application/json |jsonbody.responsess[0].results[0].id == "@XYZ" && jsonbody.responsess[0].results[0].id == "@XYZ" |
 
 !3 Remove Group
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"id" : "@XYZ"}|
-| POST | /v1/studies/$lStudyId/groups/update?action=REMOVE |200|  Content-Type: application/json |jsonbody.response[0].result.length == 1|
+| POST | /v1/studies/$lStudyId/groups/update?action=REMOVE |200|  Content-Type: application/json |jsonbody.responsess[0].results.length == 1|
 
 !3 Get Group By Name
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId/groups?name=$groupId|200|  Content-Type: application/json |jsonbody.response[0].result.length == 1 && jsonbody.response[0].result[0].name == "$groupId"|
+| GET | /v1/studies/$lStudyId/groups?name=$groupId|200|  Content-Type: application/json |jsonbody.responsess[0].results.length == 1 && jsonbody.responsess[0].results[0].name == "$groupId"|
 
 # @ is added to groupID 
 !3 Get Group By ID
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId/groups?id=@$groupId|200|  Content-Type: application/json |jsonbody.response[0].result.length == 1 && jsonbody.response[0].result[0].id == "@$groupId"|
+| GET | /v1/studies/$lStudyId/groups?id=@$groupId|200|  Content-Type: application/json |jsonbody.responsess[0].results.length == 1 && jsonbody.responsess[0].results[0].id == "@$groupId"|
 
 !3 Create Empty Group
 !|Table: Rest Fixture | $baseURL |
@@ -170,12 +170,12 @@
 
 !3 Get Empty Group 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId/groups?name=$emptyGroup|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds.length == '0.0'|
+| GET | /v1/studies/$lStudyId/groups?name=$emptyGroup|200|  Content-Type: application/json |jsonbody.responsess[0].results[0].userIds.length == '0.0'|
 
 !3 Get Groups From A Study
 !|Table: Rest Fixture | $baseURL |
 | GET | /v1/studies/$lStudyId/groups|200|Content-Type: application/json ||
-|let||js|response.jsonbody.response[0].result.length|4.0|
+|let||js.responsess.jsonbody.responsess[0].results.length|4.0|
 
 
 #@groupId in above line is exception to handle groups
@@ -183,19 +183,19 @@
 !3 Update Group 
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"users" : "$userB", "action" : "REMOVE" }|
-| POST |/v1/studies/$lStudyId/groups/$groupId/update|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds.length == '1'|
+| POST |/v1/studies/$lStudyId/groups/$groupId/update|200|  Content-Type: application/json |jsonbody.responsess[0].results[0].userIds.length == '1'|
 
 !3 Get Updated Group 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId/groups?name=$groupId|200|  Content-Type: application/json |jsonbody.response[0].result[0].userIds[0] == '$userA'|
+| GET | /v1/studies/$lStudyId/groups?name=$groupId|200|  Content-Type: application/json |jsonbody.responsess[0].results[0].userIds[0] == '$userA'|
 
 !3 Get Groups From Studies
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId,$studyId/groups|200|Content-Type: application/json |jsonbody.response[0].numResults == '4' && jsonbody.response[1].numResults == '2'|
+| GET | /v1/studies/$lStudyId,$studyId/groups|200|Content-Type: application/json |jsonbody.responsess[0].numResults == '4' && jsonbody.responsess[1].numResults == '2'|
 
 !3 Get Groups From Studies In Reverser Order
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId,$lStudyId/groups|200|Content-Type: application/json |jsonbody.response[0].numResults == '2' && jsonbody.response[1].numResults == '4'|
+| GET | /v1/studies/$studyId,$lStudyId/groups|200|Content-Type: application/json |jsonbody.responsess[0].numResults == '2' && jsonbody.responsess[1].numResults == '4'|
 
 !3 Get Groups From Studies In Reverser Order With One Invalid Entry And Silent False
 !|Table: Rest Fixture | $baseURL |
@@ -203,7 +203,7 @@
 
 !3 Get Groups From Studies In Reverser Order With One Invalid Entry And Silent True
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId,000,$lStudyId/groups?silent=true|200|Content-Type: application/json |jsonbody.response[0].numResults == '2' && jsonbody.response[1].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogException: No study found given '000' or the user '$user'  does not have permissions to view any." && jsonbody.response[2].numResults == '4'|
+| GET | /v1/studies/$studyId,000,$lStudyId/groups?silent=true|200|Content-Type: application/json |jsonbody.responsess[0].numResults == '2' && jsonbody.responsess[1].errorMsg == "org.opencb.opencga.catalog.exceptions.CatalogException: No study found given '000' or the user '$user'  does not have permissions to view any." && jsonbody.responsess[2].numResults == '4'|
 
 !3 Delete Group 
 !|Table: Rest Fixture | $baseURL |
@@ -215,159 +215,159 @@
 
 !3 Get Study Samples
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId/samples/|200|  Content-Type: application/json |jsonbody.response[0].result.length == '0'|
+| GET | /v1/studies/$lStudyId/samples/|200|  Content-Type: application/json |jsonbody.responsess[0].results.length == '0'|
 
 !3 Create Sample 
 !|Table: Rest Fixture | $baseURL |
 | setBody | {"name" : "sample" }|
 | POST | /v1/samples/create?study=$lStudyId |200|  Content-Type: application/json ||
-|let|sId|js|response.jsonbody.response[0].result[0].id||
+|let|sId|js.responsess.jsonbody.responsess[0].results[0].id||
 
 !3 Get Study Samples
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId/samples/|200|  Content-Type: application/json |jsonbody.response[0].result.length == '1'|
+| GET | /v1/studies/$lStudyId/samples/|200|  Content-Type: application/json |jsonbody.responsess[0].results.length == '1'|
 
 !3 Get Study Summary
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId/summary|200|  Content-Type: application/json |jsonbody.response[0].result[0].samples == '1'|
+| GET | /v1/studies/$lStudyId/summary|200|  Content-Type: application/json |jsonbody.responsess[0].results[0].samples == '1'|
 
 !3 Get Studies Summary
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId,$lStudyId/summary|200|  Content-Type: application/json |jsonbody.response[0].result[0].samples == '0' && jsonbody.response[1].result[0].samples == '1'|
+| GET | /v1/studies/$studyId,$lStudyId/summary|200|  Content-Type: application/json |jsonbody.responsess[0].results[0].samples == '0' && jsonbody.responsess[1].results[0].samples == '1'|
 
 !3 Get Studies Summary Reverse Order
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$lStudyId,$studyId/summary|200|  Content-Type: application/json |jsonbody.response[0].result[0].samples == '1' && jsonbody.response[1].result[0].samples == '0'|
+| GET | /v1/studies/$lStudyId,$studyId/summary|200|  Content-Type: application/json |jsonbody.responsess[0].results[0].samples == '1' && jsonbody.responsess[1].results[0].samples == '0'|
 
 !3 Search Study
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/search?projectId=$projectId&alias=$sAlias|200|  Content-Type: application/json |jsonbody.response[0].result[0].alias == '$sAlias'|
+| GET | /v1/studies/search?projectId=$projectId&alias=$sAlias|200|  Content-Type: application/json |jsonbody.responsess[0].results[0].alias == '$sAlias'|
 
 !3 Create Permission Rule For Sample 
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "id": "PR1", "query": {"name" : "Test"},  "members": [    "$userA"  ],  "permissions": [    "DELETE"  ]}|
-| POST | /v1/studies/$studyId/permissionRules/update?entity=SAMPLES&action=ADD |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| POST | /v1/studies/$studyId/permissionRules/update?entity=SAMPLES&action=ADD |200|  Content-Type: application/json |jsonbody.responsess[0].results[0].id == 'PR1' && jsonbody.responsess[0].results[0].members == '$userA'|
 
 !3 Get Permission Rule For Sample 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=SAMPLES|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| GET | /v1/studies/$studyId/permissionRules?entity=SAMPLES|200|  Content-Type: application/json |jsonbody.responsess[0].numTotalResults == '1' && jsonbody.responsess[0].results[0].id == 'PR1' && jsonbody.responsess[0].results[0].members == '$userA'|
 
 !3 Create Second Permission Rule For Sample 
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "id": "PR2", "query": {"name" : "Sample2"},  "members": ["$userB"],  "permissions": ["VIEW"]}|
-| POST | /v1/studies/$studyId/permissionRules/update?entity=SAMPLES&action=ADD |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == 'PR2' && jsonbody.response[0].result[0].members == '$userB'|
+| POST | /v1/studies/$studyId/permissionRules/update?entity=SAMPLES&action=ADD |200|  Content-Type: application/json |jsonbody.responsess[0].results[0].id == 'PR2' && jsonbody.responsess[0].results[0].members == '$userB'|
 
 !3 Get All Permission Rules For Sample 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=SAMPLES|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
+| GET | /v1/studies/$studyId/permissionRules?entity=SAMPLES|200|  Content-Type: application/json |jsonbody.responsess[0].numTotalResults == '2'|
 
 !3 Create Permission Rule For Files 
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "id": "PR1", "query": {"name" : "File"},  "members": [    "$userA"  ],  "permissions": [    "DELETE"  ]}|
-| POST | /v1/studies/$studyId/permissionRules/update?entity=FILES&action=ADD |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| POST | /v1/studies/$studyId/permissionRules/update?entity=FILES&action=ADD |200|  Content-Type: application/json |jsonbody.responsess[0].results[0].id == 'PR1' && jsonbody.responsess[0].results[0].members == '$userA'|
 
 !3 Get Permission Rule For Files 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=FILES|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| GET | /v1/studies/$studyId/permissionRules?entity=FILES|200|  Content-Type: application/json |jsonbody.responsess[0].numTotalResults == '1' && jsonbody.responsess[0].results[0].id == 'PR1' && jsonbody.responsess[0].results[0].members == '$userA'|
 
 !3 Create Second Permission Rule For Files 
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "id": "PR2", "query": {"name" : "Files2"},  "members": ["$userB"],  "permissions": ["VIEW"]}|
-| POST | /v1/studies/$studyId/permissionRules/update?entity=FILES&action=ADD |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == 'PR2' && jsonbody.response[0].result[0].members == '$userB'|
+| POST | /v1/studies/$studyId/permissionRules/update?entity=FILES&action=ADD |200|  Content-Type: application/json |jsonbody.responsess[0].results[0].id == 'PR2' && jsonbody.responsess[0].results[0].members == '$userB'|
 
 !3 Get All Permission Rules For Files 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=FILES|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
+| GET | /v1/studies/$studyId/permissionRules?entity=FILES|200|  Content-Type: application/json |jsonbody.responsess[0].numTotalResults == '2'|
 
 !3 Create Permission Rule For Cohorts 
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "id": "PR1", "query": {"name" : "Cohorts"},  "members": [    "$userA"  ],  "permissions": [    "DELETE"  ]}|
-| POST | /v1/studies/$studyId/permissionRules/update?entity=COHORTS&action=ADD |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| POST | /v1/studies/$studyId/permissionRules/update?entity=COHORTS&action=ADD |200|  Content-Type: application/json |jsonbody.responsess[0].results[0].id == 'PR1' && jsonbody.responsess[0].results[0].members == '$userA'|
 
 !3 Get Permission Rule For Cohorts 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=COHORTS|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| GET | /v1/studies/$studyId/permissionRules?entity=COHORTS|200|  Content-Type: application/json |jsonbody.responsess[0].numTotalResults == '1' && jsonbody.responsess[0].results[0].id == 'PR1' && jsonbody.responsess[0].results[0].members == '$userA'|
 
 !3 Create Second Permission Rule For Cohorts 
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "id": "PR2", "query": {"name" : "cohorts2"},  "members": ["$userB"],  "permissions": ["VIEW"]}|
-| POST | /v1/studies/$studyId/permissionRules/update?entity=COHORTS&action=ADD |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == 'PR2' && jsonbody.response[0].result[0].members == '$userB'|
+| POST | /v1/studies/$studyId/permissionRules/update?entity=COHORTS&action=ADD |200|  Content-Type: application/json |jsonbody.responsess[0].results[0].id == 'PR2' && jsonbody.responsess[0].results[0].members == '$userB'|
 
 !3 Get All Permission Rules For Cohorts 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=COHORTS|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
+| GET | /v1/studies/$studyId/permissionRules?entity=COHORTS|200|  Content-Type: application/json |jsonbody.responsess[0].numTotalResults == '2'|
 
 !3 Create Permission Rule For Individual 
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "id": "PR1", "query": {"name" : "INDIVIDUALS"},  "members": [    "$userA"  ],  "permissions": [    "DELETE"  ]}|
-| POST | /v1/studies/$studyId/permissionRules/update?entity=INDIVIDUALS&action=ADD |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| POST | /v1/studies/$studyId/permissionRules/update?entity=INDIVIDUALS&action=ADD |200|  Content-Type: application/json |jsonbody.responsess[0].results[0].id == 'PR1' && jsonbody.responsess[0].results[0].members == '$userA'|
 
 !3 Get Permission Rule For Individual 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=INDIVIDUALS|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| GET | /v1/studies/$studyId/permissionRules?entity=INDIVIDUALS|200|  Content-Type: application/json |jsonbody.responsess[0].numTotalResults == '1' && jsonbody.responsess[0].results[0].id == 'PR1' && jsonbody.responsess[0].results[0].members == '$userA'|
 
 !3 Create Second Permission Rule For Individual 
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "id": "PR2", "query": {"name" : "INDIVIDUALS2"},  "members": ["$userB"],  "permissions": ["VIEW"]}|
-| POST | /v1/studies/$studyId/permissionRules/update?entity=INDIVIDUALS&action=ADD |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == 'PR2' && jsonbody.response[0].result[0].members == '$userB'|
+| POST | /v1/studies/$studyId/permissionRules/update?entity=INDIVIDUALS&action=ADD |200|  Content-Type: application/json |jsonbody.responsess[0].results[0].id == 'PR2' && jsonbody.responsess[0].results[0].members == '$userB'|
 
 !3 Get All Permission Rules For Individual 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=INDIVIDUALS|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
+| GET | /v1/studies/$studyId/permissionRules?entity=INDIVIDUALS|200|  Content-Type: application/json |jsonbody.responsess[0].numTotalResults == '2'|
 
 !3 Create Permission Rule For Family 
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "id": "PR1", "query": {"name" : "family"},  "members": [    "$userA"  ],  "permissions": [    "DELETE"  ]}|
-| POST | /v1/studies/$studyId/permissionRules/update?entity=FAMILIES&action=ADD |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| POST | /v1/studies/$studyId/permissionRules/update?entity=FAMILIES&action=ADD |200|  Content-Type: application/json |jsonbody.responsess[0].results[0].id == 'PR1' && jsonbody.responsess[0].results[0].members == '$userA'|
 
 !3 Get Permission Rule For Family 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=FAMILIES|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| GET | /v1/studies/$studyId/permissionRules?entity=FAMILIES|200|  Content-Type: application/json |jsonbody.responsess[0].numTotalResults == '1' && jsonbody.responsess[0].results[0].id == 'PR1' && jsonbody.responsess[0].results[0].members == '$userA'|
 
 !3 Create Second Permission Rule For Family 
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "id": "PR2", "query": {"name" : "family2"},  "members": ["$userB"],  "permissions": ["VIEW"]}|
-| POST | /v1/studies/$studyId/permissionRules/update?entity=FAMILIES&action=ADD |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == 'PR2' && jsonbody.response[0].result[0].members == '$userB'|
+| POST | /v1/studies/$studyId/permissionRules/update?entity=FAMILIES&action=ADD |200|  Content-Type: application/json |jsonbody.responsess[0].results[0].id == 'PR2' && jsonbody.responsess[0].results[0].members == '$userB'|
 
 !3 Get All Permission Rules For Family 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=FAMILIES|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
+| GET | /v1/studies/$studyId/permissionRules?entity=FAMILIES|200|  Content-Type: application/json |jsonbody.responsess[0].numTotalResults == '2'|
 
 !3 Create Permission Rule For Jobs 
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "id": "PR1", "query": {"name" : "job"},  "members": [    "$userA"  ],  "permissions": [    "DELETE"  ]}|
-| POST | /v1/studies/$studyId/permissionRules/update?entity=JOBS&action=ADD |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| POST | /v1/studies/$studyId/permissionRules/update?entity=JOBS&action=ADD |200|  Content-Type: application/json |jsonbody.responsess[0].results[0].id == 'PR1' && jsonbody.responsess[0].results[0].members == '$userA'|
 
 !3 Get Permission Rule For Jobs 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=JOBS|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| GET | /v1/studies/$studyId/permissionRules?entity=JOBS|200|  Content-Type: application/json |jsonbody.responsess[0].numTotalResults == '1' && jsonbody.responsess[0].results[0].id == 'PR1' && jsonbody.responsess[0].results[0].members == '$userA'|
 
 !3 Create Second Permission Rule For Jobs
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "id": "PR2", "query": {"name" : "jobs2"},  "members": ["$userB"],  "permissions": ["VIEW"]}|
-| POST | /v1/studies/$studyId/permissionRules/update?entity=JOBS&action=ADD  |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == 'PR2' && jsonbody.response[0].result[0].members == '$userB'|
+| POST | /v1/studies/$studyId/permissionRules/update?entity=JOBS&action=ADD  |200|  Content-Type: application/json |jsonbody.responsess[0].results[0].id == 'PR2' && jsonbody.responsess[0].results[0].members == '$userB'|
 
 !3 Get All Permission Rules For Jobs 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=JOBS|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
+| GET | /v1/studies/$studyId/permissionRules?entity=JOBS|200|  Content-Type: application/json |jsonbody.responsess[0].numTotalResults == '2'|
 
 !3 Create Permission Rule For CLINICAL ANALYSES 
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "id": "PR1", "query": {"name" : "CA"},  "members": [    "$userA"  ],  "permissions": [    "DELETE"  ]}|
-| POST | /v1/studies/$studyId/permissionRules/update?entity=CLINICAL_ANALYSES&action=ADD |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| POST | /v1/studies/$studyId/permissionRules/update?entity=CLINICAL_ANALYSES&action=ADD |200|  Content-Type: application/json |jsonbody.responsess[0].results[0].id == 'PR1' && jsonbody.responsess[0].results[0].members == '$userA'|
 
 !3 Get Permission Rule For CLINICAL ANALYSES 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=CLINICAL_ANALYSES|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '1' && jsonbody.response[0].result[0].id == 'PR1' && jsonbody.response[0].result[0].members == '$userA'|
+| GET | /v1/studies/$studyId/permissionRules?entity=CLINICAL_ANALYSES|200|  Content-Type: application/json |jsonbody.responsess[0].numTotalResults == '1' && jsonbody.responsess[0].results[0].id == 'PR1' && jsonbody.responsess[0].results[0].members == '$userA'|
 
 !3 Create Second Permission Rule For CLINICAL ANALYSES  
 !|Table: Rest Fixture | $baseURL |
 | setBody | { "id": "PR2", "query": {"name" : "CA2"},  "members": ["$userB"],  "permissions": ["VIEW"]}|
-| POST | /v1/studies/$studyId/permissionRules/update?entity=CLINICAL_ANALYSES&action=ADD |200|  Content-Type: application/json |jsonbody.response[0].result[0].id == 'PR2' && jsonbody.response[0].result[0].members == '$userB'|
+| POST | /v1/studies/$studyId/permissionRules/update?entity=CLINICAL_ANALYSES&action=ADD |200|  Content-Type: application/json |jsonbody.responsess[0].results[0].id == 'PR2' && jsonbody.responsess[0].results[0].members == '$userB'|
 
 !3 Get All Permission Rules For CLINICAL ANALYSES 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=CLINICAL_ANALYSES|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '2'|
+| GET | /v1/studies/$studyId/permissionRules?entity=CLINICAL_ANALYSES|200|  Content-Type: application/json |jsonbody.responsess[0].numTotalResults == '2'|
 
 !3 Delete First Permission Rule For CLINICAL ANALYSES 
 !|Table: Rest Fixture | $baseURL |
@@ -381,26 +381,26 @@
 
 !3 Get All Permission Rules For CLINICAL ANALYSES 
 !|Table: Rest Fixture | $baseURL |
-| GET | /v1/studies/$studyId/permissionRules?entity=CLINICAL_ANALYSES|200|  Content-Type: application/json |jsonbody.response[0].numTotalResults == '0'|
+| GET | /v1/studies/$studyId/permissionRules?entity=CLINICAL_ANALYSES|200|  Content-Type: application/json |jsonbody.responsess[0].numTotalResults == '0'|
 
 !3 Create Variable Set  
 !|Table: Rest Fixture  | $baseURL |
 | setBody |  {"id" : "$VS1","unique": false, "confidential" : "false",  "name": "$vsName1",  "description": "string",  "variables": [{ "id" : "var_int", "name": "V1", "type" : "INTEGER" ,"defaultValue" : "10", "required" : true,"multiValue": false }, {"id" : "var_double", "name": "V2", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }]}|
 | POST | /v1/studies/$study/variableSets/update?action=ADD |200| Content-Type : application/json||
-|let|variableSetId1|js|response.jsonbody.response[0].result[0].id||
+|let|variableSetId1|js.responsess.jsonbody.responsess[0].results[0].id||
 
 #Enhancement Req # 545
 !3 Verify Variable Stored Value
 !|Table: Rest Fixture  | $baseURL |
-| GET |  /v1/studies/$study/variableSets?study=$studyId&id=$variableSetId1 |200| Content-Type : application/json|jsonbody.error == '' && jsonbody.response[0].result[0].variables.length == '2'|
-|let||js|!-res=0;if(response.jsonbody.response[0].result[0].variables[0].id == 'var_double') {res = response.jsonbody.response[0].result[0].variables[0].defaultValue;} else {res = response.jsonbody.response[0].result[0].variables[1].defaultValue;}res;-!|20.5|
-|let||js|!-res=0;if(response.jsonbody.response[0].result[0].variables[0].id == 'var_int') {res = response.jsonbody.response[0].result[0].variables[0].defaultValue;} else {res = response.jsonbody.response[0].result[0].variables[1].defaultValue;}res;-!|10|
+| GET |  /v1/studies/$study/variableSets?study=$studyId&id=$variableSetId1 |200| Content-Type : application/json|jsonbody.error == '' && jsonbody.responsess[0].results[0].variables.length == '2'|
+|let||js|!-res=0;if.responsess.jsonbody.responsess[0].results[0].variables[0].id == 'var_double') {res =.responsess.jsonbody.responsess[0].results[0].variables[0].defaultValue;} else {res =.responsess.jsonbody.responsess[0].results[0].variables[1].defaultValue;}res;-!|20.5|
+|let||js|!-res=0;if.responsess.jsonbody.responsess[0].results[0].variables[0].id == 'var_int') {res =.responsess.jsonbody.responsess[0].results[0].variables[0].defaultValue;} else {res =.responsess.jsonbody.responsess[0].results[0].variables[1].defaultValue;}res;-!|10|
 
 !3 Create Nested Variable Set 2
 !|Table: Rest Fixture  | $baseURL |
 | setBody |  { "id" : "$VS2", "unique": false, "confidential" : "false",  "name": "$vsName2",  "description": "string",  "variables": [{"id" : "outer_var", "name": "V11", "type" : "OBJECT", "required" : true,"multiValue": true , "variableSet" : [{"id" : "inner_first_var","name": "V1", "type" : "DOUBLE", "defaultValue" : "20.5" , "required" : false,"multiValue": false }, {"id" : "inner_second_var","name": "V2", "type" : "INTEGER", "defaultValue" : "20" , "required" : false,"multiValue": false }] }]}|
 | POST | /v1/studies/$study/variableSets/update?study=$study |200| Content-Type : application/json||
-|let|variableSetId2|js|response.jsonbody.response[0].result[0].id||
+|let|variableSetId2|js.responsess.jsonbody.responsess[0].results[0].id||
 
 !3 Create  Variable Set  Without Ids
 !|Table: Rest Fixture  | $baseURL |
@@ -410,17 +410,17 @@
 !3 Add Variable TO A Variable Set 
 !|Table: Rest Fixture  | $baseURL |
 | setBody |{ "id" : "var_add_int", "name": "V1", "type" : "INTEGER", "required" : true,"multiValue": false }|
-| POST | /v1/studies/$study/variableSets/$variableSetId1/variables/update?study=$study&action=ADD |200| Content-Type : application/json|jsonbody.response[0].result[0].variables.length == 3|
+| POST | /v1/studies/$study/variableSets/$variableSetId1/variables/update?study=$study&action=ADD |200| Content-Type : application/json|jsonbody.responsess[0].results[0].variables.length == 3|
 
 !3 Remove Variable From A Variable Set 
 !|Table: Rest Fixture  | $baseURL |
 | setBody |{ "id" : "var_int"}|
-| POST | /v1/studies/$study/variableSets/$variableSetId1/variables/update?study=$study&action=REMOVE |200| Content-Type : application/json|jsonbody.response[0].result[0].variables.length == 2|
+| POST | /v1/studies/$study/variableSets/$variableSetId1/variables/update?study=$study&action=REMOVE |200| Content-Type : application/json|jsonbody.responsess[0].results[0].variables.length == 2|
 
 !3 Remove Variable Set1  
 !|Table: Rest Fixture  | $baseURL |
 | setBody |  {"id":"$variableSetId1"}|
-| POST | /v1/studies/$study/variableSets/update?study=$study&action=REMOVE |200| Content-Type : application/json|jsonbody.response[0].result[0].id == "$variableSetId1"|
+| POST | /v1/studies/$study/variableSets/update?study=$study&action=REMOVE |200| Content-Type : application/json|jsonbody.responsess[0].results[0].id == "$variableSetId1"|
 
 !3 Get Removed Variable Set1 
 !|Table: Rest Fixture  | $baseURL |

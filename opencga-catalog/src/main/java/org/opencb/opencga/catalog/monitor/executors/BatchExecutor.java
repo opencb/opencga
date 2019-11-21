@@ -36,12 +36,10 @@ public interface BatchExecutor {
     String OUTDIR = "outdir";
     String NUM_THREADS = "num_threads";
     String MAX_MEM = "max_mem";
+    @Deprecated
     String JOB_STATUS_FILE = "status.json";
     String OUT_LOG_EXTENSION = ".out";
     String ERR_LOG_EXTENSION = ".err";
-
-    @Deprecated
-    void execute(Job job, String token) throws Exception;
 
     void execute(String jobId, String commandLine, Path stdout, Path stderr, String token) throws Exception;
 

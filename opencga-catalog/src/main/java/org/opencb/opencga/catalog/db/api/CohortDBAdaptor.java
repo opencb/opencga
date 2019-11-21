@@ -116,7 +116,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
     }
 
     default boolean exists(long cohortId) throws CatalogDBException {
-        return count(new Query(QueryParams.UID.key(), cohortId)).first() > 0;
+        return count(new Query(QueryParams.UID.key(), cohortId)).getNumMatches() > 0;
     }
 
     default void checkId(long cohortId) throws CatalogDBException {

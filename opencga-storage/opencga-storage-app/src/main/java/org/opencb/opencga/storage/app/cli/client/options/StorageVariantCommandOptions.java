@@ -109,7 +109,7 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--include-extra-fields"}, description = "Index including other FORMAT fields." +
                 " Use \"" + VariantQueryUtils.ALL + "\", \"" + VariantQueryUtils.NONE + "\", or CSV with the fields to load.")
-        public String extraFields = VariantQueryUtils.ALL;
+        public String includeExtraFields = VariantQueryUtils.ALL;
 
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
         public Aggregation aggregated = Aggregation.NONE;
@@ -528,16 +528,14 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--output-filename"}, description = "Output file name. Default: dbName", arity = 1)
         public String fileName;
 
-        @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
-        public String filterRegion;
+        @Parameter(names = {"--region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
+        public String region;
 
+        @Parameter(names = {"--filter-region"}, hidden = true)
         @Deprecated
-        @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)
-        public String filterGene;
-
-        @Parameter(names = {"--filter-annot-consequence-type"}, description = "Comma separated annotation consequence type filters",
-                splitter = CommaParameterSplitter.class)
-        public List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
+        public void setRegion(String r) {
+            region = r;
+        }
     }
 
     @Parameters(commandNames = {"annotate"}, commandDescription = "Create and load variant annotations into the database")

@@ -22,8 +22,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -32,33 +32,40 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.models.update.JobUpdateParams;
-import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.analysis.result.AnalysisResult;
 import org.opencb.opencga.core.analysis.result.AnalysisResultManager;
-import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.analysis.result.Status;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.analysis.result.Status;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Created by imedina on 16/06/16.
  */
 public class ExecutionDaemon extends MonitorParentDaemon {
 
+    public static final String OUTDIR_PARAM = "outdir";
+    public static final String FILE_PARAM_SUFFIX = "file";
     private String internalCli;
     private JobManager jobManager;
     private FileManager fileManager;
     private CatalogIOManager catalogIOManager;
-    private static final String ANALYSIS_RESULT_FILE = "analysis-result.yml";
+
+    private Path defaultJobDir;
 
     // Maximum number of jobs of each type (Pending, queued, running) that will be handled on each iteration.
     // Example: If there are 100 pending jobs, 15 queued, 70 running.
@@ -66,6 +73,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     // (15 + 50 from pending), and it will check up to 50 finished jobs from the running ones.
     // On second iteration, it will queue the remaining 50 pending jobs, and so on...
     private static final int NUM_JOBS_HANDLED = 50;
+    private final Query pendingJobsQuery;
+    private final Query queuedJobsQuery;
+    private final Query runningJobsQuery;
+    private final QueryOptions queryOptions;
 
     public ExecutionDaemon(int interval, String token, CatalogManager catalogManager, String appHome)
             throws CatalogDBException, CatalogIOException {
@@ -75,18 +86,21 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         this.fileManager = catalogManager.getFileManager();
         this.catalogIOManager = catalogManager.getCatalogIOManagerFactory().get("file");
         this.internalCli = appHome + "/bin/opencga-internal.sh";
+
+        this.defaultJobDir = Paths.get(catalogManager.getConfiguration().getJobDir());
+
+        pendingJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.PENDING);
+        queuedJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED);
+        runningJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING);
+        // Sort jobs by priority and creation date
+        queryOptions = new QueryOptions()
+                .append(QueryOptions.SORT, Arrays.asList(JobDBAdaptor.QueryParams.PRIORITY.key(),
+                        JobDBAdaptor.QueryParams.CREATION_DATE.key()))
+                .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
     }
 
     @Override
     public void run() {
-        Query pendingJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.PENDING);
-        Query queuedJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED);
-        Query runningJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING);
-        // Sort jobs by priority and creation date
-        QueryOptions queryOptions = new QueryOptions()
-                .append(QueryOptions.SORT, Arrays.asList(JobDBAdaptor.QueryParams.PRIORITY.key(),
-                        JobDBAdaptor.QueryParams.CREATION_DATE.key()))
-                .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
 
         while (!exit) {
             try {
@@ -96,74 +110,56 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     e.printStackTrace();
                 }
             }
-            logger.info("----- EXECUTION DAEMON {} -----", TimeUtils.getTimeMillis());
+            checkJobs();
+        }
+    }
+
+    protected void checkJobs() {
+        long pendingJobs = -1;
+        long queuedJobs = -1;
+        long runningJobs = -1;
+        try {
+            pendingJobs = jobManager.count(pendingJobsQuery, token).getNumMatches();
+            queuedJobs = jobManager.count(queuedJobsQuery, token).getNumMatches();
+            runningJobs = jobManager.count(runningJobsQuery, token).getNumMatches();
+        } catch (CatalogException e) {
+            logger.error("{}", e.getMessage(), e);
+        }
+        logger.info("----- EXECUTION DAEMON  ----- pending={}, queued={}, running={}", pendingJobs, queuedJobs, runningJobs);
 
             /*
             PENDING JOBS
              */
-            try {
-                long count = jobManager.count(pendingJobsQuery, token).getNumMatches();
-                logger.debug("Checking pending jobs. {} jobs found", count);
-            } catch (CatalogException e) {
-                logger.error("{}", e.getMessage(), e);
-            }
-
-            int handledPendingJobs = 0;
-            try (DBIterator<Job> iterator = jobManager.iterator(pendingJobsQuery, queryOptions, token)) {
-                while (handledPendingJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
-                    handledPendingJobs += checkPendingJob(iterator.next());
-                }
-            } catch (CatalogException e) {
-                logger.error("{}", e.getMessage(), e);
-            }
+        checkPendingJobs();
 
             /*
             QUEUED JOBS
              */
-            try {
-                long count = jobManager.count(queuedJobsQuery, token).getNumMatches();
-                logger.debug("Checking queued jobs. {} jobs found", count);
-            } catch (CatalogException e) {
-                logger.error("{}", e.getMessage(), e);
-            }
-
-            int handledQueuedJobs = 0;
-            try (DBIterator<Job> iterator = jobManager.iterator(queuedJobsQuery, queryOptions, token)) {
-                while (handledQueuedJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
-                    handledQueuedJobs += checkQueuedJob(iterator.next());
-                }
-            } catch (CatalogException e) {
-                logger.error("{}", e.getMessage(), e);
-            }
+        checkQueuedJobs();
 
             /*
             RUNNING JOBS
              */
-            try {
-                long count = jobManager.count(runningJobsQuery, token).getNumMatches();
-                logger.debug("Checking running jobs. {} running jobs found", count);
-            } catch (CatalogException e) {
-                logger.error("{}", e.getMessage(), e);
-            }
+        checkRunningJobs();
+    }
 
-            int handledRunningJobs = 0;
-            try (DBIterator<Job> iterator = jobManager.iterator(runningJobsQuery, queryOptions, token)) {
-                while (handledRunningJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
-                    handledRunningJobs += checkRunningJob(iterator.next());
-                }
-            } catch (CatalogException e) {
-                logger.error("{}", e.getMessage(), e);
+    protected void checkRunningJobs() {
+        int handledRunningJobs = 0;
+        try (DBIterator<Job> iterator = jobManager.iterator(runningJobsQuery, queryOptions, token)) {
+            while (handledRunningJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
+                Job job = iterator.next();
+                handledRunningJobs += checkRunningJob(job);
             }
-
+        } catch (CatalogException e) {
+            logger.error("{}", e.getMessage(), e);
         }
     }
 
-    private int checkRunningJob(Job job) {
-        Enums.ExecutionStatus executionStatus = getCurrentStatus(job);
+    protected int checkRunningJob(Job job) {
+        Enums.ExecutionStatus jobStatus = getCurrentStatus(job);
 
-        if (Enums.ExecutionStatus.RUNNING.equals(executionStatus.getName())) {
-            String analysisId = String.valueOf(job.getAttributes().get(Job.OPENCGA_COMMAND));
-            AnalysisResult result = readAnalysisResult(analysisId, Paths.get(job.getTmpDir().getUri()));
+        if (Enums.ExecutionStatus.RUNNING.equals(jobStatus.getName())) {
+            AnalysisResult result = readAnalysisResult(job);
             if (result != null) {
                 // Update the result of the job
                 JobUpdateParams updateParams = new JobUpdateParams().setResult(result);
@@ -183,13 +179,25 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
     }
 
+    protected void checkQueuedJobs() {
+        int handledQueuedJobs = 0;
+        try (DBIterator<Job> iterator = jobManager.iterator(queuedJobsQuery, queryOptions, token)) {
+            while (handledQueuedJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
+                Job job = iterator.next();
+                handledQueuedJobs += checkQueuedJob(job);
+            }
+        } catch (CatalogException e) {
+            logger.error("{}", e.getMessage(), e);
+        }
+    }
+
     /**
      * Check if the job is still queued or it has changed to running or error.
      *
      * @param job Job object.
      * @return 1 if the job has changed the status, 0 otherwise.
      */
-    private int checkQueuedJob(Job job) {
+    protected int checkQueuedJob(Job job) {
         Enums.ExecutionStatus status = getCurrentStatus(job);
 
         if (Enums.ExecutionStatus.QUEUED.equals(status.getName())) {
@@ -206,34 +214,38 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return processFinishedJob(job);
     }
 
+    protected void checkPendingJobs() {
+        int handledPendingJobs = 0;
+        try (DBIterator<Job> iterator = jobManager.iterator(pendingJobsQuery, queryOptions, token)) {
+            while (handledPendingJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
+                Job job = iterator.next();
+                handledPendingJobs += checkPendingJob(job);
+            }
+        } catch (CatalogException e) {
+            logger.error("{}", e.getMessage(), e);
+        }
+    }
+
     /**
      * Check everything is correct and queues the job.
      *
      * @param job Job object.
      * @return 1 if the job has changed the status, 0 otherwise.
      */
-    private int checkPendingJob(Job job) {
-        String study = String.valueOf(job.getAttributes().getOrDefault(Job.OPENCGA_STUDY, ""));
-        if (study.isEmpty()) {
+    protected int checkPendingJob(Job job) {
+        String study = String.valueOf(job.getAttributes().get(Job.OPENCGA_STUDY));
+        if (StringUtils.isEmpty(study)) {
             return abortJob(job, "Missing mandatory '" + Job.OPENCGA_STUDY + "' field");
         }
 
-        String command = String.valueOf(job.getAttributes().getOrDefault(Job.OPENCGA_COMMAND, ""));
-        if (command.isEmpty()) {
+        String command = String.valueOf(job.getAttributes().get(Job.OPENCGA_COMMAND));
+        if (StringUtils.isEmpty(command)) {
             return abortJob(job, "Missing mandatory '" + Job.OPENCGA_COMMAND + "' field");
         }
 
-        String subcommand = String.valueOf(job.getAttributes().getOrDefault(Job.OPENCGA_SUBCOMMAND, ""));
-        if (subcommand.isEmpty()) {
+        String subcommand = String.valueOf(job.getAttributes().get(Job.OPENCGA_SUBCOMMAND));
+        if (StringUtils.isEmpty(subcommand)) {
             return abortJob(job, "Missing mandatory '" + Job.OPENCGA_SUBCOMMAND + "' field");
-        }
-
-        String outDirPath = String.valueOf(job.getParams().getOrDefault("outdir", ""));
-        if (outDirPath.isEmpty()) {
-            return abortJob(job, "Missing mandatory output directory");
-        }
-        if (!outDirPath.endsWith("/")) {
-            outDirPath += "/";
         }
 
         if (!canBeQueued(job)) {
@@ -249,107 +261,222 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         JobUpdateParams updateParams = new JobUpdateParams();
 
+        Map<String, String> params = job.getParams();
+        String outDirPathParam = params.get(OUTDIR_PARAM);
+        if (!StringUtils.isEmpty(outDirPathParam)) {
+            try {
+                // Any path the user has requested
+                updateParams.setOutDir(getValidInternalOutDir(study, job, outDirPathParam, userToken));
+            } catch (CatalogException e) {
+                logger.error("Cannot create output directory. {}", e.getMessage(), e);
+                return abortJob(job, "Cannot create output directory. " + e.getMessage());
+            }
+        } else {
+            try {
+                // JOBS/user/job_id/
+                updateParams.setOutDir(getValidDefaultOutDir(study, job, userToken));
+            } catch (CatalogException e) {
+                logger.error("Cannot create output directory. {}", e.getMessage(), e);
+                return abortJob(job, "Cannot create output directory. " + e.getMessage());
+            }
+        }
+
+        Path outDirPath = Paths.get(updateParams.getOutDir().getUri());
+
+        // Define where the stdout and stderr will be stored
+        Path stderr = outDirPath.resolve(getErrorLogFileName(job));
+        Path stdout = outDirPath.resolve(getLogFileName(job));
+
+        List<File> inputFiles = new ArrayList<>();
+        String error = processJobParams(study, params, userToken, outDirPath, inputFiles);
+        if (error != null) {
+            return abortJob(job, error);
+        }
+
+        // Create cli
+        String commandLine = buildCli(internalCli, command, subcommand, params);
+
+        updateParams.setCommandLine(commandLine);
+        updateParams.setInput(inputFiles);
+
+        logger.info("Updating job {} from {} to {}", job.getId(), Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED);
+        updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED));
+        try {
+            jobManager.update(study, job.getId(), updateParams, QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            logger.error("Could not update job {}. {}", job.getId(), e.getMessage(), e);
+            return 0;
+        }
+        executeJob(job.getId(), updateParams.getCommandLine(), stdout, stderr, userToken);
+
+        return 1;
+    }
+
+    private File getValidInternalOutDir(String study, Job job, String outDirPath, String userToken) throws CatalogException {
         // TODO: Remove this line when we stop passing the outdir as a query param in the URL
         outDirPath = outDirPath.replace(":", "/");
+        if (!outDirPath.endsWith("/")) {
+            outDirPath += "/";
+        }
+        File outDir;
         try {
-            // Directory exists
-            OpenCGAResult<File> fileOpenCGAResult = fileManager.get(study, outDirPath, FileManager.INCLUDE_FILE_URI_PATH, token);
-            updateParams.setOutDir(fileOpenCGAResult.first());
+            outDir = fileManager.get(study, outDirPath, FileManager.INCLUDE_FILE_URI_PATH, token).first();
         } catch (CatalogException e) {
             // Directory not found. Will try to create using user's token
             boolean parents = (boolean) job.getAttributes().getOrDefault(Job.OPENCGA_PARENTS, false);
             try {
-                File folder = fileManager.createFolder(study, outDirPath, new File.FileStatus(), parents, "",
-                        FileManager.INCLUDE_FILE_URI_PATH, userToken).first();
-                updateParams.setOutDir(folder);
+                outDir = fileManager.createFolder(study, outDirPath, new File.FileStatus(), parents, "", FileManager.INCLUDE_FILE_URI_PATH,
+                        userToken).first();
+                CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(outDir.getUri());
+                ioManager.createDirectory(outDir.getUri(), true);
             } catch (CatalogException e1) {
-                // Directory could not be created
-                logger.error("Cannot create output directory. {}", e1.getMessage(), e1);
-                return abortJob(job, "Cannot create output directory. " + e1.getMessage());
+                throw new CatalogException("Cannot create output directory. " + e1.getMessage(), e1.getCause());
             }
         }
 
-        // Create temporal directory
-        try {
-            String tmpDir = updateParams.getOutDir().getPath() + "job_" + job.getId() + "_temp/";
-            File folder = fileManager.createFolder(study, tmpDir, new File.FileStatus(), false, "",
-                    FileManager.INCLUDE_FILE_URI_PATH, userToken).first();
-            updateParams.setTmpDir(folder);
-        } catch (CatalogException e) {
-            // Directory could not be created
-            logger.error("Cannot create temporal directory. {}", e.getMessage(), e);
-            return abortJob(job, "Cannot create temporal directory. " + e.getMessage());
+        // Ensure the directory is empty
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(outDir.getUri());
+        if (!ioManager.isDirectory(outDir.getUri())) {
+            throw new CatalogException(OUTDIR_PARAM + " seems not to be a directory");
+        }
+        if (!ioManager.listFiles(outDir.getUri()).isEmpty()) {
+            throw new CatalogException(OUTDIR_PARAM + " " + outDirPath + " is not an empty directory");
         }
 
-        Path temporalPath = Paths.get(updateParams.getTmpDir().getUri());
+        return outDir;
+    }
 
-        // Define where the stdout and stderr will be stored
-        Path stderr = temporalPath.resolve(job.getId() + ".err");
-        Path stdout = temporalPath.resolve(job.getId() + ".log");
+    private File getValidDefaultOutDir(String studyStr, Job job, String userToken) throws CatalogException {
+        OpenCGAResult<File> fileOpenCGAResult;
+        try {
+            fileOpenCGAResult = fileManager.get(studyStr, "JOBS/", FileManager.INCLUDE_FILE_URI_PATH, token);
+        } catch (CatalogException e) {
+            logger.info("JOBS/ directory does not exist, registering for the first time");
 
-        List<File> inputFiles = new ArrayList<>();
+            // Create main JOBS directory for the study
+            Study study = catalogManager.getStudyManager().resolveId(studyStr, "admin");
+            long projectUid = catalogManager.getProjectManager().get(study.getFqn().split(":")[0], new QueryOptions(QueryOptions.INCLUDE,
+                    ProjectDBAdaptor.QueryParams.UID.key()), token).first().getUid();
 
-        // Create cli
-        StringBuilder cliBuilder = new StringBuilder(internalCli).append(" ")
-                .append(command).append(" ")
-                .append(subcommand);
-        for (Map.Entry<String, String> entry : job.getParams().entrySet()) {
-            if (entry.getKey().equals("outdir")) {
-                cliBuilder.append(" --outdir ").append(temporalPath);
-            } else if (entry.getKey().toLowerCase().endsWith("file")) {
+            URI uri = Paths.get(catalogManager.getConfiguration().getJobDir())
+                    .resolve(study.getFqn().split("@")[0]) // user
+                    .resolve(Long.toString(projectUid))
+                    .resolve(Long.toString(study.getUid()))
+                    .resolve("JOBS")
+                    .toUri();
+
+            // Create the directory in the file system
+            catalogIOManager.createDirectory(uri, true);
+            // And link it to OpenCGA
+            fileOpenCGAResult = fileManager.link(studyStr, uri, "/", new ObjectMap("parents", true), token);
+        }
+
+        // Check we can write in the folder
+        catalogIOManager.checkWritableUri(fileOpenCGAResult.first().getUri());
+
+        // Check if the default jobOutDirPath of the user already exists
+        OpenCGAResult<File> result;
+        try {
+            result = fileManager.get(studyStr, "JOBS/" + job.getUserId() + "/", FileManager.INCLUDE_FILE_URI_PATH, userToken);
+        } catch (CatalogException e) {
+            // We first need to create the main directory that will contain all the jobs of the user
+            result = fileManager.createFolder(studyStr, "JOBS/" + job.getUserId() + "/", new File.FileStatus(), false,
+                    "Directory containing the jobs of " + job.getUserId(), FileManager.INCLUDE_FILE_URI_PATH, token);
+
+            // Add permissions to do anything under that path to the user launching the job
+            String allFilePermissions = EnumSet.allOf(FileAclEntry.FilePermissions.class)
+                    .stream()
+                    .map(FileAclEntry.FilePermissions::toString)
+                    .collect(Collectors.joining(","));
+            fileManager.updateAcl(studyStr, Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
+                    new File.FileAclParams(allFilePermissions, AclParams.Action.SET, null), token);
+            // Remove permissions to any other user that is not the one launching the job
+            fileManager.updateAcl(studyStr, Collections.singletonList("JOBS/" + job.getUserId() + "/"), FileAclEntry.USER_OTHERS_ID,
+                    new File.FileAclParams("", AclParams.Action.SET, null), token);
+        }
+
+        // Now we create a new directory where the job will be actually executed
+        File userFolder = result.first();
+
+        File outDirFile = fileManager.createFolder(studyStr, userFolder.getPath() + job.getId(), new File.FileStatus(), false,
+                "Directory containing the results of the execution of job " + job.getId(), FileManager.INCLUDE_FILE_URI_PATH, token)
+                .first();
+
+        // Create the physical directories in disk
+        try {
+            catalogIOManager.createDirectory(outDirFile.getUri(), true);
+        } catch (CatalogIOException e) {
+            throw new CatalogException("Cannot create job directories '" + outDirFile.getUri() + "' for path '" + outDirFile.getPath()
+                    + "'");
+        }
+
+        return outDirFile;
+    }
+
+    private String processJobParams(String study, Map<String, String> params, String userToken, Path outDirPath, List<File> inputFiles) {
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            if (entry.getKey().toLowerCase().endsWith(FILE_PARAM_SUFFIX)) {
                 // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in catalog
                 File file;
                 try {
                     file = fileManager.get(study, entry.getValue(), FileManager.INCLUDE_FILE_URI_PATH, userToken)
                             .first();
                 } catch (CatalogException e) {
-                    logger.error("Cannot find file '{}' from variable '{}'. {}", entry.getValue(), entry.getKey(), e.getMessage(), e);
-                    return abortJob(job, "Cannot find file '" + entry.getValue() + "' from variable '" + entry.getKey() + "'. "
-                            + e.getMessage());
+                    String error = "Cannot find file '" + entry.getValue() + "' from variable '" + entry.getKey() + "'. " + e.getMessage();
+                    logger.error(error, e);
+                    return error;
                 }
                 inputFiles.add(file);
-
                 // And we change the reference for the actual uri
+                entry.setValue(file.getUri().getPath());
+            }
+        }
+
+        params.put(OUTDIR_PARAM, outDirPath.toAbsolutePath().toString());
+        return null;
+    }
+
+    public static String buildCli(String internalCli, String command, String subcommand, Map<String, String> params) {
+        StringBuilder cliBuilder = new StringBuilder()
+                .append(internalCli).append(" ")
+                .append(command).append(" ")
+                .append(subcommand);
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            if (entry.getKey().startsWith("-D")) {
                 cliBuilder
-                        .append(" --").append(CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, entry.getKey()))
-                        .append(" ").append(file.getUri().getPath());
+                        .append(" ").append(entry.getKey())
+                        .append("=").append(entry.getValue());
             } else {
                 cliBuilder
                         .append(" --").append(CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, entry.getKey()))
                         .append(" ").append(entry.getValue());
             }
         }
-        updateParams.setCommandLine(cliBuilder.toString());
-        updateParams.setInput(inputFiles);
-
-        logger.info("Updating job {} from {} to {}", job.getId(), Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED);
-        updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED));
-        try {
-            executeJob(job.getId(), updateParams.getCommandLine(), stdout, stderr, userToken);
-            jobManager.update(study, job.getId(), updateParams, QueryOptions.empty(), token);
-        } catch (CatalogException e) {
-            logger.error("Could not update job {}. {}", job.getId(), e.getMessage(), e);
-            return 0;
-        }
-
-        return 1;
+        return cliBuilder.toString();
     }
 
     private boolean canBeQueued(Job job) {
         String command = String.valueOf(job.getAttributes().get(Job.OPENCGA_COMMAND));
-        String subCommand = String.valueOf(job.getAttributes().get(Job.OPENCGA_SUBCOMMAND));
+        String subcommand = String.valueOf(job.getAttributes().get(Job.OPENCGA_SUBCOMMAND));
 
-        if ("variant".equals(command) && "index".equals(subCommand)) {
+        if ("variant".equals(command) && "index".equals(subcommand)) {
+            int maxIndexJobs = catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().getMaxConcurrentJobs();
+            logger.info("TODO: Check maximum number of slots for variant index");
             // TODO: Check maximum number of slots for variant index
-            logger.info("{} index jobs running or in queue already. Skipping new index job '{}' temporary", 10, job.getId());
-            return false;
+            int currentVariantIndexJobs = 0;
+            if (currentVariantIndexJobs > maxIndexJobs) {
+                logger.info("{} index jobs running or in queue already. "
+                        + "Current limit is {}. "
+                        + "Skipping new index job '{}' temporary", currentVariantIndexJobs, maxIndexJobs, job.getId());
+                return false;
+            }
         }
 
         return true;
     }
 
     private int abortJob(Job job, String description) {
-        logger.info("{} - Aborting job...", job.getId());
+        logger.info("Aborting job: {} - Reason: '{}'", job.getId(), description);
         return setStatus(job, new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED, description));
     }
 
@@ -378,44 +505,68 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private Enums.ExecutionStatus getCurrentStatus(Job job) {
-        Path tmpOutdirPath = Paths.get(job.getTmpDir().getUri());
+
+        Path resultJson = getAnalysisResultPath(job);
 
         // Check if analysis result file is there
-        if (Files.exists(tmpOutdirPath.resolve(ANALYSIS_RESULT_FILE))) {
-            String analysisId = String.valueOf(job.getAttributes().get(Job.OPENCGA_COMMAND));
-            AnalysisResult analysisResult = readAnalysisResult(analysisId, tmpOutdirPath);
+        if (resultJson != null && Files.exists(resultJson)) {
+            AnalysisResult analysisResult = readAnalysisResult(resultJson);
             if (analysisResult != null) {
                 return new Enums.ExecutionStatus(analysisResult.getStatus().getName().name());
             } else {
-                return new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "File '" + ANALYSIS_RESULT_FILE + "' seems corrupted.");
+                return new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "File '" + resultJson + "' seems corrupted.");
             }
         } else {
-            // Check if the error file is present
-            Path errorLog = tmpOutdirPath.resolve(job.getId() + ".err");
-
-            if (Files.exists(errorLog)) {
-                // There must be some command line error. The job started running but did not finish well, otherwise we would find the
-                // analysis-result.yml file
-                return new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Command line error");
+            String status = batchExecutor.getStatus(job);
+            if (!StringUtils.isEmpty(status) && !status.equals(Enums.ExecutionStatus.UNKNOWN)) {
+                return new Enums.ExecutionStatus(status);
             } else {
-                return new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED);
+                Path tmpOutdirPath = Paths.get(job.getOutDir().getUri());
+                // Check if the error file is present
+                Path errorLog = tmpOutdirPath.resolve(getErrorLogFileName(job));
+
+                if (Files.exists(errorLog)) {
+                    // There must be some command line error. The job started running but did not finish well, otherwise we would find the
+                    // analysis-result.yml file
+                    return new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Command line error");
+                } else {
+                    return new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED);
+                }
             }
         }
     }
 
-    private AnalysisResult readAnalysisResult(String analysisId, Path directory) {
-        AnalysisResultManager manager;
-        int maxAttempts = 0;
+    private Path getAnalysisResultPath(Job job) {
+        Path resultJson = null;
         try {
-            manager = new AnalysisResultManager(analysisId, directory);
-        } catch (AnalysisException e) {
-            logger.error("Could not initialise AnalysisResultManager {}", e.getMessage(), e);
+            resultJson = Files.list(Paths.get(job.getOutDir().getUri()))
+                    .filter(path -> path.toString()
+                            .endsWith(AnalysisResultManager.FILE_EXTENSION))
+                    .findFirst()
+                    .orElse(null);
+        } catch (IOException e) {
+            logger.warn("Could not load AnalysisResult file. {}", e.getMessage(), e);
+        }
+        return resultJson;
+    }
+
+    private AnalysisResult readAnalysisResult(Job job) {
+        Path resultJson = getAnalysisResultPath(job);
+        if (resultJson != null) {
+            return readAnalysisResult(resultJson);
+        }
+        return null;
+    }
+
+    private AnalysisResult readAnalysisResult(Path file) {
+        if (file == null) {
             return null;
         }
+        int maxAttempts = 0;
         while (maxAttempts < 2) {
             try {
-                return manager.read();
-            } catch (AnalysisException e) {
+                return JacksonUtils.getDefaultObjectMapper().readValue(file.toFile(), AnalysisResult.class);
+            } catch (IOException e) {
                 logger.warn("Could not load AnalysisResult file. {}", e.getMessage(), e);
                 maxAttempts++;
             }
@@ -427,128 +578,51 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private int processFinishedJob(Job job) {
         logger.info("{} - Processing finished job...", job.getId());
 
-        Path outDirPath = Paths.get(job.getOutDir().getPath());
         Path outDirUri = Paths.get(job.getOutDir().getUri());
-        URI tmpOutdirUri = job.getTmpDir().getUri();
+        Path analysisResultPath = getAnalysisResultPath(job);
 
         String study = String.valueOf(job.getAttributes().get(Job.OPENCGA_STUDY));
 
-        logger.info("{} - Moving data from temporary folder {} to catalog folder {}", job.getId(), tmpOutdirUri, outDirUri);
+        logger.info("{} - Registering job results from '{}'", job.getId(), outDirUri);
 
-        // Because we don't want to lose any data and an error could eventually happen while we are processing the files, we will first
-        // read the list of output files from the Job information in case this ever happened and some files were already processed.
-        Set<String> outputFileIdSet = new HashSet<>();
-        List<File> outputFiles = new ArrayList<>();
-        if (job.getOutput() != null && !job.getOutput().isEmpty()) {
-            for (File file : job.getOutput()) {
-                outputFileIdSet.add(file.getPath());
-                outputFiles.add(file);
-            }
-        }
-
-        // For each file (apart from analysis-result.yml), try to register it in outDirPath
-        Iterator<URI> uriIterator;
+        List<File> registeredFiles;
         try {
-            uriIterator = catalogIOManager.listFilesStream(tmpOutdirUri).iterator();
-        } catch (CatalogIOException e) {
-            logger.error("{} - Could not list files from temporal directory {}: {}", job.getId(), tmpOutdirUri, e.getMessage(), e);
+            Predicate<URI> uriPredicate = uri -> !uri.getPath().endsWith(AnalysisResultManager.FILE_EXTENSION);
+            registeredFiles = fileManager.syncUntrackedFiles(study, job.getOutDir().getPath(), uriPredicate, token).getResults();
+        } catch (CatalogException e) {
+            logger.error("Could not registered files in Catalog: {}", e.getMessage(), e);
             return 0;
-        }
-
-        boolean allFilesMoved = true;
-
-        while (uriIterator.hasNext()) {
-            URI fileUri = uriIterator.next();
-            java.io.File file = new java.io.File(fileUri);
-
-            if (ANALYSIS_RESULT_FILE.equals(file.getName())) {
-                // We will handle this file when everything is moved.
-                continue;
-            }
-
-            Path finalFilePath = outDirPath.resolve(file.getName());
-            Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), finalFilePath);
-            File registeredFile = null;
-
-            URI finalFileUri = finalFilePath.toUri();
-            // If there is not file registered under that name in the final path and there is no file with the same name in the file system
-            // in the final uri
-
-            try {
-                if (fileManager.count(study, query, token).getNumMatches() == 0 && !catalogIOManager.exists(finalFileUri)) {
-                    logger.info("{} - Moving and registering file to {}", job.getId(), finalFilePath);
-
-                    // We can directly move the file ...
-                    catalogIOManager.moveFile(fileUri, finalFileUri);
-
-                    // Register the file in catalog
-                    registeredFile = fileManager.register(study, finalFilePath, FileManager.INCLUDE_FILE_URI_PATH, token).first();
-                } else {
-                    logger.warn("{} - File '{}' already exists in the final path. Registering directly from the temporal directory",
-                            job.getId(), file.getName());
-
-                    // The path is in use. Cannot move file to final path so we register it from the temporal directory
-                    registeredFile = fileManager.register(study, file.toPath(), FileManager.INCLUDE_FILE_URI_PATH, token).first();
-
-                    // We mark that there has been a problem and at least this file was not possible to be moved to the final directory
-                    allFilesMoved = false;
-                }
-            } catch (CatalogException e) {
-                logger.error("{} - Unexpected error while processing the files: {}", job.getId(), e.getMessage(), e);
-
-                if (registeredFile != null) {
-                    if (!outputFileIdSet.contains(registeredFile.getPath())) {
-                        outputFiles.add(registeredFile);
-                        outputFileIdSet.add(registeredFile.getPath());
-                    }
-                }
-                if (!outputFiles.isEmpty()) {
-                    // Because some of the files will probably have been moved and deleted, we will store the output files in job so this
-                    // information is not lost
-                    if (job.getOutput() == null || job.getOutput().size() < outputFiles.size()) {
-                        JobUpdateParams updateParams = new JobUpdateParams().setOutput(outputFiles);
-                        logger.error("{} - Registering processed output files in job", job.getId());
-                        try {
-                            jobManager.update(study, job.getId(), updateParams, QueryOptions.empty(), token);
-                        } catch (CatalogException e1) {
-                            logger.error("{} - Catastrophic error. Could not save processed output files in job: {}", job.getId(),
-                                    e1.getMessage(), e1);
-                            logger.error("{} - List of job paths that could not be registered is: {}", job.getId(), outputFileIdSet);
-                        }
-                    }
-                }
-
-                return 0;
-            }
-
-            // Add registered file to list of output files of Job
-            if (!outputFileIdSet.contains(registeredFile.getPath())) {
-                outputFiles.add(registeredFile);
-                outputFileIdSet.add(registeredFile.getPath());
-            }
         }
 
         // Register the job information
         JobUpdateParams updateParams = new JobUpdateParams();
-        String analysisId = String.valueOf(job.getAttributes().get(Job.OPENCGA_COMMAND));
-        AnalysisResult analysisResult = readAnalysisResult(analysisId, Paths.get(tmpOutdirUri));
 
-        updateParams.setResult(analysisResult);
+        // Process output and log files
+        List<File> outputFiles = new ArrayList<>(registeredFiles.size());
+        String logFileName = getLogFileName(job);
+        String errorLogFileName = getErrorLogFileName(job);
+        for (File registeredFile : registeredFiles) {
+            if (registeredFile.getName().equals(logFileName)) {
+                updateParams.setLog(registeredFile);
+            } else if (registeredFile.getName().equals(errorLogFileName)) {
+                updateParams.setErrorLog(registeredFile);
+            } else {
+                outputFiles.add(registeredFile);
+            }
+        }
         updateParams.setOutput(outputFiles);
 
-        // Check status of analysis result or if there are files that could not be moved to outdir to decide the final result
-        if (analysisResult.getStatus().getName().equals(Status.Type.ERROR)) {
-            updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job could not finish successfully"));
-        } else if (allFilesMoved) {
-            updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE));
-        } else {
-            updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.UNREGISTERED, "Some files could not be moved to the"
-                    + " final path"));
-        }
+        AnalysisResult analysisResult = readAnalysisResult(analysisResultPath);
+        updateParams.setResult(analysisResult);
 
-        if (allFilesMoved) {
-            // We want to remove the reference to the temporal file directory
-            updateParams.setTmpDir(new File());
+        // Check status of analysis result or if there are files that could not be moved to outdir to decide the final result
+        if (analysisResult == null) {
+            updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job could not finish successfully. "
+                    + "Missing analysis result"));
+        } else if (analysisResult.getStatus().getName().equals(Status.Type.ERROR)) {
+            updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job could not finish successfully"));
+        } else {
+            updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE));
         }
 
         logger.info("{} - Updating job information: {}", job.getId(), updateParams.toString());
@@ -561,30 +635,15 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             return 0;
         }
 
-        // This has to be almost the last thing to do
-        try {
-            if (allFilesMoved) {
-                logger.info("{} - Emptying temporal directory and deleting it from catalog", job.getId());
-
-                catalogIOManager.deleteFile(tmpOutdirUri.resolve(ANALYSIS_RESULT_FILE));
-
-                // Delete directory from catalog
-                ObjectMap params = new ObjectMap(Constants.SKIP_TRASH, true);
-                fileManager.delete(study, Collections.singletonList(job.getTmpDir().getPath()), params, token);
-
-                // If after the file deletion it still exists, that will be because it is an external folder. In such a case, because we
-                // have created the directory, we will manually delete it from the file system
-                if (catalogIOManager.exists(tmpOutdirUri)) {
-                    catalogIOManager.deleteDirectory(tmpOutdirUri);
-                }
-            } else {
-                // TODO: Change temporal folder status to READY (unblock)
-            }
-        } catch (CatalogException e) {
-            logger.error("{} - Could not clean up temporal directory: {}", job.getId(), e.getMessage(), e);
-        }
-
         return 1;
+    }
+
+    private String getErrorLogFileName(Job job) {
+        return job.getId() + ".err";
+    }
+
+    private String getLogFileName(Job job) {
+        return job.getId() + ".log";
     }
 
 }

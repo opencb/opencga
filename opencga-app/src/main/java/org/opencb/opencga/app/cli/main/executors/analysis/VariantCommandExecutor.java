@@ -112,7 +112,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         o.putIfNotNull(VariantStorageOptions.STDOUT.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.stdout);
         o.putIfNotNull("load", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.load);
         o.putIfNotNull(VariantStorageOptions.EXCLUDE_GENOTYPES.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.excludeGenotype);
-        o.putIfNotNull("includeExtraFields", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.extraFields);
+        o.putIfNotNull("includeExtraFields", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.includeExtraFields);
         o.putIfNotNull("merge", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.merge);
         o.putIfNotNull("aggregated", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.aggregated);
         o.putIfNotNull(VariantStorageOptions.STATS_CALCULATE.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.calculateStats);

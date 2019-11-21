@@ -39,7 +39,7 @@ public class JobConverter extends GenericDocumentComplexConverter<Job> {
         document.put(JobDBAdaptor.QueryParams.UID.key(), object.getUid());
         document.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), object.getStudyUid());
         document.put(JobDBAdaptor.QueryParams.OUT_DIR.key(), convertFileToDocument(object.getOutDir()));
-        document.put(JobDBAdaptor.QueryParams.TMP_DIR.key(), convertFileToDocument(object.getTmpDir()));
+//        document.put(JobDBAdaptor.QueryParams.TMP_DIR.key(), convertFileToDocument(object.getTmpDir()));
         document.put(JobDBAdaptor.QueryParams.INPUT.key(), convertFilesToDocument(object.getInput()));
         document.put(JobDBAdaptor.QueryParams.OUTPUT.key(), convertFilesToDocument(object.getOutput()));
         document.put(JobDBAdaptor.QueryParams.LOG.key(), convertFileToDocument(object.getLog()));

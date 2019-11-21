@@ -133,6 +133,9 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
         Path rootdir = Paths.get(UriUtils.createDirectoryUri(configuration.getWorkspace()));
         deleteFolderTree(rootdir.toFile());
+
+        Path jobdir = Paths.get(UriUtils.createDirectoryUri(configuration.getJobDir()));
+        deleteFolderTree(jobdir.toFile());
     }
 
     public static void deleteFolderTree(java.io.File folder) {
