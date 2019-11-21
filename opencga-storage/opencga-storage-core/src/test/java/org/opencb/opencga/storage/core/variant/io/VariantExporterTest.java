@@ -121,4 +121,24 @@ public class VariantExporterTest extends VariantStorageBaseTest implements Dummy
         assertEquals(expectedVariants.size(), numVariants);
     }
 
+    @Test
+    public void exportTpedTest() throws Exception {
+        URI output = newOutputUri().resolve("variant.tped");
+        variantStorageEngine.exportData(output, VariantOutputFormat.TPED, null, new Query(), new QueryOptions());
+
+        System.out.println("output = " + output);
+        assertTrue(Paths.get(output).toFile().exists());
+
+        // Check gzip format
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(output.getPath())))) {
+            int i = 0;
+            while (true) {
+                String line = br.readLine();
+                if (line == null) {
+                    break;
+                }
+                System.out.println("[" + i++ + "]: " + line);
+            }
+        }
+    }
 }

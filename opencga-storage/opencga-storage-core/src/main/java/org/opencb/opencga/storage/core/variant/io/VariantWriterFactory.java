@@ -84,7 +84,8 @@ public class VariantWriterFactory {
         STATS("stats.tsv", false),
         STATS_GZ("stats.tsv.gz", false),
         CELLBASE("frequencies.json"),
-        CELLBASE_GZ("frequencies.json.gz");
+        CELLBASE_GZ("frequencies.json.gz"),
+        TPED("tped", false);
 
         private final boolean multiStudy;
         private final String extension;
@@ -267,6 +268,10 @@ public class VariantWriterFactory {
             case CELLBASE_GZ:
             case CELLBASE:
                 exporter = new VariantStatsPopulationFrequencyExporter(outputStream);
+                break;
+
+            case TPED:
+                exporter = new VariantTpedWriter(outputStream);
                 break;
 
             default:

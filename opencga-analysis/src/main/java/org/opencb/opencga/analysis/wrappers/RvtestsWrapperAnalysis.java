@@ -32,8 +32,7 @@ public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
             String commandLine = getCommandLine();
             logger.info("Rvtests command line:" + commandLine);
             try {
-                Set<String> beforeNames = new HashSet<>(getFilenames(getOutDir()));
-                beforeNames.add("status.json");
+                Set<String> filenamesBeforeRunning = new HashSet<>(getFilenames(getOutDir()));
 
                 // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
                 Command cmd = new Command(getCommandLine())
@@ -45,7 +44,7 @@ public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 // Add the output files to the analysis result file
                 List<String> outNames = getFilenames(getOutDir());
                 for (String name : outNames) {
-                    if (!beforeNames.contains(name)) {
+                    if (!filenamesBeforeRunning.contains(name)) {
                         if (FileUtils.sizeOf(new File(getOutDir() + "/" + name)) > 0) {
                             FileResult.FileType fileType = FileResult.FileType.TAB_SEPARATED;
                             if (name.endsWith("txt") || name.endsWith("log")) {
@@ -86,7 +85,7 @@ public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         StringBuilder sb = new StringBuilder("docker run ").append("--mount type=bind,source=\"").append(getOutDir().toAbsolutePath())
                 .append("\",target=\"").append(DOCKER_INPUT_PATH).append("\" ").append("--mount type=bind,source=\"")
                 .append(getOutDir().toAbsolutePath()).append("\",target=\"").append(DOCKER_OUTPUT_PATH).append("\" ")
-                .append(RVTESTS_DOCKER_IMAGE);
+                .append(getDockerImageName());
         if (params.containsKey(DOCKER_IMAGE_VERSION_PARAM)) {
             sb.append(":").append(params.getString(DOCKER_IMAGE_VERSION_PARAM));
         }

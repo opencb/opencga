@@ -33,7 +33,8 @@ public @interface Analysis {
         VARIANT,
         CLINICAL,
         EXPRESSION,
-        FUNCTIONAL
+        FUNCTIONAL,
+        ALIGNMENT;
     }
 
 }

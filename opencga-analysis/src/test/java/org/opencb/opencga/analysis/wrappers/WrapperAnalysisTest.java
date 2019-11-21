@@ -90,6 +90,19 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
         System.out.println(result);
     }
 
+    @Test
+    public void alignmentPipeline() throws AnalysisException, IOException {
+        // bwa index
+
+        // bwa mem
+
+        // samtools sort
+
+        // samtools index
+
+        // deeptools coverate
+    }
+
     //    @Test
     public void commandTest() throws IOException {
         outDir = Paths.get(opencga.createTmpOutdir("_docker"));
