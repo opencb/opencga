@@ -2,7 +2,7 @@
 
 You can choose to either use a manual single machine setup or an automated HA environment setup. 
 
-For [manual setup follow this guide](./manualsetup.md) and for an [automated setup follow this guide](./arm/README.md).
+For [manual setup follow this guide](manualsetup.md) and for an [automated setup follow this guide](arm/README.md).
 
 Once completed you can use the guide below to test your install with a sample process.
 

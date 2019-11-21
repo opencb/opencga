@@ -260,11 +260,11 @@
                                     <arg value="${app.dir}/conf"/>
                                     <arg value="${project.basedir}/target/appassembler/libs"/>
                                     <arg value="${project.basedir}/target/conf"/>
-                                    <arg value="${app.dir}/completion"/>
-                                    <arg value="${app.dir}/examples"/>
-                                    <arg value="${app.dir}/migration"/>
-                                    <arg value="${app.dir}/tools"/>
                                     <arg value="${app.dir}/analysis"/>
+                                    <arg value="${app.dir}/cloud"/>
+                                    <arg value="${app.dir}/examples"/>
+                                    <arg value="${app.dir}/scripts"/>
+                                    <arg value="${app.dir}/tools"/>
                                     <!--<arg value="${project.basedir}/../opencga-storage/build/bin"/>-->
                                     <arg value="${project.basedir}/../LICENSE"/>
                                     <arg value="${project.basedir}/../README.md"/>
@@ -285,7 +285,7 @@
                                 </exec>
 
                                 <exec executable="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh">
-                                    <arg value="${build.dir}/completion"/>
+                                    <arg value="${build.dir}/scripts/completion"/>
                                 </exec>
 
                                 <echo>Copying configuration files</echo>
