@@ -15,19 +15,19 @@ Before setting up a Cluster, you will need to have created an account with Mongo
 
 First, select a cloud provider and a region. In this example, we've chosen [Microsoft Azure] and the UK South region within [Azure].
 
-![Select cloud and region](./images/select-cloud-and-region.png)
+![Select cloud and region](images/select-cloud-and-region.png)
 
 Next, you need to select the size of your cluster. OpenCGA uses MongoDB version 3.6, and so it's necessary to select on of the **Dedicated** plans (the **Shared** plans support MongoDB version 4.0 only). In this example, we've chosen the M20 Tier which is the smallest **Dedicated** cluster size.
 
-![Select cluster size](./images/select-cluster-size.png)
+![Select cluster size](images/select-cluster-size.png)
 
 Under the *Additional Settings* section, make sure you select "3.6 with WiredTiger(tm)" as the MongoDB version. Here, you can also determine whether you want the cluster to be backed up, as well as some other settings. It's highly recommended that you back your cluster up, unless you're setting up a development system.
 
-![Select MongoDB version](./images/select-mongodb-version.png)
+![Select MongoDB version](images/select-mongodb-version.png)
 
 Finally, give your cluster a meaningful name.
 
-![Set cluster name](./images/set-cluster-name.png)
+![Set cluster name](images/set-cluster-name.png)
 
 Once you've supplied all of these values, you can click "Create Cluster" and then wait for the cluster to be provisioned. This can take 5 to 10 mins.
 
@@ -47,7 +47,7 @@ Once you've created a cluster you can use the MongoDB Atlas site to obtain the c
 
 Click the "Connect" button for your Cluster, then click "Connect your Application", and then click "Standard Connection String".
 
-![Connect button](./images/connection-settings-1.png)
+![Connect button](images/connection-settings-1.png)
 
 This will give you a connection string similar to the following example:
 

@@ -64,7 +64,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                 String sessionId = catalogManager.getUserManager().login("admin", options.commonOptions.adminPassword);
 
                 // Catalog
-                String basePath = appHome + "/migration/v1.3.0/";
+                String basePath = appHome + "/scripts/migration/v1.3.0/";
 
                 String authentication = "";
                 if (StringUtils.isNotEmpty(configuration.getCatalog().getDatabase().getUser())
@@ -139,7 +139,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             if (!skipCatalogJS) {
                 logger.info("Starting Catalog migration for 1.4.0");
                 
-                String basePath = appHome + "/migration/v1.4.0/";
+                String basePath = appHome + "/scripts/migration/v1.4.0/";
 
                 String authentication = "";
                 if (StringUtils.isNotEmpty(configuration.getCatalog().getDatabase().getUser())
