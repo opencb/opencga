@@ -18,7 +18,7 @@ package org.opencb.opencga.app.cli.utils;
 
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
-import org.opencb.opencga.app.cli.analysis.AnalysisCliOptionsParser;
+import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 
 import java.io.IOException;
@@ -41,8 +41,8 @@ public class CliCompletionMain {
             CommandLineUtils.generateBashAutoComplete(adminCliOptionsParser.getJCommander(), output + "/opencga-admin",
                     "opencga-admin", Collections.singletonList("-D"));
 
-            AnalysisCliOptionsParser analysisCliOptionsParser = new AnalysisCliOptionsParser();
-            CommandLineUtils.generateBashAutoComplete(analysisCliOptionsParser.getJCommander(), output + "/opencga-analysis",
+            InternalCliOptionsParser internalCliOptionsParser = new InternalCliOptionsParser();
+            CommandLineUtils.generateBashAutoComplete(internalCliOptionsParser.getJCommander(), output + "/opencga-analysis",
                     "opencga-analysis", Collections.singletonList("-D"));
         } catch (IOException e) {
             e.printStackTrace();

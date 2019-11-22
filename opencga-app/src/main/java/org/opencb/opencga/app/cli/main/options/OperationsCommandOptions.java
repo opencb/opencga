@@ -12,8 +12,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import java.util.List;
 
 import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.PROJECT_DESC;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAggregateCommandOptions.AGGREGATE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND_DESCRIPTION;

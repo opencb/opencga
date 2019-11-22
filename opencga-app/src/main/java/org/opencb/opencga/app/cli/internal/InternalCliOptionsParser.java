@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.analysis;
+package org.opencb.opencga.app.cli.internal;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -24,22 +24,22 @@ import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
-import org.opencb.opencga.app.cli.analysis.options.InterpretationCommandOptions;
-import org.opencb.opencga.app.cli.analysis.options.ToolsCommandOptions;
-import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
+import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
+import org.opencb.opencga.app.cli.internal.options.InterpretationCommandOptions;
+import org.opencb.opencga.app.cli.internal.options.ToolsCommandOptions;
+import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.List;
 
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
@@ -51,7 +51,7 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 /**
  * Created by imedina on 02/03/15.
  */
-public class AnalysisCliOptionsParser extends CliOptionsParser {
+public class InternalCliOptionsParser extends CliOptionsParser {
 
     private final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
     private final GeneralCliOptions.DataModelOptions dataModelOptions;
@@ -61,14 +61,14 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
 
     private ExpressionCommandOptions expressionCommandOptions;
     private FunctionalCommandOptions functionalCommandOptions;
-    private org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions variantCommandOptions;
+    private org.opencb.opencga.app.cli.internal.options.VariantCommandOptions variantCommandOptions;
 //    private VariantCommandOptions variantCommandOptions;
     private ToolsCommandOptions toolsCommandOptions;
     private AlignmentCommandOptions alignmentCommandOptions;
     private InterpretationCommandOptions interpretationCommandOptions;
 
 
-    public AnalysisCliOptionsParser() {
+    public InternalCliOptionsParser() {
         jCommander.setProgramName("opencga-analysis.sh");
 
         commonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
@@ -90,7 +90,7 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
         usersSubCommands.addCommand("fatigo", functionalCommandOptions.fatigoFunctionalCommandOptions);
         usersSubCommands.addCommand("gene-set", functionalCommandOptions.genesetFunctionalCommandOptions);
 
-        variantCommandOptions = new org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions(commonCommandOptions,
+        variantCommandOptions = new org.opencb.opencga.app.cli.internal.options.VariantCommandOptions(commonCommandOptions,
                 dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
@@ -189,7 +189,7 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
         DiffExpressionCommandOptions diffExpressionCommandOptions;
         ClusteringExpressionCommandOptions clusteringExpressionCommandOptions;
 
-        GeneralCliOptions.CommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+        GeneralCliOptions.CommonCommandOptions commonOptions = InternalCliOptionsParser.this.commonCommandOptions;
 
         public ExpressionCommandOptions() {
             this.diffExpressionCommandOptions = new DiffExpressionCommandOptions();
@@ -207,7 +207,7 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
         FatigoFunctionalCommandOptions fatigoFunctionalCommandOptions;
         GenesetFunctionalCommandOptions genesetFunctionalCommandOptions;
 
-        GeneralCliOptions.CommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+        GeneralCliOptions.CommonCommandOptions commonOptions = InternalCliOptionsParser.this.commonCommandOptions;
 
         public FunctionalCommandOptions() {
             this.fatigoFunctionalCommandOptions = new FatigoFunctionalCommandOptions();
@@ -231,7 +231,7 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
     public class DiffExpressionCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = InternalCliOptionsParser.this.commonCommandOptions;
 
         @Parameter(names = {"--filter"}, description = "Query filter for data")
         public String filter;
@@ -241,7 +241,7 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
     public class ClusteringExpressionCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = InternalCliOptionsParser.this.commonCommandOptions;
     }
 
 
@@ -254,7 +254,7 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
     public class FatigoFunctionalCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = InternalCliOptionsParser.this.commonCommandOptions;
 
 
         @Parameter(names = {"--user-id"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
@@ -266,7 +266,7 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
     public class GenesetFunctionalCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = InternalCliOptionsParser.this.commonCommandOptions;
 
 
         @Parameter(names = {"--user-id"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
@@ -352,7 +352,7 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
         return commonCommandOptions;
     }
 
-    public org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions getVariantCommandOptions() {
+    public org.opencb.opencga.app.cli.internal.options.VariantCommandOptions getVariantCommandOptions() {
         return variantCommandOptions;
     }
 

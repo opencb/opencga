@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.analysis.executors;
+package org.opencb.opencga.app.cli.internal.executors;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,7 +39,7 @@ import org.opencb.opencga.analysis.variant.operations.VariantFileIndexerStorageO
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
-import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
+import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.UriUtils;
@@ -69,14 +69,14 @@ import java.util.*;
 
 import static org.opencb.opencga.analysis.variant.operations.VariantFileIndexerStorageOperation.LOAD;
 import static org.opencb.opencga.analysis.variant.operations.VariantFileIndexerStorageOperation.TRANSFORM;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
@@ -88,7 +88,7 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 /**
  * Created by imedina on 02/03/15.
  */
-public class VariantCommandExecutor extends AnalysisCommandExecutor {
+public class VariantCommandExecutor extends InternalCommandExecutor {
 
     //    private AnalysisCliOptionsParser.VariantCommandOptions variantCommandOptions;
     private VariantCommandOptions variantCommandOptions;

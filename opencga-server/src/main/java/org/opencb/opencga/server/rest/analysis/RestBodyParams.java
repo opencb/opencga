@@ -1,5 +1,10 @@
 package org.opencb.opencga.server.rest.analysis;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -14,7 +19,7 @@ import java.util.stream.Collectors;
 
 public class RestBodyParams {
 
-    public Map<String, String> dynamicParams;
+    protected Map<String, String> dynamicParams;
     private final Map<String, Field> knownParams;
 
     public RestBodyParams(Map<String, String> dynamicParams) {
@@ -23,14 +28,18 @@ public class RestBodyParams {
     }
 
     public RestBodyParams() {
-        knownParams = Arrays.stream(this.getClass().getFields())
+        knownParams = Arrays.stream(this.getClass().getDeclaredFields())
                 .filter(f -> !f.getName().equals("knownParams")) // Discard itself!
                 .filter(f -> !f.getName().equals("dynamicParams")) // Discard itself!
                 .collect(Collectors.toMap(Field::getName, Function.identity()));
     }
 
     public String toJson() throws IOException {
-        return JacksonUtils.getUpdateObjectMapper().writeValueAsString(this);
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.PROTECTED_AND_PUBLIC);
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+        return objectMapper.writeValueAsString(this);
     }
 
     public ObjectMap toObjectMap() throws IOException {

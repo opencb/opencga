@@ -30,8 +30,8 @@ import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.VariantStorageManager;
-import org.opencb.opencga.app.cli.analysis.executors.VariantQueryCommandUtils;
-import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
+import org.opencb.opencga.app.cli.internal.executors.VariantQueryCommandUtils;
+import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.io.VcfOutputWriter;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -49,8 +49,8 @@ import java.io.PrintStream;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
 
