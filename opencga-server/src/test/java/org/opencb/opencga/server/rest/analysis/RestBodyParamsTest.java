@@ -28,7 +28,7 @@ public class RestBodyParamsTest {
 
     @Test
     public void testToParams() throws IOException {
-        Map<String, String> params = p.toParams();
+        Map<String, Object> params = p.toParams();
 
         assertEquals("asdf", params.get("myKey"));
         assertNull(params.get("myKey2"));
@@ -42,7 +42,7 @@ public class RestBodyParamsTest {
 
     @Test
     public void testToParamsExtra() throws IOException {
-        Map<String, String> params = p.toParams(new ObjectMap()
+        Map<String, Object> params = p.toParams(new ObjectMap()
                 .append("otherParam", "value").append("myKey", "overwrite"));
 
         assertEquals("overwrite", params.get("myKey"));
@@ -61,7 +61,7 @@ public class RestBodyParamsTest {
         p.dynamicParams = new HashMap<>();
         p.dynamicParams.put("otherParam", "value");
         p.dynamicParams.put("myKey", "overwrite");
-        Map<String, String> params = p.toParams();
+        Map<String, Object> params = p.toParams();
 
         assertEquals(5, params.size());
         assertEquals("overwrite", params.get("myKey"));

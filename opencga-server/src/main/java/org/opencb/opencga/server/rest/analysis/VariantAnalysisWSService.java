@@ -164,7 +164,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             studyStr = studyStrOld;
         }
 
-        Map<String, String> params = new LinkedHashMap<>();
+        Map<String, Object> params = new LinkedHashMap<>();
         addParamIfNotNull(params, "file", fileIdStr);
         addParamIfNotNull(params, "study", studyStr);
         addParamIfNotNull(params, "outdir", outDirStr);

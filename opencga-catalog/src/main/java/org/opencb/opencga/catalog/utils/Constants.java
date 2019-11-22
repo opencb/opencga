@@ -122,4 +122,10 @@ public class Constants {
      */
     public static final String JOB_DELETED_OUTPUT_DIRECTORY = "deletedOutputFiles";
 
+    /* ****************************************    Execution keys       ********************************************/
+    /**
+     * Key user in params map to contain further dynamics fields that need to be treated accordingly to build the command line.
+     */
+    public static final String DYNAMIC_FIELDS = "DYNAMIC_FIELDS";
+
 }

@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.models.update.JobUpdateParams;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.analysis.result.AnalysisResult;
 import org.opencb.opencga.core.analysis.result.AnalysisResultManager;
 import org.opencb.opencga.core.analysis.result.Status;
@@ -268,8 +269,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         JobUpdateParams updateParams = new JobUpdateParams();
 
-        Map<String, String> params = job.getParams();
-        String outDirPathParam = params.get(OUTDIR_PARAM);
+        Map<String, Object> params = job.getParams();
+        String outDirPathParam = (String) params.get(OUTDIR_PARAM);
         if (!StringUtils.isEmpty(outDirPathParam)) {
             try {
                 // Any path the user has requested
@@ -427,13 +428,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return outDirFile;
     }
 
-    private String processJobParams(String study, Map<String, String> params, String userToken, Path outDirPath, List<File> inputFiles) {
-        for (Map.Entry<String, String> entry : params.entrySet()) {
+    private String processJobParams(String study, Map<String, Object> params, String userToken, Path outDirPath, List<File> inputFiles) {
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
             if (entry.getKey().toLowerCase().endsWith(FILE_PARAM_SUFFIX)) {
                 // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in catalog
                 File file;
                 try {
-                    file = fileManager.get(study, entry.getValue(), FileManager.INCLUDE_FILE_URI_PATH, userToken)
+                    file = fileManager.get(study, (String) entry.getValue(), FileManager.INCLUDE_FILE_URI_PATH, userToken)
                             .first();
                 } catch (CatalogException e) {
                     String error = "Cannot find file '" + entry.getValue() + "' from variable '" + entry.getKey() + "'. " + e.getMessage();
@@ -441,8 +442,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     return error;
                 }
                 inputFiles.add(file);
-                // And we change the reference for the actual uri
-                entry.setValue(file.getUri().getPath());
             }
         }
 
@@ -450,16 +449,19 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return null;
     }
 
-    public static String buildCli(String internalCli, String command, String subcommand, Map<String, String> params) {
+    public static String buildCli(String internalCli, String command, String subcommand, Map<String, Object> params) {
         StringBuilder cliBuilder = new StringBuilder()
                 .append(internalCli).append(" ")
                 .append(command).append(" ")
                 .append(subcommand);
-        for (Map.Entry<String, String> entry : params.entrySet()) {
-            if (entry.getKey().startsWith("-D")) {
-                cliBuilder
-                        .append(" ").append(entry.getKey())
-                        .append("=").append(entry.getValue());
+        for (Map.Entry<String, Object> entry : params.entrySet()) {
+            if (entry.getKey().equals(Constants.DYNAMIC_FIELDS)) {
+                Map<String, String> dynamicParams = (Map<String, String>) entry.getValue();
+                for (Map.Entry<String, String> dynamicEntry : dynamicParams.entrySet()) {
+                    cliBuilder
+                            .append(" ").append("-D" + dynamicEntry.getKey())
+                            .append("=").append(dynamicEntry.getValue());
+                }
             } else {
                 cliBuilder
                         .append(" --").append(CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, entry.getKey()))

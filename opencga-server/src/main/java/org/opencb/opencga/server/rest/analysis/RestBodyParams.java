@@ -37,10 +37,10 @@ public class RestBodyParams {
         return new ObjectMap(toJson());
     }
 
-    public Map<String, String> toParams() throws IOException {
+    public Map<String, Object> toParams() throws IOException {
         ObjectMap objectMap = toObjectMap();
         objectMap.remove("dynamicParams");
-        Map<String, String> map = new HashMap<>(objectMap.size());
+        Map<String, Object> map = new HashMap<>(objectMap.size());
         addParams(map, objectMap);
         if (dynamicParams != null) {
             ObjectMap dynamicParams = new ObjectMap();
@@ -50,13 +50,13 @@ public class RestBodyParams {
         return map;
     }
 
-    public Map<String, String> toParams(ObjectMap otherParams) throws IOException {
-        Map<String, String> map = toParams();
+    public Map<String, Object> toParams(ObjectMap otherParams) throws IOException {
+        Map<String, Object> map = toParams();
         addParams(map, otherParams);
         return map;
     }
 
-    private void addParams(Map<String, String> map, ObjectMap params) {
+    private void addParams(Map<String, Object> map, ObjectMap params) {
         for (String key : params.keySet()) {
             Field field = knownParams.get(key);
             String value = params.getString(key);
