@@ -88,13 +88,8 @@ public class FileManager extends AnnotationSetManager<File> {
     private UserManager userManager;
     private StudyManager studyManager;
 
-    public static final String SKIP_TRASH = "SKIP_TRASH";
-    public static final String DELETE_EXTERNAL_FILES = "DELETE_EXTERNAL_FILES";
-    public static final String FORCE_DELETE = "FORCE_DELETE";
-
     public static final String GET_NON_DELETED_FILES = Status.READY + "," + File.FileStatus.TRASHED + "," + File.FileStatus.STAGE + ","
             + File.FileStatus.MISSING;
-    public static final String GET_NON_TRASHED_FILES = Status.READY + "," + File.FileStatus.STAGE + "," + File.FileStatus.MISSING;
 
     private final String defaultFacet = "creationYear>>creationMonth;format;bioformat;format>>bioformat;status;"
             + "size[0..214748364800]:10737418240;numSamples[0..10]:1";
@@ -1284,7 +1279,8 @@ public class FileManager extends AnnotationSetManager<File> {
 
         // We need to avoid processing subfolders or subfiles of an already processed folder independently
         Set<String> processedPaths = new HashSet<>();
-        boolean physicalDelete = params.getBoolean(SKIP_TRASH, false) || params.getBoolean(DELETE_EXTERNAL_FILES, false);
+        boolean physicalDelete = params.getBoolean(Constants.SKIP_TRASH, false) || params.getBoolean(Constants.DELETE_EXTERNAL_FILES,
+                false);
 
         OpenCGAResult<File> result = OpenCGAResult.empty();
         for (String id : fileIds) {
@@ -1372,7 +1368,8 @@ public class FileManager extends AnnotationSetManager<File> {
 
         // We need to avoid processing subfolders or subfiles of an already processed folder independently
         Set<String> processedPaths = new HashSet<>();
-        boolean physicalDelete = params.getBoolean(SKIP_TRASH, false) || params.getBoolean(DELETE_EXTERNAL_FILES, false);
+        boolean physicalDelete = params.getBoolean(Constants.SKIP_TRASH, false) || params.getBoolean(Constants.DELETE_EXTERNAL_FILES,
+                false);
 
         long numMatches = 0;
 
@@ -1638,8 +1635,7 @@ public class FileManager extends AnnotationSetManager<File> {
             fileDBAdaptor.update(query, update, QueryOptions.empty());
 
             // 2. Delete files to be deleted from the file system
-            QueryOptions options = new QueryOptions()
-                    .append(QueryOptions.INCLUDE, INCLUDE_FILE_URI_PATH)
+            QueryOptions options = new QueryOptions(INCLUDE_FILE_URI_PATH)
                     .append(QueryOptions.SORT, FileDBAdaptor.QueryParams.PATH.key())
                     .append(QueryOptions.ORDER, QueryOptions.DESCENDING);
             DBIterator<File> iterator = fileDBAdaptor.iterator(query, options);
@@ -3046,6 +3042,7 @@ public class FileManager extends AnnotationSetManager<File> {
         CatalogIOManager ioManager = catalogIOManagerFactory.get(file.getUri());
         if (file.getType() == File.Type.FILE) {
             if (checkPermissions) {
+                authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
                 authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.DELETE);
             }
 
@@ -3095,6 +3092,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
                 if (checkPermissions) {
                     authorizationManager.checkFilePermission(study.getUid(), tmpFile.getUid(), userId, FileAclEntry.FilePermissions.DELETE);
+                    authorizationManager.checkFilePermission(study.getUid(), tmpFile.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
                 }
 
                 // File must exist in the file system
@@ -3464,181 +3462,166 @@ public class FileManager extends AnnotationSetManager<File> {
         }
 
         Path pathOrigin = Paths.get(normalizedUri);
-        Path externalPathDestiny = Paths.get(externalPathDestinyStr);
-        if (Paths.get(normalizedUri).toFile().isFile()) {
+        // This list will contain the list of transformed files detected during the link
+        List<File> transformedFiles = new ArrayList<>();
 
-            // Check if there is already a file in the same path
-            query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                    .append(FileDBAdaptor.QueryParams.PATH.key(), externalPathDestinyStr);
-
-            // Create the file
-            if (fileDBAdaptor.count(query).getNumMatches() == 0) {
-                return registerFile(study, externalPathDestinyStr, normalizedUri, sessionId);
-            } else {
-                throw new CatalogException("Cannot link " + externalPathDestiny.getFileName().toString() + ". A file with the same name "
-                        + "was found in the same path.");
-            }
-        } else {
-            // This list will contain the list of transformed files detected during the link
-            List<File> transformedFiles = new ArrayList<>();
-
-            // We remove the / at the end for replacement purposes in the walkFileTree
-            String finalExternalPathDestinyStr = externalPathDestinyStr.substring(0, externalPathDestinyStr.length() - 1);
-
-            // Link all the files and folders present in the uri
-            Files.walkFileTree(pathOrigin, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-
-                    try {
-                        String destinyPath = dir.toString().replace(Paths.get(normalizedUri).toString(), finalExternalPathDestinyStr);
-
-                        if (!destinyPath.isEmpty() && !destinyPath.endsWith("/")) {
-                            destinyPath += "/";
-                        }
-
-                        if (destinyPath.startsWith("/")) {
-                            destinyPath = destinyPath.substring(1);
-                        }
-
-                        Query query = new Query()
-                                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                                .append(FileDBAdaptor.QueryParams.PATH.key(), destinyPath);
-
-                        if (fileDBAdaptor.count(query).getNumMatches() == 0) {
-                            // If the folder does not exist, we create it
-
-                            String parentPath = getParentPath(destinyPath);
-                            long parentFileId = fileDBAdaptor.getId(study.getUid(), parentPath);
-                            // We obtain the permissions set in the parent folder and set them to the file or folder being created
-                            OpenCGAResult<Map<String, List<String>>> allFileAcls;
-                            try {
-                                allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId, userId, true);
-                            } catch (CatalogException e) {
-                                throw new RuntimeException(e);
-                            }
-
-                            File folder = new File(dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
-                                    File.Bioformat.NONE, dir.toUri(), destinyPath, null, TimeUtils.getTime(),
-                                    TimeUtils.getTime(), description, new File.FileStatus(File.FileStatus.READY), true, 0, null,
-                                    new Experiment(), Collections.emptyList(), new Job(), relatedFiles,
-                                    null, studyManager.getCurrentRelease(study), Collections.emptyList(),
-                                    Collections.emptyMap(), Collections.emptyMap());
-                            folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
-                            checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
-                            fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(), new QueryOptions());
-                            OpenCGAResult<File> queryResult = getFile(study.getUid(), folder.getUuid(), QueryOptions.empty());
-
-                            // Propagate ACLs
-                            if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-                                authorizationManager.replicateAcls(study.getUid(), Arrays.asList(queryResult.first().getUid()),
-                                        allFileAcls.getResults().get(0), Enums.Resource.FILE);
-                            }
-                        }
-
-                    } catch (CatalogException e) {
-                        logger.error("An error occurred when trying to create folder {}", dir.toString());
-//                        e.printStackTrace();
-                    }
-
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs) throws IOException {
-                    try {
-                        String destinyPath = filePath.toString().replace(Paths.get(normalizedUri).toString(), finalExternalPathDestinyStr);
-
-                        if (destinyPath.startsWith("/")) {
-                            destinyPath = destinyPath.substring(1);
-                        }
-
-                        Query query = new Query()
-                                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                                .append(FileDBAdaptor.QueryParams.PATH.key(), destinyPath);
-
-                        if (fileDBAdaptor.count(query).getNumMatches() == 0) {
-                            long size = Files.size(filePath);
-                            // If the file does not exist, we create it
-                            String parentPath = getParentPath(destinyPath);
-                            long parentFileId = fileDBAdaptor.getId(study.getUid(), parentPath);
-                            // We obtain the permissions set in the parent folder and set them to the file or folder being created
-                            OpenCGAResult<Map<String, List<String>>> allFileAcls;
-                            try {
-                                allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId, userId, true);
-                            } catch (CatalogException e) {
-                                throw new RuntimeException(e);
-                            }
-
-                            File subfile = new File(filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
-                                    File.Bioformat.NONE, filePath.toUri(), destinyPath, null, TimeUtils.getTime(),
-                                    TimeUtils.getTime(), description, new File.FileStatus(File.FileStatus.READY), true, size, null,
-                                    new Experiment(), Collections.emptyList(), new Job(), relatedFiles,
-                                    null, studyManager.getCurrentRelease(study), Collections.emptyList(),
-                                    Collections.emptyMap(), Collections.emptyMap());
-                            subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
-                            checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
-                            fileDBAdaptor.insert(study.getUid(), subfile, Collections.emptyList(), new QueryOptions());
-                            OpenCGAResult<File> queryResult = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty());
-
-                            // Propagate ACLs
-                            if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
-                                authorizationManager.replicateAcls(study.getUid(), Arrays.asList(queryResult.first().getUid()),
-                                        allFileAcls.getResults().get(0), Enums.Resource.FILE);
-                            }
-
-                            File file = FileManager.this.fileMetadataReader.setMetadataInformation(queryResult.first(),
-                                    queryResult.first().getUri(), new QueryOptions(), sessionId, false);
-                            if (isTransformedFile(file.getName())) {
-                                logger.info("Detected transformed file {}", file.getPath());
-                                transformedFiles.add(file);
-                            }
-                        } else {
-                            throw new CatalogException("Cannot link the file " + filePath.getFileName().toString()
-                                    + ". There is already a file in the path " + destinyPath + " with the same name.");
-                        }
-
-                    } catch (CatalogException e) {
-                        logger.error(e.getMessage());
-                    }
-
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                    return FileVisitResult.SKIP_SUBTREE;
-                }
-
-                @Override
-                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-
-            // Try to link transformed files with their corresponding original files if any
-            try {
-                if (transformedFiles.size() > 0) {
-                    matchUpVariantFiles(study.getFqn(), transformedFiles, sessionId);
-                }
-            } catch (CatalogException e) {
-                logger.warn("Matching avro to variant file: {}", e.getMessage());
-            }
-
-            // Check if the uri was already linked to that same path
-            query = new Query()
-                    .append(FileDBAdaptor.QueryParams.URI.key(), "~^" + normalizedUri)
-                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + Status.DELETED + ";!="
-                            + File.FileStatus.REMOVED)
-                    .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true);
-
-            // Limit the number of results and only some fields
-            QueryOptions queryOptions = new QueryOptions()
-                    .append(QueryOptions.LIMIT, 100);
-            return fileDBAdaptor.get(query, queryOptions);
+        // We remove the / at the end for replacement purposes in the walkFileTree
+        if (externalPathDestinyStr.endsWith("/")) {
+            externalPathDestinyStr = externalPathDestinyStr.substring(0, externalPathDestinyStr.length() - 1);
         }
+        String finalExternalPathDestinyStr = externalPathDestinyStr;
+
+        // Link all the files and folders present in the uri
+        Files.walkFileTree(pathOrigin, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+
+                try {
+                    String destinyPath = dir.toString().replace(Paths.get(normalizedUri).toString(), finalExternalPathDestinyStr);
+
+                    if (!destinyPath.isEmpty() && !destinyPath.endsWith("/")) {
+                        destinyPath += "/";
+                    }
+
+                    if (destinyPath.startsWith("/")) {
+                        destinyPath = destinyPath.substring(1);
+                    }
+
+                    Query query = new Query()
+                            .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                            .append(FileDBAdaptor.QueryParams.PATH.key(), destinyPath);
+
+                    if (fileDBAdaptor.count(query).getNumMatches() == 0) {
+                        // If the folder does not exist, we create it
+
+                        String parentPath = getParentPath(destinyPath);
+                        long parentFileId = fileDBAdaptor.getId(study.getUid(), parentPath);
+                        // We obtain the permissions set in the parent folder and set them to the file or folder being created
+                        OpenCGAResult<Map<String, List<String>>> allFileAcls;
+                        try {
+                            allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId, userId, true);
+                        } catch (CatalogException e) {
+                            throw new RuntimeException(e);
+                        }
+
+                        File folder = new File(dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
+                                File.Bioformat.NONE, dir.toUri(), destinyPath, null, TimeUtils.getTime(),
+                                TimeUtils.getTime(), description, new File.FileStatus(File.FileStatus.READY), true, 0, null,
+                                new Experiment(), Collections.emptyList(), new Job(), relatedFiles,
+                                null, studyManager.getCurrentRelease(study), Collections.emptyList(),
+                                Collections.emptyMap(), Collections.emptyMap());
+                        folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+                        checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
+                        fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(), new QueryOptions());
+                        OpenCGAResult<File> queryResult = getFile(study.getUid(), folder.getUuid(), QueryOptions.empty());
+
+                        // Propagate ACLs
+                        if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
+                            authorizationManager.replicateAcls(study.getUid(), Arrays.asList(queryResult.first().getUid()),
+                                    allFileAcls.getResults().get(0), Enums.Resource.FILE);
+                        }
+                    }
+
+                } catch (CatalogException e) {
+                    logger.error("An error occurred when trying to create folder {}", dir.toString());
+                }
+
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs) throws IOException {
+                try {
+                    String destinyPath = filePath.toString().replace(Paths.get(normalizedUri).toString(), finalExternalPathDestinyStr);
+
+                    if (destinyPath.startsWith("/")) {
+                        destinyPath = destinyPath.substring(1);
+                    }
+
+                    Query query = new Query()
+                            .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                            .append(FileDBAdaptor.QueryParams.PATH.key(), destinyPath);
+
+                    if (fileDBAdaptor.count(query).getNumMatches() == 0) {
+                        long size = Files.size(filePath);
+                        // If the file does not exist, we create it
+                        String parentPath = getParentPath(destinyPath);
+                        long parentFileId = fileDBAdaptor.getId(study.getUid(), parentPath);
+                        // We obtain the permissions set in the parent folder and set them to the file or folder being created
+                        OpenCGAResult<Map<String, List<String>>> allFileAcls;
+                        try {
+                            allFileAcls = authorizationManager.getAllFileAcls(study.getUid(), parentFileId, userId, true);
+                        } catch (CatalogException e) {
+                            throw new RuntimeException(e);
+                        }
+
+                        File subfile = new File(filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
+                                File.Bioformat.NONE, filePath.toUri(), destinyPath, null, TimeUtils.getTime(),
+                                TimeUtils.getTime(), description, new File.FileStatus(File.FileStatus.READY), true, size, null,
+                                new Experiment(), Collections.emptyList(), new Job(), relatedFiles,
+                                null, studyManager.getCurrentRelease(study), Collections.emptyList(),
+                                Collections.emptyMap(), Collections.emptyMap());
+                        subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+                        checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
+                        fileDBAdaptor.insert(study.getUid(), subfile, Collections.emptyList(), new QueryOptions());
+                        OpenCGAResult<File> queryResult = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty());
+
+                        // Propagate ACLs
+                        if (allFileAcls != null && allFileAcls.getNumResults() > 0) {
+                            authorizationManager.replicateAcls(study.getUid(), Arrays.asList(queryResult.first().getUid()),
+                                    allFileAcls.getResults().get(0), Enums.Resource.FILE);
+                        }
+
+                        File file = FileManager.this.fileMetadataReader.setMetadataInformation(queryResult.first(),
+                                queryResult.first().getUri(), new QueryOptions(), sessionId, false);
+                        if (isTransformedFile(file.getName())) {
+                            logger.info("Detected transformed file {}", file.getPath());
+                            transformedFiles.add(file);
+                        }
+                    } else {
+                        throw new CatalogException("Cannot link the file " + filePath.getFileName().toString()
+                                + ". There is already a file in the path " + destinyPath + " with the same name.");
+                    }
+
+                } catch (CatalogException e) {
+                    logger.error(e.getMessage());
+                }
+
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                return FileVisitResult.SKIP_SUBTREE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                return FileVisitResult.CONTINUE;
+            }
+        });
+
+        // Try to link transformed files with their corresponding original files if any
+        try {
+            if (transformedFiles.size() > 0) {
+                matchUpVariantFiles(study.getFqn(), transformedFiles, sessionId);
+            }
+        } catch (CatalogException e) {
+            logger.warn("Matching avro to variant file: {}", e.getMessage());
+        }
+
+        // Check if the uri was already linked to that same path
+        query = new Query()
+                .append(FileDBAdaptor.QueryParams.URI.key(), "~^" + normalizedUri)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + Status.DELETED + ";!="
+                        + File.FileStatus.REMOVED)
+                .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true);
+
+        // Limit the number of results and only some fields
+        QueryOptions queryOptions = new QueryOptions()
+                .append(QueryOptions.LIMIT, 100);
+        return fileDBAdaptor.get(query, queryOptions);
     }
 
     OpenCGAResult<File> registerFile(Study study, String filePath, URI fileUri, String token) throws CatalogException {

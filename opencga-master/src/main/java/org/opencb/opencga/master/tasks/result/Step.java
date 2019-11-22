@@ -1,4 +1,4 @@
-package org.opencb.opencga.master.task;
+package org.opencb.opencga.master.tasks.result;
 
 import org.opencb.opencga.core.analysis.result.Status;
 

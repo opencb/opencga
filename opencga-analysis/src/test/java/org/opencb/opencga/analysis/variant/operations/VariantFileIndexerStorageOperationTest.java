@@ -30,7 +30,7 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.AnalysisException;
@@ -220,11 +220,11 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         File transformedFile = transformFile(inputFile, queryOptions);
 
         catalogManager.getFileManager().delete(studyFqn,
-                new Query(FileDBAdaptor.QueryParams.NAME.key(), transformedFile.getName()), new ObjectMap(FileManager.SKIP_TRASH, true),
+                new Query(FileDBAdaptor.QueryParams.NAME.key(), transformedFile.getName()), new ObjectMap(Constants.SKIP_TRASH, true),
                         sessionId);
         catalogManager.getFileManager().delete(studyFqn, new Query(FileDBAdaptor.QueryParams.NAME.key(),
                 VariantReaderUtils.getMetaFromTransformedFile(transformedFile.getName())),
-                new ObjectMap(FileManager.SKIP_TRASH, true), sessionId);
+                new ObjectMap(Constants.SKIP_TRASH, true), sessionId);
 
         indexFile(inputFile, queryOptions, outputId);
     }

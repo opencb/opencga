@@ -1,4 +1,4 @@
-package org.opencb.opencga.master.task;
+package org.opencb.opencga.master.tasks.result;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;

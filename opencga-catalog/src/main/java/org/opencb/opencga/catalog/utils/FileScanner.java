@@ -25,7 +25,6 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Study;
@@ -254,7 +253,7 @@ public class FileScanner {
                         // Delete completely the file/folder !
                         catalogManager.getFileManager().delete(study.getFqn(),
                                 new Query(FileDBAdaptor.QueryParams.UID.key(), existingFile.getUid()),
-                                new ObjectMap(FileManager.SKIP_TRASH, true), sessionId);
+                                new ObjectMap(Constants.SKIP_TRASH, true), sessionId);
                         overwrite = false;
                         break;
                     case REPLACE:

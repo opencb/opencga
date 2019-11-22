@@ -1,16 +1,16 @@
-package org.opencb.opencga.master.task;
+package org.opencb.opencga.master.tasks;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.master.exceptions.TaskException;
+import org.opencb.opencga.master.tasks.result.Result;
+import org.opencb.opencga.master.tasks.result.TaskManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 
 public abstract class OpenCgaTask {
@@ -18,12 +18,13 @@ public abstract class OpenCgaTask {
     protected CatalogManager catalogManager;
     protected Configuration configuration;
 
-    protected String token;
+    protected String opencgaToken;
 
     protected ObjectMap params;
     protected ObjectMap executorParams;
     protected Logger logger;
     private Path outDir;
+    private String taskId;
     private final Logger privateLogger = LoggerFactory.getLogger(OpenCgaTask.class);
 
     private TaskManager arm;
@@ -34,7 +35,7 @@ public abstract class OpenCgaTask {
     public final OpenCgaTask setUp(CatalogManager catalogManager, ObjectMap params, String taskId, String token) {
         this.catalogManager = catalogManager;
         this.configuration = catalogManager.getConfiguration();
-        this.token = token;
+        this.opencgaToken = token;
         this.params = params == null ? new ObjectMap() : new ObjectMap(params);
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
@@ -47,7 +48,7 @@ public abstract class OpenCgaTask {
 
     public final OpenCgaTask setUp(Configuration configuration, ObjectMap params, String taskId, String token) throws TaskException {
         this.configuration = configuration;
-        this.token = token;
+        this.opencgaToken = token;
         this.params = params == null ? new ObjectMap() : new ObjectMap(params);
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
@@ -117,16 +118,15 @@ public abstract class OpenCgaTask {
      * Check that the given parameters are correct.
      * This method will be called before the {@link #run()}.
      *
-     * @throws Exception if the parameters are not correct
+     * @throws TaskException if the parameters are not correct
      */
-    protected void check() throws Exception {
-    }
+    protected abstract void check() throws TaskException;
 
     /**
      * Method to be implemented by subclasses with the actual execution of the analysis.
-     * @throws Exception on error
+     * @throws TaskException on error
      */
-    protected abstract void run() throws Exception;
+    protected abstract void run() throws TaskException;
 
     /**
      * Method to be called by the Runtime shutdownHook in case of an unexpected system shutdown.
@@ -135,20 +135,16 @@ public abstract class OpenCgaTask {
     }
 
     /**
-     * @return the analysis id
+     * @return the task id
      */
     public final String getId() {
-        return this.getClass().getAnnotation(Analysis.class).id();
+        return taskId;
     }
 
     /**
      * @return the analysis steps
      */
-    public List<String> getSteps() {
-        List<String> steps = new ArrayList<>();
-        steps.add(getId());
-        return steps;
-    }
+    protected abstract List<String> getSteps();
 
     @FunctionalInterface
     protected interface StepRunnable {

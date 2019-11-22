@@ -30,7 +30,7 @@ public interface TaskDBAdaptor extends DBAdaptor<Task>  {
 
     OpenCGAResult nativeInsert(Map<String, Object> task) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Task task, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Task> insert(long studyId, Task task, QueryOptions options) throws CatalogDBException;
 
     default OpenCGAResult<Task> get(long taskUid, QueryOptions options) throws CatalogDBException {
         Query query = new Query(QueryParams.UID.key(), taskUid);

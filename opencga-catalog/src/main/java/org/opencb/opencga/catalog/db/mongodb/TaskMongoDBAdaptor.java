@@ -74,7 +74,7 @@ public class TaskMongoDBAdaptor extends MongoDBAdaptor implements TaskDBAdaptor 
         Bson bson = Filters.and(filterList);
         DataResult<Long> count = taskCollection.count(clientSession, bson);
 
-        if (count.first() > 0) {
+        if (count.getNumMatches() > 0) {
             throw new CatalogDBException("Task { id: '" + task.getId() + "'} already exists.");
         }
 
@@ -142,7 +142,7 @@ public class TaskMongoDBAdaptor extends MongoDBAdaptor implements TaskDBAdaptor 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(query);
-            queryResult.setNumMatches(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }
@@ -172,7 +172,7 @@ public class TaskMongoDBAdaptor extends MongoDBAdaptor implements TaskDBAdaptor 
         // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
         if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
             OpenCGAResult<Long> count = count(query);
-            queryResult.setNumMatches(count.first());
+            queryResult.setNumMatches(count.getNumMatches());
         }
         return queryResult;
     }

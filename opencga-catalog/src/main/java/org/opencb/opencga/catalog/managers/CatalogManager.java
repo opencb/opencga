@@ -95,8 +95,6 @@ public class CatalogManager implements AutoCloseable {
         authorizationManager = new CatalogAuthorizationManager(this.catalogDBAdaptorFactory, this.configuration);
         auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, this.configuration);
 
-        taskManager = new TaskManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManagerFactory,
-                configuration);
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
         projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
@@ -121,6 +119,9 @@ public class CatalogManager implements AutoCloseable {
                 catalogIOManagerFactory, configuration);
         interpretationManager = new InterpretationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
+
+        taskManager = new TaskManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManagerFactory,
+                configuration);
     }
 
     private void initializeAdmin() throws CatalogDBException {

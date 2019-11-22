@@ -11,6 +11,7 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.TaskDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -22,6 +23,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.Task;
 import org.opencb.opencga.core.models.common.Enums;
@@ -30,8 +32,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+
+import static org.opencb.opencga.catalog.utils.Constants.DELETE_EXTERNAL_FILES;
+import static org.opencb.opencga.catalog.utils.Constants.SKIP_TRASH;
 
 public class TaskManager extends ResourceManager<Task> {
 
@@ -247,6 +254,134 @@ public class TaskManager extends ResourceManager<Task> {
     @Override
     public OpenCGAResult<Task> count(String studyStr, Query query, String token) throws CatalogException {
         return null;
+    }
+
+    public OpenCGAResult<Task> deleteFile(String studyStr, List<String> fileIds, ObjectMap params, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("resource", Enums.Resource.FILE)
+                .append("action", Enums.Action.DELETE)
+                .append("study", studyStr)
+                .append("files", fileIds)
+                .append("params", params)
+                .append("token", token);
+
+        Map<String, Object> taskParams = new HashMap<>();
+        taskParams.put("study", studyStr);
+        taskParams.put("files", fileIds);
+        taskParams.put("params", params);
+        try {
+            FileManager fileManager = catalogManager.getFileManager();
+
+            InternalGetDataResult<File> fileResult = fileManager.internalGet(study.getUid(), fileIds, FileManager.INCLUDE_FILE_URI_PATH,
+                    userId, false);
+            boolean physicalDelete = params.getBoolean(SKIP_TRASH, false) || params.getBoolean(DELETE_EXTERNAL_FILES, false);
+            for (File file : fileResult.getResults()) {
+                fileManager.checkCanDeleteFile(studyStr, file.getPath(), physicalDelete, userId);
+            }
+
+            // Set the status of all files to PENDING_DELETE
+            ObjectMap updateParams = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE);
+            for (File file : fileResult.getResults()) {
+                Query fileQuery = new Query()
+                        .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                        .append(FileDBAdaptor.QueryParams.PATH.key(), file.getType() == File.Type.FILE
+                                ? file.getPath()
+                                : "~^" + file.getPath() + "*");
+                fileDBAdaptor.update(fileQuery, updateParams, QueryOptions.empty());
+            }
+
+            Task task = generateValidTask(Enums.Resource.FILE, Enums.Action.DELETE, taskParams, new Enums.ExecutionStatus(),
+                    Enums.Priority.MEDIUM, userId);
+
+            OpenCGAResult<Task> result = taskDBAdaptor.insert(study.getUid(), task, QueryOptions.empty());
+            auditManager.auditCreate(userId, Enums.Resource.TASK, task.getId(), task.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return result;
+        } catch (CatalogException e) {
+            Task task = generateValidTask(Enums.Resource.FILE, Enums.Action.DELETE, taskParams,
+                    new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED), Enums.Priority.MEDIUM, userId);
+
+            auditManager.auditCreate(userId, Enums.Resource.TASK, task.getId(), task.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+
+            throw e;
+        }
+    }
+
+    public OpenCGAResult<Task> deleteFile(String studyStr, Query query, ObjectMap params, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("resource", Enums.Resource.FILE)
+                .append("action", Enums.Action.DELETE)
+                .append("study", studyStr)
+                .append("query", query)
+                .append("params", params)
+                .append("token", token);
+
+        Map<String, Object> taskParams = new HashMap<>();
+        taskParams.put("study", studyStr);
+        taskParams.put("query", query);
+        taskParams.put("params", params);
+        try {
+            FileManager fileManager = catalogManager.getFileManager();
+            boolean physicalDelete = params.getBoolean(SKIP_TRASH, false) || params.getBoolean(DELETE_EXTERNAL_FILES, false);
+
+            DBIterator<File> iterator = fileManager.iterator(studyStr, query, FileManager.INCLUDE_FILE_URI_PATH, token);
+            while (iterator.hasNext()) {
+                fileManager.checkCanDeleteFile(studyStr, iterator.next().getPath(), physicalDelete, userId);
+            }
+
+            // Set the status of all files to PENDING_DELETE
+            iterator = fileManager.iterator(studyStr, query, FileManager.INCLUDE_FILE_URI_PATH, token);
+            ObjectMap updateParams = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE);
+            while (iterator.hasNext()) {
+                File file = iterator.next();
+                Query fileQuery = new Query()
+                        .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
+                        .append(FileDBAdaptor.QueryParams.PATH.key(), file.getType() == File.Type.FILE
+                                ? file.getPath()
+                                : "~^" + file.getPath() + "*");
+                fileDBAdaptor.update(fileQuery, updateParams, QueryOptions.empty());
+            }
+
+            Task task = generateValidTask(Enums.Resource.FILE, Enums.Action.DELETE, taskParams, new Enums.ExecutionStatus(),
+                    Enums.Priority.MEDIUM, userId);
+
+            OpenCGAResult<Task> result = taskDBAdaptor.insert(study.getUid(), task, QueryOptions.empty());
+            auditManager.auditCreate(userId, Enums.Resource.TASK, task.getId(), task.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return result;
+        } catch (CatalogException e) {
+            Task task = generateValidTask(Enums.Resource.FILE, Enums.Action.DELETE, taskParams,
+                    new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED), Enums.Priority.MEDIUM, userId);
+
+            auditManager.auditCreate(userId, Enums.Resource.TASK, task.getId(), task.getUuid(), study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR));
+
+            throw e;
+        }
+    }
+
+    private Task generateValidTask(Enums.Resource resource, Enums.Action action, Map<String, Object> params, Enums.ExecutionStatus status,
+                                   Enums.Priority priority, String userId) {
+        String creationDate = TimeUtils.getTime();
+        return new Task()
+                .setId(resource + "__" + action + "__" + creationDate + "__" + org.opencb.commons.utils.StringUtils.randomString(6))
+                .setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.TASK))
+                .setResource(resource)
+                .setAction(action)
+                .setUserId(userId)
+                .setCreationDate(creationDate)
+                .setStatus(status)
+                .setPriority(priority)
+                .setParams(params);
     }
 
     @Override

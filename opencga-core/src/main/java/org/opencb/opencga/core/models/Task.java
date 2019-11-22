@@ -28,13 +28,13 @@ public class Task extends PrivateStudyUid {
 
     private Enums.Priority priority;
 
-    private Map<String, String> params;
+    private Map<String, Object> params;
 
     public Task() {
     }
 
     public Task(String id, String uuid, String userId, String commandLine, Enums.Resource resource, Enums.Action action,
-                String creationDate, String modificationDate, Enums.ExecutionStatus status, Enums.Priority priority, Map<String, String> params) {
+                String creationDate, String modificationDate, Enums.ExecutionStatus status, Enums.Priority priority, Map<String, Object> params) {
         this.id = id;
         this.uuid = uuid;
         this.userId = userId;
@@ -160,11 +160,11 @@ public class Task extends PrivateStudyUid {
         return this;
     }
 
-    public Map<String, String> getParams() {
+    public Map<String, Object> getParams() {
         return params;
     }
 
-    public Task setParams(Map<String, String> params) {
+    public Task setParams(Map<String, Object> params) {
         this.params = params;
         return this;
     }
