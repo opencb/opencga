@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.app.cli.client.options;
 
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.CommaParameterSplitter;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -42,7 +43,7 @@ public class StorageVariantCommandOptions {
 
     protected static final String DEPRECATED = "[DEPRECATED] ";
     public final VariantIndexCommandOptions indexVariantsCommandOptions;
-    public final VariantRemoveCommandOptions variantRemoveCommandOptions;
+    public final VariantDeleteCommandOptions variantDeleteCommandOptions;
     public final VariantQueryCommandOptions variantQueryCommandOptions;
     public final ImportVariantsCommandOptions importVariantsCommandOptions;
     public final VariantAnnotateCommandOptions annotateVariantsCommandOptions;
@@ -51,8 +52,8 @@ public class StorageVariantCommandOptions {
     public final AnnotationQueryCommandOptions annotationQueryCommandOptions;
     public final AnnotationMetadataCommandOptions annotationMetadataCommandOptions;
     public final VariantStatsCommandOptions statsVariantsCommandOptions;
-    public final FillGapsCommandOptions fillGapsCommandOptions;
-    public final FillMissingCommandOptions fillMissingCommandOptions;
+    public final AggregateFamilyCommandOptions fillGapsCommandOptions;
+    public final AggregateCommandOptions fillMissingCommandOptions;
     public final VariantExportCommandOptions exportVariantsCommandOptions;
     public final VariantSearchCommandOptions searchVariantsCommandOptions;
 
@@ -69,7 +70,7 @@ public class StorageVariantCommandOptions {
         this.jCommander = jCommander;
 
         this.indexVariantsCommandOptions = new VariantIndexCommandOptions();
-        this.variantRemoveCommandOptions = new VariantRemoveCommandOptions();
+        this.variantDeleteCommandOptions = new VariantDeleteCommandOptions();
         this.variantQueryCommandOptions = new VariantQueryCommandOptions();
         this.importVariantsCommandOptions = new ImportVariantsCommandOptions();
         this.annotateVariantsCommandOptions = new VariantAnnotateCommandOptions();
@@ -78,8 +79,8 @@ public class StorageVariantCommandOptions {
         this.annotationQueryCommandOptions = new AnnotationQueryCommandOptions();
         this.annotationMetadataCommandOptions = new AnnotationMetadataCommandOptions();
         this.statsVariantsCommandOptions = new VariantStatsCommandOptions();
-        this.fillGapsCommandOptions = new FillGapsCommandOptions();
-        this.fillMissingCommandOptions = new FillMissingCommandOptions();
+        this.fillGapsCommandOptions = new AggregateFamilyCommandOptions();
+        this.fillMissingCommandOptions = new AggregateCommandOptions();
         this.exportVariantsCommandOptions = new VariantExportCommandOptions();
         this.searchVariantsCommandOptions = new VariantSearchCommandOptions();
     }
@@ -91,12 +92,6 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
         public boolean transform;
-
-        @Parameter(names = {"--stdin"}, description = "Read the variants file from the standard input")
-        public boolean stdin;
-
-        @Parameter(names = {"--stdout"}, description = "Write the transformed variants file to the standard output")
-        public boolean stdout;
 
         @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
         public boolean load;
@@ -120,8 +115,8 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--gvcf"}, description = "The input file is in gvcf format")
         public boolean gvcf;
 
-        @Parameter(names = {"--bgzip"}, description = "[PENDING] The input file is in bgzip format")
-        public boolean bgzip;
+//        @Parameter(names = {"--bgzip"}, description = "[PENDING] The input file is in bgzip format")
+//        public boolean bgzip;
 
         @Parameter(names = {"--calculate-stats"}, description = "Calculate indexed variants statistics after the load step")
         public boolean calculateStats;
@@ -161,13 +156,19 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", arity = 1)
         public String study;
 
+        @Parameter(names = {"--stdin"}, description = "Read the variants file from the standard input")
+        public boolean stdin;
+
+        @Parameter(names = {"--stdout"}, description = "Write the transformed variants file to the standard output")
+        public boolean stdout;
+
 //        @Deprecated
 //        @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
 //        public String pedigree;
 
     }
 
-    public static class GenericVariantRemoveOptions {
+    public static class GenericVariantDeleteOptions {
 
         @Parameter(names = {"--file"}, description = "CSV of files to be removed from storage. Type 'all' to remove the whole study",
                 splitter = CommaParameterSplitter.class, required = true)
@@ -177,11 +178,11 @@ public class StorageVariantCommandOptions {
         public boolean resume;
     }
 
-    @Parameters(commandNames = {VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND}, commandDescription = VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND_DESCRIPTION)
-    public class VariantRemoveCommandOptions extends GenericVariantRemoveOptions {
+    @Parameters(commandNames = {VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND}, commandDescription = VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND_DESCRIPTION)
+    public class VariantDeleteCommandOptions extends GenericVariantDeleteOptions {
 
-        public static final String VARIANT_REMOVE_COMMAND = "remove";
-        public static final String VARIANT_REMOVE_COMMAND_DESCRIPTION = "Remove variants from storage";
+        public static final String VARIANT_DELETE_COMMAND = "delete";
+        public static final String VARIANT_DELETE_COMMAND_DESCRIPTION = "Remove variants from storage";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
@@ -509,6 +510,7 @@ public class StorageVariantCommandOptions {
      *  annotate: generic and specific options
      */
     public static class GenericVariantAnnotateOptions {
+        public static final String ANNOTATE_DESCRIPTION = "Create and load variant annotations into the database";
 
         @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
         public boolean create;
@@ -538,7 +540,7 @@ public class StorageVariantCommandOptions {
         }
     }
 
-    @Parameters(commandNames = {"annotate"}, commandDescription = "Create and load variant annotations into the database")
+    @Parameters(commandNames = {"annotate"}, commandDescription = GenericVariantAnnotateOptions.ANNOTATE_DESCRIPTION)
     public class VariantAnnotateCommandOptions extends GenericVariantAnnotateOptions {
 
         @ParametersDelegate
@@ -649,10 +651,55 @@ public class StorageVariantCommandOptions {
         public String dbName;
     }
 
+
+    public static class GenericVariantScoreIndexCommandOptions {
+        public static final String SCORE_INDEX_COMMAND = "score-index";
+        public static final String SCORE_INDEX_COMMAND_DESCRIPTION = "Index a variant score in the database.";
+
+        @Parameter(names = {"--name"}, description = "Unique name of the score within the study", required = true)
+        public String scoreName;
+
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", arity = 0)
+        public boolean resume;
+
+        @Parameter(names = {"--cohort1"}, description = "Cohort used to compute the score. "
+                + "Use the cohort '" + StudyEntry.DEFAULT_COHORT + "' if all samples from the study where used to compute the score", required = true)
+        public String cohort1;
+
+        @Parameter(names = {"--cohort2"}, description = "Second cohort used to compute the score, typically to compare against the first cohort. "
+                + "If only one cohort was used to compute the score, leave empty")
+        public String cohort2;
+
+        @Parameter(names = {"-i", "--input-file"}, description = "Input file to load", required = true)
+        public String input;
+
+        @Parameter(names = {"--input-columns"}, description = "Indicate which columns to load from the input file. "
+                + "Provide the column position (starting in 0) for the column with the score with 'SCORE=n'. "
+                + "Optionally, the PValue column with 'PVALUE=n'. "
+                + "The, to indicate the variant associated with the score, provide either the columns ['CHROM', 'POS', 'REF', 'ALT'], "
+                + "or the column 'VAR' containing a variant representation with format 'chr:start:ref:alt'. "
+                + "e.g. 'CHROM=0,POS=1,REF=3,ALT=4,SCORE=5,PVALUE=6' or 'VAR=0,SCORE=1,PVALUE=2'", required = true)
+        public String columns;
+    }
+
+    public static class GenericVariantScoreDeleteCommandOptions {
+        public static final String SCORE_DELETE_COMMAND = "score-delete";
+        public static final String SCORE_DELETE_COMMAND_DESCRIPTION = "Remove a variant score from the database.";
+
+        @Parameter(names = {"--name"}, description = "Unique name of the score within the study", required = true)
+        public String scoreName;
+
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed remove", arity = 0)
+        public boolean resume;
+
+        @Parameter(names = {"--force"}, description = "Force remove of partially indexed scores", arity = 0)
+        public boolean force;
+    }
+
     /**
      *  annotate: generic and specific options
      */
-    public static class GenericFillGapsOptions {
+    public static class GenericAggregateFamilyOptions {
 
         @Parameter(names = {"--samples"}, description = "Samples within the same study to fill", required = true)
         public List<String> samples;
@@ -664,24 +711,11 @@ public class StorageVariantCommandOptions {
 //        public boolean excludeHomRef;
     }
 
-    @Parameters(commandNames = {FillGapsCommandOptions.FILL_GAPS_COMMAND}, commandDescription = FillGapsCommandOptions.FILL_GAPS_COMMAND_DESCRIPTION)
-    public class FillGapsCommandOptions extends GenericFillGapsOptions {
+    @Parameters(commandNames = {AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND}, commandDescription = AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND_DESCRIPTION)
+    public class AggregateFamilyCommandOptions extends GenericAggregateFamilyOptions {
 
-        public static final String FILL_GAPS_COMMAND = "aggregate-family";
-        public static final String FILL_GAPS_COMMAND_DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values.";
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--study"}, description = "Study", arity = 1)
-        public String study;
-
-        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
-        public String dbName;
-    }
-
-    @Parameters(commandNames = {FillMissingCommandOptions.FILL_MISSING_COMMAND}, commandDescription = FillMissingCommandOptions.FILL_MISSING_COMMAND_DESCRIPTION)
-    public class FillMissingCommandOptions extends GenericFillMissingCommandOptions {
+        public static final String AGGREGATE_FAMILY_COMMAND = "aggregate-family";
+        public static final String AGGREGATE_FAMILY_COMMAND_DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values.";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
@@ -693,9 +727,22 @@ public class StorageVariantCommandOptions {
         public String dbName;
     }
 
-    public static class GenericFillMissingCommandOptions {
-        public static final String FILL_MISSING_COMMAND = "aggregate";
-        public static final String FILL_MISSING_COMMAND_DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values, excluding HOM-REF (0/0) values.";
+    @Parameters(commandNames = {AggregateCommandOptions.AGGREGATE_COMMAND}, commandDescription = AggregateCommandOptions.AGGREGATE_COMMAND_DESCRIPTION)
+    public class AggregateCommandOptions extends GenericAggregateCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study", arity = 1)
+        public String study;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
+        public String dbName;
+    }
+
+    public static class GenericAggregateCommandOptions {
+        public static final String AGGREGATE_COMMAND = "aggregate";
+        public static final String AGGREGATE_COMMAND_DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values, excluding HOM-REF (0/0) values.";
 
         @Parameter(names = {"--resume"}, description = "Resume a previously failed operation")
         public boolean resume;

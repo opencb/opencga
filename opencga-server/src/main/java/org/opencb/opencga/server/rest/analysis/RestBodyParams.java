@@ -1,6 +1,8 @@
 package org.opencb.opencga.server.rest.analysis;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.JacksonUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -10,22 +12,35 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
-
 public class RestBodyParams {
 
     public Map<String, String> dynamicParams;
     private final Map<String, Field> knownParams;
 
+    public RestBodyParams(Map<String, String> dynamicParams) {
+        this();
+        this.dynamicParams = dynamicParams;
+    }
+
     public RestBodyParams() {
         knownParams = Arrays.stream(this.getClass().getFields())
                 .filter(f -> !f.getName().equals("knownParams")) // Discard itself!
+                .filter(f -> !f.getName().equals("dynamicParams")) // Discard itself!
                 .collect(Collectors.toMap(Field::getName, Function.identity()));
     }
 
+    public String toJson() throws IOException {
+        return JacksonUtils.getUpdateObjectMapper().writeValueAsString(this);
+    }
+
+    public ObjectMap toObjectMap() throws IOException {
+        return new ObjectMap(toJson());
+    }
+
     public Map<String, String> toParams() throws IOException {
-        ObjectMap objectMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(this));
-        HashMap<String, String> map = new HashMap<>(objectMap.size());
+        ObjectMap objectMap = toObjectMap();
+        objectMap.remove("dynamicParams");
+        Map<String, String> map = new HashMap<>(objectMap.size());
         addParams(map, objectMap);
         if (dynamicParams != null) {
             ObjectMap dynamicParams = new ObjectMap();
@@ -44,17 +59,20 @@ public class RestBodyParams {
     private void addParams(Map<String, String> map, ObjectMap params) {
         for (String key : params.keySet()) {
             Field field = knownParams.get(key);
-            if (field != null) {
-                // native boolean fields are "flags"
-                if (field.getType() == boolean.class) {
-                    if (params.getString(key).equals("true")) {
-                        map.put(key, "");
+            String value = params.getString(key);
+            if (StringUtils.isNotEmpty(value)) {
+                if (field != null) {
+                    // native boolean fields are "flags"
+                    if (field.getType() == boolean.class) {
+                        if (value.equals("true")) {
+                            map.put(key, "");
+                        }
+                    } else {
+                        map.put(key, value);
                     }
                 } else {
-                    map.put(key, params.getString(key));
+                    map.put("-D" + key, value);
                 }
-            } else {
-                map.put("-D" + key, params.getString(key));
             }
         }
     }

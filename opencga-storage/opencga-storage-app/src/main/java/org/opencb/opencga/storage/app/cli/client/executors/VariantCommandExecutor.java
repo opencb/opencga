@@ -66,13 +66,13 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
 
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND;
 
 /**
  * Created by imedina on 02/03/15.
@@ -127,9 +127,9 @@ public class VariantCommandExecutor extends CommandExecutor {
                         variantCommandOptions.indexVariantsCommandOptions.commonIndexOptions.dbName);
                 index();
                 break;
-            case VARIANT_REMOVE_COMMAND:
-                configure(variantCommandOptions.variantRemoveCommandOptions.commonOptions,
-                        variantCommandOptions.variantRemoveCommandOptions.dbName);
+            case VARIANT_DELETE_COMMAND:
+                configure(variantCommandOptions.variantDeleteCommandOptions.commonOptions,
+                        variantCommandOptions.variantDeleteCommandOptions.dbName);
                 remove();
                 break;
             case "query":
@@ -176,12 +176,12 @@ public class VariantCommandExecutor extends CommandExecutor {
                         variantCommandOptions.statsVariantsCommandOptions.dbName);
                 stats();
                 break;
-            case FILL_GAPS_COMMAND:
+            case AGGREGATE_FAMILY_COMMAND:
                 configure(variantCommandOptions.fillGapsCommandOptions.commonOptions,
                         variantCommandOptions.fillGapsCommandOptions.dbName);
                 fillGaps();
                 break;
-            case FILL_MISSING_COMMAND:
+            case AGGREGATE_COMMAND:
                 configure(variantCommandOptions.fillMissingCommandOptions.commonOptions,
                         variantCommandOptions.fillMissingCommandOptions.dbName);
                 fillMissing();
@@ -301,7 +301,7 @@ public class VariantCommandExecutor extends CommandExecutor {
     }
 
     private void remove() throws Exception {
-        StorageVariantCommandOptions.VariantRemoveCommandOptions cliOptions = variantCommandOptions.variantRemoveCommandOptions;
+        StorageVariantCommandOptions.VariantDeleteCommandOptions cliOptions = variantCommandOptions.variantDeleteCommandOptions;
 
         variantStorageEngine.getOptions().put(VariantStorageOptions.RESUME.key(), cliOptions.resume);
         variantStorageEngine.getOptions().putAll(cliOptions.commonOptions.params);
@@ -597,7 +597,7 @@ public class VariantCommandExecutor extends CommandExecutor {
     }
 
     private void fillGaps() throws StorageEngineException {
-        StorageVariantCommandOptions.FillGapsCommandOptions fillGapsCommandOptions = variantCommandOptions.fillGapsCommandOptions;
+        StorageVariantCommandOptions.AggregateFamilyCommandOptions fillGapsCommandOptions = variantCommandOptions.fillGapsCommandOptions;
 
         ObjectMap options = storageConfiguration.getOptions();
         options.put(VariantStorageOptions.RESUME.key(), fillGapsCommandOptions.resume);
@@ -607,7 +607,7 @@ public class VariantCommandExecutor extends CommandExecutor {
     }
 
     private void fillMissing() throws StorageEngineException {
-        StorageVariantCommandOptions.FillMissingCommandOptions cliOptions = variantCommandOptions.fillMissingCommandOptions;
+        StorageVariantCommandOptions.AggregateCommandOptions cliOptions = variantCommandOptions.fillMissingCommandOptions;
 
         ObjectMap options = storageConfiguration.getOptions();
         options.put(VariantStorageOptions.RESUME.key(), cliOptions.resume);

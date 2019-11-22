@@ -59,7 +59,7 @@ public class CohortVariantStatsHBaseMapReduceAnalysisExecutor
                     studyId,
                     null,
                     params
-            ), params, "Calculate cohort variant stats");
+            ), engine.getOptions(), "Calculate cohort variant stats");
 
         } catch (VariantQueryException | StorageEngineException e) {
             throw new AnalysisExecutorException(e);

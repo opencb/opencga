@@ -15,14 +15,15 @@ public class RestBodyParamsTest {
     private MyRestBodyParams p = new MyRestBodyParams();;
 
     public static class MyRestBodyParams extends RestBodyParams {
-        public String myKey = "asdf";
-        public String myKey2;
-        public boolean myBoolean;
-        public boolean myBooleanTrue = true;
-        public Boolean myBooleanNullable;
-        public Boolean myBooleanNullableTrue = true;
-        public int myInteger;
-        public Integer myIntegerNullable;
+        protected String myKey = "asdf";
+        protected String myKey2;
+        protected boolean myBoolean;
+        protected boolean myBooleanTrue = true;
+        protected Boolean myBooleanNullable;
+        protected Boolean myBooleanNullableTrue = true;
+        protected int myInteger;
+        protected Integer myIntegerNullable;
+        private String myPrivateString = "private!";
     }
 
     @Test
@@ -62,6 +63,7 @@ public class RestBodyParamsTest {
         p.dynamicParams.put("myKey", "overwrite");
         Map<String, String> params = p.toParams();
 
+        assertEquals(5, params.size());
         assertEquals("overwrite", params.get("myKey"));
         assertNull(params.get("myKey2"));
         assertEquals("", params.get("myBooleanTrue"));
@@ -71,5 +73,24 @@ public class RestBodyParamsTest {
         assertEquals("0", params.get("myInteger"));
         assertNull(params.get("myIntegerNullable"));
         assertEquals("value", params.get("-DotherParam"));
+    }
+
+    @Test
+    public void testToObjectMap() throws IOException {
+        p.dynamicParams = new HashMap<>();
+        p.dynamicParams.put("otherParam", "value");
+        p.dynamicParams.put("myKey", "overwrite");
+        ObjectMap params = p.toObjectMap();
+
+        assertEquals(6, params.size());
+        assertEquals("asdf", params.get("myKey"));
+        assertNull(params.get("myKey2"));
+        assertEquals(true, params.get("myBooleanTrue"));
+        assertEquals(true, params.get("myBooleanNullableTrue"));
+        assertEquals(false, params.get("myBoolean"));
+        assertNull(params.get("myBooleanNullable"));
+        assertEquals(0, params.get("myInteger"));
+        assertNull(params.get("myIntegerNullable"));
+        assertEquals(p.dynamicParams, params.get("dynamicParams"));
     }
 }

@@ -37,16 +37,16 @@ import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantScoreRemoveCommandOptions.SCORE_REMOVE_COMMAND;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND;
 import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexRemoveCommandOptions.SECONDARY_INDEX_REMOVE_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND;
 
 /**
  * Created by imedina on 02/03/15.
@@ -95,12 +95,12 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
         jCommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);
-        variantSubCommands.addCommand(VARIANT_REMOVE_COMMAND, variantCommandOptions.variantRemoveCommandOptions);
+        variantSubCommands.addCommand(VARIANT_DELETE_COMMAND, variantCommandOptions.variantDeleteCommandOptions);
         variantSubCommands.addCommand(SECONDARY_INDEX_COMMAND, variantCommandOptions.variantSecondaryIndexCommandOptions);
-        variantSubCommands.addCommand(SECONDARY_INDEX_REMOVE_COMMAND, variantCommandOptions.variantSecondaryIndexRemoveCommandOptions);
+        variantSubCommands.addCommand(SECONDARY_INDEX_DELETE_COMMAND, variantCommandOptions.variantSecondaryIndexDeleteCommandOptions);
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantCommandOptions);
         variantSubCommands.addCommand(SCORE_INDEX_COMMAND, variantCommandOptions.variantScoreIndexCommandOptions);
-        variantSubCommands.addCommand(SCORE_REMOVE_COMMAND, variantCommandOptions.variantScoreRemoveCommandOptions);
+        variantSubCommands.addCommand(SCORE_DELETE_COMMAND, variantCommandOptions.variantScoreDeleteCommandOptions);
         variantSubCommands.addCommand(SAMPLE_INDEX_COMMAND, variantCommandOptions.sampleIndexCommandOptions);
         variantSubCommands.addCommand(FAMILY_INDEX_COMMAND, variantCommandOptions.familyIndexCommandOptions);
         variantSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantCommandOptions);
@@ -108,8 +108,8 @@ public class AnalysisCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(ANNOTATION_DELETE_COMMAND, variantCommandOptions.annotationDeleteCommandOptions);
         variantSubCommands.addCommand(ANNOTATION_QUERY_COMMAND, variantCommandOptions.annotationQueryCommandOptions);
         variantSubCommands.addCommand(ANNOTATION_METADATA_COMMAND, variantCommandOptions.annotationMetadataCommandOptions);
-        variantSubCommands.addCommand(FILL_GAPS_COMMAND, variantCommandOptions.fillGapsVariantCommandOptions);
-        variantSubCommands.addCommand(FILL_MISSING_COMMAND, variantCommandOptions.fillMissingCommandOptions);
+        variantSubCommands.addCommand(AGGREGATE_FAMILY_COMMAND, variantCommandOptions.fillGapsVariantCommandOptions);
+        variantSubCommands.addCommand(AGGREGATE_COMMAND, variantCommandOptions.aggregateCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
         variantSubCommands.addCommand("export-frequencies", variantCommandOptions.exportVariantStatsCommandOptions);
         variantSubCommands.addCommand("import", variantCommandOptions.importVariantCommandOptions);

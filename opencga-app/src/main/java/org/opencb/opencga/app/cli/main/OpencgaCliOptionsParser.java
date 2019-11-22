@@ -31,6 +31,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.main.options.OperationsCommandOptions.*;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
 
@@ -44,32 +47,29 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
     private final GeneralCliOptions.NumericOptions numericOptions;
 
     // Catalog commands
-    private UserCommandOptions usersCommandOptions;
-    private ProjectCommandOptions projectCommandOptions;
-    private StudyCommandOptions studyCommandOptions;
-    private FileCommandOptions fileCommandOptions;
-    private JobCommandOptions jobCommandOptions;
-    private IndividualCommandOptions individualCommandOptions;
-    private SampleCommandOptions sampleCommandOptions;
-    private ClinicalCommandOptions clinicalCommandOptions;
-    private VariableCommandOptions variableCommandOptions;
-    private CohortCommandOptions cohortCommandOptions;
-    private FamilyCommandOptions familyCommandOptions;
-    private PanelCommandOptions panelCommandOptions;
+    private final UserCommandOptions usersCommandOptions;
+    private final ProjectCommandOptions projectCommandOptions;
+    private final StudyCommandOptions studyCommandOptions;
+    private final FileCommandOptions fileCommandOptions;
+    private final JobCommandOptions jobCommandOptions;
+    private final IndividualCommandOptions individualCommandOptions;
+    private final SampleCommandOptions sampleCommandOptions;
+    private final ClinicalCommandOptions clinicalCommandOptions;
+    private final VariableCommandOptions variableCommandOptions;
+    private final CohortCommandOptions cohortCommandOptions;
+    private final FamilyCommandOptions familyCommandOptions;
+    private final PanelCommandOptions panelCommandOptions;
     private ToolCommandOptions toolCommandOptions;
 
     // Analysis commands
-    private AlignmentCommandOptions alignmentCommandOptions;
-    private VariantCommandOptions variantCommandOptions;
+    private final AlignmentCommandOptions alignmentCommandOptions;
+    private final VariantCommandOptions variantCommandOptions;
+
+    private final OperationsCommandOptions operationsCommandOptions;
 
     enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}
 
-
     public OpencgaCliOptionsParser() {
-        this(false);
-    }
-
-    public OpencgaCliOptionsParser(boolean interactive) {
         jCommander.setExpandAtSign(false);
 
         commonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
@@ -276,10 +276,30 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         variantCommandOptions = new VariantCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
-        variantSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
         variantSubCommands.addCommand(ANNOTATION_QUERY_COMMAND, variantCommandOptions.annotationQueryCommandOptions);
         variantSubCommands.addCommand(ANNOTATION_METADATA_COMMAND, variantCommandOptions.annotationMetadataCommandOptions);
+        variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantCommandOptions);
+        variantSubCommands.addCommand(SAMPLE_VARIANT_STATS_COMMAND, variantCommandOptions.sampleVariantStatsCommandOptions);
+        variantSubCommands.addCommand(COHORT_VARIANT_STATS_COMMAND, variantCommandOptions.cohortVariantStatsCommandOptions);
+        variantSubCommands.addCommand("gwas", variantCommandOptions.gwasCommandOptions);
+
+        operationsCommandOptions = new OperationsCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
+        jCommander.addCommand(OPERATIONS_COMMAND, operationsCommandOptions);
+        JCommander operationsSubCommands = jCommander.getCommands().get(OPERATIONS_COMMAND);
+        operationsSubCommands.addCommand(VARIANT_FILE_INDEX, operationsCommandOptions.variantIndex);
+        operationsSubCommands.addCommand(VARIANT_FILE_DELETE, operationsCommandOptions.variantIndexDelete);
+        operationsSubCommands.addCommand(VARIANT_SECONDARY_INDEX, operationsCommandOptions.variantSecondaryIndex);
+        operationsSubCommands.addCommand(VARIANT_SECONDARY_INDEX_DELETE, operationsCommandOptions.variantSecondaryIndexDelete);
+        operationsSubCommands.addCommand(VARIANT_ANNOTATION_INDEX, operationsCommandOptions.variantAnnotation);
+        operationsSubCommands.addCommand(VARIANT_ANNOTATION_SAVE, operationsCommandOptions.variantAnnotationSave);
+        operationsSubCommands.addCommand(VARIANT_ANNOTATION_DELETE, operationsCommandOptions.variantAnnotationDelete);
+        operationsSubCommands.addCommand(VARIANT_SCORE_INDEX, operationsCommandOptions.variantScoreIndex);
+        operationsSubCommands.addCommand(VARIANT_SCORE_DELETE, operationsCommandOptions.variantScoreDelete);
+        operationsSubCommands.addCommand(VARIANT_FAMILY_GENOTYPE_INDEX, operationsCommandOptions.variantFamilyIndex);
+        operationsSubCommands.addCommand(VARIANT_SAMPLE_GENOTYPE_INDEX, operationsCommandOptions.variantSampleIndex);
+        operationsSubCommands.addCommand(VARIANT_AGGREGATE, operationsCommandOptions.variantAggregate);
+        operationsSubCommands.addCommand(VARIANT_FAMILY_AGGREGATE, operationsCommandOptions.variantAggregateFamily);
 
     }
 
@@ -418,4 +438,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         return variantCommandOptions;
     }
 
+    public OperationsCommandOptions getOperationsCommands() {
+        return operationsCommandOptions;
+    }
 }

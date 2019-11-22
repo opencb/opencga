@@ -36,10 +36,7 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.client.*;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.File;
@@ -68,6 +65,7 @@ public abstract class AbstractParentClient {
     private static final int DEFAULT_SKIP = 0;
     protected static final String GET = "GET";
     protected static final String POST = "POST";
+    protected static final String DELETE = "DELETE";
 
     protected static final String STUDY = "study";
 
@@ -212,42 +210,52 @@ public abstract class AbstractParentClient {
      */
     private <T> DataResponse<T> callRest(WebTarget path, Map<String, Object> params, Class clazz, String method) throws IOException {
 
-        String jsonString = "{}";
-        if (method.equalsIgnoreCase(GET)) {
-            // TODO we still have to check the limit of the query, and keep querying while there are more results
-            if (params != null) {
-                for (String s : params.keySet()) {
-                    Object o = params.get(s);
-                    if (o instanceof Collection) {
-                        String value = ((Collection<?>) o).stream().map(Object::toString).collect(Collectors.joining(","));
-                        path = path.queryParam(s, value);
-                    } else {
-                        path = path.queryParam(s, o);
+        String jsonString;
+        switch (method) {
+            case DELETE:
+            case GET:
+                // TODO we still have to check the limit of the query, and keep querying while there are more results
+                if (params != null) {
+                    for (String s : params.keySet()) {
+                        Object o = params.get(s);
+                        if (o instanceof Collection) {
+                            String value = ((Collection<?>) o).stream().map(Object::toString).collect(Collectors.joining(","));
+                            path = path.queryParam(s, value);
+                        } else {
+                            path = path.queryParam(s, o);
+                        }
                     }
                 }
-            }
 
-            logger.debug("GET URL: {}", path.getUri().toURL());
-            jsonString = path.request()
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId)
-                    .get().readEntity(String.class);
-        } else if (method.equalsIgnoreCase(POST)) {
-            // TODO we still have to check the limit of the query, and keep querying while there are more results
-            if (params != null) {
-                for (String s : params.keySet()) {
-                    if (!s.equals("body")) {
-                        path = path.queryParam(s, params.get(s));
+                Invocation.Builder header = path.request()
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId);
+                logger.debug(method + " URL: {}", path.getUri().toURL());
+                if (method.equals(GET)) {
+                    jsonString = header.get().readEntity(String.class);
+                } else {
+                    jsonString = header.delete().readEntity(String.class);
+                }
+                break;
+            case POST:
+                // TODO we still have to check the limit of the query, and keep querying while there are more results
+                if (params != null) {
+                    for (String s : params.keySet()) {
+                        if (!s.equals("body")) {
+                            path = path.queryParam(s, params.get(s));
+                        }
                     }
                 }
-            }
 
-            logger.debug("POST URL: {}", path.getUri().toURL());
-            Object paramBody = (params == null ? "" : params.get("body"));
-            logger.debug("Body {}", paramBody);
-            Response body = path.request()
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId)
-                    .post(Entity.json(paramBody));
-            jsonString = body.readEntity(String.class);
+                logger.debug("POST URL: {}", path.getUri().toURL());
+                Object paramBody = (params == null ? "" : params.get("body"));
+                logger.debug("Body {}", paramBody);
+                Response body = path.request()
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId)
+                        .post(Entity.json(paramBody));
+                jsonString = body.readEntity(String.class);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported REST method " + method);
         }
         return parseResult(jsonString, clazz);
     }

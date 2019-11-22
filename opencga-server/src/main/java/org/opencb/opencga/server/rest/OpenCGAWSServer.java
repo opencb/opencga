@@ -730,6 +730,18 @@ public class OpenCGAWSServer {
 
     }
 
+    public Response submitJob(String study, String command, String subcommand, Map<String, String> paramsMap,
+                              String jobId, String jobName, String jobDescription, List<String> jobTags) {
+        return run(() -> catalogManager
+                .getJobManager()
+                .submit(study, command, subcommand, Enums.Priority.MEDIUM, paramsMap,
+                        jobId,
+                        jobName,
+                        jobDescription,
+                        jobTags, token));
+
+    }
+
     public Response createPendingResponse() {
         return createErrorResponse(new NotImplementedException("Pending " + uriInfo.getPath()));
     }
