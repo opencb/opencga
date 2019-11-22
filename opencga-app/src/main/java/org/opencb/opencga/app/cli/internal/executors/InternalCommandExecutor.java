@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.analysis.executors;
+package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -33,12 +33,12 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class AnalysisCommandExecutor extends CommandExecutor {
+public abstract class InternalCommandExecutor extends CommandExecutor {
 
     protected CatalogManager catalogManager;
     protected StorageEngineFactory storageEngineFactory;
 
-    public AnalysisCommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
+    public InternalCommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
         super(options);
     }
 

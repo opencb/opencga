@@ -21,18 +21,15 @@ import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
-import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
-import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
+import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
+import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.options.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.OperationsCommandOptions.*;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
@@ -353,10 +350,11 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
     @Override
     protected void printMainUsage() {
         Set<String> analysisCommands = new HashSet<>(Arrays.asList("alignments", "variant"));
+        Set<String> operationsCommands = new HashSet<>(Collections.singletonList(OPERATIONS_COMMAND));
 
         System.err.println("Catalog commands:");
         for (String command : jCommander.getCommands().keySet()) {
-            if (!analysisCommands.contains(command)) {
+            if (!analysisCommands.contains(command) && !operationsCommands.contains(command)) {
                 System.err.printf("%14s  %s\n", command, jCommander.getCommandDescription(command));
             }
         }
@@ -365,6 +363,14 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         System.err.println("Analysis commands:");
         for (String command : jCommander.getCommands().keySet()) {
             if (analysisCommands.contains(command)) {
+                System.err.printf("%14s  %s\n", command, jCommander.getCommandDescription(command));
+            }
+        }
+
+        System.err.println("");
+        System.err.println("Operation commands:");
+        for (String command : jCommander.getCommands().keySet()) {
+            if (operationsCommands.contains(command)) {
                 System.err.printf("%14s  %s\n", command, jCommander.getCommandDescription(command));
             }
         }

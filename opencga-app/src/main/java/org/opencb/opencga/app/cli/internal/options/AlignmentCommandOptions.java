@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.analysis.options;
+package org.opencb.opencga.app.cli.internal.options;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
-
-import java.util.List;
 
 /**
  * Created by imedina on 21/11/16.

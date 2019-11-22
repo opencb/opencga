@@ -194,7 +194,7 @@
                         </program>
                         <program>
                             <id>opencga-internal.sh</id>
-                            <mainClass>org.opencb.opencga.app.cli.analysis.AnalysisMain</mainClass>
+                            <mainClass>org.opencb.opencga.app.cli.internal.InternalMain</mainClass>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
