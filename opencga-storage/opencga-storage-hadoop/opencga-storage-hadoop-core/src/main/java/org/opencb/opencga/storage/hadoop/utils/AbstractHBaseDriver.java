@@ -219,7 +219,7 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             }
         } else {
             if (!localFs.exists(localOutput.getParent())) {
-                throw new IOException("No such file or directory");
+                throw new IOException("No such file or directory: " + localOutput);
             }
         }
         return localOutput;

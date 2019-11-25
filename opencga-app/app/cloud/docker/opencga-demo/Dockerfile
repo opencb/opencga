@@ -27,7 +27,7 @@ EXPOSE 27017 28017
 WORKDIR /opt/opencga/bin
 
 # Copy init.sh which perform initialization setps.
-COPY opencga-app/app/scripts/docker/opencga-demo/init.sh init.sh
+COPY opencga-app/app/cloud/docker/opencga-demo/init.sh init.sh
 ENTRYPOINT ["/bin/bash", "-c", "./init.sh"]
 
 

@@ -85,7 +85,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             studyStr = studyId;
         }
 
-        Map<String, String> params = new LinkedHashMap<>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("file", fileIdStr);
         addParamIfTrue(params, "transform", transform);
         addParamIfTrue(params, "load", load);

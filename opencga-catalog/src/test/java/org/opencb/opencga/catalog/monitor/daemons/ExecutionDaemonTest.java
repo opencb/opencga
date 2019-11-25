@@ -5,7 +5,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.catalog.monitor.executors.BatchExecutor;
 import org.opencb.opencga.core.analysis.result.AnalysisResult;
@@ -52,7 +51,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
     @Test
     public void testBuildCli() {
-        Map<String, String> params = new LinkedHashMap<>();
+        Map<String, Object> params = new LinkedHashMap<>();
         params.put("key", "value");
         params.put("camelCaseKey", "value");
         params.put("flag", "");
@@ -65,7 +64,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
     @Test
     public void testCreateDefaultOutDir() throws Exception {
-        HashMap<String, String> params = new HashMap<>();
+        HashMap<String, Object> params = new HashMap<>();
         String jobId = catalogManager.getJobManager().submit(studyFqn, "command", "subcommand", Enums.Priority.MEDIUM, params, sessionIdUser).first().getId();
 
         daemon.checkPendingJobs();
@@ -77,7 +76,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
     @Test
     public void testCreateOutDir() throws Exception {
-        HashMap<String, String> params = new HashMap<>();
+        HashMap<String, Object> params = new HashMap<>();
         params.put("outdir", "outputDir/");
         String jobId = catalogManager.getJobManager().submit(studyFqn, "command", "subcommand", Enums.Priority.MEDIUM, params, sessionIdUser).first().getId();
 
@@ -95,7 +94,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
                 new org.opencb.opencga.core.models.File.FileStatus(), true, "", QueryOptions.empty(), sessionIdUser).first();
         catalogManager.getCatalogIOManagerFactory().get(directory.getUri()).createDirectory(directory.getUri(), true);
 
-        HashMap<String, String> params = new HashMap<>();
+        HashMap<String, Object> params = new HashMap<>();
         params.put("outdir", "outputDir/");
         String jobId = catalogManager.getJobManager().submit(studyFqn, "command", "subcommand", Enums.Priority.MEDIUM, params,
                 sessionIdUser).first().getId();
@@ -109,7 +108,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
     @Test
     public void testNotEmptyOutDir() throws Exception {
-        HashMap<String, String> params = new HashMap<>();
+        HashMap<String, Object> params = new HashMap<>();
         params.put("outdir", "data/");
         String jobId = catalogManager.getJobManager().submit(studyFqn, "command", "subcommand", Enums.Priority.MEDIUM, params, sessionIdUser).first().getId();
 
@@ -123,7 +122,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
     @Test
     public void testRunJob() throws Exception {
-        HashMap<String, String> params = new HashMap<>();
+        HashMap<String, Object> params = new HashMap<>();
         params.put(ExecutionDaemon.OUTDIR_PARAM, "outDir");
         org.opencb.opencga.core.models.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, sessionIdUser).first();
         params.put("myFile", inputFile.getPath());
@@ -133,7 +132,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         daemon.checkJobs();
 
         String[] cli = getJob(jobId).getCommandLine().split(" ");
-        int i = Arrays.binarySearch(cli, "--my-file");
+        int i = Arrays.asList(cli).indexOf("--my-file");
         assertEquals(inputFile.getUri().getPath(), cli[i + 1]);
         assertEquals(1, getJob(jobId).getInput().size());
         assertEquals(inputFile.getPath(), getJob(jobId).getInput().get(0).getPath());
@@ -153,7 +152,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
     @Test
     public void testRegisterFilesSuccessfully() throws Exception {
-        HashMap<String, String> params = new HashMap<>();
+        HashMap<String, Object> params = new HashMap<>();
         params.put(ExecutionDaemon.OUTDIR_PARAM, "outDir");
         org.opencb.opencga.core.models.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, sessionIdUser).first();
         params.put("myFile", inputFile.getPath());
@@ -163,7 +162,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         daemon.checkJobs();
 
         String[] cli = getJob(jobId).getCommandLine().split(" ");
-        int i = Arrays.binarySearch(cli, "--my-file");
+        int i = Arrays.asList(cli).indexOf("--my-file");
         assertEquals(inputFile.getUri().getPath(), cli[i + 1]);
         assertEquals(1, getJob(jobId).getInput().size());
         assertEquals(inputFile.getPath(), getJob(jobId).getInput().get(0).getPath());
@@ -204,7 +203,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
     @Test
     public void testRunJobFail() throws Exception {
-        HashMap<String, String> params = new HashMap<>();
+        HashMap<String, Object> params = new HashMap<>();
         params.put(ExecutionDaemon.OUTDIR_PARAM, "outputDir/");
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant", "index", Enums.Priority.MEDIUM, params, sessionIdUser).first();
         String jobId = job.getId();
@@ -228,7 +227,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
     @Test
     public void testRunJobFailMissingAnalysisResult() throws Exception {
-        HashMap<String, String> params = new HashMap<>();
+        HashMap<String, Object> params = new HashMap<>();
         params.put(ExecutionDaemon.OUTDIR_PARAM, "outputDir/");
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant", "index", Enums.Priority.MEDIUM, params, sessionIdUser).first();
         String jobId = job.getId();

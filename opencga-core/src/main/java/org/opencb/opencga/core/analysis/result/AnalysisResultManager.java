@@ -12,9 +12,11 @@ import org.opencb.opencga.core.exception.AnalysisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 
 public class AnalysisResultManager {
     public static final String FILE_EXTENSION = ".result.json";
+    public static final String SWAP_FILE_EXTENSION = ".swap" + FILE_EXTENSION;
 
     private final String analysisId;
     private final Path outDir;
@@ -34,10 +37,11 @@ public class AnalysisResultManager {
 
     private Thread thread;
     private File file;
+    private File swapFile;
     private boolean initialized;
     private boolean closed;
     private final Logger logger = LoggerFactory.getLogger(AnalysisResultManager.class);
-    private int monitorThreadPeriod = 5000;
+    private int monitorThreadPeriod = 60000;
 
     public AnalysisResultManager(String analysisId, Path outDir) throws AnalysisException {
         this.analysisId = analysisId;
@@ -65,6 +69,7 @@ public class AnalysisResultManager {
         }
 
         file = outDir.resolve(analysisId + FILE_EXTENSION).toFile();
+        swapFile = outDir.resolve(analysisId + SWAP_FILE_EXTENSION).toFile();
     }
 
     public synchronized AnalysisResultManager init(ObjectMap params, ObjectMap executorParams) throws AnalysisException {
@@ -279,11 +284,36 @@ public class AnalysisResultManager {
 
     }
 
-    private void write(AnalysisResult analysisResult) throws AnalysisException {
-        try {
-            objectWriter.writeValue(file, analysisResult);
-        } catch (IOException e) {
-            throw new AnalysisException("Error writing AnalysisResult", e);
+    private synchronized void write(AnalysisResult analysisResult) throws AnalysisException {
+        int maxAttempts = 3;
+        int attempts = 0;
+        while (attempts < maxAttempts) {
+            attempts++;
+            try {
+                if (attempts < maxAttempts) {
+                    // Perform atomic writes using an intermediate temporary swap file
+                    try (OutputStream os = new BufferedOutputStream(new FileOutputStream(swapFile))) {
+                        objectWriter.writeValue(os, analysisResult);
+                    }
+                    Files.move(swapFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                } else {
+                    try (OutputStream os = new BufferedOutputStream(new FileOutputStream(file))) {
+                        objectWriter.writeValue(os, analysisResult);
+                    }
+                }
+            } catch (IOException e) {
+                if (attempts < maxAttempts) {
+                    logger.warn("Error writing AnalysisResult: " + e.toString());
+                    try {
+                        Thread.sleep(50);
+                    } catch (InterruptedException interruption) {
+                        // Ignore interruption
+                        Thread.currentThread().interrupt();
+                    }
+                } else {
+                    throw new AnalysisException("Error writing AnalysisResult", e);
+                }
+            }
         }
     }
 

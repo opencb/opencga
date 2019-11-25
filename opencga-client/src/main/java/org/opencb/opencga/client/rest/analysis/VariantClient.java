@@ -19,7 +19,9 @@ package org.opencb.opencga.client.rest.analysis;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
+import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.DataResponse;
@@ -49,11 +51,10 @@ public class VariantClient extends AbstractParentClient {
         jsonObjectMapper.addMixIn(DataResponse.class, DataResponseMixing.class);
     }
 
-    public DataResponse<Job> index(String fileIds, ObjectMap params) throws IOException {
-        params.append("file", fileIds);
-        return execute(VARIANT_URL, "index", params, GET, Job.class);
+    @Deprecated
+    public DataResponse<Job> index(ObjectMap params) throws IOException {
+        return execute("operation", "variant/index/run", new ObjectMap("body", params), POST, Job.class);
     }
-
 
     public DataResponse<VariantMetadata> metadata(ObjectMap params, QueryOptions options) throws IOException {
         if (options != null) {
@@ -118,5 +119,39 @@ public class VariantClient extends AbstractParentClient {
         }
         return execute(VARIANT_URL, "query", params, GET, ObjectMap.class);
     }
+
+    public DataResponse<Job> statsRun(ObjectMap params) throws IOException {
+        return execute(VARIANT_URL, "/stats/run", new ObjectMap("body", params), POST, Job.class);
+    }
+
+    public DataResponse<Job> sampleStatsRun(ObjectMap params) throws IOException {
+        return execute(VARIANT_URL, "/sample/stats/run", new ObjectMap("body", params), POST, Job.class);
+    }
+
+    public DataResponse<SampleVariantStats> sampleStatsQuery(String study, List<String> samples) throws IOException {
+        ObjectMap params = new ObjectMap("study", study).append("samples", String.join(",", samples));
+        return execute(VARIANT_URL, "/sample/stats/query", params, GET, SampleVariantStats.class);
+    }
+
+    public DataResponse<Job> cohortStatsRun(ObjectMap params) throws IOException {
+        return execute(VARIANT_URL, "/cohort/stats/run", new ObjectMap("body", params), POST, Job.class);
+    }
+
+    public DataResponse<VariantSetStats> cohortStatsQuery(String study, List<String> cohorts) throws IOException {
+        ObjectMap params = new ObjectMap("study", study).append("cohorts", String.join(",", cohorts));
+        return execute(VARIANT_URL, "/cohort/stats/query", params, GET, VariantSetStats.class);
+    }
+
+    public DataResponse<Job> gwasRun(ObjectMap params) throws IOException {
+        return execute(VARIANT_URL, "/gwas/run", new ObjectMap("body", params), POST, Job.class);
+    }
+
+//    public DataResponse<Job> hwRun(ObjectMap params) throws IOException {
+//        return execute(VARIANT_URL, "/hw/run", new ObjectMap("body", params), POST, Job.class);
+//    }
+
+//    public DataResponse<Job> ibsRun(ObjectMap params) throws IOException {
+//        return execute(VARIANT_URL, "/ibs/run", new ObjectMap("body", params), POST, Job.class);
+//    }
 
 }

@@ -33,6 +33,7 @@ import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Cohort;
@@ -40,15 +41,14 @@ import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.server.rest.operations.OperationsWSService;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
 import org.opencb.opencga.storage.core.variant.analysis.VariantSampleFilter;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
 import javax.servlet.http.HttpServletRequest;
@@ -164,7 +164,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             studyStr = studyStrOld;
         }
 
-        Map<String, String> params = new LinkedHashMap<>();
+        Map<String, Object> params = new LinkedHashMap<>();
         addParamIfNotNull(params, "file", fileIdStr);
         addParamIfNotNull(params, "study", studyStr);
         addParamIfNotNull(params, "outdir", outDirStr);
@@ -218,64 +218,6 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         } catch(Exception e) {
             return createErrorResponse(e);
         }
-    }
-
-    public static class IndexParams extends RestBodyParams {
-        public String study;
-        public String file;
-        public boolean resume;
-        public String outdir;
-
-        public boolean transform;
-        public boolean gvcf;
-
-        public boolean load;
-        public boolean loadSplitData;
-        public boolean skipPostLoadCheck;
-        public boolean excludeGenotype;
-        public String includeExtraFields = VariantQueryUtils.ALL;
-        public VariantStorageEngine.MergeMode merge = VariantStorageOptions.MERGE_MODE.defaultValue();
-
-        public boolean calculateStats;
-        public Aggregation aggregated = Aggregation.NONE;
-        public String aggregationMappingFile;
-
-        public boolean annotate;
-        public VariantAnnotatorFactory.AnnotationEngine annotator;
-        public boolean overwriteAnnotations;
-
-        public boolean indexSearch;
-    }
-
-    @POST
-    @Path("/index/run")
-    @ApiOperation(value = "Index variant files", response = Job.class)
-    public Response index(
-            @ApiParam(value = JOB_ID_DESCRIPTION) @QueryParam(JOB_ID) String jobId,
-            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
-            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
-            IndexParams params) {
-        return submitJob(params.study, "variant", "index", params, jobId, jobName, jobDescription, jobTags);
-    }
-
-
-    public static class IndexRemoveParams extends RestBodyParams {
-        public String study;
-        public String file;
-        public boolean resume;
-    }
-
-    @POST
-    @Path("/index/remove")
-    @ApiOperation(value = "Remove variant files", response = Job.class)
-    public Response indexRemove(
-            @ApiParam(value = JOB_ID_DESCRIPTION) @QueryParam(JOB_ID) String jobId,
-            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
-            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
-            IndexRemoveParams params) {
-        return submitJob(params.study, "variant", "remove", params, jobId, jobName, jobDescription, jobTags);
     }
 
     @GET
@@ -590,19 +532,38 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     }
 
     public static class StatsRunParams extends RestBodyParams {
-        public String study;
-        public List<String> cohorts;
-        public List<String> samples;
-        public boolean index;
-        public String outdir;
-        public String outputFileName;
-        public boolean overwriteStats;
-        public boolean updateStats;
+        public StatsRunParams() {
+        }
+        public StatsRunParams(String study, List<String> cohorts, List<String> samples, boolean index, String outdir, String outputFileName,
+                              boolean overwriteStats, boolean updateStats, boolean resume, Aggregation aggregated,
+                              String aggregationMappingFile, Map<String, String> dynamicParams) {
+            super(dynamicParams);
+            this.study = study;
+            this.cohorts = cohorts;
+            this.samples = samples;
+            this.index = index;
+            this.outdir = outdir;
+            this.outputFileName = outputFileName;
+            this.overwriteStats = overwriteStats;
+            this.updateStats = updateStats;
+            this.resume = resume;
+            this.aggregated = aggregated;
+            this.aggregationMappingFile = aggregationMappingFile;
+        }
 
-        public boolean resume;
+        protected String study;
+        protected List<String> cohorts;
+        protected List<String> samples;
+        protected boolean index;
+        protected String outdir;
+        protected String outputFileName;
+        protected boolean overwriteStats;
+        protected boolean updateStats;
 
-        public String aggregated;
-        public String aggregationMappingFile;
+        protected boolean resume;
+
+        protected Aggregation aggregated;
+        protected String aggregationMappingFile;
 
     }
 
@@ -619,18 +580,16 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     }
 
     public static class StatsExportParams extends RestBodyParams {
-        public String study;
-        public List<String> cohorts;
-        public String output;
-        public String region;
-        public String gene;
-        //        @JsonProperty("output-format")
-        public String outputFormat;
-
+        protected String study;
+        protected List<String> cohorts;
+        protected String output;
+        protected String region;
+        protected String gene;
+        protected String outputFormat;
     }
 
     @POST
-    @Path("/stats/export")
+    @Path("/stats/export/run")
     @ApiOperation(value = "Export calculated variant stats and frequencies", response = Job.class)
     public Response statsExport(
             @ApiParam(value = JOB_ID_DESCRIPTION) @QueryParam(JOB_ID) String jobId,
@@ -834,12 +793,24 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     }
 
     public static class SampleStatsRunParams extends RestBodyParams {
-        public String study;
-        public List<String> samples;
-        public String family;
-        public boolean index;
-        public String sampleAnnotation;
-        public String outdir;
+        public SampleStatsRunParams() {
+        }
+        public SampleStatsRunParams(String study, List<String> samples, String family,
+                                    boolean index, String sampleAnnotation, String outdir, Map<String, String> dynamicParams) {
+            super(dynamicParams);
+            this.study = study;
+            this.samples = samples;
+            this.family = family;
+            this.index = index;
+            this.sampleAnnotation = sampleAnnotation;
+            this.outdir = outdir;
+        }
+        protected String study;
+        protected List<String> samples;
+        protected String family;
+        protected boolean index;
+        protected String sampleAnnotation;
+        protected String outdir;
     }
 
     @POST
@@ -858,9 +829,11 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Path("/sample/stats/query")
     @ApiOperation(value = "Read sample variant stats from list of samples.", response = SampleVariantStats.class)
     public Response sampleStatsQuery(@ApiParam(value = "Study where all the samples belong to") @QueryParam("study") String studyStr,
-                                     @ApiParam(value = "Samples") @QueryParam("sample") String sample) {
+                                     @ApiParam(value = "Samples") @QueryParam("samples") String samples) {
         return run(() -> {
-            OpenCGAResult<Sample> result = catalogManager.getSampleManager().get(studyStr, Arrays.asList(sample.split(",")), new QueryOptions(), token);
+            ParamUtils.checkParameter(samples, "samples");
+            ParamUtils.checkParameter(studyStr, "study");
+            OpenCGAResult<Sample> result = catalogManager.getSampleManager().get(studyStr, Arrays.asList(samples.split(",")), new QueryOptions(), token);
 
             List<SampleVariantStats> stats = new ArrayList<>(result.getNumResults());
             for (Sample s : result.getResults()) {
@@ -893,12 +866,25 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     }
 
     public static class CohortStatsRunParams extends RestBodyParams {
-        public String study;
-        public String cohort;
-        public List<String> samples;
-        public boolean index;
-        public String sampleAnnotation;
-        public String outdir;
+        public CohortStatsRunParams() {
+        }
+        public CohortStatsRunParams(String study, String cohort, List<String> samples, boolean index, String sampleAnnotation,
+                                    String outdir, Map<String, String> dynamicParams) {
+            super(dynamicParams);
+            this.study = study;
+            this.cohort = cohort;
+            this.samples = samples;
+            this.index = index;
+            this.sampleAnnotation = sampleAnnotation;
+            this.outdir = outdir;
+        }
+
+        protected String study;
+        protected String cohort;
+        protected List<String> samples;
+        protected boolean index;
+        protected String sampleAnnotation;
+        protected String outdir;
     }
 
     @POST
@@ -917,9 +903,12 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Path("/cohort/stats/query")
     @ApiOperation(value = "Read cohort variant stats from list of cohorts.", response = VariantSetStats.class)
     public Response cohortStatsQuery(@ApiParam(value = "Study") @QueryParam("study") String studyStr,
-                                     @ApiParam(value = "Cohorts list") @QueryParam("cohort") String cohort) {
+                                     @ApiParam(value = "Cohorts list") @QueryParam("cohorts") String cohorts) {
         return run(() -> {
-            OpenCGAResult<Cohort> result = catalogManager.getCohortManager().get(studyStr, Arrays.asList(cohort.split(",")), new QueryOptions(), token);
+            ParamUtils.checkParameter(cohorts, "cohorts");
+            ParamUtils.checkParameter(studyStr, "study");
+            OpenCGAResult<Cohort> result = catalogManager.getCohortManager()
+                    .get(studyStr, Arrays.asList(cohorts.split(",")), new QueryOptions(), token);
 
             List<VariantSetStats> stats = new ArrayList<>(result.getNumResults());
             for (Cohort c : result.getResults()) {
@@ -1066,16 +1055,34 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     }
 
     public static class GwasRunParams extends RestBodyParams {
-        public String study;
-        public String phenotype;
-        public String scoreName;
-        public GwasConfiguration.Method method;
-        public GwasConfiguration.FisherMode fisherMode;
-        public String caseCohort;
-        public String caseSamplesAnnotation;
-        public String controlCohort;
-        public String controlSamplesAnnotation;
-        public String outdir;
+        public GwasRunParams() {
+        }
+        public GwasRunParams(String study, String phenotype, String scoreName, GwasConfiguration.Method method,
+                             GwasConfiguration.FisherMode fisherMode, String caseCohort, String caseSamplesAnnotation, String controlCohort,
+                             String controlSamplesAnnotation, String outdir, Map<String, String> dynamicParams) {
+            super(dynamicParams);
+            this.study = study;
+            this.phenotype = phenotype;
+            this.scoreName = scoreName;
+            this.method = method;
+            this.fisherMode = fisherMode;
+            this.caseCohort = caseCohort;
+            this.caseSamplesAnnotation = caseSamplesAnnotation;
+            this.controlCohort = controlCohort;
+            this.controlSamplesAnnotation = controlSamplesAnnotation;
+            this.outdir = outdir;
+        }
+
+        protected String study;
+        protected String phenotype;
+        protected String scoreName;
+        protected GwasConfiguration.Method method;
+        protected GwasConfiguration.FisherMode fisherMode;
+        protected String caseCohort;
+        protected String caseSamplesAnnotation;
+        protected String controlCohort;
+        protected String controlSamplesAnnotation;
+        protected String outdir;
     }
 
     @POST

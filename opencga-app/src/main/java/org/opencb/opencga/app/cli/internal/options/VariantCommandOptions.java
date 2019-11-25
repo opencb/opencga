@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.analysis.options;
+package org.opencb.opencga.app.cli.internal.options;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import com.beust.jcommander.converters.CommaParameterSplitter;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
@@ -31,7 +30,6 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
-import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
@@ -39,18 +37,20 @@ import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
 import java.util.List;
 
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexRemoveCommandOptions.SECONDARY_INDEX_REMOVE_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.*;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.*;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
@@ -59,9 +59,8 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.*;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND_DESCRIPTION;
 
 /**
  * Created by pfurio on 23/11/16.
@@ -70,14 +69,14 @@ import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.*;
 public class VariantCommandOptions {
 
     public final VariantIndexCommandOptions indexVariantCommandOptions;
-    public final VariantRemoveCommandOptions variantRemoveCommandOptions;
+    public final VariantDeleteCommandOptions variantDeleteCommandOptions;
     public final VariantSecondaryIndexCommandOptions variantSecondaryIndexCommandOptions;
-    public final VariantSecondaryIndexRemoveCommandOptions variantSecondaryIndexRemoveCommandOptions;
+    public final VariantSecondaryIndexDeleteCommandOptions variantSecondaryIndexDeleteCommandOptions;
 //    public final QueryVariantCommandOptionsOld queryVariantCommandOptionsOld;
     public final VariantQueryCommandOptions queryVariantCommandOptions;
     public final VariantStatsCommandOptions statsVariantCommandOptions;
     public final VariantScoreIndexCommandOptions variantScoreIndexCommandOptions;
-    public final VariantScoreRemoveCommandOptions variantScoreRemoveCommandOptions;
+    public final VariantScoreDeleteCommandOptions variantScoreDeleteCommandOptions;
     public final SampleIndexCommandOptions sampleIndexCommandOptions;
     public final FamilyIndexCommandOptions familyIndexCommandOptions;
     public final VariantAnnotateCommandOptions annotateVariantCommandOptions;
@@ -85,8 +84,8 @@ public class VariantCommandOptions {
     public final AnnotationDeleteCommandOptions annotationDeleteCommandOptions;
     public final AnnotationQueryCommandOptions annotationQueryCommandOptions;
     public final AnnotationMetadataCommandOptions annotationMetadataCommandOptions;
-    public final FillGapsCommandOptions fillGapsVariantCommandOptions;
-    public final FillMissingCommandOptions fillMissingCommandOptions;
+    public final AggregateFamilyCommandOptions fillGapsVariantCommandOptions;
+    public final AggregateCommandOptions aggregateCommandOptions;
     public final VariantExportStatsCommandOptions exportVariantStatsCommandOptions;
     public final VariantImportCommandOptions importVariantCommandOptions;
     public final VariantIbsCommandOptions ibsVariantCommandOptions;
@@ -111,14 +110,14 @@ public class VariantCommandOptions {
         this.jCommander = jCommander;
 
         this.indexVariantCommandOptions = new VariantIndexCommandOptions();
-        this.variantRemoveCommandOptions = new VariantRemoveCommandOptions();
+        this.variantDeleteCommandOptions = new VariantDeleteCommandOptions();
         this.variantSecondaryIndexCommandOptions = new VariantSecondaryIndexCommandOptions();
-        this.variantSecondaryIndexRemoveCommandOptions = new VariantSecondaryIndexRemoveCommandOptions();
+        this.variantSecondaryIndexDeleteCommandOptions = new VariantSecondaryIndexDeleteCommandOptions();
 //        this.queryVariantCommandOptionsOld = new QueryVariantCommandOptionsOld();
         this.queryVariantCommandOptions = new VariantQueryCommandOptions();
         this.statsVariantCommandOptions = new VariantStatsCommandOptions();
         this.variantScoreIndexCommandOptions = new VariantScoreIndexCommandOptions();
-        this.variantScoreRemoveCommandOptions = new VariantScoreRemoveCommandOptions();
+        this.variantScoreDeleteCommandOptions = new VariantScoreDeleteCommandOptions();
         this.sampleIndexCommandOptions = new SampleIndexCommandOptions();
         this.familyIndexCommandOptions = new FamilyIndexCommandOptions();
         this.annotateVariantCommandOptions = new VariantAnnotateCommandOptions();
@@ -126,8 +125,8 @@ public class VariantCommandOptions {
         this.annotationDeleteCommandOptions = new AnnotationDeleteCommandOptions();
         this.annotationQueryCommandOptions = new AnnotationQueryCommandOptions();
         this.annotationMetadataCommandOptions = new AnnotationMetadataCommandOptions();
-        this.fillGapsVariantCommandOptions = new FillGapsCommandOptions();
-        this.fillMissingCommandOptions = new FillMissingCommandOptions();
+        this.fillGapsVariantCommandOptions = new AggregateFamilyCommandOptions();
+        this.aggregateCommandOptions = new AggregateCommandOptions();
         this.exportVariantStatsCommandOptions = new VariantExportStatsCommandOptions();
         this.importVariantCommandOptions = new VariantImportCommandOptions();
         this.ibsVariantCommandOptions = new VariantIbsCommandOptions();
@@ -142,7 +141,7 @@ public class VariantCommandOptions {
     public class VariantIndexCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.GenericVariantIndexOptions genericVariantIndexOptions = new StorageVariantCommandOptions.GenericVariantIndexOptions();
+        public GenericVariantIndexOptions genericVariantIndexOptions = new GenericVariantIndexOptions();
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -156,6 +155,12 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
         public String outdir = null;
+
+        @Parameter(names = {"--stdin"}, description = "Read the variants file from the standard input")
+        public boolean stdin;
+
+        @Parameter(names = {"--stdout"}, description = "Write the transformed variants file to the standard output")
+        public boolean stdout;
     }
 
     @Parameters(commandNames = {SECONDARY_INDEX_COMMAND}, commandDescription = "Creates a secondary index using a search engine")
@@ -175,17 +180,14 @@ public class VariantCommandOptions {
                 + " If provided, all sample data will be added to the secondary index.", arity = 1)
         public String sample;
 
-        @Parameter(names = {"--cohort"}, description = VariantQueryParam.COHORT_DESCR, arity = 1)
-        public String cohort;
-
         @Parameter(names = {"--overwrite"}, description = "Overwrite search index for all files and variants. Repeat operation for already processed variants.")
         public boolean overwrite;
     }
 
-    @Parameters(commandNames = {SECONDARY_INDEX_REMOVE_COMMAND}, commandDescription = "Remove a secondary index from the search engine")
-    public class VariantSecondaryIndexRemoveCommandOptions extends GeneralCliOptions.StudyOption {
+    @Parameters(commandNames = {SECONDARY_INDEX_DELETE_COMMAND}, commandDescription = "Remove a secondary index from the search engine")
+    public class VariantSecondaryIndexDeleteCommandOptions extends GeneralCliOptions.StudyOption {
 
-        public static final String SECONDARY_INDEX_REMOVE_COMMAND = "secondary-index-remove";
+        public static final String SECONDARY_INDEX_DELETE_COMMAND = "secondary-index-delete";
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
@@ -272,11 +274,11 @@ public class VariantCommandOptions {
         public boolean resume;
     }
 
-    @Parameters(commandNames = {VARIANT_REMOVE_COMMAND}, commandDescription = VARIANT_REMOVE_COMMAND_DESCRIPTION)
-    public class VariantRemoveCommandOptions extends GeneralCliOptions.StudyOption {
+    @Parameters(commandNames = {VARIANT_DELETE_COMMAND}, commandDescription = VARIANT_DELETE_COMMAND_DESCRIPTION)
+    public class VariantDeleteCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.GenericVariantRemoveOptions genericVariantRemoveOptions = new StorageVariantCommandOptions.GenericVariantRemoveOptions();
+        public GenericVariantDeleteOptions genericVariantDeleteOptions = new GenericVariantDeleteOptions();
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -459,7 +461,7 @@ public class VariantCommandOptions {
     public class VariantQueryCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.GenericVariantQueryOptions genericVariantQueryOptions = new StorageVariantCommandOptions.GenericVariantQueryOptions();
+        public GenericVariantQueryOptions genericVariantQueryOptions = new GenericVariantQueryOptions();
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -510,16 +512,16 @@ public class VariantCommandOptions {
     public class VariantStatsCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.GenericVariantStatsOptions genericVariantStatsOptions = new StorageVariantCommandOptions.GenericVariantStatsOptions();
+        public GenericVariantStatsOptions genericVariantStatsOptions = new GenericVariantStatsOptions();
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--cohorts"}, description = "Cohort Ids for the cohorts to be calculated.")
-        public String cohortIds;
+        public List<String> cohortIds;
 
         @Parameter(names = {"--cohort-ids"}, hidden = true)
-        public void setCohortIds(String cohortIds) {
+        public void setCohortIds(List<String> cohortIds) {
             this.cohortIds = cohortIds;
         }
 
@@ -530,59 +532,25 @@ public class VariantCommandOptions {
         public boolean index;
 
         @Parameter(names = {"--samples"}, description = "List of samples to use as cohort to calculate stats")
-        public String samples;
+        public List<String> samples;
     }
 
-    @Parameters(commandNames = {VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND}, commandDescription = VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND_DESCRIPTION)
-    public class VariantScoreIndexCommandOptions extends GeneralCliOptions.StudyOption {
-        public static final String SCORE_INDEX_COMMAND = "score-index";
-        public static final String SCORE_INDEX_COMMAND_DESCRIPTION = "Index a variant score in the database.";
-
+    @Parameters(commandNames = {GenericVariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND}, commandDescription = GenericVariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND_DESCRIPTION)
+    public class VariantScoreIndexCommandOptions extends GenericVariantScoreIndexCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--name"}, description = "Unique name of the score within the study", required = true)
-        public String scoreName;
-
-        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", arity = 0)
-        public boolean resume;
-
-        @Parameter(names = {"--cohort1"}, description = "Cohort used to compute the score. "
-                + "Use the cohort '" + StudyEntry.DEFAULT_COHORT + "' if all samples from the study where used to compute the score", required = true)
-        public String cohort1;
-
-        @Parameter(names = {"--cohort2"}, description = "Second cohort used to compute the score, typically to compare against the first cohort. "
-                + "If only one cohort was used to compute the score, leave empty")
-        public String cohort2;
-
-        @Parameter(names = {"-i", "--input"}, description = "Input file to load", required = true)
-        public String input;
-
-        @Parameter(names = {"--input-columns"}, description = "Indicate which columns to load from the input file. "
-                + "Provide the column position (starting in 0) for the column with the score with 'SCORE=n'. "
-                + "Optionally, the PValue column with 'PVALUE=n'. "
-                + "The, to indicate the variant associated with the score, provide either the columns ['CHROM', 'POS', 'REF', 'ALT'], "
-                + "or the column 'VAR' containing a variant representation with format 'chr:start:ref:alt'. "
-                + "e.g. 'CHROM=0,POS=1,REF=3,ALT=4,SCORE=5,PVALUE=6' or 'VAR=0,SCORE=1,PVALUE=2'", required = true)
-        public String columns;
+        @ParametersDelegate
+        public GeneralCliOptions.StudyOption study = new GeneralCliOptions.StudyOption();
     }
 
-    @Parameters(commandNames = {VariantScoreRemoveCommandOptions.SCORE_REMOVE_COMMAND}, commandDescription = VariantScoreRemoveCommandOptions.SCORE_REMOVE_COMMAND_DESCRIPTION)
-    public class VariantScoreRemoveCommandOptions extends GeneralCliOptions.StudyOption {
-        public static final String SCORE_REMOVE_COMMAND = "score-remove";
-        public static final String SCORE_REMOVE_COMMAND_DESCRIPTION = "Remove a variant score from the database.";
-
+    @Parameters(commandNames = {GenericVariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND}, commandDescription = GenericVariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND_DESCRIPTION)
+    public class VariantScoreDeleteCommandOptions extends GenericVariantScoreDeleteCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--name"}, description = "Unique name of the score within the study", required = true)
-        public String scoreName;
-
-        @Parameter(names = {"--resume"}, description = "Resume a previously failed remove", arity = 0)
-        public boolean resume;
-
-        @Parameter(names = {"--force"}, description = "Force remove of partially indexed scores", arity = 0)
-        public boolean force;
+        @ParametersDelegate
+        public GeneralCliOptions.StudyOption study = new GeneralCliOptions.StudyOption();
     }
 
     @Parameters(commandNames = {SAMPLE_INDEX_COMMAND}, commandDescription = SAMPLE_INDEX_COMMAND_DESCRIPTION)
@@ -672,11 +640,11 @@ public class VariantCommandOptions {
         public boolean resume;
     }
 
-    @Parameters(commandNames = {"annotate"}, commandDescription = "Create and load variant annotations into the database")
+    @Parameters(commandNames = {"annotate"}, commandDescription = GenericVariantAnnotateOptions.ANNOTATE_DESCRIPTION)
     public class VariantAnnotateCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.GenericVariantAnnotateOptions genericVariantAnnotateOptions = new StorageVariantCommandOptions.GenericVariantAnnotateOptions();
+        public GenericVariantAnnotateOptions genericVariantAnnotateOptions = new GenericVariantAnnotateOptions();
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -692,7 +660,7 @@ public class VariantCommandOptions {
     }
 
     @Parameters(commandNames = {ANNOTATION_SAVE_COMMAND}, commandDescription = ANNOTATION_SAVE_COMMAND_DESCRIPTION)
-    public class AnnotationSaveCommandOptions extends StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions {
+    public class AnnotationSaveCommandOptions extends GenericAnnotationSaveCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -702,7 +670,7 @@ public class VariantCommandOptions {
     }
 
     @Parameters(commandNames = {ANNOTATION_DELETE_COMMAND}, commandDescription = ANNOTATION_DELETE_COMMAND_DESCRIPTION)
-    public class AnnotationDeleteCommandOptions extends StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions {
+    public class AnnotationDeleteCommandOptions extends GenericAnnotationDeleteCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -713,7 +681,7 @@ public class VariantCommandOptions {
     }
 
     @Parameters(commandNames = {ANNOTATION_QUERY_COMMAND}, commandDescription = ANNOTATION_QUERY_COMMAND_DESCRIPTION)
-    public class AnnotationQueryCommandOptions extends StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions {
+    public class AnnotationQueryCommandOptions extends GenericAnnotationQueryCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -732,7 +700,7 @@ public class VariantCommandOptions {
     }
 
     @Parameters(commandNames = {ANNOTATION_METADATA_COMMAND}, commandDescription = ANNOTATION_METADATA_COMMAND_DESCRIPTION)
-    public class AnnotationMetadataCommandOptions extends StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions {
+    public class AnnotationMetadataCommandOptions extends GenericAnnotationMetadataCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -802,24 +770,24 @@ public class VariantCommandOptions {
 
     }
 
-    @Parameters(commandNames = {FILL_GAPS_COMMAND}, commandDescription = FILL_GAPS_COMMAND_DESCRIPTION)
-    public class FillGapsCommandOptions extends GeneralCliOptions.StudyOption {
+    @Parameters(commandNames = {AGGREGATE_FAMILY_COMMAND}, commandDescription = AGGREGATE_FAMILY_COMMAND_DESCRIPTION)
+    public class AggregateFamilyCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.GenericFillGapsOptions genericFillGapsOptions = new StorageVariantCommandOptions.GenericFillGapsOptions();
+        public GenericAggregateFamilyOptions genericAggregateFamilyOptions = new GenericAggregateFamilyOptions();
     }
 
-    @Parameters(commandNames = {FILL_MISSING_COMMAND}, commandDescription = FILL_MISSING_COMMAND_DESCRIPTION)
-    public class FillMissingCommandOptions extends GeneralCliOptions.StudyOption {
+    @Parameters(commandNames = {AGGREGATE_COMMAND}, commandDescription = AGGREGATE_COMMAND_DESCRIPTION)
+    public class AggregateCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.GenericFillMissingCommandOptions fillMissingCommandOptions = new StorageVariantCommandOptions.GenericFillMissingCommandOptions();
+        public GenericAggregateCommandOptions aggregateCommandOptions = new GenericAggregateCommandOptions();
 
     }
 
@@ -892,7 +860,7 @@ public class VariantCommandOptions {
     public class VariantSamplesFilterCommandOptions {
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.BasicVariantQueryOptions variantQueryOptions = new StorageVariantCommandOptions.BasicVariantQueryOptions();
+        public BasicVariantQueryOptions variantQueryOptions = new BasicVariantQueryOptions();
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -926,7 +894,7 @@ public class VariantCommandOptions {
     public class VariantHistogramCommandOptions {
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.BasicVariantQueryOptions variantQueryOptions = new StorageVariantCommandOptions.BasicVariantQueryOptions();
+        public BasicVariantQueryOptions variantQueryOptions = new BasicVariantQueryOptions();
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -987,7 +955,7 @@ public class VariantCommandOptions {
                 + "For more information, please visit " + SampleCommandOptions.SearchCommandOptions.ANNOTATION_DOC_URL)
         public String controlSamplesAnnotation;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = true)
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
         public String outdir;
     }
 
@@ -1002,7 +970,7 @@ public class VariantCommandOptions {
         public String study;
 
         @Parameter(names = {"--samples"}, description = "List of samples.")
-        public String samples;
+        public List<String> samples;
 
         @Parameter(names = {"--family"}, description = "Select samples form the individuals of this family..")
         public String family;
@@ -1016,7 +984,7 @@ public class VariantCommandOptions {
                 + "Create an AnnotationSet for the VariableSet " + SampleVariantStatsAnalysis.VARIABLE_SET_ID)
         public boolean index;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = true)
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
         public String outdir;
     }
 
@@ -1034,7 +1002,7 @@ public class VariantCommandOptions {
         public String cohort;
 
         @Parameter(names = {"--samples"}, description = "List of samples.")
-        public String samples;
+        public List<String> samples;
 
         @Parameter(names = {"--samples-annotation"}, description = "Samples query selecting samples of the control cohort."
                 + " Example: age>30;gender=FEMALE."
@@ -1045,7 +1013,7 @@ public class VariantCommandOptions {
                 + "Create an AnnotationSet for the VariableSet " + CohortVariantStatsAnalysis.VARIABLE_SET_ID)
         public boolean index;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = true)
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
         public String outdir;
     }
 }

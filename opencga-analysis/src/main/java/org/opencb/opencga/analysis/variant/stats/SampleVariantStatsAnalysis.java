@@ -107,9 +107,6 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
 
         Set<String> allSamples = new HashSet<>();
 
-        if (study == null || study.isEmpty()) {
-            throw new AnalysisException("Missing study");
-        }
         try {
             study = catalogManager.getStudyManager().get(study, null, sessionId).first().getFqn();
         } catch (CatalogException e) {

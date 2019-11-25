@@ -174,7 +174,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         return keepOriginalOrder(uniqueList, interpretationStringFunction, interpretationDataResult, ignoreException, false);
     }
 
-    public OpenCGAResult<Job> queue(String interpretationTool, String studyStr, String clinicalAnalysisId, Map<String, String> params,
+    public OpenCGAResult<Job> queue(String interpretationTool, String studyStr, String clinicalAnalysisId, Map<String, Object> params,
                                     String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.analysis.executors;
+package org.opencb.opencga.app.cli.internal.executors;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,7 +39,7 @@ import org.opencb.opencga.analysis.variant.operations.VariantFileIndexerStorageO
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
-import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
+import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.UriUtils;
@@ -69,26 +69,26 @@ import java.util.*;
 
 import static org.opencb.opencga.analysis.variant.operations.VariantFileIndexerStorageOperation.LOAD;
 import static org.opencb.opencga.analysis.variant.operations.VariantFileIndexerStorageOperation.TRANSFORM;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantScoreRemoveCommandOptions.SCORE_REMOVE_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions.VariantSecondaryIndexRemoveCommandOptions.SECONDARY_INDEX_REMOVE_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillGapsCommandOptions.FILL_GAPS_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.FillMissingCommandOptions.FILL_MISSING_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantRemoveCommandOptions.VARIANT_REMOVE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND;
 
 /**
  * Created by imedina on 02/03/15.
  */
-public class VariantCommandExecutor extends AnalysisCommandExecutor {
+public class VariantCommandExecutor extends InternalCommandExecutor {
 
     //    private AnalysisCliOptionsParser.VariantCommandOptions variantCommandOptions;
     private VariantCommandOptions variantCommandOptions;
@@ -112,7 +112,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             case "ibs":
                 ibs();
                 break;
-            case VARIANT_REMOVE_COMMAND:
+            case VARIANT_DELETE_COMMAND:
                 remove();
                 break;
             case "query":
@@ -130,7 +130,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             case SECONDARY_INDEX_COMMAND:
                 secondaryIndex();
                 break;
-            case SECONDARY_INDEX_REMOVE_COMMAND:
+            case SECONDARY_INDEX_DELETE_COMMAND:
                 secondaryIndexRemove();
                 break;
             case "stats":
@@ -139,7 +139,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             case SCORE_INDEX_COMMAND:
                 scoreLoad();
                 break;
-            case SCORE_REMOVE_COMMAND:
+            case SCORE_DELETE_COMMAND:
                 scoreRemove();
                 break;
             case SAMPLE_INDEX_COMMAND:
@@ -163,10 +163,10 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             case ANNOTATION_METADATA_COMMAND:
                 annotationMetadata();
                 break;
-            case FILL_GAPS_COMMAND:
+            case AGGREGATE_FAMILY_COMMAND:
                 fillGaps();
                 break;
-            case FILL_MISSING_COMMAND:
+            case AGGREGATE_COMMAND:
                 fillMissing();
                 break;
             case "samples":
@@ -284,17 +284,17 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
     }
 
     private void remove() throws CatalogException, StorageEngineException, IOException {
-        VariantCommandOptions.VariantRemoveCommandOptions cliOptions = variantCommandOptions.variantRemoveCommandOptions;
+        VariantCommandOptions.VariantDeleteCommandOptions cliOptions = variantCommandOptions.variantDeleteCommandOptions;
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         QueryOptions options = new QueryOptions();
-        options.put(VariantStorageOptions.RESUME.key(), cliOptions.genericVariantRemoveOptions.resume);
+        options.put(VariantStorageOptions.RESUME.key(), cliOptions.genericVariantDeleteOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
-        if (cliOptions.genericVariantRemoveOptions.files.size() == 1 && cliOptions.genericVariantRemoveOptions.files.get(0).equalsIgnoreCase(VariantQueryUtils.ALL)) {
+        if (cliOptions.genericVariantDeleteOptions.files.size() == 1 && cliOptions.genericVariantDeleteOptions.files.get(0).equalsIgnoreCase(VariantQueryUtils.ALL)) {
             variantManager.removeStudy(cliOptions.study, sessionId, options);
         } else {
-            List<File> removedFiles = variantManager.removeFile(cliOptions.genericVariantRemoveOptions.files, cliOptions.study, sessionId, options);
+            List<File> removedFiles = variantManager.removeFile(cliOptions.genericVariantDeleteOptions.files, cliOptions.study, sessionId, options);
         }
     }
 
@@ -304,8 +304,8 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put(LOAD, cliOptions.genericVariantIndexOptions.load);
         queryOptions.put(TRANSFORM, cliOptions.genericVariantIndexOptions.transform);
-        queryOptions.put(VariantStorageOptions.STDIN.key(), cliOptions.genericVariantIndexOptions.stdin);
-        queryOptions.put(VariantStorageOptions.STDOUT.key(), cliOptions.genericVariantIndexOptions.stdout);
+        queryOptions.put(VariantStorageOptions.STDIN.key(), cliOptions.stdin);
+        queryOptions.put(VariantStorageOptions.STDOUT.key(), cliOptions.stdout);
         queryOptions.put(VariantStorageOptions.MERGE_MODE.key(), cliOptions.genericVariantIndexOptions.merge);
 
         queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), cliOptions.genericVariantIndexOptions.calculateStats);
@@ -355,7 +355,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
     private void secondaryIndexRemove() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageEngineException,
             InstantiationException, IllegalAccessException, URISyntaxException, VariantSearchException {
-        VariantCommandOptions.VariantSecondaryIndexRemoveCommandOptions cliOptions = variantCommandOptions.variantSecondaryIndexRemoveCommandOptions;
+        VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions cliOptions = variantCommandOptions.variantSecondaryIndexDeleteCommandOptions;
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putAll(cliOptions.commonOptions.params);
@@ -383,18 +383,8 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
         options.putAll(cliOptions.commonOptions.params);
 
-        List<String> cohorts;
-        if (StringUtils.isNotBlank(cliOptions.cohortIds)) {
-            cohorts = Arrays.asList(cliOptions.cohortIds.split(","));
-        } else {
-            cohorts = Collections.emptyList();
-        }
-        List<String> samples;
-        if (StringUtils.isNotBlank(cliOptions.samples)) {
-            samples = Arrays.asList(cliOptions.samples.split(","));
-        } else {
-            samples = Collections.emptyList();
-        }
+        List<String> cohorts = cliOptions.cohortIds;
+        List<String> samples = cliOptions.samples;
         variantManager.stats(cliOptions.study, cohorts, samples, cliOptions.outdir, cliOptions.index, options, sessionId);
     }
 
@@ -447,12 +437,12 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         descriptor.checkValid();
 
 
-        variantManager.loadVariantScore(cliOptions.study, inputUri, cliOptions.scoreName,
+        variantManager.loadVariantScore(cliOptions.study.study, inputUri, cliOptions.scoreName,
                 cliOptions.cohort1, cliOptions.cohort2, descriptor, options, sessionId);
     }
 
     private void scoreRemove() throws CatalogException, StorageEngineException {
-        VariantCommandOptions.VariantScoreRemoveCommandOptions cliOptions = variantCommandOptions.variantScoreRemoveCommandOptions;
+        VariantCommandOptions.VariantScoreDeleteCommandOptions cliOptions = variantCommandOptions.variantScoreDeleteCommandOptions;
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
@@ -461,7 +451,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 .append(VariantStorageOptions.FORCE.key(), cliOptions.force);
         options.putAll(cliOptions.commonOptions.params);
 
-        variantManager.removeVariantScore(cliOptions.study, cliOptions.scoreName, options, sessionId);
+        variantManager.removeVariantScore(cliOptions.study.study, cliOptions.scoreName, options, sessionId);
     }
 
     private void sampleIndex()
@@ -594,28 +584,28 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
     private void fillGaps() throws StorageEngineException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException,
             AnalysisExecutionException, IllegalAccessException, InstantiationException, ClassNotFoundException {
 
-        VariantCommandOptions.FillGapsCommandOptions cliOptions = variantCommandOptions.fillGapsVariantCommandOptions;
+        VariantCommandOptions.AggregateFamilyCommandOptions cliOptions = variantCommandOptions.fillGapsVariantCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         ObjectMap options = new ObjectMap();
-//        options.put("skipReferenceVariants", cliOptions.genericFillGapsOptions.excludeHomRef);
-        options.put(VariantStorageOptions.RESUME.key(), cliOptions.genericFillGapsOptions.resume);
+//        options.put("skipReferenceVariants", cliOptions.genericAggregateFamilyOptions.excludeHomRef);
+        options.put(VariantStorageOptions.RESUME.key(), cliOptions.genericAggregateFamilyOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
 
-        variantManager.fillGaps(cliOptions.study, cliOptions.genericFillGapsOptions.samples, options, sessionId);
+        variantManager.fillGaps(cliOptions.study, cliOptions.genericAggregateFamilyOptions.samples, options, sessionId);
     }
 
     private void fillMissing() throws StorageEngineException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException,
             AnalysisExecutionException, IllegalAccessException, InstantiationException, ClassNotFoundException {
 
-        VariantCommandOptions.FillMissingCommandOptions cliOptions = variantCommandOptions.fillMissingCommandOptions;
+        VariantCommandOptions.AggregateCommandOptions cliOptions = variantCommandOptions.aggregateCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         ObjectMap options = new ObjectMap();
-        options.put(VariantStorageOptions.RESUME.key(), cliOptions.fillMissingCommandOptions.resume);
+        options.put(VariantStorageOptions.RESUME.key(), cliOptions.aggregateCommandOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
 
-        variantManager.fillMissing(cliOptions.study, cliOptions.fillMissingCommandOptions.overwrite, options, sessionId);
+        variantManager.fillMissing(cliOptions.study, cliOptions.aggregateCommandOptions.overwrite, options, sessionId);
     }
 
     private void samples() throws Exception {
@@ -723,13 +713,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         ObjectMap params = new ObjectMap();
         params.putAll(cliOptions.commonOptions.params);
 
-        List<String> sampleNames;
-        if (StringUtils.isNotBlank(cliOptions.samples)) {
-            sampleNames = Arrays.asList(cliOptions.samples.split(","));
-        } else {
-            sampleNames = null;
-        }
-
         Query query = null;
         if (StringUtils.isNotEmpty(cliOptions.samplesAnnotation)) {
             query = new Query();
@@ -743,7 +726,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 .setIndexResults(cliOptions.index)
                 .setFamily(cliOptions.family)
                 .setSamplesQuery(query)
-                .setSampleNames(sampleNames)
+                .setSampleNames(cliOptions.samples)
                 .start();
     }
 
@@ -760,12 +743,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             query.append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.samplesAnnotation);
         }
 
-        List<String> sampleNames;
-        if (StringUtils.isNotBlank(cliOptions.samples)) {
-            sampleNames = Arrays.asList(cliOptions.samples.split(","));
-        } else {
-            sampleNames = null;
-        }
+        List<String> sampleNames = cliOptions.samples;
 
         CohortVariantStatsAnalysis cohortVariantStatsAnalysis = new CohortVariantStatsAnalysis();
         cohortVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);

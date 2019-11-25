@@ -408,13 +408,13 @@ public class OpenCGAWSServer {
     }
 
 
-    protected void addParamIfNotNull(Map<String, String> params, String key, Object value) {
+    protected void addParamIfNotNull(Map<String, Object> params, String key, Object value) {
         if (key != null && value != null) {
             params.put(key, value.toString());
         }
     }
 
-    protected void addParamIfTrue(Map<String, String> params, String key, boolean value) {
+    protected void addParamIfTrue(Map<String, Object> params, String key, boolean value) {
         if (key != null && value) {
             params.put(key, Boolean.toString(value));
         }
@@ -718,7 +718,7 @@ public class OpenCGAWSServer {
 //            params.remove(JOB_DESCRIPTION);
 //            params.remove(JOB_TAGS);
 //            Map<String, String> paramsMap = bodyParams.toParams(params);
-            Map<String, String> paramsMap = bodyParams.toParams();
+            Map<String, Object> paramsMap = bodyParams.toParams();
             return catalogManager
                     .getJobManager()
                     .submit(study, command, subcommand, Enums.Priority.MEDIUM, paramsMap,
@@ -727,6 +727,18 @@ public class OpenCGAWSServer {
                             jobDescription,
                             jobTags, token);
         });
+
+    }
+
+    public Response submitJob(String study, String command, String subcommand, Map<String, Object> paramsMap,
+                              String jobId, String jobName, String jobDescription, List<String> jobTags) {
+        return run(() -> catalogManager
+                .getJobManager()
+                .submit(study, command, subcommand, Enums.Priority.MEDIUM, paramsMap,
+                        jobId,
+                        jobName,
+                        jobDescription,
+                        jobTags, token));
 
     }
 

@@ -194,7 +194,7 @@
                         </program>
                         <program>
                             <id>opencga-internal.sh</id>
-                            <mainClass>org.opencb.opencga.app.cli.analysis.AnalysisMain</mainClass>
+                            <mainClass>org.opencb.opencga.app.cli.internal.InternalMain</mainClass>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
@@ -262,7 +262,6 @@
                                     <arg value="${project.basedir}/target/conf"/>
                                     <arg value="${app.dir}/analysis"/>
                                     <arg value="${app.dir}/cloud"/>
-                                    <arg value="${app.dir}/examples"/>
                                     <arg value="${app.dir}/scripts"/>
                                     <arg value="${app.dir}/tools"/>
                                     <!--<arg value="${project.basedir}/../opencga-storage/build/bin"/>-->

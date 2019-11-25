@@ -22,6 +22,8 @@ import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.analysis.AlignmentCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.analysis.VariantCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.*;
+import org.opencb.opencga.app.cli.main.executors.operations.OperationsCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.OperationsCommandOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,6 +137,9 @@ public class OpencgaMain {
                             break;
                         case "variant":
                             commandExecutor = new VariantCommandExecutor(cliOptionsParser.getVariantCommands());
+                            break;
+                        case OperationsCommandOptions.OPERATIONS_COMMAND:
+                            commandExecutor = new OperationsCommandExecutor(cliOptionsParser.getOperationsCommands());
                             break;
                         default:
                             System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");

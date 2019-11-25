@@ -462,7 +462,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (results > 0) {
             return collection.remove(lte(DocumentToTrashVariantConverter.TIMESTAMP_FIELD, timeStamp), null).getNumDeleted();
         } else {
-            long numElements = collection.count().first();
+            long numElements = collection.count().getNumMatches();
             db.dropCollection(configuration.getString(COLLECTION_TRASH.key(), COLLECTION_TRASH.defaultValue()));
             return numElements;
         }
@@ -590,7 +590,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public DataResult<Long> count(Query query) {
         Document mongoQuery = queryParser.parseQuery(query);
-        return variantsCollection.count(mongoQuery);
+        DataResult<Long> count = variantsCollection.count(mongoQuery);
+        count.setResults(Collections.singletonList(count.getNumMatches()));
+        return count;
     }
 
     @Override
