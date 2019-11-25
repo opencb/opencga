@@ -6,7 +6,7 @@ pipeline {
                        timeout(time: 5, unit: 'MINUTES')
                    }
                    steps {
-                       sh 'cd opencga-app/app/scripts/azure/arm && npx --ignore-existing armval "**/azuredeploy.json"'
+                       sh 'cd opencga-app/app/cloud/azure/arm && npx --ignore-existing armval "**/azuredeploy.json"'
                    }
                }
 
@@ -15,7 +15,7 @@ pipeline {
                        timeout(time: 5, unit: 'MINUTES')
                    }
                    steps {
-                       sh 'cd opencga-app/app/scripts/azure/arm/scripts && docker build .'
+                       sh 'cd opencga-app/app/cloud/azure/arm/scripts && docker build .'
                    }
                }
 
@@ -69,7 +69,7 @@ pipeline {
                 timeout(time: 25, unit: 'MINUTES')
             }
             steps {
-                sh 'make -f opencga-app/app/scripts/docker/Makefile DOCKER_ORG="opencb"'
+                sh 'make -f opencga-app/app/cloud/docker/Makefile DOCKER_ORG="opencb"'
             }
         }
 
@@ -105,8 +105,8 @@ pipeline {
                 timeout(time: 25, unit: 'MINUTES')
             }
             steps {
-                sh 'docker build -t opencga-next -f opencga-app/app/scripts/docker/opencga-next/Dockerfile .'
-                sh 'docker build -t opencga-demo -f opencga-app/app/scripts/docker/opencga-demo/Dockerfile .'
+                sh 'docker build -t opencga-next -f opencga-app/app/cloud/docker/opencga-next/Dockerfile .'
+                sh 'docker build -t opencga-demo -f opencga-app/app/cloud/docker/opencga-demo/Dockerfile .'
             }
         }
 
