@@ -20,7 +20,7 @@ RUN git clone "https://github.com/opencb/iva.git" && \
 # Mount volume to copy config into
 VOLUME /opt/volume
 
-COPY opencga-app/app/scripts/docker/opencga-init/ /tmp/
+COPY opencga-app/app/cloud/docker/opencga-init/ /tmp/
 # Install python requirements
 RUN pip3 install -r /tmp/requirements.txt
 RUN chmod +x /tmp/setup.sh

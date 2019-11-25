@@ -79,11 +79,11 @@ public interface FileMetadataDBAdaptor extends AutoCloseable {
 
     default void removeIndexedFiles(int studyId, Collection<Integer> fileIds) {};
 
-    default DataResult<Long> count() {
+    default DataResult count() {
         return count(new Query());
     }
 
-    DataResult<Long> count(Query query);
+    DataResult count(Query query);
 
     default void updateVariantFileMetadata(Number studyId, VariantFileMetadata metadata) throws StorageEngineException {
         updateVariantFileMetadata(studyId.toString(), metadata);

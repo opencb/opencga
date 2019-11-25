@@ -98,6 +98,16 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
     public static final QueryParam PANEL =
             QueryParam.create("panel", PANEL_DESC, QueryParam.Type.TEXT);
 
+    public static final List<QueryParam> VARIANT_CATALOG_QUERY_PARAMS = Arrays.asList(
+            SAMPLE_ANNOTATION,
+            PROJECT,
+            FAMILY,
+            FAMILY_MEMBERS,
+            FAMILY_DISORDER,
+            FAMILY_PROBAND,
+            FAMILY_SEGREGATION,
+            PANEL);
+
     private final StudyFilterValidator studyFilterValidator;
     private final FileFilterValidator fileFilterValidator;
     private final SampleFilterValidator sampleFilterValidator;

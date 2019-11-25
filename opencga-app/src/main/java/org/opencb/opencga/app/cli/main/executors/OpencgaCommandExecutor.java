@@ -86,13 +86,13 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
 //            CliSession cliSession = loadCliSessionFile();
             logger.debug("sessionFile = " + cliSession);
-            if (StringUtils.isNotEmpty(options.sessionId)) {
+            if (StringUtils.isNotEmpty(options.token)) {
                 // Ignore session file. Overwrite with command line information (just sessionId)
-                cliSession = new CliSession(clientConfiguration.getRest().getHost(), null, options.sessionId);
-                sessionId = options.sessionId;
+                cliSession = new CliSession(clientConfiguration.getRest().getHost(), null, options.token);
+                sessionId = options.token;
                 userId = null;
 
-                openCGAClient = new OpenCGAClient(options.sessionId, clientConfiguration);
+                openCGAClient = new OpenCGAClient(options.token, clientConfiguration);
             } else if (cliSession != null) {
                 // 'logout' field is only null or empty while no logout is executed
                 if (StringUtils.isNotEmpty(cliSession.getToken())) {
@@ -100,8 +100,8 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                     if (skipDuration) {
                         openCGAClient = new OpenCGAClient(cliSession.getToken(), clientConfiguration);
                         openCGAClient.setUserId(cliSession.getUser());
-                        if (options.sessionId == null) {
-                            options.sessionId = cliSession.getToken();
+                        if (options.token == null) {
+                            options.token = cliSession.getToken();
                         }
                     } else {
                         // Get the expiration of the token stored in the session file
@@ -125,8 +125,8 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                                 updateCliSessionFile();
                             }
 
-                            if (options.sessionId == null) {
-                                options.sessionId = cliSession.getToken();
+                            if (options.token == null) {
+                                options.token = cliSession.getToken();
                             }
                         } else {
                             String message = "ERROR: Your session has expired. Please, either login again or logout to work as "

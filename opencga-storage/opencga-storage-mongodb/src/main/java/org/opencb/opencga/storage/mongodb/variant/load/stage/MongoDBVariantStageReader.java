@@ -78,7 +78,7 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
     }
 
     public long countAproxNumVariants() {
-        return stageCollection.count().first();
+        return stageCollection.count().getNumMatches();
     }
 
     @Override

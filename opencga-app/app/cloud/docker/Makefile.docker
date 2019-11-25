@@ -46,7 +46,7 @@ DOCKER_USERNAME ?= <not set>
 DOCKER_ORG ?= $(DOCKER_USERNAME)
 TAG ?= $(shell git rev-parse --verify HEAD)
 PUBLISH ?= false
-PATH_PREFIX = opencga-app/app/scripts/docker/$(APP_NAME)
+PATH_PREFIX = opencga-app/app/cloud/docker/$(APP_NAME)
 BRANCH = $(shell git branch | grep \* | cut -d ' ' -f2)
 COMMIT = $(shell git rev-parse --verify HEAD)
 

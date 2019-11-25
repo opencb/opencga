@@ -85,30 +85,30 @@ public class OperationsWSService extends OpenCGAWSServer {
             this.indexSearch = indexSearch;
         }
 
-        protected String study;
-        protected String file;
-        protected boolean resume;
-        protected String outdir;
+        public String study;
+        public String file;
+        public boolean resume;
+        public String outdir;
 
-        protected boolean transform;
-        protected boolean gvcf;
+        public boolean transform;
+        public boolean gvcf;
 
-        protected boolean load;
-        protected boolean loadSplitData;
-        protected boolean skipPostLoadCheck;
-        protected boolean excludeGenotype;
-        protected String includeExtraFields = VariantQueryUtils.ALL;
-        protected VariantStorageEngine.MergeMode merge = VariantStorageOptions.MERGE_MODE.defaultValue();
+        public boolean load;
+        public boolean loadSplitData;
+        public boolean skipPostLoadCheck;
+        public boolean excludeGenotype;
+        public String includeExtraFields = VariantQueryUtils.ALL;
+        public VariantStorageEngine.MergeMode merge = VariantStorageOptions.MERGE_MODE.defaultValue();
 
-        protected boolean calculateStats;
-        protected Aggregation aggregated = Aggregation.NONE;
-        protected String aggregationMappingFile;
+        public boolean calculateStats;
+        public Aggregation aggregated = Aggregation.NONE;
+        public String aggregationMappingFile;
 
-        protected boolean annotate;
-        protected VariantAnnotatorFactory.AnnotationEngine annotator;
-        protected boolean overwriteAnnotations;
+        public boolean annotate;
+        public VariantAnnotatorFactory.AnnotationEngine annotator;
+        public boolean overwriteAnnotations;
 
-        protected boolean indexSearch;
+        public boolean indexSearch;
     }
 
     @POST
@@ -143,7 +143,6 @@ public class OperationsWSService extends OpenCGAWSServer {
         return submitTask("variant", "delete", paramsMap, taskId, taskName, taskDescription, taskTags);
     }
 
-
     public static class VariantSecondaryIndexParams extends RestBodyParams {
         public VariantSecondaryIndexParams() {
         }
@@ -157,11 +156,11 @@ public class OperationsWSService extends OpenCGAWSServer {
             this.overwrite = overwrite;
         }
 
-        protected String study;
-        protected String project;
-        protected String region;
-        protected String sample;
-        protected boolean overwrite;
+        public String study;
+        public String project;
+        public String region;
+        public String sample;
+        public boolean overwrite;
     }
 
     @POST
@@ -211,14 +210,14 @@ public class OperationsWSService extends OpenCGAWSServer {
             this.customName = customName;
         }
 
-        protected String study;
-        protected String outdir;
-        protected VariantAnnotatorFactory.AnnotationEngine annotator;
-        protected boolean overwriteAnnotations;
-        protected String region;
-        protected boolean create;
-        protected String load;
-        protected String customName;
+        public String study;
+        public String outdir;
+        public VariantAnnotatorFactory.AnnotationEngine annotator;
+        public boolean overwriteAnnotations;
+        public String region;
+        public boolean create;
+        public String load;
+        public String customName;
     }
 
     @POST
@@ -260,8 +259,8 @@ public class OperationsWSService extends OpenCGAWSServer {
             this.annotationId = annotationId;
         }
 
-        protected String project;
-        protected String annotationId;
+        public String project;
+        public String annotationId;
     }
 
     @POST
@@ -290,12 +289,12 @@ public class OperationsWSService extends OpenCGAWSServer {
             this.resume = resume;
         }
 
-        protected String study;
-        protected String cohort1;
-        protected String cohort2;
-        protected String input;
-        protected String inputColumns;
-        protected boolean resume;
+        public String study;
+        public String cohort1;
+        public String cohort2;
+        public String input;
+        public String inputColumns;
+        public boolean resume;
     }
 
     @POST
@@ -340,8 +339,8 @@ public class OperationsWSService extends OpenCGAWSServer {
             this.sample = sample;
         }
 
-        protected String study;
-        protected List<String> sample;
+        public String study;
+        public List<String> sample;
     }
 
     @POST
@@ -366,9 +365,9 @@ public class OperationsWSService extends OpenCGAWSServer {
             this.overwrite = overwrite;
         }
 
-        protected String study;
-        protected List<String> family;
-        protected boolean overwrite;
+        public String study;
+        public List<String> family;
+        public boolean overwrite;
     }
 
     @POST
@@ -393,9 +392,9 @@ public class OperationsWSService extends OpenCGAWSServer {
             this.samples = samples;
         }
 
-        protected String study;
-        protected boolean resume;
-        protected List<String> samples;
+        public String study;
+        public boolean resume;
+        public List<String> samples;
     }
 
     @POST
@@ -422,10 +421,10 @@ public class OperationsWSService extends OpenCGAWSServer {
             this.resume = resume;
         }
 
-        protected String study;
-        protected String region;
-        protected boolean overwrite;
-        protected boolean resume;
+        public String study;
+        public String region;
+        public boolean overwrite;
+        public boolean resume;
     }
 
     @POST

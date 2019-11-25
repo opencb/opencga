@@ -430,7 +430,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 Map<String, String> dynamicParams = (Map<String, String>) entry.getValue();
                 for (Map.Entry<String, String> dynamicEntry : dynamicParams.entrySet()) {
                     cliBuilder
-                            .append(" ").append("-D" + dynamicEntry.getKey())
+                            .append(" ").append("-D").append(dynamicEntry.getKey())
                             .append("=").append(dynamicEntry.getValue());
                 }
             } else {
