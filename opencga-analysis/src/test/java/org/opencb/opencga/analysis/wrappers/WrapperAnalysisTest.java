@@ -45,17 +45,53 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
 
     @Test
     public void plinkFisher() throws AnalysisException, IOException {
+        Path inDir1 = Paths.get(opencga.createTmpOutdir("_plink"));
+
         outDir = Paths.get(opencga.createTmpOutdir("_plink"));
 
-        InputStream testMap = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.map");
-        Files.copy(testMap, outDir.resolve("test.map"), StandardCopyOption.REPLACE_EXISTING);
-        InputStream testPed = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.ped");
-        Files.copy(testPed, outDir.resolve("test.ped"), StandardCopyOption.REPLACE_EXISTING);
+        InputStream testMap = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.tped");
+        Files.copy(testMap, inDir1.resolve("test.tped"), StandardCopyOption.REPLACE_EXISTING);
+        InputStream testPed = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.tfam");
+        Files.copy(testPed, inDir1.resolve("test.tmap"), StandardCopyOption.REPLACE_EXISTING);
 
-        System.out.println("======> out dir = " + outDir.toAbsolutePath());
+        System.out.println("======> in dir 1 = " + inDir1.toAbsolutePath());
+        System.out.println("======> out dir  = " + outDir.toAbsolutePath());
 
         ObjectMap plinkParams = new ObjectMap();
-        plinkParams.put("file", "test");
+        plinkParams.put(PlinkWrapperAnalysis.TPED_FILE_PARAM, inDir1.resolve("test.tped"));
+        plinkParams.put(PlinkWrapperAnalysis.TFAM_FILE_PARAM, inDir1.resolve("test.tfam"));
+        plinkParams.put("fisher", "");
+        plinkParams.put("out", "plink-output");
+
+        PlinkWrapperAnalysis plink = new PlinkWrapperAnalysis();
+        plink.setUp(opencga.getOpencgaHome().toString(), plinkParams, outDir, clinicalTest.token);
+
+        AnalysisResult result = plink.start();
+        System.out.println(result);
+    }
+
+    @Test
+    public void plinkFisherCov() throws AnalysisException, IOException {
+        Path inDir1 = Paths.get(opencga.createTmpOutdir("_plink"));
+        Path inDir2 = Paths.get(opencga.createTmpOutdir("_plink"));
+
+        outDir = Paths.get(opencga.createTmpOutdir("_plink"));
+
+        InputStream testMap = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.tped");
+        Files.copy(testMap, inDir1.resolve("test.tped"), StandardCopyOption.REPLACE_EXISTING);
+        InputStream testPed = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.tfam");
+        Files.copy(testPed, inDir1.resolve("test.tmap"), StandardCopyOption.REPLACE_EXISTING);
+        InputStream testCov = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.covar");
+        Files.copy(testPed, inDir2.resolve("test.covar"), StandardCopyOption.REPLACE_EXISTING);
+
+        System.out.println("======> in dir 1 = " + inDir1.toAbsolutePath());
+        System.out.println("======> in dir 2 = " + inDir2.toAbsolutePath());
+        System.out.println("======> out dir  = " + outDir.toAbsolutePath());
+
+        ObjectMap plinkParams = new ObjectMap();
+        plinkParams.put(PlinkWrapperAnalysis.TPED_FILE_PARAM, inDir1.resolve("test.tped"));
+        plinkParams.put(PlinkWrapperAnalysis.TFAM_FILE_PARAM, inDir1.resolve("test.tfam"));
+        plinkParams.put(PlinkWrapperAnalysis.COVAR_FILE_PARAM, inDir2.resolve("test.covar"));
         plinkParams.put("fisher", "");
         plinkParams.put("out", "plink-output");
 
@@ -68,18 +104,24 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
 
     @Test
     public void rvtestsWaldAndScore() throws AnalysisException, IOException {
+        Path inDir1 = Paths.get(opencga.createTmpOutdir("_rvtests"));
+        Path inDir2 = Paths.get(opencga.createTmpOutdir("_rvtests"));
+
         outDir = Paths.get(opencga.createTmpOutdir("_rvtests"));
 
-        InputStream testMap = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("example.vcf");
-        Files.copy(testMap, outDir.resolve("example.vcf"), StandardCopyOption.REPLACE_EXISTING);
-        InputStream testPed = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("pheno");
-        Files.copy(testPed, outDir.resolve("pheno"), StandardCopyOption.REPLACE_EXISTING);
+        InputStream vcfIs = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("example.vcf");
+        Files.copy(vcfIs, inDir1.resolve("example.vcf"), StandardCopyOption.REPLACE_EXISTING);
+//        InputStream phenoIs = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("pheno");
+//        Files.copy(phenoIs, inDir2.resolve("pheno"), StandardCopyOption.REPLACE_EXISTING);
 
+        System.out.println("======> in dir 1 = " + inDir1.toAbsolutePath());
+//        System.out.println("======> in dir 2 = " + inDir2.toAbsolutePath());
         System.out.println("======> out dir = " + outDir.toAbsolutePath());
 
         ObjectMap rvtestsParams = new ObjectMap();
-        rvtestsParams.put("inVcf", "example.vcf");
-        rvtestsParams.put("pheno", "pheno");
+        rvtestsParams.put(RvtestsWrapperAnalysis.COMMAND_PARAM, "rvtest");
+        rvtestsParams.put(RvtestsWrapperAnalysis.VCF_FILE_PARAM, "example.vcf");
+//        rvtestsParams.put(RvtestsWrapperAnalysis.PHENOTYPE_FILE_PARAM, "pheno");
         rvtestsParams.put("single", "wald,score");
         rvtestsParams.put("out", "rvtests-output");
 

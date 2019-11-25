@@ -22,6 +22,10 @@ public class PlinkWrapperAnalysis extends OpenCgaWrapperAnalysis {
     public final static String PLINK_DOCKER_IMAGE = "gelog/plink";
     public final static String OUT_NAME = "plink";
 
+    public final static String TPED_FILE_PARAM = "tpedFile";
+    public final static String TFAM_FILE_PARAM = "tfamFile";
+    public final static String COVAR_FILE_PARAM = "covarFile";
+
     protected void check() throws Exception {
         super.check();
     }
@@ -72,20 +76,23 @@ public class PlinkWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     @Override
     public String getCommandLine() {
-        StringBuilder sb = new StringBuilder("docker run ").append("--mount type=bind,source=\"").append(getOutDir().toAbsolutePath())
-                .append("\",target=\"").append(DOCKER_INPUT_PATH).append("\" ").append("--mount type=bind,source=\"")
-                .append(getOutDir().toAbsolutePath()).append("\",target=\"").append(DOCKER_OUTPUT_PATH).append("\" ")
-                .append(getDockerImageName());
+        StringBuilder sb = new StringBuilder("docker run ");
+        sb.append(getMountParameters());
+        sb.append(getDockerImageName());
         if (params.containsKey(DOCKER_IMAGE_VERSION_PARAM)) {
             sb.append(":").append(params.getString(DOCKER_IMAGE_VERSION_PARAM));
         }
 
         for (String key : params.keySet()) {
-            if (!key.equals(DOCKER_IMAGE_VERSION_PARAM) && !key.equals("noweb")) {
+            if (checkParam(key)) {
                 String value = params.getString(key);
-                if (key.equals("file") || key.equals("bfile")) {
-                    sb.append(" --").append(key).append(" ").append(DOCKER_INPUT_PATH).append("/").append(value);
+                if (key.equals(COVAR_FILE_PARAM) && StringUtils.isNotEmpty(value)) {
+                    String[] split = value.split("/");
+                    value = split[split.length - 1];
+                    sb.append(" --cov ").append(" ").append(DOCKER_INPUT_PATH).append("/").append(value);
                 } else if (key.equals("out")) {
+                    String[] split = value.split("/");
+                    value = split[split.length - 1];
                     sb.append(" --out ").append(" ").append(DOCKER_OUTPUT_PATH).append("/").append(value);
                 } else {
                     sb.append(" --").append(key);
@@ -98,7 +105,38 @@ public class PlinkWrapperAnalysis extends OpenCgaWrapperAnalysis {
         if (!params.containsKey("out")) {
             sb.append(" --out ").append(DOCKER_OUTPUT_PATH).append("/").append(OUT_NAME);
         }
+        // Input file management
+        String tpedFilename = params.getString(TPED_FILE_PARAM);
+        String prefix = new File(tpedFilename).getName().split("\\.")[0];
+        sb.append(" --tfile ").append(DOCKER_INPUT_PATH).append("/").append(prefix);
 
         return sb.toString();
+    }
+
+    private String getMountParameters() {
+        Set<String> sources = new HashSet<>();
+        String[] names = {TPED_FILE_PARAM, TFAM_FILE_PARAM, COVAR_FILE_PARAM};
+        for (String name : names) {
+            if (params.containsKey(name) && StringUtils.isNotEmpty(params.getString(name))) {
+                sources.add(new File(params.getString(name)).getParentFile().getAbsolutePath());
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sources.forEach(s
+                -> sb.append("--mount type=bind,source=\"").append(s).append("\",target=\"").append(DOCKER_INPUT_PATH).append("\" "));
+        sb.append("--mount type=bind,source=\"")
+                .append(getOutDir().toAbsolutePath()).append("\",target=\"").append(DOCKER_OUTPUT_PATH).append("\" ");
+
+        return sb.toString();
+    }
+
+    private boolean checkParam(String key) {
+        if (key.equals(DOCKER_IMAGE_VERSION_PARAM)
+                || key.equals("noweb") || key.equals("file") || key.equals("bfile")
+                || key.equals(TFAM_FILE_PARAM) || key.equals(TPED_FILE_PARAM)) {
+            return false;
+        }
+        return true;
     }
 }

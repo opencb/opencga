@@ -123,7 +123,7 @@ public class VariantExporterTest extends VariantStorageBaseTest implements Dummy
 
     @Test
     public void exportTpedTest() throws Exception {
-        URI output = newOutputUri().resolve("variant.tped");
+        URI output = newOutputUri().resolve("variant" + VariantExporter.TPED_FILE_EXTENSION);
         variantStorageEngine.exportData(output, VariantOutputFormat.TPED, null, new Query(), new QueryOptions());
 
         System.out.println("output = " + output);
