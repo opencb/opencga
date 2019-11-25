@@ -32,7 +32,6 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.models.update.JobUpdateParams;
-import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.analysis.result.AnalysisResult;
 import org.opencb.opencga.core.analysis.result.AnalysisResultManager;
 import org.opencb.opencga.core.analysis.result.Status;
@@ -63,7 +62,6 @@ import java.util.stream.Stream;
 public class ExecutionDaemon extends MonitorParentDaemon {
 
     public static final String OUTDIR_PARAM = "outdir";
-    public static final String FILE_PARAM_SUFFIX = "file";
     private String internalCli;
     private JobManager jobManager;
     private FileManager fileManager;
@@ -290,24 +288,18 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
 
         Path outDirPath = Paths.get(updateParams.getOutDir().getUri());
+        params.put(OUTDIR_PARAM, outDirPath.toAbsolutePath().toString());
 
         // Define where the stdout and stderr will be stored
         Path stderr = outDirPath.resolve(getErrorLogFileName(job));
         Path stdout = outDirPath.resolve(getLogFileName(job));
 
-        List<File> inputFiles = new ArrayList<>();
-        String error = processJobParams(study, params, userToken, outDirPath, inputFiles);
-        if (error != null) {
-            return abortJob(job, error);
-        }
-
         // Create cli
         String commandLine = buildCli(internalCli, command, subcommand, params);
-        String authenticatedCommandLine = commandLine + " --session-id " + userToken;
-        String shadedCommandLine = commandLine + " --session-id xxxxxxxxxxxxxxxxxxxxx";
+        String authenticatedCommandLine = commandLine + " --token " + userToken;
+        String shadedCommandLine = commandLine + " --token xxxxxxxxxxxxxxxxxxxxx";
 
         updateParams.setCommandLine(shadedCommandLine);
-        updateParams.setInput(inputFiles);
 
         logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.PENDING, Job.JobStatus.QUEUED);
         updateParams.setStatus(new Job.JobStatus(Job.JobStatus.QUEUED));
@@ -428,34 +420,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return outDirFile;
     }
 
-    private String processJobParams(String study, Map<String, Object> params, String userToken, Path outDirPath, List<File> inputFiles) {
-        for (Map.Entry<String, Object> entry : params.entrySet()) {
-            if (entry.getKey().toLowerCase().endsWith(FILE_PARAM_SUFFIX)) {
-                // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in catalog
-                File file;
-                try {
-                    file = fileManager.get(study, (String) entry.getValue(), FileManager.INCLUDE_FILE_URI_PATH, userToken)
-                            .first();
-                } catch (CatalogException e) {
-                    String error = "Cannot find file '" + entry.getValue() + "' from variable '" + entry.getKey() + "'. " + e.getMessage();
-                    logger.error(error, e);
-                    return error;
-                }
-                inputFiles.add(file);
-            }
-        }
-
-        params.put(OUTDIR_PARAM, outDirPath.toAbsolutePath().toString());
-        return null;
-    }
-
     public static String buildCli(String internalCli, String command, String subcommand, Map<String, Object> params) {
         StringBuilder cliBuilder = new StringBuilder()
                 .append(internalCli).append(" ")
                 .append(command).append(" ")
                 .append(subcommand);
         for (Map.Entry<String, Object> entry : params.entrySet()) {
-            if (entry.getKey().equals(Constants.DYNAMIC_FIELDS)) {
+            if (entry.getValue() instanceof Map) {
                 Map<String, String> dynamicParams = (Map<String, String>) entry.getValue();
                 for (Map.Entry<String, String> dynamicEntry : dynamicParams.entrySet()) {
                     cliBuilder
