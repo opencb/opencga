@@ -87,7 +87,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         params.put("transform", true);
         // TODO: Calculate coverage and stats
 
-        String sessionId = cliOptions.commonOptions.sessionId;
+        String sessionId = cliOptions.commonOptions.token;
 
         // Initialize monitor
         ExecutorMonitor monitor = new ExecutorMonitor();
@@ -114,7 +114,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
     private void query() throws InterruptedException, CatalogException, IOException {
         ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull("sid", alignmentCommandOptions.queryAlignmentCommandOptions.commonOptions.sessionId);
+        objectMap.putIfNotNull("sid", alignmentCommandOptions.queryAlignmentCommandOptions.commonOptions.token);
         objectMap.putIfNotNull("study", alignmentCommandOptions.queryAlignmentCommandOptions.study);
         objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), alignmentCommandOptions.queryAlignmentCommandOptions.region);
         objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(),
@@ -140,7 +140,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
     private void stats() throws CatalogException, IOException {
         ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.sessionId);
+        objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.token);
         objectMap.putIfNotNull("study", alignmentCommandOptions.statsAlignmentCommandOptions.study);
         objectMap.putIfNotNull("region", alignmentCommandOptions.statsAlignmentCommandOptions.region);
         objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.statsAlignmentCommandOptions.minMappingQuality);
@@ -159,7 +159,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
     private void coverage() throws CatalogException, IOException {
         ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull("sid", alignmentCommandOptions.coverageAlignmentCommandOptions.commonOptions.sessionId);
+        objectMap.putIfNotNull("sid", alignmentCommandOptions.coverageAlignmentCommandOptions.commonOptions.token);
         objectMap.putIfNotNull("study", alignmentCommandOptions.coverageAlignmentCommandOptions.study);
         objectMap.putIfNotNull("region", alignmentCommandOptions.coverageAlignmentCommandOptions.region);
         objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.coverageAlignmentCommandOptions.minMappingQuality);

@@ -75,8 +75,13 @@ public class GeneralCliOptions {
         @Parameter(names = {"-v", "--verbose"}, description = "Increase the verbosity of logs")
         public boolean verbose = false;
 
-        @Parameter(names = {"-S", "--sid", "--session-id"}, description = "Token session id, NOTE: parameter --sid will be delete soon", arity = 1)
-        public String sessionId;
+        @Parameter(names = {"-S", "--sid", "--session-id"}, description = "Token session id. Deprecated, use --token instead", arity = 1)
+        public void setToken(String token) {
+            this.token = token;
+        }
+
+        @Parameter(names = {"--token"}, description = "Token session id", arity = 1)
+        public String token;
 
         @Parameter(names = {"-M", "--metadata"}, description = "Include metadata information", required = false, arity = 0)
         public boolean metadata = false;

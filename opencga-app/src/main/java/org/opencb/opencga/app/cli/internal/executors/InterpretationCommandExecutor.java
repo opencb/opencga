@@ -72,7 +72,7 @@ public class InterpretationCommandExecutor extends InternalCommandExecutor {
         InterpretationCommandOptions.TeamCommandOptions options = interpretationCommandOptions.teamCommandOptions;
 
         // Prepare analysis parameters and config
-        String token = options.commonOptions.sessionId;
+        String token = options.commonOptions.token;
 
         String studyId = options.studyId;
         String clinicalAnalysisId = options.clinicalAnalysisId;
@@ -112,7 +112,7 @@ public class InterpretationCommandExecutor extends InternalCommandExecutor {
         InterpretationCommandOptions.TieringCommandOptions options = interpretationCommandOptions.tieringCommandOptions;
 
         // Prepare analysis parameters and config
-        String token = options.commonOptions.sessionId;
+        String token = options.commonOptions.token;
 
         String studyId = options.studyId;
         String clinicalAnalysisId = options.clinicalAnalysisId;
@@ -147,7 +147,7 @@ public class InterpretationCommandExecutor extends InternalCommandExecutor {
         InterpretationCommandOptions.CancerTieringCommandOptions options = interpretationCommandOptions.cancerTieringCommandOptions;
 
         // Prepare analysis parameters and config
-        String token = options.commonOptions.sessionId;
+        String token = options.commonOptions.token;
 
         String studyId = options.studyId;
         String clinicalAnalysisId = options.clinicalAnalysisId;
@@ -177,7 +177,7 @@ public class InterpretationCommandExecutor extends InternalCommandExecutor {
         InterpretationCommandOptions.CustomCommandOptions options = interpretationCommandOptions.customCommandOptions;
 
         // Prepare analysis parameters and config
-        String token = options.commonOptions.sessionId;
+        String token = options.commonOptions.token;
 
         String studyId = options.studyId;
         String clinicalAnalysisId = options.clinicalAnalysisId;

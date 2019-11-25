@@ -125,7 +125,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
                 System.out.println("You have been logged in correctly. This is your new token " + sessionId);
             }
         } else {
-            String sessionId = usersCommandOptions.commonCommandOptions.sessionId;
+            String sessionId = usersCommandOptions.commonCommandOptions.token;
             String errorMsg = "Missing password. ";
             if (StringUtils.isNotEmpty(sessionId)) {
                 errorMsg += "Active token detected " + sessionId;
