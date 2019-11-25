@@ -35,8 +35,8 @@ import org.opencb.opencga.analysis.old.execution.plugins.hist.VariantHistogramAn
 import org.opencb.opencga.analysis.old.execution.plugins.ibs.IbsAnalysis;
 import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.VariantStorageManager;
-import org.opencb.opencga.analysis.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
@@ -73,12 +73,12 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
@@ -212,7 +212,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
 
         VariantCommandOptions.VariantQueryCommandOptions queryCliOptions = variantCommandOptions.queryVariantCommandOptions;
 
-        queryCliOptions.commonOptions.outputFormat = exportCliOptions.commonOptions.outputFormat.toLowerCase().replace("tsv", "stats");
+        queryCliOptions.outputFormat = exportCliOptions.commonOptions.outputFormat.toLowerCase().replace("tsv", "stats");
         queryCliOptions.project = exportCliOptions.project;
         queryCliOptions.study = exportCliOptions.study;
         queryCliOptions.genericVariantQueryOptions.includeStudy = exportCliOptions.study;
@@ -221,7 +221,8 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         queryCliOptions.numericOptions.skip = exportCliOptions.numericOptions.skip;
         queryCliOptions.genericVariantQueryOptions.region = exportCliOptions.region;
         queryCliOptions.genericVariantQueryOptions.regionFile = exportCliOptions.regionFile;
-        queryCliOptions.output = exportCliOptions.output;
+        queryCliOptions.outdir = exportCliOptions.outdir;
+        queryCliOptions.outputFileName = exportCliOptions.outputFileName;
         queryCliOptions.genericVariantQueryOptions.gene = exportCliOptions.gene;
         queryCliOptions.numericOptions.count = exportCliOptions.numericOptions.count;
         queryCliOptions.genericVariantQueryOptions.includeSample = VariantQueryUtils.NONE;
@@ -268,8 +269,9 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                 queryOptions.add("annotations", cliOptions.genericVariantQueryOptions.annotations);
             }
             VariantWriterFactory.VariantOutputFormat outputFormat = VariantWriterFactory
-                    .toOutputFormat(cliOptions.commonOptions.outputFormat, cliOptions.output);
-            variantManager.exportData(cliOptions.output, outputFormat, cliOptions.variantsFile, query, queryOptions, sessionId);
+                    .toOutputFormat(cliOptions.outputFormat, cliOptions.outputFileName);
+            String outputFile = cliOptions.outdir + "/" + (cliOptions.outputFileName == null ? "" : cliOptions.outputFileName);
+            variantManager.exportData(outputFile, outputFormat, cliOptions.variantsFile, query, queryOptions, sessionId);
         }
     }
 
@@ -726,7 +728,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                 .setIndexResults(cliOptions.index)
                 .setFamily(cliOptions.family)
                 .setSamplesQuery(query)
-                .setSampleNames(cliOptions.samples)
+                .setSampleNames(cliOptions.sample)
                 .start();
     }
 

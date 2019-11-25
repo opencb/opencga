@@ -10,7 +10,7 @@ import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
@@ -24,6 +24,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 
+import java.lang.reflect.Field;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -392,6 +393,23 @@ public class VariantCatalogQueryUtilsTest {
 //        System.out.println("trios = " + trios);
         assertEquals(Arrays.asList(Arrays.asList("sample1", "sample2", "sample3"), Arrays.asList("sample1", "sample2", "sample4")), trios);
 
+    }
+
+    @Test
+    public void testQueryParams() throws IllegalAccessException {
+        Class<VariantCatalogQueryUtils> clazz = VariantCatalogQueryUtils.class;
+        Field[] declaredFields = clazz.getDeclaredFields();
+        Set<QueryParam> params = new HashSet<>();
+        for (Field field : declaredFields) {
+            if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
+                if (field.getAnnotation(Deprecated.class)==null) {
+                    if (QueryParam.class.isAssignableFrom(field.getType())) {
+                        params.add((QueryParam) field.get(null));
+                    }
+                }
+            }
+        }
+        assertEquals(new HashSet<>(VariantCatalogQueryUtils.VARIANT_CATALOG_QUERY_PARAMS), params);
     }
 
     protected String parseValue(VariantQueryParam param, String value) throws CatalogException {

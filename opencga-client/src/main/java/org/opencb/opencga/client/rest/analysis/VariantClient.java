@@ -22,10 +22,7 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResponse;
-import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.models.Job;
@@ -70,6 +67,14 @@ public class VariantClient extends AbstractParentClient {
             params.putAll(options);
         }
         return execute(VARIANT_URL, "query", params, GET, Variant.class);
+    }
+
+    public DataResponse<Job> export(Query query, QueryOptions options, String outdir, String outputFileName) throws IOException {
+        ObjectMap params = query == null ? new ObjectMap() : new ObjectMap(query);
+        params.putAll(options);
+        params.put("outdir", outdir);
+        params.put("outputFileName", outputFileName);
+        return execute(VARIANT_URL, "export/run", new ObjectMap("body", params), POST, Job.class);
     }
 
     public DataResponse<VariantAnnotation> annotationQuery(String annotationId, ObjectMap params, QueryOptions options)
@@ -128,8 +133,8 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "/sample/stats/run", new ObjectMap("body", params), POST, Job.class);
     }
 
-    public DataResponse<SampleVariantStats> sampleStatsQuery(String study, List<String> samples) throws IOException {
-        ObjectMap params = new ObjectMap("study", study).append("samples", String.join(",", samples));
+    public DataResponse<SampleVariantStats> sampleStatsQuery(String study, List<String> sample) throws IOException {
+        ObjectMap params = new ObjectMap("study", study).append("sample", String.join(",", sample));
         return execute(VARIANT_URL, "/sample/stats/query", params, GET, SampleVariantStats.class);
     }
 
@@ -137,8 +142,8 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "/cohort/stats/run", new ObjectMap("body", params), POST, Job.class);
     }
 
-    public DataResponse<VariantSetStats> cohortStatsQuery(String study, List<String> cohorts) throws IOException {
-        ObjectMap params = new ObjectMap("study", study).append("cohorts", String.join(",", cohorts));
+    public DataResponse<VariantSetStats> cohortStatsQuery(String study, List<String> cohort) throws IOException {
+        ObjectMap params = new ObjectMap("study", study).append("cohort", String.join(",", cohort));
         return execute(VARIANT_URL, "/cohort/stats/query", params, GET, VariantSetStats.class);
     }
 

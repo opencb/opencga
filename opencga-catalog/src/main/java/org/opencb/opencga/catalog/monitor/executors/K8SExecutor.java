@@ -203,5 +203,32 @@ public class K8SExecutor implements BatchExecutor {
         private String name;
         private String mountPath;
         private boolean readOnly;
+
+        public String getName() {
+            return name;
+        }
+
+        public K8SVolumesMount setName(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public String getMountPath() {
+            return mountPath;
+        }
+
+        public K8SVolumesMount setMountPath(String mountPath) {
+            this.mountPath = mountPath;
+            return this;
+        }
+
+        public boolean isReadOnly() {
+            return readOnly;
+        }
+
+        public K8SVolumesMount setReadOnly(boolean readOnly) {
+            this.readOnly = readOnly;
+            return this;
+        }
     }
 }

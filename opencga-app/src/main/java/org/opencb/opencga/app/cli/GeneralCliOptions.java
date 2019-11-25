@@ -52,8 +52,12 @@ public class GeneralCliOptions {
     /**
      * This class contains all those common parameters available for all 'subcommands'
      */
-    public static class CommonCommandOptions {
+    public static class CommonCommandOptions extends BasicCommonCommandOptions {
+        @Parameter(names = {"--of", "--output-format"}, description = "Output format. one of {JSON, JSON_PRETTY, TEXT, YAML}", arity = 1)
+        public String outputFormat = "TEXT";
+    }
 
+    public static class BasicCommonCommandOptions {
         @Parameter(names = {"-h", "--help"}, description = "Print this help", help = true)
         public boolean help;
 
@@ -70,9 +74,6 @@ public class GeneralCliOptions {
         @Deprecated
         @Parameter(names = {"-v", "--verbose"}, description = "Increase the verbosity of logs")
         public boolean verbose = false;
-
-        @Parameter(names = {"--of", "--output-format"}, description = "Output format. one of {JSON, JSON_PRETTY, TEXT, YAML}", arity = 1)
-        public String outputFormat = "TEXT";
 
         @Parameter(names = {"-S", "--sid", "--session-id"}, description = "Token session id, NOTE: parameter --sid will be delete soon", arity = 1)
         public String sessionId;

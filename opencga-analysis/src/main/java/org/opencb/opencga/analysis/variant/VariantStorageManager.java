@@ -343,6 +343,7 @@ public class VariantStorageManager extends StorageManager {
         VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
                 .setStudy(study)
                 .setCohorts(cohorts)
+                .setVariantsQuery(new Query(REGION.key(), config.getString(REGION.key())))
                 .setSamplesQuery(samplesQuery)
                 .setIndex(index);
         variantStatsAnalysis.setUp(null, catalogManager, this, config, Paths.get(outDir), sessionId);

@@ -74,6 +74,7 @@ public class VariantCommandOptions {
     public final VariantSecondaryIndexDeleteCommandOptions variantSecondaryIndexDeleteCommandOptions;
 //    public final QueryVariantCommandOptionsOld queryVariantCommandOptionsOld;
     public final VariantQueryCommandOptions queryVariantCommandOptions;
+    public final VariantExportCommandOptions exportVariantCommandOptions;
     public final VariantStatsCommandOptions statsVariantCommandOptions;
     public final VariantScoreIndexCommandOptions variantScoreIndexCommandOptions;
     public final VariantScoreDeleteCommandOptions variantScoreDeleteCommandOptions;
@@ -95,7 +96,9 @@ public class VariantCommandOptions {
     // Analysis
     public final GwasCommandOptions gwasCommandOptions;
     public final SampleVariantStatsCommandOptions sampleVariantStatsCommandOptions;
+    public final SampleVariantStatsQueryCommandOptions sampleVariantStatsQueryCommandOptions;
     public final CohortVariantStatsCommandOptions cohortVariantStatsCommandOptions;
+    public final CohortVariantStatsQueryCommandOptions cohortVariantStatsQueryCommandOptions;
 
     public final JCommander jCommander;
     public final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -115,6 +118,7 @@ public class VariantCommandOptions {
         this.variantSecondaryIndexDeleteCommandOptions = new VariantSecondaryIndexDeleteCommandOptions();
 //        this.queryVariantCommandOptionsOld = new QueryVariantCommandOptionsOld();
         this.queryVariantCommandOptions = new VariantQueryCommandOptions();
+        this.exportVariantCommandOptions = new VariantExportCommandOptions();
         this.statsVariantCommandOptions = new VariantStatsCommandOptions();
         this.variantScoreIndexCommandOptions = new VariantScoreIndexCommandOptions();
         this.variantScoreDeleteCommandOptions = new VariantScoreDeleteCommandOptions();
@@ -134,7 +138,9 @@ public class VariantCommandOptions {
         this.histogramCommandOptions = new VariantHistogramCommandOptions();
         this.gwasCommandOptions = new GwasCommandOptions();
         this.sampleVariantStatsCommandOptions = new SampleVariantStatsCommandOptions();
+        this.sampleVariantStatsQueryCommandOptions = new SampleVariantStatsQueryCommandOptions();
         this.cohortVariantStatsCommandOptions = new CohortVariantStatsCommandOptions();
+        this.cohortVariantStatsQueryCommandOptions = new CohortVariantStatsQueryCommandOptions();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
@@ -182,6 +188,10 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--overwrite"}, description = "Overwrite search index for all files and variants. Repeat operation for already processed variants.")
         public boolean overwrite;
+
+        // TODO Use this outdir to store the operation-status.json
+        @Parameter(names = {"--outdir"}, description = "[PENDING]", hidden = true)
+        public String outdir;
     }
 
     @Parameters(commandNames = {SECONDARY_INDEX_DELETE_COMMAND}, commandDescription = "Remove a secondary index from the search engine")
@@ -194,6 +204,10 @@ public class VariantCommandOptions {
         @Parameter(names = {"--sample"}, description = "Samples to remove. Needs to provide all the samples in the secondary index.",
                 required = true, arity = 1)
         public String sample;
+
+        // TODO Use this outdir to store the operation-status.json
+        @Parameter(names = {"--outdir"}, description = "[PENDING]", hidden = true)
+        public String outdir;
     }
 
     @Deprecated
@@ -458,13 +472,36 @@ public class VariantCommandOptions {
     }
 
     @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed variants")
-    public class VariantQueryCommandOptions extends GeneralCliOptions.StudyOption {
+    public class VariantQueryCommandOptions extends AbstractVariantQueryCommandOptions {
+
+        // FIXME: This param should not be in the INTERNAL command line!
+        @Parameter(names = {"--mode"}, description = "Communication mode. grpc|rest|auto.")
+        public String mode = "auto";
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory. [STDOUT]", arity = 1)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {"export"}, commandDescription = "Search over indexed variants")
+    public class VariantExportCommandOptions extends AbstractVariantQueryCommandOptions {
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1)
+        public String outdir;
+    }
+
+    public class AbstractVariantQueryCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GenericVariantQueryOptions genericVariantQueryOptions = new GenericVariantQueryOptions();
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.BasicCommonCommandOptions commonOptions = new GeneralCliOptions.BasicCommonCommandOptions();
+
+        @Parameter(names = {"--output-file-name"}, description = "Output file name.", arity = 1)
+        public String outputFileName;
+
+        @Parameter(names = {"--of", "--output-format"}, description = "Output format. one of {VCF, VCF.GZ, JSON, AVRO, PARQUET, STATS, CELLBASE}", arity = 1)
+        public String outputFormat = "VCF";
 
         @ParametersDelegate
         public DataModelOptions dataModelOptions = commonDataModelOptions;
@@ -474,13 +511,6 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--sample-filter"}, description = SAMPLE_ANNOTATION_DESC)
         public String sampleFilter;
-
-        // FIXME: This param should not be in the ANALYSIS command line!
-        @Parameter(names = {"--mode"}, description = "Communication mode. grpc|rest|auto.")
-        public String mode = "auto";
-
-        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
-        public String output;
 
         @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
         public String project;
@@ -525,7 +555,7 @@ public class VariantCommandOptions {
             this.cohortIds = cohortIds;
         }
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = false, arity = 1)
         public String outdir = null;
 
         @Parameter(names = {"--index"}, description = "Index stats in the variant storage database", arity = 0)
@@ -822,8 +852,11 @@ public class VariantCommandOptions {
         @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be returned")
         public String study;
 
-        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
-        public String output;
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory. [STDOUT]", arity = 1)
+        public String outdir;
+
+        @Parameter(names = {"--output-file-name"}, description = "Output file name.", arity = 1)
+        public String outputFileName;
     }
 
     @Parameters(commandNames = {"import"}, commandDescription = "Import a variants dataset into an empty study")
@@ -969,8 +1002,8 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
         public String study;
 
-        @Parameter(names = {"--samples"}, description = "List of samples.")
-        public List<String> samples;
+        @Parameter(names = {"--sample"}, description = "List of samples.")
+        public List<String> sample;
 
         @Parameter(names = {"--family"}, description = "Select samples form the individuals of this family..")
         public String family;
@@ -986,6 +1019,20 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
         public String outdir;
+    }
+
+    @Parameters(commandNames = SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND, commandDescription = "Read precomputed sample variant stats")
+    public class SampleVariantStatsQueryCommandOptions {
+        public static final String SAMPLE_VARIANT_STATS_QUERY_COMMAND = "sample-stats-query";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
+        public String study;
+
+        @Parameter(names = {"--sample"}, description = "List of samples.")
+        public List<String> sample;
     }
 
     @Parameters(commandNames = COHORT_VARIANT_STATS_COMMAND, commandDescription = CohortVariantStatsAnalysis.DESCRIPTION)
@@ -1016,4 +1063,19 @@ public class VariantCommandOptions {
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
         public String outdir;
     }
+
+    @Parameters(commandNames = CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND, commandDescription = "Read precomputed cohort variant stats")
+    public class CohortVariantStatsQueryCommandOptions {
+        public static final String COHORT_VARIANT_STATS_QUERY_COMMAND = "cohort-stats-query";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
+        public String study;
+
+        @Parameter(names = {"--cohort"}, description = "List of cohorts.")
+        public List<String> cohort;
+    }
+
 }
