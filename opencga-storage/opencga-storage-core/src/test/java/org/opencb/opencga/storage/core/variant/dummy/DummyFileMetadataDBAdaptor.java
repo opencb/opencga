@@ -98,7 +98,7 @@ public class DummyFileMetadataDBAdaptor implements FileMetadataDBAdaptor {
     }
 
     @Override
-    public DataResult<Long> count(Query query) {
+    public DataResult count(Query query) {
         return new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList(((long) VARIANT_FILE_METADATAS.size())), 1);
     }
 

@@ -104,7 +104,9 @@ public class MongoDBFileMetadataDBAdaptor extends AbstractMongoDBAdaptor<FileMet
     @Override
     public DataResult<Long> count(Query query) {
         Bson bson = parseQuery(query);
-        return collection.count(bson);
+        DataResult<Long> count = collection.count(bson);
+        count.setResults(Collections.singletonList(count.getNumMatches()));
+        return count;
     }
 
     @Override
