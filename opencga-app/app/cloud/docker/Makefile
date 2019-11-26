@@ -4,7 +4,7 @@
 # ---
 # Please refer to README.md
 
-PREFIX = opencga-app/app/scripts/docker/
+PREFIX = opencga-app/app/cloud/docker/
 ENVFILE ?= $(PREFIX)/make_env
 BUILD_PATH ?= ./build
 MAKE_ENV := $(shell echo '$(.VARIABLES)' | awk -v RS=' ' '/^[a-zA-Z0-9]+$$/' > /dev/null 2>&1)

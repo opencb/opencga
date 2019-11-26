@@ -125,7 +125,7 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
             // Check the output directory does not correspond with a catalog directory
             outDir = getOutDir();
             Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), outDir.toUri().toString());
-            DataResult<File> count = catalogManager.getFileManager().count(study, query, sessionId);
+            DataResult<File> count = catalogManager.getFileManager().count(study, query, token);
             if (count.getNumMatches() > 0) {
                 throw new AnalysisException("The output directory is pointing to one in catalog. Please, choose other out of catalog "
                         + "boundaries.");
@@ -142,7 +142,7 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
     protected void check() throws Exception {
         super.check();
 
-        Study study = catalogManager.getStudyManager().get(studyFqn, new QueryOptions(), sessionId).first();
+        Study study = catalogManager.getStudyManager().get(studyFqn, new QueryOptions(), token).first();
 
         saveIntermediateFiles = params.getBoolean(SAVE_INTERMEDIATE_FILES, false);
 //        saveIntermediateFiles = true;
@@ -162,14 +162,14 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
         step = getType(load, transform);
 
         params.put(VariantStorageOptions.STUDY.key(), studyFqn);
-        Aggregation aggregation = VariantStatsAnalysis.getAggregation(catalogManager, studyFqn, params, sessionId);
+        Aggregation aggregation = VariantStatsAnalysis.getAggregation(catalogManager, studyFqn, params, token);
         params.putIfAbsent(VariantStorageOptions.STATS_AGGREGATION.key(), aggregation);
         calculateStats = params.getBoolean(VariantStorageOptions.STATS_CALCULATE.key())
                 && (step.equals(Type.LOAD) || step.equals(Type.INDEX));
 
         // Create default cohort if needed.
         if (step.equals(Type.INDEX) || step.equals(Type.LOAD)) {
-            createDefaultCohortIfNeeded(study.getFqn(), sessionId);
+            createDefaultCohortIfNeeded(study.getFqn(), token);
         }
 
     }
@@ -179,7 +179,7 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
         Project project = catalogManager
                 .getProjectManager()
                 .get(projectFqn,
-                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(CURRENT_RELEASE.key(), ORGANISM.key())), sessionId).first();
+                        new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(CURRENT_RELEASE.key(), ORGANISM.key())), token).first();
         release = project.getCurrentRelease();
 
         // Add species, assembly and release
@@ -199,12 +199,12 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
 
         List<File> inputFiles = new ArrayList<>();
         for (String file : files) {
-            File inputFile = catalogManager.getFileManager().get(studyFqn, file, FILE_GET_QUERY_OPTIONS, sessionId).first();
+            File inputFile = catalogManager.getFileManager().get(studyFqn, file, FILE_GET_QUERY_OPTIONS, token).first();
 
             if (inputFile.getType() == File.Type.FILE) {
                 // If is a transformed file, get the related VCF file
                 if (VariantReaderUtils.isTransformedVariants(inputFile.getName())) {
-                    inputFiles.add(getOriginalFromTransformed(studyFqn, inputFile, sessionId));
+                    inputFiles.add(getOriginalFromTransformed(studyFqn, inputFile, token));
                 } else {
                     inputFiles.add(inputFile);
                 }
@@ -214,7 +214,7 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
                     query.append(FileDBAdaptor.QueryParams.FORMAT.key(),
 //                            Arrays.asList(File.Format.VCF, File.Format.GVCF, File.Format.AVRO));
                             Arrays.asList(File.Format.VCF, File.Format.GVCF));
-                    DataResult<File> fileDataResult = catalogManager.getFileManager().search(studyFqn, query, FILE_GET_QUERY_OPTIONS, sessionId);
+                    DataResult<File> fileDataResult = catalogManager.getFileManager().search(studyFqn, query, FILE_GET_QUERY_OPTIONS, token);
 //                    fileDataResult.getResults().sort(Comparator.comparing(File::getName));
                     inputFiles.addAll(fileDataResult.getResults());
                 } else {
@@ -226,7 +226,7 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
 
 
         // Update Catalog from the storage metadata. This may change the index status of the inputFiles .
-        synchronizer.synchronizeCatalogFilesFromStorage(studyFqn, inputFiles, sessionId, FILE_GET_QUERY_OPTIONS);
+        synchronizer.synchronizeCatalogFilesFromStorage(studyFqn, inputFiles, token, FILE_GET_QUERY_OPTIONS);
 
         logger.debug("Index - Number of files to be indexed: {}, list of files: {}", inputFiles.size(),
                 inputFiles.stream().map(File::getName).collect(Collectors.toList()));
@@ -252,7 +252,7 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
                 }
                 break;
             case LOAD:
-                filesToIndex = filterLoadFiles(studyFqn, inputFiles, params, fileUris, resume, sessionId);
+                filesToIndex = filterLoadFiles(studyFqn, inputFiles, params, fileUris, resume, token);
                 fileStatus = FileIndex.IndexStatus.LOADING;
                 fileStatusMessage = "Start loading file";
                 break;
@@ -273,7 +273,7 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
         if (!step.equals(Type.TRANSFORM) || saveIntermediateFiles) {
             for (File file : filesToIndex) {
                 DataResult<FileIndex> fileIndexDataResult = catalogManager.getFileManager().updateFileIndexStatus(file, fileStatus,
-                        fileStatusMessage, release, sessionId);
+                        fileStatusMessage, release, token);
                 file.setIndex(fileIndexDataResult.first());
             }
         }
@@ -283,7 +283,7 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
     @Override
     protected void run() throws Exception {
 
-        variantStorageEngine = getVariantStorageEngine(variantStorageManager.getDataStore(studyFqn, sessionId));
+        variantStorageEngine = getVariantStorageEngine(variantStorageManager.getDataStore(studyFqn, token));
         variantStorageEngine.getOptions().putAll(params);
 
         updateProject(studyFqn, variantStorageEngine);
@@ -297,7 +297,7 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
         String prevDefaultCohortStatus = Cohort.CohortStatus.NONE;
         if (step.equals(Type.INDEX) || step.equals(Type.LOAD)) {
             if (calculateStats) {
-                prevDefaultCohortStatus = updateDefaultCohortStatus(studyFqn, Cohort.CohortStatus.CALCULATING, sessionId);
+                prevDefaultCohortStatus = updateDefaultCohortStatus(studyFqn, Cohort.CohortStatus.CALCULATING, token);
             }
         }
 
@@ -327,13 +327,13 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
             if (!step.equals(Type.TRANSFORM) || saveIntermediateFiles) {
 
                 updateFileInfo(studyFqn, filesToIndex, variantStorageEngine.getVariantReaderUtils(),
-                        storagePipelineResults, Paths.get(outDirUri), release, saveIntermediateFiles, params, sessionId);
+                        storagePipelineResults, Paths.get(outDirUri), release, saveIntermediateFiles, params, token);
 
                 // Restore previous cohort status. Cohort status will be read from StudyConfiguration.
                 if (calculateStats && exception != null) {
-                    updateDefaultCohortStatus(studyFqn, prevDefaultCohortStatus, sessionId);
+                    updateDefaultCohortStatus(studyFqn, prevDefaultCohortStatus, token);
                 }
-                synchronizer.synchronizeCatalogStudyFromStorage(studyFqn, sessionId);
+                synchronizer.synchronizeCatalogStudyFromStorage(studyFqn, token);
             }
             addAttribute("storagePipelineResults", storagePipelineResults);
             variantStorageEngine.close();

@@ -38,7 +38,7 @@ public class ToolsCommandExecutor extends InternalCommandExecutor {
         ToolsCommandOptions.ExecuteToolCommandOptions cliOptions = this.toolCommandOptions.executeToolCommandOptions;
         try {
             ToolAnalysis toolAnalysis = new ToolAnalysis(configuration);
-            toolAnalysis.execute(Long.parseLong(cliOptions.job), cliOptions.commonOptions.sessionId);
+            toolAnalysis.execute(Long.parseLong(cliOptions.job), cliOptions.commonOptions.token);
         } catch (CatalogException | AnalysisToolException e) {
             logger.error("{}", e.getMessage(), e);
         }

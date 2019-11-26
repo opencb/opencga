@@ -183,7 +183,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
         }
 
         try {
-            study = catalogManager.getStudyManager().get(study, null, sessionId).first().getFqn();
+            study = catalogManager.getStudyManager().get(study, null, token).first().getFqn();
         } catch (CatalogException e) {
             throw new AnalysisException(e);
         }
@@ -214,7 +214,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
                             .append(VariantQueryParam.STUDY.key(), study)
                             .append(VariantQueryParam.INCLUDE_SAMPLE.key(), allSamples),
                     new QueryOptions(),
-                    sessionId);
+                    token);
         } catch (CatalogException | StorageEngineException e) {
             throw new AnalysisException(e);
         }
@@ -226,7 +226,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
 
             // check score is not already indexed
             try {
-                List<VariantScoreMetadata> scores = variantStorageManager.listVariantScores(study, sessionId);
+                List<VariantScoreMetadata> scores = variantStorageManager.listVariantScores(study, token);
                 for (VariantScoreMetadata score : scores) {
                     if (score.getName().equals(scoreName)) {
                         if (score.getIndexStatus().equals(TaskMetadata.Status.READY)) {
@@ -289,7 +289,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
                 try {
                     VariantScoreFormatDescriptor formatDescriptor = new VariantScoreFormatDescriptor(1, 16, 15);
                     variantStorageManager.loadVariantScore(study, outputFile.toUri(), scoreName, caseCohort, controlCohort, formatDescriptor,
-                            executorParams, sessionId);
+                            executorParams, token);
                 } catch (CatalogException | StorageEngineException e) {
                     throw new AnalysisException(e);
                 }
@@ -348,7 +348,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
 
                 samples = new ArrayList<>();
                 catalogManager.getSampleManager()
-                        .iterator(study, query, options, sessionId)
+                        .iterator(study, query, options, token)
                         .forEachRemaining(sample -> {
                             Phenotype.Status status = null;
                             for (Phenotype p : sample.getPhenotypes()) {
@@ -362,7 +362,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
                         });
             } else if (validCohort) {
                 samples = catalogManager.getCohortManager()
-                        .get(study, cohort, new QueryOptions(), sessionId)
+                        .get(study, cohort, new QueryOptions(), token)
                         .first()
                         .getSamples()
                         .stream()
@@ -370,7 +370,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
                         .collect(Collectors.toList());
             } else {
                 samples = catalogManager.getSampleManager()
-                        .search(study, samplesQuery, new QueryOptions(QueryOptions.INCLUDE, "id"), sessionId)
+                        .search(study, samplesQuery, new QueryOptions(QueryOptions.INCLUDE, "id"), token)
                         .getResults()
                         .stream()
                         .map(Sample::getId)
@@ -378,7 +378,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
             }
 
             // Remove non-indexed samples
-            Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, sessionId);
+            Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, token);
             samples.removeIf(s -> !indexedSamples.contains(s));
         } catch (CatalogException e) {
             throw new AnalysisException(e);

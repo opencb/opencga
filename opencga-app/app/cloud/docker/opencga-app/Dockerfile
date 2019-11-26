@@ -37,7 +37,7 @@ chown -R 1001:1001 /opt/tomcat/
 RUN cp /opt/opencga/*.war /opt/tomcat/webapps/opencga.war
 
 # Copy OpenCGA config to Tomcat
-COPY ./opencga-app/app/scripts/docker/opencga-app/opencga.xml /opt/tomcat/conf/Catalina/localhost/opencga.xml
+COPY ./opencga-app/app/cloud/docker/opencga-app/opencga.xml /opt/tomcat/conf/Catalina/localhost/opencga.xml
 
 #RUN chmod +r /opt/tomcat/conf/Catalina/localhost/opencga.xml && chown 1001:1001 /opt/tomcat/conf/Catalina/localhost/opencga.xml
 RUN chown 1001:1001 /opt/tomcat/conf/Catalina/localhost/opencga.xml

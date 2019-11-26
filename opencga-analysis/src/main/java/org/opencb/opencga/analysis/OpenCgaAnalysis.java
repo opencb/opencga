@@ -68,7 +68,7 @@ public abstract class OpenCgaAnalysis {
     protected VariantStorageManager variantStorageManager;
 
     protected String opencgaHome;
-    protected String sessionId;
+    protected String token;
 
     protected ObjectMap params;
     protected ObjectMap executorParams;
@@ -85,19 +85,19 @@ public abstract class OpenCgaAnalysis {
     }
 
     public void setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
-                      ObjectMap params, Path outDir, String sessionId) {
+                      ObjectMap params, Path outDir, String token) {
         VariantStorageManager manager = new VariantStorageManager(catalogManager, engineFactory);
-        setUp(opencgaHome, catalogManager, manager, params, outDir, sessionId);
+        setUp(opencgaHome, catalogManager, manager, params, outDir, token);
     }
 
     public void setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
-                      ObjectMap params, Path outDir, String sessionId) {
+                      ObjectMap params, Path outDir, String token) {
         this.opencgaHome = opencgaHome;
         this.catalogManager = catalogManager;
         this.configuration = catalogManager.getConfiguration();
         this.variantStorageManager = variantStorageManager;
         this.storageConfiguration = variantStorageManager.getStorageConfiguration();
-        this.sessionId = sessionId;
+        this.token = token;
         this.params = params == null ? new ObjectMap() : new ObjectMap(params);
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
@@ -106,10 +106,10 @@ public abstract class OpenCgaAnalysis {
         setUpFrameworksAndSource();
     }
 
-    public void setUp(String opencgaHome, ObjectMap params, Path outDir, String sessionId)
+    public void setUp(String opencgaHome, ObjectMap params, Path outDir, String token)
             throws AnalysisException {
         this.opencgaHome = opencgaHome;
-        this.sessionId = sessionId;
+        this.token = token;
         this.params = params == null ? new ObjectMap() : new ObjectMap(params);
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
@@ -299,8 +299,8 @@ public abstract class OpenCgaAnalysis {
         return scratchDir;
     }
 
-    protected final String getSessionId() {
-        return sessionId;
+    protected final String getToken() {
+        return token;
     }
 
     public final OpenCgaAnalysis addSource(AnalysisExecutor.Source source) {
@@ -495,9 +495,9 @@ public abstract class OpenCgaAnalysis {
 
     protected final void setUpStorageEngineExecutor(String study) throws AnalysisException {
         executorParams.put("opencgaHome", opencgaHome);
-        executorParams.put("sessionId", sessionId);
+        executorParams.put("token", token);
         try {
-            DataStore dataStore = variantStorageManager.getDataStore(study, sessionId);
+            DataStore dataStore = variantStorageManager.getDataStore(study, token);
 
             executorParams.put("storageEngineId", dataStore.getStorageEngine());
             executorParams.put("dbName", dataStore.getDbName());

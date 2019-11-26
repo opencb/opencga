@@ -74,7 +74,7 @@ public class VariantStatsLocalAnalysisExecutor extends VariantStatsAnalysisExecu
         QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, Arrays.asList(VariantField.STUDIES_STATS));
 
         try (OutputStream os = new BufferedOutputStream(FileUtils.openOutputStream(getOutputFile().toFile()))) {
-            VariantDBReader reader = new VariantDBReader(manager.iterator(query, queryOptions, getSessionId()));
+            VariantDBReader reader = new VariantDBReader(manager.iterator(query, queryOptions, getToken()));
 
             ProgressLogger progressLogger = new ProgressLogger("Variants processed:");
             Task<Variant, Variant> task = Task.forEach(variant -> {

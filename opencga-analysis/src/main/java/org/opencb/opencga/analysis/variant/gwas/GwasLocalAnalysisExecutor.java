@@ -43,7 +43,7 @@ public final class GwasLocalAnalysisExecutor extends GwasAnalysisExecutor implem
         try {
             Query query = new Query(VariantQueryParam.STUDY.key(), getStudy())
                     .append(VariantQueryParam.INCLUDE_SAMPLE.key(), allSamples);
-            VariantDBReader reader = new VariantDBReader(getVariantStorageManager().iterator(query, new QueryOptions(), getSessionId()));
+            VariantDBReader reader = new VariantDBReader(getVariantStorageManager().iterator(query, new QueryOptions(), getToken()));
 
             ProgressLogger progressLogger = new ProgressLogger("Processed variants:");
 

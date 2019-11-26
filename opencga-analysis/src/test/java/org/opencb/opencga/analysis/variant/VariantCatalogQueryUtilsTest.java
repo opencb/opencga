@@ -10,7 +10,8 @@ import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
@@ -24,7 +25,9 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
 
+import java.lang.reflect.Field;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.GenePanel;
@@ -77,7 +80,11 @@ public class VariantCatalogQueryUtilsTest {
         individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual2", "individual2", IndividualProperty.Sex.FEMALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()), null, sessionId).first());
         individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual3", "individual3", IndividualProperty.Sex.MALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), null, sessionId).first());
         individuals.add(catalog.getIndividualManager().create("s1", new Individual("individual4", "individual4", IndividualProperty.Sex.FEMALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), null, sessionId).first());
-        catalog.getFamilyManager().create("s1", new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), individuals, null, 3, null, null), null, sessionId);
+        catalog.getFamilyManager().create(
+                "s1",
+                new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 3, null, null),
+                individuals.stream().map(Individual::getId).collect(Collectors.toList()), new QueryOptions(),
+                sessionId);
 
 
         createSample("sample1", "individual1");
@@ -392,6 +399,23 @@ public class VariantCatalogQueryUtilsTest {
 //        System.out.println("trios = " + trios);
         assertEquals(Arrays.asList(Arrays.asList("sample1", "sample2", "sample3"), Arrays.asList("sample1", "sample2", "sample4")), trios);
 
+    }
+
+    @Test
+    public void testQueryParams() throws IllegalAccessException {
+        Class<VariantCatalogQueryUtils> clazz = VariantCatalogQueryUtils.class;
+        Field[] declaredFields = clazz.getDeclaredFields();
+        Set<QueryParam> params = new HashSet<>();
+        for (Field field : declaredFields) {
+            if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
+                if (field.getAnnotation(Deprecated.class)==null) {
+                    if (QueryParam.class.isAssignableFrom(field.getType())) {
+                        params.add((QueryParam) field.get(null));
+                    }
+                }
+            }
+        }
+        assertEquals(new HashSet<>(VariantCatalogQueryUtils.VARIANT_CATALOG_QUERY_PARAMS), params);
     }
 
     protected String parseValue(VariantQueryParam param, String value) throws CatalogException {

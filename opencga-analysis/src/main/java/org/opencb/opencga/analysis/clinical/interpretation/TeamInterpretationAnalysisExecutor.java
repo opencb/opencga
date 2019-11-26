@@ -53,7 +53,7 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaAnalysisExecutor 
 
     @Override
     public void run() throws AnalysisException {
-        sessionId = getSessionId();
+        sessionId = getToken();
         clinicalInterpretationManager = getClinicalInterpretationManager();
 
         // Get assembly

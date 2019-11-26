@@ -52,14 +52,14 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
         return parseQuery(queryVariantsOptions, studyIds.values(), clientConfiguration);
     }
 
-    public static Query parseQuery(VariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions, Collection<String> studies, ClientConfiguration clientConfiguration)
+    public static Query parseQuery(VariantCommandOptions.AbstractVariantQueryCommandOptions queryVariantsOptions, Collection<String> studies, ClientConfiguration clientConfiguration)
             throws IOException {
 
-        if ("TEXT".equalsIgnoreCase(queryVariantsOptions.commonOptions.outputFormat)) {
-            queryVariantsOptions.commonOptions.outputFormat = VCF.name();
+        if ("TEXT".equalsIgnoreCase(queryVariantsOptions.outputFormat)) {
+            queryVariantsOptions.outputFormat = VCF.name();
         }
 
-        VariantOutputFormat of = VariantWriterFactory.toOutputFormat(queryVariantsOptions.commonOptions.outputFormat, queryVariantsOptions.output);
+        VariantOutputFormat of = VariantWriterFactory.toOutputFormat(queryVariantsOptions.outputFormat, queryVariantsOptions.outputFileName);
         Query query = parseGenericVariantQuery(
                 queryVariantsOptions.genericVariantQueryOptions, queryVariantsOptions.study, studies,
                 queryVariantsOptions.numericOptions.count, of);
@@ -92,7 +92,7 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
         return query;
     }
 
-    public static QueryOptions parseQueryOptions(VariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions) {
+    public static QueryOptions parseQueryOptions(VariantCommandOptions.AbstractVariantQueryCommandOptions queryVariantsOptions) {
         QueryOptions queryOptions = new QueryOptions();
 
         if (StringUtils.isNotEmpty(queryVariantsOptions.dataModelOptions.include)) {

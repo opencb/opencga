@@ -37,8 +37,6 @@ import java.io.IOException;
 @Produces(MediaType.APPLICATION_JSON)
 public class AnalysisWSService extends OpenCGAWSServer {
 
-    public static final String JOB_ID = "jobId";
-    public static final String JOB_ID_DESCRIPTION = "Job Id";
     public static final String JOB_NAME = "jobName";
     public static final String JOB_NAME_DESCRIPTION = "Job Name";
     public static final String JOB_DESCRIPTION = "jobDescription";

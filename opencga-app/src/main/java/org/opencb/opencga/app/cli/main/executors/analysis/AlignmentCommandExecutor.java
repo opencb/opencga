@@ -169,7 +169,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         Map<String, String> query = new HashMap<>();
         addParam(query, "fileId", commandOptions.fileId);
-        addParam(query, "sid", commandOptions.commonOptions.sessionId);
+        addParam(query, "sid", commandOptions.commonOptions.token);
         addParam(query, "study", study);
         addParam(query, AlignmentDBAdaptor.QueryParams.REGION.key(), commandOptions.region);
         addParam(query, AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), commandOptions.minMappingQuality);
@@ -261,7 +261,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     private DataResponse stats() throws CatalogException, IOException {
         ObjectMap objectMap = new ObjectMap();
 //        objectMap.putIfNotNull("fileId", alignmentCommandOptions.statsAlignmentCommandOptions.fileId);
-        objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.sessionId);
+        objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.token);
         objectMap.putIfNotNull("study", alignmentCommandOptions.statsAlignmentCommandOptions.study);
         objectMap.putIfNotNull("region", alignmentCommandOptions.statsAlignmentCommandOptions.region);
         objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.statsAlignmentCommandOptions.minMappingQuality);
@@ -282,7 +282,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     private DataResponse coverage() throws CatalogException, IOException {
         ObjectMap objectMap = new ObjectMap();
 //        objectMap.putIfNotNull("fileId", alignmentCommandOptions.coverageAlignmentCommandOptions.fileId);
-        objectMap.putIfNotNull("sid", alignmentCommandOptions.coverageAlignmentCommandOptions.commonOptions.sessionId);
+        objectMap.putIfNotNull("sid", alignmentCommandOptions.coverageAlignmentCommandOptions.commonOptions.token);
         objectMap.putIfNotNull("study", alignmentCommandOptions.coverageAlignmentCommandOptions.study);
         objectMap.putIfNotNull("region", alignmentCommandOptions.coverageAlignmentCommandOptions.region);
         objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.coverageAlignmentCommandOptions.minMappingQuality);

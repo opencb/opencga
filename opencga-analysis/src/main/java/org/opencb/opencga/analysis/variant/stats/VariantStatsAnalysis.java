@@ -141,7 +141,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
     @Override
     protected void check() throws Exception {
         super.check();
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyFqn, userId);
         studyFqn = study.getFqn();
 
@@ -169,7 +169,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
         params.put("variantsQuery", variantsQuery);
 
 
-        aggregation = getAggregation(catalogManager, studyFqn, params, sessionId);
+        aggregation = getAggregation(catalogManager, studyFqn, params, token);
 
         // if the study is aggregated and a mapping file is provided, pass it to storage
         // and create in catalog the cohorts described in the mapping file
@@ -195,7 +195,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
 
         Path outdir;
         if (index) {
-            cohorts = checkCohorts(studyFqn, aggregation, cohorts, sessionId);
+            cohorts = checkCohorts(studyFqn, aggregation, cohorts, token);
 
             // Do not save intermediate files
             outdir = getScratchDir();
@@ -222,7 +222,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
                 .append(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), mappingFile)
                 .append(DefaultVariantStatisticsManager.OUTPUT, outputFile);
 
-        dataStore = VariantStorageManager.getDataStore(catalogManager, studyFqn, File.Bioformat.VARIANT, sessionId);
+        dataStore = VariantStorageManager.getDataStore(catalogManager, studyFqn, File.Bioformat.VARIANT, token);
     }
 
     @Override
@@ -243,9 +243,9 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
                 VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
                 CatalogStorageMetadataSynchronizer synchronizer =
                         new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager());
-                synchronizer.synchronizeCatalogStudyFromStorage(studyFqn, sessionId);
+                synchronizer.synchronizeCatalogStudyFromStorage(studyFqn, token);
 
-                cohortsMap = checkCanCalculateCohorts(studyFqn, cohorts, updateStats, resume, sessionId);
+                cohortsMap = checkCanCalculateCohorts(studyFqn, cohorts, updateStats, resume, token);
             } else {
 
                 // Don't need to synchronize storage metadata
@@ -253,7 +253,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
                     String cohortName = cohorts.get(0);
 
                     List<Sample> samples = catalogManager.getSampleManager()
-                            .search(studyFqn, new Query(samplesQuery), new QueryOptions(QueryOptions.INCLUDE, "id"), sessionId)
+                            .search(studyFqn, new Query(samplesQuery), new QueryOptions(QueryOptions.INCLUDE, "id"), token)
                             .getResults();
                     List<String> sampleNames = samples.stream().map(Sample::getId).collect(Collectors.toList());
 
@@ -263,7 +263,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
                     params.put("samples", sampleNames);
                 } else {
                     for (String cohortName : cohorts) {
-                        Cohort cohort = catalogManager.getCohortManager().get(studyFqn, cohortName, new QueryOptions(), sessionId).first();
+                        Cohort cohort = catalogManager.getCohortManager().get(studyFqn, cohortName, new QueryOptions(), token).first();
                         cohortsMap.put(cohortName, cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
                     }
                 }
@@ -271,7 +271,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
 
             if (!AggregationUtils.isAggregated(aggregation)) {
                 // Remove non-indexed samples
-                Set<String> indexedSamples = variantStorageManager.getIndexedSamples(studyFqn, sessionId);
+                Set<String> indexedSamples = variantStorageManager.getIndexedSamples(studyFqn, token);
                 cohortsMap.values().forEach(samples -> samples.removeIf(s -> !indexedSamples.contains(s)));
 
                 List<String> emptyCohorts = new ArrayList<>();
@@ -294,7 +294,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
                                     .append(VariantQueryParam.STUDY.key(), studyFqn)
                                     .append(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleNames),
                             new QueryOptions(),
-                            sessionId);
+                            token);
                 } catch (CatalogException | StorageEngineException e) {
                     throw new AnalysisException(e);
                 }
@@ -305,7 +305,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
             step(() -> {
                 try {
                     // Modify cohort status to "CALCULATING"
-                    updateCohorts(studyFqn, cohortsMap.keySet(), getSessionId(), Cohort.CohortStatus.CALCULATING, "Start calculating stats");
+                    updateCohorts(studyFqn, cohortsMap.keySet(), getToken(), Cohort.CohortStatus.CALCULATING, "Start calculating stats");
 
                     getAnalysisExecutor(VariantStatsAnalysisExecutor.class)
                             .setStudy(studyFqn)
@@ -316,13 +316,13 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
                             .execute();
 
                     // Modify cohort status to "READY"
-                    updateCohorts(studyFqn, cohortsMap.keySet(), getSessionId(), Cohort.CohortStatus.READY, "");
+                    updateCohorts(studyFqn, cohortsMap.keySet(), getToken(), Cohort.CohortStatus.READY, "");
                 } catch (Exception e) {
                     // Error!
                     logger.error("Error executing stats. Set cohorts status to " + Cohort.CohortStatus.INVALID, e);
                     // Modify to "INVALID"
                     try {
-                        updateCohorts(studyFqn, cohortsMap.keySet(), getSessionId(), Cohort.CohortStatus.INVALID,
+                        updateCohorts(studyFqn, cohortsMap.keySet(), getToken(), Cohort.CohortStatus.INVALID,
                                 "Error calculating stats: " + e.getMessage());
                     } catch (CatalogException ex) {
                         addError(ex);
@@ -349,7 +349,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
     protected void onShutdown() {
         try {
             if (index) {
-                updateCohorts(studyFqn, cohortsMap.keySet(), sessionId, Cohort.CohortStatus.INVALID, "");
+                updateCohorts(studyFqn, cohortsMap.keySet(), token, Cohort.CohortStatus.INVALID, "");
             }
         } catch (CatalogException e) {
             logger.error("Error updating cohorts " + cohortsMap + " to status " + Cohort.CohortStatus.INVALID, e);

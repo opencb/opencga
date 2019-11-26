@@ -112,24 +112,24 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
             }
         }
         try {
-            study = catalogManager.getStudyManager().get(study, null, sessionId).first().getFqn();
+            study = catalogManager.getStudyManager().get(study, null, token).first().getFqn();
 
             if (CollectionUtils.isNotEmpty(sampleNames)) {
-                catalogManager.getSampleManager().get(study, sampleNames, new QueryOptions(), sessionId)
+                catalogManager.getSampleManager().get(study, sampleNames, new QueryOptions(), token)
                         .getResults()
                         .stream()
                         .map(Sample::getId)
                         .forEach(allSamples::add);
             }
             if (samplesQuery != null && !samplesQuery.isEmpty()) {
-                catalogManager.getSampleManager().search(study, samplesQuery, new QueryOptions(), sessionId)
+                catalogManager.getSampleManager().search(study, samplesQuery, new QueryOptions(), token)
                         .getResults()
                         .stream()
                         .map(Sample::getId)
                         .forEach(allSamples::add);
             }
             if (StringUtils.isNotEmpty(cohortName)) {
-                catalogManager.getCohortManager().get(study, cohortName, new QueryOptions(), sessionId)
+                catalogManager.getCohortManager().get(study, cohortName, new QueryOptions(), token)
                         .getResults()
                         .stream()
                         .flatMap(c -> c.getSamples().stream())
@@ -138,7 +138,7 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
             }
 
             // Remove non-indexed samples
-            Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, sessionId);
+            Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, token);
             allSamples.removeIf(s -> !indexedSamples.contains(s));
 
             addAttribute("sampleNames", allSamples);
@@ -183,7 +183,7 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
                     VariantSetStats stats = JacksonUtils.getDefaultObjectMapper().readValue(outputFile.toFile(), VariantSetStats.class);
 
                     try {
-                        catalogManager.getStudyManager().getVariableSet(study, VARIABLE_SET_ID, new QueryOptions(), sessionId);
+                        catalogManager.getStudyManager().getVariableSet(study, VARIABLE_SET_ID, new QueryOptions(), token);
                     } catch (CatalogException e) {
                         // Assume variable set not found. Try to create
                         List<Variable> variables = AvroToAnnotationConverter.convertToVariableSet(VariantSetStats.getClassSchema());
@@ -191,12 +191,12 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
                                 .createVariableSet(study, VARIABLE_SET_ID, VARIABLE_SET_ID, true, false,
                                         "", Collections.emptyMap(), variables,
                                         Arrays.asList(VariableSet.AnnotableDataModels.COHORT, VariableSet.AnnotableDataModels.FILE),
-                                        sessionId);
+                                        token);
                     }
 
                     AnnotationSet annotationSet = AvroToAnnotationConverter.convertToAnnotationSet(stats, VARIABLE_SET_ID);
                     catalogManager.getCohortManager()
-                            .addAnnotationSet(study, cohortName, annotationSet, new QueryOptions(), sessionId);
+                            .addAnnotationSet(study, cohortName, annotationSet, new QueryOptions(), token);
                 } catch (IOException | CatalogException e) {
                     throw new AnalysisException(e);
                 }

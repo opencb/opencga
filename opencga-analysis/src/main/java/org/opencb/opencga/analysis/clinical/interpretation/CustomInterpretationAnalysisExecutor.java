@@ -47,7 +47,7 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaAnalysisExecuto
 
     @Override
     public void run() throws AnalysisException {
-        sessionId = getSessionId();
+        sessionId = getToken();
         clinicalInterpretationManager = getClinicalInterpretationManager();
 
         List<Variant> variants;

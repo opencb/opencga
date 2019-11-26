@@ -33,9 +33,11 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 import java.util.List;
 
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
@@ -118,7 +120,9 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand("histogram", variantCommandOptions.histogramCommandOptions);
         variantSubCommands.addCommand(GwasAnalysis.ID, variantCommandOptions.gwasCommandOptions);
         variantSubCommands.addCommand(SAMPLE_VARIANT_STATS_COMMAND, variantCommandOptions.sampleVariantStatsCommandOptions);
+        variantSubCommands.addCommand(SAMPLE_VARIANT_STATS_QUERY_COMMAND, variantCommandOptions.sampleVariantStatsQueryCommandOptions);
         variantSubCommands.addCommand(COHORT_VARIANT_STATS_COMMAND, variantCommandOptions.cohortVariantStatsCommandOptions);
+        variantSubCommands.addCommand(COHORT_VARIANT_STATS_QUERY_COMMAND, variantCommandOptions.cohortVariantStatsQueryCommandOptions);
 
         alignmentCommandOptions = new AlignmentCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("alignment", alignmentCommandOptions);
