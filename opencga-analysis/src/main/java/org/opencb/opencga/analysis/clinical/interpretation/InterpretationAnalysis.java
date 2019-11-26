@@ -70,9 +70,9 @@ public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
     public InterpretationAnalysis() {
     }
 
-    public void setUp(String opencgaHome, ObjectMap params, Path outDir, String sessionId)
+    public void setUp(String opencgaHome, ObjectMap params, Path outDir, String token)
             throws AnalysisException {
-        super.setUp(opencgaHome, params, outDir, sessionId);
+        super.setUp(opencgaHome, params, outDir, token);
         this.clinicalInterpretationManager = getClinicalInterpretationManager(opencgaHome);
     }
 
@@ -83,12 +83,12 @@ public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
         Software software = new Software().setName(getId());
 
         // Analyst
-        Analyst analyst = clinicalInterpretationManager.getAnalyst(sessionId);
+        Analyst analyst = clinicalInterpretationManager.getAnalyst(token);
 
         List<ReportedLowCoverage> reportedLowCoverages = null;
         if (config.isIncludeLowCoverage() && CollectionUtils.isNotEmpty(diseasePanels)) {
             reportedLowCoverages = (clinicalInterpretationManager.getReportedLowCoverage(config.getMaxLowCoverage(), clinicalAnalysis,
-                    diseasePanels, studyId, sessionId));
+                    diseasePanels, studyId, token));
         }
 
         List<ReportedVariant> primaryFindings = readReportedVariants(Paths.get(getOutDir().toString() + "/"
@@ -111,7 +111,7 @@ public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
         // Store interpretation analysis in DB
         try {
             catalogManager.getInterpretationManager().create(studyId, clinicalAnalysis.getId(), new Interpretation(interpretation),
-                    QueryOptions.empty(), sessionId);
+                    QueryOptions.empty(), token);
         } catch (CatalogException e) {
             throw new AnalysisException("Error saving interpretation into database", e);
         }

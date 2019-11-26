@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
 
 if [ -z ${HADOOP_SSH_USER} ] ; then

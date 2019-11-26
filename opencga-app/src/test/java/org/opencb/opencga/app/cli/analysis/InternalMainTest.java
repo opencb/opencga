@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
+import org.opencb.opencga.app.cli.internal.InternalMain;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -48,7 +49,7 @@ import static org.junit.Assert.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class AnalysisMainTest {
+public class InternalMainTest {
 
 
     public static final String STORAGE_ENGINE = "mongodb";
@@ -64,7 +65,7 @@ public class AnalysisMainTest {
     private String projectId;
     private String studyId;
     private String outdirId;
-    private Logger logger = LoggerFactory.getLogger(AnalysisMainTest.class);
+    private Logger logger = LoggerFactory.getLogger(InternalMainTest.class);
     private Map<File.Bioformat, DataStore> datastores;
 
 
@@ -351,7 +352,7 @@ public class AnalysisMainTest {
 
 
     public int execute(String... args) {
-        int exitValue = AnalysisMain.privateMain(args);
+        int exitValue = InternalMain.privateMain(args);
         assertEquals(0, exitValue);
         return exitValue;
     }

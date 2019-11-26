@@ -107,25 +107,22 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
 
         Set<String> allSamples = new HashSet<>();
 
-        if (study == null || study.isEmpty()) {
-            throw new AnalysisException("Missing study");
-        }
         try {
-            study = catalogManager.getStudyManager().get(study, null, sessionId).first().getFqn();
+            study = catalogManager.getStudyManager().get(study, null, token).first().getFqn();
         } catch (CatalogException e) {
             throw new AnalysisException(e);
         }
 
         try {
             if (CollectionUtils.isNotEmpty(sampleNames)) {
-                catalogManager.getSampleManager().get(study, sampleNames, new QueryOptions(), sessionId)
+                catalogManager.getSampleManager().get(study, sampleNames, new QueryOptions(), token)
                         .getResults()
                         .stream()
                         .map(Sample::getId)
                         .forEach(allSamples::add);
             }
             if (samplesQuery != null) {
-                catalogManager.getSampleManager().search(study, samplesQuery, new QueryOptions(), sessionId)
+                catalogManager.getSampleManager().search(study, samplesQuery, new QueryOptions(), token)
                         .getResults()
                         .stream()
                         .map(Sample::getId)
@@ -133,20 +130,20 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
             }
             if (StringUtils.isNotEmpty(individual)) {
                 Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), individual);
-                catalogManager.getSampleManager().search(study, query, new QueryOptions(), sessionId)
+                catalogManager.getSampleManager().search(study, query, new QueryOptions(), token)
                         .getResults()
                         .stream()
                         .map(Sample::getId)
                         .forEach(allSamples::add);
             }
             if (StringUtils.isNotEmpty(family)) {
-                Family family = catalogManager.getFamilyManager().get(study, this.family, null, sessionId).first();
+                Family family = catalogManager.getFamilyManager().get(study, this.family, null, token).first();
                 List<String> individualIds = new ArrayList<>(family.getMembers().size());
                 for (Individual member : family.getMembers()) {
                     individualIds.add(member.getId());
                 }
                 Query query = new Query(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), individualIds);
-                catalogManager.getSampleManager().search(study, query, new QueryOptions(), sessionId)
+                catalogManager.getSampleManager().search(study, query, new QueryOptions(), token)
                         .getResults()
                         .stream()
                         .map(Sample::getId)
@@ -154,7 +151,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
             }
 
             // Remove non-indexed samples
-            Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, sessionId);
+            Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, token);
             allSamples.removeIf(s -> !indexedSamples.contains(s));
 
         } catch (CatalogException e) {
@@ -174,7 +171,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
                             .append(VariantQueryParam.STUDY.key(), study)
                             .append(VariantQueryParam.INCLUDE_SAMPLE.key(), checkedSamplesList),
                     new QueryOptions(),
-                    sessionId);
+                    token);
         } catch (CatalogException | StorageEngineException e) {
             throw new AnalysisException(e);
         }
@@ -216,19 +213,19 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
                     .forEachRemaining(stats::add);
 
             try {
-                catalogManager.getStudyManager().getVariableSet(study, VARIABLE_SET_ID, new QueryOptions(), sessionId);
+                catalogManager.getStudyManager().getVariableSet(study, VARIABLE_SET_ID, new QueryOptions(), token);
             } catch (CatalogException e) {
                 // Assume variable set not found. Try to create
                 List<Variable> variables = AvroToAnnotationConverter.convertToVariableSet(SampleVariantStats.getClassSchema());
                 catalogManager.getStudyManager()
                         .createVariableSet(study, VARIABLE_SET_ID, VARIABLE_SET_ID, true, false, "", Collections.emptyMap(), variables,
-                        Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionId);
+                        Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token);
             }
 
             for (SampleVariantStats sampleStats : stats) {
                 AnnotationSet annotationSet = AvroToAnnotationConverter.convertToAnnotationSet(sampleStats, VARIABLE_SET_ID);
                 catalogManager.getSampleManager()
-                        .addAnnotationSet(study, sampleStats.getId(), annotationSet, new QueryOptions(), sessionId);
+                        .addAnnotationSet(study, sampleStats.getId(), annotationSet, new QueryOptions(), token);
             }
         } catch (IOException | CatalogException e) {
             throw new AnalysisException(e);

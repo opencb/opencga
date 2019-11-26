@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.analysis.executors;
+package org.opencb.opencga.app.cli.internal.executors;
 
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.hpg.bigdata.analysis.tools.ExecutorMonitor;
 import org.opencb.hpg.bigdata.analysis.tools.Status;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
-import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
+import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
@@ -40,7 +40,7 @@ import java.util.Map;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class AlignmentCommandExecutor extends AnalysisCommandExecutor {
+public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
     private final AlignmentCommandOptions alignmentCommandOptions;
 //    private AlignmentStorageEngine alignmentStorageManager;
@@ -87,7 +87,7 @@ public class AlignmentCommandExecutor extends AnalysisCommandExecutor {
         params.put("transform", true);
         // TODO: Calculate coverage and stats
 
-        String sessionId = cliOptions.commonOptions.sessionId;
+        String sessionId = cliOptions.commonOptions.token;
 
         // Initialize monitor
         ExecutorMonitor monitor = new ExecutorMonitor();
@@ -114,7 +114,7 @@ public class AlignmentCommandExecutor extends AnalysisCommandExecutor {
 
     private void query() throws InterruptedException, CatalogException, IOException {
         ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull("sid", alignmentCommandOptions.queryAlignmentCommandOptions.commonOptions.sessionId);
+        objectMap.putIfNotNull("sid", alignmentCommandOptions.queryAlignmentCommandOptions.commonOptions.token);
         objectMap.putIfNotNull("study", alignmentCommandOptions.queryAlignmentCommandOptions.study);
         objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), alignmentCommandOptions.queryAlignmentCommandOptions.region);
         objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(),
@@ -140,7 +140,7 @@ public class AlignmentCommandExecutor extends AnalysisCommandExecutor {
 
     private void stats() throws CatalogException, IOException {
         ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.sessionId);
+        objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.token);
         objectMap.putIfNotNull("study", alignmentCommandOptions.statsAlignmentCommandOptions.study);
         objectMap.putIfNotNull("region", alignmentCommandOptions.statsAlignmentCommandOptions.region);
         objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.statsAlignmentCommandOptions.minMappingQuality);
@@ -159,7 +159,7 @@ public class AlignmentCommandExecutor extends AnalysisCommandExecutor {
 
     private void coverage() throws CatalogException, IOException {
         ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull("sid", alignmentCommandOptions.coverageAlignmentCommandOptions.commonOptions.sessionId);
+        objectMap.putIfNotNull("sid", alignmentCommandOptions.coverageAlignmentCommandOptions.commonOptions.token);
         objectMap.putIfNotNull("study", alignmentCommandOptions.coverageAlignmentCommandOptions.study);
         objectMap.putIfNotNull("region", alignmentCommandOptions.coverageAlignmentCommandOptions.region);
         objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.coverageAlignmentCommandOptions.minMappingQuality);

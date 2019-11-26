@@ -79,14 +79,6 @@ public abstract class MonitorParentDaemon implements Runnable {
         return "J_" + jobId;
     }
 
-    void executeJob(String jobId, String commandLine, Path stdout, Path stderr, String token) {
-        try {
-            batchExecutor.execute(jobId, commandLine, stdout, stderr, token);
-        } catch (Exception e) {
-            logger.error("Error executing job {}.", jobId, e);
-        }
-    }
-
     void checkQueuedJob(Job job, Path tempJobFolder, CatalogIOManager catalogIOManager) {
 
         Path tmpOutdirPath = getJobTemporaryFolder(job.getUid(), tempJobFolder);

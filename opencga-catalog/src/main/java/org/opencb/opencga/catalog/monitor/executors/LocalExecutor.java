@@ -64,7 +64,7 @@ public class LocalExecutor implements BatchExecutor {
 
             logger.info("Ready to run {}", job.getCommandLine());
             Command com = new Command(getCommandLine(job.getCommandLine(), Paths.get(executorConfig.getStdout()),
-                    Paths.get(executorConfig.getStderr()), token));
+                    Paths.get(executorConfig.getStderr())));
 
 //                DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStdout()));
 //                com.setOutputOutputStream(dataOutputStream);
@@ -134,7 +134,7 @@ public class LocalExecutor implements BatchExecutor {
             Thread.currentThread().setName("LocalExecutor-" + nextThreadNum());
             logger.info("Ready to run - {}", commandLine);
             jobStatus.put(jobId, Enums.ExecutionStatus.RUNNING);
-            Command com = new Command(getCommandLine(commandLine, stdout, stderr, token));
+            Command com = new Command(getCommandLine(commandLine, stdout, stderr));
 
             Thread hook = new Thread(() -> {
                 logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");

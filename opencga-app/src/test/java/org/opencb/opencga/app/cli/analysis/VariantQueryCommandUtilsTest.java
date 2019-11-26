@@ -18,8 +18,9 @@ package org.opencb.opencga.app.cli.analysis;
 
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.app.cli.analysis.executors.VariantQueryCommandUtils;
-import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
+import org.opencb.opencga.app.cli.internal.InternalCliOptionsParser;
+import org.opencb.opencga.app.cli.internal.executors.VariantQueryCommandUtils;
+import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.util.Collections;
@@ -37,7 +38,7 @@ public class VariantQueryCommandUtilsTest {
     @Test
     public void parseQueryTest() throws Exception {
 
-        AnalysisCliOptionsParser cliOptionsParser = new AnalysisCliOptionsParser();
+        InternalCliOptionsParser cliOptionsParser = new InternalCliOptionsParser();
         VariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions = cliOptionsParser.getVariantCommandOptions().queryVariantCommandOptions;
 
         queryVariantsOptions.genericVariantQueryOptions.trait = "HP:0002812";

@@ -1,12 +1,12 @@
-package org.opencb.opencga.app.cli.analysis.executors;
+package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.hpg.bigdata.analysis.exceptions.AnalysisToolException;
 import org.opencb.opencga.analysis.ToolAnalysis;
-import org.opencb.opencga.app.cli.analysis.options.ToolsCommandOptions;
+import org.opencb.opencga.app.cli.internal.options.ToolsCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.slf4j.LoggerFactory;
 
-public class ToolsCommandExecutor extends AnalysisCommandExecutor {
+public class ToolsCommandExecutor extends InternalCommandExecutor {
 
     private final ToolsCommandOptions toolCommandOptions;
 
@@ -38,7 +38,7 @@ public class ToolsCommandExecutor extends AnalysisCommandExecutor {
         ToolsCommandOptions.ExecuteToolCommandOptions cliOptions = this.toolCommandOptions.executeToolCommandOptions;
         try {
             ToolAnalysis toolAnalysis = new ToolAnalysis(configuration);
-            toolAnalysis.execute(Long.parseLong(cliOptions.job), cliOptions.commonOptions.sessionId);
+            toolAnalysis.execute(Long.parseLong(cliOptions.job), cliOptions.commonOptions.token);
         } catch (CatalogException | AnalysisToolException e) {
             logger.error("{}", e.getMessage(), e);
         }

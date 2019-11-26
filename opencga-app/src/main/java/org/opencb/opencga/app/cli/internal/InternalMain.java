@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.analysis;
+package org.opencb.opencga.app.cli.internal;
 
 import com.beust.jcommander.ParameterException;
 import org.opencb.opencga.app.cli.CommandExecutor;
-import org.opencb.opencga.app.cli.analysis.executors.AlignmentCommandExecutor;
-import org.opencb.opencga.app.cli.analysis.executors.InterpretationCommandExecutor;
-import org.opencb.opencga.app.cli.analysis.executors.ToolsCommandExecutor;
-import org.opencb.opencga.app.cli.analysis.executors.VariantCommandExecutor;
+import org.opencb.opencga.app.cli.internal.executors.AlignmentCommandExecutor;
+import org.opencb.opencga.app.cli.internal.executors.InterpretationCommandExecutor;
+import org.opencb.opencga.app.cli.internal.executors.ToolsCommandExecutor;
+import org.opencb.opencga.app.cli.internal.executors.VariantCommandExecutor;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 /**
  * Created by imedina on 03/02/15.
  */
-public class AnalysisMain {
+public class InternalMain {
 
     public static final String VERSION = GitRepositoryState.get().getBuildVersion();
 
@@ -37,7 +37,7 @@ public class AnalysisMain {
 
     public static int privateMain(String[] args) {
 
-        AnalysisCliOptionsParser cliOptionsParser = new AnalysisCliOptionsParser();
+        InternalCliOptionsParser cliOptionsParser = new InternalCliOptionsParser();
         try {
             cliOptionsParser.parse(args);
         } catch (ParameterException e) {

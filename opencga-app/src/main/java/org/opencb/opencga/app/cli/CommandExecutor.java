@@ -41,7 +41,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by imedina on 19/04/16.
@@ -157,10 +156,10 @@ public abstract class CommandExecutor {
 
     @Deprecated
     protected String getSessionId(GeneralCliOptions.CommonCommandOptions commonOptions) {
-        if (StringUtils.isBlank(commonOptions.sessionId) && cliSession != null) {
+        if (StringUtils.isBlank(commonOptions.token) && cliSession != null) {
             return cliSession.getToken();
         } else {
-            return commonOptions.sessionId;
+            return commonOptions.token;
         }
     }
 

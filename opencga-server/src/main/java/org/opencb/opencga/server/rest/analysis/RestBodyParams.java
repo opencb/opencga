@@ -1,5 +1,8 @@
 package org.opencb.opencga.server.rest.analysis;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.io.IOException;
@@ -10,51 +13,55 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
-
 public class RestBodyParams {
-
-    public Map<String, String> dynamicParams;
-    private final Map<String, Field> knownParams;
+    private final Map<String, Field> internalFieldsMap;
 
     public RestBodyParams() {
-        knownParams = Arrays.stream(this.getClass().getFields())
-                .filter(f -> !f.getName().equals("knownParams")) // Discard itself!
+        internalFieldsMap = Arrays.stream(this.getClass().getFields())
+                .filter(f -> !f.getName().equals("internalFieldsMap"))
                 .collect(Collectors.toMap(Field::getName, Function.identity()));
     }
 
-    public Map<String, String> toParams() throws IOException {
-        ObjectMap objectMap = new ObjectMap(getUpdateObjectMapper().writeValueAsString(this));
-        HashMap<String, String> map = new HashMap<>(objectMap.size());
+    public String toJson() throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+//        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.PROTECTED_AND_PUBLIC);
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+        return objectMapper.writeValueAsString(this);
+    }
+
+    public ObjectMap toObjectMap() throws IOException {
+        return new ObjectMap(toJson());
+    }
+
+    public Map<String, Object> toParams() throws IOException {
+        ObjectMap objectMap = toObjectMap();
+        Map<String, Object> map = new HashMap<>(objectMap.size());
         addParams(map, objectMap);
-        if (dynamicParams != null) {
-            ObjectMap dynamicParams = new ObjectMap();
-            dynamicParams.putAll(this.dynamicParams);
-            addParams(map, dynamicParams);
-        }
         return map;
     }
 
-    public Map<String, String> toParams(ObjectMap otherParams) throws IOException {
-        Map<String, String> map = toParams();
+    public Map<String, Object> toParams(ObjectMap otherParams) throws IOException {
+        Map<String, Object> map = toParams();
         addParams(map, otherParams);
         return map;
     }
 
-    private void addParams(Map<String, String> map, ObjectMap params) {
+    private void addParams(Map<String, Object> map, ObjectMap params) {
         for (String key : params.keySet()) {
-            Field field = knownParams.get(key);
-            if (field != null) {
+            Field field = internalFieldsMap.get(key);
+            String value = params.getString(key);
+            if (StringUtils.isNotEmpty(value)) {
                 // native boolean fields are "flags"
-                if (field.getType() == boolean.class) {
-                    if (params.getString(key).equals("true")) {
+                if (field != null && field.getType() == boolean.class) {
+                    if (value.equals("true")) {
                         map.put(key, "");
                     }
+                } else if (field != null &&  Map.class.isAssignableFrom(field.getType())) {
+                    map.put(key, params.getMap(key));
                 } else {
-                    map.put(key, params.getString(key));
+                    map.put(key, value);
                 }
-            } else {
-                map.put("-D" + key, params.getString(key));
             }
         }
     }

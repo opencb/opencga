@@ -78,9 +78,9 @@ public class VariantExportStorageOperation extends OpenCgaAnalysis {
     protected void check() throws Exception {
         super.check();
         VariantCatalogQueryUtils catalogUtils = new VariantCatalogQueryUtils(catalogManager);
-        String study = catalogUtils.getAnyStudy(query, sessionId);
-        List<String> studies = catalogUtils.getStudies(query, sessionId);
-        dataStore = variantStorageManager.getDataStore(study, sessionId);
+        String study = catalogUtils.getAnyStudy(query, token);
+        List<String> studies = catalogUtils.getStudies(query, token);
+        dataStore = variantStorageManager.getDataStore(study, token);
 
         if (!VariantWriterFactory.isStandardOutput(outputFileStr)) {
             URI outdirUri;
@@ -124,7 +124,7 @@ public class VariantExportStorageOperation extends OpenCgaAnalysis {
         step(() -> {
             try (VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore)) {
                 VariantMetadataFactory metadataExporter =
-                        new CatalogVariantMetadataFactory(catalogManager, variantStorageEngine.getDBAdaptor(), sessionId);
+                        new CatalogVariantMetadataFactory(catalogManager, variantStorageEngine.getDBAdaptor(), token);
 
                 URI variantsFileUri = StringUtils.isEmpty(variantsFile) ? null : UriUtils.createUri(variantsFile);
                 variantStorageEngine.exportData(outputFile, outputFormat, variantsFileUri, query, new QueryOptions(params), metadataExporter);

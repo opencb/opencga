@@ -61,7 +61,7 @@ public class TieringInterpretationAnalysis extends InterpretationAnalysis {
         OpenCGAResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),
-                    sessionId);
+                    token);
         } catch (
                 CatalogException e) {
             throw new AnalysisException(e);
@@ -73,7 +73,7 @@ public class TieringInterpretationAnalysis extends InterpretationAnalysis {
         clinicalAnalysis = clinicalAnalysisQueryResult.first();
 
         // Check disease panels
-        diseasePanels = clinicalInterpretationManager.getDiseasePanels(studyId, diseasePanelIds, sessionId);
+        diseasePanels = clinicalInterpretationManager.getDiseasePanels(studyId, diseasePanelIds, token);
 
         // Update executor params with OpenCGA home and session ID
         setUpStorageEngineExecutor(studyId);

@@ -632,74 +632,6 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
-    /**
-     * Register files (not directories) assuming the file already exists in the file system and it is in the final path.
-     *
-     * @param studyStr Study to which the file will be associated.
-     * @param path Path of the file to be registered.
-     * @param options QueryOptions object.
-     * @param token Token.
-     * @return An OpenCGAResult containing the registered file.
-     * @throws CatalogException if there is any error.
-     */
-    public OpenCGAResult<File> register(String studyStr, Path path, QueryOptions options, String token) throws CatalogException {
-        String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
-
-        ObjectMap auditParams = new ObjectMap()
-                .append("study", studyStr)
-                .append("path", path)
-                .append("options", options)
-                .append("token", token);
-        try {
-            URI uri = UriUtils.createUri(path.toString());
-            // Check uri not in use in OpenCGA
-            Query query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                    .append(FileDBAdaptor.QueryParams.URI.key(), uri.toString());
-            if (fileDBAdaptor.count(query).getNumMatches() == 1) {
-                throw new CatalogException("Path " + path + " already registered in Catalog");
-            }
-
-            if (!path.toFile().isFile()) {
-                throw new CatalogException("Operation 'register' is only supported for files. Unable to register '" + path + "'");
-            }
-
-            URI parentUri = UriUtils.createUri(path.getParent().toString());
-            query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                    .append(FileDBAdaptor.QueryParams.URI.key(), parentUri.toString());
-            OpenCGAResult<File> fileOpenCGAResult = fileDBAdaptor.get(query, INCLUDE_FILE_URI_PATH);
-            if (fileOpenCGAResult.getNumResults() == 0) {
-                throw new CatalogException("Parent path " + parentUri.toString() + " not found.");
-            }
-            File parentDirectory = fileOpenCGAResult.first();
-
-            // Check the user have write permissions in the directory
-            authorizationManager.checkFilePermission(study.getUid(), parentDirectory.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
-
-            File file = new File()
-                    .setName(path.toFile().getName())
-                    .setPath(parentDirectory.getPath() + path.toFile().getName())
-                    .setUri(uri)
-                    .setExternal(parentDirectory.isExternal());
-
-            OpenCGAResult<File> result = create(study, file, false, null, options, token);
-            auditManager.auditCreate(userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return result;
-        } catch (CatalogException e) {
-            auditManager.auditCreate(userId, Enums.Resource.FILE, path.toString().replace("/", ":"), "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            throw e;
-        } catch (URISyntaxException e) {
-            auditManager.auditCreate(userId, Enums.Resource.FILE, path.toString().replace("/", ":"), "", study.getId(), study.getUuid(),
-                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", "Could not register file: "
-                            +  e.getMessage())));
-            throw new CatalogException("Could not register file: " + e.getMessage(), e.getCause());
-        }
-    }
-
     void validateNewFile(Study study, File file, String sessionId, boolean overwrite) throws CatalogException {
         /** Check and set all the params and create a File object **/
         ParamUtils.checkObj(file, "File");
@@ -842,9 +774,7 @@ public class FileManager extends AnnotationSetManager<File> {
             ioManager.createDirectory(Paths.get(file.getUri()).getParent().toUri(), true);
             InputStream inputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
             ioManager.createFile(file.getUri(), inputStream);
-        }
 
-        if (file.getType() == File.Type.FILE) {
             new FileMetadataReader(catalogManager).addMetadataInformation(study, file, sessionId);
             validateNewSamples(study, file, sessionId);
         }

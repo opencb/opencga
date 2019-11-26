@@ -23,9 +23,11 @@ import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.analysis.AlignmentClient;
 import org.opencb.opencga.client.rest.analysis.VariantClient;
 import org.opencb.opencga.client.rest.catalog.*;
+import org.opencb.opencga.client.rest.operations.OperationClient;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Created by imedina on 04/05/16.
@@ -65,78 +67,72 @@ public class OpenCGAClient {
 
 
     public UserClient getUserClient() {
-        clients.putIfAbsent("USER", new UserClient(userId, sessionId, clientConfiguration));
-        return (UserClient) clients.get("USER");
+        return getClient(UserClient.class, () -> new UserClient(userId, sessionId, clientConfiguration));
     }
 
     public ProjectClient getProjectClient() {
-        clients.putIfAbsent("PROJECT", new ProjectClient(userId, sessionId, clientConfiguration));
-        return (ProjectClient) clients.get("PROJECT");
+        return getClient(ProjectClient.class, () -> new ProjectClient(userId, sessionId, clientConfiguration));
     }
 
     public StudyClient getStudyClient() {
-        clients.putIfAbsent("STUDY", new StudyClient(userId, sessionId, clientConfiguration));
-        return (StudyClient) clients.get("STUDY");
+        return getClient(StudyClient.class, () -> new StudyClient(userId, sessionId, clientConfiguration));
     }
 
     public FileClient getFileClient() {
-        clients.putIfAbsent("FILE", new FileClient(userId, sessionId, clientConfiguration));
-        return (FileClient) clients.get("FILE");
+        return getClient(FileClient.class, () -> new FileClient(userId, sessionId, clientConfiguration));
     }
 
     public JobClient getJobClient() {
-        clients.putIfAbsent("JOB", new JobClient(userId, sessionId, clientConfiguration));
-        return (JobClient) clients.get("JOB");
+        return getClient(JobClient.class, () -> new JobClient(userId, sessionId, clientConfiguration));
     }
 
     public IndividualClient getIndividualClient() {
-        clients.putIfAbsent("INDIVIDUAL", new IndividualClient(userId, sessionId, clientConfiguration));
-        return (IndividualClient) clients.get("INDIVIDUAL");
+        return getClient(IndividualClient.class, () -> new IndividualClient(userId, sessionId, clientConfiguration));
     }
 
     public SampleClient getSampleClient() {
-        clients.putIfAbsent("SAMPLE", new SampleClient(userId, sessionId, clientConfiguration));
-        return (SampleClient) clients.get("SAMPLE");
+        return getClient(SampleClient.class, () -> new SampleClient(userId, sessionId, clientConfiguration));
     }
 
     public VariableSetClient getVariableClient() {
-        clients.putIfAbsent("VARIABLE", new VariableSetClient(sessionId, clientConfiguration, userId));
-        return (VariableSetClient) clients.get("VARIABLE");
+        return getClient(VariableSetClient.class, () -> new VariableSetClient(sessionId, clientConfiguration, userId));
     }
 
     public CohortClient getCohortClient() {
-        clients.putIfAbsent("COHORT", new CohortClient(userId, sessionId, clientConfiguration));
-        return (CohortClient) clients.get("COHORT");
+        return getClient(CohortClient.class, () -> new CohortClient(userId, sessionId, clientConfiguration));
     }
 
     public ClinicalAnalysisClient getClinicalAnalysisClient() {
-        clients.putIfAbsent("CLINICAL_ANALYSIS_ID", new ClinicalAnalysisClient(userId, sessionId, clientConfiguration));
-        return (ClinicalAnalysisClient) clients.get("CLINICAL_ANALYSIS_ID");
+        return getClient(ClinicalAnalysisClient.class, () -> new ClinicalAnalysisClient(userId, sessionId, clientConfiguration));
     }
 
     public PanelClient getPanelClient() {
-        clients.putIfAbsent("PANEL", new PanelClient(userId, sessionId, clientConfiguration));
-        return (PanelClient) clients.get("PANEL");
+        return getClient(PanelClient.class, () -> new PanelClient(userId, sessionId, clientConfiguration));
     }
 
     public FamilyClient getFamilyClient() {
-        clients.putIfAbsent("FAMILY", new FamilyClient(userId, sessionId, clientConfiguration));
-        return (FamilyClient) clients.get("FAMILY");
+        return getClient(FamilyClient.class, () -> new FamilyClient(userId, sessionId, clientConfiguration));
     }
 
     public ToolClient getToolClient() {
-        clients.putIfAbsent("TOOL", new ToolClient(userId, sessionId, clientConfiguration));
-        return (ToolClient) clients.get("TOOL");
+        return getClient(ToolClient.class, () -> new ToolClient(userId, sessionId, clientConfiguration));
     }
 
     public AlignmentClient getAlignmentClient() {
-        clients.putIfAbsent("ALIGNMENT", new AlignmentClient(userId, sessionId, clientConfiguration));
-        return (AlignmentClient) clients.get("ALIGNMENT");
+        return getClient(AlignmentClient.class, () -> new AlignmentClient(userId, sessionId, clientConfiguration));
     }
 
     public VariantClient getVariantClient() {
-        clients.putIfAbsent("VARIANT", new VariantClient(userId, sessionId, clientConfiguration));
-        return (VariantClient) clients.get("VARIANT");
+        return getClient(VariantClient.class, () -> new VariantClient(userId, sessionId, clientConfiguration));
+    }
+
+    public OperationClient getOperationClient() {
+        return getClient(OperationClient.class, () -> new OperationClient(userId, sessionId, clientConfiguration));
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends AbstractParentClient> T getClient(Class<T> clazz, Supplier<T> constructor) {
+        return (T) clients.computeIfAbsent(clazz.getName(), (k) -> constructor.get());
     }
 
     /**

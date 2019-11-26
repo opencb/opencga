@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.cli.analysis.options;
+package org.opencb.opencga.app.cli.internal.options;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;

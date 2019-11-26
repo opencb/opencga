@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.analysis.executors;
+package org.opencb.opencga.app.cli.internal.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
@@ -22,7 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.interpretation.*;
-import org.opencb.opencga.app.cli.analysis.options.InterpretationCommandOptions;
+import org.opencb.opencga.app.cli.internal.options.InterpretationCommandOptions;
 import org.opencb.opencga.core.exception.AnalysisException;
 
 import java.nio.file.Path;
@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 
-public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
+public class InterpretationCommandExecutor extends InternalCommandExecutor {
 
     private final InterpretationCommandOptions interpretationCommandOptions;
 
@@ -72,7 +72,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         InterpretationCommandOptions.TeamCommandOptions options = interpretationCommandOptions.teamCommandOptions;
 
         // Prepare analysis parameters and config
-        String token = options.commonOptions.sessionId;
+        String token = options.commonOptions.token;
 
         String studyId = options.studyId;
         String clinicalAnalysisId = options.clinicalAnalysisId;
@@ -112,7 +112,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         InterpretationCommandOptions.TieringCommandOptions options = interpretationCommandOptions.tieringCommandOptions;
 
         // Prepare analysis parameters and config
-        String token = options.commonOptions.sessionId;
+        String token = options.commonOptions.token;
 
         String studyId = options.studyId;
         String clinicalAnalysisId = options.clinicalAnalysisId;
@@ -147,7 +147,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         InterpretationCommandOptions.CancerTieringCommandOptions options = interpretationCommandOptions.cancerTieringCommandOptions;
 
         // Prepare analysis parameters and config
-        String token = options.commonOptions.sessionId;
+        String token = options.commonOptions.token;
 
         String studyId = options.studyId;
         String clinicalAnalysisId = options.clinicalAnalysisId;
@@ -177,7 +177,7 @@ public class InterpretationCommandExecutor extends AnalysisCommandExecutor {
         InterpretationCommandOptions.CustomCommandOptions options = interpretationCommandOptions.customCommandOptions;
 
         // Prepare analysis parameters and config
-        String token = options.commonOptions.sessionId;
+        String token = options.commonOptions.token;
 
         String studyId = options.studyId;
         String clinicalAnalysisId = options.clinicalAnalysisId;

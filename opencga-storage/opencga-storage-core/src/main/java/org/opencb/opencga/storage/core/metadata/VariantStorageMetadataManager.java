@@ -508,11 +508,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         return projectMetadata;
     }
 
-
-    public DataResult<Long> countVariantFileMetadata(Query query) {
-        return fileDBAdaptor.count(query);
-    }
-
     public DataResult<VariantFileMetadata> getVariantFileMetadata(int studyId, int fileId, QueryOptions options)
             throws StorageEngineException {
         return fileDBAdaptor.getVariantFileMetadata(studyId, fileId, options);

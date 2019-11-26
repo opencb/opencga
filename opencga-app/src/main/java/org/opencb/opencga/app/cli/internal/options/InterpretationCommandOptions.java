@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.analysis.options;
+package org.opencb.opencga.app.cli.internal.options;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -27,11 +27,8 @@ import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAna
 import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 
 import static org.opencb.opencga.analysis.clinical.interpretation.InterpretationAnalysis.*;
-import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.*;
-import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.PANEL_DESC;
 
 @Parameters(commandNames = {"interpretation"}, commandDescription = "Implement several interpretation analysis")
 public class InterpretationCommandOptions {

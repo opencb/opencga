@@ -52,7 +52,7 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
             throw new AnalysisException("Missing study");
         }
         try {
-            catalogManager.getStudyManager().get(studyId, null, sessionId).first().getFqn();
+            catalogManager.getStudyManager().get(studyId, null, token).first().getFqn();
         } catch (CatalogException e) {
             throw new AnalysisException(e);
         }
@@ -66,7 +66,7 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
         OpenCGAResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),
-                    sessionId);
+                    token);
         } catch (CatalogException e) {
             throw new AnalysisException(e);
         }
@@ -79,7 +79,7 @@ public class TeamInterpretationAnalysis extends InterpretationAnalysis {
         if (CollectionUtils.isEmpty(diseasePanelIds)) {
             throw new AnalysisException("Missing disease panels for TEAM interpretation analysis");
         }
-        diseasePanels = clinicalInterpretationManager.getDiseasePanels(studyId, diseasePanelIds, sessionId);
+        diseasePanels = clinicalInterpretationManager.getDiseasePanels(studyId, diseasePanelIds, token);
         if (CollectionUtils.isEmpty(diseasePanels)) {
             throw new AnalysisException("Disease panels not found for TEAM interpretation analysis: "
                     + StringUtils.join(diseasePanelIds, ","));

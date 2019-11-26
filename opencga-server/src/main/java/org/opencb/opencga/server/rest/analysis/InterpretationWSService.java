@@ -27,8 +27,8 @@ import org.opencb.opencga.catalog.models.update.InterpretationUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.Interpretation;
+import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -779,7 +779,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(value= VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR) @QueryParam("familySegregation") String segregation) {
         try {
             // Get analysis params and config from query
-            Map<String, String> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>();
 
             params.put(InterpretationAnalysis.STUDY_PARAM_NAME, studyId);
             params.put(InterpretationAnalysis.CLINICAL_ANALYISIS_PARAM_NAME, clinicalAnalysisId);
@@ -813,7 +813,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(value = "Penetrance", defaultValue = "COMPLETE") @QueryParam("penetrance") ClinicalProperty.Penetrance penetrance) {
         try {
             // Get analysis params and config from query
-            Map<String, String> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>();
 
             params.put(InterpretationAnalysis.STUDY_PARAM_NAME, studyId);
             params.put(InterpretationAnalysis.CLINICAL_ANALYISIS_PARAM_NAME, clinicalAnalysisId);
@@ -929,7 +929,7 @@ public class InterpretationWSService extends AnalysisWSService {
                     String studyId) {
         try {
             // Get analysis params and config from query
-            Map<String, String> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>();
 
             query.keySet().forEach(k -> params.put(k, query.getString(k)));
 
@@ -962,7 +962,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(value = "Comma separated list of variant IDs to discard") @QueryParam("panelIds") String variantIdsToDiscard) {
         try {
             // Get analysis params and config from query
-            Map<String, String> params = new HashMap<>();
+            Map<String, Object> params = new HashMap<>();
 
             params.put(InterpretationAnalysis.STUDY_PARAM_NAME, studyId);
             params.put(InterpretationAnalysis.CLINICAL_ANALYISIS_PARAM_NAME, clinicalAnalysisId);
@@ -1142,7 +1142,7 @@ public class InterpretationWSService extends AnalysisWSService {
         }
     }
 
-    private void setConfigParams(Map<String, String> params, MultivaluedMap<String, String> queryParameters) {
+    private void setConfigParams(Map<String, Object> params, MultivaluedMap<String, String> queryParameters) {
         if (queryParameters.containsKey(MAX_LOW_COVERAGE_PARAM_NAME)) {
             params.put(MAX_LOW_COVERAGE_PARAM_NAME, queryParameters.getFirst(MAX_LOW_COVERAGE_PARAM_NAME));
         }

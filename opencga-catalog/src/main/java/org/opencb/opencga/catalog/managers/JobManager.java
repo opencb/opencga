@@ -291,14 +291,15 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
-    private void autoCompleteNewJob(Study study, Job job) throws CatalogException {
+    private void autoCompleteNewJob(Study study, Job job, String token) throws CatalogException {
         ParamUtils.checkObj(job, "Job");
 
         // Auto generate id
         if (StringUtils.isEmpty(job.getId())) {
             String command = String.valueOf(job.getAttributes().get(Job.OPENCGA_COMMAND));
             String subcommand = String.valueOf(job.getAttributes().get(Job.OPENCGA_SUBCOMMAND));
-            job.setId(command + "-" + subcommand + "-" + TimeUtils.getTime() + "-" + org.opencb.commons.utils.StringUtils.randomString(6));
+            job.setId(command + INTERNAL_DELIMITER + subcommand + INTERNAL_DELIMITER + TimeUtils.getTime() + INTERNAL_DELIMITER
+                    + org.opencb.commons.utils.StringUtils.randomString(6));
         }
         job.setPriority(ParamUtils.defaultObject(job.getPriority(), Enums.Priority.MEDIUM));
         job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
@@ -308,15 +309,57 @@ public class JobManager extends ResourceManager<Job> {
         if (job.getStatus() == null || StringUtils.isEmpty(job.getStatus().getName())) {
             job.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.PENDING));
         }
+
+        // Look for input files
+        String fileParamSuffix = "file";
+        List<File> inputFiles = new ArrayList<>();
+        if (job.getParams() != null) {
+            Map<String, Object> dynamicParams = null;
+            for (Map.Entry<String, Object> entry : job.getParams().entrySet()) {
+                // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in catalog
+                if (entry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
+                    try {
+                        // Validate the user has access to the file
+                        File file = catalogManager.getFileManager().get(study.getFqn(), (String) entry.getValue(),
+                                FileManager.INCLUDE_FILE_URI_PATH, token).first();
+                        inputFiles.add(file);
+                    } catch (CatalogException e) {
+                        throw new CatalogException("Cannot find file '" + entry.getValue() + "' from variable '" + entry.getKey() + "'. ",
+                                e);
+                    }
+                } else if (entry.getValue() instanceof Map) {
+                    // If we have found a map for further dynamic params...
+                    dynamicParams = (Map<String, Object>) entry.getValue();
+                }
+            }
+            if (dynamicParams != null) {
+                // We look for files in the dynamic params
+                for (Map.Entry<String, Object> entry : dynamicParams.entrySet()) {
+                    if (entry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
+                        // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in catalog
+                        try {
+                            // Validate the user has access to the file
+                            File file = catalogManager.getFileManager().get(study.getFqn(), (String) entry.getValue(),
+                                    FileManager.INCLUDE_FILE_URI_PATH, token).first();
+                            inputFiles.add(file);
+                        } catch (CatalogException e) {
+                            throw new CatalogException("Cannot find file '" + entry.getValue() + "' from variable '" + entry.getKey()
+                                    + "'. ", e);
+                        }
+                    }
+                }
+            }
+        }
+        job.setInput(inputFiles);
     }
 
     public OpenCGAResult<Job> submit(String studyStr, String command, String subcommand, Enums.Priority priority,
-                                     Map<String, String> params, String token) throws CatalogException {
+                                     Map<String, Object> params, String token) throws CatalogException {
         return submit(studyStr, command, subcommand, priority, params, null, null, null, null, token);
     }
 
     public OpenCGAResult<Job> submit(String studyStr, String command, String subcommand, Enums.Priority priority,
-                Map<String, String> params, String jobId, String jobName, String jobDescription, List<String> jobTags, String token)
+                Map<String, Object> params, String jobId, String jobName, String jobDescription, List<String> jobTags, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
@@ -346,7 +389,7 @@ public class JobManager extends ResourceManager<Job> {
             job.setAttributes(attributes);
             job.setPriority(priority);
 
-            autoCompleteNewJob(study, job);
+            autoCompleteNewJob(study, job, token);
 
             jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
             OpenCGAResult<Job> jobResult = jobDBAdaptor.get(job.getUid(), new QueryOptions());

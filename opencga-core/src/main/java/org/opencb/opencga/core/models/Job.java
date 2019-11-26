@@ -35,7 +35,7 @@ public class Job extends PrivateStudyUid {
     private String userId;
     private String commandLine;
 
-    private Map<String, String> params;
+    private Map<String, Object> params;
 
     private String creationDate;
     private String modificationDate;
@@ -84,7 +84,7 @@ public class Job extends PrivateStudyUid {
     public Job() {
     }
 
-    public Job(String id, String uuid, String name, String description, String userId, String commandLine, Map<String, String> params,
+    public Job(String id, String uuid, String name, String description, String userId, String commandLine, Map<String, Object> params,
                String creationDate, String modificationDate, Enums.Priority priority, Enums.ExecutionStatus status, File outDir,
                List<File> input, List<File> output, List<String> tags, AnalysisResult result, File log, File errorLog, int release,
                Map<String, Object> attributes) {
@@ -206,11 +206,11 @@ public class Job extends PrivateStudyUid {
         return this;
     }
 
-    public Map<String, String> getParams() {
+    public Map<String, Object> getParams() {
         return params;
     }
 
-    public Job setParams(Map<String, String> params) {
+    public Job setParams(Map<String, Object> params) {
         this.params = params;
         return this;
     }

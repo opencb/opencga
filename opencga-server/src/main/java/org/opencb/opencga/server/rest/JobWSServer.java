@@ -61,7 +61,7 @@ public class JobWSServer extends OpenCGAWSServer {
         public InputJob() {
         }
 
-        public InputJob(String id, String name, String description, String commandLine, Map<String, String> params, Enums.ExecutionStatus status) {
+        public InputJob(String id, String name, String description, String commandLine, Map<String, Object> params, Enums.ExecutionStatus status) {
             this.id = id;
             this.name = name;
             this.description = description;
@@ -78,7 +78,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
         private String commandLine;
 
-        private Map<String, String> params;
+        private Map<String, Object> params;
 
         private String creationDate;
         private Enums.ExecutionStatus status;
@@ -111,7 +111,7 @@ public class JobWSServer extends OpenCGAWSServer {
             return commandLine;
         }
 
-        public Map<String, String> getParams() {
+        public Map<String, Object> getParams() {
             return params;
         }
 
@@ -450,7 +450,7 @@ public class JobWSServer extends OpenCGAWSServer {
         private String name;
         private String description;
 
-        private Map<String, String> params;
+        private Map<String, Object> params;
 
         public JobExecutionParams() {
         }
@@ -482,11 +482,11 @@ public class JobWSServer extends OpenCGAWSServer {
             return this;
         }
 
-        public Map<String, String> getParams() {
+        public Map<String, Object> getParams() {
             return params;
         }
 
-        public JobExecutionParams setParams(Map<String, String> params) {
+        public JobExecutionParams setParams(Map<String, Object> params) {
             this.params = params;
             return this;
         }

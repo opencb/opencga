@@ -39,7 +39,7 @@ public class VcfOutputWriter extends AbstractOutputWriter {
         if (checkErrors(queryResponse)) {
             return;
         }
-        print((VariantQueryResult<Variant>) queryResponse.first(), null);
+        print(new VariantQueryResult<Variant>(queryResponse.first()), null);
     }
 
     public void print(VariantQueryResult<Variant> variantQueryResult) {

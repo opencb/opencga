@@ -35,6 +35,7 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -52,7 +53,6 @@ import org.opencb.opencga.server.rest.analysis.RestBodyParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
@@ -74,7 +74,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObjectMapper;
-import static org.opencb.opencga.server.rest.analysis.AnalysisWSService.*;
 
 @ApplicationPath("/")
 @Path("/{apiVersion}")
@@ -136,6 +135,9 @@ public class OpenCGAWSServer {
     private static final int MAX_ID_SIZE = 100;
 
     private static String errorMessage;
+
+    public static final String STUDY_PARAM = "study";
+    public static final String STUDY_PARAM_DESCRIPTION = "Study [[user@]project:]study where study and project can be either the id or alias";
 
     static {
         initialized = new AtomicBoolean(false);
@@ -408,13 +410,13 @@ public class OpenCGAWSServer {
     }
 
 
-    protected void addParamIfNotNull(Map<String, String> params, String key, Object value) {
+    protected void addParamIfNotNull(Map<String, Object> params, String key, Object value) {
         if (key != null && value != null) {
             params.put(key, value.toString());
         }
     }
 
-    protected void addParamIfTrue(Map<String, String> params, String key, boolean value) {
+    protected void addParamIfTrue(Map<String, Object> params, String key, boolean value) {
         if (key != null && value) {
             params.put(key, Boolean.toString(value));
         }
@@ -709,24 +711,30 @@ public class OpenCGAWSServer {
     }
 
     public Response submitJob(String study, String command, String subcommand, RestBodyParams bodyParams,
-                              String jobId, String jobName, String jobDescription, List<String> jobTags) {
+                              String jobName, String jobDescription, List<String> jobTags) {
         return run(() -> {
-            // Include QueryParams?
-//            ObjectMap params = new ObjectMap(this.params);
-//            params.remove(JOB_ID);
-//            params.remove(JOB_NAME);
-//            params.remove(JOB_DESCRIPTION);
-//            params.remove(JOB_TAGS);
-//            Map<String, String> paramsMap = bodyParams.toParams(params);
-            Map<String, String> paramsMap = bodyParams.toParams();
+            Map<String, Object> paramsMap = bodyParams.toParams();
+            paramsMap.putIfAbsent("study", study);
             return catalogManager
                     .getJobManager()
                     .submit(study, command, subcommand, Enums.Priority.MEDIUM, paramsMap,
-                            jobId,
+                            null,
                             jobName,
                             jobDescription,
                             jobTags, token);
         });
+
+    }
+
+    public Response submitJob(String study, String command, String subcommand, Map<String, Object> paramsMap,
+                              String jobId, String jobName, String jobDescription, List<String> jobTags) {
+        return run(() -> catalogManager
+                .getJobManager()
+                .submit(study, command, subcommand, Enums.Priority.MEDIUM, paramsMap,
+                        jobId,
+                        jobName,
+                        jobDescription,
+                        jobTags, token));
 
     }
 

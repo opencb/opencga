@@ -9,10 +9,13 @@ import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.ScalableResource;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Execution;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.common.Enums;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -42,6 +45,7 @@ public class K8SExecutor implements BatchExecutor {
     private List<VolumeMount> volumeMounts;
     private Config k8sConfig;
     private KubernetesClient kubernetesClient;
+    private static Logger logger = LoggerFactory.getLogger(K8SExecutor.class);
 
     public K8SExecutor(Execution execution) {
         this.k8sClusterMaster = execution.getOptions().getString(K8S_MASTER_NODE);
@@ -60,56 +64,97 @@ public class K8SExecutor implements BatchExecutor {
         requests.put("cpu", new Quantity(this.cpu));
         requests.put("memory", new Quantity(this.memory));
 
-        String jobName = "opencga-job-" + jobId.replace("_", "-");
+        String jobName = buildJobName(jobId);
         final io.fabric8.kubernetes.api.model.batch.Job k8sJob = new JobBuilder()
-                    .withApiVersion("batch/v1")
-                    .withKind(K8S_KIND)
-                    .withNewMetadata()
-                        .withName(jobName)
-                        .withLabels(Collections.singletonMap("opencga", "job"))
-//                        .withAnnotations(Collections.singletonMap("variantFileSize", Long.toString(job.getSize())))
-                    .endMetadata()
-                    .withNewSpec()
-                    .withTtlSecondsAfterFinished(30)
-                    .withNewTemplate()
-                    .withNewSpec()
-                    .addNewContainer()
+                .withApiVersion("batch/v1")
+                .withKind(K8S_KIND)
+                .withNewMetadata()
                     .withName(jobName)
-                    .withImage(this.imageName)
-                    .withImagePullPolicy("Always")
-                    .withResources(new ResourceRequirementsBuilder().withRequests(requests).build())
-                    .withArgs("/bin/sh", "-c", commandLine)
-                    .withVolumeMounts(this.volumeMounts)
-                    .endContainer()
-
-                .withNodeSelector(Collections.singletonMap("node", "worker"))
-                    .withRestartPolicy("Never")
-                    .withVolumes(new VolumeBuilder().withName("conf").withConfigMap(new ConfigMapVolumeSourceBuilder()
-                                    .withName("conf").build()).build(),
-                            new VolumeBuilder().withName("opencga-shared")
-                                    .withNewPersistentVolumeClaim("opencga-storage-claim", false).build())
-                    .endSpec()
+                    .withLabels(Collections.singletonMap("opencga", "job"))
+    //                        .withAnnotations(Collections.singletonMap("variantFileSize", Long.toString(job.getSize())))
+                .endMetadata()
+                .withNewSpec()
+                    .withTtlSecondsAfterFinished(30)
+                    .withBackoffLimit(0) // specify the number of retries before considering a Job as failed
+                    .withNewTemplate()
+                        .withNewSpec()
+                            .addNewContainer()
+                                .withName(jobName)
+                                .withImage(this.imageName)
+                                .withImagePullPolicy("Always")
+                                .withResources(new ResourceRequirementsBuilder().withRequests(requests).build())
+                                .withArgs("/bin/sh", "-c", getCommandLine(commandLine, stdout, stderr))
+                                .withVolumeMounts(this.volumeMounts)
+                            .endContainer()
+                            .withNodeSelector(Collections.singletonMap("node", "worker"))
+                            .withRestartPolicy("Never")
+                            .withVolumes(
+                                    new VolumeBuilder()
+                                            .withName("conf")
+                                            .withConfigMap(new ConfigMapVolumeSourceBuilder()
+                                                    .withDefaultMode(0555) // r-x r-x r-x
+                                                    .withName("conf").build()).build(),
+                                    new VolumeBuilder()
+                                            .withName("confhadoop")
+                                            .withConfigMap(new ConfigMapVolumeSourceBuilder()
+                                                    .withDefaultMode(0555) // r-x r-x r-x
+                                                    .withName("confhadoop").build()).build(),
+                                    new VolumeBuilder()
+                                            .withName("opencga-shared")
+                                            .withNewPersistentVolumeClaim("opencga-storage-claim", false).build())
+                        .endSpec()
                     .endTemplate()
-                    .endSpec()
-                    .build();
+                .endSpec()
+                .build();
 
             getKubernetesClient().batch().jobs().inNamespace(namespace).create(k8sJob);
+    }
+
+    /**
+     * Build a valid K8S job name.
+     *
+     * DNS-1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must
+     * start and end with an alphanumeric character (e.g. 'example.com', regex used for validation
+     * is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
+     * @param jobId job Is
+     * @return valid name
+     */
+    protected static String buildJobName(String jobId) {
+        jobId = jobId.replace("_", "-");
+        int[] invalidChars = jobId
+                .chars()
+                .filter(c -> c != '-' && c != '.' && !StringUtils.isAlphanumeric(String.valueOf((char) c)))
+                .toArray();
+        for (int invalidChar : invalidChars) {
+            jobId = jobId.replace(((char) invalidChar), '.');
+        }
+        return ("opencga-job-" + jobId).toLowerCase();
     }
 
     @Override
     public String getStatus(Job job) {
 
-            ScalableResource<io.fabric8.kubernetes.api.model.batch.Job, DoneableJob> k8Job =
-                    getKubernetesClient().batch().jobs().inNamespace(namespace).withName("opencga-job-" + job.getId().replace("_", "-"));
+        String k8sJobName = buildJobName(job.getId());
+        ScalableResource<io.fabric8.kubernetes.api.model.batch.Job, DoneableJob> resource =
+                getKubernetesClient().batch().jobs().inNamespace(namespace).withName(k8sJobName);
 
-            if (k8Job.get().getStatus().getActive() > 0) {
-                return Enums.ExecutionStatus.RUNNING;
-            } else if (k8Job.get().getStatus().getSucceeded() > 0) {
-                return Enums.ExecutionStatus.DONE;
-            } else if (k8Job.get().getStatus().getFailed() > 0) {
-                return Enums.ExecutionStatus.ERROR;
-            }
+        io.fabric8.kubernetes.api.model.batch.Job k8Job = resource.get();
+
+        if (k8Job == null || k8Job.getStatus() == null) {
+            logger.debug("k8Job '" + k8sJobName + "' status = " + Enums.ExecutionStatus.UNKNOWN + ". Missing k8sJob");
             return Enums.ExecutionStatus.UNKNOWN;
+        } else if (k8Job.getStatus().getActive() != null && k8Job.getStatus().getActive() > 0) {
+            logger.debug("k8Job '" + k8sJobName + "' status = " + Enums.ExecutionStatus.RUNNING);
+            return Enums.ExecutionStatus.RUNNING;
+        } else if (k8Job.getStatus().getSucceeded() != null && k8Job.getStatus().getSucceeded() > 0) {
+            logger.debug("k8Job '" + k8sJobName + "' status = " + Enums.ExecutionStatus.DONE);
+            return Enums.ExecutionStatus.DONE;
+        } else if (k8Job.getStatus().getFailed() != null && k8Job.getStatus().getFailed() > 0) {
+            logger.debug("k8Job '" + k8sJobName + "' status = " + Enums.ExecutionStatus.ERROR);
+            return Enums.ExecutionStatus.ERROR;
+        }
+        logger.debug("k8Job '" + k8sJobName + "' status = " + Enums.ExecutionStatus.UNKNOWN);
+        return Enums.ExecutionStatus.UNKNOWN;
     }
 
     @Override
@@ -142,8 +187,11 @@ public class K8SExecutor implements BatchExecutor {
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            volumeMounts.add(new VolumeMountBuilder().withName(k8SVolumesMount.getName())
-                    .withMountPath(k8SVolumesMount.getMountPath()).withReadOnly(k8SVolumesMount.isReadOnly()).build());
+            volumeMounts.add(new VolumeMountBuilder()
+                    .withName(k8SVolumesMount.name)
+                    .withMountPath(k8SVolumesMount.mountPath)
+                    .withReadOnly(k8SVolumesMount.readOnly)
+                    .build());
         }
         return volumeMounts;
     }
@@ -152,23 +200,10 @@ public class K8SExecutor implements BatchExecutor {
         return kubernetesClient == null ? new DefaultKubernetesClient(k8sConfig).inNamespace(namespace) : this.kubernetesClient;
     }
 
-    public static class K8SVolumesMount {
-
+    private static class K8SVolumesMount {
         private String name;
         private String mountPath;
         private boolean readOnly;
-
-        public K8SVolumesMount() {
-        }
-
-        @Override
-        public String toString() {
-            return "K8SVolumesMount{"
-                    + "name='" + name + '\''
-                    + ", mountPath='" + mountPath + '\''
-                    + ", readOnly=" + readOnly
-                    + '}';
-        }
 
         public String getName() {
             return name;

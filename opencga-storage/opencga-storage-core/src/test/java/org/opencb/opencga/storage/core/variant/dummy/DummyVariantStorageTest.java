@@ -1,6 +1,8 @@
 package org.opencb.opencga.storage.core.variant.dummy;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 
@@ -17,6 +19,12 @@ public interface DummyVariantStorageTest extends VariantStorageTest {
     default VariantStorageEngine getVariantStorageEngine() throws Exception {
         try (InputStream is = DummyVariantStorageEngine.class.getClassLoader().getResourceAsStream("storage-configuration.yml")) {
             StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
+            storageConfiguration.getVariant().setDefaultEngine(DummyVariantStorageEngine.STORAGE_ENGINE_ID);
+            storageConfiguration.getVariant().getEngines().add(new StorageEngineConfiguration()
+                    .setId(DummyVariantStorageEngine.STORAGE_ENGINE_ID)
+                    .setEngine(DummyVariantStorageEngine.class.getName())
+                    .setOptions(new ObjectMap())
+            );
             DummyVariantStorageEngine storageManager = new DummyVariantStorageEngine();
             storageManager.setConfiguration(storageConfiguration, DummyVariantStorageEngine.STORAGE_ENGINE_ID);
             return storageManager;

@@ -25,7 +25,7 @@
 # - Set as environment variable
 # - Set in a `make_env` .env file
 #
-# The default location for the `make_env` file is `./opencga-app/app/scripts/docker/make_env`.
+# The default location for the `make_env` file is `./opencga-app/app/cloud/docker/make_env`.
 # If you wish to use a different file location, please provide the ENVFILE
 # envrionment variable to the `make` command at runtime.
 # The `make_env` file is formatted like any other .env file i.e.
@@ -76,7 +76,7 @@ fi
 # Arguments
 envfile=$1
 buildPath=$2
-dockerDir="opencga-app/app/scripts/docker"
+dockerDir="opencga-app/app/cloud/docker"
 
 # Validate parameters
 if [ -f "${envfile}" ]; then
