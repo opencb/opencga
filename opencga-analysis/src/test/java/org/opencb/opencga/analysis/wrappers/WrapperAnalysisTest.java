@@ -25,6 +25,8 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.fail;
+
 public class WrapperAnalysisTest extends VariantStorageBaseTest implements MongoDBVariantStorageTest {
 
     private AbstractClinicalManagerTest clinicalTest;
@@ -45,14 +47,14 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
 
     @Test
     public void plinkFisher() throws AnalysisException, IOException {
-        Path inDir1 = Paths.get(opencga.createTmpOutdir("_plink"));
+        Path inDir1 = Paths.get(opencga.createTmpOutdir("_plink1"));
 
-        outDir = Paths.get(opencga.createTmpOutdir("_plink"));
+        outDir = Paths.get(opencga.createTmpOutdir("_plink2"));
 
-        InputStream testMap = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.tped");
-        Files.copy(testMap, inDir1.resolve("test.tped"), StandardCopyOption.REPLACE_EXISTING);
-        InputStream testPed = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.tfam");
-        Files.copy(testPed, inDir1.resolve("test.tmap"), StandardCopyOption.REPLACE_EXISTING);
+        InputStream testTped = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.tped");
+        Files.copy(testTped, inDir1.resolve("test.tped"), StandardCopyOption.REPLACE_EXISTING);
+        InputStream testTfam = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.tfam");
+        Files.copy(testTfam, inDir1.resolve("test.tfam"), StandardCopyOption.REPLACE_EXISTING);
 
         System.out.println("======> in dir 1 = " + inDir1.toAbsolutePath());
         System.out.println("======> out dir  = " + outDir.toAbsolutePath());
@@ -68,21 +70,26 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
 
         AnalysisResult result = plink.start();
         System.out.println(result);
+
+        String outputFilename = plinkParams.get("out") + ".assoc.fisher";
+        if (!outDir.resolve(outputFilename).toFile().exists()) {
+            fail("Output file does not exits: " + outputFilename);
+        }
     }
 
     @Test
     public void plinkFisherCov() throws AnalysisException, IOException {
-        Path inDir1 = Paths.get(opencga.createTmpOutdir("_plink"));
-        Path inDir2 = Paths.get(opencga.createTmpOutdir("_plink"));
+        Path inDir1 = Paths.get(opencga.createTmpOutdir("_plink1"));
+        Path inDir2 = Paths.get(opencga.createTmpOutdir("_plink2"));
 
-        outDir = Paths.get(opencga.createTmpOutdir("_plink"));
+        outDir = Paths.get(opencga.createTmpOutdir("_plink3"));
 
-        InputStream testMap = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.tped");
-        Files.copy(testMap, inDir1.resolve("test.tped"), StandardCopyOption.REPLACE_EXISTING);
-        InputStream testPed = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.tfam");
-        Files.copy(testPed, inDir1.resolve("test.tmap"), StandardCopyOption.REPLACE_EXISTING);
-        InputStream testCov = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.covar");
-        Files.copy(testPed, inDir2.resolve("test.covar"), StandardCopyOption.REPLACE_EXISTING);
+        InputStream testTped = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.tped");
+        Files.copy(testTped, inDir1.resolve("test.tped"), StandardCopyOption.REPLACE_EXISTING);
+        InputStream testTfam = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.tfam");
+        Files.copy(testTfam, inDir1.resolve("test.tfam"), StandardCopyOption.REPLACE_EXISTING);
+        InputStream testCovar = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("test.cov");
+        Files.copy(testCovar, inDir2.resolve("test.cov"), StandardCopyOption.REPLACE_EXISTING);
 
         System.out.println("======> in dir 1 = " + inDir1.toAbsolutePath());
         System.out.println("======> in dir 2 = " + inDir2.toAbsolutePath());
@@ -91,8 +98,9 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
         ObjectMap plinkParams = new ObjectMap();
         plinkParams.put(PlinkWrapperAnalysis.TPED_FILE_PARAM, inDir1.resolve("test.tped"));
         plinkParams.put(PlinkWrapperAnalysis.TFAM_FILE_PARAM, inDir1.resolve("test.tfam"));
-        plinkParams.put(PlinkWrapperAnalysis.COVAR_FILE_PARAM, inDir2.resolve("test.covar"));
+        plinkParams.put(PlinkWrapperAnalysis.COVAR_FILE_PARAM, inDir2.resolve("test.cov"));
         plinkParams.put("fisher", "");
+        plinkParams.put("covar-number", "3");
         plinkParams.put("out", "plink-output");
 
         PlinkWrapperAnalysis plink = new PlinkWrapperAnalysis();
@@ -100,28 +108,32 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
 
         AnalysisResult result = plink.start();
         System.out.println(result);
+
+        String outputFilename = plinkParams.get("out") + ".assoc.fisher";
+        if (!outDir.resolve(outputFilename).toFile().exists()) {
+            fail("Output file does not exits: " + outputFilename);
+        }
     }
 
     @Test
     public void rvtestsWaldAndScore() throws AnalysisException, IOException {
-        Path inDir1 = Paths.get(opencga.createTmpOutdir("_rvtests"));
-        Path inDir2 = Paths.get(opencga.createTmpOutdir("_rvtests"));
+        Path inDir1 = Paths.get(opencga.createTmpOutdir("_rvtests1"));
+        Path inDir2 = Paths.get(opencga.createTmpOutdir("_rvtests2"));
 
-        outDir = Paths.get(opencga.createTmpOutdir("_rvtests"));
+        outDir = Paths.get(opencga.createTmpOutdir("_rvtests3"));
 
         InputStream vcfIs = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("example.vcf");
         Files.copy(vcfIs, inDir1.resolve("example.vcf"), StandardCopyOption.REPLACE_EXISTING);
-//        InputStream phenoIs = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("pheno");
-//        Files.copy(phenoIs, inDir2.resolve("pheno"), StandardCopyOption.REPLACE_EXISTING);
+        InputStream phenoIs = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("pheno");
+        Files.copy(phenoIs, inDir2.resolve("pheno"), StandardCopyOption.REPLACE_EXISTING);
 
         System.out.println("======> in dir 1 = " + inDir1.toAbsolutePath());
-//        System.out.println("======> in dir 2 = " + inDir2.toAbsolutePath());
         System.out.println("======> out dir = " + outDir.toAbsolutePath());
 
         ObjectMap rvtestsParams = new ObjectMap();
         rvtestsParams.put(RvtestsWrapperAnalysis.COMMAND_PARAM, "rvtest");
-        rvtestsParams.put(RvtestsWrapperAnalysis.VCF_FILE_PARAM, "example.vcf");
-//        rvtestsParams.put(RvtestsWrapperAnalysis.PHENOTYPE_FILE_PARAM, "pheno");
+        rvtestsParams.put(RvtestsWrapperAnalysis.VCF_FILE_PARAM, inDir1.resolve("example.vcf"));
+        rvtestsParams.put(RvtestsWrapperAnalysis.PHENOTYPE_FILE_PARAM, inDir2.resolve("pheno"));
         rvtestsParams.put("single", "wald,score");
         rvtestsParams.put("out", "rvtests-output");
 
@@ -130,6 +142,41 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
 
         AnalysisResult result = rvtests.start();
         System.out.println(result);
+
+//        String outputFilename = rvtestsParams.get("out") + ".assoc.fisher";
+//        if (!outDir.resolve(outputFilename).toFile().exists()) {
+//            fail("Output file does not exits: " + outputFilename);
+//        }
+    }
+
+    @Test
+    public void rvtestsKinship() throws AnalysisException, IOException {
+        Path inDir1 = Paths.get(opencga.createTmpOutdir("_rvtests"));
+
+        outDir = Paths.get(opencga.createTmpOutdir("_rvtests"));
+
+        InputStream vcfIs = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream("example.vcf");
+        Files.copy(vcfIs, inDir1.resolve("example.vcf"), StandardCopyOption.REPLACE_EXISTING);
+
+        System.out.println("======> in dir 1 = " + inDir1.toAbsolutePath());
+        System.out.println("======> out dir = " + outDir.toAbsolutePath());
+
+        ObjectMap rvtestsParams = new ObjectMap();
+        rvtestsParams.put(RvtestsWrapperAnalysis.COMMAND_PARAM, "vcf2kinship");
+        rvtestsParams.put(RvtestsWrapperAnalysis.VCF_FILE_PARAM, inDir1.resolve("example.vcf"));
+        rvtestsParams.put("bn", "");
+        rvtestsParams.put("out", "rvtests-output");
+
+        RvtestsWrapperAnalysis rvtests = new RvtestsWrapperAnalysis();
+        rvtests.setUp(opencga.getOpencgaHome().toString(), rvtestsParams, outDir, clinicalTest.token);
+
+        AnalysisResult result = rvtests.start();
+        System.out.println(result);
+
+        String outputFilename = rvtestsParams.get("out") + ".kinship";
+        if (!outDir.resolve(outputFilename).toFile().exists()) {
+            fail("Output file does not exits: " + outputFilename);
+        }
     }
 
     @Test

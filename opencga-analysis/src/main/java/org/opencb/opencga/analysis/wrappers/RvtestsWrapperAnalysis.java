@@ -12,9 +12,7 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.Charset;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Analysis(id = RvtestsWrapperAnalysis.ID, type = Analysis.AnalysisType.VARIANT)
 public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
@@ -64,10 +62,19 @@ public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 }
                 // Check Rvtests errors by reading the stdout and stderr files
                 boolean success = false;
-                File file = new File(getOutDir() + "/" + STDOUT_FILENAME);
-                List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
-                if (lines.get(lines.size() - 1).contains("successfully")) {
-                    success = true;
+                File file;
+                if ("rvtest".equals(params.getString(COMMAND_PARAM))) {
+                    file = new File(getOutDir() + "/" + STDOUT_FILENAME);
+                    List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+                    if (lines.get(lines.size() - 1).contains("successfully")) {
+                        success = true;
+                    }
+                } else if ("vcf2kinship".equals(params.getString(COMMAND_PARAM))) {
+                    file = new File(getOutDir() + "/" + STDERR_FILENAME);
+                    List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+                    if (lines.get(lines.size() - 1).contains("Analysis took")) {
+                        success = true;
+                    }
                 }
                 if (!success) {
                     file = new File(getOutDir() + "/" + STDERR_FILENAME);
@@ -91,7 +98,23 @@ public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
     @Override
     public String getCommandLine() {
         StringBuilder sb = new StringBuilder("docker run ");
-        sb.append(getMountParameters());
+
+        // Mount management
+        Map<String, String> srcTargetMap = new HashMap<>();
+        String[] names = {VCF_FILE_PARAM, PHENOTYPE_FILE_PARAM, PEDIGREE_FILE_PARAM, KINSHIP_FILE_PARAM, COVAR_FILE_PARAM};
+        for (String name : names) {
+            if (params.containsKey(name) && StringUtils.isNotEmpty(params.getString(name))) {
+                String src = new File(params.getString(name)).getParentFile().getAbsolutePath();
+                if (!srcTargetMap.containsKey(src)) {
+                    srcTargetMap.put(src, DOCKER_INPUT_PATH + srcTargetMap.size());
+                    sb.append("--mount type=bind,source=\"").append(src).append("\",target=\"").append(srcTargetMap.get(src)).append("\" ");
+                }
+            }
+        }
+        sb.append("--mount type=bind,source=\"")
+                .append(getOutDir().toAbsolutePath()).append("\",target=\"").append(DOCKER_OUTPUT_PATH).append("\" ");
+
+        // Docker image and version
         sb.append(getDockerImageName());
         if (params.containsKey(DOCKER_IMAGE_VERSION_PARAM)) {
             sb.append(":").append(params.getString(DOCKER_IMAGE_VERSION_PARAM));
@@ -118,20 +141,30 @@ public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         }
 
         // Input files management
-        if (params.containsKey(VCF_FILE_PARAM) && StringUtils.isNotEmpty(params.getString(VCF_FILE_PARAM))) {
-            sb.append(" --inVcf ").append(DOCKER_INPUT_PATH).append("/").append(new File(params.getString(VCF_FILE_PARAM)).getName());
+        String filename = params.getString(VCF_FILE_PARAM, null);
+        if (StringUtils.isNotEmpty(filename)) {
+            File file = new File(filename);
+            sb.append(" --inVcf ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
         }
-        if (params.containsKey(PHENOTYPE_FILE_PARAM) && StringUtils.isNotEmpty(params.getString(PHENOTYPE_FILE_PARAM))) {
-            sb.append(" --pheno ").append(DOCKER_INPUT_PATH).append("/").append(new File(params.getString(PHENOTYPE_FILE_PARAM)).getName());
+        filename = params.getString(PHENOTYPE_FILE_PARAM, null);
+        if (StringUtils.isNotEmpty(filename)) {
+            File file = new File(filename);
+            sb.append(" --pheno ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
         }
-        if (params.containsKey(PEDIGREE_FILE_PARAM) && StringUtils.isNotEmpty(params.getString(PEDIGREE_FILE_PARAM))) {
-            sb.append(" --pedigree  ").append(DOCKER_INPUT_PATH).append("/").append(new File(params.getString(PEDIGREE_FILE_PARAM)).getName());
+        filename = params.getString(PEDIGREE_FILE_PARAM, null);
+        if (StringUtils.isNotEmpty(filename)) {
+            File file = new File(filename);
+            sb.append(" --pedigree ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
         }
-        if (params.containsKey(KINSHIP_FILE_PARAM) && StringUtils.isNotEmpty(params.getString(KINSHIP_FILE_PARAM))) {
-            sb.append(" --kinship ").append(DOCKER_INPUT_PATH).append("/").append(new File(params.getString(KINSHIP_FILE_PARAM)).getName());
+        filename = params.getString(KINSHIP_FILE_PARAM, null);
+        if (StringUtils.isNotEmpty(filename)) {
+            File file = new File(filename);
+            sb.append(" --kinship ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
         }
-        if (params.containsKey(COVAR_FILE_PARAM) && StringUtils.isNotEmpty(params.getString(COVAR_FILE_PARAM))) {
-            sb.append(" --covar ").append(DOCKER_INPUT_PATH).append("/").append(new File(params.getString(COVAR_FILE_PARAM)).getName());
+        filename = params.getString(COVAR_FILE_PARAM, null);
+        if (StringUtils.isNotEmpty(filename)) {
+            File file = new File(filename);
+            sb.append(" --covar ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
         }
 
         return sb.toString();
