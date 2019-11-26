@@ -19,6 +19,7 @@ import java.util.Set;
 public class DeepToolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     public final static String ID = "deepTools";
+
     public final static String DEEPTOOLS_DOCKER_IMAGE = "dhspence/docker-deeptools";
     public final static String OUT_NAME = "out";
 

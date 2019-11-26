@@ -3,10 +3,12 @@ package org.opencb.opencga.analysis.wrappers;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -38,6 +40,15 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaAnalysis {
         return sb.toString();
     }
 
+    protected void updateSrcTargetMap(String filename, StringBuilder sb, Map<String, String> srcTargetMap) {
+        if (StringUtils.isNotEmpty(filename)) {
+            String src = new File(filename).getParentFile().getAbsolutePath();
+            if (!srcTargetMap.containsKey(src)) {
+                srcTargetMap.put(src, DOCKER_INPUT_PATH + srcTargetMap.size());
+                sb.append("--mount type=bind,source=\"").append(src).append("\",target=\"").append(srcTargetMap.get(src)).append("\" ");
+            }
+        }
+    }
     protected List<String> getFilenames(Path dir) throws IOException {
         Stream<Path> walk = Files.walk(dir);
         return walk.map(x -> x.getFileName().toString()).collect(Collectors.toList());

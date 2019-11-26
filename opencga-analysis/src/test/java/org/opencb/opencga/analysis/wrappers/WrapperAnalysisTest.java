@@ -15,16 +15,14 @@ import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class WrapperAnalysisTest extends VariantStorageBaseTest implements MongoDBVariantStorageTest {
@@ -181,15 +179,54 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
 
     @Test
     public void alignmentPipeline() throws AnalysisException, IOException {
+        ObjectMap params;
+
+        Path inDir1 = Paths.get(opencga.createTmpOutdir("_bwa"));
+        outDir = Paths.get(opencga.createTmpOutdir("_alignment"));
+
         // bwa index
 
+        String fastaFilename = "Homo_sapiens.GRCh38.dna.chromosome.MT.fa.gz";
+        InputStream refGenomeIs = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream(fastaFilename);
+        Files.copy(refGenomeIs, inDir1.resolve(fastaFilename), StandardCopyOption.REPLACE_EXISTING);
+
+        params = new ObjectMap();
+
+        BwaWrapperAnalysis bwa = new BwaWrapperAnalysis();
+        bwa.setUp(opencga.getOpencgaHome().toString(), params, inDir1, clinicalTest.token);
+        bwa.setCommand("index");
+        bwa.setFastaFile(inDir1.resolve(fastaFilename).toString());
+
+        AnalysisResult bwaIndexResult = bwa.start();
+        System.out.println(bwaIndexResult);
+
+        assertTrue(Files.exists(inDir1.resolve(fastaFilename + ".bwt")));
+
         // bwa mem
+
+        String fastqFilename = "ERR251000.1K.fastq.gz";
+        InputStream fastqIs = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream(fastqFilename);
+        Files.copy(fastqIs, inDir1.resolve(fastqFilename), StandardCopyOption.REPLACE_EXISTING);
+
+        params = new ObjectMap();
+
+        bwa = new BwaWrapperAnalysis();
+        bwa.setUp(opencga.getOpencgaHome().toString(), params, outDir, clinicalTest.token);
+        bwa.setCommand("mem");
+        bwa.setIndexBaseFile(inDir1.resolve(fastaFilename).toString());
+        bwa.setFastq1File(inDir1.resolve(fastqFilename).toString());
+        bwa.setSamFile(outDir.resolve("output.sam").toString());
+
+        AnalysisResult bwaMemResult = bwa.start();
+        System.out.println(bwaMemResult);
+
+        assertTrue(Files.exists(new File(bwa.getSamFile()).toPath()));
 
         // samtools sort
 
         // samtools index
 
-        // deeptools coverate
+        // deeptools coverage
     }
 
     //    @Test
