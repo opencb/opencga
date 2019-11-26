@@ -13,16 +13,19 @@ import java.io.FileOutputStream;
 import java.nio.charset.Charset;
 import java.util.*;
 
-@Analysis(id = PlinkWrapperAnalysis.ID, type = Analysis.AnalysisType.VARIANT)
+@Analysis(id = PlinkWrapperAnalysis.ID, type = Analysis.AnalysisType.VARIANT, description = PlinkWrapperAnalysis.DESCRIPTION)
 public class PlinkWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
-    public final static String ID = "plink";
-    public final static String PLINK_DOCKER_IMAGE = "gelog/plink";
-    public final static String OUT_NAME = "plink";
+    public static final String ID = "plink";
+    public static final String DESCRIPTION = "Plink is a whole genome association analysis toolset, designed to perform"
+            + " a range of basic, large-scale analyses.";
 
-    public final static String TPED_FILE_PARAM = "tpedFile";
-    public final static String TFAM_FILE_PARAM = "tfamFile";
-    public final static String COVAR_FILE_PARAM = "covarFile";
+    public static final String PLINK_DOCKER_IMAGE = "gelog/plink";
+    public static final String OUT_NAME = "plink";
+
+    public static final String TPED_FILE_PARAM = "tpedFile";
+    public static final String TFAM_FILE_PARAM = "tfamFile";
+    public static final String COVAR_FILE_PARAM = "covarFile";
 
     protected void check() throws Exception {
         super.check();

@@ -14,10 +14,12 @@ import java.io.FileOutputStream;
 import java.nio.charset.Charset;
 import java.util.*;
 
-@Analysis(id = RvtestsWrapperAnalysis.ID, type = Analysis.AnalysisType.VARIANT)
+@Analysis(id = RvtestsWrapperAnalysis.ID, type = Analysis.AnalysisType.VARIANT, description = RvtestsWrapperAnalysis.DESCRIPTION)
 public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     public final static String ID = "rvtests";
+    public static final String DESCRIPTION = "Rvtests is a flexible software package for genetic association studies";
+
     public final static String RVTESTS_DOCKER_IMAGE = "zhanxw/rvtests-docker";
     public final static String OUT_NAME = "out";
 
