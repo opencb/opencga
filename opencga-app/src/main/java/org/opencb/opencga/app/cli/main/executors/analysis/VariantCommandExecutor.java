@@ -133,7 +133,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
     private DataResponse stats() throws IOException {
         ObjectMap params = new VariantAnalysisWSService.StatsRunParams(
-                variantCommandOptions.statsVariantCommandOptions.cohorts,
+                variantCommandOptions.statsVariantCommandOptions.cohort,
                 variantCommandOptions.statsVariantCommandOptions.samples,
                 variantCommandOptions.statsVariantCommandOptions.index,
                 variantCommandOptions.statsVariantCommandOptions.outdir,

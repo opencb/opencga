@@ -385,7 +385,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
 
         options.putAll(cliOptions.commonOptions.params);
 
-        List<String> cohorts = cliOptions.cohorts;
+        List<String> cohorts = cliOptions.cohort;
         List<String> samples = cliOptions.samples;
         variantManager.stats(cliOptions.study, cohorts, samples, cliOptions.outdir, cliOptions.index, options, sessionId);
     }

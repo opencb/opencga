@@ -577,10 +577,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     public static class StatsRunParams extends RestBodyParams {
         public StatsRunParams() {
         }
-        public StatsRunParams(List<String> cohorts, List<String> samples, boolean index, String outdir, String outputFileName,
+        public StatsRunParams(List<String> cohort, List<String> samples, boolean index, String outdir, String outputFileName,
                               String region, boolean overwriteStats, boolean updateStats, boolean resume, Aggregation aggregated,
                               String aggregationMappingFile) {
-            this.cohorts = cohorts;
+            this.cohort = cohort;
             this.samples = samples;
             this.index = index;
             this.outdir = outdir;
@@ -593,7 +593,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             this.aggregationMappingFile = aggregationMappingFile;
         }
 
-        public List<String> cohorts;
+        public List<String> cohort;
         public List<String> samples;
         public boolean index;
         public String region;

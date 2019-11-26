@@ -334,7 +334,8 @@ public class VariantStorageManager extends StorageManager {
     public void stats(String study, List<String> cohorts, List<String> samples,
                       String outDir, boolean index, ObjectMap config, String sessionId)
             throws AnalysisException {
-        stats(study, cohorts, new Query(SampleDBAdaptor.QueryParams.ID.key(), samples), outDir, index, config, sessionId);
+        Query samplesQuery = CollectionUtils.isEmpty(samples) ? new Query() : new Query(SampleDBAdaptor.QueryParams.ID.key(), samples);
+        stats(study, cohorts, samplesQuery, outDir, index, config, sessionId);
     }
 
     public void stats(String study, List<String> cohorts, Query samplesQuery,

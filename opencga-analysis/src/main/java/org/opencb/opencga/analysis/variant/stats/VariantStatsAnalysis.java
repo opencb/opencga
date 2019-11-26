@@ -284,7 +284,12 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
                 });
 
                 if (!emptyCohorts.isEmpty()) {
-                    throw new AnalysisException("Unable to compute variant stats for cohorts " + emptyCohorts);
+                    if (dynamicCohort) {
+                        throw new AnalysisException("Missing cohort or samples. "
+                                + "Use cohort " + StudyEntry.DEFAULT_COHORT + " to compute stats for all indexed samples");
+                    } else {
+                        throw new AnalysisException("Unable to compute variant stats for cohorts " + emptyCohorts);
+                    }
                 }
 
                 // check read permission
