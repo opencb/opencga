@@ -18,6 +18,8 @@ package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.JCommander;
 import org.opencb.commons.utils.CommandLineUtils;
+import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
@@ -281,6 +283,8 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(SAMPLE_VARIANT_STATS_COMMAND, variantCommandOptions.sampleVariantStatsCommandOptions);
         variantSubCommands.addCommand(COHORT_VARIANT_STATS_COMMAND, variantCommandOptions.cohortVariantStatsCommandOptions);
         variantSubCommands.addCommand("gwas", variantCommandOptions.gwasCommandOptions);
+        variantSubCommands.addCommand(PlinkWrapperAnalysis.ID, variantCommandOptions.plinkCommandOptions);
+        variantSubCommands.addCommand(RvtestsWrapperAnalysis.ID, variantCommandOptions.rvtestsCommandOptions);
 
         operationsCommandOptions = new OperationsCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand(OPERATIONS_COMMAND, operationsCommandOptions);

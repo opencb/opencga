@@ -1180,8 +1180,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
             PlinkRunParams params) {
-        return submitJob(study, "variant", PlinkWrapperAnalysis.ID + "-run", params, null, jobName,
-                jobDescription, jobTags);
+        return submitJob(study, "variant", PlinkWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
     }
 
     public static class RvtestsRunParams extends RestBodyParams {
@@ -1218,8 +1217,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
             RvtestsRunParams params) {
-        return submitJob(study, "variant", RvtestsWrapperAnalysis.ID + "-run", params, null, jobName,
-                jobDescription, jobTags);
+        return submitJob(study, "variant", RvtestsWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
     }
 
     @POST

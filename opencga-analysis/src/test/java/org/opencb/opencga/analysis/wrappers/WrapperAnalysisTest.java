@@ -131,7 +131,7 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
         System.out.println("======> out dir = " + outDir.toAbsolutePath());
 
         ObjectMap rvtestsParams = new ObjectMap();
-        rvtestsParams.put(RvtestsWrapperAnalysis.COMMAND_PARAM, "rvtest");
+        rvtestsParams.put(RvtestsWrapperAnalysis.EXECUTABLE_PARAM, "rvtest");
         rvtestsParams.put(RvtestsWrapperAnalysis.VCF_FILE_PARAM, inDir1.resolve("example.vcf"));
         rvtestsParams.put(RvtestsWrapperAnalysis.PHENOTYPE_FILE_PARAM, inDir2.resolve("pheno"));
         rvtestsParams.put("single", "wald,score");
@@ -162,7 +162,7 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
         System.out.println("======> out dir = " + outDir.toAbsolutePath());
 
         ObjectMap rvtestsParams = new ObjectMap();
-        rvtestsParams.put(RvtestsWrapperAnalysis.COMMAND_PARAM, "vcf2kinship");
+        rvtestsParams.put(RvtestsWrapperAnalysis.EXECUTABLE_PARAM, "vcf2kinship");
         rvtestsParams.put(RvtestsWrapperAnalysis.VCF_FILE_PARAM, inDir1.resolve("example.vcf"));
         rvtestsParams.put("bn", "");
         rvtestsParams.put("out", "rvtests-output");

@@ -1,6 +1,5 @@
 package org.opencb.opencga.analysis.wrappers;
 
-import io.jsonwebtoken.lang.Collections;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
@@ -23,7 +22,7 @@ public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
     public final static String RVTESTS_DOCKER_IMAGE = "zhanxw/rvtests-docker";
     public final static String OUT_NAME = "out";
 
-    public static final String COMMAND_PARAM = "command";
+    public static final String EXECUTABLE_PARAM = "executable";
     public static final String VCF_FILE_PARAM = "vcfFile";
     public static final String PHENOTYPE_FILE_PARAM = "phenoFile";
     public static final String PEDIGREE_FILE_PARAM = "pedigreeFile";
@@ -65,13 +64,13 @@ public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 // Check Rvtests errors by reading the stdout and stderr files
                 boolean success = false;
                 File file;
-                if ("rvtest".equals(params.getString(COMMAND_PARAM))) {
+                if ("rvtest".equals(params.getString(EXECUTABLE_PARAM))) {
                     file = new File(getOutDir() + "/" + STDOUT_FILENAME);
                     List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
                     if (lines.get(lines.size() - 1).contains("successfully")) {
                         success = true;
                     }
-                } else if ("vcf2kinship".equals(params.getString(COMMAND_PARAM))) {
+                } else if ("vcf2kinship".equals(params.getString(EXECUTABLE_PARAM))) {
                     file = new File(getOutDir() + "/" + STDERR_FILENAME);
                     List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
                     if (lines.get(lines.size() - 1).contains("Analysis took")) {
@@ -122,8 +121,8 @@ public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
             sb.append(":").append(params.getString(DOCKER_IMAGE_VERSION_PARAM));
         }
 
-        // Command values: rvtest or vcf2kinship
-        sb.append(" ").append(params.getString(COMMAND_PARAM)).append(" ");
+        // Executable values: rvtest or vcf2kinship
+        sb.append(" ").append(params.getString(EXECUTABLE_PARAM)).append(" ");
 
         for (String key : params.keySet()) {
             if (checkParam(key)) {
@@ -191,7 +190,7 @@ public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
     }
 
     private boolean checkParam(String key) {
-        if (key.equals(DOCKER_IMAGE_VERSION_PARAM) || key.equals(COMMAND_PARAM) || key.equals(VCF_FILE_PARAM)
+        if (key.equals(DOCKER_IMAGE_VERSION_PARAM) || key.equals(EXECUTABLE_PARAM) || key.equals(VCF_FILE_PARAM)
                 || key.equals(PHENOTYPE_FILE_PARAM) || key.equals(PEDIGREE_FILE_PARAM) || key.equals(KINSHIP_FILE_PARAM)
                 || key.equals(COVAR_FILE_PARAM)) {
             return false;

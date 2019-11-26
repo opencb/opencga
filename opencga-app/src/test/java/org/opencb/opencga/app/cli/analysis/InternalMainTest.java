@@ -350,6 +350,75 @@ public class InternalMainTest {
 
     }
 
+    @Test
+    public void testPlinkFisher() throws CatalogException, IOException {
+        createStudy(datastores, "s1");
+
+        File tpedFile = opencga.createFile(studyId, "test.tped", sessionId);
+        File tfamFile = opencga.createFile(studyId, "test.tfam", sessionId);
+
+        String temporalDir = opencga.createTmpOutdir(studyId, "plink", sessionId);
+
+        // Plink: fisher test
+        execute("variant", "plink",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--tped-file", tpedFile.getUri().getPath(),
+                "--tfam-file", tfamFile.getUri().getPath(),
+                "-Dfisher=",
+                "-Dout=plink-output",
+                "-o", temporalDir);
+
+        assertEquals(5, Files.list(Paths.get(temporalDir)).collect(Collectors.toList()).size());
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve("plink-output.assoc.fisher")));
+    }
+
+    @Test
+    public void testRvtestsWaldScore() throws CatalogException, IOException {
+        createStudy(datastores, "s1");
+
+        File vcfFile = opencga.createFile(studyId, "example.vcf", sessionId);
+        File phenoFile = opencga.createFile(studyId, "pheno", sessionId);
+
+        String temporalDir = opencga.createTmpOutdir(studyId, "rvtests", sessionId);
+
+        // Plink: fisher test
+        execute("variant", "rvtests",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--executable", "rvtest",
+                "--vcf-file", vcfFile.getUri().getPath(),
+                "--pheno-file", phenoFile.getUri().getPath(),
+                "-Dsingle=wald,score",
+                "-Dout=rvtests-output",
+                "-o", temporalDir);
+
+        assertEquals(6, Files.list(Paths.get(temporalDir)).collect(Collectors.toList()).size());
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve("rvtests-output.SingleWald.assoc")));
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve("rvtests-output.SingleScore.assoc")));
+    }
+
+    @Test
+    public void testRvtestsVcf2Kinship() throws CatalogException, IOException {
+        createStudy(datastores, "s1");
+
+        File vcfFile = opencga.createFile(studyId, "example.vcf", sessionId);
+
+        String temporalDir = opencga.createTmpOutdir(studyId, "rvtests", sessionId);
+
+        // Plink: fisher test
+        execute("variant", "rvtests",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--executable", "vcf2kinship",
+                "--vcf-file", vcfFile.getUri().getPath(),
+                "-Dbn=",
+                "-Dout=rvtests-output",
+                "-o", temporalDir);
+
+        assertEquals(5, Files.list(Paths.get(temporalDir)).collect(Collectors.toList()).size());
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve("rvtests-output.kinship")));
+    }
 
     public int execute(String... args) {
         int exitValue = InternalMain.privateMain(args);
