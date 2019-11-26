@@ -548,11 +548,11 @@ public class VariantCommandOptions {
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--cohorts"}, description = "Cohort Ids for the cohorts to be calculated.")
-        public List<String> cohortIds;
+        public List<String> cohorts;
 
         @Parameter(names = {"--cohort-ids"}, hidden = true)
         public void setCohortIds(List<String> cohortIds) {
-            this.cohortIds = cohortIds;
+            this.cohorts = cohortIds;
         }
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = false, arity = 1)

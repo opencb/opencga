@@ -4,9 +4,11 @@ import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.OperationsCommandOptions;
+import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.server.rest.operations.OperationsWSService;
 
 import java.io.IOException;
+import java.util.Map;
 
 import static org.opencb.opencga.app.cli.main.options.OperationsCommandOptions.*;
 
@@ -78,151 +80,161 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private DataResponse variantIndex() throws IOException {
-        OperationsWSService.VariantIndexParams variantIndexParams = new OperationsWSService.VariantIndexParams(
-                operationsCommandOptions.variantIndex.study,
-                operationsCommandOptions.variantIndex.fileId,
-                operationsCommandOptions.variantIndex.genericVariantIndexOptions.resume,
-                operationsCommandOptions.variantIndex.outdir,
-                operationsCommandOptions.variantIndex.genericVariantIndexOptions.transform,
-                operationsCommandOptions.variantIndex.genericVariantIndexOptions.gvcf,
-                operationsCommandOptions.variantIndex.genericVariantIndexOptions.load,
-                operationsCommandOptions.variantIndex.genericVariantIndexOptions.loadSplitData,
-                operationsCommandOptions.variantIndex.genericVariantIndexOptions.skipPostLoadCheck,
-                operationsCommandOptions.variantIndex.genericVariantIndexOptions.excludeGenotype,
-                operationsCommandOptions.variantIndex.genericVariantIndexOptions.includeExtraFields,
-                operationsCommandOptions.variantIndex.genericVariantIndexOptions.merge,
-                operationsCommandOptions.variantIndex.genericVariantIndexOptions.calculateStats,
-                operationsCommandOptions.variantIndex.genericVariantIndexOptions.aggregated,
-                operationsCommandOptions.variantIndex.genericVariantIndexOptions.aggregationMappingFile,
-                operationsCommandOptions.variantIndex.genericVariantIndexOptions.annotate,
-                operationsCommandOptions.variantIndex.genericVariantIndexOptions.annotator,
-                operationsCommandOptions.variantIndex.genericVariantIndexOptions.overwriteAnnotations,
-                operationsCommandOptions.variantIndex.genericVariantIndexOptions.indexSearch,
-                operationsCommandOptions.commonCommandOptions.params
-        );
-        return openCGAClient.getOperationClient().variantFileIndex(variantIndexParams.toObjectMap());
+    private DataResponse<Job> variantIndex() throws IOException {
+        OperationsCommandOptions.VariantFileIndexCommandOptions variantIndex = operationsCommandOptions.variantIndex;
+        ObjectMap params = new OperationsWSService.VariantIndexParams(
+                variantIndex.fileId,
+                variantIndex.genericVariantIndexOptions.resume,
+                variantIndex.outdir,
+                variantIndex.genericVariantIndexOptions.transform,
+                variantIndex.genericVariantIndexOptions.gvcf,
+                variantIndex.genericVariantIndexOptions.load,
+                variantIndex.genericVariantIndexOptions.loadSplitData,
+                variantIndex.genericVariantIndexOptions.skipPostLoadCheck,
+                variantIndex.genericVariantIndexOptions.excludeGenotype,
+                variantIndex.genericVariantIndexOptions.includeExtraFields,
+                variantIndex.genericVariantIndexOptions.merge,
+                variantIndex.genericVariantIndexOptions.calculateStats,
+                variantIndex.genericVariantIndexOptions.aggregated,
+                variantIndex.genericVariantIndexOptions.aggregationMappingFile,
+                variantIndex.genericVariantIndexOptions.annotate,
+                variantIndex.genericVariantIndexOptions.annotator,
+                variantIndex.genericVariantIndexOptions.overwriteAnnotations,
+                variantIndex.genericVariantIndexOptions.indexSearch
+        ).toObjectMap();
+        addDynamicParams(params);
+        return openCGAClient.getOperationClient().variantFileIndex(variantIndex.study, params);
     }
 
     private DataResponse variantIndexDelete() throws IOException {
+        OperationsCommandOptions.VariantFileDeleteCommandOptions variantIndexDelete = operationsCommandOptions.variantIndexDelete;
         return openCGAClient.getOperationClient().variantFileDelete(
-                operationsCommandOptions.variantIndexDelete.study,
-                operationsCommandOptions.variantIndexDelete.genericVariantDeleteOptions.files,
-                operationsCommandOptions.variantIndexDelete.genericVariantDeleteOptions.resume,
-                new ObjectMap(operationsCommandOptions.variantIndexDelete.commonOptions.params));
+                variantIndexDelete.study,
+                variantIndexDelete.genericVariantDeleteOptions.files,
+                variantIndexDelete.genericVariantDeleteOptions.resume,
+                addDynamicParams(new ObjectMap()));
     }
 
-    private DataResponse variantSecondaryIndex() throws IOException {
+    private DataResponse<Job> variantSecondaryIndex() throws IOException {
+        OperationsCommandOptions.VariantSecondaryIndexCommandOptions variantSecondaryIndex = operationsCommandOptions.variantSecondaryIndex;
         ObjectMap params = new OperationsWSService.VariantSecondaryIndexParams(
-                operationsCommandOptions.variantSecondaryIndex.study,
-                operationsCommandOptions.variantSecondaryIndex.project,
-                operationsCommandOptions.variantSecondaryIndex.region,
-                operationsCommandOptions.variantSecondaryIndex.sample,
-                operationsCommandOptions.variantSecondaryIndex.overwrite,
-                operationsCommandOptions.variantSecondaryIndex.commonOptions.params
+                variantSecondaryIndex.project,
+                variantSecondaryIndex.region,
+                variantSecondaryIndex.sample,
+                variantSecondaryIndex.overwrite
         ).toObjectMap();
-        return openCGAClient.getOperationClient().variantSecondaryIndex(params);
+        addDynamicParams(params);
+        return openCGAClient.getOperationClient().variantSecondaryIndex(variantSecondaryIndex.study, params);
     }
 
     private DataResponse variantSecondaryIndexDelete() throws IOException {
         return openCGAClient.getOperationClient().variantSecondaryIndexDelete(
                 operationsCommandOptions.variantSecondaryIndexDelete.study,
                 operationsCommandOptions.variantSecondaryIndexDelete.sample,
-                new ObjectMap(operationsCommandOptions.variantIndexDelete.commonOptions.params));
+                addDynamicParams(new ObjectMap()));
     }
 
-    private DataResponse variantAnnotation() throws IOException {
+    private DataResponse<Job> variantAnnotation() throws IOException {
+        OperationsCommandOptions.VariantAnnotationIndexCommandOptions variantAnnotation = operationsCommandOptions.variantAnnotation;
         ObjectMap params = new OperationsWSService.VariantAnnotationParams(
-                operationsCommandOptions.variantAnnotation.study,
 //                operationsCommandOptions.variantAnnotation.project,
-                operationsCommandOptions.variantAnnotation.outdir,
-                operationsCommandOptions.variantAnnotation.genericVariantAnnotateOptions.annotator,
-                operationsCommandOptions.variantAnnotation.genericVariantAnnotateOptions.overwriteAnnotations,
-                operationsCommandOptions.variantAnnotation.genericVariantAnnotateOptions.region,
-                operationsCommandOptions.variantAnnotation.genericVariantAnnotateOptions.create,
-                operationsCommandOptions.variantAnnotation.genericVariantAnnotateOptions.load,
-                operationsCommandOptions.variantAnnotation.genericVariantAnnotateOptions.customAnnotationKey,
-                operationsCommandOptions.variantAnnotation.commonOptions.params
+                variantAnnotation.outdir,
+                variantAnnotation.genericVariantAnnotateOptions.annotator,
+                variantAnnotation.genericVariantAnnotateOptions.overwriteAnnotations,
+                variantAnnotation.genericVariantAnnotateOptions.region,
+                variantAnnotation.genericVariantAnnotateOptions.create,
+                variantAnnotation.genericVariantAnnotateOptions.load,
+                variantAnnotation.genericVariantAnnotateOptions.customAnnotationKey
         ).toObjectMap();
-        return openCGAClient.getOperationClient().variantAnnotationIndex(params);
+        addDynamicParams(params);
+        return openCGAClient.getOperationClient().variantAnnotationIndex(variantAnnotation.study, params);
     }
 
     private DataResponse variantAnnotationSave() throws IOException {
         ObjectMap params = new OperationsWSService.VariantAnnotationSaveParams(
                 operationsCommandOptions.variantAnnotationSave.project,
-                operationsCommandOptions.variantAnnotationSave.annotationId,
-                operationsCommandOptions.variantAnnotationSave.commonOptions.params
+                operationsCommandOptions.variantAnnotationSave.annotationId
         ).toObjectMap();
+        addDynamicParams(params);
         return openCGAClient.getOperationClient().variantAnnotationSave(params);
     }
 
     private DataResponse variantAnnotationDelete() throws IOException {
+        OperationsCommandOptions.VariantAnnotationDeleteCommandOptions variantAnnotationDelete = operationsCommandOptions.variantAnnotationDelete;
         return openCGAClient.getOperationClient().variantAnnotationDelete(
-                operationsCommandOptions.variantAnnotationDelete.project,
-                operationsCommandOptions.variantAnnotationDelete.annotationId,
-                new ObjectMap(operationsCommandOptions.variantAnnotationDelete.commonOptions.params));
+                variantAnnotationDelete.project,
+                variantAnnotationDelete.annotationId,
+                addDynamicParams(new ObjectMap()));
     }
 
     private DataResponse variantScoreIndex() throws IOException {
+        OperationsCommandOptions.VariantScoreIndexCommandOptions variantScoreIndex = operationsCommandOptions.variantScoreIndex;
         ObjectMap params = new OperationsWSService.VariantScoreIndexParams(
-                operationsCommandOptions.variantScoreIndex.study.study,
-                operationsCommandOptions.variantScoreIndex.cohort1,
-                operationsCommandOptions.variantScoreIndex.cohort2,
-                operationsCommandOptions.variantScoreIndex.input,
-                operationsCommandOptions.variantScoreIndex.columns,
-                operationsCommandOptions.variantScoreIndex.resume,
-                operationsCommandOptions.variantScoreIndex.commonOptions.params
+                variantScoreIndex.cohort1,
+                variantScoreIndex.cohort2,
+                variantScoreIndex.input,
+                variantScoreIndex.columns,
+                variantScoreIndex.resume
         ).toObjectMap();
-        return openCGAClient.getOperationClient().variantScoreIndex(params);
+        addDynamicParams(params);
+        return openCGAClient.getOperationClient().variantScoreIndex(variantScoreIndex.study.study, params);
     }
 
     private DataResponse variantScoreDelete() throws IOException {
+        OperationsCommandOptions.VariantScoreDeleteCommandOptions variantScoreDelete = operationsCommandOptions.variantScoreDelete;
         return openCGAClient.getOperationClient().variantScoreDelete(
-                operationsCommandOptions.variantScoreDelete.study.study,
-                operationsCommandOptions.variantScoreDelete.scoreName,
-                operationsCommandOptions.variantScoreDelete.resume,
-                operationsCommandOptions.variantScoreDelete.force,
-                new ObjectMap(operationsCommandOptions.variantScoreDelete.commonOptions.params)
+                variantScoreDelete.study.study,
+                variantScoreDelete.scoreName,
+                variantScoreDelete.resume,
+                variantScoreDelete.force,
+                addDynamicParams(new ObjectMap())
         );
     }
 
-    private DataResponse variantFamilyIndex() throws IOException {
+    private DataResponse<Job> variantFamilyIndex() throws IOException {
+        OperationsCommandOptions.VariantFamilyGenotypeIndexCommandOptions variantFamilyIndex = operationsCommandOptions.variantFamilyIndex;
         ObjectMap params = new OperationsWSService.VariantFamilyIndexParams(
-                operationsCommandOptions.variantFamilyIndex.study,
-                operationsCommandOptions.variantFamilyIndex.family,
-                operationsCommandOptions.variantFamilyIndex.overwrite,
-                operationsCommandOptions.variantFamilyIndex.commonOptions.params
+                variantFamilyIndex.family,
+                variantFamilyIndex.overwrite
         ).toObjectMap();
-        return openCGAClient.getOperationClient().variantFamilyGenotypeIndex(params);
+        addDynamicParams(params);
+        return openCGAClient.getOperationClient().variantFamilyGenotypeIndex(variantFamilyIndex.study, params);
     }
 
-    private DataResponse variantSampleIndex() throws IOException {
+    private DataResponse<Job> variantSampleIndex() throws IOException {
+        OperationsCommandOptions.VariantSampleGenotypeIndexCommandOptions variantSampleIndex = operationsCommandOptions.variantSampleIndex;
         ObjectMap params = new OperationsWSService.VariantSampleIndexParams(
-                operationsCommandOptions.variantSampleIndex.study,
-                operationsCommandOptions.variantSampleIndex.sample,
-                operationsCommandOptions.variantSampleIndex.commonOptions.params
+                variantSampleIndex.sample
         ).toObjectMap();
-        return openCGAClient.getOperationClient().variantSampleGenotypeIndex(params);
+        addDynamicParams(params);
+        return openCGAClient.getOperationClient().variantSampleGenotypeIndex(variantSampleIndex.study, params);
     }
 
-    private DataResponse variantAggregate() throws IOException {
+    private DataResponse<Job> variantAggregate() throws IOException {
+        OperationsCommandOptions.VariantAggregateCommandOptions variantAggregate = operationsCommandOptions.variantAggregate;
         ObjectMap params = new OperationsWSService.VariantAggregateParams(
-                operationsCommandOptions.variantAggregate.study,
                 null,
-                operationsCommandOptions.variantAggregate.aggregateCommandOptions.overwrite,
-                operationsCommandOptions.variantAggregate.aggregateCommandOptions.resume,
-                operationsCommandOptions.variantAggregate.commonOptions.params
+                variantAggregate.aggregateCommandOptions.overwrite,
+                variantAggregate.aggregateCommandOptions.resume
         ).toObjectMap();
-        return openCGAClient.getOperationClient().variantSampleGenotypeIndex(params);
+        addDynamicParams(params);
+        return openCGAClient.getOperationClient().variantAggregate(variantAggregate.study, params);
     }
 
-    private DataResponse variantAggregateFamily() throws IOException {
+    private DataResponse<Job> variantAggregateFamily() throws IOException {
+        OperationsCommandOptions.VariantFamilyAggregateCommandOptions variantAggregateFamily = operationsCommandOptions.variantAggregateFamily;
         ObjectMap params = new OperationsWSService.VariantAggregateFamilyParams(
-                operationsCommandOptions.variantAggregateFamily.study,
-                operationsCommandOptions.variantAggregateFamily.genericAggregateFamilyOptions.resume,
-                operationsCommandOptions.variantAggregateFamily.genericAggregateFamilyOptions.samples,
-                operationsCommandOptions.variantAggregateFamily.commonOptions.params
+                variantAggregateFamily.genericAggregateFamilyOptions.resume,
+                variantAggregateFamily.genericAggregateFamilyOptions.samples
         ).toObjectMap();
-        return openCGAClient.getOperationClient().variantSampleGenotypeIndex(params);
+        addDynamicParams(params);
+        return openCGAClient.getOperationClient().variantAggregateFamily(variantAggregateFamily.study, params);
+    }
+
+    public ObjectMap addDynamicParams(ObjectMap params) {
+        for (Map.Entry<String, String> entry : operationsCommandOptions.commonCommandOptions.params.entrySet()) {
+            params.put("dynamic_" + entry.getKey(), entry.getKey());
+        }
+        return params;
     }
 }

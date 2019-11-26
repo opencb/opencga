@@ -133,8 +133,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
     private DataResponse stats() throws IOException {
         ObjectMap params = new VariantAnalysisWSService.StatsRunParams(
-                variantCommandOptions.statsVariantCommandOptions.study,
-                variantCommandOptions.statsVariantCommandOptions.cohortIds,
+                variantCommandOptions.statsVariantCommandOptions.cohorts,
                 variantCommandOptions.statsVariantCommandOptions.samples,
                 variantCommandOptions.statsVariantCommandOptions.index,
                 variantCommandOptions.statsVariantCommandOptions.outdir,
@@ -144,23 +143,20 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.updateStats,
                 variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.resume,
                 variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.aggregated,
-                variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.aggregationMappingFile,
-                variantCommandOptions.annotateVariantCommandOptions.commonOptions.params
+                variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.aggregationMappingFile
         ).toObjectMap();
-        return openCGAClient.getVariantClient().statsRun(params);
+        return openCGAClient.getVariantClient().statsRun(variantCommandOptions.statsVariantCommandOptions.study, params);
     }
 
     private DataResponse<Job> sampleStats() throws IOException {
         ObjectMap params = new VariantAnalysisWSService.SampleStatsRunParams(
-                variantCommandOptions.sampleVariantStatsCommandOptions.study,
                 variantCommandOptions.sampleVariantStatsCommandOptions.sample,
                 variantCommandOptions.sampleVariantStatsCommandOptions.family,
                 variantCommandOptions.sampleVariantStatsCommandOptions.index,
                 variantCommandOptions.sampleVariantStatsCommandOptions.samplesAnnotation,
-                variantCommandOptions.sampleVariantStatsCommandOptions.outdir,
-                variantCommandOptions.sampleVariantStatsCommandOptions.commonOptions.params
+                variantCommandOptions.sampleVariantStatsCommandOptions.outdir
         ).toObjectMap();
-        return openCGAClient.getVariantClient().sampleStatsRun(params);
+        return openCGAClient.getVariantClient().sampleStatsRun(variantCommandOptions.sampleVariantStatsCommandOptions.study, params);
     }
 
     private DataResponse<SampleVariantStats> sampleStatsQuery() throws IOException {
@@ -171,15 +167,13 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
     private DataResponse<Job> cohortStats() throws IOException {
         ObjectMap params = new VariantAnalysisWSService.CohortStatsRunParams(
-                variantCommandOptions.cohortVariantStatsCommandOptions.study,
                 variantCommandOptions.cohortVariantStatsCommandOptions.cohort,
                 variantCommandOptions.cohortVariantStatsCommandOptions.samples,
                 variantCommandOptions.cohortVariantStatsCommandOptions.index,
                 variantCommandOptions.cohortVariantStatsCommandOptions.samplesAnnotation,
-                variantCommandOptions.cohortVariantStatsCommandOptions.outdir,
-                variantCommandOptions.cohortVariantStatsCommandOptions.commonOptions.params
+                variantCommandOptions.cohortVariantStatsCommandOptions.outdir
         ).toObjectMap();
-        return openCGAClient.getVariantClient().cohortStatsRun(params);
+        return openCGAClient.getVariantClient().cohortStatsRun(variantCommandOptions.cohortVariantStatsCommandOptions.study, params);
     }
 
     private DataResponse<VariantSetStats> cohortStatsQuery() throws IOException {
@@ -199,7 +193,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
     private DataResponse<Job> gwas() throws IOException {
         ObjectMap params = new VariantAnalysisWSService.GwasRunParams(
-                variantCommandOptions.gwasCommandOptions.study,
                 variantCommandOptions.gwasCommandOptions.phenotype,
                 variantCommandOptions.gwasCommandOptions.scoreName,
                 variantCommandOptions.gwasCommandOptions.method,
@@ -208,10 +201,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 variantCommandOptions.gwasCommandOptions.caseSamplesAnnotation,
                 variantCommandOptions.gwasCommandOptions.controlCohort,
                 variantCommandOptions.gwasCommandOptions.controlSamplesAnnotation,
-                variantCommandOptions.gwasCommandOptions.outdir,
-                variantCommandOptions.gwasCommandOptions.commonOptions.params
+                variantCommandOptions.gwasCommandOptions.outdir
         ).toObjectMap();
-        return openCGAClient.getVariantClient().gwasRun(params);
+        return openCGAClient.getVariantClient().gwasRun(variantCommandOptions.gwasCommandOptions.study, params);
     }
 
     private List<String> asList(String s) {
@@ -220,7 +212,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 : Arrays.asList(s.split(","));
     }
 
-    private DataResponse export() throws CatalogException, IOException, InterruptedException {
+    private DataResponse<Job> export() throws CatalogException, IOException, InterruptedException {
         VariantCommandOptions.VariantExportCommandOptions c = variantCommandOptions.exportVariantCommandOptions;
 
         c.study = resolveStudy(c.study);
@@ -232,8 +224,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         }
         Query query = VariantQueryCommandUtils.parseQuery(c, studies, clientConfiguration);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(c);
+        String study = query.getString(VariantQueryParam.STUDY.key());
 
-        return openCGAClient.getVariantClient().export(query, options, c.outdir, c.outputFileName);
+        return openCGAClient.getVariantClient().export(study, query, options, c.outdir, c.outputFileName);
     }
 
     private DataResponse query() throws CatalogException, IOException, InterruptedException {

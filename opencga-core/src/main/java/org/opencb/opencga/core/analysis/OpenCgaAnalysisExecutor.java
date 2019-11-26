@@ -54,8 +54,8 @@ public abstract class OpenCgaAnalysisExecutor {
         return outDir;
     }
 
-    protected final String getSessionId() throws AnalysisExecutorException {
-        return getExecutorParams().getString("sessionId");
+    protected final String getToken() throws AnalysisExecutorException {
+        return getExecutorParams().getString("token");
     }
 
     protected final void addWarning(String warning) throws AnalysisException {
