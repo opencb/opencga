@@ -21,16 +21,10 @@ import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.analysis.variant.GwasAnalysisExecutor;
 import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.results.OpenCGAResult;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Panel;
-import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.core.results.VariantQueryResult;
-import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.util.List;
@@ -87,7 +81,7 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
         OpenCGAResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),
-                    sessionId);
+                    token);
         } catch (CatalogException e) {
             throw new AnalysisException(e);
         }
@@ -135,7 +129,7 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
         }
 
         // Check disease panels
-        diseasePanels = clinicalInterpretationManager.getDiseasePanels(query, sessionId);
+        diseasePanels = clinicalInterpretationManager.getDiseasePanels(query, token);
 
         // Update executor params with OpenCGA home and session ID
         setUpStorageEngineExecutor(studyId);

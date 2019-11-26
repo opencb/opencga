@@ -56,7 +56,7 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         OpenCGAResult<ClinicalAnalysis> clinicalAnalysisQueryResult;
         try {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),
-                    sessionId);
+                    token);
         } catch (CatalogException e) {
             throw new AnalysisException(e);
         }

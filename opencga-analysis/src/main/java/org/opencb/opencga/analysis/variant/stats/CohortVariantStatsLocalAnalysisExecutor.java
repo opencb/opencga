@@ -40,11 +40,11 @@ public class CohortVariantStatsLocalAnalysisExecutor extends CohortVariantStatsA
 
         VariantSetStats stats;
         try {
-            DataResult<VariantMetadata> metadata = variantStorageManager.getMetadata(query, new QueryOptions(), getSessionId());
+            DataResult<VariantMetadata> metadata = variantStorageManager.getMetadata(query, new QueryOptions(), getToken());
             VariantSetStatsCalculator calculator = new VariantSetStatsCalculator(metadata.first().getStudies().get(0));
 
             ProgressLogger progressLogger = new ProgressLogger("Variants processed:");
-            VariantDBIterator iterator = variantStorageManager.iterator(query, new QueryOptions(), getSessionId());
+            VariantDBIterator iterator = variantStorageManager.iterator(query, new QueryOptions(), getToken());
 
             ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(10).build();
 
