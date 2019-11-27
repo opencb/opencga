@@ -182,9 +182,10 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
         ObjectMap params;
 
         Path inDir1 = Paths.get(opencga.createTmpOutdir("_bwa"));
-        outDir = Paths.get(opencga.createTmpOutdir("_alignment"));
 
         // bwa index
+        System.out.println("-------   bwa index   ------");
+        Path outDir1 = Paths.get(opencga.createTmpOutdir("_alignment1"));
 
         String fastaFilename = "Homo_sapiens.GRCh38.dna.chromosome.MT.fa.gz";
         InputStream refGenomeIs = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream(fastaFilename);
@@ -193,16 +194,18 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
         params = new ObjectMap();
 
         BwaWrapperAnalysis bwa = new BwaWrapperAnalysis();
-        bwa.setUp(opencga.getOpencgaHome().toString(), params, inDir1, clinicalTest.token);
-        bwa.setCommand("index");
-        bwa.setFastaFile(inDir1.resolve(fastaFilename).toString());
+        bwa.setUp(opencga.getOpencgaHome().toString(), params, outDir1, clinicalTest.token);
+        bwa.setCommand("index")
+                .setFastaFile(inDir1.resolve(fastaFilename).toString());
 
         AnalysisResult bwaIndexResult = bwa.start();
         System.out.println(bwaIndexResult);
 
-        assertTrue(Files.exists(inDir1.resolve(fastaFilename + ".bwt")));
+        assertTrue(Files.exists(outDir1.resolve(fastaFilename + ".bwt")));
 
         // bwa mem
+        System.out.println("-------   bwa mem   ------");
+        Path outDir2 = Paths.get(opencga.createTmpOutdir("_alignment2"));
 
         String fastqFilename = "ERR251000.1K.fastq.gz";
         InputStream fastqIs = WrapperAnalysisTest.class.getClassLoader().getResourceAsStream(fastqFilename);
@@ -211,20 +214,75 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
         params = new ObjectMap();
 
         bwa = new BwaWrapperAnalysis();
-        bwa.setUp(opencga.getOpencgaHome().toString(), params, outDir, clinicalTest.token);
-        bwa.setCommand("mem");
-        bwa.setIndexBaseFile(inDir1.resolve(fastaFilename).toString());
-        bwa.setFastq1File(inDir1.resolve(fastqFilename).toString());
-        bwa.setSamFile(outDir.resolve("output.sam").toString());
+        bwa.setUp(opencga.getOpencgaHome().toString(), params, outDir2, clinicalTest.token);
+        bwa.setCommand("mem")
+                .setIndexBaseFile(outDir1.resolve(fastaFilename).toString())
+                .setFastq1File(inDir1.resolve(fastqFilename).toString())
+                .setSamFile(outDir2.resolve("output.sam").toString());
 
         AnalysisResult bwaMemResult = bwa.start();
         System.out.println(bwaMemResult);
 
         assertTrue(Files.exists(new File(bwa.getSamFile()).toPath()));
 
-        // samtools sort
+        // samtools view (convert .sam to .bam)
+        System.out.println("-------   samtools view   ------");
+        Path outDir3 = Paths.get(opencga.createTmpOutdir("_alignment3"));
 
-        // samtools index
+        params = new ObjectMap();
+        params.put("b", "");
+        params.put("S", "");
+
+        String bamFile = outDir3.resolve((new File(bwa.getSamFile()).getName()) + ".bam").toString();
+
+        SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
+        samtools.setUp(opencga.getOpencgaHome().toString(), params, outDir3, clinicalTest.token);
+        samtools.setCommand("view")
+                .setInputFile(bwa.getSamFile())
+                .setOutputFile(bamFile);
+
+        AnalysisResult samtoolsViewResult = samtools.start();
+        System.out.println(samtoolsViewResult);
+
+        assertTrue(Files.exists(new File(samtools.getOutputFile()).toPath()));
+
+        // samtools sort (.bam)
+        System.out.println("-------   samtools sort   ------");
+        Path outDir4 = Paths.get(opencga.createTmpOutdir("_alignment4"));
+
+        params = new ObjectMap();
+
+        String sortedBamFile = outDir4.resolve((new File(bwa.getSamFile()).getName()) + ".sorted.bam").toString();
+
+        samtools = new SamtoolsWrapperAnalysis();
+        samtools.setUp(opencga.getOpencgaHome().toString(), params, outDir4, clinicalTest.token);
+        samtools.setCommand("sort")
+                .setInputFile(bamFile)
+                .setOutputFile(sortedBamFile);
+
+        AnalysisResult samtoolsSortResult = samtools.start();
+        System.out.println(samtoolsSortResult);
+
+        assertTrue(Files.exists(new File(samtools.getOutputFile()).toPath()));
+
+        // samtools index (generate .bai)
+        System.out.println("-------   samtools index   ------");
+        Path outDir5 = Paths.get(opencga.createTmpOutdir("_alignment5"));
+
+        params = new ObjectMap();
+
+        String baiFile = outDir4.resolve((new File(bwa.getSamFile()).getName()) + ".sorted.bam.bai").toString();
+
+        samtools = new SamtoolsWrapperAnalysis();
+        samtools.setUp(opencga.getOpencgaHome().toString(), params, outDir4, clinicalTest.token);
+        samtools.setCommand("index")
+                .setInputFile(sortedBamFile)
+                .setOutputFile(baiFile);
+
+        AnalysisResult samtoolsIndexResult = samtools.start();
+        System.out.println(samtoolsIndexResult);
+
+        assertTrue(Files.exists(new File(samtools.getOutputFile()).toPath()));
 
         // deeptools coverage
     }

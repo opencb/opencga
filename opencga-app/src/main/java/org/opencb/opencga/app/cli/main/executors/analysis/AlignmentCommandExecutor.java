@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -83,6 +84,9 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case BwaWrapperAnalysis.ID:
                 queryResponse = bwa();
+                break;
+            case SamtoolsWrapperAnalysis.ID:
+                queryResponse = samtools();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -324,6 +328,19 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 alignmentCommandOptions.bwaCommandOptions.basicOptions.params
         ).toObjectMap();
         return openCGAClient.getAlignmentClient().bwaRun(alignmentCommandOptions.bwaCommandOptions.study, params);
+    }
+
+    // Samtools
+
+    private DataResponse<Job> samtools() throws IOException {
+        ObjectMap params = new AlignmentAnalysisWSService.SamtoolsRunParams(
+                alignmentCommandOptions.samtoolsCommandOptions.command,
+                alignmentCommandOptions.samtoolsCommandOptions.inputFile,
+                alignmentCommandOptions.samtoolsCommandOptions.outputFile,
+                alignmentCommandOptions.samtoolsCommandOptions.outdir,
+                alignmentCommandOptions.samtoolsCommandOptions.basicOptions.params
+        ).toObjectMap();
+        return openCGAClient.getAlignmentClient().samtoolsRun(alignmentCommandOptions.samtoolsCommandOptions.study, params);
     }
 
     //-------------------------------------------------------------------------

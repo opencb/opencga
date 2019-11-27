@@ -28,6 +28,7 @@ import org.opencb.hpg.bigdata.analysis.tools.Status;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -79,6 +80,9 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 break;
             case BwaWrapperAnalysis.ID:
                 bwa();
+                break;
+            case SamtoolsWrapperAnalysis.ID:
+                samtools();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -209,6 +213,23 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 .setSamFile(cliOptions.samFile);
 
         bwa.start();
+    }
+
+    // Samtools
+
+    private void samtools() throws Exception {
+        AlignmentCommandOptions.SamtoolsCommandOptions cliOptions = alignmentCommandOptions.samtoolsCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.basicOptions.params);
+
+        SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
+        samtools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+
+        samtools.setCommand(cliOptions.command)
+                .setInputFile(cliOptions.inputFile)
+                .setOutputFile(cliOptions.outputFile);
+
+        samtools.start();
     }
 
     //-------------------------------------------------------------------------

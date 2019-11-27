@@ -22,6 +22,7 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 
 /**
@@ -37,6 +38,7 @@ public class AlignmentCommandOptions {
 
     // Wrappers
     public BwaCommandOptions bwaCommandOptions;
+    public SamtoolsCommandOptions samtoolsCommandOptions;
 
     public GeneralCliOptions.CommonCommandOptions analysisCommonOptions;
     public JCommander jCommander;
@@ -51,6 +53,7 @@ public class AlignmentCommandOptions {
         this.coverageAlignmentCommandOptions = new CoverageAlignmentCommandOptions();
 
         this.bwaCommandOptions = new BwaCommandOptions();
+        this.samtoolsCommandOptions = new SamtoolsCommandOptions();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index alignment file")
@@ -186,6 +189,30 @@ public class AlignmentCommandOptions {
 
         @Parameter(names = {"--sam-file"}, description = "SAM file.")
         public String samFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+    }
+
+    // Samtools
+
+    @Parameters(commandNames = SamtoolsWrapperAnalysis.ID, commandDescription = SamtoolsWrapperAnalysis.DESCRIPTION)
+    public class SamtoolsCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.BasicCommonCommandOptions basicOptions = analysisCommonOptions;
+
+        @Parameter(names = {"--study"}, description = "Study.")
+        public String study;
+
+        @Parameter(names = {"--command"}, description = "BWA comamnd. Valid values: index or mem.")
+        public String command;
+
+        @Parameter(names = {"--input-file"}, description = "Input file.")
+        public String inputFile;
+
+        @Parameter(names = {"--output-file"}, description = "Output file.")
+        public String outputFile;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;

@@ -36,7 +36,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -447,6 +447,39 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
             AlignmentAnalysisWSService.BwaRunParams params) {
         return submitJob(study, "alignment", BwaWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
+    }
+
+    // Samtools
+
+    public static class SamtoolsRunParams extends RestBodyParams {
+        public SamtoolsRunParams() {
+        }
+
+        public SamtoolsRunParams(String command, String inputFile, String outputFile, String outdir, Map<String, String> samtoolsParams) {
+            this.command = command;
+            this.inputFile = inputFile;
+            this.outputFile = outputFile;
+            this.outdir = outdir;
+            this.samtoolsParams = samtoolsParams;
+        }
+
+        public String command;      // Valid values: view, index, sort
+        public String inputFile;    // Input file
+        public String outputFile;   // Output file
+        public String outdir;
+        public Map<String, String> samtoolsParams;
+    }
+
+    @POST
+    @Path("/samtools/run")
+    @ApiOperation(value = SamtoolsWrapperAnalysis.DESCRIPTION, response = Job.class)
+    public Response samtoolsRun(
+            @ApiParam(value = "Study") @QueryParam("study") String study,
+            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
+            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            AlignmentAnalysisWSService.SamtoolsRunParams params) {
+        return submitJob(study, "alignment", SamtoolsWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
     }
 
     //-------------------------------------------------------------------------

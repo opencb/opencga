@@ -18,8 +18,10 @@ package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.JCommander;
 import org.opencb.commons.utils.CommandLineUtils;
+import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
@@ -271,6 +273,8 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentCommandOptions);
         alignmentSubCommands.addCommand("stats", alignmentCommandOptions.statsAlignmentCommandOptions);
         alignmentSubCommands.addCommand("coverage", alignmentCommandOptions.coverageAlignmentCommandOptions);
+        alignmentSubCommands.addCommand(BwaWrapperAnalysis.ID, alignmentCommandOptions.bwaCommandOptions);
+        alignmentSubCommands.addCommand(SamtoolsWrapperAnalysis.ID, alignmentCommandOptions.samtoolsCommandOptions);
 
         variantCommandOptions = new VariantCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("variant", variantCommandOptions);

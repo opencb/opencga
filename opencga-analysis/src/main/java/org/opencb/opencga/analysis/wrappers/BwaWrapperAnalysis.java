@@ -19,10 +19,9 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     public final static String ID = "bwa";
     public final static String DESCRIPTION = "BWA is a software package for mapping low-divergent sequences against a large reference"
-            + " genome";
+            + " genome.";
 
     public final static String BWA_DOCKER_IMAGE = "alexcoppe/bwa";
-    public final static String OUT_NAME = "out";
 
     private String command;
     private String fastaFile;
