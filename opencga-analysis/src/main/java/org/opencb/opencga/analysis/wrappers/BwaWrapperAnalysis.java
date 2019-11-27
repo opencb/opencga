@@ -33,6 +33,19 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     protected void check() throws Exception {
         super.check();
+
+        if (StringUtils.isEmpty(command)) {
+            throw new AnalysisException("Missig BWA command. Supported commands are 'index' and 'mem'");
+        }
+
+        switch (command) {
+            case "index":
+            case "mem":
+                break;
+            default:
+                // TODO: support fastmap, pemerge, aln, samse, sampe, bwasw, shm, fa2pac, pac2bwt, pac2bwtgen, bwtupdate, bwt2sa
+                throw new AnalysisException("BWA command '" + command + "' is not available. Supported commands are 'index' and 'mem'");
+        }
     }
 
     @Override
@@ -69,18 +82,25 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 boolean success = false;
                 switch (command) {
                     case "index": {
-                        if (new File(fastaFile + ".sa").exists()
-                                && new File(fastaFile + ".bwt").exists()
-                                && new File(fastaFile + ".pac").exists()
-                                && new File(fastaFile + ".amb").exists()
-                                && new File(fastaFile + ".ann").exists()) {
+                        File file = params.containsKey("p")
+                                ? new File(params.getString("p"))
+                                : new File(fastaFile);
+                        String prefix = getOutDir().toAbsolutePath() + "/" + file.getName();
+
+                        if (new File(prefix + ".sa").exists()
+                                && new File(prefix + ".bwt").exists()
+                                && new File(prefix + ".pac").exists()
+                                && new File(prefix + ".amb").exists()
+                                && new File(prefix + ".ann").exists()) {
                             success = true;
                         }
+                        break;
                     }
                     case "mem": {
                         if (new File(samFile).exists()) {
                             success = true;
                         }
+                        break;
                     }
                 }
                 if (!success) {
@@ -138,10 +158,18 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
         switch (command) {
             case "index": {
+                File file = params.containsKey("p")
+                        ? new File(params.getString("p"))
+                        : new File(fastaFile);
+
+                sb.append(" -p ").append(DOCKER_OUTPUT_PATH).append("/").append(file.getName());
+
                 if (StringUtils.isNotEmpty(fastaFile)) {
-                    File file = new File(fastaFile);
+                    file = new File(fastaFile);
                     sb.append(" ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
                 }
+
+                break;
             }
 
             case "mem": {
@@ -164,6 +192,7 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
                     File file = new File(fastq1File);
                     sb.append(" ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
                 }
+                break;
             }
         }
 
@@ -171,7 +200,11 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
     }
 
     private boolean checkParam(String param) {
-        if (param.equals(DOCKER_IMAGE_VERSION_PARAM) || param.equals("o")) {
+        if (param.equals(DOCKER_IMAGE_VERSION_PARAM)) {
+            return false;
+        } else if ("index".equals(command) && "p".equals(param)) {
+            return false;
+        } else if ("mem".equals(command) && "o".equals(param)) {
             return false;
         }
         return true;

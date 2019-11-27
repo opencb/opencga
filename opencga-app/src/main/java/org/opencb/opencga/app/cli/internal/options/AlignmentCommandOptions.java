@@ -20,6 +20,8 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 
 /**
@@ -33,6 +35,9 @@ public class AlignmentCommandOptions {
     public StatsAlignmentCommandOptions statsAlignmentCommandOptions;
     public CoverageAlignmentCommandOptions coverageAlignmentCommandOptions;
 
+    // Wrappers
+    public BwaCommandOptions bwaCommandOptions;
+
     public GeneralCliOptions.CommonCommandOptions analysisCommonOptions;
     public JCommander jCommander;
 
@@ -44,6 +49,8 @@ public class AlignmentCommandOptions {
         this.queryAlignmentCommandOptions = new QueryAlignmentCommandOptions();
         this.statsAlignmentCommandOptions = new StatsAlignmentCommandOptions();
         this.coverageAlignmentCommandOptions = new CoverageAlignmentCommandOptions();
+
+        this.bwaCommandOptions = new BwaCommandOptions();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index alignment file")
@@ -145,6 +152,42 @@ public class AlignmentCommandOptions {
         public boolean contained;
         @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000")
         public String region;
+    }
 
+    //-------------------------------------------------------------------------
+    // W R A P P E R S     A N A L Y S I S
+    //-------------------------------------------------------------------------
+
+    // BWA
+
+    @Parameters(commandNames = BwaWrapperAnalysis.ID, commandDescription = BwaWrapperAnalysis.DESCRIPTION)
+    public class BwaCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.BasicCommonCommandOptions basicOptions = analysisCommonOptions;
+
+        @Parameter(names = {"--study"}, description = "Study.")
+        public String study;
+
+        @Parameter(names = {"--command"}, description = "BWA comamnd. Valid values: index or mem.")
+        public String command;
+
+        @Parameter(names = {"--fasta-file"}, description = "Fasta file.")
+        public String fastaFile;
+
+        @Parameter(names = {"--index-base-file"}, description = "Index base file.")
+        public String indexBaseFile;
+
+        @Parameter(names = {"--fastq1-file"}, description = "FastQ #1 file.")
+        public String fastq1File;
+
+        @Parameter(names = {"--fastq2-file"}, description = "FastQ #2 file.")
+        public String fastq2File;
+
+        @Parameter(names = {"--sam-file"}, description = "SAM file.")
+        public String samFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
     }
 }

@@ -420,6 +420,48 @@ public class InternalMainTest {
         assertTrue(Files.exists(Paths.get(temporalDir).resolve("rvtests-output.kinship")));
     }
 
+    @Test
+    public void testAlignmentWrappers() throws CatalogException, IOException {
+        createStudy(datastores, "s1");
+
+        File fastaFile = opencga.createFile(studyId, "Homo_sapiens.GRCh38.dna.chromosome.MT.fa.gz", sessionId);
+
+        String temporalDir = opencga.createTmpOutdir(studyId, "_bwa", sessionId);
+
+        // bwa index
+        execute("alignment", "bwa",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--command", "index",
+                "--fasta-file", fastaFile.getUri().getPath(),
+                "-o", temporalDir);
+
+        assertEquals(8, Files.list(Paths.get(temporalDir)).collect(Collectors.toList()).size());
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve(Paths.get(fastaFile.getUri().getPath() + ".bwt").toFile().getName())));
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve(Paths.get(fastaFile.getUri().getPath() + ".pac").toFile().getName())));
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve(Paths.get(fastaFile.getUri().getPath() + ".ann").toFile().getName())));
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve(Paths.get(fastaFile.getUri().getPath() + ".amb").toFile().getName())));
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve(Paths.get(fastaFile.getUri().getPath() + ".sa").toFile().getName())));
+
+        File fastqFile = opencga.createFile(studyId, "ERR251000.1K.fastq.gz", sessionId);
+
+        String temporalDir1 = opencga.createTmpOutdir(studyId, "_bwa1", sessionId);
+
+        // bwa mem
+        execute("alignment", "bwa",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--command", "mem",
+                "--index-base-file", Paths.get(temporalDir).resolve(Paths.get(fastaFile.getUri().getPath()).toFile().getName()).toString(),
+                "--fastq1-file", fastqFile.getUri().getPath(),
+                "--sam-file", temporalDir1 + "/alignment.sam",
+                "-o", temporalDir1);
+
+        assertEquals(8, Files.list(Paths.get(temporalDir)).collect(Collectors.toList()).size());
+        assertTrue(Files.exists(Paths.get(temporalDir1).resolve("alignment.sam")));
+    }
+
+
     public int execute(String... args) {
         int exitValue = InternalMain.privateMain(args);
         assertEquals(0, exitValue);

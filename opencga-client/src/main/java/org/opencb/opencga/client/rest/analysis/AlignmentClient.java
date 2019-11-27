@@ -69,4 +69,12 @@ public class AlignmentClient extends AbstractParentClient {
         params.putIfNotEmpty("file", fileIds);
         return execute(ALIGNMENT_URL, "coverage", params, GET, RegionCoverage.class);
     }
+
+    //-------------------------------------------------------------------------
+    // W R A P P E R S     A N A L Y S I S
+    //-------------------------------------------------------------------------
+
+    public DataResponse<Job> bwaRun(String study, ObjectMap params) throws IOException {
+        return execute(ALIGNMENT_URL, "/bwa/run", new ObjectMap("body", params).append("study", study), POST, Job.class);
+    }
 }
