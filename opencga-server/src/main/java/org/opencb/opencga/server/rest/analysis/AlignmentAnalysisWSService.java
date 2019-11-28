@@ -464,7 +464,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             this.samtoolsParams = samtoolsParams;
         }
 
-        public String command;      // Valid values: view, index, sort
+        public String command;      // Valid values: view, index, sort, stats
         public String inputFile;    // Input file
         public String outputFile;   // Output file
         public String outdir;

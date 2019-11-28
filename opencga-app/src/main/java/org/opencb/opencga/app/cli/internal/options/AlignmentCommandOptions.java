@@ -175,7 +175,7 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"--study"}, description = "Study.")
         public String study;
 
-        @Parameter(names = {"--command"}, description = "BWA comamnd. Valid values: index or mem.")
+        @Parameter(names = {"--command"}, description = "BWA comamnd. Valid values: index, mem.")
         public String command;
 
         @Parameter(names = {"--fasta-file"}, description = "Fasta file.")
@@ -208,7 +208,7 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"--study"}, description = "Study.")
         public String study;
 
-        @Parameter(names = {"--command"}, description = "BWA comamnd. Valid values: index or mem.")
+        @Parameter(names = {"--command"}, description = "Samtools command. Valid values: view, sort, index, stats.")
         public String command;
 
         @Parameter(names = {"--input-file"}, description = "Input file.")

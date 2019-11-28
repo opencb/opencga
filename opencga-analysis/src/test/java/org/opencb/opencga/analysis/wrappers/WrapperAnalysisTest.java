@@ -305,6 +305,25 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
         System.out.println(deepToolsBamCoverageResult);
 
         assertTrue(Files.exists(new File(coverageFile).toPath()));
+
+        // samtools stats (generate stats)
+        System.out.println("-------   samtools stats   ------");
+        Path outDir7 = Paths.get(opencga.createTmpOutdir("_alignment7"));
+
+        params = new ObjectMap();
+
+        String statsFile = outDir7.resolve((new File(sortedBamFile).getName()) + ".stats").toString();
+
+        samtools = new SamtoolsWrapperAnalysis();
+        samtools.setUp(opencga.getOpencgaHome().toString(), params, outDir7, clinicalTest.token);
+        samtools.setCommand("stats")
+                .setInputFile(sortedBamFile)
+                .setOutputFile(statsFile);
+
+        AnalysisResult samtoolsStatsResult = samtools.start();
+        System.out.println(samtoolsStatsResult);
+
+        assertTrue(Files.exists(new File(samtools.getOutputFile()).toPath()));
     }
 
     //    @Test

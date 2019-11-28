@@ -538,6 +538,23 @@ public class InternalMainTest {
 
         assertEquals(4, Files.list(Paths.get(temporalDir6)).collect(Collectors.toList()).size());
         assertTrue(new java.io.File(bwFile).exists());
+
+        // samtools stats
+        System.out.println("---------------   samtools stats   ---------------");
+
+        String temporalDir7 = opencga.createTmpOutdir(studyId, "_alignment7", sessionId);
+        String statsFile = temporalDir7 + "/alignment.stats";
+
+        execute("alignment", "samtools",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--command", "stats",
+                "--input-file", sortedBamFile,
+                "--output-file", statsFile,
+                "-o", temporalDir7);
+
+        assertEquals(4, Files.list(Paths.get(temporalDir7)).collect(Collectors.toList()).size());
+        assertTrue(new java.io.File(statsFile).exists());
     }
 
 

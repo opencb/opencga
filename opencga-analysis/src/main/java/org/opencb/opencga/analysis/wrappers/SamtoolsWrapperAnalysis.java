@@ -37,16 +37,18 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
             case "view":
             case "sort":
             case "index":
+            case "stats":
                 break;
             default:
                 // TODO: support the remaining samtools commands
                 throw new AnalysisException("Samtools command '" + command + "' is not available. Supported commands are 'sort', 'index'"
-                        + " and 'view'");
+                        + " , 'view' and 'stats'");
         }
 
         if (StringUtils.isEmpty(inputFile)) {
             throw new AnalysisException("Missing input file when executing 'samtools " + command + "'.");
         }
+
         if (StringUtils.isEmpty(outputFile)) {
             throw new AnalysisException("Missing input file when executing 'samtools " + command + "'.");
         }
@@ -90,6 +92,16 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                     case "sort":
                     case "view": {
                         if (new File(outputFile).exists()) {
+                            success = true;
+                        }
+                        break;
+                    }
+                    case "stats": {
+                        File file = new File(getOutDir() + "/" + STDOUT_FILENAME);
+                        List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+                        if (lines.size() > 0 && lines.get(0).startsWith("# This file was produced by samtools stats")) {
+                            FileUtils.copyFile(file, new File(outputFile));
+                            addFile(new File(outputFile).toPath(), FileResult.FileType.PLAIN_TEXT);
                             success = true;
                         }
                         break;
@@ -146,6 +158,13 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         }
 
         switch (command) {
+            case "stats": {
+                if (StringUtils.isNotEmpty(inputFile)) {
+                    File file = new File(inputFile);
+                    sb.append(" ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
+                }
+                break;
+            }
             case "index": {
                 if (StringUtils.isNotEmpty(inputFile)) {
                     File file = new File(inputFile);
