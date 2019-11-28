@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.io;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
+import org.opencb.biodata.models.metadata.Individual;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
@@ -40,8 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Iterator;
@@ -59,6 +59,8 @@ import java.util.concurrent.TimeUnit;
 public class VariantExporter {
 
     public static final String METADATA_FILE_EXTENSION = ".meta.json.gz";
+    public static final String TPED_FILE_EXTENSION = ".tped";
+    public static final String TFAM_FILE_EXTENSION = ".tfam";
     protected final VariantStorageEngine engine;
     protected final VariantWriterFactory variantWriterFactory;
     protected final VariantMetadataFactory metadataFactory;
@@ -103,7 +105,11 @@ public class VariantExporter {
         }
         if (metadataFactory != null && !VariantWriterFactory.isStandardOutput(outputFile)) {
             VariantMetadata metadata = metadataFactory.makeVariantMetadata(query, queryOptions);
-            writeMetadata(metadata, UriUtils.replacePath(outputFile, outputFile.getPath() + METADATA_FILE_EXTENSION));
+            String metaFilename = outputFile.getPath() + METADATA_FILE_EXTENSION;
+            if (outputFormat == VariantOutputFormat.TPED) {
+                metaFilename = outputFile.getPath().replace(TPED_FILE_EXTENSION, TFAM_FILE_EXTENSION);
+            }
+            writeMetadata(metadata, UriUtils.replacePath(outputFile, metaFilename));
         }
     }
 
@@ -167,10 +173,32 @@ public class VariantExporter {
     }
 
     protected void writeMetadata(VariantMetadata metadata, URI metadataFile) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        try (OutputStream os = ioConnectorProvider.newOutputStream(metadataFile)) {
-            objectMapper.writeValue(os, metadata);
+        if (metadataFile.toString().endsWith(TFAM_FILE_EXTENSION)) {
+            // Write .tfam file
+            writeTfam(metadata, metadataFile);
+        } else {
+            ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+            try (OutputStream os = ioConnectorProvider.newOutputStream(metadataFile)) {
+                objectMapper.writeValue(os, metadata);
+            }
         }
+    }
+
+    private void writeTfam(VariantMetadata metadata, URI metadataFile) throws IOException {
+        OutputStream os = ioConnectorProvider.newOutputStream(metadataFile);
+        Writer writer = new OutputStreamWriter(new BufferedOutputStream(os));
+        for (Individual individual : metadata.getStudies().get(0).getIndividuals()) {
+            writer.write(individual.getFamily()
+                    + "\t" + individual.getId()
+                    + "\t" + individual.getFather()
+                    + "\t" + individual.getMother()
+                    + "\t" + individual.getSex()
+                    + "\t" + individual.getPhenotype()
+                    + "\n");
+
+        }
+        writer.close();
+        os.close();
     }
 
     private Iterator<Variant> toVariantsIterator(URI variantsFile) {

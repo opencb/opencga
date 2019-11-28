@@ -14,8 +14,7 @@ except ImportError:
 _CALL_BATCH_SIZE = 2000
 _NUM_THREADS_DEFAULT = 4
 
-
-class DataResponse:
+class RESTResponse:
     def __init__(self, response):
         self.apiVersion = response.get('apiVersion')
         self.time = response.get('time')
@@ -24,8 +23,13 @@ class DataResponse:
         self.params = response.get('params')
         self.responses = response.get('responses')
 
-        # TODO: Remove deprecated response in future release
+        # TODO: Remove deprecated response in future release. Added for backwards compatibility
         self.response = response.get('responses')
+
+        for query_result in self.responses:
+            # TODO: Remove deprecated result. Added for backwards compatibility
+            query_result['result'] = query_result['results']
+
 
     # TODO: Remove deprecated method in future release
     def first(self):
@@ -60,9 +64,18 @@ class DataResponse:
             raise Exception('Missing mandatory field response_pos')
         return self.responses[response_pos]
 
-    def num_total_results(self):
+    def num_matches(self):
         """
-        Return the total number of results taking into account the whole list of QueryResults
+        Return the total number of matches taking of all the DataResponses
+        """
+        num_matches = 0
+        for query_result in self.responses:
+            num_matches += query_result['numMatches']
+        return num_matches
+
+    def num_results(self):
+        """
+        Return the total number of results taking of all the DataResponses
         """
         num_results = 0
         for query_result in self.responses:

@@ -26,13 +26,16 @@ class Jobs(_ParentBasicCRUDClient, _ParentAclRestClient):
         :param inputFiles: comma separated list of input file ids
         :param outputFiles: comma separated list of output file ids
         :param release: release value
-        :param skipCount: skip count (bool -> default=false)       
+        :param skipCount: skip count (bool -> default=true)
         :param include: fields included in the response, whole JSON path must be provided
         :param exclude: fields excluded in the response, whole JSON path must be provided
         :param limit: number of results to be returned in the queries
         :param skip: number of results to skip in the queries
         :param count: total number of results
         """
+
+        if 'skipCount' not in options and ('count' not in options or options['count'] is False):
+            options['skipCount'] = True
 
         return self._get('search', **options)
 

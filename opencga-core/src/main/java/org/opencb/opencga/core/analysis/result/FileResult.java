@@ -6,6 +6,7 @@ public class FileResult {
         JSON,
         AVRO,
         PLAIN_TEXT,
+        BINARY,
         TAB_SEPARATED // First line starts with # and contains the header
     }
 

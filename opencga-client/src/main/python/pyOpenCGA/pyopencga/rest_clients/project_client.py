@@ -54,6 +54,9 @@ class Projects(_ParentBasicCRUDClient):
         :param skip: number of results to be skipped.
         """
 
+        if 'skipCount' not in options and ('count' not in options or options['count'] is False):
+            options['skipCount'] = True
+
         return self._get('search', **options)
 
     def studies(self, project, **options):

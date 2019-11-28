@@ -32,6 +32,8 @@ import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.executors.VariantQueryCommandUtils;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
@@ -117,6 +119,14 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 //                break;
             case "gwas":
                 queryResponse = gwas();
+                break;
+
+            case PlinkWrapperAnalysis.ID:
+                queryResponse = plink();
+                break;
+
+            case RvtestsWrapperAnalysis.ID:
+                queryResponse = rvtests();
                 break;
 
             default:
@@ -504,5 +514,32 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         options.putAll(cliOptions.commonOptions.params);
 
         return openCGAClient.getVariantClient().annotationMetadata(cliOptions.annotationId, cliOptions.project, options);
+    }
+
+    // Wrappers
+
+    private DataResponse<Job> plink() throws IOException {
+        ObjectMap params = new VariantAnalysisWSService.PlinkRunParams(
+                variantCommandOptions.plinkCommandOptions.tpedFile,
+                variantCommandOptions.plinkCommandOptions.tfamFile,
+                variantCommandOptions.plinkCommandOptions.covarFile,
+                variantCommandOptions.plinkCommandOptions.outdir,
+                variantCommandOptions.plinkCommandOptions.basicOptions.params
+        ).toObjectMap();
+        return openCGAClient.getVariantClient().plinkRun(variantCommandOptions.plinkCommandOptions.study, params);
+    }
+
+    private DataResponse<Job> rvtests() throws IOException {
+        ObjectMap params = new VariantAnalysisWSService.RvtestsRunParams(
+                variantCommandOptions.rvtestsCommandOptions.executable,
+                variantCommandOptions.rvtestsCommandOptions.vcfFile,
+                variantCommandOptions.rvtestsCommandOptions.phenoFile,
+                variantCommandOptions.rvtestsCommandOptions.pedigreeFile,
+                variantCommandOptions.rvtestsCommandOptions.kinshipFile,
+                variantCommandOptions.rvtestsCommandOptions.covarFile,
+                variantCommandOptions.rvtestsCommandOptions.outdir,
+                variantCommandOptions.rvtestsCommandOptions.basicOptions.params
+        ).toObjectMap();
+        return openCGAClient.getVariantClient().rvtestsRun(variantCommandOptions.rvtestsCommandOptions.study, params);
     }
 }

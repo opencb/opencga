@@ -134,6 +134,14 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
         String fileName = "variants.vcf.gz";
         URI uri = getOutputUri(fileName);
         variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.VCF_GZ, null, new Query(STUDY.key(), study1), new QueryOptions());
+            copyToLocal(fileName, uri);
+        }
+
+    @Test
+    public void exportTped() throws Exception {
+        String fileName = "variants" + VariantExporter.TPED_FILE_EXTENSION;
+        URI uri = getOutputUri(fileName);
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.TPED, null, new Query(STUDY.key(), study1), new QueryOptions());
 
         copyToLocal(fileName, uri);
     }
@@ -209,9 +217,16 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
             FileSystem.get(externalResource.getConf()).copyToLocalFile(true,
                     new Path(uri),
                     new Path(outputUri.resolve(fileName)));
-            FileSystem.get(externalResource.getConf()).copyToLocalFile(true,
-                    new Path(uri.toString() + VariantExporter.METADATA_FILE_EXTENSION),
-                    new Path(outputUri.resolve(fileName + VariantExporter.METADATA_FILE_EXTENSION)));
+
+            if (fileName.endsWith(VariantExporter.TPED_FILE_EXTENSION)) {
+                FileSystem.get(externalResource.getConf()).copyToLocalFile(true,
+                        new Path(uri.toString().replace(VariantExporter.TPED_FILE_EXTENSION, VariantExporter.TFAM_FILE_EXTENSION)),
+                        new Path(outputUri.resolve(fileName.replace(VariantExporter.TPED_FILE_EXTENSION, VariantExporter.TFAM_FILE_EXTENSION))));
+            } else {
+                FileSystem.get(externalResource.getConf()).copyToLocalFile(true,
+                        new Path(uri.toString() + VariantExporter.METADATA_FILE_EXTENSION),
+                        new Path(outputUri.resolve(fileName + VariantExporter.METADATA_FILE_EXTENSION)));
+            }
         }
     }
 

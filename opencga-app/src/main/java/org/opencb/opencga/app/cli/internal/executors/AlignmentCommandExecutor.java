@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.app.cli.internal.executors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
@@ -25,7 +26,12 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.hpg.bigdata.analysis.tools.ExecutorMonitor;
 import org.opencb.hpg.bigdata.analysis.tools.Status;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
+import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
+import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
@@ -72,6 +78,15 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 break;
             case "delete":
                 delete();
+                break;
+            case BwaWrapperAnalysis.ID:
+                bwa();
+                break;
+            case SamtoolsWrapperAnalysis.ID:
+                samtools();
+                break;
+            case DeeptoolsWrapperAnalysis.ID:
+                deeptools();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -179,6 +194,68 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void delete() {
         throw new UnsupportedOperationException();
     }
+
+    //-------------------------------------------------------------------------
+    // W R A P P E R S     A N A L Y S I S
+    //-------------------------------------------------------------------------
+
+    // BWA
+
+    private void bwa() throws Exception {
+        AlignmentCommandOptions.BwaCommandOptions cliOptions = alignmentCommandOptions.bwaCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.basicOptions.params);
+
+        BwaWrapperAnalysis bwa = new BwaWrapperAnalysis();
+        bwa.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+
+        bwa.setCommand(cliOptions.command)
+                .setFastaFile(cliOptions.fastaFile)
+                .setIndexBaseFile(cliOptions.indexBaseFile)
+                .setFastq1File(cliOptions.fastq1File)
+                .setFastq2File(cliOptions.fastq2File)
+                .setSamFile(cliOptions.samFile);
+
+        bwa.start();
+    }
+
+    // Samtools
+
+    private void samtools() throws Exception {
+        AlignmentCommandOptions.SamtoolsCommandOptions cliOptions = alignmentCommandOptions.samtoolsCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.basicOptions.params);
+
+        SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
+        samtools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+
+        samtools.setCommand(cliOptions.command)
+                .setInputFile(cliOptions.inputFile)
+                .setOutputFile(cliOptions.outputFile);
+
+        samtools.start();
+    }
+
+    // Deeptools
+
+    private void deeptools() throws Exception {
+        AlignmentCommandOptions.DeeptoolsCommandOptions cliOptions = alignmentCommandOptions.deeptoolsCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.basicOptions.params);
+
+        DeeptoolsWrapperAnalysis deeptools = new DeeptoolsWrapperAnalysis();
+        deeptools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+
+        deeptools.setExecutable(cliOptions.executable)
+                .setBamFile(cliOptions.bamFile)
+                .setCoverageFile(cliOptions.coverageFile);
+
+        deeptools.start();
+    }
+
+    //-------------------------------------------------------------------------
+    // M I S C E L A N E O U S     M E T H O D S
+    //-------------------------------------------------------------------------
 
     private void addParam(Map<String, String> map, String key, Object value) {
         if (value == null) {

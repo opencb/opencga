@@ -30,13 +30,19 @@ import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
 import org.opencb.opencga.server.grpc.ServiceTypesModel;
+import org.opencb.opencga.server.rest.analysis.AlignmentAnalysisWSService;
+import org.opencb.opencga.server.rest.analysis.VariantAnalysisWSService;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 
 import java.io.IOException;
@@ -77,13 +83,21 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             case "coverage":
                 queryResponse = coverage();
                 break;
+            case BwaWrapperAnalysis.ID:
+                queryResponse = bwa();
+                break;
+            case SamtoolsWrapperAnalysis.ID:
+                queryResponse = samtools();
+                break;
+            case DeeptoolsWrapperAnalysis.ID:
+                queryResponse = deeptools();
+                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
         }
 
         createOutput(queryResponse);
-
     }
 
     private DataResponse index() throws CatalogException, IOException {
@@ -299,6 +313,56 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 //            System.out.println(regionCoverage.toString());
 //        }
     }
+
+    //-------------------------------------------------------------------------
+    // W R A P P E R S     A N A L Y S I S
+    //-------------------------------------------------------------------------
+
+    // BWA
+
+    private DataResponse<Job> bwa() throws IOException {
+        ObjectMap params = new AlignmentAnalysisWSService.BwaRunParams(
+                alignmentCommandOptions.bwaCommandOptions.command,
+                alignmentCommandOptions.bwaCommandOptions.fastaFile,
+                alignmentCommandOptions.bwaCommandOptions.indexBaseFile,
+                alignmentCommandOptions.bwaCommandOptions.fastq1File,
+                alignmentCommandOptions.bwaCommandOptions.fastq2File,
+                alignmentCommandOptions.bwaCommandOptions.samFile,
+                alignmentCommandOptions.bwaCommandOptions.outdir,
+                alignmentCommandOptions.bwaCommandOptions.basicOptions.params
+        ).toObjectMap();
+        return openCGAClient.getAlignmentClient().bwaRun(alignmentCommandOptions.bwaCommandOptions.study, params);
+    }
+
+    // Samtools
+
+    private DataResponse<Job> samtools() throws IOException {
+        ObjectMap params = new AlignmentAnalysisWSService.SamtoolsRunParams(
+                alignmentCommandOptions.samtoolsCommandOptions.command,
+                alignmentCommandOptions.samtoolsCommandOptions.inputFile,
+                alignmentCommandOptions.samtoolsCommandOptions.outputFile,
+                alignmentCommandOptions.samtoolsCommandOptions.outdir,
+                alignmentCommandOptions.samtoolsCommandOptions.basicOptions.params
+        ).toObjectMap();
+        return openCGAClient.getAlignmentClient().samtoolsRun(alignmentCommandOptions.samtoolsCommandOptions.study, params);
+    }
+
+    // Deeptools
+
+    private DataResponse<Job> deeptools() throws IOException {
+        ObjectMap params = new AlignmentAnalysisWSService.DeeptoolsRunParams(
+                alignmentCommandOptions.deeptoolsCommandOptions.executable,
+                alignmentCommandOptions.deeptoolsCommandOptions.bamFile,
+                alignmentCommandOptions.deeptoolsCommandOptions.coverageFile,
+                alignmentCommandOptions.deeptoolsCommandOptions.outdir,
+                alignmentCommandOptions.deeptoolsCommandOptions.basicOptions.params
+        ).toObjectMap();
+        return openCGAClient.getAlignmentClient().deeptoolsRun(alignmentCommandOptions.deeptoolsCommandOptions.study, params);
+    }
+
+    //-------------------------------------------------------------------------
+    // M I S C E L A N E O U S     M E T H O D S
+    //-------------------------------------------------------------------------
 
     private void addParam(Map<String, String> map, String key, Object value) {
         if (value == null) {

@@ -70,6 +70,9 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         :param count: get a count of the number of results obtained. Deactivated by default.
         """
 
+        if 'skipCount' not in options and ('count' not in options or options['count'] is False):
+            options['skipCount'] = True
+
         return self._get('search', **options)
 
     def scan_files(self, study, **options):

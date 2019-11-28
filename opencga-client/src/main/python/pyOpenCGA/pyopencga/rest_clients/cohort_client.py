@@ -45,7 +45,7 @@ class Cohorts(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSet
         :param status: Status
         :param annotation: Annotation, e.g: key1=value(;key2=value)
         :param samples: Sample list
-        :param skipCount: Skip count (Boolean, default is False)
+        :param skipCount: Skip count (Boolean, default is True)
         :param release: Release value
         :param include: Fields included in the response, whole JSON path must be provided
         :param exclude:Fields excluded in the response, whole JSON path must be provided
@@ -68,6 +68,9 @@ class Cohorts(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSet
         'COLLECTION'
         ]
         """
+
+        if 'skipCount' not in options and ('count' not in options or options['count'] is False):
+            options['skipCount'] = True
 
         return self._get('search', **options)
 

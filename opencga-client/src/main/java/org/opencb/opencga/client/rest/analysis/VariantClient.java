@@ -163,4 +163,14 @@ public class VariantClient extends AbstractParentClient {
 //        return execute(VARIANT_URL, "/ibs/run", new ObjectMap("body", params), POST, Job.class);
 //    }
 
+
+    // Wrappers
+
+    public DataResponse<Job> plinkRun(String study, ObjectMap params) throws IOException {
+        return execute(VARIANT_URL, "/plink/run", new ObjectMap("body", params).append("study", study), POST, Job.class);
+    }
+
+    public DataResponse<Job> rvtestsRun(String study, ObjectMap params) throws IOException {
+        return execute(VARIANT_URL, "/rvtests/run", new ObjectMap("body", params).append("study", study), POST, Job.class);
+    }
 }

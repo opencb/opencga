@@ -35,10 +35,14 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
@@ -400,6 +404,117 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    //-------------------------------------------------------------------------
+    // W R A P P E R S
+    //-------------------------------------------------------------------------
+
+    // BWA
+
+    public static class BwaRunParams extends RestBodyParams {
+        public BwaRunParams() {
+        }
+
+        public BwaRunParams(String command, String fastaFile, String indexBaseFile, String fastq1File, String fastq2File, String samFile,
+                                String outdir, Map<String, String> bwaParams) {
+            this.command = command;
+            this.fastaFile = fastaFile;
+            this.indexBaseFile = indexBaseFile;
+            this.fastq1File = fastq1File;
+            this.fastq2File = fastq2File;
+            this.samFile = samFile;
+            this.outdir = outdir;
+            this.bwaParams = bwaParams;
+        }
+
+        public String command;       // Valid values: index or mem
+        public String fastaFile;     //  Fasta file
+        public String indexBaseFile; // Index base file
+        public String fastq1File;    // FastQ #1 file
+        public String fastq2File;    // FastQ #2 file
+        public String samFile;       // SAM file
+        public String outdir;
+        public Map<String, String> bwaParams;
+    }
+
+    @POST
+    @Path("/bwa/run")
+    @ApiOperation(value = BwaWrapperAnalysis.DESCRIPTION, response = Job.class)
+    public Response rvtestsRun(
+            @ApiParam(value = "Study") @QueryParam("study") String study,
+            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
+            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            AlignmentAnalysisWSService.BwaRunParams params) {
+        return submitJob(study, "alignment", BwaWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
+    }
+
+    // Samtools
+
+    public static class SamtoolsRunParams extends RestBodyParams {
+        public SamtoolsRunParams() {
+        }
+
+        public SamtoolsRunParams(String command, String inputFile, String outputFile, String outdir, Map<String, String> samtoolsParams) {
+            this.command = command;
+            this.inputFile = inputFile;
+            this.outputFile = outputFile;
+            this.outdir = outdir;
+            this.samtoolsParams = samtoolsParams;
+        }
+
+        public String command;      // Valid values: view, index, sort, stats
+        public String inputFile;    // Input file
+        public String outputFile;   // Output file
+        public String outdir;
+        public Map<String, String> samtoolsParams;
+    }
+
+    @POST
+    @Path("/samtools/run")
+    @ApiOperation(value = SamtoolsWrapperAnalysis.DESCRIPTION, response = Job.class)
+    public Response samtoolsRun(
+            @ApiParam(value = "Study") @QueryParam("study") String study,
+            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
+            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            AlignmentAnalysisWSService.SamtoolsRunParams params) {
+        return submitJob(study, "alignment", SamtoolsWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
+    }
+
+    // Deeptools
+
+    public static class DeeptoolsRunParams extends RestBodyParams {
+        public DeeptoolsRunParams() {
+        }
+
+        public DeeptoolsRunParams(String executable, String bamFile, String coverageFile, String outdir,
+                                  Map<String, String> deeptoolsParams) {
+            this.executable = executable;
+            this.bamFile = bamFile;
+            this.coverageFile = coverageFile;
+            this.outdir = outdir;
+            this.deeptoolsParams = deeptoolsParams;
+        }
+
+        public String executable;     // Valid values: bamCoverage
+        public String bamFile;        // BAM file
+        public String coverageFile;   // Coverage file
+        public String outdir;
+        public Map<String, String> deeptoolsParams;
+    }
+
+    @POST
+    @Path("/deeptools/run")
+    @ApiOperation(value = DeeptoolsWrapperAnalysis.DESCRIPTION, response = Job.class)
+    public Response deeptoolsRun(
+            @ApiParam(value = "Study") @QueryParam("study") String study,
+            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
+            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            AlignmentAnalysisWSService.DeeptoolsRunParams params) {
+        return submitJob(study, "alignment", DeeptoolsWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
     }
 
     //-------------------------------------------------------------------------

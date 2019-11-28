@@ -39,6 +39,8 @@ import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -177,6 +179,12 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                 break;
             case GwasAnalysis.ID:
                 gwas();
+                break;
+            case PlinkWrapperAnalysis.ID:
+                plink();
+                break;
+            case RvtestsWrapperAnalysis.ID:
+                rvtests();
                 break;
             case SAMPLE_VARIANT_STATS_COMMAND:
                 sampleStats();
@@ -761,5 +769,56 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                 .setSamplesQuery(query)
                 .setSampleNames(sampleNames)
                 .start();
+    }
+
+    // Wrappers
+
+    private void plink() throws Exception {
+        VariantCommandOptions.PlinkCommandOptions cliOptions = variantCommandOptions.plinkCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.basicOptions.params);
+
+        if (StringUtils.isNotEmpty(cliOptions.tpedFile)) {
+            params.put(PlinkWrapperAnalysis.TPED_FILE_PARAM, cliOptions.tpedFile);
+        }
+        if (StringUtils.isNotEmpty(cliOptions.tfamFile)) {
+            params.put(PlinkWrapperAnalysis.TFAM_FILE_PARAM, cliOptions.tfamFile);
+        }
+        if (StringUtils.isNotEmpty(cliOptions.covarFile)) {
+            params.put(PlinkWrapperAnalysis.COVAR_FILE_PARAM, cliOptions.covarFile);
+        }
+
+        PlinkWrapperAnalysis plink = new PlinkWrapperAnalysis();
+        plink.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+
+        plink.start();
+    }
+
+    private void rvtests() throws Exception {
+        VariantCommandOptions.RvtestsCommandOptions cliOptions = variantCommandOptions.rvtestsCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.basicOptions.params);
+
+        params.put(RvtestsWrapperAnalysis.EXECUTABLE_PARAM, cliOptions.executable);
+        if (StringUtils.isNotEmpty(cliOptions.vcfFile)) {
+            params.put(RvtestsWrapperAnalysis.VCF_FILE_PARAM, cliOptions.vcfFile);
+        }
+        if (StringUtils.isNotEmpty(cliOptions.phenoFile)) {
+            params.put(RvtestsWrapperAnalysis.PHENOTYPE_FILE_PARAM, cliOptions.phenoFile);
+        }
+        if (StringUtils.isNotEmpty(cliOptions.pedigreeFile)) {
+            params.put(RvtestsWrapperAnalysis.PEDIGREE_FILE_PARAM, cliOptions.pedigreeFile);
+        }
+        if (StringUtils.isNotEmpty(cliOptions.kinshipFile)) {
+            params.put(RvtestsWrapperAnalysis.KINSHIP_FILE_PARAM, cliOptions.kinshipFile);
+        }
+        if (StringUtils.isNotEmpty(cliOptions.covarFile)) {
+            params.put(RvtestsWrapperAnalysis.COVAR_FILE_PARAM, cliOptions.covarFile);
+        }
+
+        RvtestsWrapperAnalysis rvtests = new RvtestsWrapperAnalysis();
+        rvtests.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+
+        rvtests.start();
     }
 }

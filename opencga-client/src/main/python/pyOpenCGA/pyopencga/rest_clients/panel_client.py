@@ -28,7 +28,7 @@ class Panels(_ParentBasicCRUDClient, _ParentAclRestClient):
         :param creationDate: Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)
         :param modificationDate: Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)
         :param global: Boolean (deafult False) indicating which panels are queried (installation or study specific panels)
-        :param skipCount: Skip count (Boolean, default False)
+        :param skipCount: Skip count (Boolean, default True)
         :param release: Release value (Current release from the moment the samples were first created)
         :param snapshot: Snapshot value (Latest version of samples in the specified release)
         :param include: Fields included in the response, whole JSON path must be provided
@@ -37,5 +37,8 @@ class Panels(_ParentBasicCRUDClient, _ParentAclRestClient):
         :param skip: Number of results to skip in the queries
         :param count: Total number of results (Boolean, default False)
         """
+
+        if 'skipCount' not in options and ('count' not in options or options['count'] is False):
+            options['skipCount'] = True
 
         return self._get('search', **options)
