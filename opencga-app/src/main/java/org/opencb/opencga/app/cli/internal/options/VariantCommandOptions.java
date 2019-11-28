@@ -970,9 +970,12 @@ public class VariantCommandOptions {
                 + "This parameter can not be mixed with other parameters to define the cohorts.")
         public String phenotype;
 
-        @Parameter(names = {"--index-score"}, description = "Name to be used to index que score in the variant storage. "
+        @Parameter(names = {"--index"}, description = "Index the produced gwas score in the variant storage.", arity = 0)
+        public boolean index;
+
+        @Parameter(names = {"--index-score-id"}, description = "Name to be used to index que score in the variant storage. "
                 + "Must be unique in the study. If provided, the control/case cohorts must be registered in catalog.")
-        public String scoreName;
+        public String indexScoreId;
 
         @Parameter(names = {"--method"}, description = "Either Fisher Test or ChiSquare")
         public GwasConfiguration.Method method = GwasConfiguration.Method.FISHER_TEST;
@@ -1091,7 +1094,7 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         //public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-        public GeneralCliOptions.BasicCommonCommandOptions basicOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
 
         @Parameter(names = {"--study"}, description = "Study.")
         public String study;
@@ -1113,7 +1116,7 @@ public class VariantCommandOptions {
     public class RvtestsCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.BasicCommonCommandOptions basicOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
 
         @Parameter(names = {"--study"}, description = "Study.")
         public String study;

@@ -205,7 +205,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     private DataResponse<Job> gwas() throws IOException {
         ObjectMap params = new VariantAnalysisWSService.GwasRunParams(
                 variantCommandOptions.gwasCommandOptions.phenotype,
-                variantCommandOptions.gwasCommandOptions.scoreName,
+                variantCommandOptions.gwasCommandOptions.index,
+                variantCommandOptions.gwasCommandOptions.indexScoreId,
                 variantCommandOptions.gwasCommandOptions.method,
                 variantCommandOptions.gwasCommandOptions.fisherMode,
                 variantCommandOptions.gwasCommandOptions.caseCohort,

@@ -30,6 +30,7 @@ import org.opencb.opencga.core.annotations.Analysis.AnalysisType;
 import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.models.StudyResourceMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -56,7 +57,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
     private Query controlCohortSamplesQuery;
     private List<String> caseCohortSamples;
     private List<String> controlCohortSamples;
-    private String scoreName;
+    private String indexScoreId;
     private boolean index;
     private Path outputFile;
 
@@ -156,14 +157,25 @@ public class GwasAnalysis extends OpenCgaAnalysis {
     }
 
     /**
-     * Name to be used to index que score in the variant storage.
-     * Must be unique in the study. If provided, the control/case cohorts must be registered in catalog.
+     * Index the produced gwas score in the variant storage.
      *
-     * @param scoreName score name
+     * @param index index gwas score
      * @return this
      */
-    public GwasAnalysis setScoreName(String scoreName) {
-        this.scoreName = scoreName;
+    public GwasAnalysis setIndex(boolean index) {
+        this.index = index;
+        return this;
+    }
+
+    /**
+     * Name to be used to index the score in the variant storage.
+     * Must be unique in the study. If provided, the control/case cohorts must be registered in catalog.
+     *
+     * @param indexScoreId score id
+     * @return this
+     */
+    public GwasAnalysis setIndexScoreId(String indexScoreId) {
+        this.indexScoreId = indexScoreId;
         return this;
     }
 
@@ -219,7 +231,10 @@ public class GwasAnalysis extends OpenCgaAnalysis {
             throw new AnalysisException(e);
         }
 
-        if (StringUtils.isNotEmpty(scoreName)) {
+        if (index) {
+            if (StringUtils.isEmpty(indexScoreId)) {
+                throw new AnalysisException("Unable to index gwas result as VariantScore. Required a valid index score id");
+            }
             if (StringUtils.isEmpty(caseCohort) || StringUtils.isEmpty(controlCohort)) {
                 throw new AnalysisException("Unable to index gwas result as VariantScore if the cohorts are not defined in catalog");
             }
@@ -228,10 +243,11 @@ public class GwasAnalysis extends OpenCgaAnalysis {
             try {
                 List<VariantScoreMetadata> scores = variantStorageManager.listVariantScores(study, token);
                 for (VariantScoreMetadata score : scores) {
-                    if (score.getName().equals(scoreName)) {
+                    if (score.getName().equals(indexScoreId)) {
                         if (score.getIndexStatus().equals(TaskMetadata.Status.READY)) {
-                            throw new AnalysisException("Score name '" + scoreName + "' already exists in the database. "
-                                    + "The score name must be unique.");
+                            throw new AnalysisException("Score name '" + indexScoreId + "' already exists in the database. "
+                                    + "The score name must be unique. Existing scores: "
+                                    + scores.stream().map(StudyResourceMetadata::getName).collect(Collectors.toList()));
                         }
                     }
                 }
@@ -240,15 +256,15 @@ public class GwasAnalysis extends OpenCgaAnalysis {
             }
 
             // TODO: Check score index permissions
-
-            index = true;
+        } else if (StringUtils.isNotEmpty(indexScoreId)) {
+            throw new AnalysisException("Provided indexScoreId with index=false. Use index=true and indexScoreId to index the score.");
         }
 
         outputFile = getOutDir().resolve(buildOutputFilename());
 
         executorParams.append("index", index)
                 .append("phenotype", phenotype)
-                .append("scoreName", scoreName)
+                .append("indexScoreId", indexScoreId)
                 .append("caseCohort", caseCohort)
                 .append("caseCohortSamples", caseCohortSamples)
                 .append("controlCohort", controlCohort)
@@ -288,7 +304,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
             step("index", () -> {
                 try {
                     VariantScoreFormatDescriptor formatDescriptor = new VariantScoreFormatDescriptor(1, 16, 15);
-                    variantStorageManager.loadVariantScore(study, outputFile.toUri(), scoreName, caseCohort, controlCohort, formatDescriptor,
+                    variantStorageManager.loadVariantScore(study, outputFile.toUri(), indexScoreId, caseCohort, controlCohort, formatDescriptor,
                             executorParams, token);
                 } catch (CatalogException | StorageEngineException e) {
                     throw new AnalysisException(e);

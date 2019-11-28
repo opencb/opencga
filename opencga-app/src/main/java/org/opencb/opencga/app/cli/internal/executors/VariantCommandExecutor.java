@@ -714,7 +714,8 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         gwasAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
         gwasAnalysis.setStudy(cliOptions.study)
                 .setPhenotype(cliOptions.phenotype)
-                .setScoreName(cliOptions.scoreName)
+                .setIndex(cliOptions.index)
+                .setIndexScoreId(cliOptions.indexScoreId)
                 .setFisherMode(cliOptions.fisherMode)
                 .setGwasMethod(cliOptions.method)
                 .setControlCohort(cliOptions.controlCohort)

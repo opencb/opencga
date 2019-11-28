@@ -1108,11 +1108,12 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     public static class GwasRunParams extends RestBodyParams {
         public GwasRunParams() {
         }
-        public GwasRunParams(String phenotype, String scoreName, GwasConfiguration.Method method,
+        public GwasRunParams(String phenotype, boolean index, String indexScoreId, GwasConfiguration.Method method,
                              GwasConfiguration.FisherMode fisherMode, String caseCohort, String caseSamplesAnnotation, String controlCohort,
                              String controlSamplesAnnotation, String outdir) {
             this.phenotype = phenotype;
-            this.scoreName = scoreName;
+            this.index = index;
+            this.indexScoreId = indexScoreId;
             this.method = method;
             this.fisherMode = fisherMode;
             this.caseCohort = caseCohort;
@@ -1123,7 +1124,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         }
 
         public String phenotype;
-        public String scoreName;
+        public boolean index;
+        public String indexScoreId;
         public GwasConfiguration.Method method;
         public GwasConfiguration.FisherMode fisherMode;
         public String caseCohort;
