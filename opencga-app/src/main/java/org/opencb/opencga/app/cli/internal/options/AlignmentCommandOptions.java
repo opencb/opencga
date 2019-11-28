@@ -21,6 +21,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
@@ -39,6 +40,7 @@ public class AlignmentCommandOptions {
     // Wrappers
     public BwaCommandOptions bwaCommandOptions;
     public SamtoolsCommandOptions samtoolsCommandOptions;
+    public DeeptoolsCommandOptions deeptoolsCommandOptions;
 
     public GeneralCliOptions.CommonCommandOptions analysisCommonOptions;
     public JCommander jCommander;
@@ -54,6 +56,7 @@ public class AlignmentCommandOptions {
 
         this.bwaCommandOptions = new BwaCommandOptions();
         this.samtoolsCommandOptions = new SamtoolsCommandOptions();
+        this.deeptoolsCommandOptions = new DeeptoolsCommandOptions();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index alignment file")
@@ -213,6 +216,30 @@ public class AlignmentCommandOptions {
 
         @Parameter(names = {"--output-file"}, description = "Output file.")
         public String outputFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+    }
+
+    // Deeptools
+
+    @Parameters(commandNames = DeeptoolsWrapperAnalysis.ID, commandDescription = DeeptoolsWrapperAnalysis.DESCRIPTION)
+    public class DeeptoolsCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.BasicCommonCommandOptions basicOptions = analysisCommonOptions;
+
+        @Parameter(names = {"--study"}, description = "Study.")
+        public String study;
+
+        @Parameter(names = {"--executable"}, description = "Deeptools executable. Valid values: bamCoverage.")
+        public String executable;
+
+        @Parameter(names = {"--bam-file"}, description = "BAM file.")
+        public String bamFile;
+
+        @Parameter(names = {"--coverage-file"}, description = "Coverage file.")
+        public String coverageFile;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;

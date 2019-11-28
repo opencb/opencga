@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
@@ -87,6 +88,9 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case SamtoolsWrapperAnalysis.ID:
                 queryResponse = samtools();
+                break;
+            case DeeptoolsWrapperAnalysis.ID:
+                queryResponse = deeptools();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -341,6 +345,19 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 alignmentCommandOptions.samtoolsCommandOptions.basicOptions.params
         ).toObjectMap();
         return openCGAClient.getAlignmentClient().samtoolsRun(alignmentCommandOptions.samtoolsCommandOptions.study, params);
+    }
+
+    // Deeptools
+
+    private DataResponse<Job> deeptools() throws IOException {
+        ObjectMap params = new AlignmentAnalysisWSService.DeeptoolsRunParams(
+                alignmentCommandOptions.deeptoolsCommandOptions.executable,
+                alignmentCommandOptions.deeptoolsCommandOptions.bamFile,
+                alignmentCommandOptions.deeptoolsCommandOptions.coverageFile,
+                alignmentCommandOptions.deeptoolsCommandOptions.outdir,
+                alignmentCommandOptions.deeptoolsCommandOptions.basicOptions.params
+        ).toObjectMap();
+        return openCGAClient.getAlignmentClient().deeptoolsRun(alignmentCommandOptions.deeptoolsCommandOptions.study, params);
     }
 
     //-------------------------------------------------------------------------

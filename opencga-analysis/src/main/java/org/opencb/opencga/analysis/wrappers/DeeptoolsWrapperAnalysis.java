@@ -13,50 +13,48 @@ import java.io.FileOutputStream;
 import java.nio.charset.Charset;
 import java.util.*;
 
-@Analysis(id = SamtoolsWrapperAnalysis.ID, type = Analysis.AnalysisType.VARIANT, description = SamtoolsWrapperAnalysis.DESCRIPTION)
-public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
+@Analysis(id = DeeptoolsWrapperAnalysis.ID, type = Analysis.AnalysisType.ALIGNMENT, description = DeeptoolsWrapperAnalysis.DESCRIPTION)
+public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
-    public final static String ID = "samtools";
-    public final static String DESCRIPTION = "Samtools is a program for interacting with high-throughput sequencing data in SAM, BAM"
-            + " and CRAM formats.";
+    public final static String ID = "deeptools";
+    public final static String DESCRIPTION = "Deeptools is a suite of python tools particularly developed for the efficient analysis of"
+        + " high-throughput sequencing data, such as ChIP-seq, RNA-seq or MNase-seq.";
 
-    public final static String SAMTOOLS_DOCKER_IMAGE = "zlskidmore/samtools";
+    public final static String DEEPTOOLS_DOCKER_IMAGE = "dhspence/docker-deeptools";
 
-    private String command;
-    private String inputFile;
-    private String outputFile;
+    private String executable;
+    private String bamFile;
+    private String coverageFile;
 
     protected void check() throws Exception {
         super.check();
 
-        if (StringUtils.isEmpty(command)) {
-            throw new AnalysisException("Missing samtools command. Supported commands are 'sort', 'index' and 'view'");
+        if (StringUtils.isEmpty(executable)) {
+            throw new AnalysisException("Missing deeptools executable. Supported executable is 'bamCoverage'");
         }
 
-        switch (command) {
-            case "view":
-            case "sort":
-            case "index":
+        switch (executable) {
+            case "bamCoverage":
+                if (StringUtils.isEmpty(bamFile)) {
+                    throw new AnalysisException("Missing BAM file when executing 'deeptools " + executable + "'.");
+                }
+                if (StringUtils.isEmpty(coverageFile)) {
+                    throw new AnalysisException("Missing coverage file when executing 'deeptools " + executable + "'.");
+                }
                 break;
             default:
-                // TODO: support the remaining samtools commands
-                throw new AnalysisException("Samtools command '" + command + "' is not available. Supported commands are 'sort', 'index'"
-                        + " and 'view'");
+                // TODO: support the remaining deeptools executable
+                throw new AnalysisException("Deeptools executable '" + executable + "' is not available. Supported executable is"
+                        + " 'bamCoverage'");
         }
 
-        if (StringUtils.isEmpty(inputFile)) {
-            throw new AnalysisException("Missing input file when executing 'samtools " + command + "'.");
-        }
-        if (StringUtils.isEmpty(outputFile)) {
-            throw new AnalysisException("Missing input file when executing 'samtools " + command + "'.");
-        }
     }
 
     @Override
     protected void run() throws Exception {
         step(() -> {
             String commandLine = getCommandLine();
-            logger.info("Samtools command line: " + commandLine);
+            logger.info("Deeptools command line: " + commandLine);
             try {
                 Set<String> filenamesBeforeRunning = new HashSet<>(getFilenames(getOutDir()));
 
@@ -73,9 +71,9 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                     if (!filenamesBeforeRunning.contains(name)) {
                         if (FileUtils.sizeOf(new File(getOutDir() + "/" + name)) > 0) {
                             FileResult.FileType fileType = FileResult.FileType.TAB_SEPARATED;
-                            if (name.endsWith("txt") || name.endsWith("log") || name.endsWith("sam")) {
+                            if (name.endsWith("txt") || name.endsWith("log")) {
                                 fileType = FileResult.FileType.PLAIN_TEXT;
-                            } else if (name.endsWith("bam") || name.endsWith("cram") || name.endsWith("bai") || name.endsWith("crai")) {
+                            } else if (name.endsWith("bw") || name.endsWith("bigwig")  || name.endsWith("bedgraph")) {
                                 fileType = FileResult.FileType.BINARY;
                             }
                             addFile(getOutDir().resolve(name), fileType);
@@ -83,13 +81,11 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                     }
                 }
 
-                // Check samtools errors
+                // Check deeptools errors
                 boolean success = false;
-                switch (command) {
-                    case "index":
-                    case "sort":
-                    case "view": {
-                        if (new File(outputFile).exists()) {
+                switch (executable) {
+                    case "bamCoverage": {
+                        if (new File(coverageFile).exists()) {
                             success = true;
                         }
                         break;
@@ -111,7 +107,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     @Override
     public String getDockerImageName() {
-        return SAMTOOLS_DOCKER_IMAGE;
+        return DEEPTOOLS_DOCKER_IMAGE;
     }
 
     @Override
@@ -120,7 +116,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
         // Mount management
         Map<String, String> srcTargetMap = new HashMap<>();
-        updateSrcTargetMap(inputFile, sb, srcTargetMap);
+        updateSrcTargetMap(bamFile, sb, srcTargetMap);
 
         sb.append("--mount type=bind,source=\"")
                 .append(getOutDir().toAbsolutePath()).append("\",target=\"").append(DOCKER_OUTPUT_PATH).append("\" ");
@@ -131,10 +127,10 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
             sb.append(":").append(params.getString(DOCKER_IMAGE_VERSION_PARAM));
         }
 
-        // Samtools command
-        sb.append(" samtools ").append(command);
+        // Deeptools executable
+        sb.append(" ").append(executable);
 
-        // Samtools options
+        // Deeptools options
         for (String param : params.keySet()) {
             if (checkParam(param)) {
                 String value = params.getString(param);
@@ -145,27 +141,11 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
             }
         }
 
-        switch (command) {
-            case "index": {
-                if (StringUtils.isNotEmpty(inputFile)) {
-                    File file = new File(inputFile);
-                    sb.append(" ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
-                }
-
-                if (StringUtils.isNotEmpty(outputFile)) {
-                    File file = new File(outputFile);
-                    sb.append(" ").append(DOCKER_OUTPUT_PATH).append("/").append(file.getName());
-                }
-                break;
-            }
-            case "sort":
-            case "view": {
-                sb.append(" -o ").append(DOCKER_OUTPUT_PATH).append("/").append(new File(outputFile).getName());
-
-                if (StringUtils.isNotEmpty(inputFile)) {
-                    File file = new File(inputFile);
-                    sb.append(" ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
-                }
+        switch (executable) {
+            case "bamCoverage": {
+                File file = new File(bamFile);
+                sb.append(" -b ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
+                sb.append(" -o ").append(DOCKER_OUTPUT_PATH).append("/").append(new File(coverageFile).getName());
                 break;
             }
         }
@@ -176,38 +156,38 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
     private boolean checkParam(String param) {
         if (param.equals(DOCKER_IMAGE_VERSION_PARAM)) {
             return false;
-        } else if ("index".equals(command) || "view".equals(command) || "sort".equals(command)) {
-            if ("o".equals(param)) {
+        } else if ("bamCoverage".equals(executable)) {
+            if ("o".equals(param) || "b".equals(param)) {
                 return false;
             }
         }
         return true;
     }
 
-    public String getCommand() {
-        return command;
+    public String getExecutable() {
+        return executable;
     }
 
-    public SamtoolsWrapperAnalysis setCommand(String command) {
-        this.command = command;
+    public DeeptoolsWrapperAnalysis setExecutable(String executable) {
+        this.executable = executable;
         return this;
     }
 
-    public String getInputFile() {
-        return inputFile;
+    public String getBamFile() {
+        return bamFile;
     }
 
-    public SamtoolsWrapperAnalysis setInputFile(String inputFile) {
-        this.inputFile = inputFile;
+    public DeeptoolsWrapperAnalysis setBamFile(String bamFile) {
+        this.bamFile = bamFile;
         return this;
     }
 
-    public String getOutputFile() {
-        return outputFile;
+    public String getCoverageFile() {
+        return coverageFile;
     }
 
-    public SamtoolsWrapperAnalysis setOutputFile(String outputFile) {
-        this.outputFile = outputFile;
+    public DeeptoolsWrapperAnalysis setCoverageFile(String coverageFile) {
+        this.coverageFile = coverageFile;
         return this;
     }
 }

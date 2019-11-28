@@ -36,6 +36,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -480,6 +481,40 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
             AlignmentAnalysisWSService.SamtoolsRunParams params) {
         return submitJob(study, "alignment", SamtoolsWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
+    }
+
+    // Deeptools
+
+    public static class DeeptoolsRunParams extends RestBodyParams {
+        public DeeptoolsRunParams() {
+        }
+
+        public DeeptoolsRunParams(String executable, String bamFile, String coverageFile, String outdir,
+                                  Map<String, String> deeptoolsParams) {
+            this.executable = executable;
+            this.bamFile = bamFile;
+            this.coverageFile = coverageFile;
+            this.outdir = outdir;
+            this.deeptoolsParams = deeptoolsParams;
+        }
+
+        public String executable;     // Valid values: bamCoverage
+        public String bamFile;        // BAM file
+        public String coverageFile;   // Coverage file
+        public String outdir;
+        public Map<String, String> deeptoolsParams;
+    }
+
+    @POST
+    @Path("/deeptools/run")
+    @ApiOperation(value = DeeptoolsWrapperAnalysis.DESCRIPTION, response = Job.class)
+    public Response deeptoolsRun(
+            @ApiParam(value = "Study") @QueryParam("study") String study,
+            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
+            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            AlignmentAnalysisWSService.DeeptoolsRunParams params) {
+        return submitJob(study, "alignment", DeeptoolsWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
     }
 
     //-------------------------------------------------------------------------

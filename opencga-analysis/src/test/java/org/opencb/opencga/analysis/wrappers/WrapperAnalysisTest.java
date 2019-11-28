@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.wrappers;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -271,10 +272,10 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
 
         params = new ObjectMap();
 
-        String baiFile = outDir4.resolve((new File(bwa.getSamFile()).getName()) + ".sorted.bam.bai").toString();
+        String baiFile = outDir5.resolve((new File(sortedBamFile).getName()) + ".bai").toString();
 
         samtools = new SamtoolsWrapperAnalysis();
-        samtools.setUp(opencga.getOpencgaHome().toString(), params, outDir4, clinicalTest.token);
+        samtools.setUp(opencga.getOpencgaHome().toString(), params, outDir5, clinicalTest.token);
         samtools.setCommand("index")
                 .setInputFile(sortedBamFile)
                 .setOutputFile(baiFile);
@@ -284,7 +285,26 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
 
         assertTrue(Files.exists(new File(samtools.getOutputFile()).toPath()));
 
-        // deeptools coverage
+        // deeptools bamCoverage
+        System.out.println("-------   deeptools bamCoverage   ------");
+        Path outDir6 = Paths.get(opencga.createTmpOutdir("_alignment6"));
+
+        params = new ObjectMap();
+        params.put("of", "bigwig");
+
+        FileUtils.copyFile(new java.io.File(baiFile), new java.io.File(outDir4 + "/" + new java.io.File(baiFile).getName()));
+        String coverageFile = outDir6.resolve((new File(sortedBamFile).getName()) + ".bw").toString();
+
+        DeeptoolsWrapperAnalysis deeptools = new DeeptoolsWrapperAnalysis();
+        deeptools.setUp(opencga.getOpencgaHome().toString(), params, outDir6, clinicalTest.token);
+        deeptools.setExecutable("bamCoverage")
+                .setBamFile(sortedBamFile)
+                .setCoverageFile(coverageFile);
+
+        AnalysisResult deepToolsBamCoverageResult = deeptools.start();
+        System.out.println(deepToolsBamCoverageResult);
+
+        assertTrue(Files.exists(new File(coverageFile).toPath()));
     }
 
     //    @Test

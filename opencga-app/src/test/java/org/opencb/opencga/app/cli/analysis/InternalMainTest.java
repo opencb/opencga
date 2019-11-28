@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.app.cli.analysis;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -425,6 +426,7 @@ public class InternalMainTest {
         createStudy(datastores, "s1");
 
         // bwa index
+        System.out.println("---------------   bwa index   ---------------");
 
         File fastaFile = opencga.createFile(studyId, "Homo_sapiens.GRCh38.dna.chromosome.MT.fa.gz", sessionId);
 
@@ -445,6 +447,7 @@ public class InternalMainTest {
         assertTrue(Files.exists(Paths.get(temporalDir1).resolve(Paths.get(fastaFile.getUri().getPath() + ".sa").toFile().getName())));
 
         // bwa mem
+        System.out.println("---------------   bwa mem   ---------------");
 
         File fastqFile = opencga.createFile(studyId, "ERR251000.1K.fastq.gz", sessionId);
 
@@ -464,6 +467,8 @@ public class InternalMainTest {
         assertTrue(new java.io.File(samFile).exists());
 
         // samtools view (.sam -> .bam)
+        System.out.println("---------------   samtools view   ---------------");
+
 
         String temporalDir3 = opencga.createTmpOutdir(studyId, "_alignment3", sessionId);
         String bamFile = temporalDir3 + "/alignment.bam";
@@ -482,6 +487,7 @@ public class InternalMainTest {
         assertTrue(new java.io.File(bamFile).exists());
 
         // samtools sort
+        System.out.println("---------------   samtools sort   ---------------");
 
         String temporalDir4 = opencga.createTmpOutdir(studyId, "_alignment4", sessionId);
         String sortedBamFile = temporalDir4 + "/alignment.sorted.bam";
@@ -498,6 +504,7 @@ public class InternalMainTest {
         assertTrue(new java.io.File(sortedBamFile).exists());
 
         // samtools index
+        System.out.println("---------------   samtools index   ---------------");
 
         String temporalDir5 = opencga.createTmpOutdir(studyId, "_alignment5", sessionId);
         String baiFile = temporalDir5 + "/alignment.sorted.bam.bai";
@@ -512,6 +519,25 @@ public class InternalMainTest {
 
         assertEquals(4, Files.list(Paths.get(temporalDir5)).collect(Collectors.toList()).size());
         assertTrue(new java.io.File(baiFile).exists());
+
+        // deeptools bamCoverage
+        System.out.println("---------------   deeptools bamCoverage   ---------------");
+
+        FileUtils.copyFile(new java.io.File(baiFile), new java.io.File(temporalDir4 + "/" + new java.io.File(baiFile).getName()));
+        String temporalDir6 = opencga.createTmpOutdir(studyId, "_alignment6", sessionId);
+        String bwFile = temporalDir6 + "/alignment.bw";
+
+        execute("alignment", "deeptools",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--executable", "bamCoverage",
+                "--bam-file", sortedBamFile,
+                "--coverage-file", bwFile,
+                "-Dof=bigwig",
+                "-o", temporalDir6);
+
+        assertEquals(4, Files.list(Paths.get(temporalDir6)).collect(Collectors.toList()).size());
+        assertTrue(new java.io.File(bwFile).exists());
     }
 
 

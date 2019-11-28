@@ -27,6 +27,7 @@ import org.opencb.hpg.bigdata.analysis.tools.ExecutorMonitor;
 import org.opencb.hpg.bigdata.analysis.tools.Status;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
@@ -83,6 +84,9 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 break;
             case SamtoolsWrapperAnalysis.ID:
                 samtools();
+                break;
+            case DeeptoolsWrapperAnalysis.ID:
+                deeptools();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -230,6 +234,23 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 .setOutputFile(cliOptions.outputFile);
 
         samtools.start();
+    }
+
+    // Deeptools
+
+    private void deeptools() throws Exception {
+        AlignmentCommandOptions.DeeptoolsCommandOptions cliOptions = alignmentCommandOptions.deeptoolsCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.basicOptions.params);
+
+        DeeptoolsWrapperAnalysis deeptools = new DeeptoolsWrapperAnalysis();
+        deeptools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+
+        deeptools.setExecutable(cliOptions.executable)
+                .setBamFile(cliOptions.bamFile)
+                .setCoverageFile(cliOptions.coverageFile);
+
+        deeptools.start();
     }
 
     //-------------------------------------------------------------------------
