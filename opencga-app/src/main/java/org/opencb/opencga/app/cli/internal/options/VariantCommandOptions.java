@@ -495,13 +495,13 @@ public class VariantCommandOptions {
         public GenericVariantQueryOptions genericVariantQueryOptions = new GenericVariantQueryOptions();
 
         @ParametersDelegate
-        public GeneralCliOptions.BasicCommonCommandOptions commonOptions = new GeneralCliOptions.BasicCommonCommandOptions();
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--output-file-name"}, description = "Output file name.", arity = 1)
         public String outputFileName;
 
-        @Parameter(names = {"--of", "--output-format"}, description = "Output format. one of {VCF, VCF.GZ, JSON, AVRO, PARQUET, STATS, CELLBASE}", arity = 1)
-        public String outputFormat = "VCF";
+        @Parameter(names = {"--compress", "-z"}, description = "Compress output file.", arity = 0)
+        public boolean compress;
 
         @ParametersDelegate
         public DataModelOptions dataModelOptions = commonDataModelOptions;
@@ -509,8 +509,8 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--sample-filter"}, description = SAMPLE_ANNOTATION_DESC)
-        public String sampleFilter;
+        @Parameter(names = {"--sample-annotation"}, description = SAMPLE_ANNOTATION_DESC)
+        public String sampleAnnotation;
 
         @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
         public String project;

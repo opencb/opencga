@@ -532,6 +532,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 //            options.put(FileStudyConfigurationAdaptor.STUDY_CONFIGURATION_PATH, statsVariantsCommandOptions.studyConfigurationFile);
 //        }
         options.put(VariantQueryParam.REGION.key(), statsVariantsCommandOptions.region);
+        options.put(VariantQueryParam.GENE.key(), statsVariantsCommandOptions.gene);
         options.put(VariantStorageOptions.RESUME.key(), statsVariantsCommandOptions.resume);
 
         if (statsVariantsCommandOptions.commonOptions.params != null) {

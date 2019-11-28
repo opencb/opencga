@@ -55,16 +55,16 @@ public class VariantQueryCommandUtils extends org.opencb.opencga.storage.app.cli
     public static Query parseQuery(VariantCommandOptions.AbstractVariantQueryCommandOptions queryVariantsOptions, Collection<String> studies, ClientConfiguration clientConfiguration)
             throws IOException {
 
-        if ("TEXT".equalsIgnoreCase(queryVariantsOptions.outputFormat)) {
-            queryVariantsOptions.outputFormat = VCF.name();
+        if ("TEXT".equalsIgnoreCase(queryVariantsOptions.commonOptions.outputFormat)) {
+            queryVariantsOptions.commonOptions.outputFormat = VCF.name();
         }
 
-        VariantOutputFormat of = VariantWriterFactory.toOutputFormat(queryVariantsOptions.outputFormat, queryVariantsOptions.outputFileName);
+        VariantOutputFormat of = VariantWriterFactory.toOutputFormat(queryVariantsOptions.commonOptions.outputFormat, queryVariantsOptions.outputFileName);
         Query query = parseGenericVariantQuery(
                 queryVariantsOptions.genericVariantQueryOptions, queryVariantsOptions.study, studies,
                 queryVariantsOptions.numericOptions.count, of);
 
-        addParam(query, VariantCatalogQueryUtils.SAMPLE_ANNOTATION, queryVariantsOptions.sampleFilter);
+        addParam(query, VariantCatalogQueryUtils.SAMPLE_ANNOTATION, queryVariantsOptions.sampleAnnotation);
         addParam(query, VariantCatalogQueryUtils.PROJECT, queryVariantsOptions.project);
         addParam(query, VariantCatalogQueryUtils.FAMILY, queryVariantsOptions.family);
         addParam(query, VariantCatalogQueryUtils.FAMILY_DISORDER, queryVariantsOptions.familyPhenotype);

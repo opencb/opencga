@@ -341,10 +341,13 @@ public class VariantStorageManager extends StorageManager {
     public void stats(String study, List<String> cohorts, Query samplesQuery,
                       String outDir, boolean index, ObjectMap config, String sessionId)
             throws AnalysisException {
+        Query variantsQuery = new Query();
+        variantsQuery.putIfNotEmpty(REGION.key(), config.getString(REGION.key()));
+        variantsQuery.putIfNotEmpty(GENE.key(), config.getString(GENE.key()));
         VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
                 .setStudy(study)
                 .setCohorts(cohorts)
-                .setVariantsQuery(new Query(REGION.key(), config.getString(REGION.key())))
+                .setVariantsQuery(variantsQuery)
                 .setSamplesQuery(samplesQuery)
                 .setIndex(index);
         variantStatsAnalysis.setUp(null, catalogManager, this, config, Paths.get(outDir), sessionId);

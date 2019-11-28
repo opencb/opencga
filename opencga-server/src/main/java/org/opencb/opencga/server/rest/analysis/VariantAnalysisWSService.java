@@ -513,14 +513,18 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     public static class VariantExportParams extends VariantQueryParams {
         public VariantExportParams() {
         }
-        public VariantExportParams(Query query, String outdir, String outputFileName) {
+        public VariantExportParams(Query query, String outdir, String outputFileName, String outputFormat, boolean compress) {
             super(query);
             this.outdir = outdir;
             this.outputFileName = outputFileName;
+            this.outputFormat = outputFormat;
+            this.compress = compress;
         }
 
         public String outdir;
         public String outputFileName;
+        public String outputFormat;
+        public boolean compress;
     }
 
     @POST
@@ -578,14 +582,15 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         public StatsRunParams() {
         }
         public StatsRunParams(List<String> cohort, List<String> samples, boolean index, String outdir, String outputFileName,
-                              String region, boolean overwriteStats, boolean updateStats, boolean resume, Aggregation aggregated,
-                              String aggregationMappingFile) {
+                              String region, String gene, boolean overwriteStats, boolean updateStats, boolean resume,
+                              Aggregation aggregated, String aggregationMappingFile) {
             this.cohort = cohort;
             this.samples = samples;
             this.index = index;
             this.outdir = outdir;
             this.outputFileName = outputFileName;
             this.region = region;
+            this.gene = gene;
             this.overwriteStats = overwriteStats;
             this.updateStats = updateStats;
             this.resume = resume;
@@ -597,6 +602,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         public List<String> samples;
         public boolean index;
         public String region;
+        public String gene;
         public String outdir;
         public String outputFileName;
         public boolean overwriteStats;

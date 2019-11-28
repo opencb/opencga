@@ -212,7 +212,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
 
         VariantCommandOptions.VariantQueryCommandOptions queryCliOptions = variantCommandOptions.queryVariantCommandOptions;
 
-        queryCliOptions.outputFormat = exportCliOptions.commonOptions.outputFormat.toLowerCase().replace("tsv", "stats");
+        queryCliOptions.commonOptions.outputFormat = exportCliOptions.commonOptions.outputFormat.toLowerCase().replace("tsv", "stats");
         queryCliOptions.project = exportCliOptions.project;
         queryCliOptions.study = exportCliOptions.study;
         queryCliOptions.genericVariantQueryOptions.includeStudy = exportCliOptions.study;
@@ -244,6 +244,11 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
     private void query() throws Exception {
 //        AnalysisCliOptionsParser.QueryVariantCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
         VariantCommandOptions.VariantQueryCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
+        if (cliOptions.compress) {
+            if (!cliOptions.commonOptions.outputFormat.toLowerCase().endsWith(".gz")) {
+                cliOptions.commonOptions.outputFormat += ".GZ";
+            }
+        }
 
         Map<Long, String> studyIds = getStudyIds(sessionId);
         Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds, clientConfiguration);
@@ -269,7 +274,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                 queryOptions.add("annotations", cliOptions.genericVariantQueryOptions.annotations);
             }
             VariantWriterFactory.VariantOutputFormat outputFormat = VariantWriterFactory
-                    .toOutputFormat(cliOptions.outputFormat, cliOptions.outputFileName);
+                    .toOutputFormat(cliOptions.commonOptions.outputFormat, cliOptions.outputFileName);
             String outputFile = cliOptions.outdir + "/" + (cliOptions.outputFileName == null ? "" : cliOptions.outputFileName);
             variantManager.exportData(outputFile, outputFormat, cliOptions.variantsFile, query, queryOptions, sessionId);
         }
@@ -381,7 +386,8 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                 .append(VariantStorageOptions.STATS_AGGREGATION.key(), cliOptions.genericVariantStatsOptions.aggregated)
                 .append(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), cliOptions.genericVariantStatsOptions.aggregationMappingFile)
                 .append(VariantStorageOptions.RESUME.key(), cliOptions.genericVariantStatsOptions.resume)
-                .append(VariantQueryParam.REGION.key(), cliOptions.genericVariantStatsOptions.region);
+                .append(VariantQueryParam.REGION.key(), cliOptions.genericVariantStatsOptions.region)
+                .append(VariantQueryParam.GENE.key(), cliOptions.genericVariantStatsOptions.gene);
 
         options.putAll(cliOptions.commonOptions.params);
 
