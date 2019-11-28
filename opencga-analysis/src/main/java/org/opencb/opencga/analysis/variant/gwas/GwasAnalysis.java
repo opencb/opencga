@@ -331,7 +331,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
         switch (method) {
             case CHI_SQUARE_TEST:
             case FISHER_TEST:
-                return method.label + ".tsv";
+                return method.label + ".tsv.gz";
             default:
                 throw new AnalysisException("Unknown GWAS method: " + method);
         }
