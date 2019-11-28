@@ -65,7 +65,7 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
         ObjectMap objectMap = new ObjectMap()
                 .append(FisherTestDriver.CONTROL_COHORT, controlCohort.boxed().collect(Collectors.toList()))
                 .append(FisherTestDriver.CASE_COHORT, caseCohort.boxed().collect(Collectors.toList()))
-                .append(FisherTestDriver.OUTDIR, "fisher_result");
+                .append(FisherTestDriver.OUTPUT, "fisher_result");
         getMrExecutor().run(FisherTestDriver.class, FisherTestDriver.buildArgs(
                 dbAdaptor.getArchiveTableName(1),
                 dbAdaptor.getVariantTable(),
@@ -75,7 +75,7 @@ public class FisherTestDriverTest extends VariantStorageBaseTest implements Hado
         URI local1 = copyToLocal("fisher_result");
 
         URI local2 = localOut.resolve("fisher_result2.tsv");
-        objectMap.append(FisherTestDriver.OUTDIR, local2)
+        objectMap.append(FisherTestDriver.OUTPUT, local2)
                 .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), "lof,missense_variant")
                 .append(VariantQueryParam.ANNOT_BIOTYPE.key(), "protein_coding");
         getMrExecutor().run(FisherTestDriver.class, FisherTestDriver.buildArgs(

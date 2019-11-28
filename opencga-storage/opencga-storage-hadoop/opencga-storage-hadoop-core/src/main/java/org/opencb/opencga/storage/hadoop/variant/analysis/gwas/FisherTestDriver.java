@@ -49,7 +49,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
     private final Logger logger = LoggerFactory.getLogger(FisherTestDriver.class);
 
     // Output directory within DFS
-    public static final String OUTDIR = "outdir";
+    public static final String OUTPUT = "output";
 //    // Move to local directory (remove from DFS)
 //    public static final String MOVE_TO_LOCAL = "move-to-local";
     public static final String CASE_COHORT = "caseCohort";
@@ -77,7 +77,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
     protected Map<String, String> getParams() {
         Map<String, String> params = new HashMap<>();
         params.put("--" + VariantStorageOptions.STUDY.key(), "<study>*");
-        params.put("--" + OUTDIR, "<outdir>*");
+        params.put("--" + OUTPUT, "<output>*");
         params.put("--" + CASE_COHORT, "<case-cohort>*");
         params.put("--" + CONTROL_COHORT, "<control-cohort>*");
 //        params.put("--" + MOVE_TO_LOCAL, "<local-output>");
@@ -136,7 +136,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
                         VariantField.STUDIES_SECONDARY_ALTERNATES,
                         VariantField.STUDIES_STATS));
 
-        String outdirStr = getConf().get(OUTDIR);
+        String outdirStr = getConf().get(OUTPUT);
         if (StringUtils.isEmpty(outdirStr)) {
             outdir = new Path("fisher." + TimeUtils.getTime() + ".tsv");
         } else {

@@ -21,6 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -219,7 +221,8 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
             }
         } else {
             if (!localFs.exists(localOutput.getParent())) {
-                throw new IOException("No such file or directory: " + localOutput);
+                Files.createDirectories(Paths.get(localOutput.getParent().toUri()));
+//                throw new IOException("No such file or directory: " + localOutput);
             }
         }
         return localOutput;
