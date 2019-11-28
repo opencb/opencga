@@ -36,6 +36,7 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper.VariantColumn;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveRowKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
@@ -154,6 +155,21 @@ public class VariantHBaseQueryParser {
         if (otherParams.contains(ANNOTATION_EXISTS) && query.getBoolean(ANNOTATION_EXISTS.key())) {
             messages.add("Filter " + ANNOTATION_EXISTS.key() + "=true not supported");
         }
+        if (otherParams.contains(GENE)) {
+            if (isValidParam(query, ANNOT_GENE_REGIONS)) {
+                otherParams.remove(GENE);
+            }
+        }
+        if (otherParams.contains(ANNOT_EXPRESSION)) {
+            if (isValidParam(query, ANNOT_EXPRESSION_GENES)) {
+                otherParams.remove(ANNOT_EXPRESSION);
+            }
+        }
+        if (otherParams.contains(ANNOT_GO)) {
+            if (isValidParam(query, ANNOT_GO_GENES)) {
+                otherParams.remove(ANNOT_GO);
+            }
+        }
 
         if (messages.isEmpty() && otherParams.isEmpty()) {
             return Collections.emptySet();
@@ -195,7 +211,7 @@ public class VariantHBaseQueryParser {
         }
 
         List<Scan> scans;
-        if (regions.isEmpty() && variants.isEmpty()) {
+        if ((regions.isEmpty() || regions.size() == 1) && variants.isEmpty()) {
             scans = Collections.singletonList(parseQuery(selectElements, query, options));
         } else {
             scans = new ArrayList<>(regions.size() + variants.size());
@@ -287,20 +303,23 @@ public class VariantHBaseQueryParser {
 
 
         if (!StringUtils.isEmpty(query.getString(GENE.key()))) {
-            addValueFilter(filters, GENES.bytes(), query.getAsStringList(GENE.key()));
+            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantColumn.GENES.bytes());
+            addValueFilter(filters, VariantColumn.GENES.bytes(), query.getAsStringList(GENE.key()));
         }
         if (!StringUtils.isEmpty(query.getString(ANNOT_BIOTYPE.key()))) {
-            addValueFilter(filters, BIOTYPE.bytes(), query.getAsStringList(ANNOT_BIOTYPE.key()));
+            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantColumn.BIOTYPE.bytes());
+            addValueFilter(filters, VariantColumn.BIOTYPE.bytes(), query.getAsStringList(ANNOT_BIOTYPE.key()));
         }
         if (!StringUtils.isEmpty(query.getString(TYPE.key()))) {
-            addValueFilter(filters, VariantPhoenixHelper.VariantColumn.TYPE.bytes(), query.getAsStringList(TYPE.key()));
+            scan.addColumn(GenomeHelper.COLUMN_FAMILY_BYTES, VariantColumn.TYPE.bytes());
+            addValueFilter(filters, VariantColumn.TYPE.bytes(), query.getAsStringList(TYPE.key()));
         }
 
         if (isValidParam(query, ANNOTATION_EXISTS)) {
             if (!query.getBoolean(ANNOTATION_EXISTS.key())) {
                 // Use a column different from FULL_ANNOTATION to read few elements from disk
 //                byte[] annotationColumn = VariantPhoenixHelper.VariantColumn.FULL_ANNOTATION.bytes();
-                byte[] annotationColumn = VariantPhoenixHelper.VariantColumn.SO.bytes();
+                byte[] annotationColumn = VariantColumn.SO.bytes();
 
                 filters.addFilter(missingColumnFilter(annotationColumn));
                 if (!selectElements.getFields().contains(VariantField.ANNOTATION)) {
@@ -511,7 +530,7 @@ public class VariantHBaseQueryParser {
 //            scan.addColumn(genomeHelper.getColumnFamily(), VariantPhoenixHelper.VariantColumn.TYPE.bytes());
 //        }
         if (selectElements.getFields().contains(VariantField.TYPE) || !scan.hasFamilies()) {
-            scan.addColumn(family, VariantPhoenixHelper.VariantColumn.TYPE.bytes());
+            scan.addColumn(family, VariantColumn.TYPE.bytes());
         }
 
 //        if (!columnPrefixes.isEmpty()) {

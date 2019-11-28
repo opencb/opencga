@@ -23,8 +23,10 @@ import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.test.GenericTest;
 
+import java.lang.reflect.Field;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -327,6 +329,17 @@ public class VariantQueryUtilsTest extends GenericTest {
         assertEquals(Arrays.asList(new Region("1", 100, 200), new Region("1", 201, 400)), mergeRegions(Arrays.asList(new Region("1", 100, 200), new Region("1", 201, 400))));
         assertEquals(Arrays.asList(new Region("1", 100, 200), new Region("2", 200, 400)), mergeRegions(Arrays.asList(new Region("1", 100, 200), new Region("2", 200, 400))));
         assertEquals(Arrays.asList(new Region("1", 100, 400), new Region("2", 100, 200)), mergeRegions(Arrays.asList(new Region("1", 100, 200), new Region("2", 100, 200), new Region("1", 200, 400))));
-
     }
+
+    @Test
+    public void checkAllPrivateParams() throws IllegalAccessException {
+        Set<QueryParam> actualQueryParams = new HashSet<>();
+        for (Field field : VariantQueryUtils.class.getFields()) {
+            if (QueryParam.class.isAssignableFrom(field.getType())) {
+                actualQueryParams.add((QueryParam) field.get(null));
+            }
+        }
+        assertEquals(actualQueryParams, new HashSet<>(INTERNAL_VARIANT_QUERY_PARAMS));
+    }
+
 }
