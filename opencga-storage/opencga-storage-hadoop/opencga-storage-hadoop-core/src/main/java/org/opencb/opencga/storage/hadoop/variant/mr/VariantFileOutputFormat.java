@@ -68,11 +68,11 @@ public class VariantFileOutputFormat extends FileOutputFormat<Variant, NullWrita
         Path file = this.getDefaultWorkFile(job, extension);
         FileSystem fs = file.getFileSystem(conf);
         FSDataOutputStream fileOut = fs.create(file, false);
-        if (!isCompressed) {
-            return new VariantRecordWriter(configureWriter(job, fileOut), fileOut);
-        } else {
+        if (isCompressed) {
             DataOutputStream out = new DataOutputStream(codec.createOutputStream(fileOut));
             return new VariantRecordWriter(configureWriter(job, out), out);
+        } else {
+            return new VariantRecordWriter(configureWriter(job, fileOut), fileOut);
         }
     }
 

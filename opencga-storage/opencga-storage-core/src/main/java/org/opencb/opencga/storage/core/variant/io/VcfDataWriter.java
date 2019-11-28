@@ -35,7 +35,9 @@ public abstract class VcfDataWriter<T> implements DataWriter<T> {
     protected VcfDataWriter(VariantMetadata metadata, List<String> annotations, OutputStream outputStream) {
         this.metadata = metadata;
         this.annotations = annotations;
-        this.outputStream = outputStream;
+        // VariantContextWriter may attempt to close the output stream.
+        // To respect the symmetry of open/close resources, make the os unclosable
+        this.outputStream = new VariantWriterFactory.UnclosableOutputStream(outputStream);
     }
 
     public static VcfDataWriter<Variant> newWriterForAvro(VariantMetadata metadata, List<String> annotations, OutputStream outputStream) {
