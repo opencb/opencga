@@ -143,4 +143,7 @@ class Clinical(_ParentBasicCRUDClient, _ParentAclRestClient):
         URL: /{apiVersion}/analysis/clinical/search
         """
 
+        if 'skipCount' not in options and ('count' not in options or options['count'] is False):
+            options['skipCount'] = True
+
         return self._get('search', **options)

@@ -62,4 +62,7 @@ class Families(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSe
         :param flattenAnnotations: flatten the annotations?
         """
 
+        if 'skipCount' not in options and ('count' not in options or options['count'] is False):
+            options['skipCount'] = True
+
         return self._get('search', **options)
