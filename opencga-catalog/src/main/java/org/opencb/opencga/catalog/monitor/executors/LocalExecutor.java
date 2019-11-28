@@ -23,13 +23,18 @@ import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.DataOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Created by pfurio on 22/08/16.
@@ -47,121 +52,64 @@ public class LocalExecutor implements BatchExecutor {
         logger = LoggerFactory.getLogger(LocalExecutor.class);
         int maxConcurrentJobs = execution.getOptions().getInt(MAX_CONCURRENT_JOBS, 1);
         threadPool = Executors.newFixedThreadPool(maxConcurrentJobs);
-        jobStatus = new LinkedHashMap<String, String>(1000) {
+        jobStatus = Collections.synchronizedMap(new LinkedHashMap<String, String>(1000) {
             @Override
             protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
                 return size() > 1000;
             }
-        };
-    }
-
-    @Deprecated
-    public void execute(Job job, String token) throws Exception {
-        Runnable runnable = () -> {
-//            try {
-            ExecutorConfig executorConfig = ExecutorConfig.getExecutorConfig(job);
-
-            logger.info("Ready to run {}", job.getCommandLine());
-            Command com = new Command(getCommandLine(job.getCommandLine(), Paths.get(executorConfig.getStdout()),
-                    Paths.get(executorConfig.getStderr())));
-
-//                DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStdout()));
-//                com.setOutputOutputStream(dataOutputStream);
-//
-//                dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStderr()));
-//                com.setErrorOutputStream(dataOutputStream);
-
-            final long jobId = job.getUid();
-
-            Thread hook = new Thread(() -> {
-                logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
-                com.setStatus(RunnableProcess.Status.KILLED);
-                com.setExitValue(-2);
-                closeOutputStreams(com);
-            });
-
-            logger.info("==========================================");
-            logger.info("Executing job {}({})", job.getName(), job.getUid());
-            logger.debug("Executing commandLine {}", job.getCommandLine());
-            logger.info("==========================================");
-            System.err.println();
-
-            Runtime.getRuntime().addShutdownHook(hook);
-            com.run();
-            Runtime.getRuntime().removeShutdownHook(hook);
-
-            System.err.println();
-            logger.info("==========================================");
-            logger.info("Finished job {}({})", job.getName(), job.getUid());
-            logger.info("==========================================");
-
-            closeOutputStreams(com);
-//            } catch (FileNotFoundException e) {
-//                logger.error("Could not create the output/error files", e);
-//            }
-//            finally {
-//                if (executorConfig != null) {
-//                    Path outdir = Paths.get(executorConfig.getOutdir());
-//                    // The outdir folder may be removed by the IndexDaemon
-//                    if (outdir.toFile().exists()) {
-//                        String status = status(outdir, job);
-//                        if (!status.equals(Job.JobStatus.DONE)
-//                                && !status.equals(Job.JobStatus.READY)
-//                                && !status.equals(Job.JobStatus.ERROR)) {
-//                            logger.error("Job {} finished with status {}. Write {} with status {}",
-//                                    job.getId(), status, JOB_STATUS_FILE, Job.JobStatus.ERROR);
-//                            try {
-//                                Path jobStatusFile = outdir.resolve(JOB_STATUS_FILE);
-//                                Job.JobStatus jobStatus = new Job.JobStatus(Job.JobStatus.ERROR, "Job finished with status " + status);
-//                                objectMapper.writer().writeValue(jobStatusFile.toFile(), jobStatus);
-//                            } catch (IOException e) {
-//                                logger.error("Could not write the " + JOB_STATUS_FILE + " with status " + Job.JobStatus.ERROR, e);
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-        };
-        Thread thread = new Thread(runnable, "LocalExecutor-" + nextThreadNum());
-        thread.start();
+        });
     }
 
     @Override
-    public void execute(String jobId, String commandLine, Path stdout, Path stderr, String token) throws Exception {
+    public void execute(String jobId, String commandLine, Path stdout, Path stderr) throws Exception {
         jobStatus.put(jobId, Job.JobStatus.QUEUED);
         Runnable runnable = () -> {
-            Thread.currentThread().setName("LocalExecutor-" + nextThreadNum());
-            logger.info("Ready to run - {}", commandLine);
-            jobStatus.put(jobId, Job.JobStatus.RUNNING);
-            Command com = new Command(getCommandLine(commandLine, stdout, stderr));
+            try {
+                Thread.currentThread().setName("LocalExecutor-" + nextThreadNum());
+                logger.info("Ready to run - {}", commandLine);
+                jobStatus.put(jobId, Job.JobStatus.RUNNING);
+                Command com = new Command(commandLine);
 
-            Thread hook = new Thread(() -> {
-                logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
-                com.setStatus(RunnableProcess.Status.KILLED);
-                com.setExitValue(-2);
-                closeOutputStreams(com);
-                jobStatus.put(jobId, Job.JobStatus.ERROR);
-            });
+                DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream(stdout.toFile()));
+                com.setOutputOutputStream(dataOutputStream);
 
-            logger.info("==========================================");
-            logger.info("Executing job {}", jobId);
-            logger.debug("Executing commandLine {}", commandLine);
-            logger.info("==========================================");
-            System.err.println();
+                dataOutputStream = new DataOutputStream(new FileOutputStream(stderr.toFile()));
+                com.setErrorOutputStream(dataOutputStream);
 
-            Runtime.getRuntime().addShutdownHook(hook);
-            com.run();
-            Runtime.getRuntime().removeShutdownHook(hook);
+                Thread hook = new Thread(() -> {
+                    logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
+                    com.setStatus(RunnableProcess.Status.KILLED);
+                    com.setExitValue(-2);
+                    closeOutputStreams(com);
+                    jobStatus.put(jobId, Job.JobStatus.ERROR);
+                });
 
-            System.err.println();
-            logger.info("==========================================");
-            logger.info("Finished job {}", jobId);
-            logger.info("==========================================");
+                logger.info("==========================================");
+                logger.info("Executing job {}", jobId);
+                logger.debug("Executing commandLine {}", commandLine);
+                logger.info("==========================================");
+                System.err.println();
 
-            closeOutputStreams(com);
-            if (com.getStatus().equals(RunnableProcess.Status.DONE)) {
-                jobStatus.put(jobId, Job.JobStatus.DONE);
-            } else {
+                try {
+                    Runtime.getRuntime().addShutdownHook(hook);
+                    com.run();
+                } finally {
+                    Runtime.getRuntime().removeShutdownHook(hook);
+                    closeOutputStreams(com);
+                }
+
+                System.err.println();
+                logger.info("==========================================");
+                logger.info("Finished job {}", jobId);
+                logger.info("==========================================");
+
+                if (com.getStatus().equals(RunnableProcess.Status.DONE)) {
+                    jobStatus.put(jobId, Job.JobStatus.DONE);
+                } else {
+                    jobStatus.put(jobId, Job.JobStatus.ERROR);
+                }
+            } catch (Throwable throwable) {
+                logger.error("Error running job " + jobId, throwable);
                 jobStatus.put(jobId, Job.JobStatus.ERROR);
             }
         };

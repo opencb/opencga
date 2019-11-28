@@ -58,7 +58,7 @@ public class K8SExecutor implements BatchExecutor {
     }
 
     @Override
-    public void execute(String jobId, String commandLine, Path stdout, Path stderr, String token) throws Exception {
+    public void execute(String jobId, String commandLine, Path stdout, Path stderr) throws Exception {
         HashMap<String, Quantity> requests = new HashMap<>();
         requests.put("cpu", new Quantity(this.cpu));
         requests.put("memory", new Quantity(this.memory));

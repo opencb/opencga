@@ -265,7 +265,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         public Map<String, String> jobStatus = new HashMap<>();
 
         @Override
-        public void execute(String jobId, String commandLine, Path stdout, Path stderr, String token) throws Exception {
+        public void execute(String jobId, String commandLine, Path stdout, Path stderr) throws Exception {
             System.out.println("Executing job " + jobId + " --- " + commandLine);
             jobStatus.put(jobId, Job.JobStatus.QUEUED);
         }

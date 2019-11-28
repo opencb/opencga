@@ -311,7 +311,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
 
         try {
-            batchExecutor.execute(job.getId(), authenticatedCommandLine, stdout, stderr, token);
+            batchExecutor.execute(job.getId(), authenticatedCommandLine, stdout, stderr);
         } catch (Exception e) {
             logger.error("Error executing job {}.", job.getId(), e);
             return abortJob(job, "Error executing job. " + e.getMessage());
