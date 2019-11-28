@@ -20,6 +20,10 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 
 /**
@@ -33,6 +37,11 @@ public class AlignmentCommandOptions {
     public StatsAlignmentCommandOptions statsAlignmentCommandOptions;
     public CoverageAlignmentCommandOptions coverageAlignmentCommandOptions;
 
+    // Wrappers
+    public BwaCommandOptions bwaCommandOptions;
+    public SamtoolsCommandOptions samtoolsCommandOptions;
+    public DeeptoolsCommandOptions deeptoolsCommandOptions;
+
     public GeneralCliOptions.CommonCommandOptions analysisCommonOptions;
     public JCommander jCommander;
 
@@ -44,6 +53,10 @@ public class AlignmentCommandOptions {
         this.queryAlignmentCommandOptions = new QueryAlignmentCommandOptions();
         this.statsAlignmentCommandOptions = new StatsAlignmentCommandOptions();
         this.coverageAlignmentCommandOptions = new CoverageAlignmentCommandOptions();
+
+        this.bwaCommandOptions = new BwaCommandOptions();
+        this.samtoolsCommandOptions = new SamtoolsCommandOptions();
+        this.deeptoolsCommandOptions = new DeeptoolsCommandOptions();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index alignment file")
@@ -145,6 +158,90 @@ public class AlignmentCommandOptions {
         public boolean contained;
         @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000")
         public String region;
+    }
 
+    //-------------------------------------------------------------------------
+    // W R A P P E R S     A N A L Y S I S
+    //-------------------------------------------------------------------------
+
+    // BWA
+
+    @Parameters(commandNames = BwaWrapperAnalysis.ID, commandDescription = BwaWrapperAnalysis.DESCRIPTION)
+    public class BwaCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.BasicCommonCommandOptions basicOptions = analysisCommonOptions;
+
+        @Parameter(names = {"--study"}, description = "Study.")
+        public String study;
+
+        @Parameter(names = {"--command"}, description = "BWA comamnd. Valid values: index, mem.")
+        public String command;
+
+        @Parameter(names = {"--fasta-file"}, description = "Fasta file.")
+        public String fastaFile;
+
+        @Parameter(names = {"--index-base-file"}, description = "Index base file.")
+        public String indexBaseFile;
+
+        @Parameter(names = {"--fastq1-file"}, description = "FastQ #1 file.")
+        public String fastq1File;
+
+        @Parameter(names = {"--fastq2-file"}, description = "FastQ #2 file.")
+        public String fastq2File;
+
+        @Parameter(names = {"--sam-file"}, description = "SAM file.")
+        public String samFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+    }
+
+    // Samtools
+
+    @Parameters(commandNames = SamtoolsWrapperAnalysis.ID, commandDescription = SamtoolsWrapperAnalysis.DESCRIPTION)
+    public class SamtoolsCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.BasicCommonCommandOptions basicOptions = analysisCommonOptions;
+
+        @Parameter(names = {"--study"}, description = "Study.")
+        public String study;
+
+        @Parameter(names = {"--command"}, description = "Samtools command. Valid values: view, sort, index, stats.")
+        public String command;
+
+        @Parameter(names = {"--input-file"}, description = "Input file.")
+        public String inputFile;
+
+        @Parameter(names = {"--output-file"}, description = "Output file.")
+        public String outputFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+    }
+
+    // Deeptools
+
+    @Parameters(commandNames = DeeptoolsWrapperAnalysis.ID, commandDescription = DeeptoolsWrapperAnalysis.DESCRIPTION)
+    public class DeeptoolsCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.BasicCommonCommandOptions basicOptions = analysisCommonOptions;
+
+        @Parameter(names = {"--study"}, description = "Study.")
+        public String study;
+
+        @Parameter(names = {"--executable"}, description = "Deeptools executable. Valid values: bamCoverage.")
+        public String executable;
+
+        @Parameter(names = {"--bam-file"}, description = "BAM file.")
+        public String bamFile;
+
+        @Parameter(names = {"--coverage-file"}, description = "Coverage file.")
+        public String coverageFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
     }
 }

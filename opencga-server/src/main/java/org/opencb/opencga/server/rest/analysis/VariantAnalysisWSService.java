@@ -31,6 +31,8 @@ import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -352,7 +354,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "Histogram interval size") @DefaultValue("2000") @QueryParam("interval") int interval,
                                 @ApiParam(value = "Ranks different entities with the most number of variants. Rank by: [ct, gene, ensemblGene]") @QueryParam("rank") String rank
                                 // @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge
-                                ) {
+    ) {
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -997,7 +999,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Path("/stats")
     @ApiOperation(value = "This method has been renamed, use endpoint /aggregationStats instead" + DEPRECATED, hidden = true, response = QueryResponse.class)
     public Response getStats(@ApiParam(value = "List of facet fields separated by semicolons, e.g.: studies;type. For nested faceted fields use >>, e.g.: studies>>biotype;type") @QueryParam("facet") String facet,
-                              @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange) {
+                             @ApiParam(value = "List of facet ranges separated by semicolons with the format {field_name}:{start}:{end}:{step}, e.g.: sift:0:1:0.2;caddRaw:0:30:1") @QueryParam("facetRange") String facetRange) {
         return getAggregationStats(facet);
     }
 
@@ -1151,11 +1153,71 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         return createPendingResponse();
     }
 
+    public static class PlinkRunParams extends RestBodyParams {
+        public PlinkRunParams() {
+        }
+        public PlinkRunParams(String tpedFile, String tfamFile, String covarFile, String outdir, Map<String, String> plinkParams) {
+            this.tpedFile = tpedFile;
+            this.tfamFile = tfamFile;
+            this.covarFile = covarFile;
+            this.outdir = outdir;
+            this.plinkParams = plinkParams;
+        }
+
+        public String tpedFile;  // Transpose PED file (.tped) containing SNP and genotype information
+        public String tfamFile;  // Transpose FAM file (.tfam) containing individual and family information
+        public String covarFile; // Covariate file
+        public String outdir;
+        public Map<String, String> plinkParams;
+    }
+
     @POST
     @Path("/plink/run")
-    @ApiOperation(value = PENDING, response = Job.class)
-    public Response plinkRun() {
-        return createPendingResponse();
+    @ApiOperation(value = PlinkWrapperAnalysis.DESCRIPTION, response = Job.class)
+    public Response plinkRun(
+            @ApiParam(value = "Study") @QueryParam("study") String study,
+            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
+            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            PlinkRunParams params) {
+        return submitJob(study, "variant", PlinkWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
+    }
+
+    public static class RvtestsRunParams extends RestBodyParams {
+        public RvtestsRunParams() {
+        }
+        public RvtestsRunParams(String command, String vcfFile, String phenoFile, String pedigreeFile, String kinshipFile, String covarFile,
+                                String outdir, Map<String, String> rvtestsParams) {
+            this.command = command;
+            this.vcfFile = vcfFile;
+            this.phenoFile = phenoFile;
+            this.pedigreeFile = pedigreeFile;
+            this.kinshipFile = kinshipFile;
+            this.covarFile = covarFile;
+            this.outdir = outdir;
+            this.rvtestsParams = rvtestsParams;
+        }
+
+        public String command;      // Valid values: rvtests or vcf2kinship
+        public String vcfFile;      // VCF file
+        public String phenoFile;    // Phenotype file
+        public String pedigreeFile; // Pedigree file
+        public String kinshipFile;  // Kinship file
+        public String covarFile;    // Covariate file
+        public String outdir;
+        public Map<String, String> rvtestsParams;
+    }
+
+    @POST
+    @Path("/rvtests/run")
+    @ApiOperation(value = RvtestsWrapperAnalysis.DESCRIPTION, response = Job.class)
+    public Response rvtestsRun(
+            @ApiParam(value = "Study") @QueryParam("study") String study,
+            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
+            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            RvtestsRunParams params) {
+        return submitJob(study, "variant", RvtestsWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
     }
 
     @POST

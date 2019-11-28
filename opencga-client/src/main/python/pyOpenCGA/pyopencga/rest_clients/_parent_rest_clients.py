@@ -1,5 +1,5 @@
+from pyopencga.commons import execute, RESTResponse
 from pyopencga.retry import retry
-from pyopencga.commons import execute, DataResponse
 
 class _ParentRestClient(object):
     """Queries the REST service given the different query params"""
@@ -69,7 +69,7 @@ class _ParentRestClient(object):
 
         if self.auto_refresh:
             self._refresh_token_client()
-        return DataResponse(response)
+        return RESTResponse(response)
 
     def _get(self, resource, query_id=None, subcategory=None, second_query_id=None, **options):
         """Queries the REST service and returns the result"""

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.app.cli.analysis;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -348,6 +349,212 @@ public class InternalMainTest {
 
 //        execute("alignment", "query", "--session-id", sessionId, "--file", "user@p1:s1:" + bam.getPath(), "--region", "20");
 
+    }
+
+    @Test
+    public void testPlinkFisher() throws CatalogException, IOException {
+        createStudy(datastores, "s1");
+
+        File tpedFile = opencga.createFile(studyId, "test.tped", sessionId);
+        File tfamFile = opencga.createFile(studyId, "test.tfam", sessionId);
+
+        String temporalDir = opencga.createTmpOutdir(studyId, "plink", sessionId);
+
+        // Plink: fisher test
+        execute("variant", "plink",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--tped-file", tpedFile.getUri().getPath(),
+                "--tfam-file", tfamFile.getUri().getPath(),
+                "-Dfisher=",
+                "-Dout=plink-output",
+                "-o", temporalDir);
+
+        assertEquals(5, Files.list(Paths.get(temporalDir)).collect(Collectors.toList()).size());
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve("plink-output.assoc.fisher")));
+    }
+
+    @Test
+    public void testRvtestsWaldScore() throws CatalogException, IOException {
+        createStudy(datastores, "s1");
+
+        File vcfFile = opencga.createFile(studyId, "example.vcf", sessionId);
+        File phenoFile = opencga.createFile(studyId, "pheno", sessionId);
+
+        String temporalDir = opencga.createTmpOutdir(studyId, "rvtests", sessionId);
+
+        // Plink: fisher test
+        execute("variant", "rvtests",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--executable", "rvtest",
+                "--vcf-file", vcfFile.getUri().getPath(),
+                "--pheno-file", phenoFile.getUri().getPath(),
+                "-Dsingle=wald,score",
+                "-Dout=rvtests-output",
+                "-o", temporalDir);
+
+        assertEquals(6, Files.list(Paths.get(temporalDir)).collect(Collectors.toList()).size());
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve("rvtests-output.SingleWald.assoc")));
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve("rvtests-output.SingleScore.assoc")));
+    }
+
+    @Test
+    public void testRvtestsVcf2Kinship() throws CatalogException, IOException {
+        createStudy(datastores, "s1");
+
+        File vcfFile = opencga.createFile(studyId, "example.vcf", sessionId);
+
+        String temporalDir = opencga.createTmpOutdir(studyId, "rvtests", sessionId);
+
+        // Plink: fisher test
+        execute("variant", "rvtests",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--executable", "vcf2kinship",
+                "--vcf-file", vcfFile.getUri().getPath(),
+                "-Dbn=",
+                "-Dout=rvtests-output",
+                "-o", temporalDir);
+
+        assertEquals(5, Files.list(Paths.get(temporalDir)).collect(Collectors.toList()).size());
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve("rvtests-output.kinship")));
+    }
+
+    @Test
+    public void testAlignmentWrappers() throws CatalogException, IOException {
+        createStudy(datastores, "s1");
+
+        // bwa index
+        System.out.println("---------------   bwa index   ---------------");
+
+        File fastaFile = opencga.createFile(studyId, "Homo_sapiens.GRCh38.dna.chromosome.MT.fa.gz", sessionId);
+
+        String temporalDir1 = opencga.createTmpOutdir(studyId, "_alignment1", sessionId);
+
+        execute("alignment", "bwa",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--command", "index",
+                "--fasta-file", fastaFile.getUri().getPath(),
+                "-o", temporalDir1);
+
+        assertEquals(8, Files.list(Paths.get(temporalDir1)).collect(Collectors.toList()).size());
+        assertTrue(Files.exists(Paths.get(temporalDir1).resolve(Paths.get(fastaFile.getUri().getPath() + ".bwt").toFile().getName())));
+        assertTrue(Files.exists(Paths.get(temporalDir1).resolve(Paths.get(fastaFile.getUri().getPath() + ".pac").toFile().getName())));
+        assertTrue(Files.exists(Paths.get(temporalDir1).resolve(Paths.get(fastaFile.getUri().getPath() + ".ann").toFile().getName())));
+        assertTrue(Files.exists(Paths.get(temporalDir1).resolve(Paths.get(fastaFile.getUri().getPath() + ".amb").toFile().getName())));
+        assertTrue(Files.exists(Paths.get(temporalDir1).resolve(Paths.get(fastaFile.getUri().getPath() + ".sa").toFile().getName())));
+
+        // bwa mem
+        System.out.println("---------------   bwa mem   ---------------");
+
+        File fastqFile = opencga.createFile(studyId, "ERR251000.1K.fastq.gz", sessionId);
+
+        String temporalDir2 = opencga.createTmpOutdir(studyId, "_alignment2", sessionId);
+        String samFile = temporalDir2 + "/alignment.sam";
+
+        execute("alignment", "bwa",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--command", "mem",
+                "--index-base-file", Paths.get(temporalDir1).resolve(Paths.get(fastaFile.getUri().getPath()).toFile().getName()).toString(),
+                "--fastq1-file", fastqFile.getUri().getPath(),
+                "--sam-file", samFile,
+                "-o", temporalDir2);
+
+        assertEquals(4, Files.list(Paths.get(temporalDir2)).collect(Collectors.toList()).size());
+        assertTrue(new java.io.File(samFile).exists());
+
+        // samtools view (.sam -> .bam)
+        System.out.println("---------------   samtools view   ---------------");
+
+
+        String temporalDir3 = opencga.createTmpOutdir(studyId, "_alignment3", sessionId);
+        String bamFile = temporalDir3 + "/alignment.bam";
+
+        execute("alignment", "samtools",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--command", "view",
+                "--input-file", samFile,
+                "--output-file", bamFile,
+                "-Db=",
+                "-DS=",
+                "-o", temporalDir3);
+
+        assertEquals(4, Files.list(Paths.get(temporalDir3)).collect(Collectors.toList()).size());
+        assertTrue(new java.io.File(bamFile).exists());
+
+        // samtools sort
+        System.out.println("---------------   samtools sort   ---------------");
+
+        String temporalDir4 = opencga.createTmpOutdir(studyId, "_alignment4", sessionId);
+        String sortedBamFile = temporalDir4 + "/alignment.sorted.bam";
+
+        execute("alignment", "samtools",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--command", "sort",
+                "--input-file", bamFile,
+                "--output-file", sortedBamFile,
+                "-o", temporalDir4);
+
+        assertEquals(4, Files.list(Paths.get(temporalDir4)).collect(Collectors.toList()).size());
+        assertTrue(new java.io.File(sortedBamFile).exists());
+
+        // samtools index
+        System.out.println("---------------   samtools index   ---------------");
+
+        String temporalDir5 = opencga.createTmpOutdir(studyId, "_alignment5", sessionId);
+        String baiFile = temporalDir5 + "/alignment.sorted.bam.bai";
+
+        execute("alignment", "samtools",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--command", "index",
+                "--input-file", sortedBamFile,
+                "--output-file", baiFile,
+                "-o", temporalDir5);
+
+        assertEquals(4, Files.list(Paths.get(temporalDir5)).collect(Collectors.toList()).size());
+        assertTrue(new java.io.File(baiFile).exists());
+
+        // deeptools bamCoverage
+        System.out.println("---------------   deeptools bamCoverage   ---------------");
+
+        FileUtils.copyFile(new java.io.File(baiFile), new java.io.File(temporalDir4 + "/" + new java.io.File(baiFile).getName()));
+        String temporalDir6 = opencga.createTmpOutdir(studyId, "_alignment6", sessionId);
+        String bwFile = temporalDir6 + "/alignment.bw";
+
+        execute("alignment", "deeptools",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--executable", "bamCoverage",
+                "--bam-file", sortedBamFile,
+                "--coverage-file", bwFile,
+                "-Dof=bigwig",
+                "-o", temporalDir6);
+
+        assertEquals(4, Files.list(Paths.get(temporalDir6)).collect(Collectors.toList()).size());
+        assertTrue(new java.io.File(bwFile).exists());
+
+        // samtools stats
+        System.out.println("---------------   samtools stats   ---------------");
+
+        String temporalDir7 = opencga.createTmpOutdir(studyId, "_alignment7", sessionId);
+        String statsFile = temporalDir7 + "/alignment.stats";
+
+        execute("alignment", "samtools",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--command", "stats",
+                "--input-file", sortedBamFile,
+                "--output-file", statsFile,
+                "-o", temporalDir7);
+
+        assertEquals(4, Files.list(Paths.get(temporalDir7)).collect(Collectors.toList()).size());
+        assertTrue(new java.io.File(statsFile).exists());
     }
 
 

@@ -63,9 +63,15 @@ public class HadoopVariantExporter extends VariantExporter {
             if (fileSystem.exists(outputPath)) {
                 throw new IOException("Output directory " + outputFileUri + " already exists!");
             }
-            Path metadataPath = new Path(outputFileUri.toString() + METADATA_FILE_EXTENSION);
+
+            String metaFilename = outputFileUri.toString() + METADATA_FILE_EXTENSION;
+            if (outputFormat == VariantWriterFactory.VariantOutputFormat.TPED) {
+                metaFilename = outputFileUri.toString().replace(TPED_FILE_EXTENSION, TFAM_FILE_EXTENSION);
+            }
+
+            Path metadataPath = new Path(metaFilename);
             if (fileSystem.exists(metadataPath)) {
-                throw new IOException("Output file " + outputFileUri + " already exists!");
+                throw new IOException("Output file " + metadataPath + " already exists!");
             }
 
             ObjectMap options = new ObjectMap(engine.getOptions())
@@ -79,7 +85,8 @@ public class HadoopVariantExporter extends VariantExporter {
             mrExecutor.run(VariantExporterDriver.class, args, engine.getOptions(), "Export variants");
 
             VariantMetadata metadata = metadataFactory.makeVariantMetadata(query, queryOptions);
-            writeMetadataInHdfs(metadata, metadataPath, fileSystem);
+            writeMetadata(metadata, metadataPath.toUri());
+            //writeMetadataInHdfs(metadata, metadataPath, fileSystem);
 
             logger.info("Output file : " + outputPath.toString());
             logger.info("Output metadata file : " + metadataPath.toString());

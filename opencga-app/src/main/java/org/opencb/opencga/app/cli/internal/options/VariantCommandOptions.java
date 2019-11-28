@@ -26,6 +26,8 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
@@ -100,6 +102,10 @@ public class VariantCommandOptions {
     public final CohortVariantStatsCommandOptions cohortVariantStatsCommandOptions;
     public final CohortVariantStatsQueryCommandOptions cohortVariantStatsQueryCommandOptions;
 
+    // Wrappers
+    public final PlinkCommandOptions plinkCommandOptions;
+    public final RvtestsCommandOptions rvtestsCommandOptions;
+
     public final JCommander jCommander;
     public final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
     public final DataModelOptions commonDataModelOptions;
@@ -141,6 +147,8 @@ public class VariantCommandOptions {
         this.sampleVariantStatsQueryCommandOptions = new SampleVariantStatsQueryCommandOptions();
         this.cohortVariantStatsCommandOptions = new CohortVariantStatsCommandOptions();
         this.cohortVariantStatsQueryCommandOptions = new CohortVariantStatsQueryCommandOptions();
+        this.plinkCommandOptions = new PlinkCommandOptions();
+        this.rvtestsCommandOptions = new RvtestsCommandOptions();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
@@ -1078,4 +1086,57 @@ public class VariantCommandOptions {
         public List<String> cohort;
     }
 
+    @Parameters(commandNames = PlinkWrapperAnalysis.ID, commandDescription = PlinkWrapperAnalysis.DESCRIPTION)
+    public class PlinkCommandOptions {
+
+        @ParametersDelegate
+        //public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.BasicCommonCommandOptions basicOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study.")
+        public String study;
+
+        @Parameter(names = {"--tped-file"}, description = "Transpose PED file (.tped) containing SNP and genotype information.")
+        public String tpedFile;
+
+        @Parameter(names = {"--tfam-file"}, description = "Transpose FAM file (.tfam) containing individual and family information.")
+        public String tfamFile;
+
+        @Parameter(names = {"--covar-file"}, description = "Covariate file.")
+        public String covarFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+    }
+
+    @Parameters(commandNames = RvtestsWrapperAnalysis.ID, commandDescription = RvtestsWrapperAnalysis.DESCRIPTION)
+    public class RvtestsCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.BasicCommonCommandOptions basicOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study.")
+        public String study;
+
+        @Parameter(names = {"--executable"}, description = "Rvtests executable. Valid values: rvtest or vcf2kinship.")
+        public String executable = "rvtest";
+
+        @Parameter(names = {"--vcf-file"}, description = "VCF file.")
+        public String vcfFile;
+
+        @Parameter(names = {"--pheno-file"}, description = "Phenotype file.")
+        public String phenoFile;
+
+        @Parameter(names = {"--pedigree-file"}, description = "Pedigree file.")
+        public String pedigreeFile;
+
+        @Parameter(names = {"--kinship-file"}, description = "Kinship file.")
+        public String kinshipFile;
+
+        @Parameter(names = {"--covar-file"}, description = "Covariate file.")
+        public String covarFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+    }
 }
