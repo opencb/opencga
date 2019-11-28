@@ -986,18 +986,24 @@ public class VariantCommandOptions {
         @Parameter(names = {"--case-cohort"}, description = "Cohort from catalog to be used as case cohort.")
         public String caseCohort;
 
-        @Parameter(names = {"--case-samples-annotation"}, description = "Samples annotation query selecting samples of the case cohort. "
+        @Parameter(names = {"--case-cohort-samples"}, description = "List of samples to conform the case cohort.")
+        public List<String> caseCohortSamples;
+
+        @Parameter(names = {"--case-cohort-samples-annotation"}, description = "Samples annotation query selecting samples of the case cohort. "
                 + "This parameter is an alternative to --case-cohort . Example: age>30;gender=FEMALE. "
                 + "For more information, please visit " + SampleCommandOptions.SearchCommandOptions.ANNOTATION_DOC_URL)
-        public String caseSamplesAnnotation;
+        public String caseCohortSamplesAnnotation;
 
         @Parameter(names = {"--control-cohort"}, description = "Cohort from catalog to be used as control cohort.")
         public String controlCohort;
 
-        @Parameter(names = {"--control-samples-annotation"}, description = "Samples query selecting samples of the control cohort. "
+        @Parameter(names = {"--control-cohort-samples"}, description = "List of samples to conform the control cohort.")
+        public List<String> controlCohortSamples;
+
+        @Parameter(names = {"--control-cohort-samples-annotation"}, description = "Samples query selecting samples of the control cohort. "
                 + "This parameter is an alternative to --control-cohort . Example: age>30;gender=FEMALE. "
                 + "For more information, please visit " + SampleCommandOptions.SearchCommandOptions.ANNOTATION_DOC_URL)
-        public String controlSamplesAnnotation;
+        public String controlCohortSamplesAnnotation;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
         public String outdir;
