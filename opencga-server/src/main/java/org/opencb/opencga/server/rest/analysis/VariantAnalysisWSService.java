@@ -515,14 +515,18 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     public static class VariantExportParams extends VariantQueryParams {
         public VariantExportParams() {
         }
-        public VariantExportParams(Query query, String outdir, String outputFileName) {
+        public VariantExportParams(Query query, String outdir, String outputFileName, String outputFormat, boolean compress) {
             super(query);
             this.outdir = outdir;
             this.outputFileName = outputFileName;
+            this.outputFormat = outputFormat;
+            this.compress = compress;
         }
 
         public String outdir;
         public String outputFileName;
+        public String outputFormat;
+        public boolean compress;
     }
 
     @POST
@@ -579,15 +583,16 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     public static class StatsRunParams extends RestBodyParams {
         public StatsRunParams() {
         }
-        public StatsRunParams(List<String> cohorts, List<String> samples, boolean index, String outdir, String outputFileName,
-                              String region, boolean overwriteStats, boolean updateStats, boolean resume, Aggregation aggregated,
-                              String aggregationMappingFile) {
-            this.cohorts = cohorts;
+        public StatsRunParams(List<String> cohort, List<String> samples, boolean index, String outdir, String outputFileName,
+                              String region, String gene, boolean overwriteStats, boolean updateStats, boolean resume,
+                              Aggregation aggregated, String aggregationMappingFile) {
+            this.cohort = cohort;
             this.samples = samples;
             this.index = index;
             this.outdir = outdir;
             this.outputFileName = outputFileName;
             this.region = region;
+            this.gene = gene;
             this.overwriteStats = overwriteStats;
             this.updateStats = updateStats;
             this.resume = resume;
@@ -595,10 +600,11 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             this.aggregationMappingFile = aggregationMappingFile;
         }
 
-        public List<String> cohorts;
+        public List<String> cohort;
         public List<String> samples;
         public boolean index;
         public String region;
+        public String gene;
         public String outdir;
         public String outputFileName;
         public boolean overwriteStats;
@@ -1102,28 +1108,36 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     public static class GwasRunParams extends RestBodyParams {
         public GwasRunParams() {
         }
-        public GwasRunParams(String phenotype, String scoreName, GwasConfiguration.Method method,
-                             GwasConfiguration.FisherMode fisherMode, String caseCohort, String caseSamplesAnnotation, String controlCohort,
-                             String controlSamplesAnnotation, String outdir) {
+        public GwasRunParams(String phenotype, boolean index, String indexScoreId, GwasConfiguration.Method method,
+                             GwasConfiguration.FisherMode fisherMode,
+                             String caseCohort, String caseCohortSamplesAnnotation, List<String> caseCohortSamples,
+                             String controlCohort, String controlCohortSamplesAnnotation, List<String> controlCohortSamples,
+                             String outdir) {
             this.phenotype = phenotype;
-            this.scoreName = scoreName;
+            this.index = index;
+            this.indexScoreId = indexScoreId;
             this.method = method;
             this.fisherMode = fisherMode;
             this.caseCohort = caseCohort;
-            this.caseSamplesAnnotation = caseSamplesAnnotation;
+            this.caseCohortSamplesAnnotation = caseCohortSamplesAnnotation;
+            this.caseCohortSamples = caseCohortSamples;
             this.controlCohort = controlCohort;
-            this.controlSamplesAnnotation = controlSamplesAnnotation;
+            this.controlCohortSamplesAnnotation = controlCohortSamplesAnnotation;
+            this.controlCohortSamples = controlCohortSamples;
             this.outdir = outdir;
         }
 
         public String phenotype;
-        public String scoreName;
+        public boolean index;
+        public String indexScoreId;
         public GwasConfiguration.Method method;
         public GwasConfiguration.FisherMode fisherMode;
         public String caseCohort;
-        public String caseSamplesAnnotation;
+        public String caseCohortSamplesAnnotation;
+        public List<String> caseCohortSamples;
         public String controlCohort;
-        public String controlSamplesAnnotation;
+        public String controlCohortSamplesAnnotation;
+        public List<String> controlCohortSamples;
         public String outdir;
     }
 

@@ -69,12 +69,15 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "query", params, GET, Variant.class);
     }
 
-    public DataResponse<Job> export(String study, Query query, QueryOptions options, String outdir, String outputFileName)
+    public DataResponse<Job> export(String study, Query query, QueryOptions options, String outdir, String outputFileName,
+                                    String outputFormat, boolean compress)
             throws IOException {
         ObjectMap params = query == null ? new ObjectMap() : new ObjectMap(query);
         params.putAll(options);
         params.put("outdir", outdir);
         params.put("outputFileName", outputFileName);
+        params.put("outputFormat", outputFormat);
+        params.put("compress", compress);
         return execute(VARIANT_URL, "export/run", new ObjectMap("body", params).append("study", study), POST, Job.class);
     }
 

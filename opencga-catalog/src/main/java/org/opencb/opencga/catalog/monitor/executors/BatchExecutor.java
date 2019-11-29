@@ -41,7 +41,7 @@ public interface BatchExecutor {
     String OUT_LOG_EXTENSION = ".out";
     String ERR_LOG_EXTENSION = ".err";
 
-    void execute(String jobId, String commandLine, Path stdout, Path stderr, String token) throws Exception;
+    void execute(String jobId, String commandLine, Path stdout, Path stderr) throws Exception;
 
     String getStatus(Job job);
 

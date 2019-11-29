@@ -75,7 +75,7 @@ public class AzureBatchExecutor implements BatchExecutor {
     }
 
     @Override
-    public void execute(String jobId, String commandLine, Path stdout, Path stderr, String token) throws Exception {
+    public void execute(String jobId, String commandLine, Path stdout, Path stderr) throws Exception {
 //        submitAzureTask(job, token);
     }
 

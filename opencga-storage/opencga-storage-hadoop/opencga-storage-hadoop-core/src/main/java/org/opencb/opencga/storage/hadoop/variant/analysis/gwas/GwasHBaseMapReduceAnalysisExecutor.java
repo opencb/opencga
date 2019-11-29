@@ -41,7 +41,7 @@ public class GwasHBaseMapReduceAnalysisExecutor extends GwasAnalysisExecutor imp
             ObjectMap params = new ObjectMap()
                     .append(FisherTestDriver.CASE_COHORT, samples1)
                     .append(FisherTestDriver.CONTROL_COHORT, samples2)
-                    .append(FisherTestDriver.OUTDIR, getOutputFile().toAbsolutePath().toUri());
+                    .append(FisherTestDriver.OUTPUT, getOutputFile().toAbsolutePath().toUri());
             engine.getMRExecutor().run(FisherTestDriver.class, FisherTestDriver.buildArgs(
                     dbAdaptor.getArchiveTableName(studyId),
                     dbAdaptor.getVariantTable(),

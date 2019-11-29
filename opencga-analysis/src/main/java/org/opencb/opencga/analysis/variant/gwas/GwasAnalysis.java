@@ -30,6 +30,7 @@ import org.opencb.opencga.core.annotations.Analysis.AnalysisType;
 import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.metadata.models.StudyResourceMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -56,7 +57,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
     private Query controlCohortSamplesQuery;
     private List<String> caseCohortSamples;
     private List<String> controlCohortSamples;
-    private String scoreName;
+    private String indexScoreId;
     private boolean index;
     private Path outputFile;
 
@@ -155,15 +156,36 @@ public class GwasAnalysis extends OpenCgaAnalysis {
         return this;
     }
 
+    public GwasAnalysis setCaseCohortSamples(List<String> caseCohortSamples) {
+        this.caseCohortSamples = caseCohortSamples;
+        return this;
+    }
+
+    public GwasAnalysis setControlCohortSamples(List<String> controlCohortSamples) {
+        this.controlCohortSamples = controlCohortSamples;
+        return this;
+    }
+
     /**
-     * Name to be used to index que score in the variant storage.
-     * Must be unique in the study. If provided, the control/case cohorts must be registered in catalog.
+     * Index the produced gwas score in the variant storage.
      *
-     * @param scoreName score name
+     * @param index index gwas score
      * @return this
      */
-    public GwasAnalysis setScoreName(String scoreName) {
-        this.scoreName = scoreName;
+    public GwasAnalysis setIndex(boolean index) {
+        this.index = index;
+        return this;
+    }
+
+    /**
+     * Name to be used to index the score in the variant storage.
+     * Must be unique in the study. If provided, the control/case cohorts must be registered in catalog.
+     *
+     * @param indexScoreId score id
+     * @return this
+     */
+    public GwasAnalysis setIndexScoreId(String indexScoreId) {
+        this.indexScoreId = indexScoreId;
         return this;
     }
 
@@ -188,8 +210,8 @@ public class GwasAnalysis extends OpenCgaAnalysis {
             throw new AnalysisException(e);
         }
 
-        caseCohortSamples = getCohortSamples(caseCohort, caseCohortSamplesQuery, "case", true);
-        controlCohortSamples = getCohortSamples(controlCohort, controlCohortSamplesQuery, "control", false);
+        caseCohortSamples = getCohortSamples(caseCohortSamples, caseCohort, caseCohortSamplesQuery, "case", true);
+        controlCohortSamples = getCohortSamples(controlCohortSamples, controlCohort, controlCohortSamplesQuery, "control", false);
 
         if (!Collections.disjoint(caseCohortSamples, controlCohortSamples)) {
             List<String> overlapping = new ArrayList<>();
@@ -219,7 +241,10 @@ public class GwasAnalysis extends OpenCgaAnalysis {
             throw new AnalysisException(e);
         }
 
-        if (StringUtils.isNotEmpty(scoreName)) {
+        if (index) {
+            if (StringUtils.isEmpty(indexScoreId)) {
+                throw new AnalysisException("Unable to index gwas result as VariantScore. Required a valid index score id");
+            }
             if (StringUtils.isEmpty(caseCohort) || StringUtils.isEmpty(controlCohort)) {
                 throw new AnalysisException("Unable to index gwas result as VariantScore if the cohorts are not defined in catalog");
             }
@@ -228,10 +253,11 @@ public class GwasAnalysis extends OpenCgaAnalysis {
             try {
                 List<VariantScoreMetadata> scores = variantStorageManager.listVariantScores(study, token);
                 for (VariantScoreMetadata score : scores) {
-                    if (score.getName().equals(scoreName)) {
+                    if (score.getName().equals(indexScoreId)) {
                         if (score.getIndexStatus().equals(TaskMetadata.Status.READY)) {
-                            throw new AnalysisException("Score name '" + scoreName + "' already exists in the database. "
-                                    + "The score name must be unique.");
+                            throw new AnalysisException("Score name '" + indexScoreId + "' already exists in the database. "
+                                    + "The score name must be unique. Existing scores: "
+                                    + scores.stream().map(StudyResourceMetadata::getName).collect(Collectors.toList()));
                         }
                     }
                 }
@@ -240,15 +266,15 @@ public class GwasAnalysis extends OpenCgaAnalysis {
             }
 
             // TODO: Check score index permissions
-
-            index = true;
+        } else if (StringUtils.isNotEmpty(indexScoreId)) {
+            throw new AnalysisException("Provided indexScoreId with index=false. Use index=true and indexScoreId to index the score.");
         }
 
         outputFile = getOutDir().resolve(buildOutputFilename());
 
         executorParams.append("index", index)
                 .append("phenotype", phenotype)
-                .append("scoreName", scoreName)
+                .append("indexScoreId", indexScoreId)
                 .append("caseCohort", caseCohort)
                 .append("caseCohortSamples", caseCohortSamples)
                 .append("controlCohort", controlCohort)
@@ -288,7 +314,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
             step("index", () -> {
                 try {
                     VariantScoreFormatDescriptor formatDescriptor = new VariantScoreFormatDescriptor(1, 16, 15);
-                    variantStorageManager.loadVariantScore(study, outputFile.toUri(), scoreName, caseCohort, controlCohort, formatDescriptor,
+                    variantStorageManager.loadVariantScore(study, outputFile.toUri(), indexScoreId, caseCohort, controlCohort, formatDescriptor,
                             executorParams, token);
                 } catch (CatalogException | StorageEngineException e) {
                     throw new AnalysisException(e);
@@ -305,32 +331,26 @@ public class GwasAnalysis extends OpenCgaAnalysis {
         switch (method) {
             case CHI_SQUARE_TEST:
             case FISHER_TEST:
-                return method.label + ".tsv";
+                return method.label + ".tsv.gz";
             default:
                 throw new AnalysisException("Unknown GWAS method: " + method);
         }
     }
 
-    private List<String> getCohortSamples(String cohort, Query samplesQuery, String cohortType, boolean observedPhenotype) throws AnalysisException {
+    private List<String> getCohortSamples(List<String> inputSamples, String cohort, Query samplesQuery, String cohortType,
+                                          boolean observedPhenotype)
+            throws AnalysisException {
+        boolean validListOfSamples = inputSamples != null && !inputSamples.isEmpty();
         boolean validSampleQuery = samplesQuery != null && !samplesQuery.isEmpty();
         boolean validCohort = StringUtils.isNotEmpty(cohort);
         boolean validPhenotype = StringUtils.isNotEmpty(phenotype);
-        if (validPhenotype) {
-            if (validSampleQuery || validCohort) {
-                throw new AnalysisException("Unable to mix phenotype parameter with " + cohortType + " cohort definition.");
-            }
-        } else {
-            if (!validSampleQuery && !validCohort) {
-                throw new AnalysisException("Missing " + cohortType + " cohort!");
-            }
-        }
-        if (validSampleQuery && validCohort) {
-            throw new AnalysisException("Provide either " + cohortType + " cohort name or " + cohortType + " cohort samples query,"
-                    + " but not both.");
-        }
+        checkParamsCombination(cohortType, validListOfSamples, validSampleQuery, validCohort, validPhenotype);
+
         List<String> samples;
         try {
-            if (validPhenotype) {
+            if (validListOfSamples) {
+                samples = inputSamples;
+            } else if (validPhenotype) {
                 Set<Phenotype.Status> expectedStatus = observedPhenotype
                         ? Collections.singleton(Phenotype.Status.OBSERVED)
                         : new HashSet<>(Arrays.asList(null, Phenotype.Status.NOT_OBSERVED));
@@ -343,7 +363,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
                 }
                 QueryOptions options = new QueryOptions(
                         QueryOptions.INCLUDE, Arrays.asList(
-                                SampleDBAdaptor.QueryParams.ID.key(),
+                        SampleDBAdaptor.QueryParams.ID.key(),
                         SampleDBAdaptor.QueryParams.PHENOTYPES.key()));
 
                 samples = new ArrayList<>();
@@ -387,6 +407,30 @@ public class GwasAnalysis extends OpenCgaAnalysis {
             throw new AnalysisException("Unable to run GWAS analysis with " + cohortType + " cohort of size " + samples.size());
         }
         return samples;
+    }
+
+    private void checkParamsCombination(String cohortType,
+                                        boolean validListOfSamples, boolean validSampleQuery, boolean validCohort, boolean validPhenotype)
+            throws AnalysisException {
+        LinkedList<String> params = new LinkedList<>();
+        if (validListOfSamples) {
+            params.add(cohortType + "CohortSamples");
+        }
+        if (validSampleQuery) {
+            params.add(cohortType + "CohortSampleQuery");
+        }
+        if (validCohort) {
+            params.add(cohortType + "Cohort");
+        }
+        if (validPhenotype) {
+            params.add("Phenotype");
+        }
+        if (params.isEmpty()) {
+            throw new AnalysisException("Missing " + cohortType + " cohort!");
+        } else if (params.size() > 1) {
+            throw new AnalysisException("Unable to mix params " + params + " to define the " + cohortType + " cohort. "
+                    + "Please, provide only one of them.");
+        }
     }
 
 }

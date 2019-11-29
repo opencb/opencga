@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.analysis.stats;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.analysis.variant.VariantStatsAnalysisExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -83,7 +84,9 @@ public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnal
         }
 
         try {
-            ObjectMap params = new ObjectMap(getVariantsQuery())
+            Query variantsQuery = getVariantsQuery();
+            variantsQuery = engine.preProcessQuery(variantsQuery, new QueryOptions());
+            ObjectMap params = new ObjectMap(variantsQuery)
                     .append(VariantStatsDriver.COHORTS, temporaryCohortNames)
                     .append(VariantStatsDriver.OUTPUT, getOutputFile().toAbsolutePath().toUri());
             engine.getMRExecutor().run(VariantStatsDriver.class, VariantStatsDriver.buildArgs(

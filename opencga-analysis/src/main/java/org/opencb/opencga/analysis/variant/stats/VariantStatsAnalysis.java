@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.slf4j.LoggerFactory;
 
@@ -284,7 +285,12 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
                 });
 
                 if (!emptyCohorts.isEmpty()) {
-                    throw new AnalysisException("Unable to compute variant stats for cohorts " + emptyCohorts);
+                    if (dynamicCohort) {
+                        throw new AnalysisException("Missing cohort or samples. "
+                                + "Use cohort " + StudyEntry.DEFAULT_COHORT + " to compute stats for all indexed samples");
+                    } else {
+                        throw new AnalysisException("Unable to compute variant stats for cohorts " + emptyCohorts);
+                    }
                 }
 
                 // check read permission

@@ -18,8 +18,10 @@ import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -451,10 +453,17 @@ public class VariantMapReduceUtil {
 
     public static void getQueryFromConfig(Query query, Configuration conf) {
         for (VariantQueryParam param : VariantQueryParam.values()) {
-            String value = conf.get(param.key(), conf.get("--" + param.key()));
-            if (value != null && !value.isEmpty()) {
-                query.put(param.key(), value);
-            }
+            addParam(query, conf, param);
+        }
+        for (QueryParam param : VariantQueryUtils.INTERNAL_VARIANT_QUERY_PARAMS) {
+            addParam(query, conf, param);
+        }
+    }
+
+    private static void addParam(Query query, Configuration conf, QueryParam param) {
+        String value = conf.get(param.key(), conf.get("--" + param.key()));
+        if (value != null && !value.isEmpty()) {
+            query.put(param.key(), value);
         }
     }
 

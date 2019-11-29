@@ -105,6 +105,7 @@ public class VariantExportStorageOperation extends OpenCgaAnalysis {
                     outputFileName = buildOutputFileName(studies, regions);
                 }
                 outputFile = outdirUri.resolve(outputFileName);
+                outputFile = VariantWriterFactory.checkOutput(outputFile, outputFormat);
             } else {
                 outputFile = outdirUri;
             }
@@ -138,11 +139,19 @@ public class VariantExportStorageOperation extends OpenCgaAnalysis {
     }
 
     private String buildOutputFileName(List<String> studyNames, List<Region> regions) {
-        String studies = String.join("_", studyNames);
-        if (regions == null || regions.size() != 1) {
-            return studies + ".export";
+        String fileName;
+        if (studyNames != null && studyNames.size() == 1) {
+            String study = studyNames.get(0);
+            String[] split = study.split(":");
+            fileName = split[split.length - 1] + ".";
         } else {
-            return studies + '.' + regions.get(0).toString() + ".export";
+            fileName = "";
+        }
+
+        if (regions == null || regions.size() != 1) {
+            return fileName + "export";
+        } else {
+            return fileName + regions.get(0).toString() + ".export";
         }
     }
 

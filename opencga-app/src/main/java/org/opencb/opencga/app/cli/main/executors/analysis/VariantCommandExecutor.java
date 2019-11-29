@@ -143,12 +143,13 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
     private DataResponse stats() throws IOException {
         ObjectMap params = new VariantAnalysisWSService.StatsRunParams(
-                variantCommandOptions.statsVariantCommandOptions.cohorts,
+                variantCommandOptions.statsVariantCommandOptions.cohort,
                 variantCommandOptions.statsVariantCommandOptions.samples,
                 variantCommandOptions.statsVariantCommandOptions.index,
                 variantCommandOptions.statsVariantCommandOptions.outdir,
                 variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.fileName,
                 variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.region,
+                variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.gene,
                 variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.overwriteStats,
                 variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.updateStats,
                 variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.resume,
@@ -204,13 +205,16 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     private DataResponse<Job> gwas() throws IOException {
         ObjectMap params = new VariantAnalysisWSService.GwasRunParams(
                 variantCommandOptions.gwasCommandOptions.phenotype,
-                variantCommandOptions.gwasCommandOptions.scoreName,
+                variantCommandOptions.gwasCommandOptions.index,
+                variantCommandOptions.gwasCommandOptions.indexScoreId,
                 variantCommandOptions.gwasCommandOptions.method,
                 variantCommandOptions.gwasCommandOptions.fisherMode,
                 variantCommandOptions.gwasCommandOptions.caseCohort,
-                variantCommandOptions.gwasCommandOptions.caseSamplesAnnotation,
+                variantCommandOptions.gwasCommandOptions.caseCohortSamplesAnnotation,
+                variantCommandOptions.gwasCommandOptions.caseCohortSamples,
                 variantCommandOptions.gwasCommandOptions.controlCohort,
-                variantCommandOptions.gwasCommandOptions.controlSamplesAnnotation,
+                variantCommandOptions.gwasCommandOptions.controlCohortSamplesAnnotation,
+                variantCommandOptions.gwasCommandOptions.controlCohortSamples,
                 variantCommandOptions.gwasCommandOptions.outdir
         ).toObjectMap();
         return openCGAClient.getVariantClient().gwasRun(variantCommandOptions.gwasCommandOptions.study, params);
@@ -235,8 +239,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         Query query = VariantQueryCommandUtils.parseQuery(c, studies, clientConfiguration);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(c);
         String study = query.getString(VariantQueryParam.STUDY.key());
-
-        return openCGAClient.getVariantClient().export(study, query, options, c.outdir, c.outputFileName);
+        return openCGAClient.getVariantClient()
+                .export(study, query, options, c.outdir, c.outputFileName, c.commonOptions.outputFormat, c.compress);
     }
 
     private DataResponse query() throws CatalogException, IOException, InterruptedException {
@@ -287,8 +291,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             } else {
                 options.put(QueryOptions.SKIP_COUNT, true);
                 params.put(VariantQueryParam.SAMPLE_METADATA.key(), true);
-                if (queryCommandOptions.outputFormat.equalsIgnoreCase("vcf")
-                        || queryCommandOptions.outputFormat.equalsIgnoreCase("text")) {
+                if (queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("vcf")
+                        || queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("text")) {
                     DataResponse<Variant> queryResponse = openCGAClient.getVariantClient().query(params, options);
 
                     vcfOutputWriter.print(queryResponse);
@@ -334,8 +338,8 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = openCGAClient.getVariantClient().genericQuery(params, options);
             } else {
                 Iterator<VariantProto.Variant> variantIterator = variantServiceBlockingStub.get(request);
-                if (queryCommandOptions.outputFormat.equalsIgnoreCase("vcf")
-                        || queryCommandOptions.outputFormat.equalsIgnoreCase("text")) {
+                if (queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("vcf")
+                        || queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("text")) {
                     options.put(QueryOptions.SKIP_COUNT, true);
                     options.put(QueryOptions.LIMIT, 1);
 
@@ -406,7 +410,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             return null;
         } catch (RuntimeException e) {
             return e;
-        } catch (NoClassDefFoundError e) {
+        } catch (NoSuchMethodError | NoClassDefFoundError e) {
             return new RuntimeException(e);
         }
     }

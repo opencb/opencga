@@ -334,16 +334,20 @@ public class VariantStorageManager extends StorageManager {
     public void stats(String study, List<String> cohorts, List<String> samples,
                       String outDir, boolean index, ObjectMap config, String sessionId)
             throws AnalysisException {
-        stats(study, cohorts, new Query(SampleDBAdaptor.QueryParams.ID.key(), samples), outDir, index, config, sessionId);
+        Query samplesQuery = CollectionUtils.isEmpty(samples) ? new Query() : new Query(SampleDBAdaptor.QueryParams.ID.key(), samples);
+        stats(study, cohorts, samplesQuery, outDir, index, config, sessionId);
     }
 
     public void stats(String study, List<String> cohorts, Query samplesQuery,
                       String outDir, boolean index, ObjectMap config, String sessionId)
             throws AnalysisException {
+        Query variantsQuery = new Query();
+        variantsQuery.putIfNotEmpty(REGION.key(), config.getString(REGION.key()));
+        variantsQuery.putIfNotEmpty(GENE.key(), config.getString(GENE.key()));
         VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
                 .setStudy(study)
                 .setCohorts(cohorts)
-                .setVariantsQuery(new Query(REGION.key(), config.getString(REGION.key())))
+                .setVariantsQuery(variantsQuery)
                 .setSamplesQuery(samplesQuery)
                 .setIndex(index);
         variantStatsAnalysis.setUp(null, catalogManager, this, config, Paths.get(outDir), sessionId);

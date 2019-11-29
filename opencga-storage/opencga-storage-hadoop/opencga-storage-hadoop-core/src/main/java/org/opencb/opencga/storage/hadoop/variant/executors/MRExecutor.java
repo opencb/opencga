@@ -94,7 +94,7 @@ public abstract class MRExecutor {
         return run(executable, Commandline.toString(args));
     }
 
-    public abstract int run(String executable, String args);
+    public abstract int run(String executable, String args) throws StorageEngineException;
 
     protected ObjectMap getOptions() {
         return options;

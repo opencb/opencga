@@ -795,6 +795,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--region"}, description = "Region to calculate.")
         public String region;
 
+        @Parameter(names = {"--gene"}, description = "List of genes.")
+        public String gene;
+
         @Parameter(names = {"--update-stats"}, description = "Calculate stats just for missing positions. Assumes that existing stats are" +
                 " correct")
         public boolean updateStats = false;

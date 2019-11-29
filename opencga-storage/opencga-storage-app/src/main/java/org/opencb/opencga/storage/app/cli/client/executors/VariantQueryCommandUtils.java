@@ -225,8 +225,10 @@ public class VariantQueryCommandUtils {
         }
     }
 
-    protected static void addParam(ObjectMap query, QueryParam key, Number value) {
-        query.put(key.key(), value);
+    protected static void addParam(ObjectMap query, QueryParam key, long value) {
+        if (value > 0) {
+            query.put(key.key(), value);
+        }
     }
 
 }

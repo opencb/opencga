@@ -85,6 +85,16 @@ public final class VariantQueryUtils {
     public static final QueryParam NUM_SAMPLES = QueryParam.create("numSamples", "", QueryParam.Type.INTEGER);
     public static final QueryParam NUM_TOTAL_SAMPLES = QueryParam.create("numTotalSamples", "", QueryParam.Type.INTEGER);
 
+    public static final List<QueryParam> INTERNAL_VARIANT_QUERY_PARAMS = Arrays.asList(ANNOT_EXPRESSION_GENES,
+            ANNOT_GO_GENES,
+            ANNOT_GENE_REGIONS,
+            VARIANTS_TO_INDEX,
+            SAMPLE_MENDELIAN_ERROR,
+            SAMPLE_DE_NOVO,
+            SAMPLE_COMPOUND_HETEROZYGOUS,
+            NUM_SAMPLES,
+            NUM_TOTAL_SAMPLES);
+
     public static final String LOF = "lof";
     // LOF does not include missense_variant
     public static final Set<String> LOF_SET = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(

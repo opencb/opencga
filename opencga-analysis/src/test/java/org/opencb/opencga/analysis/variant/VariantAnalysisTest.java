@@ -327,7 +327,7 @@ public class VariantAnalysisTest {
         analysis.setStudy(STUDY)
                 .setCaseCohort("CASE")
                 .setControlCohort("CONTROL")
-                .setScoreName("GwasScore");
+                .setIndexScoreId("GwasScore");
         checkAnalysisResult(analysis.start());
 
         List<VariantScoreMetadata> scores = variantStorageManager.listVariantScores(STUDY, sessionId);

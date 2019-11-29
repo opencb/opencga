@@ -130,6 +130,14 @@ public class HadoopVariantExporterTest extends VariantStorageBaseTest implements
     }
 
     @Test
+    public void exportVcfGz() throws Exception {
+        String fileName = "variants.vcf.gz";
+        URI uri = getOutputUri(fileName);
+        variantStorageEngine.exportData(uri, VariantWriterFactory.VariantOutputFormat.VCF_GZ, null, new Query(STUDY.key(), study1), new QueryOptions());
+            copyToLocal(fileName, uri);
+        }
+
+    @Test
     public void exportTped() throws Exception {
         String fileName = "variants" + VariantExporter.TPED_FILE_EXTENSION;
         URI uri = getOutputUri(fileName);

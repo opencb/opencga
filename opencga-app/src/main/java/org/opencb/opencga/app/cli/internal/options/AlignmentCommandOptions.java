@@ -22,7 +22,6 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 
@@ -170,7 +169,7 @@ public class AlignmentCommandOptions {
     public class BwaCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.BasicCommonCommandOptions basicOptions = analysisCommonOptions;
+        public GeneralCliOptions.CommonCommandOptions basicOptions = analysisCommonOptions;
 
         @Parameter(names = {"--study"}, description = "Study.")
         public String study;
@@ -203,7 +202,7 @@ public class AlignmentCommandOptions {
     public class SamtoolsCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.BasicCommonCommandOptions basicOptions = analysisCommonOptions;
+        public GeneralCliOptions.CommonCommandOptions basicOptions = analysisCommonOptions;
 
         @Parameter(names = {"--study"}, description = "Study.")
         public String study;
@@ -227,7 +226,7 @@ public class AlignmentCommandOptions {
     public class DeeptoolsCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.BasicCommonCommandOptions basicOptions = analysisCommonOptions;
+        public GeneralCliOptions.CommonCommandOptions basicOptions = analysisCommonOptions;
 
         @Parameter(names = {"--study"}, description = "Study.")
         public String study;

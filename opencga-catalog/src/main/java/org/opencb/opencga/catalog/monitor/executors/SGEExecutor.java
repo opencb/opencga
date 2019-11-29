@@ -38,7 +38,7 @@ public class SGEExecutor implements BatchExecutor {
     }
 
     @Override
-    public void execute(String jobId, String commandLine, Path stdout, Path stderr, String token) throws Exception {
+    public void execute(String jobId, String commandLine, Path stdout, Path stderr) throws Exception {
         sgeManager.queueJob(jobId, "", -1, getCommandLine(commandLine, stdout, stderr), null);
     }
 
