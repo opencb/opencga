@@ -271,8 +271,8 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         }
 
         @Override
-        public String getStatus(Job job) {
-            return jobStatus.getOrDefault(job.getId(), Enums.ExecutionStatus.UNKNOWN);
+        public String getStatus(String jobId) {
+            return jobStatus.getOrDefault(jobId, Enums.ExecutionStatus.UNKNOWN);
         }
 
         @Override

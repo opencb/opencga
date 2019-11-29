@@ -12,7 +12,6 @@ import io.fabric8.kubernetes.client.dsl.ScalableResource;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Execution;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.common.Enums;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,9 +131,9 @@ public class K8SExecutor implements BatchExecutor {
     }
 
     @Override
-    public String getStatus(Job job) {
+    public String getStatus(String jobId) {
 
-        String k8sJobName = buildJobName(job.getId());
+        String k8sJobName = buildJobName(jobId);
         ScalableResource<io.fabric8.kubernetes.api.model.batch.Job, DoneableJob> resource =
                 getKubernetesClient().batch().jobs().inNamespace(namespace).withName(k8sJobName);
 

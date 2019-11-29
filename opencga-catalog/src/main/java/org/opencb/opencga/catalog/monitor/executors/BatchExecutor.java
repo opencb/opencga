@@ -43,7 +43,7 @@ public interface BatchExecutor {
 
     void execute(String jobId, String commandLine, Path stdout, Path stderr) throws Exception;
 
-    String getStatus(Job job);
+    String getStatus(String jobId);
 
     boolean stop(String jobId) throws Exception;
 
@@ -74,14 +74,14 @@ public interface BatchExecutor {
         ObjectReader objectReader = getDefaultObjectMapper().reader(Enums.ExecutionStatus.class);
         Path jobStatusFilePath = jobOutput.resolve(JOB_STATUS_FILE);
         if (!jobStatusFilePath.toFile().exists()) {
-            return getStatus(job);
+            return getStatus(job.getId());
         }
         // File exists
         try {
             Enums.ExecutionStatus executionStatus = objectReader.readValue(jobStatusFilePath.toFile());
             return executionStatus.getName();
         } catch (IOException e) {
-            return getStatus(job);
+            return getStatus(job.getId());
         }
     }
 }

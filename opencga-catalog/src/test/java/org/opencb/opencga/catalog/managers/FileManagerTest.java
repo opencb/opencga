@@ -1303,9 +1303,9 @@ public class FileManagerTest extends AbstractManagerTest {
             assertTrue(ioManager.exists(fileManager.getUri(file)));
         }
 
-        // 1st we set the status to PENDING DELETE.
-        catalogManager.getTaskManager().deleteFile(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()),
-                new ObjectMap(), sessionIdUser);
+//        // 1st we set the status to PENDING DELETE.
+//        catalogManager.getTaskManager().deleteFile(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()),
+//                new ObjectMap(), sessionIdUser);
 
         // Now we delete the files
         fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()), null, sessionIdUser);
@@ -1342,9 +1342,9 @@ public class FileManagerTest extends AbstractManagerTest {
             assertTrue(ioManager.exists(fileManager.getUri(file)));
         }
 
-        // 1st we set the status to PENDING DELETE.
-        catalogManager.getTaskManager().deleteFile(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()),
-                new ObjectMap(), sessionIdUser);
+//        // 1st we set the status to PENDING DELETE.
+//        catalogManager.getTaskManager().deleteFile(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()),
+//                new ObjectMap(), sessionIdUser);
         Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "~^" + folder.getPath() + "*");
         OpenCGAResult<File> results = fileManager.search(studyFqn, query,
                 new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.STATUS.key()), sessionIdUser);
@@ -1368,8 +1368,8 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // 1st we set the status to PENDING DELETE.
         ObjectMap params = new ObjectMap(Constants.SKIP_TRASH, true);
-        catalogManager.getTaskManager().deleteFile(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()), params,
-                sessionIdUser);
+//        catalogManager.getTaskManager().deleteFile(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()), params,
+//                sessionIdUser);
 
         // Now we delete the files
         fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()), params, sessionIdUser);
@@ -1442,7 +1442,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // 1st, we create the task so it is moved to Pending delete
         Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), deletable.getPath());
-        catalogManager.getTaskManager().deleteFile(study.getFqn(), query, new ObjectMap(), sessionIdUser);
+//        catalogManager.getTaskManager().deleteFile(study.getFqn(), query, new ObjectMap(), sessionIdUser);
 
         fileManager.delete(study.getFqn(), query, null, sessionIdUser);
 

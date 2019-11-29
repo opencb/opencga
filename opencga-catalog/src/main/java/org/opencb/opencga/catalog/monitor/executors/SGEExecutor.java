@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.monitor.executors;
 
 import org.opencb.opencga.core.config.Execution;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.common.Enums;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +42,7 @@ public class SGEExecutor implements BatchExecutor {
     }
 
     @Override
-    public String getStatus(Job job) {
+    public String getStatus(String jobId) {
         return Enums.ExecutionStatus.UNKNOWN;
 //        String status;
 //        try {

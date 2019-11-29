@@ -511,7 +511,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             }
         }
 
-        String status = batchExecutor.getStatus(job);
+        String status = batchExecutor.getStatus(job.getId());
         if (!StringUtils.isEmpty(status) && !status.equals(Enums.ExecutionStatus.UNKNOWN)) {
             return new Enums.ExecutionStatus(status);
         } else {

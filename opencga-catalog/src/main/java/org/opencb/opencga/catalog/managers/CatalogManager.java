@@ -64,8 +64,6 @@ public class CatalogManager implements AutoCloseable {
     private InterpretationManager interpretationManager;
     private PanelManager panelManager;
 
-    private TaskManager taskManager;
-
     private AuditManager auditManager;
     private AuthorizationManager authorizationManager;
 
@@ -119,9 +117,6 @@ public class CatalogManager implements AutoCloseable {
                 catalogIOManagerFactory, configuration);
         interpretationManager = new InterpretationManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
-
-        taskManager = new TaskManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManagerFactory,
-                configuration);
     }
 
     private void initializeAdmin() throws CatalogDBException {
@@ -292,10 +287,6 @@ public class CatalogManager implements AutoCloseable {
 
     public PanelManager getPanelManager() {
         return panelManager;
-    }
-
-    public TaskManager getTaskManager() {
-        return taskManager;
     }
 
     public Configuration getConfiguration() {

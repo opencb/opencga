@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.monitor.executors;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.RunnableProcess;
 import org.opencb.opencga.core.config.Execution;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.common.Enums;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,8 +118,8 @@ public class LocalExecutor implements BatchExecutor {
     }
 
     @Override
-    public String getStatus(Job job) {
-        return jobStatus.getOrDefault(job.getId(), Enums.ExecutionStatus.UNKNOWN);
+    public String getStatus(String jobId) {
+        return jobStatus.getOrDefault(jobId, Enums.ExecutionStatus.UNKNOWN);
     }
 
     @Override

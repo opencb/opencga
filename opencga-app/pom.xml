@@ -47,6 +47,11 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-master</artifactId>
+            <version>${opencga.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-app</artifactId>
             <exclusions>
                 <exclusion>
