@@ -71,14 +71,19 @@ import java.util.*;
 
 import static org.opencb.opencga.analysis.variant.operations.VariantFileIndexerStorageOperation.LOAD;
 import static org.opencb.opencga.analysis.variant.operations.VariantFileIndexerStorageOperation.TRANSFORM;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantAnnotateCommandOptions.ANNOTATION_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantStatsCommandOptions.STATS_RUN_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
@@ -117,10 +122,13 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
             case VARIANT_DELETE_COMMAND:
                 remove();
                 break;
+            case "export-run":
+                export();
+                break;
             case "query":
                 query();
                 break;
-            case "export-frequencies":
+            case "stats-export-run":
                 exportFrequencies();
                 break;
             case "import":
@@ -135,7 +143,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
             case SECONDARY_INDEX_DELETE_COMMAND:
                 secondaryIndexRemove();
                 break;
-            case "stats":
+            case STATS_RUN_COMMAND:
                 stats();
                 break;
             case SCORE_INDEX_COMMAND:
@@ -150,7 +158,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
             case FAMILY_INDEX_COMMAND:
                 familyIndex();
                 break;
-            case "annotate":
+            case ANNOTATION_INDEX_COMMAND:
                 annotate();
                 break;
             case ANNOTATION_SAVE_COMMAND:
@@ -177,19 +185,19 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
             case "histogram":
                 histogram();
                 break;
-            case GwasAnalysis.ID:
+            case GWAS_RUN_COMMAND:
                 gwas();
                 break;
-            case PlinkWrapperAnalysis.ID:
+            case PLINK_RUN_COMMAND:
                 plink();
                 break;
-            case RvtestsWrapperAnalysis.ID:
+            case RVTEST_RUN_COMMAND:
                 rvtests();
                 break;
-            case SAMPLE_VARIANT_STATS_COMMAND:
+            case SAMPLE_VARIANT_STATS_RUN_COMMAND:
                 sampleStats();
                 break;
-            case COHORT_VARIANT_STATS_COMMAND:
+            case COHORT_VARIANT_STATS_RUN_COMMAND:
                 cohortStats();
                 break;
             default:
@@ -249,9 +257,16 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         query();
     }
 
+    private void export() throws Exception {
+        query(variantCommandOptions.exportVariantCommandOptions, variantCommandOptions.exportVariantCommandOptions.outdir);
+    }
+
     private void query() throws Exception {
+        query(variantCommandOptions.queryVariantCommandOptions, variantCommandOptions.queryVariantCommandOptions.outdir);
+    }
+
+    private void query(VariantCommandOptions.AbstractVariantQueryCommandOptions cliOptions, String outdir) throws Exception {
 //        AnalysisCliOptionsParser.QueryVariantCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
-        VariantCommandOptions.VariantQueryCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
         if (cliOptions.compress) {
             if (!cliOptions.commonOptions.outputFormat.toLowerCase().endsWith(".gz")) {
                 cliOptions.commonOptions.outputFormat += ".GZ";
@@ -259,7 +274,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         }
 
         Map<Long, String> studyIds = getStudyIds(sessionId);
-        Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds, clientConfiguration);
+        Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds.values(), clientConfiguration);
         QueryOptions queryOptions = VariantQueryCommandUtils.parseQueryOptions(cliOptions);
         queryOptions.put("summary", cliOptions.genericVariantQueryOptions.summary);
 
@@ -283,7 +298,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
             }
             VariantWriterFactory.VariantOutputFormat outputFormat = VariantWriterFactory
                     .toOutputFormat(cliOptions.commonOptions.outputFormat, cliOptions.outputFileName);
-            String outputFile = cliOptions.outdir + "/" + (cliOptions.outputFileName == null ? "" : cliOptions.outputFileName);
+            String outputFile = outdir + "/" + (cliOptions.outputFileName == null ? "" : cliOptions.outputFileName);
             variantManager.exportData(outputFile, outputFormat, cliOptions.variantsFile, query, queryOptions, sessionId);
         }
     }

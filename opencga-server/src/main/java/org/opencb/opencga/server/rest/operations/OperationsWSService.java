@@ -209,7 +209,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = TASK_DESCRIPTION_DESCRIPTION) @QueryParam(TASK_DESCRIPTION) String taskDescription,
             @ApiParam(value = TASK_TAGS_DESCRIPTION) @QueryParam(TASK_TAGS) List<String> taskTags,
             VariantAnnotationParams params) {
-        return submitTask("variant", "annotate", params, taskName, taskDescription, taskTags);
+        return submitTask("variant", "annotation-index", params, taskName, taskDescription, taskTags);
     }
 
     @DELETE

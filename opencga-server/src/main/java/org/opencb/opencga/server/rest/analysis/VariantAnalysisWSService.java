@@ -135,7 +135,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Deprecated
     @GET
     @Path("/index")
-    @ApiOperation(value = DEPRECATED + "Use /index/run instead", response = DataResponse.class)
+    @ApiOperation(value = DEPRECATED + "Use operations/variant/file/index instead", response = DataResponse.class)
     public Response index(@Deprecated @ApiParam(value = "(DEPRECATED) Comma separated list of file ids (files or directories)", hidden = true)
                           @QueryParam (value = "fileId") String fileIdStrOld,
                           @ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
@@ -546,7 +546,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             VariantExportParams params) {
         logger.info("count {} , limit {} , skip {}", count, limit, skip);
         // FIXME: What if exporting from multiple studies?
-        return submitJob(study, "variant", "query", params, jobName, jobDescription, jobTags);
+        return submitJob(study, "variant", "export-run", params, jobName, jobDescription, jobTags);
     }
 
     @GET
@@ -625,7 +625,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
             StatsRunParams params) {
-        return submitJob(study, "variant", "stats", params, jobName, jobDescription, jobTags);
+        return submitJob(study, "variant", "stats-run", params, jobName, jobDescription, jobTags);
     }
 
     public static class StatsExportParams extends RestBodyParams {
@@ -654,7 +654,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
             StatsExportParams params) {
-        return submitJob(study, "variant", "export-frequencies", params, jobName, jobDescription, jobTags);
+        return submitJob(study, "variant", "stats-export-run", params, jobName, jobDescription, jobTags);
     }
 
     public static class StatsDeleteParams extends RestBodyParams {
@@ -876,13 +876,13 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
             SampleStatsRunParams params) {
-        return submitJob(study, "variant", "sample-stats", params, jobName, jobDescription, jobTags);
+        return submitJob(study, "variant", "sample-stats-run", params, jobName, jobDescription, jobTags);
     }
 
     @GET
-    @Path("/sample/stats/query")
+    @Path("/sample/stats/info")
     @ApiOperation(value = "Read sample variant stats from list of samples.", response = SampleVariantStats.class)
-    public Response sampleStatsQuery(@ApiParam(value = "Study where all the samples belong to") @QueryParam("study") String studyStr,
+    public Response sampleStatsInfo(@ApiParam(value = "Study where all the samples belong to") @QueryParam("study") String studyStr,
                                      @ApiParam(value = "Samples") @QueryParam("sample") String sample) {
         return run(() -> {
             ParamUtils.checkParameter(sample, "sample");
@@ -947,11 +947,11 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
             CohortStatsRunParams params) {
-        return submitJob(study, "variant", "cohort-stats", params, jobName, jobDescription, jobTags);
+        return submitJob(study, "variant", "cohort-stats-run", params, jobName, jobDescription, jobTags);
     }
 
     @GET
-    @Path("/cohort/stats/query")
+    @Path("/cohort/stats/info")
     @ApiOperation(value = "Read cohort variant stats from list of cohorts.", response = VariantSetStats.class)
     public Response cohortStatsQuery(@ApiParam(value = "Study") @QueryParam("study") String studyStr,
                                      @ApiParam(value = "Cohorts list") @QueryParam("cohort") String cohort) {
@@ -1150,7 +1150,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
             GwasRunParams params) {
-        return submitJob(study, "variant", "gwas", params, jobName, jobDescription, jobTags);
+        return submitJob(study, "variant", "gwas-run", params, jobName, jobDescription, jobTags);
     }
 
     @POST
@@ -1194,7 +1194,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
             PlinkRunParams params) {
-        return submitJob(study, "variant", PlinkWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
+        return submitJob(study, "variant", PlinkWrapperAnalysis.ID + "-run", params, jobName, jobDescription, jobTags);
     }
 
     public static class RvtestsRunParams extends RestBodyParams {
@@ -1231,7 +1231,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
             RvtestsRunParams params) {
-        return submitJob(study, "variant", RvtestsWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
+        return submitJob(study, "variant", RvtestsWrapperAnalysis.ID + "-run", params, jobName, jobDescription, jobTags);
     }
 
     @POST

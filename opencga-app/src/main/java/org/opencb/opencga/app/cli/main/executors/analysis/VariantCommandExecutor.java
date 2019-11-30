@@ -53,10 +53,14 @@ import java.io.PrintStream;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantStatsCommandOptions.STATS_RUN_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
 
@@ -86,7 +90,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             case "query":
                 queryResponse = query();
                 break;
-            case "export":
+            case "export-run":
                 queryResponse = export();
                 break;
             case ANNOTATION_QUERY_COMMAND:
@@ -96,16 +100,16 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = annotationMetadata();
                 break;
 
-            case "stats":
+            case STATS_RUN_COMMAND:
                 queryResponse = stats();
                 break;
-            case SAMPLE_VARIANT_STATS_COMMAND:
+            case SAMPLE_VARIANT_STATS_RUN_COMMAND:
                 queryResponse = sampleStats();
                 break;
             case SAMPLE_VARIANT_STATS_QUERY_COMMAND:
                 queryResponse = sampleStatsQuery();
                 break;
-            case COHORT_VARIANT_STATS_COMMAND:
+            case COHORT_VARIANT_STATS_RUN_COMMAND:
                 queryResponse = cohortStats();
                 break;
             case COHORT_VARIANT_STATS_QUERY_COMMAND:
@@ -117,15 +121,15 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 //            case "family-stats-query":
 //                queryResponse = familyStatsQuery();
 //                break;
-            case "gwas":
+            case GWAS_RUN_COMMAND:
                 queryResponse = gwas();
                 break;
 
-            case PlinkWrapperAnalysis.ID:
+            case PLINK_RUN_COMMAND:
                 queryResponse = plink();
                 break;
 
-            case RvtestsWrapperAnalysis.ID:
+            case RVTEST_RUN_COMMAND:
                 queryResponse = rvtests();
                 break;
 

@@ -40,12 +40,12 @@ import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 import java.util.List;
 
 import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.*;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
@@ -546,8 +546,9 @@ public class VariantCommandOptions {
         public String variantsFile;
     }
 
-    @Parameters(commandNames = {"stats"}, commandDescription = "Create and load stats into a database.")
+    @Parameters(commandNames = {VariantStatsCommandOptions.STATS_RUN_COMMAND}, commandDescription = "Create and load stats into a database.")
     public class VariantStatsCommandOptions extends GeneralCliOptions.StudyOption {
+        public static final String STATS_RUN_COMMAND = "stats-run";
 
         @ParametersDelegate
         public GenericVariantStatsOptions genericVariantStatsOptions = new GenericVariantStatsOptions();
@@ -678,9 +679,10 @@ public class VariantCommandOptions {
         public boolean resume;
     }
 
-    @Parameters(commandNames = {"annotate"}, commandDescription = GenericVariantAnnotateOptions.ANNOTATE_DESCRIPTION)
+    @Parameters(commandNames = {VariantAnnotateCommandOptions.ANNOTATION_INDEX_COMMAND}, commandDescription = GenericVariantAnnotateOptions.ANNOTATE_DESCRIPTION)
     public class VariantAnnotateCommandOptions extends GeneralCliOptions.StudyOption {
 
+        public static final String ANNOTATION_INDEX_COMMAND = "annotation-index";
         @ParametersDelegate
         public GenericVariantAnnotateOptions genericVariantAnnotateOptions = new GenericVariantAnnotateOptions();
 
@@ -956,8 +958,9 @@ public class VariantCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = GwasAnalysis.ID, commandDescription = GwasAnalysis.DESCRIPTION)
+    @Parameters(commandNames = GwasCommandOptions.GWAS_RUN_COMMAND, commandDescription = GwasAnalysis.DESCRIPTION)
     public class GwasCommandOptions {
+        public static final String GWAS_RUN_COMMAND = GwasAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -1009,9 +1012,9 @@ public class VariantCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = SAMPLE_VARIANT_STATS_COMMAND, commandDescription = SampleVariantStatsAnalysis.DESCRIPTION)
+    @Parameters(commandNames = SAMPLE_VARIANT_STATS_RUN_COMMAND, commandDescription = SampleVariantStatsAnalysis.DESCRIPTION)
     public class SampleVariantStatsCommandOptions {
-        public static final String SAMPLE_VARIANT_STATS_COMMAND = "sample-stats";
+        public static final String SAMPLE_VARIANT_STATS_RUN_COMMAND = "sample-stats-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -1052,9 +1055,9 @@ public class VariantCommandOptions {
         public List<String> sample;
     }
 
-    @Parameters(commandNames = COHORT_VARIANT_STATS_COMMAND, commandDescription = CohortVariantStatsAnalysis.DESCRIPTION)
+    @Parameters(commandNames = COHORT_VARIANT_STATS_RUN_COMMAND, commandDescription = CohortVariantStatsAnalysis.DESCRIPTION)
     public class CohortVariantStatsCommandOptions {
-        public static final String COHORT_VARIANT_STATS_COMMAND = "cohort-stats";
+        public static final String COHORT_VARIANT_STATS_RUN_COMMAND = "cohort-stats-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -1095,8 +1098,9 @@ public class VariantCommandOptions {
         public List<String> cohort;
     }
 
-    @Parameters(commandNames = PlinkWrapperAnalysis.ID, commandDescription = PlinkWrapperAnalysis.DESCRIPTION)
+    @Parameters(commandNames = PlinkCommandOptions.PLINK_RUN_COMMAND, commandDescription = PlinkWrapperAnalysis.DESCRIPTION)
     public class PlinkCommandOptions {
+        public static final String PLINK_RUN_COMMAND = PlinkWrapperAnalysis.ID + "-run";
 
         @ParametersDelegate
         //public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -1118,8 +1122,9 @@ public class VariantCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = RvtestsWrapperAnalysis.ID, commandDescription = RvtestsWrapperAnalysis.DESCRIPTION)
+    @Parameters(commandNames = RvtestsCommandOptions.RVTEST_RUN_COMMAND, commandDescription = RvtestsWrapperAnalysis.DESCRIPTION)
     public class RvtestsCommandOptions {
+        public static final String RVTEST_RUN_COMMAND = RvtestsWrapperAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
