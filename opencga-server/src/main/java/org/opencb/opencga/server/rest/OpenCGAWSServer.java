@@ -711,8 +711,14 @@ public class OpenCGAWSServer {
     }
 
     public Response submitJob(String study, String command, String subcommand, RestBodyParams bodyParams,
-                              String jobName, String jobDescription, List<String> jobTags) {
+                              String jobName, String jobDescription, String jobTagsStr) {
         return run(() -> {
+            List<String> jobTags;
+            if (StringUtils.isNotEmpty(jobTagsStr)) {
+                jobTags = Arrays.asList(jobTagsStr.split(","));
+            } else {
+                jobTags = Collections.emptyList();
+            }
             Map<String, Object> paramsMap = bodyParams.toParams();
             paramsMap.putIfAbsent("study", study);
             return catalogManager
@@ -727,14 +733,22 @@ public class OpenCGAWSServer {
     }
 
     public Response submitJob(String study, String command, String subcommand, Map<String, Object> paramsMap,
-                              String jobId, String jobName, String jobDescription, List<String> jobTags) {
-        return run(() -> catalogManager
-                .getJobManager()
-                .submit(study, command, subcommand, Enums.Priority.MEDIUM, paramsMap,
-                        jobId,
-                        jobName,
-                        jobDescription,
-                        jobTags, token));
+                              String jobId, String jobName, String jobDescription, String jobTagsStr) {
+        return run(() -> {
+            List<String> jobTags;
+            if (StringUtils.isNotEmpty(jobTagsStr)) {
+                jobTags = Arrays.asList(jobTagsStr.split(","));
+            } else {
+                jobTags = Collections.emptyList();
+            }
+            return catalogManager
+                    .getJobManager()
+                    .submit(study, command, subcommand, Enums.Priority.MEDIUM, paramsMap,
+                            jobId,
+                            jobName,
+                            jobDescription,
+                            jobTags, token);
+        });
 
     }
 

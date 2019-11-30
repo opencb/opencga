@@ -542,7 +542,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
             @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) String jobTags,
             VariantExportParams params) {
         logger.info("count {} , limit {} , skip {}", count, limit, skip);
         // FIXME: What if exporting from multiple studies?
@@ -623,7 +623,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
             @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) String jobTags,
             StatsRunParams params) {
         return submitJob(study, "variant", "stats-run", params, jobName, jobDescription, jobTags);
     }
@@ -652,7 +652,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
             @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) String jobTags,
             StatsExportParams params) {
         return submitJob(study, "variant", "stats-export-run", params, jobName, jobDescription, jobTags);
     }
@@ -874,7 +874,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
             @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) String jobTags,
             SampleStatsRunParams params) {
         return submitJob(study, "variant", "sample-stats-run", params, jobName, jobDescription, jobTags);
     }
@@ -945,7 +945,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
             @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) String jobTags,
             CohortStatsRunParams params) {
         return submitJob(study, "variant", "cohort-stats-run", params, jobName, jobDescription, jobTags);
     }
@@ -1148,7 +1148,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
             @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) String jobTags,
             GwasRunParams params) {
         return submitJob(study, "variant", "gwas-run", params, jobName, jobDescription, jobTags);
     }
@@ -1192,7 +1192,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = "Study") @QueryParam("study") String study,
             @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) String jobTags,
             PlinkRunParams params) {
         return submitJob(study, "variant", PlinkWrapperAnalysis.ID + "-run", params, jobName, jobDescription, jobTags);
     }
@@ -1229,7 +1229,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = "Study") @QueryParam("study") String study,
             @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) String jobTags,
             RvtestsRunParams params) {
         return submitJob(study, "variant", RvtestsWrapperAnalysis.ID + "-run", params, jobName, jobDescription, jobTags);
     }

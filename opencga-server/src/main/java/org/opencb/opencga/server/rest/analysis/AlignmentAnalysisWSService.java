@@ -445,7 +445,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = "Study") @QueryParam("study") String study,
             @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) String jobTags,
             AlignmentAnalysisWSService.BwaRunParams params) {
         return submitJob(study, "alignment", BwaWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
     }
@@ -478,7 +478,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = "Study") @QueryParam("study") String study,
             @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) String jobTags,
             AlignmentAnalysisWSService.SamtoolsRunParams params) {
         return submitJob(study, "alignment", SamtoolsWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
     }
@@ -512,7 +512,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = "Study") @QueryParam("study") String study,
             @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
             @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) List<String> jobTags,
+            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) String jobTags,
             AlignmentAnalysisWSService.DeeptoolsRunParams params) {
         return submitJob(study, "alignment", DeeptoolsWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
     }
