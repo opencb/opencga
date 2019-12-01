@@ -20,8 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.*;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
@@ -67,6 +66,8 @@ import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -455,15 +456,7 @@ public class OpenCGAWSServer {
         return new AclParams(permissions, action);
     }
 
-    @Deprecated
-    @GET
-    @Path("/help")
-    @ApiOperation(value = "Help", hidden = true, position = 1)
-    public Response help() {
-        return createErrorResponse("help", "No help available");
-    }
-
-    protected Response createErrorResponse(Exception e) {        
+    protected Response createErrorResponse(Exception e) {
         // First we print the exception in Server logs
         logger.error("Catch error: " + e.getMessage(), e);
 

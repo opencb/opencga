@@ -16,29 +16,31 @@
 
 package org.opencb.opencga.server.rest;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.*;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.server.rest.admin.AdminWSServer;
+import org.opencb.opencga.server.rest.analysis.AlignmentAnalysisWSService;
+import org.opencb.opencga.server.rest.analysis.VariantAnalysisWSService;
+import org.opencb.opencga.server.rest.ga4gh.Ga4ghWSServer;
+import org.opencb.opencga.server.rest.operations.OperationsWSService;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by pfurio on 05/05/17.
@@ -157,6 +159,130 @@ public class MetaWSServer extends OpenCGAWSServer {
             logger.error("HealthCheck : " + healthCheckResults.toString());
             return createErrorResponse(errorMsg.toString(), queryResult);
         }
+    }
+
+    @GET
+    @Path("/api")
+    @ApiOperation(value = "API")
+    public Response api(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr) {
+        List<LinkedHashMap<String, Object>> api = new ArrayList<>(20);
+        Map<String, Class> classes = new LinkedHashMap<>();
+        classes.put("users", UserWSServer.class);
+        classes.put("projects", ProjectWSServer.class);
+        classes.put("studies", StudyWSServer.class);
+        classes.put("files", FileWSServer.class);
+        classes.put("jobs", JobWSServer.class);
+        classes.put("samples", SampleWSServer.class);
+        classes.put("individuals", IndividualWSServer.class);
+        classes.put("families", FamilyWSServer.class);
+        classes.put("cohorts", CohortWSServer.class);
+        classes.put("panels", PanelWSServer.class);
+        classes.put("alignment", AlignmentAnalysisWSService.class);
+        classes.put("variant", VariantAnalysisWSService.class);
+        classes.put("clinical", ClinicalAnalysisWSServer.class);
+        classes.put("operations", OperationsWSService.class);
+        classes.put("meta", MetaWSServer.class);
+        classes.put("ga4gh", Ga4ghWSServer.class);
+        classes.put("admin", AdminWSServer.class);
+
+        if (StringUtils.isNotEmpty(categoryStr)) {
+            for (String category : categoryStr.split(",")) {
+                api.add(getHelp(classes.get(category)));
+            }
+        } else {
+            // Get API for all categories
+            for (String category : classes.keySet()) {
+                api.add(getHelp(classes.get(category)));
+            }
+        }
+        return createRawOkResponse(api);
+    }
+
+    private LinkedHashMap<String, Object> getHelp(Class clazz) {
+        LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+
+        map.put("name", ((Api) clazz.getAnnotation(Api.class)).value());
+        map.put("path", ((Path) clazz.getAnnotation(Path.class)).value());
+
+        List<LinkedHashMap<String, Object>> endpoints = new ArrayList<>(20);
+        for (Method method : clazz.getMethods()) {
+            Path pathAnnotation = method.getAnnotation(Path.class);
+            String httpMethod = "GET";
+            if (method.getAnnotation(POST.class) != null ) {
+                httpMethod = "POST";
+            } else {
+                if (method.getAnnotation(DELETE.class) != null) {
+                    httpMethod = "DELETE";
+                }
+            }
+            ApiOperation apiOperationAnnotation = method.getAnnotation(ApiOperation.class);
+            if (pathAnnotation != null && apiOperationAnnotation != null && !apiOperationAnnotation.hidden()) {
+                LinkedHashMap<String, Object> endpoint = new LinkedHashMap<>();
+                endpoint.put("path", map.get("path") + pathAnnotation.value());
+                endpoint.put("method", httpMethod);
+                endpoint.put("response", StringUtils.substringAfterLast(apiOperationAnnotation.response().getName().replace("Void", ""), "."));
+                endpoint.put("notes", apiOperationAnnotation.notes());
+                endpoint.put("description", apiOperationAnnotation.value());
+
+                ApiImplicitParams apiImplicitParams = method.getAnnotation(ApiImplicitParams.class);
+                List<LinkedHashMap<String, Object>> parameters = new ArrayList<>();
+                if (apiImplicitParams != null) {
+                    for (ApiImplicitParam apiImplicitParam : apiImplicitParams.value()) {
+                        LinkedHashMap<String, Object> parameter = new LinkedHashMap<>();
+                        parameter.put("name", apiImplicitParam.name());
+                        parameter.put("param", apiImplicitParam.paramType());
+                        parameter.put("type", apiImplicitParam.dataType());
+                        parameter.put("allowedValues", apiImplicitParam.allowableValues());
+                        parameter.put("required", apiImplicitParam.required());
+                        parameter.put("defaultValue", apiImplicitParam.defaultValue());
+                        parameter.put("description", apiImplicitParam.value());
+                        parameters.add(parameter);
+                    }
+                }
+
+                Parameter[] methodParameters = method.getParameters();
+                if (methodParameters != null) {
+                    for (Parameter methodParameter : methodParameters) {
+                        ApiParam apiParam = methodParameter.getAnnotation(ApiParam.class);
+                        if (apiParam!= null && !apiParam.hidden()) {
+                            LinkedHashMap<String, Object> parameter = new LinkedHashMap<>();
+                            if (methodParameter.getAnnotation(PathParam.class) != null) {
+                                parameter.put("name", methodParameter.getAnnotation(PathParam.class).value());
+                                parameter.put("param", "path");
+                            } else {
+                                if (methodParameter.getAnnotation(QueryParam.class) != null) {
+                                    parameter.put("name", methodParameter.getAnnotation(QueryParam.class).value());
+                                    parameter.put("param", "query");
+                                } else {
+                                    parameter.put("name", "body");
+                                    parameter.put("param", "body");
+                                }
+                            }
+
+                            // Get type in lower case except for 'body' param
+                            String type = methodParameter.getType().getName();
+                            if (type.contains(".")) {
+                                String[] split = type.split("\\.");
+                                type = split[split.length - 1];
+                                if (!parameter.get("param").equals("body")) {
+                                    type = type.toLowerCase();
+                                }
+                            }
+                            parameter.put("type", type);
+                            parameter.put("allowedValues", apiParam.allowableValues());
+                            parameter.put("required", apiParam.required());
+                            parameter.put("defaultValue", apiParam.defaultValue());
+                            parameter.put("description", apiParam.value());
+                            parameters.add(parameter);
+                        }
+                    }
+                }
+                endpoint.put("parameters", parameters);
+                endpoints.add(endpoint);
+            }
+        }
+        map.put("endpoints", endpoints);
+        return map;
     }
 
     private boolean isHealthy() {
