@@ -156,6 +156,16 @@ public class GwasAnalysis extends OpenCgaAnalysis {
         return this;
     }
 
+    public GwasAnalysis setCaseCohortSamples(List<String> caseCohortSamples) {
+        this.caseCohortSamples = caseCohortSamples;
+        return this;
+    }
+
+    public GwasAnalysis setControlCohortSamples(List<String> controlCohortSamples) {
+        this.controlCohortSamples = controlCohortSamples;
+        return this;
+    }
+
     /**
      * Index the produced gwas score in the variant storage.
      *
@@ -200,8 +210,8 @@ public class GwasAnalysis extends OpenCgaAnalysis {
             throw new AnalysisException(e);
         }
 
-        caseCohortSamples = getCohortSamples(caseCohort, caseCohortSamplesQuery, "case", true);
-        controlCohortSamples = getCohortSamples(controlCohort, controlCohortSamplesQuery, "control", false);
+        caseCohortSamples = getCohortSamples(caseCohortSamples, caseCohort, caseCohortSamplesQuery, "case", true);
+        controlCohortSamples = getCohortSamples(controlCohortSamples, controlCohort, controlCohortSamplesQuery, "control", false);
 
         if (!Collections.disjoint(caseCohortSamples, controlCohortSamples)) {
             List<String> overlapping = new ArrayList<>();
@@ -321,32 +331,26 @@ public class GwasAnalysis extends OpenCgaAnalysis {
         switch (method) {
             case CHI_SQUARE_TEST:
             case FISHER_TEST:
-                return method.label + ".tsv";
+                return method.label + ".tsv.gz";
             default:
                 throw new AnalysisException("Unknown GWAS method: " + method);
         }
     }
 
-    private List<String> getCohortSamples(String cohort, Query samplesQuery, String cohortType, boolean observedPhenotype) throws AnalysisException {
+    private List<String> getCohortSamples(List<String> inputSamples, String cohort, Query samplesQuery, String cohortType,
+                                          boolean observedPhenotype)
+            throws AnalysisException {
+        boolean validListOfSamples = inputSamples != null && !inputSamples.isEmpty();
         boolean validSampleQuery = samplesQuery != null && !samplesQuery.isEmpty();
         boolean validCohort = StringUtils.isNotEmpty(cohort);
         boolean validPhenotype = StringUtils.isNotEmpty(phenotype);
-        if (validPhenotype) {
-            if (validSampleQuery || validCohort) {
-                throw new AnalysisException("Unable to mix phenotype parameter with " + cohortType + " cohort definition.");
-            }
-        } else {
-            if (!validSampleQuery && !validCohort) {
-                throw new AnalysisException("Missing " + cohortType + " cohort!");
-            }
-        }
-        if (validSampleQuery && validCohort) {
-            throw new AnalysisException("Provide either " + cohortType + " cohort name or " + cohortType + " cohort samples query,"
-                    + " but not both.");
-        }
+        checkParamsCombination(cohortType, validListOfSamples, validSampleQuery, validCohort, validPhenotype);
+
         List<String> samples;
         try {
-            if (validPhenotype) {
+            if (validListOfSamples) {
+                samples = inputSamples;
+            } else if (validPhenotype) {
                 Set<Phenotype.Status> expectedStatus = observedPhenotype
                         ? Collections.singleton(Phenotype.Status.OBSERVED)
                         : new HashSet<>(Arrays.asList(null, Phenotype.Status.NOT_OBSERVED));
@@ -359,7 +363,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
                 }
                 QueryOptions options = new QueryOptions(
                         QueryOptions.INCLUDE, Arrays.asList(
-                                SampleDBAdaptor.QueryParams.ID.key(),
+                        SampleDBAdaptor.QueryParams.ID.key(),
                         SampleDBAdaptor.QueryParams.PHENOTYPES.key()));
 
                 samples = new ArrayList<>();
@@ -403,6 +407,30 @@ public class GwasAnalysis extends OpenCgaAnalysis {
             throw new AnalysisException("Unable to run GWAS analysis with " + cohortType + " cohort of size " + samples.size());
         }
         return samples;
+    }
+
+    private void checkParamsCombination(String cohortType,
+                                        boolean validListOfSamples, boolean validSampleQuery, boolean validCohort, boolean validPhenotype)
+            throws AnalysisException {
+        LinkedList<String> params = new LinkedList<>();
+        if (validListOfSamples) {
+            params.add(cohortType + "CohortSamples");
+        }
+        if (validSampleQuery) {
+            params.add(cohortType + "CohortSampleQuery");
+        }
+        if (validCohort) {
+            params.add(cohortType + "Cohort");
+        }
+        if (validPhenotype) {
+            params.add("Phenotype");
+        }
+        if (params.isEmpty()) {
+            throw new AnalysisException("Missing " + cohortType + " cohort!");
+        } else if (params.size() > 1) {
+            throw new AnalysisException("Unable to mix params " + params + " to define the " + cohortType + " cohort. "
+                    + "Please, provide only one of them.");
+        }
     }
 
 }

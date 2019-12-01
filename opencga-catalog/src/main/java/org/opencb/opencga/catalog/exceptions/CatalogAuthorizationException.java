@@ -48,6 +48,10 @@ public class CatalogAuthorizationException extends CatalogException {
         return deny(userId, "execute", resource, id, name);
     }
 
+    public static CatalogAuthorizationException adminOnlySupportedOperation() {
+        return new CatalogAuthorizationException("Operation only support for 'admin' user");
+    }
+
     @Deprecated
     public static CatalogAuthorizationException deny(String userId, String permission, String resource, long id, String name) {
         return new CatalogAuthorizationException("Permission denied. "

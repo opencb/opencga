@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.executors.BatchExecutor;
 import org.opencb.opencga.catalog.monitor.executors.ExecutorFactory;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.common.Enums;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,10 +91,10 @@ public abstract class MonitorParentDaemon implements Runnable {
             }
         } else {
             String status = batchExecutor.status(tmpOutdirPath, job);
-            if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.QUEUED)) {
+            if (!status.equalsIgnoreCase(Enums.ExecutionStatus.UNKNOWN) && !status.equalsIgnoreCase(Enums.ExecutionStatus.QUEUED)) {
                 try {
-                    logger.info("Updating job {} from {} to {}", job.getUid(), Job.JobStatus.QUEUED, Job.JobStatus.RUNNING);
-                    setNewStatus(job.getUid(), Job.JobStatus.RUNNING, "The job is running");
+                    logger.info("Updating job {} from {} to {}", job.getUid(), Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.RUNNING);
+                    setNewStatus(job.getUid(), Enums.ExecutionStatus.RUNNING, "The job is running");
                 } catch (CatalogException e) {
                     logger.warn("Could not update job {} to status running", job.getUid());
                 }

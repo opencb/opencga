@@ -41,6 +41,7 @@ import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.io.BufferedInputStream;
@@ -83,6 +84,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     public ExecutionDaemon(int interval, String token, CatalogManager catalogManager, String appHome)
             throws CatalogDBException, CatalogIOException {
         super(interval, token, catalogManager);
+
         this.jobManager = catalogManager.getJobManager();
         this.fileManager = catalogManager.getFileManager();
         this.catalogIOManager = catalogManager.getCatalogIOManagerFactory().get("file");
@@ -90,9 +92,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         this.defaultJobDir = Paths.get(catalogManager.getConfiguration().getJobDir());
 
-        pendingJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.PENDING);
-        queuedJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED);
-        runningJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING);
+        pendingJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.PENDING);
+        queuedJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED);
+        runningJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING);
         // Sort jobs by priority and creation date
         queryOptions = new QueryOptions()
                 .append(QueryOptions.SORT, Arrays.asList(JobDBAdaptor.QueryParams.PRIORITY.key(),
@@ -162,9 +164,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     protected int checkRunningJob(Job job) {
-        Job.JobStatus jobStatus = getCurrentStatus(job);
+        Enums.ExecutionStatus jobStatus = getCurrentStatus(job);
 
-        if (Job.JobStatus.RUNNING.equals(jobStatus.getName())) {
+        if (Enums.ExecutionStatus.RUNNING.equals(jobStatus.getName())) {
             AnalysisResult result = readAnalysisResult(job);
             if (result != null) {
                 // Update the result of the job
@@ -204,16 +206,16 @@ public class ExecutionDaemon extends MonitorParentDaemon {
      * @return 1 if the job has changed the status, 0 otherwise.
      */
     protected int checkQueuedJob(Job job) {
-        Job.JobStatus status = getCurrentStatus(job);
+        Enums.ExecutionStatus status = getCurrentStatus(job);
 
-        if (Job.JobStatus.QUEUED.equals(status.getName())) {
+        if (Enums.ExecutionStatus.QUEUED.equals(status.getName())) {
             // Job is still queued
             return 0;
         }
 
-        if (Job.JobStatus.RUNNING.equals(status.getName())) {
-            logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.QUEUED, Job.JobStatus.RUNNING);
-            return setStatus(job, new Job.JobStatus(Job.JobStatus.RUNNING));
+        if (Enums.ExecutionStatus.RUNNING.equals(status.getName())) {
+            logger.info("Updating job {} from {} to {}", job.getId(), Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.RUNNING);
+            return setStatus(job, new Enums.ExecutionStatus(Enums.ExecutionStatus.RUNNING));
         }
 
         // Job has finished the execution, so we need to register the job results
@@ -301,8 +303,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         updateParams.setCommandLine(shadedCommandLine);
 
-        logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.PENDING, Job.JobStatus.QUEUED);
-        updateParams.setStatus(new Job.JobStatus(Job.JobStatus.QUEUED));
+        logger.info("Updating job {} from {} to {}", job.getId(), Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED);
+        updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED));
         try {
             jobManager.update(study, job.getId(), updateParams, QueryOptions.empty(), token);
         } catch (CatalogException e) {
@@ -311,7 +313,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
 
         try {
-            batchExecutor.execute(job.getId(), authenticatedCommandLine, stdout, stderr, token);
+            batchExecutor.execute(job.getId(), authenticatedCommandLine, stdout, stderr);
         } catch (Exception e) {
             logger.error("Error executing job {}.", job.getId(), e);
             return abortJob(job, "Error executing job. " + e.getMessage());
@@ -464,10 +466,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     private int abortJob(Job job, String description) {
         logger.info("Aborting job: {} - Reason: '{}'", job.getId(), description);
-        return setStatus(job, new Job.JobStatus(Job.JobStatus.ABORTED, description));
+        return setStatus(job, new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED, description));
     }
 
-    private int setStatus(Job job, Job.JobStatus status) {
+    private int setStatus(Job job, Enums.ExecutionStatus status) {
         JobUpdateParams updateParams = new JobUpdateParams().setStatus(status);
 
         String study = String.valueOf(job.getAttributes().get(Job.OPENCGA_STUDY));
@@ -491,7 +493,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return 1;
     }
 
-    private Job.JobStatus getCurrentStatus(Job job) {
+    private Enums.ExecutionStatus getCurrentStatus(Job job) {
 
         Path resultJson = getAnalysisResultPath(job);
 
@@ -499,20 +501,19 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         if (resultJson != null && Files.exists(resultJson)) {
             AnalysisResult analysisResult = readAnalysisResult(resultJson);
             if (analysisResult != null) {
-                return new Job.JobStatus(analysisResult.getStatus().getName().name());
+                return new Enums.ExecutionStatus(analysisResult.getStatus().getName().name());
             } else {
                 if (Files.exists(resultJson)) {
                     logger.warn("File '" + resultJson + "' seems corrupted.");
                 } else {
                     logger.warn("Could not find file '" + resultJson + "'.");
                 }
-//                return new Job.JobStatus(Job.JobStatus.ERROR, "File '" + resultJson + "' seems corrupted.");
             }
         }
 
-        String status = batchExecutor.getStatus(job);
-        if (!StringUtils.isEmpty(status) && !status.equals(Job.JobStatus.UNKNOWN)) {
-            return new Job.JobStatus(status);
+        String status = batchExecutor.getStatus(job.getId());
+        if (!StringUtils.isEmpty(status) && !status.equals(Enums.ExecutionStatus.UNKNOWN)) {
+            return new Enums.ExecutionStatus(status);
         } else {
             Path tmpOutdirPath = Paths.get(job.getOutDir().getUri());
             // Check if the error file is present
@@ -524,9 +525,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
                 // There must be some command line error. The job started running but did not finish well, otherwise we would find the
                 // analysis-result.yml file
-                return new Job.JobStatus(Job.JobStatus.ERROR, "Command line error");
+                return new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Command line error");
             } else {
-                return new Job.JobStatus(Job.JobStatus.QUEUED);
+                return new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED);
             }
         }
 
@@ -649,11 +650,12 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         // Check status of analysis result or if there are files that could not be moved to outdir to decide the final result
         if (analysisResult == null) {
-            updateParams.setStatus(new Job.JobStatus(Job.JobStatus.ERROR, "Job could not finish successfully. Missing analysis result"));
+            updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job could not finish successfully. "
+                    + "Missing analysis result"));
         } else if (analysisResult.getStatus().getName().equals(Status.Type.ERROR)) {
-            updateParams.setStatus(new Job.JobStatus(Job.JobStatus.ERROR, "Job could not finish successfully"));
+            updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job could not finish successfully"));
         } else {
-            updateParams.setStatus(new Job.JobStatus(Job.JobStatus.DONE));
+            updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE));
         }
 
         logger.info("{} - Updating job information", job.getId());

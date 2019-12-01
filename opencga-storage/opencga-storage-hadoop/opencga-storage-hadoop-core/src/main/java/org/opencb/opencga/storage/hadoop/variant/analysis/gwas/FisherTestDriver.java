@@ -200,7 +200,7 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
         job.getConfiguration().set(CONTROL_COHORT_IDS, controlCohort.stream().map(Objects::toString).collect(Collectors.joining(",")));
 
         job.setOutputFormatClass(TextOutputFormat.class);
-        TextOutputFormat.setCompressOutput(job, false);
+        TextOutputFormat.setCompressOutput(job, outdir.toString().toLowerCase().endsWith(".gz"));
         TextOutputFormat.setOutputPath(job, outdir);
 
         job.setReducerClass(FisherTestReducer.class);
@@ -241,7 +241,6 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
             super.setup(context);
 
             Configuration configuration = context.getConfiguration();
-            VariantTableHelper helper = getHelper();
 
             List<Integer> caseCohortIds = Arrays.stream(configuration.getInts(CASE_COHORT_IDS)).boxed().collect(Collectors.toList());
             List<Integer> controlCohortIds = Arrays.stream(configuration.getInts(CONTROL_COHORT_IDS)).boxed().collect(Collectors.toList());

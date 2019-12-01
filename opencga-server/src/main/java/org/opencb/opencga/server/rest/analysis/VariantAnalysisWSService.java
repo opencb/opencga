@@ -1109,17 +1109,21 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         public GwasRunParams() {
         }
         public GwasRunParams(String phenotype, boolean index, String indexScoreId, GwasConfiguration.Method method,
-                             GwasConfiguration.FisherMode fisherMode, String caseCohort, String caseSamplesAnnotation, String controlCohort,
-                             String controlSamplesAnnotation, String outdir) {
+                             GwasConfiguration.FisherMode fisherMode,
+                             String caseCohort, String caseCohortSamplesAnnotation, List<String> caseCohortSamples,
+                             String controlCohort, String controlCohortSamplesAnnotation, List<String> controlCohortSamples,
+                             String outdir) {
             this.phenotype = phenotype;
             this.index = index;
             this.indexScoreId = indexScoreId;
             this.method = method;
             this.fisherMode = fisherMode;
             this.caseCohort = caseCohort;
-            this.caseSamplesAnnotation = caseSamplesAnnotation;
+            this.caseCohortSamplesAnnotation = caseCohortSamplesAnnotation;
+            this.caseCohortSamples = caseCohortSamples;
             this.controlCohort = controlCohort;
-            this.controlSamplesAnnotation = controlSamplesAnnotation;
+            this.controlCohortSamplesAnnotation = controlCohortSamplesAnnotation;
+            this.controlCohortSamples = controlCohortSamples;
             this.outdir = outdir;
         }
 
@@ -1129,9 +1133,11 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         public GwasConfiguration.Method method;
         public GwasConfiguration.FisherMode fisherMode;
         public String caseCohort;
-        public String caseSamplesAnnotation;
+        public String caseCohortSamplesAnnotation;
+        public List<String> caseCohortSamples;
         public String controlCohort;
-        public String controlSamplesAnnotation;
+        public String controlCohortSamplesAnnotation;
+        public List<String> controlCohortSamples;
         public String outdir;
     }
 

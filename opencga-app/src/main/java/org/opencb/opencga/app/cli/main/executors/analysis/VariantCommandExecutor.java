@@ -210,9 +210,11 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 variantCommandOptions.gwasCommandOptions.method,
                 variantCommandOptions.gwasCommandOptions.fisherMode,
                 variantCommandOptions.gwasCommandOptions.caseCohort,
-                variantCommandOptions.gwasCommandOptions.caseSamplesAnnotation,
+                variantCommandOptions.gwasCommandOptions.caseCohortSamplesAnnotation,
+                variantCommandOptions.gwasCommandOptions.caseCohortSamples,
                 variantCommandOptions.gwasCommandOptions.controlCohort,
-                variantCommandOptions.gwasCommandOptions.controlSamplesAnnotation,
+                variantCommandOptions.gwasCommandOptions.controlCohortSamplesAnnotation,
+                variantCommandOptions.gwasCommandOptions.controlCohortSamples,
                 variantCommandOptions.gwasCommandOptions.outdir
         ).toObjectMap();
         return openCGAClient.getVariantClient().gwasRun(variantCommandOptions.gwasCommandOptions.study, params);

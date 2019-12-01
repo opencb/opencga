@@ -46,7 +46,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     @Test
     public void createJobTest() throws CatalogDBException {
         Job job = new Job()
-                .setStatus(new Job.JobStatus());
+                .setStatus(new Enums.ExecutionStatus());
 
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         job.setId("jobName1");
@@ -66,10 +66,10 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void deleteJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        catalogJobDBAdaptor.insert(studyId, new Job().setStatus(new Job.JobStatus()).setId("name").setUserId(user3.getId())
+        catalogJobDBAdaptor.insert(studyId, new Job().setStatus(new Enums.ExecutionStatus()).setId("name").setUserId(user3.getId())
                 .setOutDir(new File().setUid(4)), null);
         Job job = getJob(studyId, "name");
-        assertEquals(Job.JobStatus.PENDING, job.getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.PENDING, job.getStatus().getName());
         catalogJobDBAdaptor.delete(job);
 
         Query query = new Query()
@@ -95,7 +95,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void getJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        catalogJobDBAdaptor.insert(studyId, new Job().setStatus(new Job.JobStatus()).setId("name").setUserId(user3.getId())
+        catalogJobDBAdaptor.insert(studyId, new Job().setStatus(new Enums.ExecutionStatus()).setId("name").setUserId(user3.getId())
                 .setOutDir(new File().setUid(4)), null);
         Job job = getJob(studyId, "name");
 
@@ -120,14 +120,14 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         // Create 100 jobs
         for (int i = 0; i < 100; i++) {
             Job job = new Job().setId(String.valueOf(i))
-                    .setStatus(new Job.JobStatus(Job.JobStatus.QUEUED))
+                    .setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED))
                     .setPriority(Enums.Priority.getPriority((i % 4) + 1))
                     .setCreationDate(TimeUtils.getTime());
 
             catalogJobDBAdaptor.insert(studyUid, job, QueryOptions.empty());
         }
 
-        Query query = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED);
+        Query query = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED);
         QueryOptions options = new QueryOptions()
                 .append(QueryOptions.SORT, Arrays.asList(JobDBAdaptor.QueryParams.PRIORITY.key(),
                         JobDBAdaptor.QueryParams.CREATION_DATE.key()))
@@ -178,7 +178,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         Job job1 = new Job()
                 .setId("job1")
                 .setCreationDate(TimeUtils.getTime())
-                .setStatus(new Job.JobStatus());
+                .setStatus(new Enums.ExecutionStatus());
 
         // Job with current date one hour before
         Calendar cal = Calendar.getInstance();
@@ -189,7 +189,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         Job job2 = new Job()
                 .setId("job2")
                 .setCreationDate(TimeUtils.getTime(oneHourBack))
-                .setStatus(new Job.JobStatus());
+                .setStatus(new Enums.ExecutionStatus());
 
         // We create the jobs
         catalogJobDBAdaptor.insert(studyId, job1, new QueryOptions());
@@ -222,7 +222,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         Job job = new Job()
                 .setId("jobName1")
                 .setOutDir(new File().setUid(5))
-                .setStatus(new Job.JobStatus());
+                .setStatus(new Enums.ExecutionStatus());
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         catalogJobDBAdaptor.insert(studyId, job, null);
         job = getJob(studyId, "jobName1");

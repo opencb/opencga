@@ -935,8 +935,6 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/{files}/delete")
     @ApiOperation(value = "Delete existing files and folders")
     @ApiImplicitParams({
-//            @ApiImplicitParam(name = Constants.DELETE_EXTERNAL_FILES, value = "Delete files and folders from disk (only applicable for "
-//                    + "linked files/folders)", dataType = "boolean", defaultValue = "false", paramType = "query"),
             @ApiImplicitParam(name = Constants.SKIP_TRASH, value = "Skip trash and delete the files/folders from disk directly (CANNOT BE"
                     + " RECOVERED)", dataType = "boolean", defaultValue = "false", paramType = "query")
     })

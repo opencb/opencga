@@ -699,16 +699,16 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         params.putAll(cliOptions.commonOptions.params);
 
         Query caseCohortSamplesQuery = null;
-        if (StringUtils.isNotEmpty(cliOptions.caseSamplesAnnotation)) {
+        if (StringUtils.isNotEmpty(cliOptions.caseCohortSamplesAnnotation)) {
             caseCohortSamplesQuery = new Query()
                     .append(SampleDBAdaptor.QueryParams.STUDY.key(), cliOptions.study)
-                    .append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.caseSamplesAnnotation);
+                    .append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.caseCohortSamplesAnnotation);
         }
         Query controlCohortSamplesQuery = null;
-        if (StringUtils.isNotEmpty(cliOptions.controlSamplesAnnotation)) {
+        if (StringUtils.isNotEmpty(cliOptions.controlCohortSamplesAnnotation)) {
             controlCohortSamplesQuery = new Query()
                     .append(SampleDBAdaptor.QueryParams.STUDY.key(), cliOptions.study)
-                    .append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.controlSamplesAnnotation);
+                    .append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.controlCohortSamplesAnnotation);
         }
         GwasAnalysis gwasAnalysis = new GwasAnalysis();
         gwasAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
@@ -722,6 +722,8 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                 .setCaseCohort(cliOptions.caseCohort)
                 .setCaseCohortSamplesQuery(caseCohortSamplesQuery)
                 .setControlCohortSamplesQuery(controlCohortSamplesQuery)
+                .setCaseCohortSamples(cliOptions.caseCohortSamples)
+                .setControlCohortSamples(cliOptions.controlCohortSamples)
                 .start();
     }
 

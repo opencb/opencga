@@ -5,7 +5,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.analysis.result.AnalysisResult;
 import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.List;
 import java.util.Map;
@@ -21,7 +21,7 @@ public class JobUpdateParams {
 
     private Map<String, String> params;
 
-    private Job.JobStatus status;
+    private Enums.ExecutionStatus status;
 
     private File outDir;
     private File tmpDir;
@@ -104,11 +104,11 @@ public class JobUpdateParams {
         return this;
     }
 
-    public Job.JobStatus getStatus() {
+    public Enums.ExecutionStatus getStatus() {
         return status;
     }
 
-    public JobUpdateParams setStatus(Job.JobStatus status) {
+    public JobUpdateParams setStatus(Enums.ExecutionStatus status) {
         this.status = status;
         return this;
     }
