@@ -1,3 +1,0 @@
-
-get_GOsubgraph.r <infile> <pval_threshold>
-get_nodeAttributes_from_fatiGO.r  <infile> <pval_threshold>
