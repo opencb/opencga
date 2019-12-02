@@ -27,7 +27,6 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -43,7 +42,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocument;
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.parseObject;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
@@ -166,24 +164,14 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     }
 
     public void initializeMetaCollection(Configuration configuration) throws CatalogException {
-        Admin admin = configuration.getAdmin();
-        admin.setPassword(CatalogAuthenticationManager.cypherPassword(admin.getPassword()));
-
         Metadata metadata = new Metadata().setIdCounter(0L).setVersion(VERSION);
 
         Document metadataObject = getMongoDBDocument(metadata, "Metadata");
         metadataObject.put(PRIVATE_ID, MongoDBAdaptorFactory.METADATA_OBJECT_ID);
-        Document adminDocument = getMongoDBDocument(admin, "Admin");
+        Document adminDocument = getMongoDBDocument(configuration.getAdmin(), "Admin");
         metadataObject.put("admin", adminDocument);
 
         metaCollection.insert(metadataObject, null);
-    }
-
-    @Override
-    public String getAdminPassword() throws CatalogDBException {
-        Bson query = METADATA_QUERY;
-        DataResult<Document> queryResult = metaCollection.find(query, new QueryOptions(QueryOptions.INCLUDE, "admin"));
-        return parseObject((Document) queryResult.first().get("admin"), Admin.class).getPassword();
     }
 
     @Override

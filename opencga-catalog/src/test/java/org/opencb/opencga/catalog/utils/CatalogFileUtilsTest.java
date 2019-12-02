@@ -80,7 +80,7 @@ public class CatalogFileUtilsTest {
 
         CatalogManagerExternalResource.clearCatalog(configuration);
         catalogManager = new CatalogManager(configuration);
-        catalogManager.installCatalogDB("dummy", "admin");
+        catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "");
 
         //Create USER
         catalogManager.getUserManager().create("user", "name", "mi@mail.com", "asdf", "", null, Account.Type.FULL, null);

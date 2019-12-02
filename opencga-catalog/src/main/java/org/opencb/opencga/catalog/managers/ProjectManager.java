@@ -530,7 +530,7 @@ public class ProjectManager extends AbstractManager {
 
     public void importReleases(String owner, String inputDirStr, String sessionId) throws CatalogException, IOException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        if (!"admin".equals(userId)) {
+        if (!authorizationManager.checkIsAdmin(userId)) {
             throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to import data");
         }
 
@@ -647,7 +647,7 @@ public class ProjectManager extends AbstractManager {
 
     public void exportByFileNames(String studyStr, File outputDir, File filePath, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
-        if (!"admin".equals(userId)) {
+        if (!authorizationManager.checkIsAdmin(userId)) {
             throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to export data");
         }
 
@@ -677,7 +677,7 @@ public class ProjectManager extends AbstractManager {
 
         String owner = studyDataResult.first().getFqn().split("@")[0];
 
-        String ownerToken = catalogManager.getUserManager().getSystemTokenForUser(owner, token);
+        String ownerToken = catalogManager.getUserManager().getNonExpiringToken(owner, token);
 
         try (BufferedReader buf = new BufferedReader(new FileReader(filePath))) {
 
@@ -839,7 +839,7 @@ public class ProjectManager extends AbstractManager {
 
     public void exportReleases(String projectStr, int release, String outputDirStr, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        if (!"admin".equals(userId)) {
+        if (!authorizationManager.checkIsAdmin(userId)) {
             throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to export data");
         }
 

@@ -75,14 +75,6 @@ public class WorkEnvironmentTest extends ExternalResource {
         inputStream = getClass().getResource("/analysis.properties").openStream();
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
 
-//            // Copy the bin files
-//            Files.createDirectories(opencgaHome.resolve("bin"));
-//            inputStream = new FileInputStream("../opencga-app/target/appassembler/bin/opencga-analysis.sh");
-//            Files.copy(inputStream, opencgaHome.resolve("bin").resolve("opencga-analysis.sh"), StandardCopyOption.COPY_ATTRIBUTES);
-//
-//            inputStream = new FileInputStream("../opencga-app/target/appassembler/bin/opencga.sh");
-//            Files.copy(inputStream, opencgaHome.resolve("bin").resolve("opencga.sh"), StandardCopyOption.COPY_ATTRIBUTES);
-
         // Copy the configuration and example demo files
         Files.createDirectories(opencgaHome.resolve("examples"));
         inputStream = new FileInputStream("../opencga-app/app/examples/20130606_g1k.ped");
@@ -92,7 +84,7 @@ public class WorkEnvironmentTest extends ExternalResource {
         Files.copy(inputStream, opencgaHome.resolve("examples")
                 .resolve("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), StandardCopyOption.REPLACE_EXISTING);
 
-        CatalogDemo.createDemoDatabase(configuration, true);
+        CatalogDemo.createDemoDatabase(configuration, "admin", true);
 
         restServer = new RestServer(opencgaHome.resolve("conf"));
         restServer.start();
@@ -100,10 +92,6 @@ public class WorkEnvironmentTest extends ExternalResource {
         catalogManager = new CatalogManager(configuration);
         clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration-test.yml"));
         openCGAClient = new OpenCGAClient("user1", "user1_pass", clientConfiguration);
-//            AnalysisDemo.insertVariantFile(catalogManager, 6L,
-//                    opencgaHome.resolve("examples/1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-//                    openCGAClient.getSessionId());
-
     }
 
     @Override
@@ -116,17 +104,5 @@ public class WorkEnvironmentTest extends ExternalResource {
             e.printStackTrace();
         }
     }
-
-//    protected void loadTestPedigreeFile() throws CatalogException, StorageEngineException {
-//        AnalysisDemo.insertPedigreeFile(catalogManager, 6L, opencgaHome.resolve("examples/20130606_g1k.ped"),
-//                openCGAClient.getSessionId());
-//    }
-
-//    protected void loadTestVariantFile()
-//            throws StorageEngineException, AnalysisExecutionException, CatalogException, JsonProcessingException {
-//        AnalysisDemo.insertVariantFile(catalogManager, 6L,
-//                opencgaHome.resolve("examples/1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-//                openCGAClient.getSessionId());
-//    }
 
 }

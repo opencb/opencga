@@ -41,8 +41,8 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     public void setUp() throws IOException, CatalogException {
         super.setUp();
 
-        String expiringToken = this.catalogManager.getUserManager().login("admin", "admin");
-        String nonExpiringToken = this.catalogManager.getUserManager().getSystemTokenForUser("admin", expiringToken);
+        String expiringToken = this.catalogManager.getUserManager().loginAsAdmin("admin");
+        String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken("opencga", expiringToken);
 
         daemon = new ExecutionDaemon(1000, nonExpiringToken, catalogManager, "/tmp");
         executor = new DummyBatchExecutor();

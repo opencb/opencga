@@ -131,9 +131,7 @@ public class UserManager extends AbstractManager {
             AuthenticationManager authenticationManager = entry.getValue();
             try {
                 String userId = authenticationManager.getUserId(token);
-                if (!userId.equals("admin")) {
-                    userDBAdaptor.checkId(userId);
-                }
+                userDBAdaptor.checkId(userId);
                 return userId;
             } catch (Exception e) {
                 logger.debug("Could not get user from token using {} authentication manager. {}", entry.getKey(), e.getMessage(), e);
@@ -171,9 +169,10 @@ public class UserManager extends AbstractManager {
         ObjectMap auditParams = new ObjectMap("user", user);
 
         String userId = user.getId();
-        if (!authorizationManager.isPublicRegistration()) {
-             userId = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
-            if (!"admin".equals(userId)) {
+        // We add a condition to check if the registration is private + user (or system) is not trying to create the ADMINISTRATOR user
+        if (!authorizationManager.isPublicRegistration() && !OPENCGA.equals(user.getId())) {
+            userId = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token);
+            if (!OPENCGA.equals(userId)) {
                 String errorMsg = "The registration is closed to the public: Please talk to your administrator.";
                 auditManager.auditCreate(userId, Enums.Resource.USER, user.getId(), "", "", "", auditParams,
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
@@ -258,7 +257,7 @@ public class UserManager extends AbstractManager {
      * @throws CatalogException If user already exists, or unable to create a new user.
      */
     public OpenCGAResult<User> create(String id, String name, String email, String password, String organization, Long quota,
-                                    Account.Type type, String token) throws CatalogException {
+                                      Account.Type type, String token) throws CatalogException {
         User user = new User(id, name, email, password, organization, User.UserStatus.READY)
                 .setAccount(new Account(type, "", "", null))
                 .setQuota(quota != null ? quota : 0L);
@@ -267,7 +266,7 @@ public class UserManager extends AbstractManager {
     }
 
     public void syncAllUsersOfExternalGroup(String study, String authOrigin, String token) throws CatalogException {
-        if (!ROOT.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
+        if (!OPENCGA.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
             throw new CatalogAuthorizationException("Only the root user can perform this action");
         }
 
@@ -346,7 +345,7 @@ public class UserManager extends AbstractManager {
                 .append("sync", sync)
                 .append("token", token);
         try {
-            if (!ROOT.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
+            if (!OPENCGA.equals(authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(token))) {
                 throw new CatalogAuthorizationException("Only the root user can perform this action");
             }
 
@@ -435,7 +434,7 @@ public class UserManager extends AbstractManager {
         String userId = getUserId(token);
 
         try {
-            if (!ROOT.equals(userId)) {
+            if (!OPENCGA.equals(userId)) {
                 throw new CatalogAuthorizationException("Only the root user can perform this action");
             }
 
@@ -612,18 +611,19 @@ public class UserManager extends AbstractManager {
         ParamUtils.checkParameter(userIdList, "userIdList");
         ParamUtils.checkParameter(token, "token");
 
-        String tokenUser = getUserId(token);
-
         String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
         ObjectMap auditParams = new ObjectMap()
                 .append("userIdList", userIdList)
                 .append("options", options)
                 .append("token", token);
 
+        String tokenUser = getUserId(token);
+
         List<String> userIds = Arrays.asList(userIdList.split(","));
         OpenCGAResult<User> deletedUsers = OpenCGAResult.empty();
         for (String userId : userIds) {
-            if ("admin".equals(tokenUser) || userId.equals(tokenUser)) {
+            // Only if the user asking the deletion is the ADMINISTRATOR or the user to be deleted itself...
+            if (OPENCGA.equals(tokenUser) || userId.equals(tokenUser)) {
                 try {
                     OpenCGAResult result = userDBAdaptor.delete(userId, options);
 
@@ -685,6 +685,10 @@ public class UserManager extends AbstractManager {
         }
     }
 
+    public String loginAsAdmin(String password) throws CatalogException {
+        return login(OPENCGA, password);
+    }
+
     public String login(String username, String password) throws CatalogException {
         ParamUtils.checkParameter(username, "userId");
         ParamUtils.checkParameter(password, "password");
@@ -722,7 +726,7 @@ public class UserManager extends AbstractManager {
                 // The user does not exist so we register it
                 User user = authenticationManagerMap.get(authId).getRemoteUserInformation(Collections.singletonList(userId)).get(0);
                 // Generate a root token to be able to create the user even if the installation is private
-                String rootToken = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken("admin");
+                String rootToken = authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createToken(OPENCGA);
                 create(user, rootToken);
             }
 
@@ -774,9 +778,13 @@ public class UserManager extends AbstractManager {
      * @return an objectMap containing the new sessionId
      * @throws CatalogException if the password is not correct or the userId does not exist.
      */
-    public String getSystemTokenForUser(String userId, String adminCredentials) throws CatalogException {
-        validateUserAndToken("admin", adminCredentials);
+    public String getNonExpiringToken(String userId, String adminCredentials) throws CatalogException {
+        validateUserAndToken(OPENCGA, adminCredentials);
         return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).createNonExpiringToken(userId);
+    }
+
+    public String getAdminNonExpiringToken(String adminCredentials) throws CatalogException {
+        return getNonExpiringToken(OPENCGA, adminCredentials);
     }
 
     /**
@@ -794,7 +802,7 @@ public class UserManager extends AbstractManager {
      *                          session id is not the same as the provided user id.
      */
     public OpenCGAResult<User.Filter> addFilter(String userId, String name, String description, File.Bioformat bioformat, Query query,
-                                              QueryOptions queryOptions, String token) throws CatalogException {
+                                                QueryOptions queryOptions, String token) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(token, "sessionId");
         ParamUtils.checkParameter(name, "name");
@@ -1208,9 +1216,7 @@ public class UserManager extends AbstractManager {
     }
 
     private void checkUserExists(String userId) throws CatalogException {
-        if (userId.toLowerCase().equals("admin")) {
-            throw new CatalogException("Permission denied: It is not allowed the creation of another admin user.");
-        } else if (userId.toLowerCase().equals(ANONYMOUS) || userId.toLowerCase().equals("daemon")) {
+        if (userId.toLowerCase().equals(ANONYMOUS)) {
             throw new CatalogException("Permission denied: Cannot create users with special treatments in catalog.");
         }
 

@@ -66,8 +66,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void testAdminUserExists() throws Exception {
-        String token = catalogManager.getUserManager().login("admin", "admin");
-        assertEquals("admin" ,catalogManager.getUserManager().getUserId(token));
+        String token = catalogManager.getUserManager().loginAsAdmin("admin");
+        assertEquals("opencga" ,catalogManager.getUserManager().getUserId(token));
     }
 
     @Test
@@ -163,7 +163,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     }
 
     private String getAdminToken() throws CatalogException, IOException {
-        return catalogManager.getUserManager().login("admin", "admin");
+        return catalogManager.getUserManager().loginAsAdmin("admin");
     }
 
     @Ignore
@@ -198,7 +198,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void syncUsers() throws CatalogException {
         // Action only for admins
-        String token = catalogManager.getUserManager().login("admin", "admin");
+        String token = catalogManager.getUserManager().loginAsAdmin("admin");
 
         catalogManager.getUserManager().importRemoteGroupOfUsers("ldap", "bio", "bio", studyFqn, true, token);
         DataResult<Group> bio = catalogManager.getStudyManager().getGroup(studyFqn, "bio", sessionIdUser);

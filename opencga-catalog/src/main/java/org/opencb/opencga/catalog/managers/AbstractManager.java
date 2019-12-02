@@ -65,7 +65,7 @@ public abstract class AbstractManager {
     protected final ClinicalAnalysisDBAdaptor clinicalDBAdaptor;
     protected final InterpretationDBAdaptor interpretationDBAdaptor;
 
-    protected static final String ROOT = "admin";
+    protected static final String OPENCGA = "opencga";
     protected static final String ANONYMOUS = "*";
 
     protected static final int BATCH_OPERATION_SIZE = 100;

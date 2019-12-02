@@ -30,7 +30,6 @@ import org.opencb.opencga.catalog.monitor.MonitorService;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.models.Panel;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -97,7 +96,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
     }
 
-    private void demo() throws CatalogException, StorageEngineException, IOException, URISyntaxException {
+    private void demo() throws CatalogException, IOException, URISyntaxException {
         if (catalogCommandOptions.demoCatalogCommandOptions.prefix != null) {
             configuration.setDatabasePrefix(catalogCommandOptions.demoCatalogCommandOptions.prefix);
         } else {
@@ -109,22 +108,21 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             configuration.setAdmin(new Admin());
         }
 
-        configuration.getAdmin().setPassword(adminPassword);
         configuration.getAdmin().setSecretKey("demo");
         configuration.getAdmin().setAlgorithm("HS256");
 
-        CatalogDemo.createDemoDatabase(configuration, catalogCommandOptions.demoCatalogCommandOptions.force);
+        CatalogDemo.createDemoDatabase(configuration, adminPassword, catalogCommandOptions.demoCatalogCommandOptions.force);
         CatalogManager catalogManager = new CatalogManager(configuration);
         sessionId = catalogManager.getUserManager().login("user1", "user1_pass");
         AnalysisDemo.insertPedigreeFile(catalogManager, Paths.get(this.appHome).resolve("examples/20130606_g1k.ped"), sessionId);
     }
 
-    private void export() throws CatalogException, IOException {
+    private void export() throws CatalogException {
         AdminCliOptionsParser.ExportCatalogCommandOptions commandOptions = catalogCommandOptions.exportCatalogCommandOptions;
-        validateConfiguration(commandOptions, commandOptions.commonOptions);
+        validateConfiguration(commandOptions);
 
         CatalogManager catalogManager = new CatalogManager(configuration);
-        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+        String token = catalogManager.getUserManager().loginAsAdmin(adminPassword);
 
         if (StringUtils.isNotEmpty(commandOptions.project)) {
             catalogManager.getProjectManager().exportReleases(commandOptions.project, commandOptions.release, commandOptions.outputDir, token);
@@ -136,32 +134,37 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
     private void importDatabase() throws CatalogException, IOException {
         AdminCliOptionsParser.ImportCatalogCommandOptions commandOptions = catalogCommandOptions.importCatalogCommandOptions;
-        validateConfiguration(commandOptions, commandOptions.commonOptions);
+        validateConfiguration(commandOptions);
 
         CatalogManager catalogManager = new CatalogManager(configuration);
-        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+        String token = catalogManager.getUserManager().loginAsAdmin(adminPassword);
 
         catalogManager.getProjectManager().importReleases(commandOptions.owner, commandOptions.directory, token);
     }
 
     private void install() throws CatalogException, URISyntaxException {
-        validateConfiguration(catalogCommandOptions.installCatalogCommandOptions, catalogCommandOptions.commonOptions);
+        AdminCliOptionsParser.InstallCatalogCommandOptions commandOptions = catalogCommandOptions.installCatalogCommandOptions;
+
+        validateConfiguration(commandOptions);
 
         this.configuration.getAdmin().setAlgorithm("HS256");
 
-        this.configuration.getAdmin().setSecretKey(this.catalogCommandOptions.installCatalogCommandOptions.secretKey);
+        this.configuration.getAdmin().setSecretKey(commandOptions.secretKey);
         if (StringUtils.isEmpty(configuration.getAdmin().getSecretKey())) {
             configuration.getAdmin().setSecretKey(RandomStringUtils.randomAlphabetic(16));
         }
 
-        if (StringUtils.isEmpty(configuration.getAdmin().getPassword())) {
+        if (StringUtils.isEmpty(commandOptions.commonOptions.adminPassword)) {
             throw new CatalogException("No admin password found. Please, insert your password.");
         }
 
         CatalogManager catalogManager = new CatalogManager(configuration);
         if (catalogManager.existsCatalogDB()) {
-            if (catalogCommandOptions.installCatalogCommandOptions.force) {
-                catalogManager.deleteCatalogDB(false);
+            if (commandOptions.force) {
+                // The password of the old db should match the one to be used in the new installation. Otherwise, they can obtain the same
+                // results calling first to "catalog delete" and then "catalog install"
+                String token = catalogManager.getUserManager().loginAsAdmin(commandOptions.commonOptions.adminPassword);
+                catalogManager.deleteCatalogDB(token);
             } else {
                 throw new CatalogException("A database called " + catalogManager.getCatalogDatabase() + " already exists");
             }
@@ -170,8 +173,8 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         logger.info("\nInstalling database {} in {}\n", catalogManager.getCatalogDatabase(),
                 configuration.getCatalog().getDatabase().getHosts());
 
-        catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(),
-                configuration.getAdmin().getPassword());
+        catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), commandOptions.commonOptions.adminPassword,
+                commandOptions.email, commandOptions.organization);
     }
 
     /**
@@ -194,25 +197,27 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         return mongoDataStoreManager.exists(database);
     }
 
-    private void delete() throws CatalogException, URISyntaxException, IOException {
-        validateConfiguration(catalogCommandOptions.deleteCatalogCommandOptions, catalogCommandOptions.commonOptions);
+    private void delete() throws CatalogException, URISyntaxException {
+        validateConfiguration(catalogCommandOptions.deleteCatalogCommandOptions);
 
         CatalogManager catalogManager = new CatalogManager(configuration);
-        catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+        String token = catalogManager.getUserManager()
+                .loginAsAdmin(catalogCommandOptions.deleteCatalogCommandOptions.commonOptions.adminPassword);
 
         if (!checkDatabaseExists(catalogManager.getCatalogDatabase())) {
             throw new CatalogException("The database " + catalogManager.getCatalogDatabase() + " does not exist.");
         }
         logger.info("\nDeleting database {} from {}\n", catalogManager.getCatalogDatabase(), configuration.getCatalog().getDatabase()
                 .getHosts());
-        catalogManager.deleteCatalogDB(false);
+        catalogManager.deleteCatalogDB(token);
     }
 
-    private void index() throws CatalogException, IOException {
-        validateConfiguration(catalogCommandOptions.indexCatalogCommandOptions, catalogCommandOptions.commonOptions);
+    private void index() throws CatalogException {
+        validateConfiguration(catalogCommandOptions.indexCatalogCommandOptions);
 
         CatalogManager catalogManager = new CatalogManager(configuration);
-        String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+        String token = catalogManager.getUserManager()
+                .loginAsAdmin(catalogCommandOptions.indexCatalogCommandOptions.commonOptions.adminPassword);
 
         if (!checkDatabaseExists(catalogManager.getCatalogDatabase())) {
             throw new CatalogException("The database " + catalogManager.getCatalogDatabase() + " does not exist.");
@@ -225,16 +230,16 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
     }
 
     private void daemons() throws Exception {
-        validateConfiguration(catalogCommandOptions.daemonCatalogCommandOptions, catalogCommandOptions.commonOptions);
+        validateConfiguration(catalogCommandOptions.daemonCatalogCommandOptions);
 
         CatalogManager catalogManager = new CatalogManager(configuration);
-        catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+        String token = catalogManager.getUserManager()
+                .loginAsAdmin(catalogCommandOptions.daemonCatalogCommandOptions.commonOptions.adminPassword);
 
         if (catalogCommandOptions.daemonCatalogCommandOptions.start) {
             // Server crated and started
             MonitorService monitorService =
-                    new MonitorService(catalogCommandOptions.daemonCatalogCommandOptions.commonOptions.adminPassword, configuration,
-                            appHome);
+                    new MonitorService(configuration, appHome, token);
             monitorService.start();
             monitorService.blockUntilShutdown();
             logger.info("Shutting down OpenCGA Storage REST server");
@@ -253,14 +258,14 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
     }
 
     private void panels() throws CatalogException, IOException {
-        validateConfiguration(catalogCommandOptions.panelCatalogCommandOptions, catalogCommandOptions.commonOptions);
+        validateConfiguration(catalogCommandOptions.panelCatalogCommandOptions);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+            String token = catalogManager.getUserManager()
+                    .loginAsAdmin(catalogCommandOptions.panelCatalogCommandOptions.commonOptions.adminPassword);
 
             if (catalogCommandOptions.panelCatalogCommandOptions.panelAppImport) {
-                catalogManager.getPanelManager().importPanelApp(token,
-                        catalogCommandOptions.panelCatalogCommandOptions.overwrite);
+                catalogManager.getPanelManager().importPanelApp(token, catalogCommandOptions.panelCatalogCommandOptions.overwrite);
             } else if (StringUtils.isNotEmpty(catalogCommandOptions.panelCatalogCommandOptions.panelImport)) {
                 importPanels(catalogManager, token);
             } else if (StringUtils.isNotEmpty(catalogCommandOptions.panelCatalogCommandOptions.delete)) {
@@ -323,8 +328,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         }
     }
 
-    private void validateConfiguration(AdminCliOptionsParser.CatalogDatabaseCommandOptions catalogOptions,
-                                       AdminCliOptionsParser.AdminCommonCommandOptions adminOptions) {
+    private void validateConfiguration(AdminCliOptionsParser.CatalogDatabaseCommandOptions catalogOptions) {
         if (catalogOptions.databaseUser != null) {
             configuration.getCatalog().getDatabase().setUser(catalogOptions.databaseUser);
         }
@@ -336,9 +340,6 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         }
         if (catalogOptions.databaseHost != null) {
             configuration.getCatalog().getDatabase().setHosts(Collections.singletonList(catalogOptions.databaseHost));
-        }
-        if (adminOptions.adminPassword != null) {
-            configuration.setAdmin(new Admin(adminOptions.adminPassword, null));
         }
     }
 }

@@ -69,14 +69,15 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
         catalogManager = new CatalogManager(configuration);
         try {
-            catalogManager.deleteCatalogDB(false);
+            String token = catalogManager.getUserManager().loginAsAdmin("admin");
+            catalogManager.deleteCatalogDB(token);
         } catch (Exception ignore) {}
         clearCatalog(configuration);
         if (!opencgaHome.toFile().exists()) {
             deleteFolderTree(opencgaHome.toFile());
             Files.createDirectory(opencgaHome);
         }
-        catalogManager.installCatalogDB("dummy", "admin");
+        catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "");
     }
 
     @Override

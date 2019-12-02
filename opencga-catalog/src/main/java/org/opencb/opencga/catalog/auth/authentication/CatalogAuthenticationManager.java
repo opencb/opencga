@@ -86,27 +86,16 @@ public class CatalogAuthenticationManager extends AuthenticationManager {
             throw new CatalogAuthenticationException(e.getMessage(), e);
         }
 
-        String storedPassword;
-        boolean validSessionId = false;
-        if (username.equals("admin")) {
-            try {
-                storedPassword = metaDBAdaptor.getAdminPassword();
-            } catch (CatalogDBException e) {
-                throw new CatalogAuthenticationException("Could not validate 'admin' password\n" + e.getMessage(), e);
+        try {
+            String storedPassword = userDBAdaptor.get(username, new QueryOptions(QueryOptions.INCLUDE, "password"), null)
+                    .first().getPassword();
+            if (storedPassword.equals(cypherPassword)) {
+                return jwtManager.createJWTToken(username, expiration);
+            } else {
+                throw CatalogAuthenticationException.incorrectUserOrPassword();
             }
-            validSessionId = storedPassword.equals(cypherPassword);
-        } else {
-            try {
-                storedPassword = userDBAdaptor.get(username, new QueryOptions(QueryOptions.INCLUDE, "password"), null)
-                        .first().getPassword();
-            } catch (CatalogDBException e) {
-                throw new CatalogAuthenticationException("Could not validate '" + username + "' password\n" + e.getMessage(), e);
-            }
-        }
-        if (storedPassword.equals(cypherPassword) || validSessionId) {
-            return jwtManager.createJWTToken(username, expiration);
-        } else {
-            throw CatalogAuthenticationException.incorrectUserOrPassword();
+        } catch (CatalogDBException e) {
+            throw new CatalogAuthenticationException("Could not validate '" + username + "' password\n" + e.getMessage(), e);
         }
     }
 

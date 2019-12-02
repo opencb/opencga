@@ -51,7 +51,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     public static final String MEMBERS_GROUP = "@members";
     public static final String ADMINS_GROUP = "@admins";
-    private static final String ADMIN = "admin";
+    private static final String OPENCGA = "opencga";
 
     private final Logger logger;
 
@@ -69,7 +69,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     // List of Acls defined for the special users (admin, daemon...) read from the main configuration file.
     private static final List<StudyAclEntry> SPECIAL_ACL_LIST = Arrays.asList(
-            new StudyAclEntry(ADMIN, Arrays.asList(StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS.name(),
+            new StudyAclEntry(OPENCGA, Arrays.asList(StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS.name(),
                     StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS.name(), StudyAclEntry.StudyPermissions.VIEW_FILES.name(),
                     StudyAclEntry.StudyPermissions.WRITE_FILES.name(), StudyAclEntry.StudyPermissions.UPLOAD_FILES.name(),
                     StudyAclEntry.StudyPermissions.DELETE_FILES.name(), StudyAclEntry.StudyPermissions.VIEW_JOBS.name(),
@@ -123,7 +123,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanViewProject(long projectId, String userId) throws CatalogException {
-        if (userId.equals(ADMIN)) {
+        if (userId.equals(OPENCGA)) {
             return;
         }
         if (projectDBAdaptor.getOwnerId(projectId).equals(userId)) {
@@ -150,8 +150,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void checkStudyPermission(long studyId, String userId, StudyAclEntry.StudyPermissions permission, String message)
             throws CatalogException {
-        if (userId.equals(ADMIN)) {
-            if (getSpecialPermissions(ADMIN).getPermissions().contains(permission)) {
+        if (userId.equals(OPENCGA)) {
+            if (getSpecialPermissions(OPENCGA).getPermissions().contains(permission)) {
                 return;
             }
         } else {
@@ -173,7 +173,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCanViewStudy(long studyId, String userId) throws CatalogException {
-        if (ADMIN.equals(userId)) {
+        if (OPENCGA.equals(userId)) {
             return;
         }
 
@@ -205,7 +205,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         String ownerId = studyDBAdaptor.getOwnerId(studyId);
-        if (!userId.equals(ADMIN) && !userId.equals(ownerId) && !isAdministrativeUser(studyId, userId)) {
+        if (!userId.equals(OPENCGA) && !userId.equals(ownerId) && !isAdministrativeUser(studyId, userId)) {
             throw new CatalogAuthorizationException("Only administrative users are allowed to create/remove groups.");
         }
     }
@@ -232,7 +232,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throw new CatalogAuthorizationException("Only the owner of the study can assign/remove users to the administrative group.");
         }
 
-        if (!userId.equals(ADMIN) && !isAdministrativeUser(studyId, userId)) {
+        if (!userId.equals(OPENCGA) && !isAdministrativeUser(studyId, userId)) {
             throw new CatalogAuthorizationException("Only administrative users are allowed to assign/remove users to groups.");
         }
 
@@ -256,7 +256,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkCanAssignOrSeePermissions(long studyId, String userId) throws CatalogException {
         String ownerId = studyDBAdaptor.getOwnerId(studyId);
 
-        if (!ADMIN.equals(userId) && !ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
+        if (!OPENCGA.equals(userId) && !ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {
             throw new CatalogAuthorizationException("Only owners or administrative users are allowed to assign permissions");
         }
     }
@@ -273,7 +273,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public Boolean checkIsAdmin(String user) {
-        return user.equals(ADMIN);
+        return user.equals(OPENCGA);
     }
 
     @Override
@@ -348,8 +348,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private boolean checkUserPermission(long studyUid, String userId, Query query, StudyAclEntry.StudyPermissions studyPermission,
                                         DBAdaptor dbAdaptor) throws CatalogDBException, CatalogAuthorizationException {
-        if (userId.equals(ADMIN)) {
-            if (getSpecialPermissions(ADMIN).getPermissions().contains(studyPermission)) {
+        if (userId.equals(OPENCGA)) {
+            if (getSpecialPermissions(OPENCGA).getPermissions().contains(studyPermission)) {
                 return true;
             }
         } else {

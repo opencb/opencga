@@ -80,13 +80,13 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 executor.commonOptions.adminPassword);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            String sessionId = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+            String token = catalogManager.getUserManager().loginAsAdmin(executor.commonOptions.adminPassword);
 
             if (executor.syncAll) {
-                catalogManager.getUserManager().syncAllUsersOfExternalGroup(executor.study, executor.authOrigin, sessionId);
+                catalogManager.getUserManager().syncAllUsersOfExternalGroup(executor.study, executor.authOrigin, token);
             } else {
                 catalogManager.getUserManager().importRemoteGroupOfUsers(executor.authOrigin, executor.from, executor.to, executor.study,
-                        true, sessionId);
+                        true, token);
             }
         }
     }
@@ -106,7 +106,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         setCatalogDatabaseCredentials(executor.databaseHost, executor.prefix, executor.databaseUser, executor.databasePassword,
                 executor.commonOptions.adminPassword);
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            String token = catalogManager.getUserManager().login("admin", executor.commonOptions.adminPassword);
+            String token = catalogManager.getUserManager().loginAsAdmin(executor.commonOptions.adminPassword);
 
             if (StringUtils.isEmpty(executor.resourceType)) {
                 logger.error("Missing resource type");
@@ -150,7 +150,8 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            String token = catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+            String token = catalogManager.getUserManager()
+                    .loginAsAdmin(usersCommandOptions.createUserCommandOptions.commonOptions.adminPassword);
 
             User user = catalogManager.getUserManager().create(usersCommandOptions.createUserCommandOptions.userId,
                     usersCommandOptions.createUserCommandOptions.userName, usersCommandOptions.createUserCommandOptions.userEmail,
@@ -169,7 +170,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 usersCommandOptions.deleteUserCommandOptions.commonOptions.adminPassword);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+            catalogManager.getUserManager().loginAsAdmin(usersCommandOptions.deleteUserCommandOptions.commonOptions.adminPassword);
 
             DataResult<User> deletedUsers = catalogManager.getUserManager()
                     .delete(usersCommandOptions.deleteUserCommandOptions.userId, new QueryOptions("force", true), null);
@@ -182,16 +183,16 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
     }
 
     private void setQuota() throws CatalogException {
-        setCatalogDatabaseCredentials(usersCommandOptions.QuotaUserCommandOptions.databaseHost,
-                usersCommandOptions.QuotaUserCommandOptions.prefix, usersCommandOptions.QuotaUserCommandOptions.databaseUser,
-                usersCommandOptions.QuotaUserCommandOptions.databasePassword,
-                usersCommandOptions.QuotaUserCommandOptions.commonOptions.adminPassword);
+        setCatalogDatabaseCredentials(usersCommandOptions.quotaUserCommandOptions.databaseHost,
+                usersCommandOptions.quotaUserCommandOptions.prefix, usersCommandOptions.quotaUserCommandOptions.databaseUser,
+                usersCommandOptions.quotaUserCommandOptions.databasePassword,
+                usersCommandOptions.quotaUserCommandOptions.commonOptions.adminPassword);
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-            catalogManager.getUserManager().login("admin", configuration.getAdmin().getPassword());
+            catalogManager.getUserManager().loginAsAdmin(usersCommandOptions.quotaUserCommandOptions.commonOptions.adminPassword);
 
-            User user = catalogManager.getUserManager().update(usersCommandOptions.QuotaUserCommandOptions.userId, new ObjectMap
-                    (UserDBAdaptor.QueryParams.QUOTA.key(), usersCommandOptions.QuotaUserCommandOptions.quota * 1073741824), null, null).first();
+            User user = catalogManager.getUserManager().update(usersCommandOptions.quotaUserCommandOptions.userId, new ObjectMap
+                    (UserDBAdaptor.QueryParams.QUOTA.key(), usersCommandOptions.quotaUserCommandOptions.quota * 1073741824), null, null).first();
 
             System.out.println("The disk quota has been properly updated: " + user.toString());
         }

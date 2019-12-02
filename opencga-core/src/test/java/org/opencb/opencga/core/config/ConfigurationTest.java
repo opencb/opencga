@@ -35,7 +35,7 @@ public class ConfigurationTest {
 
         configuration.setWorkspace("/opt/opencga/sessions");
 
-        configuration.setAdmin(new Admin("password", "admin@admin.com"));
+        configuration.setAdmin(new Admin());
 
         Authentication authentication = new Authentication();
         configuration.setAuthentication(authentication);
