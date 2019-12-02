@@ -22,10 +22,10 @@ We recommend to contact OpenCGA developers by writing to OpenCB mailing list ope
 * Ignacio Medina (im411@cam.ac.uk) (_Founder and Project Leader_)
 * Jacobo Coll (jacobo.coll-moragon@genomicsengland.co.uk)
 * Pedro Furio (pedro.furio@genomicsengland.co.uk)
-* Matthias Haimel (mh719@cam.ac.uk)
-* Asuncion Gallego (agallego@cipf.es)
 
 ##### Former Contributors
+* Matthias Haimel (mh719@cam.ac.uk)
+* Asuncion Gallego (agallego@cipf.es)
 * Cristina Y. Gonzalez (cyenyxe@ebi.ac.uk)
 * Jose M. Mut (jmmut@ebi.ac.uk)
 * Roberto Alonso (ralonso@cipf.es)
@@ -43,7 +43,7 @@ Stable releases are merged and tagged at **_master_** branch, you are encourage 
 * _java-common-libs_: https://github.com/opencb/java-common-libs (branch 'develop')
 * _biodata_: https://github.com/opencb/biodata (branch 'develop')
 * _cellbase_: https://github.com/opencb/cellbase (branch 'develop')
-* _hpg-bigdata_: https://github.com/opencb/hpg-bigdata (branch 'develop')
+* _oskar_: https://github.com/opencb/oskar (branch 'develop')
 
 ### Cloning
 OpenCGA is an open-source and free project, you can download default **_develop_** branch by executing:
@@ -163,15 +163,18 @@ See the description of each property in https://github.com/opencb/opencga/wiki/O
 
 Remember that **_develop_** branch dependencies are not ensured to be deployed at Maven Central, you may need to clone and install **_develop_** branches from OpenCB _biodata_, _datastore_, _cellbase_ and _hpg-bigdata_ repositories. After this you should have this file structure in **_opencga/build_**:
 
-    opencga/build/
-    ├── bin/
-    ├── conf/
-    ├── examples/
-    ├── libs/
+    build/
+    ├── analysis
+    ├── bin
+    ├── cloud
+    ├── conf
+    ├── libs
     ├── LICENSE
-    ├── opencga.war
+    ├── opencga-2.0.0-dev.war
     ├── README.md
-    └── tools/
+    ├── scripts
+    └── test
+
 
 You can copy the content of the _build_ folder into the installation directory such as _/opt/opencga_.
 
@@ -189,8 +192,5 @@ You can find more detailed documentation and tutorials at: https://github.com/op
 We try to improve the admin experience by making the installation and build as simple as possible. Unfortunately, for some OpenCGA components and functionalities other dependencies are required.
 
 ##### Loading data
-At this moment the only fully developed storage engine plugin is [MongoDB](https://www.mongodb.org/). MongoDB is free and open-source and can be downloaded from [here](https://www.mongodb.org/downloads). Currently Apache HBase plugin is under heavy development and will be ready soon.
+At this moment there are two variant storage engines available: [MongoDB](https://www.mongodb.org/) and [Apache HBase](http://hbase.apache.org/)
 
-##### AES encryption
-For AES encryption please download UnlimitedJCEPolicyJDK7.zip from https://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html .
-Then unzip the file into $JAVA_HOME/jre/lib/security
