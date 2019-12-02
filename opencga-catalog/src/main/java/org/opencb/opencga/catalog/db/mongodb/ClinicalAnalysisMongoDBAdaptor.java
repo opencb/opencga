@@ -510,6 +510,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         } else {
             clinicalObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
         }
+        clinicalObject.put(PRIVATE_MODIFICATION_DATE, clinicalObject.get(PRIVATE_CREATION_DATE));
         clinicalObject.put(PERMISSION_RULES_APPLIED, Collections.emptyList());
 
         return new OpenCGAResult(clinicalCollection.insert(clinicalObject, null));

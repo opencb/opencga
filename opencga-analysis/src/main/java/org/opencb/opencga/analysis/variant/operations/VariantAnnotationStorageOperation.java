@@ -29,8 +29,8 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.DataStore;
 import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Project;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -80,7 +80,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
 
         List<File> newFiles;
         Thread hook = buildHook(outdir);
-        writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
+        writeJobStatus(outdir, new Enums.ExecutionStatus(Enums.ExecutionStatus.RUNNING, "Job has just started"));
         Runtime.getRuntime().addShutdownHook(hook);
         // Up to this point, catalog has not been modified
         try {
@@ -174,11 +174,11 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
                 newFiles = Collections.emptyList();
             }
 
-            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.DONE, "Job completed"));
+            writeJobStatus(outdir, new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE, "Job completed"));
         } catch (Exception e) {
             // Error!
             logger.error("Error annotating variants.", e);
-            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job with error : " + e.getMessage()));
+            writeJobStatus(outdir, new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job with error : " + e.getMessage()));
             throw new StorageEngineException("Error annotating variants.", e);
         } finally {
             // Remove hook

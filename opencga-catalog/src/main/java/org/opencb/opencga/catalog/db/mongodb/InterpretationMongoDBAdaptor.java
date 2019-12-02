@@ -86,6 +86,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         } else {
             interpretationObject.put(PRIVATE_CREATION_DATE, TimeUtils.getDate());
         }
+        interpretationObject.put(PRIVATE_MODIFICATION_DATE, interpretationObject.get(PRIVATE_CREATION_DATE));
         return new OpenCGAResult(interpretationCollection.insert(interpretationObject, null));
     }
 

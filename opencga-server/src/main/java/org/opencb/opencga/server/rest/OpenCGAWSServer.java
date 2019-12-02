@@ -20,7 +20,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
-import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.NotImplementedException;
@@ -451,14 +450,6 @@ public class OpenCGAWSServer {
             action = AclParams.Action.REMOVE;
         }
         return new AclParams(permissions, action);
-    }
-
-    @Deprecated
-    @GET
-    @Path("/help")
-    @ApiOperation(value = "Help", hidden = true, position = 1)
-    public Response help() {
-        return createErrorResponse("help", "No help available");
     }
 
     protected Response createErrorResponse(Exception e) {

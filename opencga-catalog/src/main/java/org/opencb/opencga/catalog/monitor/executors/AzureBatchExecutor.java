@@ -4,7 +4,6 @@ import com.microsoft.azure.batch.BatchClient;
 import com.microsoft.azure.batch.auth.BatchSharedKeyCredentials;
 import com.microsoft.azure.batch.protocol.models.PoolInformation;
 import org.opencb.opencga.core.config.Execution;
-import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +79,7 @@ public class AzureBatchExecutor implements BatchExecutor {
     }
 
     @Override
-    public String getStatus(Job job) {
+    public String getStatus(String jobId) {
         return null;
 //        try {
 //            CloudTask cloudTask = batchClient.taskOperations().getTask(getAzureJobType(job.getType()), job.getId());
@@ -103,17 +102,17 @@ public class AzureBatchExecutor implements BatchExecutor {
     }
 
     @Override
-    public boolean stop(Job job) throws Exception {
+    public boolean stop(String jobId) throws Exception {
         return false;
     }
 
     @Override
-    public boolean resume(Job job) throws Exception {
+    public boolean resume(String jobId) throws Exception {
         return false;
     }
 
     @Override
-    public boolean kill(Job job) throws Exception {
+    public boolean kill(String jobId) throws Exception {
         return false;
     }
 

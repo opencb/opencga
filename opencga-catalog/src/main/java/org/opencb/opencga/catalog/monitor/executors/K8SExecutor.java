@@ -12,7 +12,7 @@ import io.fabric8.kubernetes.client.dsl.ScalableResource;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Execution;
-import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.common.Enums;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,43 +131,43 @@ public class K8SExecutor implements BatchExecutor {
     }
 
     @Override
-    public String getStatus(Job job) {
+    public String getStatus(String jobId) {
 
-        String k8sJobName = buildJobName(job.getId());
+        String k8sJobName = buildJobName(jobId);
         ScalableResource<io.fabric8.kubernetes.api.model.batch.Job, DoneableJob> resource =
                 getKubernetesClient().batch().jobs().inNamespace(namespace).withName(k8sJobName);
 
         io.fabric8.kubernetes.api.model.batch.Job k8Job = resource.get();
 
         if (k8Job == null || k8Job.getStatus() == null) {
-            logger.debug("k8Job '" + k8sJobName + "' status = " + Job.JobStatus.UNKNOWN + ". Missing k8sJob");
-            return Job.JobStatus.UNKNOWN;
+            logger.debug("k8Job '" + k8sJobName + "' status = " + Enums.ExecutionStatus.UNKNOWN + ". Missing k8sJob");
+            return Enums.ExecutionStatus.UNKNOWN;
         } else if (k8Job.getStatus().getActive() != null && k8Job.getStatus().getActive() > 0) {
-            logger.debug("k8Job '" + k8sJobName + "' status = " + Job.JobStatus.RUNNING);
-            return Job.JobStatus.RUNNING;
+            logger.debug("k8Job '" + k8sJobName + "' status = " + Enums.ExecutionStatus.RUNNING);
+            return Enums.ExecutionStatus.RUNNING;
         } else if (k8Job.getStatus().getSucceeded() != null && k8Job.getStatus().getSucceeded() > 0) {
-            logger.debug("k8Job '" + k8sJobName + "' status = " + Job.JobStatus.DONE);
-            return Job.JobStatus.DONE;
+            logger.debug("k8Job '" + k8sJobName + "' status = " + Enums.ExecutionStatus.DONE);
+            return Enums.ExecutionStatus.DONE;
         } else if (k8Job.getStatus().getFailed() != null && k8Job.getStatus().getFailed() > 0) {
-            logger.debug("k8Job '" + k8sJobName + "' status = " + Job.JobStatus.ERROR);
-            return Job.JobStatus.ERROR;
+            logger.debug("k8Job '" + k8sJobName + "' status = " + Enums.ExecutionStatus.ERROR);
+            return Enums.ExecutionStatus.ERROR;
         }
-        logger.debug("k8Job '" + k8sJobName + "' status = " + Job.JobStatus.UNKNOWN);
-        return Job.JobStatus.UNKNOWN;
+        logger.debug("k8Job '" + k8sJobName + "' status = " + Enums.ExecutionStatus.UNKNOWN);
+        return Enums.ExecutionStatus.UNKNOWN;
     }
 
     @Override
-    public boolean stop(Job job) throws Exception {
+    public boolean stop(String jobId) throws Exception {
         return false;
     }
 
     @Override
-    public boolean resume(Job job) throws Exception {
+    public boolean resume(String jobId) throws Exception {
         return false;
     }
 
     @Override
-    public boolean kill(Job job) throws Exception {
+    public boolean kill(String jobId) throws Exception {
         return false;
     }
 

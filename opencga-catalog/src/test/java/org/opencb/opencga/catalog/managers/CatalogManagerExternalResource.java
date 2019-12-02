@@ -65,7 +65,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
         configuration.getAdmin().setAlgorithm("HS256");
         configuration.getAdmin().setSecretKey("dummy");
-        configuration.setWorkspace(opencgaHome.resolve("sessions").toUri().toString());
+        configuration.setWorkspace(opencgaHome.resolve("sessions").toAbsolutePath().toString());
 
         catalogManager = new CatalogManager(configuration);
         try {

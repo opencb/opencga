@@ -19,7 +19,7 @@ package org.opencb.opencga.catalog.monitor.executors;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.RunnableProcess;
 import org.opencb.opencga.core.config.Execution;
-import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.common.Enums;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,12 +59,12 @@ public class LocalExecutor implements BatchExecutor {
 
     @Override
     public void execute(String jobId, String commandLine, Path stdout, Path stderr) throws Exception {
-        jobStatus.put(jobId, Job.JobStatus.QUEUED);
+        jobStatus.put(jobId, Enums.ExecutionStatus.QUEUED);
         Runnable runnable = () -> {
             try {
                 Thread.currentThread().setName("LocalExecutor-" + nextThreadNum());
                 logger.info("Ready to run - {}", commandLine);
-                jobStatus.put(jobId, Job.JobStatus.RUNNING);
+                jobStatus.put(jobId, Enums.ExecutionStatus.RUNNING);
                 Command com = new Command(commandLine);
 
                 DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream(stdout.toFile()));
@@ -78,7 +78,7 @@ public class LocalExecutor implements BatchExecutor {
                     com.setStatus(RunnableProcess.Status.KILLED);
                     com.setExitValue(-2);
                     closeOutputStreams(com);
-                    jobStatus.put(jobId, Job.JobStatus.ERROR);
+                    jobStatus.put(jobId, Enums.ExecutionStatus.ERROR);
                 });
 
                 logger.info("==========================================");
@@ -101,13 +101,13 @@ public class LocalExecutor implements BatchExecutor {
                 logger.info("==========================================");
 
                 if (com.getStatus().equals(RunnableProcess.Status.DONE)) {
-                    jobStatus.put(jobId, Job.JobStatus.DONE);
+                    jobStatus.put(jobId, Enums.ExecutionStatus.DONE);
                 } else {
-                    jobStatus.put(jobId, Job.JobStatus.ERROR);
+                    jobStatus.put(jobId, Enums.ExecutionStatus.ERROR);
                 }
             } catch (Throwable throwable) {
                 logger.error("Error running job " + jobId, throwable);
-                jobStatus.put(jobId, Job.JobStatus.ERROR);
+                jobStatus.put(jobId, Enums.ExecutionStatus.ERROR);
             }
         };
         threadPool.submit(runnable);
@@ -118,22 +118,22 @@ public class LocalExecutor implements BatchExecutor {
     }
 
     @Override
-    public String getStatus(Job job) {
-        return jobStatus.getOrDefault(job.getId(), Job.JobStatus.UNKNOWN);
+    public String getStatus(String jobId) {
+        return jobStatus.getOrDefault(jobId, Enums.ExecutionStatus.UNKNOWN);
     }
 
     @Override
-    public boolean stop(Job job) throws Exception {
+    public boolean stop(String jobId) throws Exception {
         return false;
     }
 
     @Override
-    public boolean resume(Job job) throws Exception {
+    public boolean resume(String jobId) throws Exception {
         return false;
     }
 
     @Override
-    public boolean kill(Job job) throws Exception {
+    public boolean kill(String jobId) throws Exception {
         return false;
     }
 

@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
+import org.opencb.opencga.core.models.common.Enums;
 
 import javax.naming.NamingException;
 import java.io.IOException;
@@ -708,14 +709,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getJobManager().submit(studyId, "command", "subcommand", null, Collections.emptyMap(), sessionIdUser);
         catalogManager.getJobManager().submit(studyId, "command", "subcommand2", null, Collections.emptyMap(), sessionIdUser);
 
-        catalogManager.getJobManager().create(studyId, new Job().setId("job1").setStatus(new Job.JobStatus(Job.JobStatus.DONE)),
+        catalogManager.getJobManager().create(studyId, new Job().setId("job1").setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE)),
                 QueryOptions.empty(), sessionIdUser);
-        catalogManager.getJobManager().create(studyId, new Job().setId("job2").setStatus(new Job.JobStatus(Job.JobStatus.ERROR)),
+        catalogManager.getJobManager().create(studyId, new Job().setId("job2").setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR)),
                 QueryOptions.empty(), sessionIdUser);
-        catalogManager.getJobManager().create(studyId, new Job().setId("job3").setStatus(new Job.JobStatus(Job.JobStatus.UNREGISTERED)),
+        catalogManager.getJobManager().create(studyId, new Job().setId("job3").setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.UNREGISTERED)),
                 QueryOptions.empty(), sessionIdUser);
 
-        query = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.PENDING);
+        query = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.PENDING);
         DataResult<Job> unfinishedJobs = catalogManager.getJobManager().search(String.valueOf(studyId), query, null, sessionIdUser);
         assertEquals(2, unfinishedJobs.getNumResults());
 
@@ -724,7 +725,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         thrown.expectMessage("status different");
         thrown.expect(CatalogException.class);
-        catalogManager.getJobManager().create(studyId, new Job().setId("job5").setStatus(new Job.JobStatus(Job.JobStatus.PENDING)),
+        catalogManager.getJobManager().create(studyId, new Job().setId("job5").setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.PENDING)),
                 QueryOptions.empty(), sessionIdUser);
     }
 

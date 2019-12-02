@@ -20,7 +20,7 @@ import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.SingleProcess;
 import org.opencb.opencga.core.config.Execution;
-import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.common.Enums;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -38,7 +38,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.opencb.opencga.core.models.Job.JobStatus.*;
+import static org.opencb.opencga.core.models.common.Enums.ExecutionStatus.*;
 
 /**
  * Created by pfurio on 24/08/16.
@@ -146,7 +146,7 @@ public class SGEManager {
     }
 
     public static String status(String jobId) throws Exception {
-        String status = Job.JobStatus.UNKNOWN;
+        String status = Enums.ExecutionStatus.UNKNOWN;
 
         String xml;
         try {
@@ -196,7 +196,7 @@ public class SGEManager {
             }
         }
 
-        if (!status.equals(Job.JobStatus.UNKNOWN)) {
+        if (!status.equals(Enums.ExecutionStatus.UNKNOWN)) {
             status = STATE_DIC.get(status);
         } else {
             String command = "qacct -j *" + jobId + "*";

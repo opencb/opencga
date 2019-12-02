@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.common.Enums;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -244,10 +245,10 @@ public class LocalExecutorManager implements ExecutorManager {
 
         ObjectMapper objectMapper = getDefaultObjectMapper();
         Path outdir = Paths.get((String) job.getAttributes().get(TMP_OUT_DIR));
-        Job.JobStatus status = objectMapper.reader(Job.JobStatus.class).readValue(outdir.resolve(JOB_STATUS_FILE).toFile());
+        Enums.ExecutionStatus status = objectMapper.reader(Enums.ExecutionStatus.class).readValue(outdir.resolve(JOB_STATUS_FILE).toFile());
         /** Change status to READY or ERROR **/
         if (exitValue == 0 && StringUtils.isEmpty(error)) {
-            objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), new Job.JobStatus(Job.JobStatus.DONE,
+            objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE,
                     "Job finished."));
         }
 //            catalogManager.modifyJob(job.getId(), new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.READY),

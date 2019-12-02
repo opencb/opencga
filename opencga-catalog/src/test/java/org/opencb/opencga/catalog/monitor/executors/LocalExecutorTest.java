@@ -36,7 +36,7 @@ public class LocalExecutorTest {
 
         for (int i = 0; i < 10; i++) {
             String jobId = "jobId-" + i;
-            while(!localExecutor.getStatus(new Job().setId(jobId)).equals("DONE")) {
+            while(!localExecutor.getStatus(jobId).equals("DONE")) {
                 Thread.sleep(1000);
             }
             Assert.assertTrue(Files.exists(rootDir.resolve("out_" + i + ".txt")));

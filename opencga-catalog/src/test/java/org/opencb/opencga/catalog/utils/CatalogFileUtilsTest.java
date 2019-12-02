@@ -100,7 +100,7 @@ public class CatalogFileUtilsTest {
     public void unlinkNonExternalFile() throws CatalogException, IOException {
         File file = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN,
                 File.Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", null, 0, null, (long) -1, null,
-                null, true, null, null, userSessionId).first();
+                null, true, "blabla", null, userSessionId).first();
 
         // Now we try to unlink it
         thrown.expect(CatalogException.class);
@@ -155,7 +155,7 @@ public class CatalogFileUtilsTest {
         }
 
         //Create deleted files inside the folder
-        DataResult<File> queryResult1 = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toDelete.txt", "", new File.FileStatus(File.FileStatus.STAGE), 0, null, -1, null, null, true, null, null, userSessionId);
+        DataResult<File> queryResult1 = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toDelete.txt", "", new File.FileStatus(File.FileStatus.STAGE), 0, null, -1, null, null, true, "to delete", null, userSessionId);
         new FileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(200).getBytes()), queryResult1.first(), userSessionId, false, false, true);
 
         File toDelete = catalogManager.getFileManager().get(studyFqn, queryResult1.first().getPath(), null, userSessionId).first();
@@ -163,7 +163,7 @@ public class CatalogFileUtilsTest {
                 null, userSessionId);
 //        catalogFileUtils.delete(toDelete.getId(), userSessionId);
 
-        DataResult<File> queryResult = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toTrash.txt", "", new File.FileStatus(File.FileStatus.STAGE), 0, null, -1, null, null, true, null, null, userSessionId);
+        DataResult<File> queryResult = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toTrash.txt", "", new File.FileStatus(File.FileStatus.STAGE), 0, null, -1, null, null, true, "to trash", null, userSessionId);
         new FileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(200).getBytes()), queryResult.first(), userSessionId, false, false, true);
         File toTrash = catalogManager.getFileManager().get(studyFqn, queryResult.first().getPath(), null, userSessionId).first();
         catalogManager.getFileManager().delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), toTrash.getUid()),
