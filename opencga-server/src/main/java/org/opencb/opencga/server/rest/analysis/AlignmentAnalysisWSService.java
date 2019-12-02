@@ -41,6 +41,7 @@ import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Project;
@@ -79,8 +80,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     public Response index(@ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
                           @QueryParam(value = "file") String fileIdStr,
                           @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
-                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                          @QueryParam("study") String studyStr,
+                          @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
+                          @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                           @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr,
                           @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") boolean transform,
                           @ApiParam("Boolean indicating that only the load step will be run") @DefaultValue("false") @QueryParam("load") boolean load) {
@@ -110,12 +111,12 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @Path("/query")
     @ApiOperation(value = "Fetch alignments from a BAM file", position = 15, response = ReadAlignment[].class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "limit", value = "Max number of results to be returned", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "skip", value = "Number of results to skip", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Return total number of results", defaultValue = "false", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Max number of results to be returned", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = "Return total number of results", defaultValue = "false", dataType = "boolean", paramType = "query")
     })
     public Response getAlignments(@ApiParam(value = "File ID or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
-                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the Id or alias") @QueryParam("study") String studyStr,
+                                  @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                                   @ApiParam(value = "Comma-separated list of regions 'chr:start-end'", required = true) @QueryParam("region") String regions,
                                   @ApiParam(value = "Minimum mapping quality") @QueryParam("minMapQ") Integer minMapQ,
                                   @ApiParam(value = "Maximum number of mismatches") @QueryParam("maxNM") Integer maxNM,
@@ -169,7 +170,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @ApiOperation(value = "Fetch the coverage of an alignment file", position = 15, response = RegionCoverage.class)
     public Response getCoverage(
             @ApiParam(value = "File ID or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
             @ApiParam(value = "Comma separated list of genes") @QueryParam("gene") String geneStr,
             @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("500") @QueryParam("geneOffset") int geneOffset,
@@ -255,7 +256,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @ApiOperation(value = "Compute log2 coverage ratio from file #1 and file #2", position = 15, response = RegionCoverage.class)
     public Response getSomaticAndGermlineCoverageRatio(@ApiParam(value = "File #1 (e.g., somatic file ID or name in Catalog)", required = true) @QueryParam("file1") String somaticFileIdStr,
                                                        @ApiParam(value = "File #2 (e.g., germline file ID or name in Catalog)", required = true) @QueryParam("file2") String germlineFileIdStr,
-                                                       @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+                                                       @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                                                        @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
                                                        @ApiParam(value = "Comma separated list of genes") @QueryParam("gene") String geneStr,
                                                        @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("500") @QueryParam("geneOffset") int geneOffset,
@@ -328,7 +329,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @ApiOperation(value = "Fetch regions with a low coverage", position = 15, hidden = true, response = RegionCoverage.class)
     public Response getLowCoveredRegions(
             @ApiParam(value = "File id or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
             @ApiParam(value = "Comma separated list of genes") @QueryParam("gene") String geneStr,
             @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("500") @QueryParam("geneOffset") int geneOffset,
@@ -371,8 +372,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     public Response getStats(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("file")
                                      String fileIdStr,
                              @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
-                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                             @QueryParam("study") String studyStr,
+                             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
+                             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                              @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String region,
                              @ApiParam(value = "Minimum mapping quality") @QueryParam("minMapQ") Integer minMapQ,
                              @ApiParam(value = "Only alignments completely contained within boundaries of region")
@@ -442,10 +443,10 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @Path("/bwa/run")
     @ApiOperation(value = BwaWrapperAnalysis.DESCRIPTION, response = Job.class)
     public Response rvtestsRun(
-            @ApiParam(value = "Study") @QueryParam("study") String study,
-            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
-            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             AlignmentAnalysisWSService.BwaRunParams params) {
         return submitJob(study, "alignment", BwaWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
     }
@@ -475,10 +476,10 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @Path("/samtools/run")
     @ApiOperation(value = SamtoolsWrapperAnalysis.DESCRIPTION, response = Job.class)
     public Response samtoolsRun(
-            @ApiParam(value = "Study") @QueryParam("study") String study,
-            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
-            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             AlignmentAnalysisWSService.SamtoolsRunParams params) {
         return submitJob(study, "alignment", SamtoolsWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
     }
@@ -509,10 +510,10 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @Path("/deeptools/run")
     @ApiOperation(value = DeeptoolsWrapperAnalysis.DESCRIPTION, response = Job.class)
     public Response deeptoolsRun(
-            @ApiParam(value = "Study") @QueryParam("study") String study,
-            @ApiParam(value = JOB_NAME_DESCRIPTION) @QueryParam(JOB_NAME) String jobName,
-            @ApiParam(value = JOB_DESCRIPTION_DESCRIPTION) @QueryParam(JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = JOB_TAGS_DESCRIPTION) @QueryParam(JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             AlignmentAnalysisWSService.DeeptoolsRunParams params) {
         return submitJob(study, "alignment", DeeptoolsWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
     }

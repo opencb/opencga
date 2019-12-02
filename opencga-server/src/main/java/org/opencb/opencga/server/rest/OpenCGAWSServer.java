@@ -43,6 +43,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -135,9 +136,6 @@ public class OpenCGAWSServer {
     private static final int MAX_ID_SIZE = 100;
 
     private static String errorMessage;
-
-    public static final String STUDY_PARAM = "study";
-    public static final String STUDY_PARAM_DESCRIPTION = "Study [[user@]project:]study where study and project can be either the id or alias";
 
     static {
         initialized = new AtomicBoolean(false);
@@ -463,7 +461,7 @@ public class OpenCGAWSServer {
         return createErrorResponse("help", "No help available");
     }
 
-    protected Response createErrorResponse(Exception e) {        
+    protected Response createErrorResponse(Exception e) {
         // First we print the exception in Server logs
         logger.error("Catch error: " + e.getMessage(), e);
 
@@ -720,7 +718,7 @@ public class OpenCGAWSServer {
                 jobTags = Collections.emptyList();
             }
             Map<String, Object> paramsMap = bodyParams.toParams();
-            paramsMap.putIfAbsent("study", study);
+            paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
             return catalogManager
                     .getJobManager()
                     .submit(study, command, subcommand, Enums.Priority.MEDIUM, paramsMap,

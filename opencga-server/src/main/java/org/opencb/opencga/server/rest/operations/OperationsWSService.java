@@ -6,6 +6,7 @@ import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
@@ -111,7 +112,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = TASK_NAME_DESCRIPTION) @QueryParam(TASK_NAME) String taskName,
             @ApiParam(value = TASK_DESCRIPTION_DESCRIPTION) @QueryParam(TASK_DESCRIPTION) String taskDescription,
             @ApiParam(value = TASK_TAGS_DESCRIPTION) @QueryParam(TASK_TAGS) String taskTags,
-            @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantIndexParams params) {
         return submitTask("variant", "index", study, params, taskName, taskDescription, taskTags);
     }
@@ -123,11 +124,11 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = TASK_NAME_DESCRIPTION) @QueryParam(TASK_NAME) String taskName,
             @ApiParam(value = TASK_DESCRIPTION_DESCRIPTION) @QueryParam(TASK_DESCRIPTION) String taskDescription,
             @ApiParam(value = TASK_TAGS_DESCRIPTION) @QueryParam(TASK_TAGS) String taskTags,
-            @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "Files to remove") @QueryParam("file") String file,
             @ApiParam(value = "Resume a previously failed indexation") @QueryParam("resume") boolean resume) {
         HashMap<String, Object> paramsMap = new HashMap<>();
-        paramsMap.put("study", study);
+        paramsMap.put(ParamConstants.STUDY_PARAM, study);
         paramsMap.put("file", file);
         if (resume) {
             paramsMap.put("resume", "");
@@ -158,7 +159,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = TASK_NAME_DESCRIPTION) @QueryParam(TASK_NAME) String taskName,
             @ApiParam(value = TASK_DESCRIPTION_DESCRIPTION) @QueryParam(TASK_DESCRIPTION) String taskDescription,
             @ApiParam(value = TASK_TAGS_DESCRIPTION) @QueryParam(TASK_TAGS) String taskTags,
-            @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantSecondaryIndexParams params) {
         return submitTask("variant", "secondary-index", study, params, taskName, taskDescription, taskTags);
     }
@@ -170,10 +171,10 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = TASK_NAME_DESCRIPTION) @QueryParam(TASK_NAME) String taskName,
             @ApiParam(value = TASK_DESCRIPTION_DESCRIPTION) @QueryParam(TASK_DESCRIPTION) String taskDescription,
             @ApiParam(value = TASK_TAGS_DESCRIPTION) @QueryParam(TASK_TAGS) String taskTags,
-            @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "Samples to remove. Needs to provide all the samples in the secondary index.") @QueryParam("samples") String samples) {
         HashMap<String, Object> params = new HashMap<>();
-        params.put("study", study);
+        params.put(ParamConstants.STUDY_PARAM, study);
         params.put("samples", samples);
         return submitTask("variant", "secondary-index-delete", params, taskName, taskDescription, taskTags);
     }
@@ -219,11 +220,11 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = TASK_NAME_DESCRIPTION) @QueryParam(TASK_NAME) String taskName,
             @ApiParam(value = TASK_DESCRIPTION_DESCRIPTION) @QueryParam(TASK_DESCRIPTION) String taskDescription,
             @ApiParam(value = TASK_TAGS_DESCRIPTION) @QueryParam(TASK_TAGS) String taskTags,
-            @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam("project") String project,
+            @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = "Annotation identifier") @QueryParam("annotationId") String annotationId
     ) {
         Map<String, Object> params = new HashMap<>();
-        params.put("project", project);
+        params.put(ParamConstants.PROJECT_PARAM, project);
         params.put("annotationId", annotationId);
         return submitTask("variant", "annotation-delete", params, taskName, taskDescription, taskTags);
     }
@@ -278,7 +279,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = TASK_NAME_DESCRIPTION) @QueryParam(TASK_NAME) String taskName,
             @ApiParam(value = TASK_DESCRIPTION_DESCRIPTION) @QueryParam(TASK_DESCRIPTION) String taskDescription,
             @ApiParam(value = TASK_TAGS_DESCRIPTION) @QueryParam(TASK_TAGS) String taskTags,
-            @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantScoreIndexParams params) {
         return submitTask("variant", "score-index", study, params, taskName, taskDescription, taskTags);
     }
@@ -290,13 +291,13 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = TASK_NAME_DESCRIPTION) @QueryParam(TASK_NAME) String taskName,
             @ApiParam(value = TASK_DESCRIPTION_DESCRIPTION) @QueryParam(TASK_DESCRIPTION) String taskDescription,
             @ApiParam(value = TASK_TAGS_DESCRIPTION) @QueryParam(TASK_TAGS) String taskTags,
-            @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "Unique name of the score within the study") @QueryParam("name") String name,
             @ApiParam(value = "Resume a previously failed remove") @QueryParam("resume") boolean resume,
             @ApiParam(value = "Force remove of partially indexed scores") @QueryParam("force") boolean force
     ) {
         Map<String, Object> params = new HashMap<>();
-        params.put("study", study);
+        params.put(ParamConstants.STUDY_PARAM, study);
         params.put("name", name);
         if (resume) params.put("resume", "");
         if (force) params.put("force", "");
@@ -319,7 +320,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = TASK_NAME_DESCRIPTION) @QueryParam(TASK_NAME) String taskName,
             @ApiParam(value = TASK_DESCRIPTION_DESCRIPTION) @QueryParam(TASK_DESCRIPTION) String taskDescription,
             @ApiParam(value = TASK_TAGS_DESCRIPTION) @QueryParam(TASK_TAGS) String taskTags,
-            @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantSampleIndexParams params) {
         return submitTask("variant", "sample-index", study, params, taskName, taskDescription, taskTags);
     }
@@ -342,7 +343,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = TASK_NAME_DESCRIPTION) @QueryParam(TASK_NAME) String taskName,
             @ApiParam(value = TASK_DESCRIPTION_DESCRIPTION) @QueryParam(TASK_DESCRIPTION) String taskDescription,
             @ApiParam(value = TASK_TAGS_DESCRIPTION) @QueryParam(TASK_TAGS) String taskTags,
-            @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantFamilyIndexParams params) {
         return submitTask("variant", "family-index", study, params, taskName, taskDescription, taskTags);
     }
@@ -365,7 +366,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = TASK_NAME_DESCRIPTION) @QueryParam(TASK_NAME) String taskName,
             @ApiParam(value = TASK_DESCRIPTION_DESCRIPTION) @QueryParam(TASK_DESCRIPTION) String taskDescription,
             @ApiParam(value = TASK_TAGS_DESCRIPTION) @QueryParam(TASK_TAGS) String taskTags,
-            @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantAggregateFamilyParams params) {
         return submitTask("variant", "aggregate-family", study, params, taskName, taskDescription, taskTags);
     }
@@ -390,7 +391,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = TASK_NAME_DESCRIPTION) @QueryParam(TASK_NAME) String taskName,
             @ApiParam(value = TASK_DESCRIPTION_DESCRIPTION) @QueryParam(TASK_DESCRIPTION) String taskDescription,
             @ApiParam(value = TASK_TAGS_DESCRIPTION) @QueryParam(TASK_TAGS) String taskTags,
-            @ApiParam(value = STUDY_PARAM_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantAggregateParams params) {
         return submitTask("variant", "aggregate", study, params, taskName, taskDescription, taskTags);
     }
@@ -405,7 +406,7 @@ public class OperationsWSService extends OpenCGAWSServer {
         try {
             Map<String, Object> paramsMap = params.toParams();
             if (StringUtils.isNotEmpty(study)) {
-                paramsMap.put("study", study);
+                paramsMap.put(ParamConstants.STUDY_PARAM, study);
             }
             return submitTask(command, subcommand, paramsMap, taskName, taskDescription, taskTags);
         } catch (Exception e) {
@@ -426,7 +427,7 @@ public class OperationsWSService extends OpenCGAWSServer {
         if (dynamicParamsMap.size() > 0) {
             paramsMap.put("dynamicParams", dynamicParamsMap);
         }
-        String study = (String) paramsMap.get("study");
+        String study = (String) paramsMap.get(ParamConstants.STUDY_PARAM);
         // FIXME
         //  This should actually submit a TASK, not a JOB
         if (StringUtils.isNotEmpty(study)) {

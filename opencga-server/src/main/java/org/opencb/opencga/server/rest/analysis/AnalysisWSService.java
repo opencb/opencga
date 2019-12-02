@@ -37,13 +37,6 @@ import java.io.IOException;
 @Produces(MediaType.APPLICATION_JSON)
 public class AnalysisWSService extends OpenCGAWSServer {
 
-    public static final String JOB_NAME = "jobName";
-    public static final String JOB_NAME_DESCRIPTION = "Job Name";
-    public static final String JOB_DESCRIPTION = "jobDescription";
-    public static final String JOB_DESCRIPTION_DESCRIPTION = "Job Description";
-    public static final String JOB_TAGS = "jobTags";
-    public static final String JOB_TAGS_DESCRIPTION = "Job Tags";
-
     protected JobManager jobManager;
 
     public AnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)

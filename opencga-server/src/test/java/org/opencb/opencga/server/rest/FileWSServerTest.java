@@ -181,7 +181,7 @@ public class FileWSServerTest {
     @Test
     public void searchFiles() throws Exception {
         String json = webTarget.path("files").path("search")
-                .queryParam("include", "id,path")
+                .queryParam(QueryOptions.INCLUDE, "id,path")
                 .queryParam("sid", sessionId)
                 .queryParam("studyId", studyId)
                 .queryParam("path", "data/").request().get(String.class);
@@ -192,7 +192,7 @@ public class FileWSServerTest {
         assertEquals("data/", file.getPath());
 
         response = WSServerTestUtils.parseResult(webTarget.path("files").path("user@1000G:phase1:data:").path("update")
-                .queryParam("include", "id,path")
+                .queryParam(QueryOptions.INCLUDE, "id,path")
                 .queryParam("sid", sessionId)
                 .request().post(Entity.json(
                                 new ObjectMap("attributes",
@@ -203,7 +203,7 @@ public class FileWSServerTest {
         System.out.println(response.getQueryOptions().toJson());
 
         WSServerTestUtils.parseResult(webTarget.path("files").path("user@1000G:phase1:analysis:").path("update")
-//                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+//                .queryParam(QueryOptions.INCLUDE, "projects.studies.files.id,projects.studies.files.path")
                 .queryParam("sid", sessionId)
                 .request().post(Entity.json(
                                 new ObjectMap("attributes",
@@ -213,8 +213,8 @@ public class FileWSServerTest {
                         String.class), File.class);
 
         response = WSServerTestUtils.parseResult(webTarget.path("files").path("search")
-                .queryParam("include", "id,path")
-                .queryParam("limit", "5")
+                .queryParam(QueryOptions.INCLUDE, "id,path")
+                .queryParam(QueryOptions.LIMIT, "5")
                 .queryParam("sid", sessionId)
                 .queryParam("studyId", studyId)
                 .queryParam("attributes.txt", "~hello").request().get(String.class), File.class);
@@ -222,14 +222,14 @@ public class FileWSServerTest {
 
         System.out.println(response.getQueryOptions().toJson());
         response = WSServerTestUtils.parseResult(webTarget.path("files").path("search")
-                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+                .queryParam(QueryOptions.INCLUDE, "projects.studies.files.id,projects.studies.files.path")
                 .queryParam("sid", sessionId)
                 .queryParam("studyId", studyId)
                 .queryParam("battributes.exists", true).request().get(String.class), File.class);
         assertEquals(2, response.getResponse().get(0).getNumResults());
 
         response = WSServerTestUtils.parseResult(webTarget.path("files").path("search")
-                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+                .queryParam(QueryOptions.INCLUDE, "projects.studies.files.id,projects.studies.files.path")
                 .queryParam("sid", sessionId)
                 .queryParam("studyId", studyId)
                 .queryParam("nattributes.num", "<3").request().get(String.class), File.class);

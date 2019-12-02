@@ -51,7 +51,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //    @Consumes(MediaType.APPLICATION_JSON)
 //    @ApiOperation(value = "Create a new clinical analysis", position = 1, response = ClinicalAnalysis.class)
 //    public Response create(
-//            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+//            @ApiParam(value = Params.STUDY_DESCRIPTION) @QueryParam(Params.STUDY_PARAM)
 //                    String studyId,
 //            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
 //                    ClinicalAnalysisParameters params) {
@@ -68,7 +68,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //    @ApiOperation(value = "Update a clinical analysis", position = 1, response = ClinicalAnalysis.class)
 //    public Response update(
 //            @ApiParam(value = "Clinical analysis id") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
-//            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+//            @ApiParam(value = Params.STUDY_DESCRIPTION) @QueryParam(Params.STUDY_PARAM)
 //                    String studyId,
 //            @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
 //                    ClinicalAnalysisParameters params) {
@@ -97,7 +97,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //    @ApiOperation(value = "Update a clinical analysis", position = 1, response = ClinicalAnalysis.class)
 //    public Response interpretationUpdate(
 //            @ApiParam(value = "Clinical analysis id") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
-//            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+//            @ApiParam(value = Params.STUDY_DESCRIPTION) @QueryParam(Params.STUDY_PARAM)
 //                    String studyId,
 //            @ApiParam(value = "Action to be performed if the array of interpretations is being updated.", defaultValue = "ADD")
 //                @QueryParam("action") ParamUtils.BasicUpdateAction interpretationAction,
@@ -125,20 +125,20 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //    @Path("/{clinicalAnalyses}/info")
 //    @ApiOperation(value = "Clinical analysis info", position = 3, response = ClinicalAnalysis[].class)
 //    @ApiImplicitParams({
-//            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
+//            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = Params.INCLUDE_DESCRIPTION,
 //                    example = "name,attributes", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
+//            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = Params.EXCLUDE_DESCRIPTION,
 //                    example = "id,status", dataType = "string", paramType = "query")
 //    })
 //    public Response info(@ApiParam(value = "Comma separated list of clinical analysis IDs up to a maximum of 100")
 //                             @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
-//                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-//                         @QueryParam("study") String studyId,
+//                         @ApiParam(value = Params.STUDY_DESCRIPTION)
+//                         @QueryParam(Params.STUDY_PARAM) String studyId,
 //                         @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
 //                                 + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-//                                 defaultValue = "false") @QueryParam("silent") boolean silent) {
+//                                 defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
 //        try {
-//            query.remove("study");
+//            query.remove(Params.STUDY_PARAM);
 //            query.remove("clinicalAnalyses");
 //
 //            List<String> analysisList = getIdList(clinicalAnalysisStr);
@@ -153,21 +153,21 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //    @Path("/search")
 //    @ApiOperation(value = "Clinical analysis search.", position = 12, response = ClinicalAnalysis[].class)
 //    @ApiImplicitParams({
-//            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
-//            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-//            @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query")
+//            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = Params.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = Params.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = QueryOptions.LIMIT, value = Params.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+//            @ApiImplicitParam(name = QueryOptions.SKIP, value = Params.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+//            @ApiImplicitParam(name = QueryOptions.COUNT, value = Params.COUNT_DESCRIPTION, defaultValue = "false", dataType = "boolean", paramType = "query")
 //    })
 //    public Response search(
-//            @ApiParam(value = "Study [[user@]project:]{study} where study and project can be either the id or alias.")
-//            @QueryParam("study") String studyId,
+//            @ApiParam(value = Params.STUDY_DESCRIPTION)
+//            @QueryParam(Params.STUDY_PARAM) String studyId,
 //            @ApiParam(value = "Clinical analysis type") @QueryParam("type") ClinicalAnalysis.Type type,
 //            @ApiParam(value = "Priority") @QueryParam("priority") String priority,
 //            @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
-//            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+//            @ApiParam(value = Params.CREATION_DATE_DESCRIPTION)
 //                @QueryParam("creationDate") String creationDate,
-//            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+//            @ApiParam(value = Params.MODIFICATION_DATE_DESCRIPTION)
 //                @QueryParam("modificationDate") String modificationDate,
 //            @ApiParam(value = "Due date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)") @QueryParam("dueDate") String dueDate,
 //            @ApiParam(value = "Description") @QueryParam("description") String description,
@@ -180,7 +180,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
 //            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @QueryParam("nattributes") String nattributes) {
 //        try {
-//            query.remove("study");
+//            query.remove(Params.STUDY_PARAM);
 //
 //            DataResult<ClinicalAnalysis> queryResult;
 //            if (count) {
@@ -199,14 +199,14 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //    @ApiOperation(value = "Group clinical analysis by several fields", position = 10, hidden = true,
 //            notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
 //    @ApiImplicitParams({
-//            @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
+//            @ApiImplicitParam(name = QueryOptions.COUNT, value = "Count the number of elements matching the group", dataType = "boolean",
 //                    paramType = "query"),
-//            @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
+//            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Maximum number of documents (groups) to be returned", dataType = "integer",
 //                    paramType = "query", defaultValue = "50")
 //    })
 //    public Response groupBy(
 //            @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
-//            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+//            @ApiParam(value = Params.STUDY_DESCRIPTION) @QueryParam(Params.STUDY_PARAM)
 //                    String studyId,
 //            @ApiParam(value = "Comma separated list of ids.") @QueryParam("id") String id,
 //            @ApiParam(value = "DEPRECATED: Comma separated list of names.") @QueryParam("name") String name,
@@ -219,7 +219,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //            @ApiParam(value = "Sample") @QueryParam("sample") String sample,
 //            @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release) {
 //        try {
-//            query.remove("study");
+//            query.remove(Params.STUDY_PARAM);
 //            query.remove("fields");
 //
 //            DataResult result = clinicalManager.groupBy(studyId, query, fields, queryOptions, sessionId);
@@ -236,11 +236,11 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //    public Response getAcls(
 //            @ApiParam(value = "Comma separated list of clinical analysis IDs or names up to a maximum of 100", required = true)
 //                @PathParam("clinicalAnalyses") String clinicalAnalysis,
-//            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyId,
+//            @ApiParam(value = Params.STUDY_DESCRIPTION) @QueryParam(Params.STUDY_PARAM) String studyId,
 //            @ApiParam(value = "User or group id") @QueryParam("member") String member,
 //            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
 //                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-//                    defaultValue = "false") @QueryParam("silent") boolean silent) {
+//                    defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
 //        try {
 //            List<String> idList = getIdList(clinicalAnalysis);
 //            return createOkResponse(clinicalManager.getAcls(studyId, idList, member, silent, sessionId));
@@ -257,7 +257,7 @@ public class ClinicalAnalysisWSServer extends OpenCGAWSServer {
 //    @Path("/acl/{members}/update")
 //    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
 //    public Response updateAcl(
-//            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyId,
+//            @ApiParam(value = Params.STUDY_DESCRIPTION) @QueryParam(Params.STUDY_PARAM) String studyId,
 //            @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
 //            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) ClinicalAnalysisAcl params) {
 //        try {
