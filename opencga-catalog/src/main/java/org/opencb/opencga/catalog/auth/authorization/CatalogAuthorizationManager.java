@@ -38,7 +38,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -67,14 +66,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final FamilyDBAdaptor familyDBAdaptor;
     private final ClinicalAnalysisDBAdaptor clinicalAnalysisDBAdaptor;
 
-    // List of Acls defined for the special users (admin, daemon...) read from the main configuration file.
-    private static final List<StudyAclEntry> SPECIAL_ACL_LIST = Arrays.asList(
-            new StudyAclEntry(OPENCGA, Arrays.asList(StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS.name(),
-                    StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS.name(), StudyAclEntry.StudyPermissions.VIEW_FILES.name(),
-                    StudyAclEntry.StudyPermissions.WRITE_FILES.name(), StudyAclEntry.StudyPermissions.UPLOAD_FILES.name(),
-                    StudyAclEntry.StudyPermissions.DELETE_FILES.name(), StudyAclEntry.StudyPermissions.VIEW_JOBS.name(),
-                    StudyAclEntry.StudyPermissions.WRITE_JOBS.name())));
-
     private final boolean openRegister;
 
     private final AuthorizationDBAdaptor aclDBAdaptor;
@@ -97,15 +88,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         panelDBAdaptor = dbFactory.getCatalogPanelDBAdaptor();
         familyDBAdaptor = dbFactory.getCatalogFamilyDBAdaptor();
         clinicalAnalysisDBAdaptor = dbFactory.getClinicalAnalysisDBAdaptor();
-    }
-
-    public static StudyAclEntry getSpecialPermissions(String member) {
-        for (StudyAclEntry studyAclEntry : SPECIAL_ACL_LIST) {
-            if (studyAclEntry.getMember().equals(member)) {
-                return studyAclEntry;
-            }
-        }
-        return new StudyAclEntry(member, Collections.emptyList());
     }
 
     @Override
@@ -150,10 +132,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void checkStudyPermission(long studyId, String userId, StudyAclEntry.StudyPermissions permission, String message)
             throws CatalogException {
-        if (userId.equals(OPENCGA)) {
-            if (getSpecialPermissions(OPENCGA).getPermissions().contains(permission)) {
-                return;
-            }
+        if (OPENCGA.equals(userId)) {
+            return;
         } else {
             if (studyDBAdaptor.hasStudyPermission(studyId, userId, permission)) {
                 return;
@@ -348,10 +328,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private boolean checkUserPermission(long studyUid, String userId, Query query, StudyAclEntry.StudyPermissions studyPermission,
                                         DBAdaptor dbAdaptor) throws CatalogDBException, CatalogAuthorizationException {
-        if (userId.equals(OPENCGA)) {
-            if (getSpecialPermissions(OPENCGA).getPermissions().contains(studyPermission)) {
-                return true;
-            }
+        if (OPENCGA.equals(userId)) {
+            return true;
         } else {
             if (dbAdaptor.count(studyUid, query, userId, studyPermission).getNumMatches() == 1) {
                 return true;
@@ -865,7 +843,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public OpenCGAResult<Map<String, List<String>>> removeStudyAcls(List<Long> studyIds, List<String> members,
-                                                                 @Nullable List<String> permissions) throws CatalogException {
+                                                                    @Nullable List<String> permissions) throws CatalogException {
         aclDBAdaptor.removeFromMembers(studyIds, members, permissions, Enums.Resource.STUDY);
         return aclDBAdaptor.get(studyIds, members, Enums.Resource.STUDY);
     }
@@ -926,7 +904,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public OpenCGAResult<Map<String, List<String>>> replicateAcls(long studyId, List<Long> ids, Map<String, List<String>> aclEntries,
-                                                               Enums.Resource resource) throws CatalogException {
+                                                                  Enums.Resource resource) throws CatalogException {
         if (ids == null || ids.isEmpty()) {
             throw new CatalogDBException("Missing identifiers to set acls");
         }

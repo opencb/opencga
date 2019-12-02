@@ -212,9 +212,9 @@ public class ProjectManager extends AbstractManager {
                 .append("assembly", assembly)
                 .append("options", options)
                 .append("token", sessionId);
-        if (Account.Type.GUEST == user.first().getAccount().getType()) {
-            String errorMsg = "User " + userId + " has a guest account and is not authorized to create new projects. If you "
-                    + " think this might be an error, please contact with your administrator.";
+        if (Account.Type.FULL != user.first().getAccount().getType()) {
+            String errorMsg = "User " + userId + " is not authorized to create new projects. Only users with " + Account.Type.FULL
+                    + " accounts are allowed to do so.";
             auditManager.auditCreate(userId, Enums.Resource.PROJECT, id, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
             throw new CatalogException(errorMsg);
