@@ -1099,7 +1099,7 @@ public class VariantCommandOptions {
     public class PlinkCommandOptions {
 
         @ParametersDelegate
-        //public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        //public GeneralCliOptions.CommonCommandOptions commonOptions = commonOptions;
         public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
 
         @Parameter(names = {"--study"}, description = "Study.")
