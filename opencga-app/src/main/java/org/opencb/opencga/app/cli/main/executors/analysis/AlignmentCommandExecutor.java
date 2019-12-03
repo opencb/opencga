@@ -42,7 +42,6 @@ import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
 import org.opencb.opencga.server.grpc.ServiceTypesModel;
 import org.opencb.opencga.server.rest.analysis.AlignmentAnalysisWSService;
-import org.opencb.opencga.server.rest.analysis.VariantAnalysisWSService;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 
 import java.io.IOException;
@@ -329,7 +328,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 alignmentCommandOptions.bwaCommandOptions.fastq2File,
                 alignmentCommandOptions.bwaCommandOptions.samFile,
                 alignmentCommandOptions.bwaCommandOptions.outdir,
-                alignmentCommandOptions.bwaCommandOptions.basicOptions.params
+                alignmentCommandOptions.bwaCommandOptions.basicCommandOptions.params
         ).toObjectMap();
         return openCGAClient.getAlignmentClient().bwaRun(alignmentCommandOptions.bwaCommandOptions.study, params);
     }
@@ -342,7 +341,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 alignmentCommandOptions.samtoolsCommandOptions.inputFile,
                 alignmentCommandOptions.samtoolsCommandOptions.outputFile,
                 alignmentCommandOptions.samtoolsCommandOptions.outdir,
-                alignmentCommandOptions.samtoolsCommandOptions.basicOptions.params
+                alignmentCommandOptions.samtoolsCommandOptions.basicCommandOptions.params
         ).toObjectMap();
         return openCGAClient.getAlignmentClient().samtoolsRun(alignmentCommandOptions.samtoolsCommandOptions.study, params);
     }
@@ -355,7 +354,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 alignmentCommandOptions.deeptoolsCommandOptions.bamFile,
                 alignmentCommandOptions.deeptoolsCommandOptions.coverageFile,
                 alignmentCommandOptions.deeptoolsCommandOptions.outdir,
-                alignmentCommandOptions.deeptoolsCommandOptions.basicOptions.params
+                alignmentCommandOptions.deeptoolsCommandOptions.basicCommandOptions.params
         ).toObjectMap();
         return openCGAClient.getAlignmentClient().deeptoolsRun(alignmentCommandOptions.deeptoolsCommandOptions.study, params);
     }

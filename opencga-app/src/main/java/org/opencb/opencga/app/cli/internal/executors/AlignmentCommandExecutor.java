@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.app.cli.internal.executors;
 
-import org.apache.commons.lang3.StringUtils;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
@@ -28,10 +27,8 @@ import org.opencb.hpg.bigdata.analysis.tools.Status;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
-import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
@@ -204,10 +201,13 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void bwa() throws Exception {
         AlignmentCommandOptions.BwaCommandOptions cliOptions = alignmentCommandOptions.bwaCommandOptions;
         ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.basicOptions.params);
+        params.putAll(cliOptions.basicCommandOptions.params);
 
         BwaWrapperAnalysis bwa = new BwaWrapperAnalysis();
-        bwa.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+        bwa.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                cliOptions.basicCommandOptions.token);
+
+        bwa.setStudy(cliOptions.study);
 
         bwa.setCommand(cliOptions.command)
                 .setFastaFile(cliOptions.fastaFile)
@@ -224,10 +224,13 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void samtools() throws Exception {
         AlignmentCommandOptions.SamtoolsCommandOptions cliOptions = alignmentCommandOptions.samtoolsCommandOptions;
         ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.basicOptions.params);
+        params.putAll(cliOptions.basicCommandOptions.params);
 
         SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
-        samtools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+        samtools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                cliOptions.basicCommandOptions.token);
+
+        samtools.setStudy(cliOptions.study);
 
         samtools.setCommand(cliOptions.command)
                 .setInputFile(cliOptions.inputFile)
@@ -241,10 +244,13 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void deeptools() throws Exception {
         AlignmentCommandOptions.DeeptoolsCommandOptions cliOptions = alignmentCommandOptions.deeptoolsCommandOptions;
         ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.basicOptions.params);
+        params.putAll(cliOptions.basicCommandOptions.params);
 
         DeeptoolsWrapperAnalysis deeptools = new DeeptoolsWrapperAnalysis();
-        deeptools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+        deeptools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                cliOptions.basicCommandOptions.token);
+
+        deeptools.setStudy(cliOptions.study);
 
         deeptools.setExecutable(cliOptions.executable)
                 .setBamFile(cliOptions.bamFile)

@@ -22,7 +22,6 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 
@@ -170,9 +169,9 @@ public class AlignmentCommandOptions {
     public class BwaCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.BasicCommonCommandOptions basicOptions = analysisCommonOptions;
+        public GeneralCliOptions.BasicCommonCommandOptions basicCommandOptions = analysisCommonOptions;
 
-        @Parameter(names = {"--study"}, description = "Study.")
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
         public String study;
 
         @Parameter(names = {"--command"}, description = "BWA comamnd. Valid values: index, mem.")
@@ -203,9 +202,9 @@ public class AlignmentCommandOptions {
     public class SamtoolsCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.BasicCommonCommandOptions basicOptions = analysisCommonOptions;
+        public GeneralCliOptions.BasicCommonCommandOptions basicCommandOptions = analysisCommonOptions;
 
-        @Parameter(names = {"--study"}, description = "Study.")
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
         public String study;
 
         @Parameter(names = {"--command"}, description = "Samtools command. Valid values: view, sort, index, stats.")
@@ -227,9 +226,9 @@ public class AlignmentCommandOptions {
     public class DeeptoolsCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.BasicCommonCommandOptions basicOptions = analysisCommonOptions;
+        public GeneralCliOptions.BasicCommonCommandOptions basicCommandOptions = analysisCommonOptions;
 
-        @Parameter(names = {"--study"}, description = "Study.")
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
         public String study;
 
         @Parameter(names = {"--executable"}, description = "Deeptools executable. Valid values: bamCoverage.")

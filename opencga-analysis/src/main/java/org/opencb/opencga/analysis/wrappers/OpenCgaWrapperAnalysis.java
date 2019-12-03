@@ -1,10 +1,15 @@
 package org.opencb.opencga.analysis.wrappers;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -21,9 +26,11 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaAnalysis {
     public final String STDOUT_FILENAME = "stdout.txt";
     public final String STDERR_FILENAME = "stderr.txt";
 
+    private String study;
+
     public abstract String getDockerImageName();
 
-    protected String getCommandLine() {
+    protected String getCommandLine() throws AnalysisException {
         return getCommandLine("--");
     }
 
@@ -40,17 +47,75 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaAnalysis {
         return sb.toString();
     }
 
-    protected void updateSrcTargetMap(String filename, StringBuilder sb, Map<String, String> srcTargetMap) {
-        if (StringUtils.isNotEmpty(filename)) {
-            String src = new File(filename).getParentFile().getAbsolutePath();
+    protected void updateSrcTargetMap(String filename, StringBuilder sb, Map<String, String> srcTargetMap) throws AnalysisException {
+        if (StringUtils.isEmpty(filename)) {
+            // Skip
+            return;
+        }
+
+        OpenCGAResult<org.opencb.opencga.core.models.File> fileResult;
+        try {
+            fileResult = catalogManager.getFileManager().get(getStudy(), filename,
+                    QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new AnalysisException("Error accessing file '" + filename + "' of the study " + getStudy() + "'", e);
+        }
+        if (fileResult.getNumResults() <= 0) {
+            throw new AnalysisException("File '" + filename + "' not found in study '" + getStudy() + "'");
+        }
+        URI uri = fileResult.getResults().get(0).getUri();
+        logger.info("filename = " + filename + " ---> uri = " + uri + " ---> path = " + uri.getPath());
+
+        if (StringUtils.isNotEmpty(uri.toString())) {
+            String src = new File(uri.getPath()).getParentFile().getAbsolutePath();
             if (!srcTargetMap.containsKey(src)) {
                 srcTargetMap.put(src, DOCKER_INPUT_PATH + srcTargetMap.size());
                 sb.append("--mount type=bind,source=\"").append(src).append("\",target=\"").append(srcTargetMap.get(src)).append("\" ");
             }
         }
     }
+
+    protected void updateFileMaps(String filename, StringBuilder sb, Map<String, URI> fileUriMap, Map<String, String> srcTargetMap)
+            throws AnalysisException {
+        if (StringUtils.isEmpty(filename)) {
+            // Skip
+            return;
+        }
+
+        OpenCGAResult<org.opencb.opencga.core.models.File> fileResult;
+        try {
+            fileResult = catalogManager.getFileManager().get(getStudy(), filename,
+                    QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new AnalysisException("Error accessing file '" + filename + "' of the study " + getStudy() + "'", e);
+        }
+        if (fileResult.getNumResults() <= 0) {
+            throw new AnalysisException("File '" + filename + "' not found in study '" + getStudy() + "'");
+        }
+        URI uri = fileResult.getResults().get(0).getUri();
+        logger.info("filename = " + filename + " ---> uri = " + uri + " ---> path = " + uri.getPath());
+
+        if (StringUtils.isNotEmpty(uri.toString())) {
+            fileUriMap.put(filename, uri);
+            String src = new File(uri.getPath()).getParentFile().getAbsolutePath();
+            if (!srcTargetMap.containsKey(src)) {
+                srcTargetMap.put(src, DOCKER_INPUT_PATH + srcTargetMap.size());
+                sb.append("--mount type=bind,source=\"").append(src).append("\",target=\"").append(srcTargetMap.get(src)).append("\" ");
+            }
+        }
+    }
+
     protected List<String> getFilenames(Path dir) throws IOException {
         Stream<Path> walk = Files.walk(dir);
         return walk.map(x -> x.getFileName().toString()).collect(Collectors.toList());
+    }
+
+    public String getStudy() {
+        return study;
+    }
+
+    public OpenCgaWrapperAnalysis setStudy(String study) {
+        this.study = study;
+        return this;
     }
 }

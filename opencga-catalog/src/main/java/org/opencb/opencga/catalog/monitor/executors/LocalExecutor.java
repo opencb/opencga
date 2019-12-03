@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.monitor.executors;
 
+import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.RunnableProcess;
 import org.opencb.opencga.core.config.Execution;
@@ -23,9 +24,11 @@ import org.opencb.opencga.core.models.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.DataOutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -62,14 +65,23 @@ public class LocalExecutor implements BatchExecutor {
             ExecutorConfig executorConfig = ExecutorConfig.getExecutorConfig(job);
 
             logger.info("Ready to run {}", job.getCommandLine());
-            Command com = new Command(getCommandLine(job.getCommandLine(), Paths.get(executorConfig.getStdout()),
-                    Paths.get(executorConfig.getStderr())));
+            Command com = new Command(job.getCommandLine());
+            //getCommandLine(job.getCommandLine()), Paths.get(executorConfig.getStdout()), Paths.get(executorConfig.getStderr())));
 
-//                DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStdout()));
-//                com.setOutputOutputStream(dataOutputStream);
-//
-//                dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStderr()));
-//                com.setErrorOutputStream(dataOutputStream);
+            try {
+                if (StringUtils.isNotEmpty(executorConfig.getStdout())) {
+                    DataOutputStream dataOutputStream = null;
+                    dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStdout()));
+                    com.setOutputOutputStream(dataOutputStream);
+                }
+
+                if (StringUtils.isNotEmpty(executorConfig.getStderr())) {
+                    DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStderr()));
+                    com.setErrorOutputStream(dataOutputStream);
+                }
+            } catch (FileNotFoundException e) {
+                logger.error("Could not create the standard output/error files", e);
+            }
 
             final long jobId = job.getUid();
 
@@ -133,7 +145,23 @@ public class LocalExecutor implements BatchExecutor {
             Thread.currentThread().setName("LocalExecutor-" + nextThreadNum());
             logger.info("Ready to run - {}", commandLine);
             jobStatus.put(jobId, Job.JobStatus.RUNNING);
-            Command com = new Command(getCommandLine(commandLine, stdout, stderr));
+            Command com = new Command(commandLine);
+            //getCommandLine(commandLine), stdout, stderr));
+
+            try {
+                DataOutputStream dataOutputStream;
+                if (stdout != null) {
+                    dataOutputStream = new DataOutputStream(new FileOutputStream(stdout.toAbsolutePath().toString()));
+                    com.setOutputOutputStream(dataOutputStream);
+                }
+
+                if (stderr != null) {
+                    dataOutputStream = new DataOutputStream(new FileOutputStream(stderr.toAbsolutePath().toString()));
+                    com.setErrorOutputStream(dataOutputStream);
+                }
+            } catch (FileNotFoundException e) {
+                logger.error("Could not create the standard output/error files", e);
+            }
 
             Thread hook = new Thread(() -> {
                 logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
