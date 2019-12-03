@@ -46,7 +46,6 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.AnalysisException;
-import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -66,6 +65,7 @@ import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsMan
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -303,7 +303,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         }
     }
 
-    private void importData() throws URISyntaxException, CatalogException, StorageEngineException, IOException {
+    private void importData() throws URISyntaxException, AnalysisException {
         VariantCommandOptions.VariantImportCommandOptions importVariantOptions = variantCommandOptions.importVariantCommandOptions;
 
 
@@ -313,7 +313,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
 
     }
 
-    private void remove() throws CatalogException, StorageEngineException, IOException {
+    private void remove() throws AnalysisException {
         VariantCommandOptions.VariantDeleteCommandOptions cliOptions = variantCommandOptions.variantDeleteCommandOptions;
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
@@ -321,10 +321,11 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         QueryOptions options = new QueryOptions();
         options.put(VariantStorageOptions.RESUME.key(), cliOptions.genericVariantDeleteOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
+        Path outdir = Paths.get(cliOptions.outdir);
         if (cliOptions.genericVariantDeleteOptions.files.size() == 1 && cliOptions.genericVariantDeleteOptions.files.get(0).equalsIgnoreCase(VariantQueryUtils.ALL)) {
-            variantManager.removeStudy(cliOptions.study, sessionId, options);
+            variantManager.removeStudy(cliOptions.study, outdir, options, sessionId);
         } else {
-            List<File> removedFiles = variantManager.removeFile(cliOptions.genericVariantDeleteOptions.files, cliOptions.study, sessionId, options);
+            variantManager.removeFile(cliOptions.study, cliOptions.genericVariantDeleteOptions.files, outdir, options, sessionId);
         }
     }
 
@@ -365,7 +366,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
     }
 
     private void secondaryIndex() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageEngineException,
-            InstantiationException, IllegalAccessException, URISyntaxException, VariantSearchException {
+            InstantiationException, IllegalAccessException, URISyntaxException, VariantSearchException, AnalysisException {
         VariantCommandOptions.VariantSecondaryIndexCommandOptions cliOptions = variantCommandOptions.variantSecondaryIndexCommandOptions;
 
         QueryOptions queryOptions = new QueryOptions();
@@ -376,10 +377,8 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         if (StringUtils.isNotEmpty(cliOptions.sample)) {
             variantManager.searchIndexSamples(cliOptions.study, Arrays.asList(cliOptions.sample.split(",")), queryOptions, sessionId);
         } else {
-            Query query = new Query();
-            query.putIfNotEmpty(VariantCatalogQueryUtils.PROJECT.key(), cliOptions.project);
-            query.putIfNotEmpty(VariantQueryParam.REGION.key(), cliOptions.region);
-            variantManager.searchIndex(query, queryOptions, cliOptions.overwrite, sessionId);
+            variantManager.searchIndex(cliOptions.project, cliOptions.region, cliOptions.overwrite, Paths.get(cliOptions.outdir),
+                    new ObjectMap(cliOptions.commonOptions.params), sessionId);
         }
     }
 
@@ -500,7 +499,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
     }
 
     private void familyIndex()
-            throws CatalogException, ClassNotFoundException, StorageEngineException, InstantiationException, IllegalAccessException {
+            throws AnalysisException {
         VariantCommandOptions.FamilyIndexCommandOptions cliOptions = variantCommandOptions.familyIndexCommandOptions;
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
@@ -511,17 +510,13 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
 
         List<String> families = Arrays.asList(cliOptions.family.split(","));
 
-        variantManager.familyIndex(cliOptions.study, families, options, sessionId);
+        variantManager.familyIndex(cliOptions.study, families, Paths.get(cliOptions.outdir), options, sessionId);
     }
 
-    private void annotate() throws StorageEngineException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException,
-            AnalysisExecutionException, IllegalAccessException, InstantiationException, ClassNotFoundException {
+    private void annotate() throws AnalysisException {
 
         VariantCommandOptions.VariantAnnotateCommandOptions cliOptions = variantCommandOptions.annotateVariantCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
-
-        Query query = new Query()
-                .append(VariantQueryParam.REGION.key(), cliOptions.genericVariantAnnotateOptions.region);
 
         QueryOptions options = new QueryOptions();
         options.put(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), cliOptions.genericVariantAnnotateOptions.overwriteAnnotations);
@@ -532,10 +527,10 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         options.putIfNotEmpty(DefaultVariantAnnotationManager.FILE_NAME, cliOptions.genericVariantAnnotateOptions.fileName);
         options.putAll(cliOptions.commonOptions.params);
 
-        variantManager.annotate(cliOptions.project, cliOptions.study, query, cliOptions.outdir, options, sessionId);
+        variantManager.annotate(cliOptions.project, cliOptions.study, cliOptions.genericVariantAnnotateOptions.region, cliOptions.outdir, options, sessionId);
     }
 
-    private void annotationSave() throws IllegalAccessException, StorageEngineException, InstantiationException, VariantAnnotatorException, CatalogException, ClassNotFoundException {
+    private void annotationSave() throws AnalysisException {
         VariantCommandOptions.AnnotationSaveCommandOptions cliOptions = variantCommandOptions.annotationSaveSnapshotCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
@@ -543,18 +538,18 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         options.putAll(cliOptions.commonOptions.params);
 
 
-        variantManager.saveAnnotation(cliOptions.project, cliOptions.annotationId, options, sessionId);
+        variantManager.saveAnnotation(cliOptions.project, cliOptions.annotationId, Paths.get(cliOptions.outdir), options, sessionId);
     }
 
-    private void annotationDelete() throws IllegalAccessException, StorageEngineException, InstantiationException, VariantAnnotatorException, CatalogException, ClassNotFoundException {
-        VariantCommandOptions.AnnotationSaveCommandOptions cliOptions = variantCommandOptions.annotationSaveSnapshotCommandOptions;
+    private void annotationDelete() throws AnalysisException {
+        VariantCommandOptions.AnnotationDeleteCommandOptions cliOptions = variantCommandOptions.annotationDeleteCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         QueryOptions options = new QueryOptions();
         options.putAll(cliOptions.commonOptions.params);
 
 
-        variantManager.deleteAnnotation(cliOptions.project, cliOptions.annotationId, options, sessionId);
+        variantManager.deleteAnnotation(cliOptions.project, cliOptions.annotationId, Paths.get(cliOptions.outdir), options, sessionId);
     }
 
     private void annotationQuery() throws CatalogException, IOException, StorageEngineException {

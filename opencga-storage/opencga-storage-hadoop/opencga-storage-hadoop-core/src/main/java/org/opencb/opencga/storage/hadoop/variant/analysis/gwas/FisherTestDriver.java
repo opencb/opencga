@@ -6,6 +6,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
@@ -200,7 +201,10 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
         job.getConfiguration().set(CONTROL_COHORT_IDS, controlCohort.stream().map(Objects::toString).collect(Collectors.joining(",")));
 
         job.setOutputFormatClass(TextOutputFormat.class);
-        TextOutputFormat.setCompressOutput(job, outdir.toString().toLowerCase().endsWith(".gz"));
+        if (outdir.toString().toLowerCase().endsWith(".gz")) {
+            TextOutputFormat.setCompressOutput(job, true);
+            TextOutputFormat.setOutputCompressorClass(job, GzipCodec.class);
+        }
         TextOutputFormat.setOutputPath(job, outdir);
 
         job.setReducerClass(FisherTestReducer.class);

@@ -25,7 +25,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.analysis.OpenCgaAnalysis;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
@@ -38,7 +37,6 @@ import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
@@ -64,7 +62,7 @@ import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_S
  * Created by imedina on 17/08/16.
  */
 @Analysis(id = "variant-index", type = Analysis.AnalysisType.VARIANT)
-public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
+public class VariantFileIndexerStorageOperation extends StorageOperation {
 
     public static final String DEFAULT_COHORT_DESCRIPTION = "Default cohort with almost all indexed samples";
     public static final QueryOptions FILE_GET_QUERY_OPTIONS = new QueryOptions()
@@ -78,13 +76,11 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
     public static final String LOAD = "load";
     // FIXME : Needed?
     public static final String TRANSFORMED_FILES = "transformedFiles";
-    public static final String SAVE_INTERMEDIATE_FILES = "saveIntermediateFiles";
 
 
     private String studyFqn;
     private List<String> files;
 
-    private boolean saveIntermediateFiles;
     private boolean calculateStats;
     private boolean transform;
     private boolean load;
@@ -121,7 +117,7 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
 
     private URI checkOutdir(String study) throws Exception {
         Path outDir;
-        if (saveIntermediateFiles) {
+        if (keepIntermediateFiles) {
             // Check the output directory does not correspond with a catalog directory
             outDir = getOutDir();
             Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), outDir.toUri().toString());
@@ -144,7 +140,7 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
 
         Study study = catalogManager.getStudyManager().get(studyFqn, new QueryOptions(), token).first();
 
-        saveIntermediateFiles = params.getBoolean(SAVE_INTERMEDIATE_FILES, false);
+        keepIntermediateFiles = params.getBoolean(KEEP_INTERMEDIATE_FILES, false);
 //        saveIntermediateFiles = true;
         studyFqn = study.getFqn();
         outDirUri = checkOutdir(studyFqn);
@@ -270,7 +266,7 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
         }
 
         // Only if we are not transforming or if a path has been passed, we will update catalog information
-        if (!step.equals(Type.TRANSFORM) || saveIntermediateFiles) {
+        if (!step.equals(Type.TRANSFORM) || keepIntermediateFiles) {
             for (File file : filesToIndex) {
                 DataResult<FileIndex> fileIndexDataResult = catalogManager.getFileManager().updateFileIndexStatus(file, fileStatus,
                         fileStatusMessage, release, token);
@@ -283,7 +279,7 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
     @Override
     protected void run() throws Exception {
 
-        variantStorageEngine = getVariantStorageEngine(variantStorageManager.getDataStore(studyFqn, token));
+        variantStorageEngine = getVariantStorageEngine(studyFqn);
         variantStorageEngine.getOptions().putAll(params);
 
         updateProject(studyFqn, variantStorageEngine);
@@ -324,10 +320,10 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
             throw e;
         } finally {
             // Only if we are not transforming or if a path has been passed, we will update catalog information
-            if (!step.equals(Type.TRANSFORM) || saveIntermediateFiles) {
+            if (!step.equals(Type.TRANSFORM) || keepIntermediateFiles) {
 
                 updateFileInfo(studyFqn, filesToIndex, variantStorageEngine.getVariantReaderUtils(),
-                        storagePipelineResults, Paths.get(outDirUri), release, saveIntermediateFiles, params, token);
+                        storagePipelineResults, Paths.get(outDirUri), release, keepIntermediateFiles, params, token);
 
                 // Restore previous cohort status. Cohort status will be read from StudyConfiguration.
                 if (calculateStats && exception != null) {
@@ -345,11 +341,6 @@ public class VariantFileIndexerStorageOperation extends OpenCgaAnalysis {
                 addFile(Paths.get(VariantReaderUtils.getMetaFromTransformedFile(result.getTransformResult())), FileResult.FileType.JSON);
             }
         }
-    }
-
-    private VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {
-        return StorageEngineFactory.get(variantStorageManager.getStorageConfiguration())
-                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
     }
 
     private Type getType(Boolean load, Boolean transform) {

@@ -229,7 +229,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
         queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, true);
         queryOptions.append(VariantFileIndexerStorageOperation.LOAD, false);
-        queryOptions.append("saveIntermediateFiles", true);
+        queryOptions.append(StorageOperation.KEEP_INTERMEDIATE_FILES, true);
         boolean calculateStats = queryOptions.getBoolean(VariantStorageOptions.STATS_CALCULATE.key());
 
         Study study = catalogManager.getFileManager().getStudy(inputFile, sessionId);
@@ -285,7 +285,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     protected List<StoragePipelineResult> loadFiles(List<File> files, List<File> expectedLoadedFiles, QueryOptions queryOptions, String outputId) throws Exception {
         queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, false);
         queryOptions.append(VariantFileIndexerStorageOperation.LOAD, true);
-        queryOptions.append("saveIntermediateFiles", true);
+        queryOptions.append(StorageOperation.KEEP_INTERMEDIATE_FILES, true);
         boolean calculateStats = queryOptions.getBoolean(VariantStorageOptions.STATS_CALCULATE.key());
 
         String studyId = catalogManager.getFileManager().getStudy(files.get(0), sessionId).getId();
@@ -325,7 +325,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
         String studyId = catalogManager.getFileManager().getStudy(files.get(0), sessionId).getId();
 //        queryOptions.append(StorageOperation.CATALOG_PATH, outputId);
-        queryOptions.append("saveIntermediateFiles", true);
+        queryOptions.append(StorageOperation.KEEP_INTERMEDIATE_FILES, true);
 
 
         String tmpOutdir = opencga.createTmpOutdir(studyId, "_INDEX", sessionId);

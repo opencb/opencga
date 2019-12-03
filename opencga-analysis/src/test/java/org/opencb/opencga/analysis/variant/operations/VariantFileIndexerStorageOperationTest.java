@@ -76,7 +76,6 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false);
         queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
-        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, outputId);
         variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(500, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.NONE, getDefaultCohort(studyId).getStatus().getName());
@@ -117,7 +116,6 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), true);
         queryOptions.put(VariantStorageOptions.STATS_AGGREGATION.key(), "none");
 
-        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, outputId);
         variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(500, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
@@ -131,7 +129,6 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), true);
         queryOptions.put(VariantStorageOptions.STATS_AGGREGATION.key(), "wrong_type");
 
-        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, outputId);
         try {
             variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
             fail("Expected StoragePipelineException exception");

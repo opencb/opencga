@@ -197,8 +197,7 @@ public class VariantCommandOptions {
         @Parameter(names = {"--overwrite"}, description = "Overwrite search index for all files and variants. Repeat operation for already processed variants.")
         public boolean overwrite;
 
-        // TODO Use this outdir to store the operation-status.json
-        @Parameter(names = {"--outdir"}, description = "[PENDING]", hidden = true)
+        @Parameter(names = {"--outdir"}, description = "Output directory", hidden = true)
         public String outdir;
     }
 
@@ -304,6 +303,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = true, arity = 1)
+        public String outdir = null;
     }
 
     @Deprecated
@@ -622,6 +624,9 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--overwrite"}, description = "Overwrite existing values")
         public boolean overwrite = false;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
+        public String outdir;
     }
 
     public class StatsVariantStatsCommandOptionsOld { //extends AnalysisCliOptionsParser.CatalogDatabaseCommandOptions {
@@ -707,6 +712,9 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
         public String project;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
+        public String outdir;
     }
 
     @Parameters(commandNames = {ANNOTATION_DELETE_COMMAND}, commandDescription = ANNOTATION_DELETE_COMMAND_DESCRIPTION)
@@ -718,6 +726,8 @@ public class VariantCommandOptions {
         @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
         public String project;
 
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
+        public String outdir;
     }
 
     @Parameters(commandNames = {ANNOTATION_QUERY_COMMAND}, commandDescription = ANNOTATION_QUERY_COMMAND_DESCRIPTION)

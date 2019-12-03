@@ -70,9 +70,8 @@ public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
     public InterpretationAnalysis() {
     }
 
-    public void setUp(String opencgaHome, ObjectMap params, Path outDir, String token)
-            throws AnalysisException {
-        super.setUp(opencgaHome, params, outDir, token);
+    @Override
+    protected void check() throws Exception {
         this.clinicalInterpretationManager = getClinicalInterpretationManager(opencgaHome);
     }
 
