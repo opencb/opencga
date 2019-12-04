@@ -171,9 +171,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     @Override
     public long getId(long studyId, String path) throws CatalogDBException {
         Query query = new Query(QueryParams.STUDY_UID.key(), studyId).append(QueryParams.PATH.key(), path);
-        QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_UID);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, PRIVATE_UID);
         OpenCGAResult<File> fileDataResult = get(query, options);
-        return fileDataResult.getNumTotalResults() == 1 ? fileDataResult.getResults().get(0).getUid() : -1;
+        return fileDataResult.getNumMatches() == 1 ? fileDataResult.getResults().get(0).getUid() : -1;
     }
 
     @Override
@@ -349,8 +349,27 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             document.getSet().put(QueryParams.ID.key(), StringUtils.replace(path, "/", ":"));
         }
 
-        String[] acceptedParamsList = { QueryParams.TAGS.key() };
-        filterStringListParams(parameters, document.getSet(), acceptedParamsList);
+        // Check if the tags exist.
+        if (parameters.containsKey(QueryParams.TAGS.key())) {
+            List<String> tagList = parameters.getAsStringList(QueryParams.TAGS.key());
+
+            if (!tagList.isEmpty()) {
+                Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+                String operation = (String) actionMap.getOrDefault(QueryParams.TAGS.key(), "ADD");
+                switch (operation) {
+                    case "SET":
+                        document.getSet().put(QueryParams.TAGS.key(), tagList);
+                        break;
+                    case "REMOVE":
+                        document.getPullAll().put(QueryParams.TAGS.key(), tagList);
+                        break;
+                    case "ADD":
+                    default:
+                        document.getAddToSet().put(QueryParams.TAGS.key(), tagList);
+                        break;
+                }
+            }
+        }
 
         Map<String, Class<? extends Enum>> acceptedEnums = new HashMap<>();
         acceptedEnums.put(QueryParams.TYPE.key(), File.Type.class);
@@ -368,6 +387,15 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             document.getSet().put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             document.getSet().put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
+        if (parameters.containsKey(QueryParams.STATUS.key())) {
+            if (parameters.get(QueryParams.STATUS.key()) instanceof Enums.ExecutionStatus) {
+                document.getSet().put(QueryParams.STATUS.key(), getMongoDBDocument(parameters.get(QueryParams.STATUS.key()),
+                        "File.FileStatus"));
+            } else {
+                document.getSet().put(QueryParams.STATUS.key(), parameters.get(QueryParams.STATUS.key()));
+            }
+        }
+
         if (parameters.containsKey(QueryParams.RELATED_FILES.key())) {
             List<File.RelatedFile> relatedFiles = parameters.getAsList(QueryParams.RELATED_FILES.key(), File.RelatedFile.class);
             List<Document> relatedFileDocument = fileConverter.convertRelatedFiles(relatedFiles);
@@ -832,7 +860,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     @Override
     public DBIterator<File> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(null, query, options);
-        return new FileMongoDBIterator<>(mongoCursor, null, fileConverter, null, this, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
+        return new FileMongoDBIterator<File>(mongoCursor, null, fileConverter, null, this, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
                 options);
     }
 
@@ -846,7 +874,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
-        return new FileMongoDBIterator<>(mongoCursor, clientSession, null, null, this, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
+        return new FileMongoDBIterator<Document>(mongoCursor, clientSession, null, null, this, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
                 queryOptions);
     }
 
@@ -860,7 +888,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
                 FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
 
-        return new FileMongoDBIterator<>(mongoCursor, null, fileConverter, iteratorFilter, this,
+        return new FileMongoDBIterator<File>(mongoCursor, null, fileConverter, iteratorFilter, this,
                 dbAdaptorFactory.getCatalogSampleDBAdaptor(), studyUid, user, options);
     }
 
@@ -882,7 +910,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
                 FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
 
-        return new FileMongoDBIterator<>(mongoCursor, null, null, iteratorFilter, this,
+        return new FileMongoDBIterator<Document>(mongoCursor, null, null, iteratorFilter, this,
                 dbAdaptorFactory.getCatalogSampleDBAdaptor(), studyUid, user, options);
     }
 

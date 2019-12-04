@@ -23,6 +23,7 @@ public class FileUpdateParams {
     private File.Format format;
     private File.Bioformat bioformat;
     private Software software;
+    private List<String> tags;
     private File.FileStatus status;
 
     private List<AnnotationSet> annotationSets;
@@ -62,6 +63,7 @@ public class FileUpdateParams {
         sb.append(", bioformat=").append(bioformat);
         sb.append(", status=").append(status);
         sb.append(", software=").append(software);
+        sb.append(", tags=").append(tags);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
@@ -129,6 +131,15 @@ public class FileUpdateParams {
 
     public FileUpdateParams setStatus(File.FileStatus status) {
         this.status = status;
+        return this;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public FileUpdateParams setTags(List<String> tags) {
+        this.tags = tags;
         return this;
     }
 

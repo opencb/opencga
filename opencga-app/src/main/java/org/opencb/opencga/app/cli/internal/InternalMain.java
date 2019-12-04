@@ -18,10 +18,7 @@ package org.opencb.opencga.app.cli.internal;
 
 import com.beust.jcommander.ParameterException;
 import org.opencb.opencga.app.cli.CommandExecutor;
-import org.opencb.opencga.app.cli.internal.executors.AlignmentCommandExecutor;
-import org.opencb.opencga.app.cli.internal.executors.InterpretationCommandExecutor;
-import org.opencb.opencga.app.cli.internal.executors.ToolsCommandExecutor;
-import org.opencb.opencga.app.cli.internal.executors.VariantCommandExecutor;
+import org.opencb.opencga.app.cli.internal.executors.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 /**
@@ -88,6 +85,9 @@ public class InternalMain {
                             break;
                         case "interpretation":
                             commandExecutor = new InterpretationCommandExecutor(cliOptionsParser.getInterpretationCommandOptions());
+                            break;
+                        case "files":
+                            commandExecutor = new FileCommandExecutor(cliOptionsParser.getFileCommandOptions());
                             break;
                         default:
                             System.err.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
