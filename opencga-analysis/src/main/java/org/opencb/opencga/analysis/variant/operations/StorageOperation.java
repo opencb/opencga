@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.analysis.variant.operations;
 
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.OpenCgaAnalysis;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -75,6 +74,11 @@ public abstract class StorageOperation extends OpenCgaAnalysis {
     protected final VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {
         return StorageEngineFactory.get(variantStorageManager.getStorageConfiguration())
                 .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+    }
+
+    protected final String getStudyFqn(String study) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(token);
+        return catalogManager.getStudyManager().resolveId(study, userId).getFqn();
     }
 
     public static boolean isVcfFormat(File file) {

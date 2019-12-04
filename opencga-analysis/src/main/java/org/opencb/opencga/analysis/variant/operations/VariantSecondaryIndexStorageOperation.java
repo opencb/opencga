@@ -30,12 +30,12 @@ public class VariantSecondaryIndexStorageOperation extends StorageOperation {
 
     @Override
     protected void run() throws Exception {
-        step(()->{
+        step(() -> {
             VariantStorageEngine variantStorageEngine = getVariantStorageEngineByProject(projectStr);
 
             Query inputQuery = new Query();
             inputQuery.putIfNotEmpty(VariantQueryParam.REGION.key(), region);
-            variantStorageEngine.searchIndex(inputQuery, new QueryOptions(params), overwrite);
+            variantStorageEngine.secondaryIndex(inputQuery, new QueryOptions(params), overwrite);
         });
     }
 }

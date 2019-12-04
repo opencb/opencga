@@ -56,7 +56,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.analysis.VariantSampleFilter;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
@@ -174,10 +173,10 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                 annotationMetadata();
                 break;
             case AGGREGATE_FAMILY_COMMAND:
-                fillGaps();
+                aggregateFamily();
                 break;
             case AGGREGATE_COMMAND:
-                fillMissing();
+                aggregate();
                 break;
             case "samples":
                 samples();
@@ -365,8 +364,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         variantManager.index(cliOptions.study, cliOptions.fileId, cliOptions.outdir, queryOptions, sessionId);
     }
 
-    private void secondaryIndex() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageEngineException,
-            InstantiationException, IllegalAccessException, URISyntaxException, VariantSearchException, AnalysisException {
+    private void secondaryIndex() throws AnalysisException {
         VariantCommandOptions.VariantSecondaryIndexCommandOptions cliOptions = variantCommandOptions.variantSecondaryIndexCommandOptions;
 
         QueryOptions queryOptions = new QueryOptions();
@@ -375,9 +373,10 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         if (StringUtils.isNotEmpty(cliOptions.sample)) {
-            variantManager.searchIndexSamples(cliOptions.study, Arrays.asList(cliOptions.sample.split(",")), queryOptions, sessionId);
+            variantManager.secondaryIndexSamples(cliOptions.study, Arrays.asList(cliOptions.sample.split(",")),
+                    Paths.get(cliOptions.outdir), queryOptions, sessionId);
         } else {
-            variantManager.searchIndex(cliOptions.project, cliOptions.region, cliOptions.overwrite, Paths.get(cliOptions.outdir),
+            variantManager.secondaryIndex(cliOptions.project, cliOptions.region, cliOptions.overwrite, Paths.get(cliOptions.outdir),
                     new ObjectMap(cliOptions.commonOptions.params), sessionId);
         }
     }
@@ -485,7 +484,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
     }
 
     private void sampleIndex()
-            throws CatalogException, ClassNotFoundException, StorageEngineException, InstantiationException, IllegalAccessException {
+            throws AnalysisException {
         VariantCommandOptions.SampleIndexCommandOptions cliOptions = variantCommandOptions.sampleIndexCommandOptions;
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
@@ -495,7 +494,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
 
         List<String> samples = Arrays.asList(cliOptions.sample.split(","));
 
-        variantManager.sampleIndexAnnotate(cliOptions.study, samples, options, sessionId);
+        variantManager.sampleIndexAnnotate(cliOptions.study, samples, Paths.get(cliOptions.outdir), options, sessionId);
     }
 
     private void familyIndex()
@@ -607,8 +606,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         }
     }
 
-    private void fillGaps() throws StorageEngineException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException,
-            AnalysisExecutionException, IllegalAccessException, InstantiationException, ClassNotFoundException {
+    private void aggregateFamily() throws AnalysisException {
 
         VariantCommandOptions.AggregateFamilyCommandOptions cliOptions = variantCommandOptions.fillGapsVariantCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
@@ -618,11 +616,10 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         options.put(VariantStorageOptions.RESUME.key(), cliOptions.genericAggregateFamilyOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
 
-        variantManager.fillGaps(cliOptions.study, cliOptions.genericAggregateFamilyOptions.samples, options, sessionId);
+        variantManager.aggregateFamily(cliOptions.study, cliOptions.genericAggregateFamilyOptions.samples, Paths.get(cliOptions.outdir), options, sessionId);
     }
 
-    private void fillMissing() throws StorageEngineException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException,
-            AnalysisExecutionException, IllegalAccessException, InstantiationException, ClassNotFoundException {
+    private void aggregate() throws AnalysisException {
 
         VariantCommandOptions.AggregateCommandOptions cliOptions = variantCommandOptions.aggregateCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
@@ -631,7 +628,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         options.put(VariantStorageOptions.RESUME.key(), cliOptions.aggregateCommandOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
 
-        variantManager.fillMissing(cliOptions.study, cliOptions.aggregateCommandOptions.overwrite, options, sessionId);
+        variantManager.aggregate(cliOptions.study, cliOptions.aggregateCommandOptions.overwrite, Paths.get(cliOptions.outdir), options, sessionId);
     }
 
     private void samples() throws Exception {

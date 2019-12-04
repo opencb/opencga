@@ -6,6 +6,7 @@ import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -18,7 +19,11 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.variant.operations.VariantFileIndexerStorageOperation.DEFAULT_COHORT_DESCRIPTION;
 
+@Analysis(id = "variant-import", type = Analysis.AnalysisType.VARIANT)
 public class VariantImportStorageOperation extends StorageOperation {
+
+    private String study;
+    private URI inputUri;
 
     public VariantImportStorageOperation setStudy(String study) {
         this.study = study;
@@ -29,9 +34,6 @@ public class VariantImportStorageOperation extends StorageOperation {
         this.inputUri = inputUri;
         return this;
     }
-
-    private String study;
-    private URI inputUri;
 
     @Override
     protected void run() throws Exception {

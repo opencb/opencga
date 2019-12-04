@@ -545,7 +545,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             AlignmentAnalysisWSService.BwaRunParams params) {
-        return submitJob(study, "alignment", BwaWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
+        return submitJob("alignment", BwaWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     // Samtools
@@ -578,7 +578,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             AlignmentAnalysisWSService.SamtoolsRunParams params) {
-        return submitJob(study, "alignment", SamtoolsWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
+        return submitJob("alignment", SamtoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     // Deeptools
@@ -612,7 +612,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             AlignmentAnalysisWSService.DeeptoolsRunParams params) {
-        return submitJob(study, "alignment", DeeptoolsWrapperAnalysis.ID, params, jobName, jobDescription, jobTags);
+        return submitJob("alignment", DeeptoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     //-------------------------------------------------------------------------

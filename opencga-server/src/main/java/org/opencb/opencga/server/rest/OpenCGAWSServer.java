@@ -699,7 +699,7 @@ public class OpenCGAWSServer {
         }
     }
 
-    public Response submitJob(String study, String command, String subcommand, RestBodyParams bodyParams,
+    public Response submitJob(String command, String subcommand, String study, RestBodyParams bodyParams,
                               String jobName, String jobDescription, String jobTagsStr) {
         return run(() -> {
             List<String> jobTags;
@@ -709,7 +709,9 @@ public class OpenCGAWSServer {
                 jobTags = Collections.emptyList();
             }
             Map<String, Object> paramsMap = bodyParams.toParams();
-            paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
+            if (StringUtils.isNotEmpty(study)) {
+                paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
+            }
             return catalogManager
                     .getJobManager()
                     .submit(study, command, subcommand, Enums.Priority.MEDIUM, paramsMap,
@@ -718,10 +720,9 @@ public class OpenCGAWSServer {
                             jobDescription,
                             jobTags, token);
         });
-
     }
 
-    public Response submitJob(String study, String command, String subcommand, Map<String, Object> paramsMap,
+    public Response submitJob(String command, String subcommand, String study, Map<String, Object> paramsMap,
                               String jobId, String jobName, String jobDescription, String jobTagsStr) {
         return run(() -> {
             List<String> jobTags;

@@ -90,9 +90,8 @@ public abstract class OpenCgaAnalysis {
         return setUp(opencgaHome, catalogManager, manager, params, outDir, token);
     }
 
-    public final OpenCgaAnalysis setUp(CatalogManager catalogManager, VariantStorageManager variantStorageManager,
-                      ObjectMap params, Path outDir, String token) {
-        return setUp(null, catalogManager, variantStorageManager, params, outDir, token);
+    public final OpenCgaAnalysis setUp(VariantStorageManager variantStorageManager, ObjectMap params, Path outDir, String token) {
+        return setUp(null, variantStorageManager.getCatalogManager(), variantStorageManager, params, outDir, token);
     }
 
     public final OpenCgaAnalysis setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,

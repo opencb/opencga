@@ -114,7 +114,7 @@ public class VariantStorageManager extends StorageManager {
         return new VariantImportStorageOperation()
                 .setStudy(study)
                 .setInputUri(inputUri)
-                .setUp(catalogManager, this, null, null, token)
+                .setUp(this, null, null, token)
                 .start();
     }
 
@@ -181,7 +181,7 @@ public class VariantStorageManager extends StorageManager {
                 .setOutputFormat(outputFormat)
                 .setVariantsFile(variantsFile)
                 .setOutputFile(outputFile);
-        operation.setUp(null, catalogManager, this, queryOptions, outDir, token);
+        operation.setUp(this, queryOptions, outDir, token);
 
         AnalysisResult result = operation.start();
 
@@ -203,22 +203,21 @@ public class VariantStorageManager extends StorageManager {
     public List<StoragePipelineResult> index(String study, List<String> files, String outDir, ObjectMap config, String token)
             throws AnalysisException {
         VariantFileIndexerStorageOperation operation = new VariantFileIndexerStorageOperation()
-                .setStudyId(study)
+                .setStudy(study)
                 .setFiles(files);
-        operation.setUp(null, catalogManager, this, config, Paths.get(outDir), token);
+        operation.setUp(this, config, Paths.get(outDir), token);
         operation.start();
 
         return operation.getStoragePipelineResults();
     }
 
-    public void searchIndexSamples(String study, List<String> samples, QueryOptions queryOptions, String token)
-            throws StorageEngineException, IOException, VariantSearchException, CatalogException {
-        DataStore dataStore = getDataStore(study, token);
-        VariantStorageEngine variantStorageEngine =
-                getVariantStorageEngine(dataStore);
-        variantStorageEngine.getOptions().putAll(queryOptions);
-
-        variantStorageEngine.secondaryIndexSamples(study, samples);
+    public AnalysisResult secondaryIndexSamples(String study, List<String> samples, Path outDir, ObjectMap params, String token)
+            throws AnalysisException {
+        return new VariantSecondaryIndexSamplesStorageOperation()
+                .setStudy(study)
+                .setSamples(samples)
+                .setUp(this, params, outDir, token)
+                .start();
     }
 
     public void removeSearchIndexSamples(String study, List<String> samples, QueryOptions queryOptions, String token)
@@ -232,13 +231,13 @@ public class VariantStorageManager extends StorageManager {
 
     }
 
-    public AnalysisResult searchIndex(String project, String region, boolean overwrite, Path outdir, ObjectMap params, String token)
+    public AnalysisResult secondaryIndex(String project, String region, boolean overwrite, Path outdir, ObjectMap params, String token)
             throws AnalysisException {
         return new VariantSecondaryIndexStorageOperation()
                 .setProject(project)
                 .setRegion(region)
                 .setOverwrite(overwrite)
-                .setUp(catalogManager, this, params, outdir, token)
+                .setUp(this, params, outdir, token)
                 .start();
     }
 
@@ -247,7 +246,7 @@ public class VariantStorageManager extends StorageManager {
         return new VariantRemoveStorageOperation()
                 .setStudy(study)
                 .setRemoveWholeStudy(true)
-                .setUp(catalogManager, this, options, outdir, token)
+                .setUp(this, options, outdir, token)
                 .start();
     }
 
@@ -256,7 +255,7 @@ public class VariantStorageManager extends StorageManager {
         return new VariantRemoveStorageOperation()
                 .setStudy(study)
                 .setFiles(files)
-                .setUp(catalogManager, this, options, outdir, token)
+                .setUp(this, options, outdir, token)
                 .start();
     }
 
@@ -271,7 +270,7 @@ public class VariantStorageManager extends StorageManager {
                 .setProject(project)
                 .setStudies(StringUtils.isEmpty(studies) ? null : Arrays.asList(studies.split(",")))
                 .setRegion(region)
-                .setUp(catalogManager, this, config, Paths.get(outDir), token)
+                .setUp(this, config, Paths.get(outDir), token)
                 .start();
     }
 
@@ -280,7 +279,7 @@ public class VariantStorageManager extends StorageManager {
         return new VariantAnnotationSaveStorageOperation()
                 .setProject(project)
                 .setAnnotationName(annotationName)
-                .setUp(catalogManager, this, params, outDir, token)
+                .setUp(this, params, outDir, token)
                 .start();
     }
 
@@ -289,7 +288,7 @@ public class VariantStorageManager extends StorageManager {
         return new VariantAnnotationDeleteStorageOperation()
                 .setProject(project)
                 .setAnnotationName(annotationName)
-                .setUp(catalogManager, this, params, outDir, token)
+                .setUp(this, params, outDir, token)
                 .start();
     }
 
@@ -324,7 +323,7 @@ public class VariantStorageManager extends StorageManager {
                 .setVariantsQuery(variantsQuery)
                 .setSamplesQuery(samplesQuery)
                 .setIndex(index)
-                .setUp(null, catalogManager, this, config, Paths.get(outDir), token)
+                .setUp(this, config, Paths.get(outDir), token)
                 .start();
     }
 
@@ -377,36 +376,26 @@ public class VariantStorageManager extends StorageManager {
         engine.removeVariantScore(study, scoreName, options);
     }
 
-    public void sampleIndex(String studyStr, List<String> samples, ObjectMap config, String token)
-            throws CatalogException, StorageEngineException {
-
-        String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-
-        DataStore dataStore = getDataStore(study.getFqn(), token);
-        VariantStorageEngine engine = getVariantStorageEngine(dataStore);
-
-        if (CollectionUtils.isEmpty(samples)) {
-            throw new IllegalArgumentException("Empty list of samples");
-        }
-
-        engine.sampleIndex(study.getFqn(), samples, config);
+    public AnalysisResult sampleIndex(String studyStr, List<String> samples, Path outDir, ObjectMap config, String token)
+            throws AnalysisException {
+        return new VariantSampleIndexStorageOperation()
+                .setStudy(studyStr)
+                .setSamples(samples)
+                .setBuildIndex(true)
+                .setAnnotate(false)
+                .setUp(this, config, outDir, token)
+                .start();
     }
 
-    public void sampleIndexAnnotate(String studyStr, List<String> samples, ObjectMap config, String token)
-            throws CatalogException, StorageEngineException {
-
-        String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-
-        DataStore dataStore = getDataStore(study.getFqn(), token);
-        VariantStorageEngine engine = getVariantStorageEngine(dataStore);
-
-        if (CollectionUtils.isEmpty(samples)) {
-            throw new IllegalArgumentException("Empty list of samples");
-        }
-
-        engine.sampleIndexAnnotate(study.getFqn(), samples, config);
+    public AnalysisResult sampleIndexAnnotate(String studyStr, List<String> samples, Path outDir, ObjectMap config, String token)
+            throws AnalysisException {
+        return new VariantSampleIndexStorageOperation()
+                .setStudy(studyStr)
+                .setSamples(samples)
+                .setBuildIndex(false)
+                .setAnnotate(true)
+                .setUp(this, config, outDir, token)
+                .start();
     }
 
     public AnalysisResult familyIndex(String studyStr, List<String> familiesStr, Path outdir, ObjectMap params, String token)
@@ -414,34 +403,27 @@ public class VariantStorageManager extends StorageManager {
         return new VariantFamilyIndexStorageOperation()
                 .setStudy(studyStr)
                 .setFamily(familiesStr)
-                .setUp(catalogManager, this, params, outdir, token)
+                .setUp(this, params, outdir, token)
                 .start();
     }
 
-    public void fillGaps(String studyStr, List<String> samples, ObjectMap config, String token)
-            throws CatalogException, StorageEngineException {
+    public AnalysisResult aggregateFamily(String studyStr, List<String> samples, Path outdir, ObjectMap params, String token)
+            throws AnalysisException {
 
-        String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-
-        DataStore dataStore = getDataStore(study.getFqn(), token);
-        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
-
-        if (samples == null || samples.size() < 2) {
-            throw new IllegalArgumentException("Fill gaps operation requires at least two samples!");
-        }
-        variantStorageEngine.fillGaps(study.getFqn(), samples, config);
+        return new VariantAggregateFamilyStorageOperation()
+                .setStudy(studyStr)
+                .setSamples(samples)
+                .setUp(this, params, outdir, token)
+                .start();
     }
 
-    public void fillMissing(String studyStr, boolean overwrite, ObjectMap config, String token)
-            throws CatalogException, StorageEngineException {
-        String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-
-        DataStore dataStore = getDataStore(study.getFqn(), token);
-        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
-
-        variantStorageEngine.fillMissing(study.getFqn(), config, overwrite);
+    public AnalysisResult aggregate(String studyStr, boolean overwrite, Path outdir, ObjectMap params, String token)
+            throws AnalysisException {
+        return new VariantAggregateStorageOperation()
+                .setStudy(studyStr)
+                .setOverwrite(overwrite)
+                .setUp(this, params, outdir, token)
+                .start();
     }
 
     // ---------------------//

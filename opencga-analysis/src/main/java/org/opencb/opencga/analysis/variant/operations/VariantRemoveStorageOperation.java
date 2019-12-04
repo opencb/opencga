@@ -57,7 +57,7 @@ public class VariantRemoveStorageOperation extends StorageOperation {
             throw new AnalysisException("Missing list of files to remove");
         }
 
-        study = catalogManager.getStudyManager().resolveId(study, catalogManager.getUserManager().getUserId(token)).getFqn();
+        study = getStudyFqn(study);
 
     }
 

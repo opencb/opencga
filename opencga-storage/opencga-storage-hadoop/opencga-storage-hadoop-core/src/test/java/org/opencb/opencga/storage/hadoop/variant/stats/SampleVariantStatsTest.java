@@ -64,7 +64,7 @@ public class SampleVariantStatsTest extends VariantStorageBaseTest implements Ha
             });
 
             engine.annotate(new Query(), new ObjectMap());
-            engine.fillGaps(study, family, new ObjectMap());
+            engine.aggregateFamily(study, family, new ObjectMap());
 
             VariantHbaseTestUtils.printVariants(engine.getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
 

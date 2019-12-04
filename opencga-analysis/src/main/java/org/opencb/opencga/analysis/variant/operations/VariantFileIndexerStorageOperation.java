@@ -101,7 +101,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         INDEX
     }
 
-    public VariantFileIndexerStorageOperation setStudyId(String studyId) {
+    public VariantFileIndexerStorageOperation setStudy(String studyId) {
         this.studyFqn = studyId;
         return this;
     }
@@ -137,12 +137,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
     @Override
     protected void check() throws Exception {
         super.check();
-
-        Study study = catalogManager.getStudyManager().get(studyFqn, new QueryOptions(), token).first();
-
-        keepIntermediateFiles = params.getBoolean(KEEP_INTERMEDIATE_FILES, false);
-//        saveIntermediateFiles = true;
-        studyFqn = study.getFqn();
+        studyFqn = getStudyFqn(studyFqn);
         outDirUri = checkOutdir(studyFqn);
 
         transform = true;
@@ -165,9 +160,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         // Create default cohort if needed.
         if (step.equals(Type.INDEX) || step.equals(Type.LOAD)) {
-            createDefaultCohortIfNeeded(study.getFqn(), token);
+            createDefaultCohortIfNeeded(studyFqn, token);
         }
-
     }
 
     private void updateProject(String studyFqn, VariantStorageEngine variantStorageEngine) throws CatalogException, StorageEngineException {

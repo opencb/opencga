@@ -352,7 +352,7 @@ public class OperationsWSService extends OpenCGAWSServer {
         // FIXME
         //  This should actually submit a TASK, not a JOB
         if (StringUtils.isNotEmpty(study)) {
-            return submitJob(study, command, subcommand, paramsMap, null, jobName, jobDescription, jobTags);
+            return submitJob(command, subcommand, study, paramsMap, null, jobName, jobDescription, jobTags);
         } else {
             return createPendingResponse();
         }

@@ -7,7 +7,6 @@ import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.models.Family;
-import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -19,13 +18,13 @@ import java.util.List;
 public class VariantFamilyIndexStorageOperation extends StorageOperation {
 
 
-    private String studyStr;
+    private String study;
     private List<String> familiesStr;
     private boolean skipIncompleteFamily;
     private boolean overwrite;
 
     public VariantFamilyIndexStorageOperation setStudy(String study) {
-        this.studyStr = study;
+        this.study = study;
         return this;
     }
 
@@ -50,9 +49,7 @@ public class VariantFamilyIndexStorageOperation extends StorageOperation {
         skipIncompleteFamily = params.getBoolean("skipIncompleteFamily", skipIncompleteFamily);
         overwrite = params.getBoolean("overwrite", overwrite);
 
-        String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-        studyStr = study.getFqn();
+        study = getStudyFqn(study);
 
         if (CollectionUtils.isEmpty(familiesStr)) {
             throw new IllegalArgumentException("Empty list of families");
@@ -62,26 +59,26 @@ public class VariantFamilyIndexStorageOperation extends StorageOperation {
     @Override
     protected void run() throws Exception {
         step(() -> {
-            VariantStorageEngine engine = getVariantStorageEngine(studyStr);
+            VariantStorageEngine engine = getVariantStorageEngine(study);
 
             List<List<String>> trios = new LinkedList<>();
 
             VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
             VariantCatalogQueryUtils catalogUtils = new VariantCatalogQueryUtils(catalogManager);
             if (familiesStr.size() == 1 && familiesStr.get(0).equals(VariantQueryUtils.ALL)) {
-                DBIterator<Family> iterator = catalogManager.getFamilyManager().iterator(studyStr, new Query(), new QueryOptions(), token);
+                DBIterator<Family> iterator = catalogManager.getFamilyManager().iterator(study, new Query(), new QueryOptions(), token);
                 while (iterator.hasNext()) {
                     Family family = iterator.next();
-                    trios.addAll(catalogUtils.getTriosFromFamily(studyStr, family, metadataManager, true, token));
+                    trios.addAll(catalogUtils.getTriosFromFamily(study, family, metadataManager, true, token));
                 }
             } else {
                 for (String familyId : familiesStr) {
-                    Family family = catalogManager.getFamilyManager().get(studyStr, familyId, null, token).first();
-                    trios.addAll(catalogUtils.getTriosFromFamily(studyStr, family, metadataManager, skipIncompleteFamily, token));
+                    Family family = catalogManager.getFamilyManager().get(study, familyId, null, token).first();
+                    trios.addAll(catalogUtils.getTriosFromFamily(study, family, metadataManager, skipIncompleteFamily, token));
                 }
             }
 
-            engine.familyIndex(studyStr, trios, params);
+            engine.familyIndex(study, trios, params);
         });
     }
 }
