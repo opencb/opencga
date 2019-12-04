@@ -118,8 +118,8 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(AGGREGATE_FAMILY_COMMAND, variantCommandOptions.fillGapsVariantCommandOptions);
         variantSubCommands.addCommand(AGGREGATE_COMMAND, variantCommandOptions.aggregateCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
-        variantSubCommands.addCommand("export-run", variantCommandOptions.exportVariantCommandOptions);
-        variantSubCommands.addCommand("stats-export-run", variantCommandOptions.exportVariantStatsCommandOptions);
+        variantSubCommands.addCommand("export", variantCommandOptions.exportVariantCommandOptions);
+        variantSubCommands.addCommand("stats-export", variantCommandOptions.exportVariantStatsCommandOptions);
         variantSubCommands.addCommand("import", variantCommandOptions.importVariantCommandOptions);
 //        variantSubCommands.addCommand("ibs", variantCommandOptions.ibsVariantCommandOptions);
         variantSubCommands.addCommand("samples", variantCommandOptions.samplesFilterCommandOptions);

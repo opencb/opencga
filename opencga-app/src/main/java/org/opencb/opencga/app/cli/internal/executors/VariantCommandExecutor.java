@@ -122,13 +122,13 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
             case VARIANT_DELETE_COMMAND:
                 remove();
                 break;
-            case "export-run":
+            case "export":
                 export();
                 break;
             case "query":
                 query();
                 break;
-            case "stats-export-run":
+            case "stats-export":
                 exportFrequencies();
                 break;
             case "import":

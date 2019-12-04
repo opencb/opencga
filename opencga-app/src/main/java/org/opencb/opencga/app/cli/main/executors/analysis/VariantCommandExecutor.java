@@ -32,8 +32,6 @@ import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.VariantStorageManager;
-import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.executors.VariantQueryCommandUtils;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
@@ -87,10 +85,13 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         DataResponse queryResponse = null;
         switch (subCommandString) {
 
+            case "index":
+                queryResponse = index();
+                break;
             case "query":
                 queryResponse = query();
                 break;
-            case "export-run":
+            case "export":
                 queryResponse = export();
                 break;
             case ANNOTATION_QUERY_COMMAND:
@@ -245,6 +246,31 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         String study = query.getString(VariantQueryParam.STUDY.key());
         return openCGAClient.getVariantClient()
                 .export(study, query, options, c.outdir, c.outputFileName, c.commonOptions.outputFormat, c.compress);
+    }
+
+    private DataResponse<Job> index() throws IOException {
+        VariantCommandOptions.VariantIndexCommandOptions variantIndex = variantCommandOptions.indexVariantCommandOptions;
+        ObjectMap params = new VariantAnalysisWSService.VariantIndexParams(
+                variantIndex.fileId,
+                variantIndex.genericVariantIndexOptions.resume,
+                variantIndex.outdir,
+                variantIndex.genericVariantIndexOptions.transform,
+                variantIndex.genericVariantIndexOptions.gvcf,
+                variantIndex.genericVariantIndexOptions.load,
+                variantIndex.genericVariantIndexOptions.loadSplitData,
+                variantIndex.genericVariantIndexOptions.skipPostLoadCheck,
+                variantIndex.genericVariantIndexOptions.excludeGenotype,
+                variantIndex.genericVariantIndexOptions.includeExtraFields,
+                variantIndex.genericVariantIndexOptions.merge,
+                variantIndex.genericVariantIndexOptions.calculateStats,
+                variantIndex.genericVariantIndexOptions.aggregated,
+                variantIndex.genericVariantIndexOptions.aggregationMappingFile,
+                variantIndex.genericVariantIndexOptions.annotate,
+                variantIndex.genericVariantIndexOptions.annotator,
+                variantIndex.genericVariantIndexOptions.overwriteAnnotations,
+                variantIndex.genericVariantIndexOptions.indexSearch
+        ).toObjectMap();
+        return openCGAClient.getOperationClient().variantFileIndex(variantIndex.study, params);
     }
 
     private DataResponse query() throws CatalogException, IOException, InterruptedException {

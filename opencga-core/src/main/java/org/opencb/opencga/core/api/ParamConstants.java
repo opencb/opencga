@@ -114,5 +114,8 @@ public class ParamConstants {
             + "with only the key 'reset' containing the comma separated variables that will be set to the default value"
             + " when the action is RESET";
 
+    // ---------------------------------------------
 
+    public static final String VARIANTS_EXPORT_DESCRIPTION = "Filter and export variants from the variant storage to a file";
+    public static final String VARIANTS_QUERY_DESCRIPTION = "Filter and fetch variants from indexed VCF files in the variant storage";
 }

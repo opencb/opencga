@@ -281,8 +281,9 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         variantCommandOptions = new VariantCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
+        variantSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
-        variantSubCommands.addCommand("export-run", variantCommandOptions.exportVariantCommandOptions);
+        variantSubCommands.addCommand("export", variantCommandOptions.exportVariantCommandOptions);
         variantSubCommands.addCommand(ANNOTATION_QUERY_COMMAND, variantCommandOptions.annotationQueryCommandOptions);
         variantSubCommands.addCommand(ANNOTATION_METADATA_COMMAND, variantCommandOptions.annotationMetadataCommandOptions);
         variantSubCommands.addCommand(STATS_RUN_COMMAND, variantCommandOptions.statsVariantCommandOptions);
@@ -295,7 +296,6 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         operationsCommandOptions = new OperationsCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand(OPERATIONS_COMMAND, operationsCommandOptions);
         JCommander operationsSubCommands = jCommander.getCommands().get(OPERATIONS_COMMAND);
-        operationsSubCommands.addCommand(VARIANT_FILE_INDEX, operationsCommandOptions.variantIndex);
         operationsSubCommands.addCommand(VARIANT_FILE_DELETE, operationsCommandOptions.variantIndexDelete);
         operationsSubCommands.addCommand(VARIANT_SECONDARY_INDEX, operationsCommandOptions.variantSecondaryIndex);
         operationsSubCommands.addCommand(VARIANT_SECONDARY_INDEX_DELETE, operationsCommandOptions.variantSecondaryIndexDelete);

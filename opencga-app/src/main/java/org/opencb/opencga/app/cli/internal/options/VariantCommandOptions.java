@@ -32,6 +32,7 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
@@ -167,7 +168,7 @@ public class VariantCommandOptions {
                 arity = 1)
         public String transformedPaths = null;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir = null;
 
         @Parameter(names = {"--stdin"}, description = "Read the variants file from the standard input")
@@ -481,7 +482,7 @@ public class VariantCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed variants")
+    @Parameters(commandNames = {"query"}, commandDescription = ParamConstants.VARIANTS_QUERY_DESCRIPTION)
     public class VariantQueryCommandOptions extends AbstractVariantQueryCommandOptions {
 
         // FIXME: This param should not be in the INTERNAL command line!
@@ -492,7 +493,7 @@ public class VariantCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {"export"}, commandDescription = "Search over indexed variants")
+    @Parameters(commandNames = {"export"}, commandDescription = ParamConstants.VARIANTS_EXPORT_DESCRIPTION)
     public class VariantExportCommandOptions extends AbstractVariantQueryCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1)

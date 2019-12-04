@@ -45,12 +45,14 @@ import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
 import org.opencb.opencga.storage.core.variant.analysis.VariantSampleFilter;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
 import javax.servlet.http.HttpServletRequest;
@@ -136,96 +138,81 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Deprecated
     @GET
     @Path("/index")
-    @ApiOperation(value = DEPRECATED + "Use operations/variant/file/index instead", response = DataResponse.class)
-    public Response index(@Deprecated @ApiParam(value = "(DEPRECATED) Comma separated list of file ids (files or directories)", hidden = true)
-                          @QueryParam (value = "fileId") String fileIdStrOld,
-                          @ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
-                          @QueryParam(value = "file") String fileIdStr,
-                          // Study id is not ingested by the analysis index command line. No longer needed.
-                          @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyStrOld,
-                          @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-                          @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                          @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr,
-                          @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") boolean transform,
-                          @ApiParam("Boolean indicating that only the load step will be run") @DefaultValue("false") @QueryParam("load") boolean load,
-                          @ApiParam("Currently two levels of merge are supported: \"basic\" mode merge genotypes of the same variants while \"advanced\" merge multiallelic and overlapping variants.") @DefaultValue("ADVANCED") @QueryParam("merge") VariantStorageEngine.MergeMode merge,
-                          @ApiParam("Index including other FORMAT fields. Use \"" + VariantQueryUtils.ALL + "\", \"" + VariantQueryUtils.NONE + "\", or CSV with the fields to load.") @QueryParam("includeExtraFields") String includeExtraFields,
-                          @ApiParam("Type of aggregated VCF file: none, basic, EVS or ExAC") @DefaultValue("none") @QueryParam("aggregated") String aggregated,
-                          @ApiParam("Calculate indexed variants statistics after the load step") @DefaultValue("false") @QueryParam("calculateStats") boolean calculateStats,
-                          @ApiParam("Annotate indexed variants after the load step") @DefaultValue("false") @QueryParam("annotate") boolean annotate,
-                          @ApiParam("Overwrite annotations already present in variants") @DefaultValue("false") @QueryParam("overwrite") boolean overwriteAnnotations,
-                          @ApiParam("Add files to the secondary search index") @DefaultValue("false") @QueryParam("indexSearch") boolean indexSearch,
-                          @ApiParam("Resume a previously failed indexation") @DefaultValue("false") @QueryParam("resume") boolean resume,
-                          @ApiParam("Indicate that the variants from a sample (or group of samples) split into different files (by chromosome, by type, ...)") @DefaultValue("false") @QueryParam("loadSplitData") boolean loadSplitData,
-                          @ApiParam("Do not execute post load checks over the database") @DefaultValue("false") @QueryParam("skipPostLoadCheck") boolean skipPostLoadCheck) {
+    @ApiOperation(value = DEPRECATED + "Use via POST", response = DataResponse.class, hidden = true)
+    public Response index() {
+        return createErrorResponse(new UnsupportedOperationException("Deprecated endpoint. Please, use via POST"));
+    }
 
-        if (StringUtils.isNotEmpty(fileIdStrOld)) {
-            fileIdStr = fileIdStrOld;
+    public static class VariantIndexParams extends RestBodyParams {
+        public VariantIndexParams() {
         }
 
-        if (StringUtils.isNotEmpty(studyStrOld)) {
-            studyStr = studyStrOld;
+        public VariantIndexParams(String file,
+                                  boolean resume, String outdir, boolean transform, boolean gvcf,
+                                  boolean load, boolean loadSplitData, boolean skipPostLoadCheck,
+                                  boolean excludeGenotype, String includeExtraFields, VariantStorageEngine.MergeMode merge,
+                                  boolean calculateStats, Aggregation aggregated, String aggregationMappingFile, boolean annotate,
+                                  VariantAnnotatorFactory.AnnotationEngine annotator, boolean overwriteAnnotations, boolean indexSearch) {
+            this.file = file;
+            this.resume = resume;
+            this.outdir = outdir;
+            this.transform = transform;
+            this.gvcf = gvcf;
+            this.load = load;
+            this.loadSplitData = loadSplitData;
+            this.skipPostLoadCheck = skipPostLoadCheck;
+            this.excludeGenotype = excludeGenotype;
+            this.includeExtraFields = includeExtraFields;
+            this.merge = merge;
+            this.calculateStats = calculateStats;
+            this.aggregated = aggregated;
+            this.aggregationMappingFile = aggregationMappingFile;
+            this.annotate = annotate;
+            this.annotator = annotator;
+            this.overwriteAnnotations = overwriteAnnotations;
+            this.indexSearch = indexSearch;
         }
 
-        Map<String, Object> params = new LinkedHashMap<>();
-        addParamIfNotNull(params, "file", fileIdStr);
-        addParamIfNotNull(params, ParamConstants.STUDY_PARAM, studyStr);
-        addParamIfNotNull(params, "outdir", outDirStr);
-        addParamIfTrue(params, "transform", transform);
-        addParamIfTrue(params, "load", load);
-        addParamIfNotNull(params, "merge", merge);
-        addParamIfNotNull(params, EXTRA_FORMAT_FIELDS.key(), includeExtraFields);
-        addParamIfNotNull(params, STATS_AGGREGATION.key(), aggregated);
-        addParamIfTrue(params, STATS_CALCULATE.key(), calculateStats);
-        addParamIfTrue(params, ANNOTATE.key(), annotate);
-        addParamIfTrue(params, INDEX_SEARCH.key(), indexSearch);
-        addParamIfTrue(params, ANNOTATION_OVERWEITE.key(), overwriteAnnotations);
-        addParamIfTrue(params, LOAD_SPLIT_DATA.key(), loadSplitData);
-        addParamIfTrue(params, POST_LOAD_CHECK_SKIP.key(), skipPostLoadCheck);
+        public String file;
+        public boolean resume;
+        public String outdir;
 
-        Set<String> knownParams = new HashSet<>();
-        knownParams.add(ParamConstants.STUDY_PARAM);
-        knownParams.add("studyId");
-        knownParams.add("outDir");
-        knownParams.add("transform");
-        knownParams.add("load");
-        knownParams.add("merge");
-        knownParams.add("includeExtraFields");
-        knownParams.add("aggregated");
-        knownParams.add("calculateStats");
-        knownParams.add("annotate");
-        knownParams.add("overwrite");
-        knownParams.add("indexSearch");
-        knownParams.add("sid");
-        knownParams.add(QueryOptions.INCLUDE);
-        knownParams.add(QueryOptions.EXCLUDE);
-        knownParams.add("loadSplitData");
-        knownParams.add("skipPostLoadCheck");
+        public boolean transform;
+        public boolean gvcf;
 
-        // Add other params
-        query.forEach((key, value) -> {
-            if (!knownParams.contains(key)) {
-                if (value != null) {
-                    params.put(key, value.toString());
-                }
-            }
-        });
-        logger.info("ObjectMap: {}", params);
+        public boolean load;
+        public boolean loadSplitData;
+        public boolean skipPostLoadCheck;
+        public boolean excludeGenotype;
+        public String includeExtraFields = VariantQueryUtils.ALL;
+        public VariantStorageEngine.MergeMode merge = VariantStorageOptions.MERGE_MODE.defaultValue();
 
-        try {
-//            List<String> idList = getIdList(fileIdStr);
-            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "variant", "index", Enums.Priority.HIGH,
-                    params, token);
-//            DataResult queryResult = catalogManager.getFileManager().index(studyStr, idList, "VCF", params, token);
-            return createOkResponse(queryResult);
-        } catch(Exception e) {
-            return createErrorResponse(e);
-        }
+        public boolean calculateStats;
+        public Aggregation aggregated = Aggregation.NONE;
+        public String aggregationMappingFile;
+
+        public boolean annotate;
+        public VariantAnnotatorFactory.AnnotationEngine annotator;
+        public boolean overwriteAnnotations;
+
+        public boolean indexSearch;
+    }
+
+    @POST
+    @Path("/index")
+    @ApiOperation(value = "Index variant files into the variant storage", response = Job.class)
+    public Response variantFileIndex(
+            @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            VariantIndexParams params) {
+        return submitJob("variant", "index", study, params, jobName, jobDescription, jobTags);
     }
 
     @GET
     @Path("/query")
-    @ApiOperation(value = "Fetch variants from a VCF/gVCF file", response = Variant[].class)
+    @ApiOperation(value = ParamConstants.VARIANTS_QUERY_DESCRIPTION, response = Variant[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -483,7 +470,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
     @POST
     @Path("/query")
-    @ApiOperation(value = "Fetch variants from a VCF/gVCF file", response = Variant[].class)
+    @ApiOperation(value = ParamConstants.VARIANTS_QUERY_DESCRIPTION, response = Variant[].class, hidden = true)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -531,8 +518,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     }
 
     @POST
-    @Path("/export/run")
-    @ApiOperation(value = "Export variants to a file", response = Job.class)
+    @Path("/export")
+    @ApiOperation(value = ParamConstants.VARIANTS_EXPORT_DESCRIPTION, response = Job.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -547,7 +534,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             VariantExportParams params) {
         logger.info("count {} , limit {} , skip {}", count, limit, skip);
         // FIXME: What if exporting from multiple studies?
-        return submitJob(study, "variant", "export-run", params, jobName, jobDescription, jobTags);
+        return submitJob(study, "variant", "export", params, jobName, jobDescription, jobTags);
     }
 
     @GET
@@ -647,7 +634,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     }
 
     @POST
-    @Path("/stats/export/run")
+    @Path("/stats/export")
     @ApiOperation(value = "Export calculated variant stats and frequencies", response = Job.class)
     public Response statsExport(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
@@ -655,7 +642,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             StatsExportParams params) {
-        return submitJob(study, "variant", "stats-export-run", params, jobName, jobDescription, jobTags);
+        return submitJob(study, "variant", "stats-export", params, jobName, jobDescription, jobTags);
     }
 
     public static class StatsDeleteParams extends RestBodyParams {
@@ -663,16 +650,16 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         public List<String> cohorts;
     }
 
-    @DELETE
-    @Path("/stats/delete")
-    @ApiOperation(value = PENDING)
-    public Response statsDelete(StatsDeleteParams params) {
-        return createPendingResponse();
-    }
+//    @DELETE
+//    @Path("/stats/delete")
+//    @ApiOperation(value = PENDING)
+//    public Response statsDelete(StatsDeleteParams params) {
+//        return createPendingResponse();
+//    }
 
     @GET
     @Path("/familyGenotypes")
-    @ApiOperation(value = DEPRECATED + "Use family/genotypes", response = Map.class)
+    @ApiOperation(value = DEPRECATED + "Use family/genotypes", hidden = true, response = Map.class)
     public Response calculateGenotypes(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Family id") @QueryParam("family") String family,
@@ -711,31 +698,31 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         });
     }
 
-    @POST
-    @Path("/family/stats/run")
-    @ApiOperation(value = PENDING, response = Job.class)
-    public Response familyStatsRun(RestBodyParams params) {
-        return createPendingResponse();
-    }
-
-    @GET
-    @Path("/family/stats/query")
-    @ApiOperation(value = PENDING)
-    public Response familyStatsQuery() {
-        return createPendingResponse();
-    }
-
-    @DELETE
-    @Path("/family/stats/delete")
-    @ApiOperation(value = PENDING)
-    public Response familyStatsDelete() {
-        return createPendingResponse();
-    }
+//    @POST
+//    @Path("/family/stats/run")
+//    @ApiOperation(value = PENDING, response = Job.class)
+//    public Response familyStatsRun(RestBodyParams params) {
+//        return createPendingResponse();
+//    }
+//
+//    @GET
+//    @Path("/family/stats/info")
+//    @ApiOperation(value = PENDING)
+//    public Response familyStatsInfo() {
+//        return createPendingResponse();
+//    }
+//
+//    @DELETE
+//    @Path("/family/stats/delete")
+//    @ApiOperation(value = PENDING)
+//    public Response familyStatsDelete() {
+//        return createPendingResponse();
+//    }
 
 
     @GET
     @Path("/samples")
-    @ApiOperation(value = DEPRECATED + "Use /sample/query", response = Sample.class)
+    @ApiOperation(value = DEPRECATED + "Use /sample/query", hidden = true, response = Sample.class)
     public Response samples(
             @ApiParam(value = "Study where all the samples belong to") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "List of samples to check. By default, all samples") @QueryParam("sample") String samples,
@@ -822,7 +809,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
     @GET
     @Path("/{variant}/sampleData")
-    @ApiOperation(value = DEPRECATED + " User sample/data", response = VariantSampleData.class)
+    @ApiOperation(value = DEPRECATED + " User sample/data", hidden = true, response = VariantSampleData.class)
     public Response sampleDataOld(
             @ApiParam(value = "Variant") @PathParam("variant") String variant,
             @ApiParam(value = "Study where all the samples belong to") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
@@ -884,11 +871,11 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Path("/sample/stats/info")
     @ApiOperation(value = "Read sample variant stats from list of samples.", response = SampleVariantStats.class)
     public Response sampleStatsInfo(@ApiParam(value = "Study where all the samples belong to") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                     @ApiParam(value = "Samples") @QueryParam("sample") String sample) {
+                                     @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("sample") String sample) {
         return run(() -> {
             ParamUtils.checkParameter(sample, "sample");
             ParamUtils.checkParameter(studyStr, ParamConstants.STUDY_PARAM);
-            OpenCGAResult<Sample> result = catalogManager.getSampleManager().get(studyStr, Arrays.asList(sample.split(",")), new QueryOptions(), token);
+            OpenCGAResult<Sample> result = catalogManager.getSampleManager().get(studyStr, getIdList(sample), new QueryOptions(), token);
 
             List<SampleVariantStats> stats = new ArrayList<>(result.getNumResults());
             for (Sample s : result.getResults()) {
@@ -955,12 +942,12 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Path("/cohort/stats/info")
     @ApiOperation(value = "Read cohort variant stats from list of cohorts.", response = VariantSetStats.class)
     public Response cohortStatsQuery(@ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                     @ApiParam(value = "Cohorts list") @QueryParam("cohort") String cohort) {
+                                     @ApiParam(value = ParamConstants.COHORTS_DESCRIPTION) @QueryParam("cohort") String cohort) {
         return run(() -> {
             ParamUtils.checkParameter(cohort, "cohort");
             ParamUtils.checkParameter(studyStr, ParamConstants.STUDY_PARAM);
             OpenCGAResult<Cohort> result = catalogManager.getCohortManager()
-                    .get(studyStr, Arrays.asList(cohort.split(",")), new QueryOptions(), token);
+                    .get(studyStr, getIdList(cohort), new QueryOptions(), token);
 
             List<VariantSetStats> stats = new ArrayList<>(result.getNumResults());
             for (Cohort c : result.getResults()) {
@@ -986,7 +973,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Path("/cohort/stats/delete")
     @ApiOperation(value = "Delete cohort variant stats from a cohort.", response = SampleVariantStats.class)
     public Response cohortStatsDelete(@ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                      @ApiParam(value = "Cohort") @QueryParam("cohort") String cohort) {
+                                      @ApiParam(value = ParamConstants.COHORT_DESCRIPTION) @QueryParam("cohort") String cohort) {
         return run(() -> catalogManager
                 .getCohortManager()
                 .removeAnnotationSet(studyStr, cohort, CohortVariantStatsAnalysis.VARIABLE_SET_ID, queryOptions, token));
@@ -1154,19 +1141,19 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         return submitJob(study, "variant", "gwas-run", params, jobName, jobDescription, jobTags);
     }
 
-    @POST
-    @Path("/ibs/run")
-    @ApiOperation(value = PENDING, response = Job.class)
-    public Response ibsRun() {
-        return createPendingResponse();
-    }
-
-    @GET
-    @Path("/ibs/query")
-    @ApiOperation(value = PENDING)
-    public Response ibsQuery() {
-        return createPendingResponse();
-    }
+//    @POST
+//    @Path("/ibs/run")
+//    @ApiOperation(value = PENDING, response = Job.class)
+//    public Response ibsRun() {
+//        return createPendingResponse();
+//    }
+//
+//    @GET
+//    @Path("/ibs/query")
+//    @ApiOperation(value = PENDING)
+//    public Response ibsQuery() {
+//        return createPendingResponse();
+//    }
 
     public static class PlinkRunParams extends RestBodyParams {
         public PlinkRunParams() {
@@ -1235,21 +1222,21 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         return submitJob(study, "variant", RvtestsWrapperAnalysis.ID + "-run", params, jobName, jobDescription, jobTags);
     }
 
-    @POST
-    @Path("/hw/run")
-    @ApiOperation(value = PENDING, response = Job.class)
-    public Response hwRun() {
-        return createPendingResponse();
-    }
+//    @POST
+//    @Path("/hw/run")
+//    @ApiOperation(value = PENDING, response = Job.class)
+//    public Response hwRun() {
+//        return createPendingResponse();
+//    }
 
-    @POST
-    @Path("/validate")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Validate a VCF file" + PENDING, response = QueryResponse.class)
-    public Response validate(
-            @ApiParam(value = "Study [[user@]project:]study where study and project are the id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "VCF file id, name or path", required = true) @QueryParam("file") String file) {
-        return createPendingResponse();
+//    @POST
+//    @Path("/validate")
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    @ApiOperation(value = "Validate a VCF file" + PENDING, response = QueryResponse.class)
+//    public Response validate(
+//            @ApiParam(value = "Study [[user@]project:]study where study and project are the id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "VCF file id, name or path", required = true) @QueryParam("file") String file) {
+//        return createPendingResponse();
 //        try {
 //            Map<String, String> params = new HashMap<>();
 //            params.put("input", file);
@@ -1260,7 +1247,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 //        } catch(Exception e) {
 //            return createErrorResponse(e);
 //        }
-    }
+//    }
 
     // FIXME This method must be deleted once deprecated params are not supported any more
     static Query getVariantQuery(QueryOptions queryOptions) {
