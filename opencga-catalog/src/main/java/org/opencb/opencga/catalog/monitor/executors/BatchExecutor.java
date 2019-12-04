@@ -53,6 +53,10 @@ public interface BatchExecutor {
 
     boolean isExecutorAlive();
 
+    default String getCommandLine(String commandLine) {
+        return getCommandLine(commandLine, null, null);
+    }
+
     /**
      * We do it this way to avoid writing the session id in the command line (avoid display/monitor/logs) attribute of Job.
      * @param commandLine Basic command line

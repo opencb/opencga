@@ -169,9 +169,9 @@ public class AlignmentCommandOptions {
     public class BwaCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions basicOptions = analysisCommonOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
-        @Parameter(names = {"--study"}, description = "Study.")
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
         public String study;
 
         @Parameter(names = {"--command"}, description = "BWA comamnd. Valid values: index, mem.")
@@ -202,9 +202,9 @@ public class AlignmentCommandOptions {
     public class SamtoolsCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions basicOptions = analysisCommonOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
-        @Parameter(names = {"--study"}, description = "Study.")
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
         public String study;
 
         @Parameter(names = {"--command"}, description = "Samtools command. Valid values: view, sort, index, stats.")
@@ -226,9 +226,9 @@ public class AlignmentCommandOptions {
     public class DeeptoolsCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions basicOptions = analysisCommonOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
-        @Parameter(names = {"--study"}, description = "Study.")
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
         public String study;
 
         @Parameter(names = {"--executable"}, description = "Deeptools executable. Valid values: bamCoverage.")

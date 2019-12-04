@@ -308,7 +308,6 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         operationsSubCommands.addCommand(VARIANT_SAMPLE_GENOTYPE_INDEX, operationsCommandOptions.variantSampleIndex);
         operationsSubCommands.addCommand(VARIANT_AGGREGATE, operationsCommandOptions.variantAggregate);
         operationsSubCommands.addCommand(VARIANT_FAMILY_AGGREGATE, operationsCommandOptions.variantAggregateFamily);
-
     }
 
     @Override

@@ -433,10 +433,10 @@ public class InternalMainTest {
         String temporalDir1 = opencga.createTmpOutdir(studyId, "_alignment1", sessionId);
 
         execute("alignment", "bwa",
-                "--session-id", sessionId,
+                "--token", sessionId,
                 "--study", studyId,
                 "--command", "index",
-                "--fasta-file", fastaFile.getUri().getPath(),
+                "--fasta-file", fastaFile.getId(),
                 "-o", temporalDir1);
 
         assertEquals(8, Files.list(Paths.get(temporalDir1)).collect(Collectors.toList()).size());
@@ -462,6 +462,8 @@ public class InternalMainTest {
                 "--fastq1-file", fastqFile.getUri().getPath(),
                 "--sam-file", samFile,
                 "-o", temporalDir2);
+
+//        fail("------- stop -----");
 
         assertEquals(4, Files.list(Paths.get(temporalDir2)).collect(Collectors.toList()).size());
         assertTrue(new java.io.File(samFile).exists());

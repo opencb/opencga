@@ -111,7 +111,7 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
     }
 
     @Override
-    public String getCommandLine() {
+    public String getCommandLine() throws AnalysisException {
         StringBuilder sb = new StringBuilder("docker run ");
 
         // Mount management

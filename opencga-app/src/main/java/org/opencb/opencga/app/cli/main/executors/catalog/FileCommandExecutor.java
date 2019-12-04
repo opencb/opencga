@@ -260,7 +260,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
 //        params.putIfNotNull("overwrite", filesCommandOptions.indexCommandOptions.overwriteAnnotations);
 //        params.putIfNotNull(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.indexCommandOptions.study);
 //        params.putIfNotNull(VariantStorageEngine.Options.RESUME.key(), filesCommandOptions.indexCommandOptions.resume);
-//        params.putAll(filesCommandOptions.commonCommandOptions.params);
+//        params.putAll(filesCommandOptions.commonOptions.params);
 //
 //        return openCGAClient.getFileClient().index(fileIds, params);
 //    }

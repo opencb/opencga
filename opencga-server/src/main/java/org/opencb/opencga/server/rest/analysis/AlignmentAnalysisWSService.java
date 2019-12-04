@@ -31,10 +31,7 @@ import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.GeneClient;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
@@ -46,12 +43,14 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
@@ -61,7 +60,7 @@ import java.util.*;
  */
 @Path("/{apiVersion}/analysis/alignment")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Analysis - Alignment", position = 4, description = "Methods for working with 'files' endpoint")
+@Api(value = "Analysis - Alignment", description = "Methods for working with 'files' endpoint")
 public class AlignmentAnalysisWSService extends AnalysisWSService {
 
     public AlignmentAnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
@@ -74,17 +73,16 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         super(apiVersion, uriInfo, httpServletRequest, httpHeaders);
     }
 
-    @GET
+    @POST
     @Path("/index")
-    @ApiOperation(value = "Index alignment files", position = 14, response = QueryResponse.class)
+    @ApiOperation(value = "Index alignment files", response = DataResponse.class)
     public Response index(@ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
                           @QueryParam(value = "file") String fileIdStr,
                           @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
                           @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
                           @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                           @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr,
-                          @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") boolean transform,
-                          @ApiParam("Boolean indicating that only the load step will be run") @DefaultValue("false") @QueryParam("load") boolean load) {
+                          @ApiParam("Compute coverage") @DefaultValue("false") @QueryParam("coverage") boolean coverage) {
 
         if (StringUtils.isNotEmpty(studyId)) {
             studyStr = studyId;
@@ -92,15 +90,14 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("file", fileIdStr);
-        addParamIfTrue(params, "transform", transform);
-        addParamIfTrue(params, "load", load);
+        addParamIfTrue(params, "coverage", coverage);
         addParamIfNotNull(params, "outdir", outDirStr);
 
         logger.info("ObjectMap: {}", params);
 
         try {
-            DataResult queryResult = catalogManager.getJobManager().submit(studyStr, "alignment", "index", Enums.Priority.HIGH, params,
-                    token);
+            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "alignment", "index", Enums.Priority.HIGH,
+                    params, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -109,13 +106,13 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
     @GET
     @Path("/query")
-    @ApiOperation(value = "Fetch alignments from a BAM file", position = 15, response = ReadAlignment[].class)
+    @ApiOperation(value = "Fetch alignments from a BAM file", response = ReadAlignment[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Max number of results to be returned", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.COUNT, value = "Return total number of results", defaultValue = "false", dataType = "boolean", paramType = "query")
     })
-    public Response getAlignments(@ApiParam(value = "File ID or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
+    public Response query(@ApiParam(value = "File ID or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
                                   @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                                   @ApiParam(value = "Comma-separated list of regions 'chr:start-end'", required = true) @QueryParam("region") String regions,
                                   @ApiParam(value = "Minimum mapping quality") @QueryParam("minMapQ") Integer minMapQ,
@@ -165,10 +162,40 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         }
     }
 
+    @POST
+    @Path("/coverage/run")
+    @ApiOperation(value = "Compute coverage for a list of alignment files", response = Job.class)
+    public Response coverageRun(@ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
+                          @QueryParam(value = "file") String fileIdStr,
+                          @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
+                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                          @QueryParam("study") String studyStr,
+                          @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr) {
+
+        if (StringUtils.isNotEmpty(studyId)) {
+            studyStr = studyId;
+        }
+
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("file", fileIdStr);
+        addParamIfNotNull(params, "outdir", outDirStr);
+
+        logger.info("ObjectMap: {}", params);
+
+
+        try {
+            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "alignment", "coverage-run", Enums.Priority.HIGH, params,
+                    token);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @GET
-    @Path("/coverage")
-    @ApiOperation(value = "Fetch the coverage of an alignment file", position = 15, response = RegionCoverage.class)
-    public Response getCoverage(
+    @Path("/coverage/query")
+    @ApiOperation(value = "Fetch the coverage of an alignment file", response = RegionCoverage.class)
+    public Response coverageQuery(
             @ApiParam(value = "File ID or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
@@ -252,9 +279,9 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     }
 
     @GET
-    @Path("/log2CoverageRatio")
-    @ApiOperation(value = "Compute log2 coverage ratio from file #1 and file #2", position = 15, response = RegionCoverage.class)
-    public Response getSomaticAndGermlineCoverageRatio(@ApiParam(value = "File #1 (e.g., somatic file ID or name in Catalog)", required = true) @QueryParam("file1") String somaticFileIdStr,
+    @Path("/coverage/log2Ratio")
+    @ApiOperation(value = "Compute log2 coverage ratio from file #1 and file #2", response = RegionCoverage.class)
+    public Response coverageLog2Ratio(@ApiParam(value = "File #1 (e.g., somatic file ID or name in Catalog)", required = true) @QueryParam("file1") String somaticFileIdStr,
                                                        @ApiParam(value = "File #2 (e.g., germline file ID or name in Catalog)", required = true) @QueryParam("file2") String germlineFileIdStr,
                                                        @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                                                        @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
@@ -326,8 +353,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
     @GET
     @Path("/lowCoverage")
-    @ApiOperation(value = "Fetch regions with a low coverage", position = 15, hidden = true, response = RegionCoverage.class)
-    public Response getLowCoveredRegions(
+    @ApiOperation(value = "Fetch regions with a low coverage", hidden = true, response = RegionCoverage.class)
+    public Response lowCoverage(
             @ApiParam(value = "File id or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
@@ -366,10 +393,80 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         }
     }
 
+    @POST
+    @Path("/stats/run")
+    @ApiOperation(value = "Compute stats for a list of alignment files", response = Job.class)
+    public Response statsRun(@ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
+                                @QueryParam(value = "file") String fileIdStr,
+                                @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
+                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                @QueryParam("study") String studyStr,
+                                @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr) {
+
+        if (StringUtils.isNotEmpty(studyId)) {
+            studyStr = studyId;
+        }
+
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("file", fileIdStr);
+        addParamIfNotNull(params, "outdir", outDirStr);
+
+        logger.info("ObjectMap: {}", params);
+
+        try {
+            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "alignment", "stats-run", Enums.Priority.HIGH, params,
+                    token);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @GET
-    @Path("/stats")
-    @ApiOperation(value = "Fetch the stats of an alignment file", position = 15, response = AlignmentGlobalStats.class)
-    public Response getStats(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("file")
+    @Path("/stats/query")
+    @ApiOperation(value = "Fetch the stats of an alignment file", response = AlignmentGlobalStats.class)
+    public Response statsQuery(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("file")
+                                     String fileIdStr,
+                             @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
+                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                             @QueryParam("study") String studyStr,
+                             @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String region,
+                             @ApiParam(value = "Minimum mapping quality") @QueryParam("minMapQ") Integer minMapQ,
+                             @ApiParam(value = "Only alignments completely contained within boundaries of region")
+                             @QueryParam("contained") Boolean contained) {
+        try {
+            if (StringUtils.isNotEmpty(studyId)) {
+                studyStr = studyId;
+            }
+
+            Query query = new Query();
+            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
+
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
+
+            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
+
+            if (StringUtils.isNotEmpty(region)) {
+                String[] regionList = region.split(",");
+                DataResult<AlignmentGlobalStats> dataResult = DataResult.empty();
+                for (String regionAux : regionList) {
+                    query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), regionAux);
+                    dataResult.append(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, token));
+                }
+                return createOkResponse(dataResult);
+            } else {
+                return createOkResponse(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, token));
+            }
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/stats/info")
+    @ApiOperation(value = "Fetch the stats of an alignment file", response = AlignmentGlobalStats.class)
+    public Response statsInfo(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("file")
                                      String fileIdStr,
                              @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
                              @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
@@ -442,8 +539,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @POST
     @Path("/bwa/run")
     @ApiOperation(value = BwaWrapperAnalysis.DESCRIPTION, response = Job.class)
-    public Response rvtestsRun(
-            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+    public Response bwaRun(
+                    @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,

@@ -1114,7 +1114,7 @@ public class VariantCommandOptions {
         public static final String PLINK_RUN_COMMAND = PlinkWrapperAnalysis.ID + "-run";
 
         @ParametersDelegate
-        //public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        //public GeneralCliOptions.CommonCommandOptions commonOptions = commonOptions;
         public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
 
         @Parameter(names = {"--study"}, description = "Study.")

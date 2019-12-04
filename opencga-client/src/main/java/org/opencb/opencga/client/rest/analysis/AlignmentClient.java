@@ -43,7 +43,7 @@ public class AlignmentClient extends AbstractParentClient {
             params = new ObjectMap();
         }
         params.putIfNotEmpty("file", fileIds);
-        return execute(ALIGNMENT_URL, "index", params, GET, Job.class);
+        return execute(ALIGNMENT_URL, "index", params, POST, Job.class);
     }
 
     public DataResponse<ReadAlignment> query(String fileIds, ObjectMap params) throws IOException {

@@ -72,7 +72,7 @@ public class PanelCommandOptions {
 //    public class CreateCommandOptions {
 //
 //        @ParametersDelegate
-//        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+//        public GeneralCliOptions.CommonCommandOptions commonOptions = commonOptions;
 //
 //        @Parameter(names = {"-s","--study-id"}, description = "Study id", required = true, arity = 1)
 //        public String studyId;
