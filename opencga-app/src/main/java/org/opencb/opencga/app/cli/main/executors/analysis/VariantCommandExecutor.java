@@ -177,7 +177,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
     private DataResponse<SampleVariantStats> sampleStatsQuery() throws IOException {
         return openCGAClient.getVariantClient()
-                .sampleStatsQuery(variantCommandOptions.sampleVariantStatsQueryCommandOptions.study,
+                .sampleStatsInfo(variantCommandOptions.sampleVariantStatsQueryCommandOptions.study,
                         variantCommandOptions.sampleVariantStatsQueryCommandOptions.sample);
     }
 
@@ -193,7 +193,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private DataResponse<VariantSetStats> cohortStatsQuery() throws IOException {
-        return openCGAClient.getVariantClient().cohortStatsQuery(
+        return openCGAClient.getVariantClient().cohortStatsInfo(
                 variantCommandOptions.cohortVariantStatsQueryCommandOptions.study,
                 variantCommandOptions.cohortVariantStatsQueryCommandOptions.cohort
         );
@@ -270,7 +270,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 variantIndex.genericVariantIndexOptions.overwriteAnnotations,
                 variantIndex.genericVariantIndexOptions.indexSearch
         ).toObjectMap();
-        return openCGAClient.getOperationClient().variantFileIndex(variantIndex.study, params);
+        return openCGAClient.getVariantClient().index(variantIndex.study, params);
     }
 
     private DataResponse query() throws CatalogException, IOException, InterruptedException {
