@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.models.update;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -21,6 +22,7 @@ public class CohortUpdateParams {
     public CohortUpdateParams() {
     }
 
+    @JsonIgnore
     public ObjectMap getUpdateMap() throws CatalogException {
         try {
             List<AnnotationSet> annotationSetList = this.annotationSets;

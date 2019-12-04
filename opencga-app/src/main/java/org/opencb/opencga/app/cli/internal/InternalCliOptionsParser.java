@@ -24,10 +24,7 @@ import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.analysis.wrappers.*;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
-import org.opencb.opencga.app.cli.internal.options.InterpretationCommandOptions;
-import org.opencb.opencga.app.cli.internal.options.ToolsCommandOptions;
-import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
+import org.opencb.opencga.app.cli.internal.options.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.List;
@@ -73,6 +70,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
     private ToolsCommandOptions toolsCommandOptions;
     private AlignmentCommandOptions alignmentCommandOptions;
     private InterpretationCommandOptions interpretationCommandOptions;
+    private FileCommandOptions fileCommandOptions;
 
 
     public InternalCliOptionsParser() {
@@ -157,6 +155,11 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         interpretationSubCommands.addCommand("team", interpretationCommandOptions.teamCommandOptions);
         interpretationSubCommands.addCommand("tiering", interpretationCommandOptions.tieringCommandOptions);
 
+        fileCommandOptions = new FileCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("files", fileCommandOptions);
+        JCommander fileSubCommands = jCommander.getCommands().get("files");
+        fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
+        fileSubCommands.addCommand("unlink", fileCommandOptions.unlinkCommandOptions);
     }
 
     @Override
@@ -389,5 +392,9 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 
     public InterpretationCommandOptions getInterpretationCommandOptions() {
         return interpretationCommandOptions;
+    }
+
+    public FileCommandOptions getFileCommandOptions() {
+        return fileCommandOptions;
     }
 }

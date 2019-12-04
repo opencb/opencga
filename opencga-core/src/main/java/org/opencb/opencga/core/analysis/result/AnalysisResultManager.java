@@ -145,6 +145,13 @@ public class AnalysisResultManager {
         Status.Type finalStatus;
         if (exception == null) {
             finalStatus = Status.Type.DONE;
+            for (Event event : analysisResult.getEvents()) {
+                if (event.getType().equals(Event.Type.ERROR)) {
+                    // If there is any ERROR event the final status will be ERROR
+                    finalStatus = Status.Type.ERROR;
+                    break;
+                }
+            }
         } else {
             addError(exception, analysisResult);
             finalStatus = Status.Type.ERROR;

@@ -25,9 +25,7 @@ public class Enums {
         CLINICAL_ANALYSIS,
         INTERPRETATION,
         VARIANT,
-        ALIGNMENT,
-        TASK,
-        CATALOG;
+        ALIGNMENT;
 
         public List<String> getFullPermissionList() {
             switch (this) {
