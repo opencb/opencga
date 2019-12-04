@@ -481,8 +481,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         switch (status) {
             case File.FileStatus.TRASHED:
             case File.FileStatus.REMOVED:
-            case File.FileStatus.PENDING_DELETE:
-            case File.FileStatus.DELETING:
+//            case File.FileStatus.PENDING_DELETE:
+//            case File.FileStatus.DELETING:
             case File.FileStatus.DELETED:
                 break;
             default:
@@ -507,8 +507,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         switch (status) {
             case File.FileStatus.TRASHED:
             case File.FileStatus.REMOVED:
-            case File.FileStatus.PENDING_DELETE:
-            case File.FileStatus.DELETING:
+//            case File.FileStatus.PENDING_DELETE:
+//            case File.FileStatus.DELETING:
             case File.FileStatus.DELETED:
                 break;
             default:
@@ -550,44 +550,52 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             // Look for all the nested files and folders
             query.append(QueryParams.PATH.key(), "~^" + path + "*");
         }
-        QueryOptions options = new QueryOptions()
-                .append(QueryOptions.SORT, QueryParams.PATH.key())
-                .append(QueryOptions.ORDER, QueryOptions.DESCENDING);
 
-        DBIterator<Document> iterator = nativeIterator(clientSession, query, options);
+        if (File.FileStatus.TRASHED.equals(status)) {
+            Bson update = Updates.set(QueryParams.STATUS.key(), getMongoDBDocument(new File.FileStatus(status), "status"));
+            QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+            return endWrite(tmpStartTime, fileCollection.update(parseQuery(query), update, multi));
+        } else {
+            // DELETED AND REMOVED status
+            QueryOptions options = new QueryOptions()
+                    .append(QueryOptions.SORT, QueryParams.PATH.key())
+                    .append(QueryOptions.ORDER, QueryOptions.DESCENDING);
 
-        // TODO: Delete any documents that might have been previously deleted under the same paths
-        long numFiles = 0;
+            DBIterator<Document> iterator = nativeIterator(clientSession, query, options);
 
-        while (iterator.hasNext()) {
-            Document tmpFile = iterator.next();
-            long tmpFileUid = tmpFile.getLong(PRIVATE_UID);
+            // TODO: Delete any documents that might have been previously deleted under the same paths
+            long numFiles = 0;
 
-            dbAdaptorFactory.getCatalogJobDBAdaptor().removeFileReferences(clientSession, studyUid, tmpFileUid, tmpFile);
+            while (iterator.hasNext()) {
+                Document tmpFile = iterator.next();
+                long tmpFileUid = tmpFile.getLong(PRIVATE_UID);
 
-            // Set status
-            tmpFile.put(QueryParams.STATUS.key(), getMongoDBDocument(new File.FileStatus(status), "status"));
+                dbAdaptorFactory.getCatalogJobDBAdaptor().removeFileReferences(clientSession, studyUid, tmpFileUid, tmpFile);
 
-            // Insert the document in the DELETE collection
-            deletedFileCollection.insert(clientSession, tmpFile, null);
-            logger.debug("Inserted file uid '{}' in DELETE collection", tmpFileUid);
+                // Set status
+                tmpFile.put(QueryParams.STATUS.key(), getMongoDBDocument(new File.FileStatus(status), "status"));
 
-            // Remove the document from the main FILE collection
-            Bson bsonQuery = parseQuery(new Query(QueryParams.UID.key(), tmpFileUid));
-            DataResult remove = fileCollection.remove(clientSession, bsonQuery, null);
-            if (remove.getNumMatches() == 0) {
-                throw new CatalogDBException("File " + tmpFileUid + " not found");
+                // Insert the document in the DELETE collection
+                deletedFileCollection.insert(clientSession, tmpFile, null);
+                logger.debug("Inserted file uid '{}' in DELETE collection", tmpFileUid);
+
+                // Remove the document from the main FILE collection
+                Bson bsonQuery = parseQuery(new Query(QueryParams.UID.key(), tmpFileUid));
+                DataResult remove = fileCollection.remove(clientSession, bsonQuery, null);
+                if (remove.getNumMatches() == 0) {
+                    throw new CatalogDBException("File " + tmpFileUid + " not found");
+                }
+                if (remove.getNumDeleted() == 0) {
+                    throw new CatalogDBException("File " + tmpFileUid + " could not be deleted");
+                }
+
+                logger.debug("File uid '{}' deleted from main FILE collection", tmpFileUid);
+                numFiles++;
             }
-            if (remove.getNumDeleted() == 0) {
-                throw new CatalogDBException("File " + tmpFileUid + " could not be deleted");
-            }
 
-            logger.debug("File uid '{}' deleted from main FILE collection", tmpFileUid);
-            numFiles++;
+            logger.debug("File {}({}) deleted", path, fileUid);
+            return endWrite(tmpStartTime, numFiles, 0, 0, numFiles, Collections.emptyList());
         }
-
-        logger.debug("File {}({}) deleted", path, fileUid);
-        return endWrite(tmpStartTime, numFiles, 0, 0, numFiles, Collections.emptyList());
     }
 
 //    OpenCGAResult<Object> privateDelete(ClientSession clientSession, File file, String status) throws CatalogDBException {

@@ -329,6 +329,9 @@ public class FileManagerTest extends AbstractManagerTest {
 
         System.out.println("Number of files/folders linked = " + fileDataResultLinked.getNumResults());
 
+        FileUpdateParams updateParams = new FileUpdateParams().setStatus(new File.FileStatus(File.FileStatus.PENDING_DELETE));
+        fileManager.update(studyFqn, query, updateParams, QueryOptions.empty(), sessionIdUser);
+
         // Now we try to unlink them
         fileManager.unlink(studyFqn, "myDirectory/A/", sessionIdUser);
         fileDataResultLinked = fileManager.search(studyFqn, query, null, sessionIdUser);

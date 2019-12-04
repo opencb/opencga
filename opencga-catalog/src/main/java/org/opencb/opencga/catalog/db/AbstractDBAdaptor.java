@@ -76,6 +76,12 @@ public abstract class AbstractDBAdaptor {
         return new OpenCGAResult<>((int) (end - startTime), events, numMatches, numInserted, numUpdated, numDeleted, new ObjectMap());
     }
 
+    protected <T> OpenCGAResult<T> endWrite(long startTime, DataResult result) {
+        long end = System.currentTimeMillis();
+        return new OpenCGAResult<>((int) (end - startTime), result.getEvents(), result.getNumMatches(), result.getNumInserted(),
+                result.getNumUpdated(), result.getNumDeleted(), new ObjectMap());
+    }
+
     protected void checkParameter(Object param, String name) throws CatalogDBException {
         if (param == null) {
             throw new CatalogDBException("Error: parameter '" + name + "' is null");

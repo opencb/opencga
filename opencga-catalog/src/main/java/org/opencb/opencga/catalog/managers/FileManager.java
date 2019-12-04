@@ -644,6 +644,7 @@ public class FileManager extends AnnotationSetManager<File> {
         file.setSamples(ParamUtils.defaultObject(file.getSamples(), ArrayList::new));
         file.setCreationDate(TimeUtils.getTime());
         file.setModificationDate(file.getCreationDate());
+        file.setTags(ParamUtils.defaultObject(file.getTags(), ArrayList::new));
         file.setStatus(ParamUtils.defaultObject(file.getStatus(), new File.FileStatus(File.FileStatus.READY)));
         file.setStats(ParamUtils.defaultObject(file.getStats(), HashMap::new));
         file.setAttributes(ParamUtils.defaultObject(file.getAttributes(), HashMap::new));
@@ -916,6 +917,9 @@ public class FileManager extends AnnotationSetManager<File> {
                 // Move the file to the final directory
                 String checksum = new org.opencb.opencga.catalog.managers.FileUtils(catalogManager).move(sourceUri, file.getUri(),
                         overwrite, calculateChecksum);
+                // Remove the temporal directory
+                ioManager.deleteDirectory(tempDirectory);
+
                 file.setChecksum(checksum);
 
                 // Improve metadata information and extract samples if any
@@ -1345,7 +1349,7 @@ public class FileManager extends AnnotationSetManager<File> {
     private OpenCGAResult delete(Study study, File file, boolean physicalDelete, String userId)
             throws CatalogException {
         // Check if the file or the folder plus any nested files/folders can be deleted
-        checkCanDeleteFile(study, file.getPath(), false, File.FileStatus.PENDING_DELETE, userId);
+        checkCanDeleteFile(study, file.getPath(), false, Collections.singletonList(File.FileStatus.PENDING_DELETE), userId);
 
         String currentStatus = file.getStatus().getName();
         if (File.FileStatus.DELETED.equals(currentStatus)) {
@@ -1461,7 +1465,7 @@ public class FileManager extends AnnotationSetManager<File> {
             }
 
             // Check if the file or the folder plus any nested files/folders can be deleted
-            checkCanDeleteFile(study, file.getPath(), true, File.FileStatus.PENDING_DELETE, userId);
+            checkCanDeleteFile(study, file.getPath(), true, Collections.singletonList(File.FileStatus.PENDING_DELETE), userId);
 
             OpenCGAResult result = unlink(file);
             auditManager.audit(userId, Enums.Action.UNLINK, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
@@ -2845,7 +2849,7 @@ public class FileManager extends AnnotationSetManager<File> {
     public void checkCanDeleteFile(String studyStr, String fileId, boolean unlink, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
-        checkCanDeleteFile(study, fileId, unlink, File.FileStatus.READY, userId);
+        checkCanDeleteFile(study, fileId, unlink, Arrays.asList(File.FileStatus.READY, File.FileStatus.TRASHED), userId);
     }
 
     /**
@@ -2855,12 +2859,13 @@ public class FileManager extends AnnotationSetManager<File> {
      * @param fileId         File or folder id.
      * @param unlink         Boolean indicating whether the operation only expects to remove the entry from the database or also remove
      *                       the file from disk.
-     * @param expectedStatus Status the file should have for validation. For the public, the file should be in READY status. However, if
-     *                       someone calls to the delete/unlink methods, the status of those files should already be in PENDING_DELETE.
+     * @param acceptedStatus List of valid statuses the file should have. For the public, the file should be in READY or TRASHED status.
+     *                       However, if someone calls to the delete/unlink methods, the status of those files should already be in
+     *                       PENDING_DELETE.
      * @param userId         user for which DELETE permissions will be checked.
      * @throws CatalogException if any of the files cannot be deleted.
      */
-    private void checkCanDeleteFile(Study study, String fileId, boolean unlink, String expectedStatus, String userId)
+    private void checkCanDeleteFile(Study study, String fileId, boolean unlink, List<String> acceptedStatus, String userId)
             throws CatalogException {
 
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.UID.key(),
@@ -2897,7 +2902,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 throw new CatalogException("File " + file.getUri() + " not found in file system");
             }
 
-            checkValidStatusForDeletion(file, expectedStatus);
+            checkValidStatusForDeletion(file, acceptedStatus);
             indexFiles.addAll(getProducedFromIndexFiles(file));
         } else {
             // We cannot delete the root folder
@@ -2946,7 +2951,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     throw new CatalogException("File " + tmpFile.getUri() + " not found in file system");
                 }
 
-                checkValidStatusForDeletion(tmpFile, expectedStatus);
+                checkValidStatusForDeletion(tmpFile, acceptedStatus);
                 indexFiles.addAll(getProducedFromIndexFiles(tmpFile));
             }
 
@@ -2996,13 +3001,17 @@ public class FileManager extends AnnotationSetManager<File> {
         return Collections.emptySet();
     }
 
-    void checkValidStatusForDeletion(File file, String expectedStatus) throws CatalogException {
+    void checkValidStatusForDeletion(File file, List<String> expectedStatus) throws CatalogException {
         if (file.getStatus() == null) {
             throw new CatalogException("Cannot check file status for deletion");
         }
-        if (!expectedStatus.equals(file.getStatus().getName())) {
-            throw new CatalogException("Cannot delete file: " + file.getName() + ". The status is " + file.getStatus().getName());
+        for (String status : expectedStatus) {
+            if (status.equals(file.getStatus().getName())) {
+                // Valid status
+                return;
+            }
         }
+        throw new CatalogException("Cannot delete file: " + file.getName() + ". The status is " + file.getStatus().getName());
     }
 
     public DataResult<FacetField> facet(String studyId, Query query, QueryOptions options, boolean defaultStats, String token)

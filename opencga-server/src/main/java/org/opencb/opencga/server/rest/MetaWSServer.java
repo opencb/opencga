@@ -179,7 +179,6 @@ public class MetaWSServer extends OpenCGAWSServer {
         classes.put("panels", PanelWSServer.class);
         classes.put("alignment", AlignmentAnalysisWSService.class);
         classes.put("variant", VariantAnalysisWSService.class);
-        classes.put("clinical", ClinicalAnalysisWSServer.class);
         classes.put("operations", OperationsWSService.class);
         classes.put("meta", MetaWSServer.class);
         classes.put("ga4gh", Ga4ghWSServer.class);

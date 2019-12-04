@@ -39,7 +39,7 @@ public class FileCommandOptions {
         public String files;
 
         @Parameter(names = {"--skip-trash"}, description = "Flag indicating to skip trash bin and completely delete the file. It will"
-                + " not be possible to recover the file.")
+                + " not be possible to recover the file.", arity = 1)
         public boolean skipTrash;
 
         @Parameter(names = {"-o", "--" + OUTDIR_PARAM_NAME}, description = "Directory where output files will be saved", required = true,
