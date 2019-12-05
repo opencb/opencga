@@ -2,7 +2,9 @@
   "unique": true,
   "confidential": false,
   "id": "alignment_stats",
+  "name": "alignment_stats",
   "description": "Alignment stats",
+  "entities": ["FILE"],
   "variables": [
     {
       "id": "raw_total_sequences",
