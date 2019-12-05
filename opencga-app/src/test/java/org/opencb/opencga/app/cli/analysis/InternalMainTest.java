@@ -353,7 +353,7 @@ public class InternalMainTest {
     }
 
     @Test
-    public void testStatsRun() throws CatalogException, IOException {
+    public void testAlignmentStats() throws CatalogException, IOException {
         createStudy(datastores, "s1");
 
         String filename = "HG00096.chrom20.small.bam";
@@ -361,7 +361,7 @@ public class InternalMainTest {
 
         String temporalDir = opencga.createTmpOutdir(studyId, "_run_stats", sessionId);
 
-        // Index file1
+        // stats run
         execute("alignment", "stats-run",
                 "--session-id", sessionId,
                 "--study", studyId,
@@ -369,6 +369,18 @@ public class InternalMainTest {
                 "-o", temporalDir);
 
         assertTrue(Files.exists(Paths.get(temporalDir).resolve(filename + ".stats.txt")));
+
+        // stats info
+        execute("alignment", "stats-info",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--input-file", bam.getName());
+
+        // stats query
+        execute("alignment", "stats-query",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--input-file", bam.getName());
     }
 
     @Test

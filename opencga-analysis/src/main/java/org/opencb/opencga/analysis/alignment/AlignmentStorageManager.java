@@ -171,6 +171,11 @@ public class AlignmentStorageManager extends StorageManager {
 //        return alignmentDBAdaptor.iterator((Path) fileInfo.get("filePath"), query, options, clazz);
     }
 
+
+    //-------------------------------------------------------------------------
+    // STATS: run, info and query
+    //-------------------------------------------------------------------------
+
     public DataResult<AlignmentGlobalStats> stats(String studyIdStr, String fileIdStr, Query query, QueryOptions options, String sessionId)
             throws Exception {
         query = ParamUtils.defaultObject(query, Query::new);
@@ -209,20 +214,9 @@ public class AlignmentStorageManager extends StorageManager {
 
     }
 
+    //-------------------------------------------------------------------------
 
     public void statsRun(String study, String inputFile, String outdir, String token) throws AnalysisException {
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.ID.key(), "fileId")
-                .append(Constants.ANNOTATION, Constants.VARIABLE_SET +"=alignment_stats");
-        try {
-            if (catalogManager.getFileManager().count(study, query, token).getNumMatches() > 0) {
-                // Skip
-                return;
-            }
-        } catch (CatalogException e) {
-            throw new AnalysisException(e);
-        }
-
         ObjectMap params = new ObjectMap();
         params.put(SamtoolsWrapperAnalysis.CALLBACK, (Consumer<SamtoolsWrapperAnalysis>) w -> statsRunCallback(w));
 
@@ -280,6 +274,68 @@ public class AlignmentStorageManager extends StorageManager {
             e.printStackTrace();
         }
     }
+
+    //-------------------------------------------------------------------------
+
+    public DataResult<String> statsInfo(String study, String inputFile, String token) throws AnalysisException {
+        StopWatch watch = StopWatch.createStarted();
+        OpenCGAResult<File> fileResult;
+        try {
+            fileResult = catalogManager.getFileManager().get(study, inputFile, QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new AnalysisException("Error accessing to the file: " + inputFile, e);
+        }
+
+        URI uri = fileResult.getResults().get(0).getUri();
+        java.io.File statsFile = new java.io.File(uri.getPath() + ".stats.txt");
+
+        if (!statsFile.exists()) {
+            throw new AnalysisException("Stats file does not exist: " + statsFile.getAbsolutePath());
+        }
+
+        try {
+            List<String> lines = org.apache.commons.io.FileUtils.readLines(statsFile, Charset.defaultCharset());
+            watch.stop();
+            return new DataResult<>((int) watch.getTime(), Collections.emptyList(), 1, Arrays.asList(StringUtils.join(lines, "\n")), 1);
+        } catch (IOException e) {
+            throw new AnalysisException("Error reading stats file: " + statsFile.getName(), e);
+        }
+    }
+
+    //-------------------------------------------------------------------------
+
+    public DataResult<File> statsQuery(String study, String annotations, String token) throws AnalysisException {
+        return null;
+//        StopWatch watch = StopWatch.createStarted();
+//
+//        try {
+//            OpenCGAResult<File> fileResult = catalogManager.getFileManager().gget(study, inputFile, QueryOptions.empty(), token);
+//
+//        } catch (CatalogException e) {
+//            throw new AnalysisException("Stats query error", e);
+//        }
+//
+//        catalogManager.getFileManager().g
+//
+//        URI uri = fileResult.getResults().get(0).getUri();
+//        java.io.File statsFile = new java.io.File(uri.getPath() + ".stats.txt");
+//
+//        if (!statsFile.exists()) {
+//            throw new AnalysisException("Stats file does not exist: " + statsFile.getAbsolutePath());
+//        }
+//
+//        try {
+//            List<String> lines = org.apache.commons.io.FileUtils.readLines(statsFile, Charset.defaultCharset());
+//            watch.stop();
+//            return new DataResult<>((int) watch.getTime(), Collections.emptyList(), 1, Arrays.asList(StringUtils.join(lines, "\n")), 1);
+//        } catch (IOException e) {
+//            throw new AnalysisException("Error reading stats file: " + statsFile.getName(), e);
+//        }
+    }
+
+    //-------------------------------------------------------------------------
+    // COVERAGE: run and query
+    //-------------------------------------------------------------------------
 
     public DataResult<RegionCoverage> coverage(String studyIdStr, String fileIdStr, Region region, int windowSize, String sessionId)
             throws Exception {

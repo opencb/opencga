@@ -198,7 +198,6 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 //        }
     }
 
-
     private void coverage() throws CatalogException, IOException {
         ObjectMap objectMap = new ObjectMap();
         objectMap.putIfNotNull("sid", alignmentCommandOptions.coverageAlignmentCommandOptions.commonOptions.token);

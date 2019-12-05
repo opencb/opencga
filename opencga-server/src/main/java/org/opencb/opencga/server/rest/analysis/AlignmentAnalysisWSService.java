@@ -38,6 +38,7 @@ import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Project;
@@ -392,71 +393,27 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         }
     }
 
+    //-------------------------------------------------------------------------
+    // STATS: run, info and query
+    //-------------------------------------------------------------------------
+
     @POST
     @Path("/stats/run")
     @ApiOperation(value = "Compute stats for a list of alignment files", response = Job.class)
     public Response statsRun(@ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
-                                @QueryParam(value = "file") String fileIdStr,
-                                @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
+                                @QueryParam(value = "inputFile") String inputFile,
                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                @QueryParam("study") String studyStr,
-                                @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr) {
-
-        if (StringUtils.isNotEmpty(studyId)) {
-            studyStr = studyId;
-        }
+                                @QueryParam("study") String study) {
 
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put("file", fileIdStr);
-        addParamIfNotNull(params, "outdir", outDirStr);
+        params.put("inputFile", inputFile);
 
         logger.info("ObjectMap: {}", params);
 
         try {
-            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "alignment", "stats-run", Enums.Priority.HIGH, params,
-                    token);
+            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(study, "alignment", "stats-run",
+                    Enums.Priority.HIGH, params, token);
             return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/stats/query")
-    @ApiOperation(value = "Fetch the stats of an alignment file", response = AlignmentGlobalStats.class)
-    public Response statsQuery(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("file")
-                                     String fileIdStr,
-                             @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
-                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                             @QueryParam("study") String studyStr,
-                             @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String region,
-                             @ApiParam(value = "Minimum mapping quality") @QueryParam("minMapQ") Integer minMapQ,
-                             @ApiParam(value = "Only alignments completely contained within boundaries of region")
-                             @QueryParam("contained") Boolean contained) {
-        try {
-            if (StringUtils.isNotEmpty(studyId)) {
-                studyStr = studyId;
-            }
-
-            Query query = new Query();
-            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
-
-            QueryOptions queryOptions = new QueryOptions();
-            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
-
-            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
-
-            if (StringUtils.isNotEmpty(region)) {
-                String[] regionList = region.split(",");
-                DataResult<AlignmentGlobalStats> dataResult = DataResult.empty();
-                for (String regionAux : regionList) {
-                    query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), regionAux);
-                    dataResult.append(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, token));
-                }
-                return createOkResponse(dataResult);
-            } else {
-                return createOkResponse(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, token));
-            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -465,42 +422,85 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @GET
     @Path("/stats/info")
     @ApiOperation(value = "Fetch the stats of an alignment file", response = AlignmentGlobalStats.class)
-    public Response statsInfo(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("file")
-                                     String fileIdStr,
-                             @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
-                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                             @QueryParam("study") String studyStr,
-                             @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String region,
-                             @ApiParam(value = "Minimum mapping quality") @QueryParam("minMapQ") Integer minMapQ,
-                             @ApiParam(value = "Only alignments completely contained within boundaries of region")
-                             @QueryParam("contained") Boolean contained) {
+    public Response statsInfo(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("inputFile")
+                                      String inputFile,
+                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                              @QueryParam("study") String study) {
+
         try {
-            if (StringUtils.isNotEmpty(studyId)) {
-                studyStr = studyId;
-            }
-
-            Query query = new Query();
-            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
-
-            QueryOptions queryOptions = new QueryOptions();
-            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
-
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
-
-            if (StringUtils.isNotEmpty(region)) {
-                String[] regionList = region.split(",");
-                DataResult<AlignmentGlobalStats> dataResult = DataResult.empty();
-                for (String regionAux : regionList) {
-                    query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), regionAux);
-                    dataResult.append(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, token));
-                }
-                return createOkResponse(dataResult);
-            } else {
-                return createOkResponse(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, token));
-            }
-        } catch (Exception e) {
+            return createOkResponse(alignmentStorageManager.statsInfo(study, inputFile, token));
+        } catch (AnalysisException e) {
             return createErrorResponse(e);
         }
+
+//        try {
+//            Query query = new Query();
+//            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
+//
+//            QueryOptions queryOptions = new QueryOptions();
+//            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
+//
+//            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
+//            alignmentStorageManager.statsInfo(study, inputFile, token);
+//
+//            if (StringUtils.isNotEmpty(region)) {
+//                String[] regionList = region.split(",");
+//                DataResult<AlignmentGlobalStats> dataResult = DataResult.empty();
+//                for (String regionAux : regionList) {
+//                    query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), regionAux);
+//                    dataResult.append(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, token));
+//                }
+//                return createOkResponse(dataResult);
+//            } else {
+//                return createOkResponse(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, token));
+//            }
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+    }
+
+    @GET
+    @Path("/stats/query")
+    @ApiOperation(value = "Fetch the stats of an alignment file", response = AlignmentGlobalStats.class)
+    public Response statsQuery(@ApiParam(value = "Annotations", required = true) @QueryParam("inputFile")
+                                     String annotations,
+                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                             @QueryParam("study") String study) {
+        try {
+            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
+            return createOkResponse(alignmentStorageManager.statsQuery(study, annotations, token));
+        } catch (AnalysisException e) {
+            return createErrorResponse(e);
+        }
+
+//        try {
+//            if (StringUtils.isNotEmpty(studyId)) {
+//                studyStr = studyId;
+//            }
+//
+//            Query query = new Query();
+//            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
+//
+//            QueryOptions queryOptions = new QueryOptions();
+//            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
+//
+//            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
+//
+//            if (StringUtils.isNotEmpty(region)) {
+//                String[] regionList = region.split(",");
+//                DataResult<AlignmentGlobalStats> dataResult = DataResult.empty();
+//                for (String regionAux : regionList) {
+//                    query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), regionAux);
+//                    dataResult.append(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, token));
+//                }
+//                return createOkResponse(dataResult);
+//            } else {
+//                return createOkResponse(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, token));
+//            }
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
     }
 
     //-------------------------------------------------------------------------

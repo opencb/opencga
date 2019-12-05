@@ -18,11 +18,11 @@ package org.opencb.opencga.client.rest.analysis;
 
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
-import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.DataResponse;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.AbstractParentClient;
+import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 
 import java.io.IOException;
@@ -54,12 +54,27 @@ public class AlignmentClient extends AbstractParentClient {
         return execute(ALIGNMENT_URL, "query", params, GET, ReadAlignment.class);
     }
 
-    public DataResponse<AlignmentGlobalStats> stats(String fileIds, ObjectMap params) throws IOException {
+    public DataResponse<Job> statsRun(String fileIds, ObjectMap params) throws IOException {
         if (params == null) {
             params = new ObjectMap();
         }
         params.putIfNotEmpty("file", fileIds);
-        return execute(ALIGNMENT_URL, "stats", params, GET, AlignmentGlobalStats.class);
+        return execute(ALIGNMENT_URL, "stats-run", params, POST, Job.class);
+    }
+
+    public DataResponse<String> statsInfo(String fileIds, ObjectMap params) throws IOException {
+        if (params == null) {
+            params = new ObjectMap();
+        }
+        params.putIfNotEmpty("file", fileIds);
+        return execute(ALIGNMENT_URL, "stats-info", params, GET, String.class);
+    }
+
+    public DataResponse<File> statsQuery(ObjectMap params) throws IOException {
+        if (params == null) {
+            params = new ObjectMap();
+        }
+        return execute(ALIGNMENT_URL, "stats-query", params, GET, File.class);
     }
 
     public DataResponse<RegionCoverage> coverage(String fileIds, ObjectMap params) throws IOException {

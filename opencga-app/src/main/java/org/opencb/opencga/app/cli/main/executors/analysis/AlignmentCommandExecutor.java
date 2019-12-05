@@ -29,13 +29,17 @@ import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmen
 import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
@@ -75,8 +79,14 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             case "query":
                 query();
                 break;
-            case "stats":
-                queryResponse = stats();
+            case "stats-run":
+                queryResponse = statsRun();
+                break;
+            case "stats-info":
+                queryResponse = statsInfo();
+                break;
+            case "stats-query":
+                queryResponse = statsQuery();
                 break;
             case "coverage":
                 queryResponse = coverage();
@@ -269,8 +279,11 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         channel.shutdown().awaitTermination(1, TimeUnit.SECONDS);
     }
 
+    //-------------------------------------------------------------------------
+    // STATS: run, info and query
+    //-------------------------------------------------------------------------
 
-    private DataResponse stats() throws CatalogException, IOException {
+    private DataResponse statsRun() throws IOException {
 //        ObjectMap objectMap = new ObjectMap();
 ////        objectMap.putIfNotNull("fileId", alignmentCommandOptions.statsAlignmentCommandOptions.fileId);
 //        objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.token);
@@ -289,8 +302,33 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 ////        for (AlignmentGlobalStats alignmentGlobalStats : globalStats.allResults()) {
 ////            System.out.println(alignmentGlobalStats.toJSON());
 ////        }
-        return null;
+
+        AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
+
+        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
+        return openCGAClient.getAlignmentClient().statsRun(cliOptions.inputFile, null);
     }
+
+    private DataResponse<String> statsInfo() throws IOException {
+        AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
+
+        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
+        return openCGAClient.getAlignmentClient().statsInfo(cliOptions.inputFile, null);
+    }
+
+    private DataResponse<File> statsQuery() throws IOException {
+        AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
+
+        ObjectMap objectMap = new ObjectMap();
+        objectMap.putIfNotNull("study", cliOptions.study);
+
+        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
+        return openCGAClient.getAlignmentClient().statsQuery(objectMap);
+    }
+
+    //-------------------------------------------------------------------------
+    // STATS: run, info and query
+    //-------------------------------------------------------------------------
 
     private DataResponse coverage() throws CatalogException, IOException {
         ObjectMap objectMap = new ObjectMap();
