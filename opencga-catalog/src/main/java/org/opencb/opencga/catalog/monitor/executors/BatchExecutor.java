@@ -16,14 +16,7 @@
 
 package org.opencb.opencga.catalog.monitor.executors;
 
-import com.fasterxml.jackson.databind.ObjectReader;
-import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.models.common.Enums;
-
-import java.io.IOException;
 import java.nio.file.Path;
-
-import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
  * Created by pfurio on 22/08/16.
@@ -72,20 +65,5 @@ public interface BatchExecutor {
             commandLine = commandLine + " >> " + stdout.toString();
         }
         return commandLine;
-    }
-
-    default String status(Path jobOutput, Job job) {
-        ObjectReader objectReader = getDefaultObjectMapper().reader(Enums.ExecutionStatus.class);
-        Path jobStatusFilePath = jobOutput.resolve(JOB_STATUS_FILE);
-        if (!jobStatusFilePath.toFile().exists()) {
-            return getStatus(job.getId());
-        }
-        // File exists
-        try {
-            Enums.ExecutionStatus executionStatus = objectReader.readValue(jobStatusFilePath.toFile());
-            return executionStatus.getName();
-        } catch (IOException e) {
-            return getStatus(job.getId());
-        }
     }
 }
