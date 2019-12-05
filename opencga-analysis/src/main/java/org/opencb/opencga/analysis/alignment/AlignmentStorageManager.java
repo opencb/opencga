@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.alignment;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectReader;
@@ -30,13 +31,20 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.StorageManager;
+import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.update.FileUpdateParams;
+import org.opencb.opencga.catalog.utils.AnnotationUtils;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
@@ -47,12 +55,12 @@ import org.opencb.opencga.analysis.models.StudyInfo;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * Created by pfurio on 31/10/16.
@@ -201,6 +209,78 @@ public class AlignmentStorageManager extends StorageManager {
 
     }
 
+
+    public void statsRun(String study, String inputFile, String outdir, String token) throws AnalysisException {
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.ID.key(), "fileId")
+                .append(Constants.ANNOTATION, Constants.VARIABLE_SET +"=alignment_stats");
+        try {
+            if (catalogManager.getFileManager().count(study, query, token).getNumMatches() > 0) {
+                // Skip
+                return;
+            }
+        } catch (CatalogException e) {
+            throw new AnalysisException(e);
+        }
+
+        ObjectMap params = new ObjectMap();
+        params.put(SamtoolsWrapperAnalysis.CALLBACK, (Consumer<SamtoolsWrapperAnalysis>) w -> statsRunCallback(w));
+
+        SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
+        samtools.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), token);
+
+        samtools.setStudy(study);
+        samtools.setCommand("stats")
+                .setInputFile(inputFile);
+
+        samtools.start();
+    }
+
+    private void statsRunCallback(SamtoolsWrapperAnalysis samtools) {
+        try {
+            OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(samtools.getStudy(), samtools.getInputFile(),
+                    QueryOptions.empty(), samtools.getToken());
+
+            URI uri = fileResult.getResults().get(0).getUri();
+            java.io.File inputFile = new java.io.File(uri.getPath());
+            java.io.File outputFile = new java.io.File(samtools.getOutDir() + "/" + inputFile.getName() + ".stats.txt");
+
+            Path linkedFile = Files.createSymbolicLink(inputFile.getParentFile().toPath().resolve(outputFile.getName()),
+                    Paths.get(outputFile.getAbsolutePath()));
+
+            // Create a variable set with the summary numbers of the statistics
+            Map<String, Object> annotations = new HashMap<>();
+            List<String> lines = org.apache.commons.io.FileUtils.readLines(outputFile, Charset.defaultCharset());
+            int count = 0;
+
+            for (String line : lines) {
+                if (line.startsWith("SN")) {
+                    count++;
+                    String[] splits = line.split("\t");
+                    String key = splits[1].split("\\(")[0].trim().replace(" ", "_").replace(":", "");
+                    if (line.contains("bases mapped (cigar):")) {
+                        key += "_cigar";
+                    }
+                    String value = splits[2].split(" ")[0];
+                    annotations.put(key, value);
+
+                } else if (count > 0) {
+                    break;
+                }
+            }
+
+            AnnotationSet annotationSet = new AnnotationSet("alignment_stats", "alignment_stats", annotations);
+
+            FileUpdateParams updateParams = new FileUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet));
+
+            catalogManager.getFileManager().update(samtools.getStudy(), samtools.getInputFile(), updateParams, QueryOptions.empty(),
+                    samtools.getToken());
+        } catch (CatalogException | IOException e) {
+            // TODO: be nice
+            e.printStackTrace();
+        }
+    }
+
     public DataResult<RegionCoverage> coverage(String studyIdStr, String fileIdStr, Region region, int windowSize, String sessionId)
             throws Exception {
         File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, sessionId);
@@ -208,13 +288,13 @@ public class AlignmentStorageManager extends StorageManager {
     }
 
     public DataResult<RegionCoverage> coverage(String studyIdStr, String fileIdStr, Region region, int minCoverage, int maxCoverage,
-                                                String sessionId) throws Exception {
+                                               String sessionId) throws Exception {
         File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, sessionId);
         return alignmentStorageEngine.getDBAdaptor().coverage(Paths.get(file.getUri()), region, minCoverage, maxCoverage);
     }
 
     public DataResult<RegionCoverage> getLowCoverageRegions(String studyIdStr, String fileIdStr, Region region, int minCoverage,
-                                                             String sessionId) throws Exception {
+                                                            String sessionId) throws Exception {
         File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, sessionId);
         return alignmentStorageEngine.getDBAdaptor().getLowCoverageRegions(Paths.get(file.getUri()), region, minCoverage);
     }

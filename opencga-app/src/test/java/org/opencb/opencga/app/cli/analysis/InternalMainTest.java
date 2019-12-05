@@ -328,27 +328,47 @@ public class InternalMainTest {
         File bam = opencga.createFile(studyId, "HG00096.chrom20.small.bam", sessionId);
 //        File bai = opencga.createFile(studyId, "HG00096.chrom20.small.bam.bai", sessionId);
 
-        String temporalDir = opencga.createTmpOutdir(studyId, "index", sessionId);
+        //String temporalDir = opencga.createTmpOutdir(studyId, "index", sessionId);
 
         // Index file1
         execute("alignment", "index",
                 "--session-id", sessionId,
                 "--study", studyId,
-                "--file", bam.getName(),
-                "-o", temporalDir);
+                "--file", bam.getName());
 
+
+        java.io.File baiFile = new java.io.File(bam.getUri().getPath() + ".bai");
 
 //        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, bam.getId(), null, sessionId).first().getIndex().getStatus().getName());
 //        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), bam.getUid()), null, sessionId).first();
 //        assertEquals(Job.JobStatus.READY, job.getStatus().getName());
 
-        assertEquals(3, Files.list(Paths.get(temporalDir)).collect(Collectors.toList()).size());
-        assertTrue(Files.exists(Paths.get(temporalDir).resolve("HG00096.chrom20.small.bam.bai")));
-        assertTrue(Files.exists(Paths.get(temporalDir).resolve("HG00096.chrom20.small.bam.bw")));
-        assertTrue(Files.exists(Paths.get(temporalDir).resolve("status.json")));
+        assertEquals(3, Files.list(baiFile.getParentFile().toPath()).collect(Collectors.toList()).size());
+        assertTrue(baiFile.exists());
+//        assertTrue(Files.exists(Paths.get(temporalDir).resolve("HG00096.chrom20.small.bam.bw")));
+//        assertTrue(Files.exists(Paths.get(temporalDir).resolve("status.json")));
 
 //        execute("alignment", "query", "--session-id", sessionId, "--file", "user@p1:s1:" + bam.getPath(), "--region", "20");
 
+    }
+
+    @Test
+    public void testStatsRun() throws CatalogException, IOException {
+        createStudy(datastores, "s1");
+
+        String filename = "HG00096.chrom20.small.bam";
+        File bam = opencga.createFile(studyId, filename, sessionId);
+
+        String temporalDir = opencga.createTmpOutdir(studyId, "_run_stats", sessionId);
+
+        // Index file1
+        execute("alignment", "stats-run",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--input-file", bam.getName(),
+                "-o", temporalDir);
+
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve(filename + ".stats.txt")));
     }
 
     @Test

@@ -25,18 +25,21 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.hpg.bigdata.analysis.tools.ExecutorMonitor;
 import org.opencb.hpg.bigdata.analysis.tools.Status;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
+import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * Created on 09/05/16
@@ -67,8 +70,8 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
             case "query":
                 query();
                 break;
-            case "stats":
-                stats();
+            case "stats-run":
+                statsRun();
                 break;
             case "coverage":
                 coverage();
@@ -150,24 +153,51 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         }
     }
 
-    private void stats() throws CatalogException, IOException {
-        ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.token);
-        objectMap.putIfNotNull("study", alignmentCommandOptions.statsAlignmentCommandOptions.study);
-        objectMap.putIfNotNull("region", alignmentCommandOptions.statsAlignmentCommandOptions.region);
-        objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.statsAlignmentCommandOptions.minMappingQuality);
-        if (alignmentCommandOptions.statsAlignmentCommandOptions.contained) {
-            objectMap.put("contained", alignmentCommandOptions.statsAlignmentCommandOptions.contained);
-        }
+    private void statsRun() throws AnalysisException {
+        AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
 
-        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        DataResponse<AlignmentGlobalStats> globalStats = openCGAClient.getAlignmentClient()
-                .stats(alignmentCommandOptions.statsAlignmentCommandOptions.fileId, objectMap);
+        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
 
-        for (AlignmentGlobalStats alignmentGlobalStats : globalStats.allResults()) {
-            System.out.println(alignmentGlobalStats.toJSON());
-        }
+        alignmentManager.statsRun(cliOptions.study, cliOptions.inputFile, cliOptions.outdir, cliOptions.commonOptions.token);
+
+//        ObjectMap params = new ObjectMap();
+//        params.putAll(cliOptions.commonOptions.params);
+//
+//        Consumer<SamtoolsWrapperAnalysis> consumer = samtools -> callback(samtools);
+//
+//        params.put(SamtoolsWrapperAnalysis.CALLBACK, consumer);
+//
+//        SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
+//        samtools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+//                cliOptions.commonOptions.token);
+//
+//        samtools.setStudy(cliOptions.study);
+//
+//        samtools.setCommand("stats")
+//                .setInputFile(cliOptions.inputFile);
+//
+//        samtools.start();
+//
+//
+//
+//        ObjectMap objectMap = new ObjectMap();
+//        objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.token);
+//        objectMap.putIfNotNull("study", alignmentCommandOptions.statsAlignmentCommandOptions.study);
+//        objectMap.putIfNotNull("region", alignmentCommandOptions.statsAlignmentCommandOptions.region);
+//        objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.statsAlignmentCommandOptions.minMappingQuality);
+//        if (alignmentCommandOptions.statsAlignmentCommandOptions.contained) {
+//            objectMap.put("contained", alignmentCommandOptions.statsAlignmentCommandOptions.contained);
+//        }
+//
+//        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
+//        DataResponse<AlignmentGlobalStats> globalStats = openCGAClient.getAlignmentClient()
+//                .stats(alignmentCommandOptions.statsAlignmentCommandOptions.inputFile, objectMap);
+//
+//        for (AlignmentGlobalStats alignmentGlobalStats : globalStats.allResults()) {
+//            System.out.println(alignmentGlobalStats.toJSON());
+//        }
     }
+
 
     private void coverage() throws CatalogException, IOException {
         ObjectMap objectMap = new ObjectMap();

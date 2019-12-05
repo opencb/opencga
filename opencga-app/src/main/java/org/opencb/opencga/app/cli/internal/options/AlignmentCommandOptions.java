@@ -125,18 +125,21 @@ public class AlignmentCommandOptions {
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
 
-        @Parameter(names = {"--file"}, description = "Id of the alignment file in catalog", required = true, arity = 1)
-        public String fileId;
+        @Parameter(names = {"--input-file"}, description = "Input alignment file in catalog", required = true, arity = 1)
+        public String inputFile;
 
-        @Parameter(names = {"--min-mapq"}, description = "Minimum mapping quality", arity = 1)
-        public Integer minMappingQuality;
+//        @Parameter(names = {"--min-mapq"}, description = "Minimum mapping quality", arity = 1)
+//        public Integer minMappingQuality;
+//
+//        @Parameter(names = {"--contained"}, description = "Set flag to select just the alignments completely contained within the "
+//                + "boundaries of the region", arity = 0)
+//        public boolean contained;
+//
+//        @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000")
+//        public String region;
 
-        @Parameter(names = {"--contained"}, description = "Set flag to select just the alignments completely contained within the "
-                + "boundaries of the region", arity = 0)
-        public boolean contained;
-
-        @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000")
-        public String region;
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
     }
 
     @Parameters(commandNames = {"coverage"}, commandDescription = "Obtain the coverage of an alignment")

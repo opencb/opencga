@@ -10,8 +10,10 @@ import org.opencb.opencga.core.exception.AnalysisException;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.function.Consumer;
 
 @Analysis(id = SamtoolsWrapperAnalysis.ID, type = Analysis.AnalysisType.VARIANT, description = SamtoolsWrapperAnalysis.DESCRIPTION)
 public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
@@ -22,9 +24,13 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     public final static String SAMTOOLS_DOCKER_IMAGE = "zlskidmore/samtools";
 
+    public final static String CALLBACK = "samtools_callback";
+
     private String command;
     private String inputFile;
     private String outputFile;
+
+    private Map<String, URI> fileUriMap = new HashMap<>();
 
     protected void check() throws Exception {
         super.check();
@@ -49,9 +55,9 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
             throw new AnalysisException("Missing input file when executing 'samtools " + command + "'.");
         }
 
-        if (StringUtils.isEmpty(outputFile)) {
-            throw new AnalysisException("Missing input file when executing 'samtools " + command + "'.");
-        }
+//        if (StringUtils.isEmpty(outputFile)) {
+//            throw new AnalysisException("Missing input file when executing 'samtools " + command + "'.");
+//        }
     }
 
     @Override
@@ -61,6 +67,8 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
             logger.info("Samtools command line: " + commandLine);
             try {
                 Set<String> filenamesBeforeRunning = new HashSet<>(getFilenames(getOutDir()));
+                filenamesBeforeRunning.add(STDOUT_FILENAME);
+                filenamesBeforeRunning.add(STDERR_FILENAME);
 
                 // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
                 Command cmd = new Command(getCommandLine())
@@ -100,6 +108,8 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                         File file = new File(getOutDir() + "/" + STDOUT_FILENAME);
                         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
                         if (lines.size() > 0 && lines.get(0).startsWith("# This file was produced by samtools stats")) {
+                            outputFile = getOutDir() + "/" + new File(fileUriMap.get(inputFile)).getName() + ".stats.txt";
+
                             FileUtils.copyFile(file, new File(outputFile));
                             addFile(new File(outputFile).toPath(), FileResult.FileType.PLAIN_TEXT);
                             success = true;
@@ -114,6 +124,11 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                         msg = StringUtils.join(FileUtils.readLines(file, Charset.defaultCharset()), ". ");
                     }
                     throw new AnalysisException(msg);
+                } else {
+                    if (params.containsKey(CALLBACK)) {
+                        Consumer<SamtoolsWrapperAnalysis> callback = (Consumer<SamtoolsWrapperAnalysis>) params.get(CALLBACK);
+                        callback.accept(this);
+                    }
                 }
             } catch (Exception e) {
                 throw new AnalysisException(e);
@@ -132,7 +147,8 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
         // Mount management
         Map<String, String> srcTargetMap = new HashMap<>();
-        updateSrcTargetMap(inputFile, sb, srcTargetMap);
+        updateFileMaps(inputFile, sb, fileUriMap, srcTargetMap);
+//        updateSrcTargetMap(inputFile, sb, srcTargetMap);
 
         sb.append("--mount type=bind,source=\"")
                 .append(getOutDir().toAbsolutePath()).append("\",target=\"").append(DOCKER_OUTPUT_PATH).append("\" ");
@@ -160,7 +176,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         switch (command) {
             case "stats": {
                 if (StringUtils.isNotEmpty(inputFile)) {
-                    File file = new File(inputFile);
+                    File file = new File(fileUriMap.get(inputFile).getPath());
                     sb.append(" ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
                 }
                 break;
@@ -193,7 +209,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
     }
 
     private boolean checkParam(String param) {
-        if (param.equals(DOCKER_IMAGE_VERSION_PARAM)) {
+        if (param.equals(DOCKER_IMAGE_VERSION_PARAM) || param.equals(CALLBACK)) {
             return false;
         } else if ("index".equals(command) || "view".equals(command) || "sort".equals(command)) {
             if ("o".equals(param)) {

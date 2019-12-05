@@ -299,7 +299,7 @@ public abstract class OpenCgaAnalysis {
         return scratchDir;
     }
 
-    protected final String getToken() {
+    public final String getToken() {
         return token;
     }
 

@@ -26,7 +26,6 @@ import io.grpc.ManagedChannelBuilder;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmentBiConverter;
-import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -272,24 +271,25 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
 
     private DataResponse stats() throws CatalogException, IOException {
-        ObjectMap objectMap = new ObjectMap();
-//        objectMap.putIfNotNull("fileId", alignmentCommandOptions.statsAlignmentCommandOptions.fileId);
-        objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.token);
-        objectMap.putIfNotNull("study", alignmentCommandOptions.statsAlignmentCommandOptions.study);
-        objectMap.putIfNotNull("region", alignmentCommandOptions.statsAlignmentCommandOptions.region);
-        objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.statsAlignmentCommandOptions.minMappingQuality);
-        if (alignmentCommandOptions.statsAlignmentCommandOptions.contained) {
-            objectMap.put("contained", alignmentCommandOptions.statsAlignmentCommandOptions.contained);
-        }
-
-        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        DataResponse<AlignmentGlobalStats> globalStats = openCGAClient.getAlignmentClient()
-                .stats(alignmentCommandOptions.statsAlignmentCommandOptions.fileId, objectMap);
-
-        return globalStats;
-//        for (AlignmentGlobalStats alignmentGlobalStats : globalStats.allResults()) {
-//            System.out.println(alignmentGlobalStats.toJSON());
+//        ObjectMap objectMap = new ObjectMap();
+////        objectMap.putIfNotNull("fileId", alignmentCommandOptions.statsAlignmentCommandOptions.fileId);
+//        objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.token);
+//        objectMap.putIfNotNull("study", alignmentCommandOptions.statsAlignmentCommandOptions.study);
+//        objectMap.putIfNotNull("region", alignmentCommandOptions.statsAlignmentCommandOptions.region);
+//        objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.statsAlignmentCommandOptions.minMappingQuality);
+//        if (alignmentCommandOptions.statsAlignmentCommandOptions.contained) {
+//            objectMap.put("contained", alignmentCommandOptions.statsAlignmentCommandOptions.contained);
 //        }
+//
+//        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
+//        DataResponse<AlignmentGlobalStats> globalStats = openCGAClient.getAlignmentClient()
+//                .stats(alignmentCommandOptions.statsAlignmentCommandOptions.inputFile, objectMap);
+//
+//        return globalStats;
+////        for (AlignmentGlobalStats alignmentGlobalStats : globalStats.allResults()) {
+////            System.out.println(alignmentGlobalStats.toJSON());
+////        }
+        return null;
     }
 
     private DataResponse coverage() throws CatalogException, IOException {
