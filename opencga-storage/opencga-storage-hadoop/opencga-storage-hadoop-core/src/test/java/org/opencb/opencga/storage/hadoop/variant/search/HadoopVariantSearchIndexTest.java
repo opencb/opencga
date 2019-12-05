@@ -28,7 +28,7 @@ public class HadoopVariantSearchIndexTest extends VariantSearchIndexTest impleme
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("searchIndex_" + i + "_pre"));
 
         externalResource.flush(dbAdaptor.getVariantTable());
-        VariantSearchLoadResult loadResult = variantStorageEngine.searchIndex(new Query(), new QueryOptions(), overwrite);
+        VariantSearchLoadResult loadResult = variantStorageEngine.secondaryIndex(new Query(), new QueryOptions(), overwrite);
         externalResource.flush(dbAdaptor.getVariantTable());
         System.out.println("[" + i + "] VariantSearch LoadResult " + loadResult);
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri("searchIndex_" + i + "_post"));

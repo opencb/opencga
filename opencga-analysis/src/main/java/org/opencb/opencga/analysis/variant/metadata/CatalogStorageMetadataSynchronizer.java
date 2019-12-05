@@ -21,6 +21,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
@@ -30,6 +31,8 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.update.CohortUpdateParams;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.FileIndex.IndexStatus;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -225,9 +228,10 @@ public class CatalogStorageMetadataSynchronizer {
                     }
                     catalogManager.getCohortManager().setStatus(study.getName(), defaultCohortName, status, null, sessionId);
                 }
+                QueryOptions options = new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), "SET"));
                 catalogManager.getCohortManager().update(study.getName(), defaultCohortName,
                         new CohortUpdateParams().setSamples(new ArrayList<>(cohortFromStorage)),
-                        true, null, sessionId);
+                        true, options, sessionId);
                 modified = true;
             }
         }
@@ -492,4 +496,25 @@ public class CatalogStorageMetadataSynchronizer {
         return index.getTransformedFile() != null && index.getTransformedFile().getId() > 0;
     }
 
+    public void synchronizeRemovedStudyFromStorage(String study, String token) throws CatalogException {
+        catalogManager.getCohortManager().update(study, StudyEntry.DEFAULT_COHORT,
+                new CohortUpdateParams().setSamples(Collections.emptyList()),
+                true,
+                new QueryOptions(Constants.ACTIONS, new ObjectMap(CohortDBAdaptor.QueryParams.SAMPLES.key(), "SET")),
+                token);
+
+        catalogManager.getCohortManager().setStatus(study, StudyEntry.DEFAULT_COHORT, Cohort.CohortStatus.NONE,
+                "Study has been removed from storage", token);
+
+
+        String userId = catalogManager.getUserManager().getUserId(token);
+        try (DBIterator<File> iterator = catalogManager.getFileManager()
+                .iterator(study, INDEXED_FILES_QUERY, INDEXED_FILES_QUERY_OPTIONS, token)) {
+            while (iterator.hasNext()) {
+                File file = iterator.next();
+                catalogManager.getFileManager().setFileIndex(study, file.getId(),
+                        new FileIndex(userId, TimeUtils.getTime(), new IndexStatus(IndexStatus.NONE), -1, null, null, null), token);
+            }
+        }
+    }
 }

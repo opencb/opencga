@@ -25,7 +25,6 @@ public class OperationsCommandOptions {
 
     public static final String OPERATIONS_COMMAND = "operations";
 
-    public static final String VARIANT_FILE_INDEX = "variant-file-index";
     public static final String VARIANT_FILE_DELETE = "variant-file-delete";
 
     public static final String VARIANT_SECONDARY_INDEX = "variant-secondary-index";
@@ -44,7 +43,6 @@ public class OperationsCommandOptions {
     public static final String VARIANT_FAMILY_AGGREGATE = "variant-family-aggregate";
     public static final String VARIANT_AGGREGATE = "variant-aggregate";
 
-    public final VariantFileIndexCommandOptions variantIndex;
     public final VariantFileDeleteCommandOptions variantIndexDelete;
 
     public final VariantSecondaryIndexCommandOptions variantSecondaryIndex;
@@ -79,7 +77,6 @@ public class OperationsCommandOptions {
         this.commonNumericOptions = numericOptions;
         this.jCommander = jCommander;
 
-        variantIndex = new VariantFileIndexCommandOptions();
         variantIndexDelete = new VariantFileDeleteCommandOptions();
         variantSecondaryIndex = new VariantSecondaryIndexCommandOptions();
         variantSecondaryIndexDelete = new VariantSecondaryIndexDeleteCommandOptions();
@@ -93,22 +90,6 @@ public class OperationsCommandOptions {
         variantAggregateFamily = new VariantFamilyAggregateCommandOptions();
         variantAggregate = new VariantAggregateCommandOptions();
 
-    }
-
-    @Parameters(commandNames = {VARIANT_FILE_INDEX}, commandDescription = "Index variants file")
-    public class VariantFileIndexCommandOptions extends GeneralCliOptions.StudyOption {
-
-        @ParametersDelegate
-        public GenericVariantIndexOptions genericVariantIndexOptions = new GenericVariantIndexOptions();
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--file"}, description = "CSV of file ids to be indexed", required = true, arity = 1)
-        public String fileId = null;
-
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
-        public String outdir = null;
     }
 
     @Parameters(commandNames = {VARIANT_FILE_DELETE}, commandDescription = StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND_DESCRIPTION)

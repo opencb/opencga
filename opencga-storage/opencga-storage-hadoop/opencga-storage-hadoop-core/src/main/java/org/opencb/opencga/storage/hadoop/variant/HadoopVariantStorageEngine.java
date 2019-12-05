@@ -395,8 +395,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public void fillMissing(String study, ObjectMap options, boolean overwrite) throws StorageEngineException {
-        logger.info("FillMissing: Study " + study);
+    public void aggregate(String study, ObjectMap options, boolean overwrite) throws StorageEngineException {
+        logger.info("Aggregate: Study " + study);
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
@@ -406,11 +406,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public VariantSearchLoadResult searchIndex(Query query, QueryOptions queryOptions, boolean overwrite)
+    public VariantSearchLoadResult secondaryIndex(Query query, QueryOptions queryOptions, boolean overwrite)
             throws StorageEngineException, IOException, VariantSearchException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
         queryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
-        return super.searchIndex(query, queryOptions, overwrite);
+        return super.secondaryIndex(query, queryOptions, overwrite);
     }
 
     @Override
@@ -434,9 +434,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public void fillGaps(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
+    public void aggregateFamily(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         if (samples == null || samples.size() < 2) {
-            throw new IllegalArgumentException("Fill gaps operation requires at least two samples.");
+            throw new IllegalArgumentException("Aggregate family operation requires at least two samples.");
         } else if (samples.size() > FILL_GAPS_MAX_SAMPLES) {
             throw new IllegalArgumentException("Unable to execute fill gaps operation with more than "
                     + FILL_GAPS_MAX_SAMPLES + " samples.");

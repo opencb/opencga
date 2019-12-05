@@ -152,7 +152,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
         checkArchiveTableTimeStamp(dbAdaptor);
 
-        getVariantStorageEngine().fillMissing(studyMetadata.getName(), new ObjectMap("local", true), false);
+        getVariantStorageEngine().aggregate(studyMetadata.getName(), new ObjectMap("local", true), false);
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
@@ -178,7 +178,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
         checkArchiveTableTimeStamp(dbAdaptor);
 
-        getVariantStorageEngine().fillGaps(studyMetadata.getName(), Arrays.asList("s1", "s2"), new ObjectMap("local", true));
+        getVariantStorageEngine().aggregateFamily(studyMetadata.getName(), Arrays.asList("s1", "s2"), new ObjectMap("local", true));
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
@@ -219,7 +219,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
         checkArchiveTableTimeStamp(dbAdaptor);
 
-        getVariantStorageEngine().fillGaps(studyMetadata.getName(), Arrays.asList("s1", "s2"), new ObjectMap("local", true));
+        getVariantStorageEngine().aggregateFamily(studyMetadata.getName(), Arrays.asList("s1", "s2"), new ObjectMap("local", true));
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 

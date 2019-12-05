@@ -48,9 +48,8 @@ public class VariantClient extends AbstractParentClient {
         jsonObjectMapper.addMixIn(DataResponse.class, DataResponseMixing.class);
     }
 
-    @Deprecated
-    public DataResponse<Job> index(ObjectMap params) throws IOException {
-        return execute("operation", "variant/index/run", new ObjectMap("body", params), POST, Job.class);
+    public DataResponse<Job> index(String study, ObjectMap params) throws IOException {
+        return execute(VARIANT_URL, "index", new ObjectMap("body", params).append("study", study), POST, Job.class);
     }
 
     public DataResponse<VariantMetadata> metadata(ObjectMap params, QueryOptions options) throws IOException {
@@ -78,7 +77,7 @@ public class VariantClient extends AbstractParentClient {
         params.put("outputFileName", outputFileName);
         params.put("outputFormat", outputFormat);
         params.put("compress", compress);
-        return execute(VARIANT_URL, "export/run", new ObjectMap("body", params).append("study", study), POST, Job.class);
+        return execute(VARIANT_URL, "export", new ObjectMap("body", params).append("study", study), POST, Job.class);
     }
 
     public DataResponse<VariantAnnotation> annotationQuery(String annotationId, ObjectMap params, QueryOptions options)
@@ -137,18 +136,18 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "/sample/stats/run", new ObjectMap("body", params).append("study", study), POST, Job.class);
     }
 
-    public DataResponse<SampleVariantStats> sampleStatsQuery(String study, List<String> sample) throws IOException {
+    public DataResponse<SampleVariantStats> sampleStatsInfo(String study, List<String> sample) throws IOException {
         ObjectMap params = new ObjectMap("study", study).append("sample", String.join(",", sample));
-        return execute(VARIANT_URL, "/sample/stats/query", params, GET, SampleVariantStats.class);
+        return execute(VARIANT_URL, "/sample/stats/info", params, GET, SampleVariantStats.class);
     }
 
     public DataResponse<Job> cohortStatsRun(String study, ObjectMap params) throws IOException {
         return execute(VARIANT_URL, "/cohort/stats/run", new ObjectMap("body", params).append("study", study), POST, Job.class);
     }
 
-    public DataResponse<VariantSetStats> cohortStatsQuery(String study, List<String> cohort) throws IOException {
+    public DataResponse<VariantSetStats> cohortStatsInfo(String study, List<String> cohort) throws IOException {
         ObjectMap params = new ObjectMap("study", study).append("cohort", String.join(",", cohort));
-        return execute(VARIANT_URL, "/cohort/stats/query", params, GET, VariantSetStats.class);
+        return execute(VARIANT_URL, "/cohort/stats/info", params, GET, VariantSetStats.class);
     }
 
     public DataResponse<Job> gwasRun(String study, ObjectMap params) throws IOException {

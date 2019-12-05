@@ -126,7 +126,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public VariantSearchLoadResult searchIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
+    public VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
             throws StorageEngineException, IOException, VariantSearchException {
         VariantSearchManager variantSearchManager = getVariantSearchManager();
 
@@ -147,14 +147,14 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             }
 
             // Then, load new variants.
-            searchIndex = super.searchIndex(inputQuery, inputQueryOptions, overwrite);
+            searchIndex = super.secondaryIndex(inputQuery, inputQueryOptions, overwrite);
         } else {
             //The current dbName from the SearchEngine is not alive or does not exist. There is nothing to remove
             deletedVariants = 0;
             logger.debug("Skip removed variants!");
 
             // Try to index the rest of variants. This method will fail if the search engine is not alive
-            searchIndex = super.searchIndex(inputQuery, inputQueryOptions, overwrite);
+            searchIndex = super.secondaryIndex(inputQuery, inputQueryOptions, overwrite);
 
             // If the variants were loaded correctly, the trash can be clean up.
             getDBAdaptor().cleanTrash(timeStamp);

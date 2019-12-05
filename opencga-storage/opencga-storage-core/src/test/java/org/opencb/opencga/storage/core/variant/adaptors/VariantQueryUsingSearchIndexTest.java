@@ -30,7 +30,7 @@ public abstract class VariantQueryUsingSearchIndexTest extends VariantDBAdaptorT
         super.before();
 
         if (!preFileIndexed) {
-            variantStorageEngine.searchIndex();
+            variantStorageEngine.secondaryIndex();
         }
     }
 

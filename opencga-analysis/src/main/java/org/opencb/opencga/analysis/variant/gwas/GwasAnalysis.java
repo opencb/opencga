@@ -282,7 +282,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
     }
 
     @Override
-    public List<String> getSteps() {
+    protected List<String> getSteps() {
         List<String> steps = super.getSteps();
         if (index) {
             steps.add("index");

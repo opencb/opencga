@@ -36,6 +36,7 @@ import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
@@ -154,7 +155,7 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
             if (request.getPageToken() != null) {
                 try {
                     page = Integer.parseInt(request.getPageToken().toString());
-                    this.queryOptions.put("skip", this.queryOptions.getInt("limit") * page);
+                    this.queryOptions.put(QueryOptions.SKIP, this.queryOptions.getInt(QueryOptions.LIMIT) * page);
                 } catch (Exception e) {
                     return createErrorResponse(method, "Invalid page token \"" + request.getPageToken() + "\"");
                 }
@@ -181,7 +182,7 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
     public Response getHtsget(
             @Context HttpHeaders headers,
             @ApiParam(value = "File id, name or path") @PathParam("file") String fileIdStr,
-            @ApiParam(value = "Study [[user@]project:]study") @PathParam("study") String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Reference sequence name (Example: 'chr1', '1' or 'chrX'") @QueryParam("referenceName") String reference,
             @ApiParam(value = "The start position of the range on the reference, 0-based, inclusive.") @QueryParam("start") int start,
             @ApiParam(value = "The end position of the range on the reference, 0-based, exclusive.") @QueryParam("end") int end,

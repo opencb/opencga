@@ -91,6 +91,13 @@ public class MetaWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/fail")
+    @ApiOperation(httpMethod = "GET", value = "Ping Opencga webservices.")
+    public Response fail() {
+        throw new RuntimeException("Do fail!");
+    }
+
+    @GET
     @Path("/status")
     @ApiOperation(httpMethod = "GET", value = "Database status.")
     public Response status() {

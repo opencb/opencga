@@ -327,6 +327,7 @@ public class VariantAnalysisTest {
         analysis.setStudy(STUDY)
                 .setCaseCohort("CASE")
                 .setControlCohort("CONTROL")
+                .setIndex(true)
                 .setIndexScoreId("GwasScore");
         checkAnalysisResult(analysis.start());
 

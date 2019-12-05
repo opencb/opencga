@@ -84,13 +84,17 @@ public abstract class OpenCgaAnalysis {
     public OpenCgaAnalysis() {
     }
 
-    public void setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
+    public final OpenCgaAnalysis setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
                       ObjectMap params, Path outDir, String token) {
         VariantStorageManager manager = new VariantStorageManager(catalogManager, engineFactory);
-        setUp(opencgaHome, catalogManager, manager, params, outDir, token);
+        return setUp(opencgaHome, catalogManager, manager, params, outDir, token);
     }
 
-    public void setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
+    public final OpenCgaAnalysis setUp(VariantStorageManager variantStorageManager, ObjectMap params, Path outDir, String token) {
+        return setUp(null, variantStorageManager.getCatalogManager(), variantStorageManager, params, outDir, token);
+    }
+
+    public final OpenCgaAnalysis setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
                       ObjectMap params, Path outDir, String token) {
         this.opencgaHome = opencgaHome;
         this.catalogManager = catalogManager;
@@ -104,9 +108,10 @@ public abstract class OpenCgaAnalysis {
         //this.params.put("outDir", outDir.toAbsolutePath().toString());
 
         setUpFrameworksAndSource();
+        return this;
     }
 
-    public void setUp(String opencgaHome, ObjectMap params, Path outDir, String token)
+    public final OpenCgaAnalysis setUp(String opencgaHome, ObjectMap params, Path outDir, String token)
             throws AnalysisException {
         this.opencgaHome = opencgaHome;
         this.token = token;
@@ -126,6 +131,7 @@ public abstract class OpenCgaAnalysis {
         }
 
         setUpFrameworksAndSource();
+        return this;
     }
 
     private void setUpFrameworksAndSource() {
@@ -272,7 +278,7 @@ public abstract class OpenCgaAnalysis {
     /**
      * @return the analysis steps
      */
-    public List<String> getSteps() {
+    protected List<String> getSteps() {
         List<String> steps = new ArrayList<>();
         steps.add(getId());
         return steps;
@@ -358,6 +364,10 @@ public abstract class OpenCgaAnalysis {
 
     protected final void addAttribute(String key, Object value) throws AnalysisException {
         arm.addAttribute(key, value);
+    }
+
+    protected final void addFile(Path file) throws AnalysisException {
+        arm.addFile(file, FileResult.FileType.fromName(file.getFileName().toString()));
     }
 
     protected final void addFile(Path file, FileResult.FileType fileType) throws AnalysisException {
