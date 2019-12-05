@@ -52,6 +52,8 @@ import org.opencb.opencga.core.models.summaries.StudySummary;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
 import org.opencb.opencga.core.results.OpenCGAResult;
+import org.reflections.Reflections;
+import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +61,6 @@ import javax.annotation.Nullable;
 import javax.naming.NamingException;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -341,27 +342,19 @@ public class StudyManager extends AbstractManager {
             catalogIOManager.createDirectory(jobUri, true);
             fileDBAdaptor.update(jobFolder, new ObjectMap("uri", jobUri), QueryOptions.empty());
 
-            // Check if there are any VariableSets to be installed
-            List<URI> uris = null;
-            try {
-                uris = catalogIOManager.listFiles(getClass().getResource("/variablesets/").toURI());
-            } catch (URISyntaxException e) {
-                logger.error("Could not list installation variable sets", e);
-            }
-
-            if (uris != null) {
-                for (URI variableSetUri : uris) {
-                    VariableSet vs = null;
-                    try {
-                        vs = JacksonUtils.getDefaultNonNullObjectMapper().readValue(new java.io.File(variableSetUri),
-                                VariableSet.class);
-                    } catch (IOException e) {
-                        logger.error("Could not parse variable set from uri {}", variableSetUri, e);
-                    }
-                    if (vs != null) {
-                        createVariableSet(study, vs.getId(), vs.getName(), vs.isUnique(), vs.isConfidential(), vs.getDescription(),
-                                vs.getAttributes(), vs.getVariables().stream().collect(Collectors.toList()), vs.getEntities(), token);
-                    }
+            // Read and process installation variable sets
+            Set<String> variablesets = new Reflections(new ResourcesScanner(), "variablesets/").getResources(Pattern.compile(".*\\.json"));
+            for (String variableset : variablesets) {
+                VariableSet vs = null;
+                try {
+                    vs = JacksonUtils.getDefaultNonNullObjectMapper().readValue(
+                            getClass().getClassLoader().getResourceAsStream(variableset), VariableSet.class);
+                } catch (IOException e) {
+                    logger.error("Could not parse variable set '{}'", variableset, e);
+                }
+                if (vs != null) {
+                    createVariableSet(study, vs.getId(), vs.getName(), vs.isUnique(), vs.isConfidential(), vs.getDescription(),
+                            vs.getAttributes(), vs.getVariables().stream().collect(Collectors.toList()), vs.getEntities(), token);
                 }
             }
 
