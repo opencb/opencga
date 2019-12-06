@@ -43,9 +43,6 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.models.update.JobUpdateParams;
-import org.opencb.opencga.core.tools.result.ExecutorResultManager;
-import org.opencb.opencga.core.tools.result.ExecutionResult;
-import org.opencb.opencga.core.tools.result.Status;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
@@ -54,6 +51,9 @@ import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.tools.result.ExecutorResultManager;
+import org.opencb.opencga.core.tools.result.Status;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -111,7 +111,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(VariantFileIndexerStorageOperation.ID, "variant index");
             put(VariantExportStorageOperation.ID, "variant export");
             put(VariantStatsAnalysis.ID, "variant stats-run");
-            put("stats-export", "variant stats-export");
+            put("variant-stats-export", "variant stats-export");
             put(SampleVariantStatsAnalysis.ID, "variant sample-stats-run");
             put(CohortVariantStatsAnalysis.ID, "variant cohort-stats-run");
             put(GwasAnalysis.ID, "variant gwas-run");
