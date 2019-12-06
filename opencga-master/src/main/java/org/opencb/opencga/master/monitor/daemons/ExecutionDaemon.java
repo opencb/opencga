@@ -103,12 +103,12 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(SamtoolsWrapperAnalysis.ID, "alignment " + SamtoolsWrapperAnalysis.ID);
             put(DeeptoolsWrapperAnalysis.ID, "alignment " + DeeptoolsWrapperAnalysis.ID);
 
-            put("index", "variant index");
-            put("export", "variant export");
-            put("stats", "variant stats-run");
-            put("stats-export", "variant stats-export");
-            put("sample-stats", "variant sample-stats-run");
-            put("cohort-stats", "variant cohort-stats-run");
+            put("variant-index", "variant index");
+            put("variant-export", "variant export");
+            put("variant-stats", "variant stats-run");
+            put("variant-stats-export", "variant stats-export");
+            put("variant-sample-stats", "variant sample-stats-run");
+            put("variant-cohort-stats", "variant cohort-stats-run");
             put("gwas", "variant gwas-run");
             put(PlinkWrapperAnalysis.ID, "variant " + PlinkWrapperAnalysis.ID + "-run");
             put(RvtestsWrapperAnalysis.ID, "variant " + RvtestsWrapperAnalysis.ID + "-run");
