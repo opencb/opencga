@@ -9,6 +9,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.managers.PanelManager;
 import org.opencb.opencga.catalog.models.update.PanelUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.models.Status;
@@ -41,7 +42,7 @@ public class PanelWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a panel")
     public Response createPanel(
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of installation panel ids to be imported. To import them all at once, write the "
                     + "special word 'ALL_GLOBAL_PANELS'")
             @QueryParam("import") String panelIds,
@@ -66,7 +67,7 @@ public class PanelWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update panel attributes")
     public Response updateByQuery(
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Panel id") @QueryParam("id") String id,
             @ApiParam(value = "Panel name") @QueryParam("name") String name,
             @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
@@ -84,7 +85,7 @@ public class PanelWSServer extends OpenCGAWSServer {
                 @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(name = "params", value = "Panel parameters") PanelUpdateParams panelParams) {
         try {
-            query.remove("study");
+            query.remove(ParamConstants.STUDY_PARAM);
             return createOkResponse(panelManager.update(studyStr, query, panelParams, true, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -96,7 +97,7 @@ public class PanelWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update panel attributes")
     public Response updatePanel(
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of panel ids") @PathParam("panels") String panels,
             @ApiParam(value = "Create a new version of panel", defaultValue = "false")
             @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
@@ -112,20 +113,20 @@ public class PanelWSServer extends OpenCGAWSServer {
     @Path("/{panels}/info")
     @ApiOperation(value = "Panel info")
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
                     example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
                     example = "id,status", dataType = "string", paramType = "query")
     })
     public Response info(
-            @ApiParam(value = "Comma separated list of panel ids up to a maximum of 100") @PathParam(value = "panels") String panelStr,
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = ParamConstants.PANELS_DESCRIPTION) @PathParam(value = "panels") String panelStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Panel  version") @QueryParam("version") Integer version,
             @ApiParam(value = "Boolean to retrieve deleted panels", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = "Boolean indicating which panels are queried (installation or study specific panels)",
                     defaultValue = "false") @QueryParam("global") boolean global) {
         try {
-            query.remove("study");
+            query.remove(ParamConstants.STUDY_PARAM);
             query.remove("global");
 
             if (global) {
@@ -145,16 +146,16 @@ public class PanelWSServer extends OpenCGAWSServer {
     @Path("/search")
     @ApiOperation(value = "Panel search")
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
                     example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
                     example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, defaultValue = "false", dataType = "boolean", paramType = "query")
     })
     public Response search(
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Panel name") @QueryParam("name") String name,
             @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
             @ApiParam(value = "Panel variants") @QueryParam("variants") String variants,
@@ -165,9 +166,9 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Panel description") @QueryParam("description") String description,
             @ApiParam(value = "Panel author") @QueryParam("author") String author,
             @ApiParam(value = "Boolean to retrieve deleted panels", defaultValue = "false") @QueryParam("deleted") boolean deleted,
-            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
             @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
             @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Boolean indicating which panels are queried (installation or study specific panels)",
                     defaultValue = "false") @QueryParam("global") boolean global,
@@ -177,7 +178,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Snapshot value (Latest version of samples in the specified release)") @QueryParam("snapshot")
                     int snapshot) {
         try {
-            query.remove("study");
+            query.remove(ParamConstants.STUDY_PARAM);
             query.remove("global");
 
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
@@ -202,7 +203,7 @@ public class PanelWSServer extends OpenCGAWSServer {
     @Path("/{panels}/delete")
     @ApiOperation(value = "Delete existing panels")
     public Response deleteList(
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of panel ids") @PathParam("panels") String panels) {
         try {
             return createOkResponse(panelManager.delete(studyStr, getIdList(panels), queryOptions, true, token));
@@ -215,7 +216,7 @@ public class PanelWSServer extends OpenCGAWSServer {
     @Path("/delete")
     @ApiOperation(value = "Delete existing panels")
     public Response delete(
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Panel id") @QueryParam("id") String id,
             @ApiParam(value = "Panel name") @QueryParam("name") String name,
             @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
@@ -229,7 +230,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = "Release") @QueryParam("release") String release) {
         try {
-            query.remove("study");
+            query.remove(ParamConstants.STUDY_PARAM);
             return createOkResponse(panelManager.delete(studyStr, query, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -241,14 +242,14 @@ public class PanelWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Group panels by several fields", position = 10, hidden = true,
             notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = "Count the number of elements matching the group", dataType = "boolean",
                     paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Maximum number of documents (groups) to be returned", dataType = "integer",
                     paramType = "query", defaultValue = "50")
     })
     public Response groupBy(
             @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @QueryParam("fields") String fields,
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Panel name") @QueryParam("name") String name,
             @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
             @ApiParam(value = "Panel categories") @QueryParam("categories") String categories,
@@ -262,7 +263,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot") int snapshot) {
         try {
-            query.remove("study");
+            query.remove(ParamConstants.STUDY_PARAM);
             query.remove("fields");
 
             DataResult result = panelManager.groupBy(studyStr, query, fields, queryOptions, token);
@@ -276,13 +277,12 @@ public class PanelWSServer extends OpenCGAWSServer {
     @Path("/{panels}/acl")
     @ApiOperation(value = "Returns the acl of the panels. If member is provided, it will only return the acl for the member.", position = 18)
     public Response getAcls(
-            @ApiParam(value = "Comma separated list of panel ids up to a maximum of 100", required = true) @PathParam("panels")
+            @ApiParam(value = ParamConstants.PANELS_DESCRIPTION, required = true) @PathParam("panels")
                     String sampleIdsStr,
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "User or group id") @QueryParam("member") String member,
-            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                    + "exception whenever one of the entries looked for cannot be shown for whichever reason", defaultValue = "false")
-            @QueryParam("silent") boolean silent) {
+            @ApiParam(value = ParamConstants.SILENT_DESCRIPTION, defaultValue = "false")
+            @QueryParam(Constants.SILENT) boolean silent) {
         try {
             List<String> idList = getIdList(sampleIdsStr);
             return createOkResponse(panelManager.getAcls(studyStr, idList, member,silent, token));
@@ -299,7 +299,7 @@ public class PanelWSServer extends OpenCGAWSServer {
     @Path("/acl/{members}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
     public Response updateAcl(
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = "JSON containing the parameters to update the permissions.", required = true) PanelAcl params) {
         try {

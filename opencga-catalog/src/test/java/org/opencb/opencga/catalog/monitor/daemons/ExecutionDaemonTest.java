@@ -21,10 +21,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -43,6 +40,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         String expiringToken = this.catalogManager.getUserManager().login("admin", "admin");
         String nonExpiringToken = this.catalogManager.getUserManager().getSystemTokenForUser("admin", expiringToken);
+        catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().setMaxConcurrentJobs(1);
 
         daemon = new ExecutionDaemon(1000, nonExpiringToken, catalogManager, "/tmp");
         executor = new DummyBatchExecutor();
@@ -57,7 +55,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         params.put("flag", "");
         params.put("boolean", "true");
         params.put("outdir", "/tmp/folder");
-        params.put("-Ddynamic", "true");
+        params.put("other", Collections.singletonMap("dynamic", "true"));
         String cli = ExecutionDaemon.buildCli("opencga-internal.sh", "variant", "index", params);
         assertEquals("opencga-internal.sh variant index --key value --camel-case-key value --flag  --boolean true --outdir /tmp/folder -Ddynamic=true", cli);
     }
@@ -71,7 +69,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         URI uri = getJob(jobId).getOutDir().getUri();
         Assert.assertTrue(Files.exists(Paths.get(uri)));
-        assertTrue(uri.getPath().startsWith("/tmp/opencga/jobs/") && uri.getPath().endsWith(jobId + "/"));
+        assertTrue(uri.getPath().startsWith(catalogManager.getConfiguration().getJobDir()) && uri.getPath().endsWith(jobId + "/"));
     }
 
     @Test
@@ -133,7 +131,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         String[] cli = getJob(jobId).getCommandLine().split(" ");
         int i = Arrays.asList(cli).indexOf("--my-file");
-        assertEquals(inputFile.getUri().getPath(), cli[i + 1]);
+        assertEquals(inputFile.getPath(), cli[i + 1]);
         assertEquals(1, getJob(jobId).getInput().size());
         assertEquals(inputFile.getPath(), getJob(jobId).getInput().get(0).getPath());
         assertEquals(Enums.ExecutionStatus.QUEUED, getJob(jobId).getStatus().getName());
@@ -163,7 +161,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         String[] cli = getJob(jobId).getCommandLine().split(" ");
         int i = Arrays.asList(cli).indexOf("--my-file");
-        assertEquals(inputFile.getUri().getPath(), cli[i + 1]);
+        assertEquals(inputFile.getPath(), cli[i + 1]);
         assertEquals(1, getJob(jobId).getInput().size());
         assertEquals(inputFile.getPath(), getJob(jobId).getInput().get(0).getPath());
         assertEquals(Enums.ExecutionStatus.QUEUED, getJob(jobId).getStatus().getName());

@@ -29,9 +29,6 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         String subCommandString = getParsedSubCommand(operationsCommandOptions.jCommander);
         DataResponse queryResponse = null;
         switch (subCommandString) {
-            case VARIANT_FILE_INDEX:
-                queryResponse = variantIndex();
-                break;
             case VARIANT_FILE_DELETE:
                 queryResponse = variantIndexDelete();
                 break;
@@ -78,32 +75,6 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
 
         createOutput(queryResponse);
 
-    }
-
-    private DataResponse<Job> variantIndex() throws IOException {
-        OperationsCommandOptions.VariantFileIndexCommandOptions variantIndex = operationsCommandOptions.variantIndex;
-        ObjectMap params = new OperationsWSService.VariantIndexParams(
-                variantIndex.fileId,
-                variantIndex.genericVariantIndexOptions.resume,
-                variantIndex.outdir,
-                variantIndex.genericVariantIndexOptions.transform,
-                variantIndex.genericVariantIndexOptions.gvcf,
-                variantIndex.genericVariantIndexOptions.load,
-                variantIndex.genericVariantIndexOptions.loadSplitData,
-                variantIndex.genericVariantIndexOptions.skipPostLoadCheck,
-                variantIndex.genericVariantIndexOptions.excludeGenotype,
-                variantIndex.genericVariantIndexOptions.includeExtraFields,
-                variantIndex.genericVariantIndexOptions.merge,
-                variantIndex.genericVariantIndexOptions.calculateStats,
-                variantIndex.genericVariantIndexOptions.aggregated,
-                variantIndex.genericVariantIndexOptions.aggregationMappingFile,
-                variantIndex.genericVariantIndexOptions.annotate,
-                variantIndex.genericVariantIndexOptions.annotator,
-                variantIndex.genericVariantIndexOptions.overwriteAnnotations,
-                variantIndex.genericVariantIndexOptions.indexSearch
-        ).toObjectMap();
-        addDynamicParams(params);
-        return openCGAClient.getOperationClient().variantFileIndex(variantIndex.study, params);
     }
 
     private DataResponse variantIndexDelete() throws IOException {

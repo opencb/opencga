@@ -227,7 +227,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
     }
 
     @Override
-    public List<String> getSteps() {
+    protected List<String> getSteps() {
         return Arrays.asList("prepare-cohorts", getId());
     }
 

@@ -132,7 +132,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             logger.info("Starting annotation creation");
             logger.info("Query : {} ", query.toJson());
             annotationFile = createAnnotation(
-                    URI.create(params.getString(OUT_DIR)),
+                    UriUtils.createDirectoryUriSafe(params.getString(OUT_DIR)),
                     params.getString(FILE_NAME, "annotation_" + TimeUtils.getTime()),
                     query, params);
             logger.info("Finished annotation creation {}ms, generated file {}", System.currentTimeMillis() - start, annotationFile);

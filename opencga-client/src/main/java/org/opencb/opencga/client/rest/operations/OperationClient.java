@@ -17,12 +17,6 @@ public class OperationClient extends AbstractParentClient {
 
     private static final String OPERATION_URL = "operation";
 
-
-    public DataResponse<Job> variantFileIndex(String study, ObjectMap params) throws IOException {
-        return execute(OPERATION_URL, "/variant/file/index",
-                new ObjectMap("body", params).append("study", study).append("study", study), POST, Job.class);
-    }
-
     public DataResponse<Job> variantFileDelete(String study, List<String> file, boolean resume, ObjectMap params) throws IOException {
         return execute(OPERATION_URL, "/variant/file/delete",
                 copy(params)

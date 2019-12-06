@@ -139,6 +139,8 @@ analysis:
      # k8s.cpu: "1"
      # k8s.memory: "2048Mi"
      # k8s.namespace: "default"
+     # k8s.nodeSelector: # List of labels for the node selection
+     #   node: worker
      # k8S.volumesMount:
      #   - name: "conf"
      #     mountPath: "/opt/opencga/conf"

@@ -174,7 +174,7 @@ public class VariantTableRemoveTest extends VariantStorageBaseTest implements Ha
 
         loadFile("s2.genome.vcf", studyMetadata, options);
 
-        getVariantStorageEngine().fillGaps(studyName, Arrays.asList("s1", "s2"), options);
+        getVariantStorageEngine().aggregateFamily(studyName, Arrays.asList("s1", "s2"), options);
 
         VariantHbaseTestUtils.printVariants(dbAdaptor, newOutputUri());
         variants = buildVariantsIdx();

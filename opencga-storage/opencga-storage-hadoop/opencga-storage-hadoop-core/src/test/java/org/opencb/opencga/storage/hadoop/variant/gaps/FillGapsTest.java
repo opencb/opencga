@@ -63,7 +63,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
 //        fillGapsLocal(variantStorageEngine, studyMetadata, sampleIds);
 //        fillLocalMRDriver(variantStorageEngine, studyMetadata, sampleIds);
 //        fillGapsLocalFromArchive(variantStorageEngine, studyMetadata, sampleIds, false);
-        variantStorageEngine.fillGaps(studyMetadata.getName(), sampleIds.stream().map(Object::toString).collect(Collectors.toList()), new ObjectMap("local", false));
+        variantStorageEngine.aggregateFamily(studyMetadata.getName(), sampleIds.stream().map(Object::toString).collect(Collectors.toList()), new ObjectMap("local", false));
 //        variantStorageEngine.fillGaps(studyMetadata.getStudyName(), sampleIds.stream().map(Object::toString).collect(Collectors.toList()), new ObjectMap("local", true));
     }
 
@@ -129,7 +129,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
                 getResourceUri("gaps/file1.genome.vcf"),
                 getResourceUri("gaps/file2.genome.vcf")));
 
-        variantStorageEngine.fillMissing(studyMetadata.getName(), new ObjectMap(), true);
+        variantStorageEngine.aggregate(studyMetadata.getName(), new ObjectMap(), true);
         VariantHadoopDBAdaptor dbAdaptor = (VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor();
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
@@ -236,7 +236,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
         sampleIds.sort(Integer::compareTo);
 
         // Fill missing
-        variantStorageEngine.fillMissing(studyMetadata.getName(), options, false);
+        variantStorageEngine.aggregate(studyMetadata.getName(), options, false);
         printVariants(dbAdaptor, newOutputUri());
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         assertTrue(studyMetadata.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
@@ -257,7 +257,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
         checkSampleIndexTable(dbAdaptor);
 
         // Fill missing
-        variantStorageEngine.fillMissing(studyMetadata.getName(), options, false);
+        variantStorageEngine.aggregate(studyMetadata.getName(), options, false);
         printVariants(dbAdaptor, newOutputUri());
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         assertTrue(studyMetadata.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
@@ -275,7 +275,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
         checkSampleIndexTable(dbAdaptor);
 
         // Fill missing
-        variantStorageEngine.fillMissing(studyMetadata.getName(), options, false);
+        variantStorageEngine.aggregate(studyMetadata.getName(), options, false);
         printVariants(dbAdaptor, newOutputUri());
         checkFillMissing(dbAdaptor, "NA12877", "NA12878", "NA12879", "NA12880");
         checkQueryGenotypes(dbAdaptor);

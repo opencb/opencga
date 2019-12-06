@@ -21,28 +21,29 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.commons.utils.CommandLineUtils;
-import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.wrappers.*;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
-import org.opencb.opencga.app.cli.internal.options.InterpretationCommandOptions;
-import org.opencb.opencga.app.cli.internal.options.ToolsCommandOptions;
-import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
+import org.opencb.opencga.app.cli.internal.options.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.List;
 
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantAnnotateCommandOptions.ANNOTATION_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantStatsCommandOptions.STATS_RUN_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND;
@@ -69,6 +70,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
     private ToolsCommandOptions toolsCommandOptions;
     private AlignmentCommandOptions alignmentCommandOptions;
     private InterpretationCommandOptions interpretationCommandOptions;
+    private FileCommandOptions fileCommandOptions;
 
 
     public InternalCliOptionsParser() {
@@ -101,12 +103,12 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(VARIANT_DELETE_COMMAND, variantCommandOptions.variantDeleteCommandOptions);
         variantSubCommands.addCommand(SECONDARY_INDEX_COMMAND, variantCommandOptions.variantSecondaryIndexCommandOptions);
         variantSubCommands.addCommand(SECONDARY_INDEX_DELETE_COMMAND, variantCommandOptions.variantSecondaryIndexDeleteCommandOptions);
-        variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantCommandOptions);
+        variantSubCommands.addCommand(STATS_RUN_COMMAND, variantCommandOptions.statsVariantCommandOptions);
         variantSubCommands.addCommand(SCORE_INDEX_COMMAND, variantCommandOptions.variantScoreIndexCommandOptions);
         variantSubCommands.addCommand(SCORE_DELETE_COMMAND, variantCommandOptions.variantScoreDeleteCommandOptions);
         variantSubCommands.addCommand(SAMPLE_INDEX_COMMAND, variantCommandOptions.sampleIndexCommandOptions);
         variantSubCommands.addCommand(FAMILY_INDEX_COMMAND, variantCommandOptions.familyIndexCommandOptions);
-        variantSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantCommandOptions);
+        variantSubCommands.addCommand(ANNOTATION_INDEX_COMMAND, variantCommandOptions.annotateVariantCommandOptions);
         variantSubCommands.addCommand(ANNOTATION_SAVE_COMMAND, variantCommandOptions.annotationSaveSnapshotCommandOptions);
         variantSubCommands.addCommand(ANNOTATION_DELETE_COMMAND, variantCommandOptions.annotationDeleteCommandOptions);
         variantSubCommands.addCommand(ANNOTATION_QUERY_COMMAND, variantCommandOptions.annotationQueryCommandOptions);
@@ -114,18 +116,19 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(AGGREGATE_FAMILY_COMMAND, variantCommandOptions.fillGapsVariantCommandOptions);
         variantSubCommands.addCommand(AGGREGATE_COMMAND, variantCommandOptions.aggregateCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
-        variantSubCommands.addCommand("export-frequencies", variantCommandOptions.exportVariantStatsCommandOptions);
+        variantSubCommands.addCommand("export", variantCommandOptions.exportVariantCommandOptions);
+        variantSubCommands.addCommand("stats-export", variantCommandOptions.exportVariantStatsCommandOptions);
         variantSubCommands.addCommand("import", variantCommandOptions.importVariantCommandOptions);
-        variantSubCommands.addCommand("ibs", variantCommandOptions.ibsVariantCommandOptions);
+//        variantSubCommands.addCommand("ibs", variantCommandOptions.ibsVariantCommandOptions);
         variantSubCommands.addCommand("samples", variantCommandOptions.samplesFilterCommandOptions);
         variantSubCommands.addCommand("histogram", variantCommandOptions.histogramCommandOptions);
-        variantSubCommands.addCommand(GwasAnalysis.ID, variantCommandOptions.gwasCommandOptions);
-        variantSubCommands.addCommand(SAMPLE_VARIANT_STATS_COMMAND, variantCommandOptions.sampleVariantStatsCommandOptions);
+        variantSubCommands.addCommand(GWAS_RUN_COMMAND, variantCommandOptions.gwasCommandOptions);
+        variantSubCommands.addCommand(SAMPLE_VARIANT_STATS_RUN_COMMAND, variantCommandOptions.sampleVariantStatsCommandOptions);
         variantSubCommands.addCommand(SAMPLE_VARIANT_STATS_QUERY_COMMAND, variantCommandOptions.sampleVariantStatsQueryCommandOptions);
-        variantSubCommands.addCommand(COHORT_VARIANT_STATS_COMMAND, variantCommandOptions.cohortVariantStatsCommandOptions);
+        variantSubCommands.addCommand(COHORT_VARIANT_STATS_RUN_COMMAND, variantCommandOptions.cohortVariantStatsCommandOptions);
         variantSubCommands.addCommand(COHORT_VARIANT_STATS_QUERY_COMMAND, variantCommandOptions.cohortVariantStatsQueryCommandOptions);
-        variantSubCommands.addCommand(PlinkWrapperAnalysis.ID, variantCommandOptions.plinkCommandOptions);
-        variantSubCommands.addCommand(RvtestsWrapperAnalysis.ID, variantCommandOptions.rvtestsCommandOptions);
+        variantSubCommands.addCommand(PLINK_RUN_COMMAND, variantCommandOptions.plinkCommandOptions);
+        variantSubCommands.addCommand(RVTEST_RUN_COMMAND, variantCommandOptions.rvtestsCommandOptions);
 
         alignmentCommandOptions = new AlignmentCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("alignment", alignmentCommandOptions);
@@ -153,6 +156,11 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         interpretationSubCommands.addCommand("team", interpretationCommandOptions.teamCommandOptions);
         interpretationSubCommands.addCommand("tiering", interpretationCommandOptions.tieringCommandOptions);
 
+        fileCommandOptions = new FileCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("files", fileCommandOptions);
+        JCommander fileSubCommands = jCommander.getCommands().get("files");
+        fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
+        fileSubCommands.addCommand("unlink", fileCommandOptions.unlinkCommandOptions);
     }
 
     @Override
@@ -385,5 +393,9 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 
     public InterpretationCommandOptions getInterpretationCommandOptions() {
         return interpretationCommandOptions;
+    }
+
+    public FileCommandOptions getFileCommandOptions() {
+        return fileCommandOptions;
     }
 }

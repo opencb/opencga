@@ -20,7 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
-import io.swagger.annotations.*;
+import io.swagger.annotations.ApiParam;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
@@ -42,6 +42,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -66,8 +67,6 @@ import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -136,9 +135,6 @@ public class OpenCGAWSServer {
     private static final int MAX_ID_SIZE = 100;
 
     private static String errorMessage;
-
-    public static final String STUDY_PARAM = "study";
-    public static final String STUDY_PARAM_DESCRIPTION = "Study [[user@]project:]study where study and project can be either the id or alias";
 
     static {
         initialized = new AtomicBoolean(false);
@@ -703,11 +699,19 @@ public class OpenCGAWSServer {
         }
     }
 
-    public Response submitJob(String study, String command, String subcommand, RestBodyParams bodyParams,
-                              String jobName, String jobDescription, List<String> jobTags) {
+    public Response submitJob(String command, String subcommand, String study, RestBodyParams bodyParams,
+                              String jobName, String jobDescription, String jobTagsStr) {
         return run(() -> {
+            List<String> jobTags;
+            if (StringUtils.isNotEmpty(jobTagsStr)) {
+                jobTags = Arrays.asList(jobTagsStr.split(","));
+            } else {
+                jobTags = Collections.emptyList();
+            }
             Map<String, Object> paramsMap = bodyParams.toParams();
-            paramsMap.putIfAbsent("study", study);
+            if (StringUtils.isNotEmpty(study)) {
+                paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
+            }
             return catalogManager
                     .getJobManager()
                     .submit(study, command, subcommand, Enums.Priority.MEDIUM, paramsMap,
@@ -716,18 +720,25 @@ public class OpenCGAWSServer {
                             jobDescription,
                             jobTags, token);
         });
-
     }
 
-    public Response submitJob(String study, String command, String subcommand, Map<String, Object> paramsMap,
-                              String jobId, String jobName, String jobDescription, List<String> jobTags) {
-        return run(() -> catalogManager
-                .getJobManager()
-                .submit(study, command, subcommand, Enums.Priority.MEDIUM, paramsMap,
-                        jobId,
-                        jobName,
-                        jobDescription,
-                        jobTags, token));
+    public Response submitJob(String command, String subcommand, String study, Map<String, Object> paramsMap,
+                              String jobId, String jobName, String jobDescription, String jobTagsStr) {
+        return run(() -> {
+            List<String> jobTags;
+            if (StringUtils.isNotEmpty(jobTagsStr)) {
+                jobTags = Arrays.asList(jobTagsStr.split(","));
+            } else {
+                jobTags = Collections.emptyList();
+            }
+            return catalogManager
+                    .getJobManager()
+                    .submit(study, command, subcommand, Enums.Priority.MEDIUM, paramsMap,
+                            jobId,
+                            jobName,
+                            jobDescription,
+                            jobTags, token);
+        });
 
     }
 

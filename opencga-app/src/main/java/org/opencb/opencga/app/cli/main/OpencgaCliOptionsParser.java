@@ -29,8 +29,12 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.*;
 
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_COMMAND;
-import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantStatsCommandOptions.STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.OperationsCommandOptions.*;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
@@ -277,21 +281,21 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         variantCommandOptions = new VariantCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
+        variantSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
         variantSubCommands.addCommand("export", variantCommandOptions.exportVariantCommandOptions);
         variantSubCommands.addCommand(ANNOTATION_QUERY_COMMAND, variantCommandOptions.annotationQueryCommandOptions);
         variantSubCommands.addCommand(ANNOTATION_METADATA_COMMAND, variantCommandOptions.annotationMetadataCommandOptions);
-        variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantCommandOptions);
-        variantSubCommands.addCommand(SAMPLE_VARIANT_STATS_COMMAND, variantCommandOptions.sampleVariantStatsCommandOptions);
-        variantSubCommands.addCommand(COHORT_VARIANT_STATS_COMMAND, variantCommandOptions.cohortVariantStatsCommandOptions);
-        variantSubCommands.addCommand("gwas", variantCommandOptions.gwasCommandOptions);
-        variantSubCommands.addCommand(PlinkWrapperAnalysis.ID, variantCommandOptions.plinkCommandOptions);
-        variantSubCommands.addCommand(RvtestsWrapperAnalysis.ID, variantCommandOptions.rvtestsCommandOptions);
+        variantSubCommands.addCommand(STATS_RUN_COMMAND, variantCommandOptions.statsVariantCommandOptions);
+        variantSubCommands.addCommand(SAMPLE_VARIANT_STATS_RUN_COMMAND, variantCommandOptions.sampleVariantStatsCommandOptions);
+        variantSubCommands.addCommand(COHORT_VARIANT_STATS_RUN_COMMAND, variantCommandOptions.cohortVariantStatsCommandOptions);
+        variantSubCommands.addCommand(GWAS_RUN_COMMAND, variantCommandOptions.gwasCommandOptions);
+        variantSubCommands.addCommand(PLINK_RUN_COMMAND, variantCommandOptions.plinkCommandOptions);
+        variantSubCommands.addCommand(RVTEST_RUN_COMMAND, variantCommandOptions.rvtestsCommandOptions);
 
         operationsCommandOptions = new OperationsCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand(OPERATIONS_COMMAND, operationsCommandOptions);
         JCommander operationsSubCommands = jCommander.getCommands().get(OPERATIONS_COMMAND);
-        operationsSubCommands.addCommand(VARIANT_FILE_INDEX, operationsCommandOptions.variantIndex);
         operationsSubCommands.addCommand(VARIANT_FILE_DELETE, operationsCommandOptions.variantIndexDelete);
         operationsSubCommands.addCommand(VARIANT_SECONDARY_INDEX, operationsCommandOptions.variantSecondaryIndex);
         operationsSubCommands.addCommand(VARIANT_SECONDARY_INDEX_DELETE, operationsCommandOptions.variantSecondaryIndexDelete);

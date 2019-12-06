@@ -179,7 +179,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
     }
 
     @Override
-    public List<String> getSteps() {
+    protected List<String> getSteps() {
         List<String> steps = super.getSteps();
         if (indexResults) {
             steps.add("index");

@@ -42,6 +42,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -229,7 +230,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
             suffix = suffix.substring(0, suffix.length() - 1);
         }
         String folder = "I_tmp_" + new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss.SSS").format(new Date()) + suffix;
-        Path tmpOutDir = opencgaHome.resolve("jobs").resolve(folder);
+        Path tmpOutDir = Paths.get(getCatalogManager().getConfiguration().getJobDir()).resolve(folder);
         Files.createDirectories(tmpOutDir);
         return tmpOutDir.toString();
 //        return getCatalogManager().getJobManager().createJobOutDir(studyId, "I_tmp_" + date + sufix, sessionId).toString();

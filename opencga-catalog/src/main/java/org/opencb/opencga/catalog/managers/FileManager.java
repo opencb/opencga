@@ -644,6 +644,7 @@ public class FileManager extends AnnotationSetManager<File> {
         file.setSamples(ParamUtils.defaultObject(file.getSamples(), ArrayList::new));
         file.setCreationDate(TimeUtils.getTime());
         file.setModificationDate(file.getCreationDate());
+        file.setTags(ParamUtils.defaultObject(file.getTags(), ArrayList::new));
         file.setStatus(ParamUtils.defaultObject(file.getStatus(), new File.FileStatus(File.FileStatus.READY)));
         file.setStats(ParamUtils.defaultObject(file.getStats(), HashMap::new));
         file.setAttributes(ParamUtils.defaultObject(file.getAttributes(), HashMap::new));
@@ -916,6 +917,9 @@ public class FileManager extends AnnotationSetManager<File> {
                 // Move the file to the final directory
                 String checksum = new org.opencb.opencga.catalog.managers.FileUtils(catalogManager).move(sourceUri, file.getUri(),
                         overwrite, calculateChecksum);
+                // Remove the temporal directory
+                ioManager.deleteDirectory(tempDirectory);
+
                 file.setChecksum(checksum);
 
                 // Improve metadata information and extract samples if any
@@ -1209,8 +1213,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
         // We need to avoid processing subfolders or subfiles of an already processed folder independently
         Set<String> processedPaths = new HashSet<>();
-        boolean physicalDelete = params.getBoolean(Constants.SKIP_TRASH, false) || params.getBoolean(Constants.DELETE_EXTERNAL_FILES,
-                false);
+        boolean physicalDelete = params.getBoolean(Constants.SKIP_TRASH, false);
 
         OpenCGAResult<File> result = OpenCGAResult.empty();
         for (String id : fileIds) {
@@ -1232,7 +1235,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     continue;
                 }
 
-                OpenCGAResult updateResult = delete(study, file, params, physicalDelete, userId);
+                OpenCGAResult updateResult = delete(study, file, physicalDelete, userId);
                 result.append(updateResult);
 
                 // We store the processed path as is
@@ -1298,8 +1301,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
         // We need to avoid processing subfolders or subfiles of an already processed folder independently
         Set<String> processedPaths = new HashSet<>();
-        boolean physicalDelete = params.getBoolean(Constants.SKIP_TRASH, false) || params.getBoolean(Constants.DELETE_EXTERNAL_FILES,
-                false);
+        boolean physicalDelete = params.getBoolean(Constants.SKIP_TRASH, false);
 
         long numMatches = 0;
 
@@ -1312,7 +1314,7 @@ public class FileManager extends AnnotationSetManager<File> {
             }
 
             try {
-                OpenCGAResult result = delete(study, file, params, physicalDelete, userId);
+                OpenCGAResult result = delete(study, file, physicalDelete, userId);
                 dataResult.append(result);
 
                 // We store the processed path as is
@@ -1344,27 +1346,10 @@ public class FileManager extends AnnotationSetManager<File> {
         return endResult(dataResult, ignoreException);
     }
 
-    private OpenCGAResult delete(Study study, File file, ObjectMap params, boolean physicalDelete, String userId)
+    private OpenCGAResult delete(Study study, File file, boolean physicalDelete, String userId)
             throws CatalogException {
         // Check if the file or the folder plus any nested files/folders can be deleted
-        checkCanDeleteFile(study.getFqn(), file.getPath(), physicalDelete, userId);
-
-        // Remove job references
-//                try {
-//                    removeJobReferences(study.getUid(), fileList);
-//                } catch (CatalogException e) {
-//                    logger.error("Could not remove job references: {}", e.getMessage(), e);
-//                    throw new CatalogException("Could not remove job references: " + e.getMessage(), e);
-//                }
-
-
-        // Remove the index references in case it is a transformed file or folder
-//                try {
-//                    updateIndexStatusAfterDeletionOfTransformedFile(study.getUid(), file);
-//                } catch (CatalogException e) {
-//                    logger.error("Could not remove relation references: {}", e.getMessage(), e);
-//                    throw new CatalogException("Could not remove relation references: " + e.getMessage(), e);
-//                }
+        checkCanDeleteFile(study, file.getPath(), false, Collections.singletonList(File.FileStatus.PENDING_DELETE), userId);
 
         String currentStatus = file.getStatus().getName();
         if (File.FileStatus.DELETED.equals(currentStatus)) {
@@ -1377,16 +1362,10 @@ public class FileManager extends AnnotationSetManager<File> {
             throw new CatalogException("The status of file should be " + File.FileStatus.PENDING_DELETE);
         }
 
-        if (file.isExternal()) {
-            // unlink
-            return unlink(study, file);
+        if (physicalDelete) {
+            return physicalDelete(study, file);
         } else {
-            // local
-            if (physicalDelete) {
-                return physicalDelete(study, file);
-            } else {
-                return sendToTrash(study.getUid(), file);
-            }
+            return sendToTrash(file);
         }
     }
 
@@ -1481,36 +1460,14 @@ public class FileManager extends AnnotationSetManager<File> {
 
             File file = internalGet(study.getUid(), fileId, QueryOptions.empty(), userId).first();
 
-            // Check 3.
             if (!file.isExternal()) {
                 throw new CatalogException("Only previously linked files can be unlinked. Please, use delete instead.");
             }
 
-            // Check if the file can be deleted
-            checkCanDeleteFile(studyId, file.getPath(), false, userId);
+            // Check if the file or the folder plus any nested files/folders can be deleted
+            checkCanDeleteFile(study, file.getPath(), true, Collections.singletonList(File.FileStatus.PENDING_DELETE), userId);
 
-//            // Remove job references
-//            try {
-//                removeJobReferences(study.getUid(), fileList);
-//            } catch (CatalogException e) {
-//                logger.error("Could not remove job references: {}", e.getMessage(), e);
-//                throw new CatalogException("Could not remove job references: " + e.getMessage(), e);
-//            }
-//
-//            // Remove the index references in case it is a transformed file or folder
-//            try {
-//                updateIndexStatusAfterDeletionOfTransformedFile(study.getUid(), file);
-//            } catch (CatalogException e) {
-//                logger.error("Could not remove relation references: {}", e.getMessage(), e);
-//                throw new CatalogException("Could not remove relation references: " + e.getMessage(), e);
-//            }
-
-            unlink(study, file);
-
-            Query query = new Query()
-                    .append(FileDBAdaptor.QueryParams.UID.key(), file.getUid())
-                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<File> result = fileDBAdaptor.get(study.getUid(), query, new QueryOptions(), userId);
+            OpenCGAResult result = unlink(file);
             auditManager.audit(userId, Enums.Action.UNLINK, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -1739,73 +1696,12 @@ public class FileManager extends AnnotationSetManager<File> {
 //        return new OpenCGAResult("delete", (int) watch.getTime(TimeUnit.MILLISECONDS), numMatched, numModified, failedList, null, null);
     }
 
-    private OpenCGAResult sendToTrash(long studyId, File file) throws CatalogDBException {
-        // It doesn't really matter if file is a file or a directory. I can directly set the status of the file or the directory +
-        // subfiles and subdirectories doing a single query as I don't need to rename anything
-        // Obtain all files within the folder
-//        Query query = new Query()
-//                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-//                .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
-//                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), GET_NON_DELETED_FILES);
-//        ObjectMap params = new ObjectMap()
-//                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
-//
-//        return fileDBAdaptor.update(query, params, QueryOptions.empty()).setId("trash");
+    private OpenCGAResult sendToTrash(File file) throws CatalogDBException {
         return fileDBAdaptor.delete(file, File.FileStatus.TRASHED);
     }
 
-    private OpenCGAResult unlink(Study study, File file) throws CatalogDBException {
-        long studyId = study.getUid();
-//        StopWatch watch = StopWatch.createStarted();
-
-        OpenCGAResult unlink = fileDBAdaptor.delete(file, File.FileStatus.REMOVED);
-        return unlink;
-
-//        String suffixName = INTERNAL_DELIMITER + File.FileStatus.REMOVED + "_" + TimeUtils.getTime();
-//
-//        // Set the new path
-//        String basePath = Paths.get(file.getPath()).toString();
-//        String suffixedPath = basePath + suffixName;
-//
-//        long numMatched = 0;
-//        long numModified = 0;
-//
-//        if (file.getType() == File.Type.FILE) {
-//            numMatched += 1;
-//
-//            ObjectMap params = new ObjectMap()
-//                    .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath().replaceFirst(basePath, suffixedPath))
-//                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
-//
-//            logger.debug("Unlinking file {}", file.getPath());
-//            fileDBAdaptor.update(file.getUid(), params, QueryOptions.empty());
-//
-//            numModified += 1;
-//        } else {
-//            // Obtain all files within the folder
-//            Query query = new Query()
-//                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-//                    .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
-//                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), GET_NON_DELETED_FILES);
-//
-//            logger.debug("Looking for files and folders inside {} to unlink", file.getPath());
-//            DBIterator<File> iterator = fileDBAdaptor.iterator(query, new QueryOptions());
-//
-//            while (iterator.hasNext()) {
-//                File auxFile = iterator.next();
-//                numMatched += 1;
-//
-//                ObjectMap updateParams = new ObjectMap()
-//                        .append(FileDBAdaptor.QueryParams.PATH.key(), auxFile.getPath().replaceFirst(basePath, suffixedPath))
-//                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
-//
-//                fileDBAdaptor.update(auxFile.getUid(), updateParams, QueryOptions.empty());
-//
-//                numModified += 1;
-//            }
-//        }
-//
-//        return new OpenCGAResult("unlink", (int) watch.getTime(TimeUnit.MILLISECONDS), numMatched, numModified, null, null, null);
+    private OpenCGAResult unlink(File file) throws CatalogDBException {
+        return fileDBAdaptor.delete(file, File.FileStatus.REMOVED);
     }
 
     private boolean subpathInPath(String subpath, Set<String> pathSet) {
@@ -2945,14 +2841,33 @@ public class FileManager extends AnnotationSetManager<File> {
      *
      * @param studyStr       Study.
      * @param fileId         File or folder id.
-     * @param physicalDelete Boolean indicating whether the delete operation expects files to be also deleted from the file system.
+     * @param unlink         Boolean indicating whether the operation only expects to remove the entry from the database or also remove
+     *                       the file from disk.
+     * @param token          Token of the user for which DELETE permissions will be checked.
+     * @throws CatalogException if any of the files cannot be deleted.
+     */
+    public void checkCanDeleteFile(String studyStr, String fileId, boolean unlink, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+        checkCanDeleteFile(study, fileId, unlink, Arrays.asList(File.FileStatus.READY, File.FileStatus.TRASHED), userId);
+    }
+
+    /**
+     * Method to check if a file or folder can be deleted. It will check for indexation, status, permissions and file system availability.
+     *
+     * @param study          Study.
+     * @param fileId         File or folder id.
+     * @param unlink         Boolean indicating whether the operation only expects to remove the entry from the database or also remove
+     *                       the file from disk.
+     * @param acceptedStatus List of valid statuses the file should have. For the public, the file should be in READY or TRASHED status.
+     *                       However, if someone calls to the delete/unlink methods, the status of those files should already be in
+     *                       PENDING_DELETE.
      * @param userId         user for which DELETE permissions will be checked.
      * @throws CatalogException if any of the files cannot be deleted.
      */
-    public void checkCanDeleteFile(String studyStr, String fileId, boolean physicalDelete, String userId) throws CatalogException {
-//        String statusQuery = physicalDelete ? GET_NON_DELETED_FILES : GET_NON_TRASHED_FILES;
+    private void checkCanDeleteFile(Study study, String fileId, boolean unlink, List<String> acceptedStatus, String userId)
+            throws CatalogException {
 
-        Study study = studyManager.resolveId(studyStr, userId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.UID.key(),
                 FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.TYPE.key(), FileDBAdaptor.QueryParams.RELATED_FILES.key(),
                 FileDBAdaptor.QueryParams.SIZE.key(), FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.PATH.key(),
@@ -2969,6 +2884,12 @@ public class FileManager extends AnnotationSetManager<File> {
 
         Set<Long> indexFiles = new HashSet<>();
 
+        if (unlink && !file.isExternal()) {
+            throw new CatalogException("Cannot unlink non-external files. Use delete operation instead");
+        } else if (!unlink && file.isExternal()) {
+            throw new CatalogException("Cannot delete external files. Use unlink operation instead");
+        }
+
         CatalogIOManager ioManager = catalogIOManagerFactory.get(file.getUri());
         if (file.getType() == File.Type.FILE) {
             if (checkPermissions) {
@@ -2977,11 +2898,11 @@ public class FileManager extends AnnotationSetManager<File> {
             }
 
             // File must exist in the file system
-            if (ioManager.exists(file.getUri())) {
+            if (!unlink && !ioManager.exists(file.getUri())) {
                 throw new CatalogException("File " + file.getUri() + " not found in file system");
             }
 
-            checkValidStatusForDeletion(file);
+            checkValidStatusForDeletion(file, acceptedStatus);
             indexFiles.addAll(getProducedFromIndexFiles(file));
         } else {
             // We cannot delete the root folder
@@ -2994,7 +2915,7 @@ public class FileManager extends AnnotationSetManager<File> {
                     .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
                     .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*");
 
-            if (file.isExternal()) {
+            if (unlink) {
                 // Only external files/folders are allowed within the folder
                 Query tmpQuery = new Query(query)
                         .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), false);
@@ -3026,11 +2947,11 @@ public class FileManager extends AnnotationSetManager<File> {
                 }
 
                 // File must exist in the file system
-                if (!ioManager.exists(tmpFile.getUri())) {
+                if (!unlink && !ioManager.exists(tmpFile.getUri())) {
                     throw new CatalogException("File " + tmpFile.getUri() + " not found in file system");
                 }
 
-                checkValidStatusForDeletion(tmpFile);
+                checkValidStatusForDeletion(tmpFile, acceptedStatus);
                 indexFiles.addAll(getProducedFromIndexFiles(tmpFile));
             }
 
@@ -3080,23 +3001,17 @@ public class FileManager extends AnnotationSetManager<File> {
         return Collections.emptySet();
     }
 
-    void checkValidStatusForDeletion(File file) throws CatalogException {
-        // Check the file status is not STAGE or MISSING
+    void checkValidStatusForDeletion(File file, List<String> expectedStatus) throws CatalogException {
         if (file.getStatus() == null) {
             throw new CatalogException("Cannot check file status for deletion");
         }
-        if (File.FileStatus.STAGE.equals(file.getStatus().getName())
-                || File.FileStatus.MISSING.equals(file.getStatus().getName())) {
-            throw new CatalogException("Cannot delete file: " + file.getName() + ". The status is " + file.getStatus().getName());
+        for (String status : expectedStatus) {
+            if (status.equals(file.getStatus().getName())) {
+                // Valid status
+                return;
+            }
         }
-
-        // Check the index status
-        if (file.getIndex() != null && file.getIndex().getStatus() != null
-                && !FileIndex.IndexStatus.NONE.equals(file.getIndex().getStatus().getName())
-                && !FileIndex.IndexStatus.TRANSFORMED.equals(file.getIndex().getStatus().getName())) {
-            throw new CatalogException("Cannot delete file: " + file.getName() + ". The index status is "
-                    + file.getIndex().getStatus().getName());
-        }
+        throw new CatalogException("Cannot delete file: " + file.getName() + ". The status is " + file.getStatus().getName());
     }
 
     public DataResult<FacetField> facet(String studyId, Query query, QueryOptions options, boolean defaultStats, String token)

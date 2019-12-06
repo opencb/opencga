@@ -20,6 +20,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
@@ -50,8 +51,8 @@ public class FileRanges extends OpenCGAWSServer {
     @Produces("text/plain")
     public Response getRanges(@Context HttpHeaders headers,
                               @ApiParam(value = "File id, name or path") @PathParam("file") String fileIdStr,
-                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                              @QueryParam("study") String studyStr) {
+                              @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
+                              @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
 
         try {
             DataResult<File> queryResult = catalogManager.getFileManager().get(studyStr, fileIdStr, this.queryOptions, token);

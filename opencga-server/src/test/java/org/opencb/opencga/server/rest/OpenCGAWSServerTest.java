@@ -127,7 +127,7 @@ public class OpenCGAWSServerTest {
 //        indexJobVcf = runStorageJob(sessionId, indexJobVcf);
 //        assertEquals(Job.JobStatus.READY, indexJobVcf.getStatus().getName());
 //
-//        QueryOptions queryOptions = new QueryOptions("limit", 10);
+//        QueryOptions queryOptions = new QueryOptions(QueryOptions.LIMIT, 10);
 //        queryOptions.put("region", "1");
 //        List<Sample> samples = OpenCGAWSServer.catalogManager.getAllSamples(study.getId(),
 //                new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), fileVcf.getSampleIds()), new QueryOptions(), sessionId).getResult();
@@ -187,7 +187,7 @@ public class OpenCGAWSServerTest {
 //        indexJobBam = runStorageJob(sessionId, indexJobBam);
 //        assertEquals(Job.JobStatus.READY, indexJobBam.getStatus().getName());
 //
-//        queryOptions = new QueryOptions("limit", 10);
+//        queryOptions = new QueryOptions(QueryOptions.LIMIT, 10);
 //        queryOptions.put("region", "20:60000-60200");
 //        queryOptions.put(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, false);
 //        fileTest.fetchAlignments(fileBam.getId(), sessionId, queryOptions);

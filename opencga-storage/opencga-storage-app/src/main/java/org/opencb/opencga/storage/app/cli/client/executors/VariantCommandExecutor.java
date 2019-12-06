@@ -604,7 +604,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         options.put(VariantStorageOptions.RESUME.key(), fillGapsCommandOptions.resume);
         options.putAll(fillGapsCommandOptions.commonOptions.params);
 
-        variantStorageEngine.fillGaps(fillGapsCommandOptions.study, fillGapsCommandOptions.samples, options);
+        variantStorageEngine.aggregateFamily(fillGapsCommandOptions.study, fillGapsCommandOptions.samples, options);
     }
 
     private void fillMissing() throws StorageEngineException {
@@ -614,7 +614,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         options.put(VariantStorageOptions.RESUME.key(), cliOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
 
-        variantStorageEngine.fillMissing(cliOptions.study, options, cliOptions.overwrite);
+        variantStorageEngine.aggregate(cliOptions.study, options, cliOptions.overwrite);
     }
 
     private void export() throws URISyntaxException, StorageEngineException, IOException {
@@ -743,7 +743,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (searchOptions.index) {
             querying = false;
             Query query = VariantQueryCommandUtils.parseQuery(searchOptions, new Query());
-            variantStorageEngine.searchIndex(query, options, searchOptions.overwrite);
+            variantStorageEngine.secondaryIndex(query, options, searchOptions.overwrite);
         }
 
         String mode = variantStorageEngine.getConfiguration().getSearch().getMode();
