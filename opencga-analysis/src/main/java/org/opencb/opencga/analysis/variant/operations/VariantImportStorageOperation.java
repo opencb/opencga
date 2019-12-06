@@ -19,9 +19,10 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.variant.operations.VariantFileIndexerStorageOperation.DEFAULT_COHORT_DESCRIPTION;
 
-@Analysis(id = "variant-import", type = Analysis.AnalysisType.VARIANT)
+@Analysis(id = VariantImportStorageOperation.ID, type = Analysis.AnalysisType.VARIANT)
 public class VariantImportStorageOperation extends StorageOperation {
 
+    public static final String ID = "variant-import";
     private String study;
     private URI inputUri;
 

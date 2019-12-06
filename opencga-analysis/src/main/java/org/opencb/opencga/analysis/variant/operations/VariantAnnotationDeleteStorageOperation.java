@@ -4,9 +4,10 @@ import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchr
 import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
-@Analysis(id = "variant-annotation-delete", type = Analysis.AnalysisType.VARIANT)
+@Analysis(id = VariantAnnotationDeleteStorageOperation.ID, type = Analysis.AnalysisType.VARIANT)
 public class VariantAnnotationDeleteStorageOperation extends StorageOperation {
 
+    public static final String ID = "variant-annotation-delete";
     public String project;
     public String annotationName;
 

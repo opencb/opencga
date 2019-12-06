@@ -50,9 +50,10 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-@Analysis(id = "annotation-index", description = "", type = Analysis.AnalysisType.VARIANT)
+@Analysis(id = VariantAnnotationStorageOperation.ID, description = "", type = Analysis.AnalysisType.VARIANT)
 public class VariantAnnotationStorageOperation extends StorageOperation {
 
+    public static final String ID = "variant-annotation-index";
     private List<String> studies;
     private String projectStr;
     private String outputFileName;

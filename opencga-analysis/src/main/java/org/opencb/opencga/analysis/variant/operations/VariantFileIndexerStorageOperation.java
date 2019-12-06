@@ -52,7 +52,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.ID;
 import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.UID;
 import static org.opencb.opencga.catalog.db.api.ProjectDBAdaptor.QueryParams.CURRENT_RELEASE;
 import static org.opencb.opencga.catalog.db.api.ProjectDBAdaptor.QueryParams.ORGANISM;
@@ -61,7 +60,7 @@ import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_S
 /**
  * Created by imedina on 17/08/16.
  */
-@Analysis(id = "variant-index", type = Analysis.AnalysisType.VARIANT)
+@Analysis(id = VariantFileIndexerStorageOperation.ID, type = Analysis.AnalysisType.VARIANT)
 public class VariantFileIndexerStorageOperation extends StorageOperation {
 
     public static final String DEFAULT_COHORT_DESCRIPTION = "Default cohort with almost all indexed samples";
@@ -76,6 +75,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
     public static final String LOAD = "load";
     // FIXME : Needed?
     public static final String TRANSFORMED_FILES = "transformedFiles";
+    public static final String ID = "variant-index";
 
 
     private String studyFqn;
@@ -743,7 +743,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 long fileUid = relatedFile.getFile().getUid();
                 // FIXME!!!
                 vcfId = catalogManager.getFileManager().search(study, new Query(UID.key(), fileUid),
-                        new QueryOptions(QueryOptions.INCLUDE, ID.key()), sessionId).first().getId();
+                        new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key()), sessionId).first().getId();
                 break;
             }
         }

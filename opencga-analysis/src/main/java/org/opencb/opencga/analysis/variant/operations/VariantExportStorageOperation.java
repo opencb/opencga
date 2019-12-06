@@ -43,9 +43,10 @@ import java.util.List;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-@Analysis(id = "variant-export", type = Analysis.AnalysisType.VARIANT)
+@Analysis(id = VariantExportStorageOperation.ID, type = Analysis.AnalysisType.VARIANT)
 public class VariantExportStorageOperation extends OpenCgaAnalysis {
 
+    public static final String ID = "variant-export";
     private Query query;
     private VariantWriterFactory.VariantOutputFormat outputFormat;
     private String variantsFile;

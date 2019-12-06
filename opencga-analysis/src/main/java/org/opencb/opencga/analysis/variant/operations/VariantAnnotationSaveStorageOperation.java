@@ -5,9 +5,10 @@ import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.models.DataStore;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
-@Analysis(id = "variant-annotation-save", type = Analysis.AnalysisType.VARIANT)
+@Analysis(id = VariantAnnotationSaveStorageOperation.ID, type = Analysis.AnalysisType.VARIANT)
 public class VariantAnnotationSaveStorageOperation extends StorageOperation {
 
+    public static final String ID = "variant-annotation-save";
     public String project;
     public String annotationName;
 

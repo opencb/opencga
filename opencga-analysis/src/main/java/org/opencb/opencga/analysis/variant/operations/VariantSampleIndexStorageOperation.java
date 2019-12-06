@@ -6,9 +6,10 @@ import org.opencb.opencga.core.annotations.Analysis;
 import java.util.ArrayList;
 import java.util.List;
 
-@Analysis(id = "variant-sample-index", type = Analysis.AnalysisType.VARIANT)
+@Analysis(id = VariantSampleIndexStorageOperation.ID, type = Analysis.AnalysisType.VARIANT)
 public class VariantSampleIndexStorageOperation extends StorageOperation {
 
+    public static final String ID = "variant-sample-index";
     protected String study;
     protected List<String> samples;
     protected boolean buildIndex;

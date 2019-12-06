@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
+import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Job;
@@ -54,7 +55,7 @@ public class OperationsWSService extends OpenCGAWSServer {
         if (resume) {
             paramsMap.put("resume", "");
         }
-        return submitOperation("variant-delete", paramsMap, jobName, jobDescription, jobTags);
+        return submitOperation(VariantRemoveStorageOperation.ID, paramsMap, jobName, jobDescription, jobTags);
     }
 
     public static class VariantSecondaryIndexParams extends RestBodyParams {
@@ -132,7 +133,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantAnnotationParams params) {
-        return submitOperation("variant-annotation-index", project, study, params, jobName, jobDescription, jobTags);
+        return submitOperation(VariantAnnotationStorageOperation.ID, project, study, params, jobName, jobDescription, jobTags);
     }
 
     @DELETE
@@ -148,7 +149,7 @@ public class OperationsWSService extends OpenCGAWSServer {
         Map<String, Object> params = new HashMap<>();
         params.put(ParamConstants.PROJECT_PARAM, project);
         params.put("annotationId", annotationId);
-        return submitOperationToProject("variant-annotation-delete", project, params, jobName, jobDescription, jobTags);
+        return submitOperationToProject(VariantAnnotationDeleteStorageOperation.ID, project, params, jobName, jobDescription, jobTags);
     }
 
     public static class VariantAnnotationSaveParams extends RestBodyParams {
@@ -171,7 +172,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             VariantAnnotationSaveParams params) {
-        return submitOperationToProject("variant-annotation-save", project, params, jobName, jobDescription, jobTags);
+        return submitOperationToProject(VariantAnnotationSaveStorageOperation.ID, project, params, jobName, jobDescription, jobTags);
     }
 
     public static class VariantScoreIndexParams extends RestBodyParams {
@@ -243,7 +244,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantSampleIndexParams params) {
-        return submitOperation("variant-sample-index", study, params, jobName, jobDescription, jobTags);
+        return submitOperation(VariantSampleIndexStorageOperation.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     public static class VariantFamilyIndexParams extends RestBodyParams {
@@ -266,7 +267,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantFamilyIndexParams params) {
-        return submitOperation("variant-family-index", study, params, jobName, jobDescription, jobTags);
+        return submitOperation(VariantFamilyIndexStorageOperation.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     public static class VariantAggregateFamilyParams extends RestBodyParams {
@@ -289,7 +290,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantAggregateFamilyParams params) {
-        return submitOperation("variant-aggregate-family", study, params, jobName, jobDescription, jobTags);
+        return submitOperation(VariantAggregateFamilyStorageOperation.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     public static class VariantAggregateParams extends RestBodyParams {
@@ -314,7 +315,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantAggregateParams params) {
-        return submitOperation("variant-aggregate", study, params, jobName, jobDescription, jobTags);
+        return submitOperation(VariantAggregateStorageOperation.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     public Response submitOperation(String toolId, RestBodyParams params, String jobName, String jobDescription, String jobTags) {

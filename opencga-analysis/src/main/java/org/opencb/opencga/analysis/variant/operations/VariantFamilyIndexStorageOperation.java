@@ -14,10 +14,11 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import java.util.LinkedList;
 import java.util.List;
 
-@Analysis(id = "variant-family-index", type = Analysis.AnalysisType.VARIANT)
+@Analysis(id = VariantFamilyIndexStorageOperation.ID, type = Analysis.AnalysisType.VARIANT)
 public class VariantFamilyIndexStorageOperation extends StorageOperation {
 
 
+    public static final String ID = "variant-family-index";
     private String study;
     private List<String> familiesStr;
     private boolean skipIncompleteFamily;

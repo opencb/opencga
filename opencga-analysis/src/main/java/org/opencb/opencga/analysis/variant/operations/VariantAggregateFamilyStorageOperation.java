@@ -5,8 +5,9 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
 import java.util.List;
 
-@Analysis(id = "variant-aggregate-family", type = Analysis.AnalysisType.VARIANT)
+@Analysis(id = VariantAggregateFamilyStorageOperation.ID, type = Analysis.AnalysisType.VARIANT)
 public class VariantAggregateFamilyStorageOperation extends StorageOperation {
+    public static final String ID = "variant-aggregate-family";
     private String study;
     private List<String> samples;
 

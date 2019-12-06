@@ -6,9 +6,10 @@ import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
-@Analysis(id = "variant-secondary-index", type = Analysis.AnalysisType.VARIANT)
+@Analysis(id = VariantSecondaryIndexStorageOperation.ID, type = Analysis.AnalysisType.VARIANT)
 public class VariantSecondaryIndexStorageOperation extends StorageOperation {
 
+    public static final String ID = "variant-secondary-index";
     private String projectStr;
     private String region;
     private boolean overwrite;

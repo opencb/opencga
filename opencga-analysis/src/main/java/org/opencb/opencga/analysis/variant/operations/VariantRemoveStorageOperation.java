@@ -21,9 +21,10 @@ import java.util.List;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-@Analysis(id = "variant-file-remove", type = Analysis.AnalysisType.VARIANT)
+@Analysis(id = VariantRemoveStorageOperation.ID, type = Analysis.AnalysisType.VARIANT)
 public class VariantRemoveStorageOperation extends StorageOperation {
 
+    public static final String ID = "variant-file-remove";
     private String study;
     private boolean removeWholeStudy;
     private List<String> files;

@@ -5,9 +5,10 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
 import java.util.List;
 
-@Analysis(id = "variant-search-index-samples", type = Analysis.AnalysisType.VARIANT)
+@Analysis(id = VariantSecondaryIndexSamplesStorageOperation.ID, type = Analysis.AnalysisType.VARIANT)
 public class VariantSecondaryIndexSamplesStorageOperation extends StorageOperation {
 
+    public static final String ID = "variant-search-index-samples";
     private String study;
     private List<String> samples;
 
