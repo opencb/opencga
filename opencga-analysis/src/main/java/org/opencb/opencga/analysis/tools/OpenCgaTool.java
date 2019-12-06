@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis;
+package org.opencb.opencga.analysis.tools;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -24,6 +23,7 @@ import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -32,7 +32,6 @@ import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.annotations.ToolExecutor;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.core.exception.ToolExecutorException;
 import org.opencb.opencga.core.models.DataStore;
 import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
@@ -42,21 +41,17 @@ import org.opencb.opencga.core.tools.result.ExecutorResultManager;
 import org.opencb.opencga.core.tools.result.FileResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.reflections.Reflections;
-import org.reflections.scanners.SubTypesScanner;
-import org.reflections.scanners.TypeAnnotationsScanner;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
@@ -72,16 +67,20 @@ public abstract class OpenCgaTool {
 
     protected ObjectMap params;
     protected ObjectMap executorParams;
-    protected List<ToolExecutor.Source> sourceTypes;
-    protected List<ToolExecutor.Framework> availableFrameworks;
+    private List<ToolExecutor.Source> sourceTypes;
+    private List<ToolExecutor.Framework> availableFrameworks;
     protected Logger logger;
     private Path outDir;
     private Path scratchDir;
-    private final Logger privateLogger = LoggerFactory.getLogger(OpenCgaTool.class);
+
+    private final ToolExecutorFactory toolExecutorFactory;
+    private final Logger privateLogger;
 
     private ExecutorResultManager erm;
 
     public OpenCgaTool() {
+        privateLogger = LoggerFactory.getLogger(OpenCgaTool.class);
+        toolExecutorFactory = new ToolExecutorFactory();
     }
 
     public final OpenCgaTool setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
@@ -378,95 +377,13 @@ public abstract class OpenCgaTool {
         return erm.read().getOutputFiles();
     }
 
-    protected final Class<? extends OpenCgaToolExecutor> getToolExecutorClass(String toolExecutorId) {
-        return getToolExecutorClass(OpenCgaToolExecutor.class, toolExecutorId);
-    }
-
-    protected final <T extends OpenCgaToolExecutor> Class<? extends T> getToolExecutorClass(Class<T> clazz, String toolExecutorId) {
-        Objects.requireNonNull(clazz);
-        String toolId = getId();
-
-        List<Class<? extends T>> candidateClasses = new ArrayList<>();
-        // If the given class is not abstract, check if matches the criteria.
-        if (!Modifier.isAbstract(clazz.getModifiers())) {
-            if (isValidClass(toolId, toolExecutorId, clazz)) {
-                if (StringUtils.isNotEmpty(toolExecutorId) || Modifier.isFinal(clazz.getModifiers())) {
-                    // Shortcut to skip reflection
-                    return clazz;
-                }
-                candidateClasses.add(clazz);
-            }
-        }
-
-        Reflections reflections = new Reflections(new ConfigurationBuilder()
-                .setScanners(
-                        new SubTypesScanner(),
-                        new TypeAnnotationsScanner().filterResultsBy(s -> StringUtils.equals(s, ToolExecutor.class.getName())))
-                .addUrls(ClasspathHelper.forJavaClassPath())
-                .filterInputsBy(input -> input.endsWith(".class"))
-        );
-
-        Set<Class<? extends T>> typesAnnotatedWith = reflections.getSubTypesOf(clazz);
-        for (Class<? extends T> aClass : typesAnnotatedWith) {
-            if (isValidClass(toolId, toolExecutorId, aClass)) {
-                candidateClasses.add(aClass);
-            }
-        }
-        if (candidateClasses.isEmpty()) {
-            return null;
-        } else if (candidateClasses.size() == 1) {
-            return candidateClasses.get(0);
-        } else {
-            privateLogger.info("Found multiple " + OpenCgaToolExecutor.class.getName() + " candidates.");
-            for (Class<? extends T> matchedClass : candidateClasses) {
-                privateLogger.info(" - " + matchedClass);
-            }
-            privateLogger.info("Sort by framework and source preference.");
-
-            // Prefer the executor that matches better with the source
-            // Prefer the executor that matches better with the framework
-            List<ToolExecutor.Framework> finalAvailableFrameworks =
-                    availableFrameworks == null ? Collections.emptyList() : availableFrameworks;
-            List<ToolExecutor.Source> finalSourceTypes =
-                    sourceTypes == null ? Collections.emptyList() : sourceTypes;
-
-            Comparator<Class<? extends T>> comparator = Comparator.<Class<? extends T>>comparingInt(c1 -> {
-                ToolExecutor annot1 = c1.getAnnotation(ToolExecutor.class);
-                return finalAvailableFrameworks.indexOf(annot1.framework());
-            }).thenComparingInt(c -> {
-                ToolExecutor annot = c.getAnnotation(ToolExecutor.class);
-                return finalSourceTypes.indexOf(annot.source());
-            }).thenComparing(Class::getName);
-
-            candidateClasses.sort(comparator);
-
-            return candidateClasses.get(0);
-        }
-    }
-
-    private <T> boolean isValidClass(String toolId, String toolExecutorId, Class<T> aClass) {
-        ToolExecutor annotation = aClass.getAnnotation(ToolExecutor.class);
-        if (annotation != null) {
-            if (annotation.tool().equals(toolId)) {
-                if (StringUtils.isEmpty(toolExecutorId) || toolExecutorId.equals(annotation.id())) {
-                    if (CollectionUtils.isEmpty(sourceTypes) || sourceTypes.contains(annotation.source())) {
-                        if (CollectionUtils.isEmpty(availableFrameworks) || availableFrameworks.contains(annotation.framework())) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
     protected final OpenCgaToolExecutor getToolExecutor()
-            throws ToolExecutorException {
+            throws ToolException {
         return getToolExecutor(OpenCgaToolExecutor.class);
     }
 
     protected final <T extends OpenCgaToolExecutor> T getToolExecutor(Class<T> clazz)
-            throws ToolExecutorException {
+            throws ToolException {
         String executorId = executorParams == null ? null : executorParams.getString(EXECUTOR_ID);
         if (StringUtils.isEmpty(executorId) && params != null) {
             executorId = params.getString(EXECUTOR_ID);
@@ -475,31 +392,24 @@ public abstract class OpenCgaTool {
     }
 
     protected final <T extends OpenCgaToolExecutor> T getToolExecutor(Class<T> clazz, String toolExecutorId)
-            throws ToolExecutorException {
-        Class<? extends T> executorClass = getToolExecutorClass(clazz, toolExecutorId);
-        if (executorClass == null) {
-            throw ToolExecutorException.executorNotFound(clazz, getId(), toolExecutorId, sourceTypes, availableFrameworks);
+            throws ToolException {
+        T toolExecutor = toolExecutorFactory.getToolExecutor(getId(), toolExecutorId, clazz, sourceTypes, availableFrameworks);
+        String executorId = toolExecutor.getId();
+        if (executorParams == null) {
+            executorParams = new ObjectMap();
         }
-        try {
-            T t = executorClass.newInstance();
-            privateLogger.info("Using " + clazz.getName() + " '" + t.getId() + "' : " + executorClass);
+        executorParams.put(EXECUTOR_ID, executorId);
 
-            String executorId = t.getId();
-            if (executorParams == null) {
-                executorParams = new ObjectMap();
-            }
-            executorParams.put(EXECUTOR_ID, executorId);
+        // Update executor ID
+        erm.setExecutorInfo(new ExecutorInfo(executorId,
+                toolExecutor.getClass(),
+                executorParams,
+                toolExecutor.getSource(),
+                toolExecutor.getFramework()));
 
-            // Update executor ID
-            if (erm != null) {
-                erm.setExecutorInfo(new ExecutorInfo(executorId, executorClass, executorParams, t.getSource(), t.getFramework()));
-            }
-            t.setUp(erm, executorParams, outDir);
+        toolExecutor.setUp(erm, executorParams, outDir);
 
-            return t;
-        } catch (InstantiationException | IllegalAccessException | ToolException e) {
-            throw ToolExecutorException.cantInstantiate(executorClass, e);
-        }
+        return toolExecutor;
     }
 
     protected final void setUpStorageEngineExecutor(String study) throws ToolException {

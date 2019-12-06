@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis;
+package org.opencb.opencga.analysis.tools;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -28,7 +28,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class ToolAnalysisTest extends GenericTest {
+public class ToolExecutorTest extends GenericTest {
 
 //    public final static String PASSWORD = "asdf";
 //    public final static String STUDY = "user@1000G:phase1";

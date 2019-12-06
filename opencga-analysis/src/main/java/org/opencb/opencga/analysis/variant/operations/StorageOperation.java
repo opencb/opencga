@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.operations;
 
-import org.opencb.opencga.analysis.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.DataStore;

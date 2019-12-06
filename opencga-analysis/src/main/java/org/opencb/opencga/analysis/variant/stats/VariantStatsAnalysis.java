@@ -26,7 +26,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.analysis.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.analysis.variant.operations.StorageOperation;

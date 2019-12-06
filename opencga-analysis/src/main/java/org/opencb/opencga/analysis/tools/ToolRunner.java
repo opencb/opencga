@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis;
+package org.opencb.opencga.analysis.tools;
 
 import org.opencb.hpg.bigdata.analysis.exceptions.AnalysisToolException;
 import org.opencb.hpg.bigdata.analysis.tools.ToolManager;
@@ -10,9 +10,9 @@ import org.opencb.opencga.core.config.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ToolAnalysis {
+public class ToolRunner {
 
-    private Logger logger = LoggerFactory.getLogger(ToolAnalysis.class);
+    private Logger logger = LoggerFactory.getLogger(ToolRunner.class);
 
     private CatalogManager catalogManager;
     private ToolManager toolManager;
@@ -20,7 +20,7 @@ public class ToolAnalysis {
     private JobManager jobManager;
     private FileManager fileManager;
 
-    public ToolAnalysis(Configuration configuration) throws CatalogException, AnalysisToolException {
+    public ToolRunner(Configuration configuration) throws CatalogException, AnalysisToolException {
         this.catalogManager = new CatalogManager(configuration);
 //        this.toolManager = new ToolManager(Paths.get(configuration.getToolDir()));
         this.toolManager = null;
