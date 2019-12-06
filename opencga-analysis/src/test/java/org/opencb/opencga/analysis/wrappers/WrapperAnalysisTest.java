@@ -11,7 +11,7 @@ import org.opencb.opencga.analysis.clinical.ClinicalAnalysisUtilsTest;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.core.analysis.result.AnalysisResult;
+import org.opencb.opencga.core.analysis.result.Execution;
 import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
@@ -67,7 +67,7 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
         PlinkWrapperAnalysis plink = new PlinkWrapperAnalysis();
         plink.setUp(opencga.getOpencgaHome().toString(), plinkParams, outDir, clinicalTest.token);
 
-        AnalysisResult result = plink.start();
+        Execution result = plink.start();
         System.out.println(result);
 
         String outputFilename = plinkParams.get("out") + ".assoc.fisher";
@@ -105,7 +105,7 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
         PlinkWrapperAnalysis plink = new PlinkWrapperAnalysis();
         plink.setUp(opencga.getOpencgaHome().toString(), plinkParams, outDir, clinicalTest.token);
 
-        AnalysisResult result = plink.start();
+        Execution result = plink.start();
         System.out.println(result);
 
         String outputFilename = plinkParams.get("out") + ".assoc.fisher";
@@ -139,7 +139,7 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
         RvtestsWrapperAnalysis rvtests = new RvtestsWrapperAnalysis();
         rvtests.setUp(opencga.getOpencgaHome().toString(), rvtestsParams, outDir, clinicalTest.token);
 
-        AnalysisResult result = rvtests.start();
+        Execution result = rvtests.start();
         System.out.println(result);
 
 //        String outputFilename = rvtestsParams.get("out") + ".assoc.fisher";
@@ -169,7 +169,7 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
         RvtestsWrapperAnalysis rvtests = new RvtestsWrapperAnalysis();
         rvtests.setUp(opencga.getOpencgaHome().toString(), rvtestsParams, outDir, clinicalTest.token);
 
-        AnalysisResult result = rvtests.start();
+        Execution result = rvtests.start();
         System.out.println(result);
 
         String outputFilename = rvtestsParams.get("out") + ".kinship";
@@ -199,7 +199,7 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
         bwa.setCommand("index")
                 .setFastaFile(inDir1.resolve(fastaFilename).toString());
 
-        AnalysisResult bwaIndexResult = bwa.start();
+        Execution bwaIndexResult = bwa.start();
         System.out.println(bwaIndexResult);
 
         assertTrue(Files.exists(outDir1.resolve(fastaFilename + ".bwt")));
@@ -221,7 +221,7 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
                 .setFastq1File(inDir1.resolve(fastqFilename).toString())
                 .setSamFile(outDir2.resolve("output.sam").toString());
 
-        AnalysisResult bwaMemResult = bwa.start();
+        Execution bwaMemResult = bwa.start();
         System.out.println(bwaMemResult);
 
         assertTrue(Files.exists(new File(bwa.getSamFile()).toPath()));
@@ -242,7 +242,7 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
                 .setInputFile(bwa.getSamFile())
                 .setOutputFile(bamFile);
 
-        AnalysisResult samtoolsViewResult = samtools.start();
+        Execution samtoolsViewResult = samtools.start();
         System.out.println(samtoolsViewResult);
 
         assertTrue(Files.exists(new File(samtools.getOutputFile()).toPath()));
@@ -261,7 +261,7 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
                 .setInputFile(bamFile)
                 .setOutputFile(sortedBamFile);
 
-        AnalysisResult samtoolsSortResult = samtools.start();
+        Execution samtoolsSortResult = samtools.start();
         System.out.println(samtoolsSortResult);
 
         assertTrue(Files.exists(new File(samtools.getOutputFile()).toPath()));
@@ -280,7 +280,7 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
                 .setInputFile(sortedBamFile)
                 .setOutputFile(baiFile);
 
-        AnalysisResult samtoolsIndexResult = samtools.start();
+        Execution samtoolsIndexResult = samtools.start();
         System.out.println(samtoolsIndexResult);
 
         assertTrue(Files.exists(new File(samtools.getOutputFile()).toPath()));
@@ -301,7 +301,7 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
                 .setBamFile(sortedBamFile)
                 .setCoverageFile(coverageFile);
 
-        AnalysisResult deepToolsBamCoverageResult = deeptools.start();
+        Execution deepToolsBamCoverageResult = deeptools.start();
         System.out.println(deepToolsBamCoverageResult);
 
         assertTrue(Files.exists(new File(coverageFile).toPath()));
@@ -320,7 +320,7 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
                 .setInputFile(sortedBamFile)
                 .setOutputFile(statsFile);
 
-        AnalysisResult samtoolsStatsResult = samtools.start();
+        Execution samtoolsStatsResult = samtools.start();
         System.out.println(samtoolsStatsResult);
 
         assertTrue(Files.exists(new File(samtools.getOutputFile()).toPath()));

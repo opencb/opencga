@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.opencga.core.analysis.result.AnalysisResult;
+import org.opencb.opencga.core.analysis.result.Execution;
 import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.List;
@@ -31,6 +31,8 @@ public class Job extends PrivateStudyUid {
     private String uuid;
     private String name;
     private String description;
+
+    private String toolId;
 
     private String userId;
     private String commandLine;
@@ -49,7 +51,7 @@ public class Job extends PrivateStudyUid {
     private List<File> output;   // output files of this job
     private List<String> tags;
 
-    private AnalysisResult result;
+    private Execution execution;
 
     private File log;
     private File errorLog;
@@ -57,8 +59,6 @@ public class Job extends PrivateStudyUid {
     private int release;
     private Map<String, Object> attributes;
 
-    public static final String OPENCGA_COMMAND = "OPENCGA_COMMAND";
-    public static final String OPENCGA_SUBCOMMAND = "OPENCGA_SUBCOMMAND";
     public static final String OPENCGA_STUDY = "OPENCGA_STUDY";
     public static final String OPENCGA_PARENTS = "OPENCGA_PARENTS";
 //    public static final String OPENCGA_TMP_DIR = "OPENCGA_TMP_DIR";
@@ -84,9 +84,9 @@ public class Job extends PrivateStudyUid {
     public Job() {
     }
 
-    public Job(String id, String uuid, String name, String description, String userId, String commandLine, Map<String, Object> params,
+    public Job(String id, String uuid, String name, String description, String toolId, String userId, String commandLine, Map<String, Object> params,
                String creationDate, String modificationDate, Enums.Priority priority, Enums.ExecutionStatus status, File outDir,
-               List<File> input, List<File> output, List<String> tags, AnalysisResult result, File log, File errorLog, int release,
+               List<File> input, List<File> output, List<String> tags, Execution execution, File log, File errorLog, int release,
                Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
@@ -103,7 +103,7 @@ public class Job extends PrivateStudyUid {
         this.input = input;
         this.output = output;
         this.tags = tags;
-        this.result = result;
+        this.execution = execution;
         this.log = log;
         this.errorLog = errorLog;
         this.release = release;
@@ -117,6 +117,7 @@ public class Job extends PrivateStudyUid {
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
+        sb.append(", toolId='").append(toolId).append('\'');
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", commandLine='").append(commandLine).append('\'');
         sb.append(", params=").append(params);
@@ -128,7 +129,7 @@ public class Job extends PrivateStudyUid {
         sb.append(", input=").append(input);
         sb.append(", output=").append(output);
         sb.append(", tags=").append(tags);
-        sb.append(", result=").append(result);
+        sb.append(", execution=").append(execution);
         sb.append(", log=").append(log);
         sb.append(", errorLog=").append(errorLog);
         sb.append(", release=").append(release);
@@ -185,6 +186,15 @@ public class Job extends PrivateStudyUid {
 
     public Job setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getToolId() {
+        return toolId;
+    }
+
+    public Job setToolId(String toolId) {
+        this.toolId = toolId;
         return this;
     }
 
@@ -287,12 +297,12 @@ public class Job extends PrivateStudyUid {
         return this;
     }
 
-    public AnalysisResult getResult() {
-        return result;
+    public Execution getExecution() {
+        return execution;
     }
 
-    public Job setResult(AnalysisResult result) {
-        this.result = result;
+    public Job setExecution(Execution execution) {
+        this.execution = execution;
         return this;
     }
 

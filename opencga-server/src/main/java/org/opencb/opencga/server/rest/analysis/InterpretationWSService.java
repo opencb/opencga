@@ -32,6 +32,7 @@ import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
 import javax.servlet.http.HttpServletRequest;
@@ -786,10 +787,8 @@ public class InterpretationWSService extends AnalysisWSService {
 
             setConfigParams(params, uriInfo.getQueryParameters());
 
-            // Queue job
-            Object result = catalogInterpretationManager.queue(studyId, TeamInterpretationAnalysis.ID, clinicalAnalysisId, params,
-                    token);
-
+            // Submit job
+            OpenCGAResult<Job> result = jobManager.submit(studyId, TeamInterpretationAnalysis.ID, Enums.Priority.MEDIUM, params, token);
             return createAnalysisOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -820,9 +819,8 @@ public class InterpretationWSService extends AnalysisWSService {
 
             setConfigParams(params, uriInfo.getQueryParameters());
 
-            // Queue job
-            Object result = catalogInterpretationManager.queue(studyId, TieringInterpretationAnalysis.ID, clinicalAnalysisId, params,
-                    token);
+            // Submit job
+            OpenCGAResult<Job> result = jobManager.submit(studyId, TieringInterpretationAnalysis.ID, Enums.Priority.MEDIUM, params, token);
 
             return createAnalysisOkResponse(result);
         } catch (Exception e) {
@@ -936,9 +934,8 @@ public class InterpretationWSService extends AnalysisWSService {
 
             setConfigParams(params, uriInfo.getQueryParameters());
 
-            // Queue job
-            Object result = catalogInterpretationManager.queue(studyId, CustomInterpretationAnalysis.ID, clinicalAnalysisId, params,
-                    token);
+            // Submit job
+            OpenCGAResult<Job> result = jobManager.submit(studyId, CustomInterpretationAnalysis.ID, Enums.Priority.MEDIUM, params, token);
 
             return createAnalysisOkResponse(result);
         } catch (Exception e) {
@@ -968,9 +965,9 @@ public class InterpretationWSService extends AnalysisWSService {
 
             setConfigParams(params, uriInfo.getQueryParameters());
 
-            // Queue job
-            Object result = catalogInterpretationManager.queue(studyId, CancerTieringInterpretationAnalysis.ID, clinicalAnalysisId,
-                    params, token);
+            // Submit job
+            OpenCGAResult<Job> result = jobManager.submit(studyId, CancerTieringInterpretationAnalysis.ID, Enums.Priority.MEDIUM, params,
+                    token);
 
             return createAnalysisOkResponse(result);
         } catch (Exception e) {

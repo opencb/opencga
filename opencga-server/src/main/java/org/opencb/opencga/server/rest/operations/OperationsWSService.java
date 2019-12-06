@@ -54,7 +54,7 @@ public class OperationsWSService extends OpenCGAWSServer {
         if (resume) {
             paramsMap.put("resume", "");
         }
-        return submitTask("variant", "delete", paramsMap, jobName, jobDescription, jobTags);
+        return submitTask("variant-delete", paramsMap, jobName, jobDescription, jobTags);
     }
 
     public static class VariantSecondaryIndexParams extends RestBodyParams {
@@ -82,7 +82,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantSecondaryIndexParams params) {
-        return submitTask("variant", "secondary-index", study, params, jobName, jobDescription, jobTags);
+        return submitTask("variant-secondary-index", study, params, jobName, jobDescription, jobTags);
     }
 
     @DELETE
@@ -97,7 +97,7 @@ public class OperationsWSService extends OpenCGAWSServer {
         HashMap<String, Object> params = new HashMap<>();
         params.put(ParamConstants.STUDY_PARAM, study);
         params.put("samples", samples);
-        return submitTask("variant", "secondary-index-delete", params, jobName, jobDescription, jobTags);
+        return submitTask("variant-secondary-index-delete", params, jobName, jobDescription, jobTags);
     }
 
     public static class VariantAnnotationParams extends RestBodyParams {
@@ -131,7 +131,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             VariantAnnotationParams params) {
-        return submitTask("variant", "annotation-index", params, jobName, jobDescription, jobTags);
+        return submitTask("variant-annotation-index", params, jobName, jobDescription, jobTags);
     }
 
     @DELETE
@@ -147,7 +147,7 @@ public class OperationsWSService extends OpenCGAWSServer {
         Map<String, Object> params = new HashMap<>();
         params.put(ParamConstants.PROJECT_PARAM, project);
         params.put("annotationId", annotationId);
-        return submitTask("variant", "annotation-delete", params, jobName, jobDescription, jobTags);
+        return submitTask("variant-annotation-delete", params, jobName, jobDescription, jobTags);
     }
 
     public static class VariantAnnotationSaveParams extends RestBodyParams {
@@ -171,7 +171,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             VariantAnnotationSaveParams params) {
-        return submitTask("variant", "annotation-save", params, jobName, jobDescription, jobTags);
+        return submitTask("variant-annotation-save", params, jobName, jobDescription, jobTags);
     }
 
     public static class VariantScoreIndexParams extends RestBodyParams {
@@ -202,7 +202,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantScoreIndexParams params) {
-        return submitTask("variant", "score-index", study, params, jobName, jobDescription, jobTags);
+        return submitTask("variant-score-index", study, params, jobName, jobDescription, jobTags);
     }
 
     @DELETE
@@ -222,7 +222,7 @@ public class OperationsWSService extends OpenCGAWSServer {
         params.put("name", name);
         if (resume) params.put("resume", "");
         if (force) params.put("force", "");
-        return submitTask("variant", "score-delete", params, jobName, jobDescription, jobTags);
+        return submitTask("variant-score-delete", params, jobName, jobDescription, jobTags);
     }
 
     public static class VariantSampleIndexParams extends RestBodyParams {
@@ -243,7 +243,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantSampleIndexParams params) {
-        return submitTask("variant", "sample-index", study, params, jobName, jobDescription, jobTags);
+        return submitTask("variant-sample-index", study, params, jobName, jobDescription, jobTags);
     }
 
     public static class VariantFamilyIndexParams extends RestBodyParams {
@@ -266,7 +266,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantFamilyIndexParams params) {
-        return submitTask("variant", "family-index", study, params, jobName, jobDescription, jobTags);
+        return submitTask("variant-family-index", study, params, jobName, jobDescription, jobTags);
     }
 
     public static class VariantAggregateFamilyParams extends RestBodyParams {
@@ -289,7 +289,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantAggregateFamilyParams params) {
-        return submitTask("variant", "aggregate-family", study, params, jobName, jobDescription, jobTags);
+        return submitTask("variant-aggregate-family", study, params, jobName, jobDescription, jobTags);
     }
 
     public static class VariantAggregateParams extends RestBodyParams {
@@ -314,29 +314,26 @@ public class OperationsWSService extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantAggregateParams params) {
-        return submitTask("variant", "aggregate", study, params, jobName, jobDescription, jobTags);
+        return submitTask("variant-aggregate", study, params, jobName, jobDescription, jobTags);
     }
 
-    public Response submitTask(String command, String subcommand, RestBodyParams params,
-                               String jobName, String jobDescription, String jobTags) {
-        return submitTask(command, subcommand, null, params, jobName, jobDescription, jobTags);
+    public Response submitTask(String toolId, RestBodyParams params, String jobName, String jobDescription, String jobTags) {
+        return submitTask(toolId, null, params, jobName, jobDescription, jobTags);
     }
 
-    public Response submitTask(String command, String subcommand, String study, RestBodyParams params,
-                               String jobName, String jobDescription, String jobTags) {
+    public Response submitTask(String toolId, String study, RestBodyParams params, String jobName, String jobDescription, String jobTags) {
         try {
             Map<String, Object> paramsMap = params.toParams();
             if (StringUtils.isNotEmpty(study)) {
                 paramsMap.put(ParamConstants.STUDY_PARAM, study);
             }
-            return submitTask(command, subcommand, paramsMap, jobName, jobDescription, jobTags);
+            return submitTask(toolId, paramsMap, jobName, jobDescription, jobTags);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
-    public Response submitTask(String command, String subcommand, Map<String, Object> paramsMap,
-                               String jobName, String jobDescription, String jobTags) {
+    public Response submitTask(String toolId, Map<String, Object> paramsMap, String jobName, String jobDescription, String jobTags) {
 
         Map<String, String> dynamicParamsMap = new HashMap<>();
         for (String key : this.params.keySet()) {
@@ -352,7 +349,7 @@ public class OperationsWSService extends OpenCGAWSServer {
         // FIXME
         //  This should actually submit a TASK, not a JOB
         if (StringUtils.isNotEmpty(study)) {
-            return submitJob(command, subcommand, study, paramsMap, null, jobName, jobDescription, jobTags);
+            return submitJob(toolId, study, paramsMap, null, jobName, jobDescription, jobTags);
         } else {
             return createPendingResponse();
         }

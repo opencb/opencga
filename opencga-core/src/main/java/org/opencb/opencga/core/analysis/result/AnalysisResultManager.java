@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -48,8 +47,8 @@ public class AnalysisResultManager {
         this.outDir = outDir.toAbsolutePath();
         ObjectMapper objectMapper = new ObjectMapper();
 //        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        objectWriter = objectMapper.writerFor(AnalysisResult.class).withDefaultPrettyPrinter();
-        objectReader = objectMapper.readerFor(AnalysisResult.class);
+        objectWriter = objectMapper.writerFor(Execution.class).withDefaultPrettyPrinter();
+        objectReader = objectMapper.readerFor(Execution.class);
         initialized = false;
         closed = false;
 
@@ -79,18 +78,17 @@ public class AnalysisResultManager {
         initialized = true;
 
         Date now = now();
-        AnalysisResult analysisResult = new AnalysisResult()
-                .setId(analysisId)
+        Execution execution = new Execution()
                 .setParams(params)
                 .setExecutor(new ExecutorInfo()
                         .setId(executorParams.getString(OpenCgaAnalysisExecutor.EXECUTOR_ID))
                         .setParams(executorParams))
                 .setStart(now);
-        analysisResult.getStatus()
+        execution.getStatus()
                 .setDate(now)
                 .setName(Status.Type.RUNNING);
 
-        write(analysisResult);
+        write(execution);
         startMonitorThread();
         return this;
     }
@@ -114,38 +112,38 @@ public class AnalysisResultManager {
         return closed;
     }
 
-    public synchronized AnalysisResult close() throws AnalysisException {
+    public synchronized Execution close() throws AnalysisException {
         return close(null);
     }
 
-    public synchronized AnalysisResult close(Exception exception) throws AnalysisException {
+    public synchronized Execution close(Exception exception) throws AnalysisException {
         if (closed) {
             throw new AnalysisException("AnalysisResultManager already closed!");
         }
         thread.interrupt();
 
-        AnalysisResult analysisResult = read();
+        Execution execution = read();
 
         Date now = now();
-        analysisResult.setEnd(now);
-        analysisResult.getStatus()
+        execution.setEnd(now);
+        execution.getStatus()
                 .setDate(now);
 
         AnalysisStep step;
-        if (StringUtils.isEmpty(analysisResult.getStatus().getStep())) {
-            if (CollectionUtils.isEmpty(analysisResult.getSteps())) {
-                analysisResult.setSteps(Collections.singletonList(new AnalysisStep().setId("check")));
+        if (StringUtils.isEmpty(execution.getStatus().getStep())) {
+            if (CollectionUtils.isEmpty(execution.getSteps())) {
+                execution.setSteps(Collections.singletonList(new AnalysisStep().setId("check")));
             }
-            step = analysisResult.getSteps().get(0);
-            step.setStart(analysisResult.getStart());
+            step = execution.getSteps().get(0);
+            step.setStart(execution.getStart());
         } else {
-            step = getStep(analysisResult, analysisResult.getStatus().getStep());
+            step = getStep(execution, execution.getStatus().getStep());
         }
 
         Status.Type finalStatus;
         if (exception == null) {
             finalStatus = Status.Type.DONE;
-            for (Event event : analysisResult.getEvents()) {
+            for (Event event : execution.getEvents()) {
                 if (event.getType().equals(Event.Type.ERROR)) {
                     // If there is any ERROR event the final status will be ERROR
                     finalStatus = Status.Type.ERROR;
@@ -153,11 +151,11 @@ public class AnalysisResultManager {
                 }
             }
         } else {
-            addError(exception, analysisResult);
+            addError(exception, execution);
             finalStatus = Status.Type.ERROR;
         }
 
-        analysisResult.getStatus()
+        execution.getStatus()
                 .setStep(null)
                 .setName(finalStatus);
 
@@ -166,9 +164,9 @@ public class AnalysisResultManager {
             step.setEnd(now);
         }
 
-        write(analysisResult);
+        write(execution);
         closed = true;
-        return analysisResult;
+        return execution;
     }
 
     public void setExecutorInfo(ExecutorInfo executorInfo) throws AnalysisException {
@@ -183,8 +181,8 @@ public class AnalysisResultManager {
         updateResult(analysisResult -> addError(exception, analysisResult));
     }
 
-    private boolean addError(Exception exception, AnalysisResult analysisResult) {
-        return analysisResult.getEvents().add(new Event(Event.Type.ERROR, exception.getMessage()));
+    private boolean addError(Exception exception, Execution execution) {
+        return execution.getEvents().add(new Event(Event.Type.ERROR, exception.getMessage()));
     }
 
     public void addAttribute(String key, Object value) throws AnalysisException {
@@ -250,14 +248,14 @@ public class AnalysisResultManager {
         });
     }
 
-    private AnalysisStep getStep(AnalysisResult analysisResult, String stepId) throws AnalysisException {
-        for (AnalysisStep step : analysisResult.getSteps()) {
+    private AnalysisStep getStep(Execution execution, String stepId) throws AnalysisException {
+        for (AnalysisStep step : execution.getSteps()) {
             if (step.getId().equals(stepId)) {
                 return step;
             }
         }
 
-        List<String> steps = analysisResult.getSteps().stream().map(AnalysisStep::getId).collect(Collectors.toList());
+        List<String> steps = execution.getSteps().stream().map(AnalysisStep::getId).collect(Collectors.toList());
 
         throw new AnalysisException("Step '" + stepId + "' not found. Available steps: " + steps);
     }
@@ -272,17 +270,17 @@ public class AnalysisResultManager {
 
     @FunctionalInterface
     public interface AnalysisResultFunction<R> {
-        R apply(AnalysisResult analysisResult) throws AnalysisException;
+        R apply(Execution execution) throws AnalysisException;
     }
 
     private synchronized <R> R updateResult(AnalysisResultFunction<R> update) throws AnalysisException {
-        AnalysisResult analysisResult = read();
-        R apply = update.apply(analysisResult);
-        write(analysisResult);
+        Execution execution = read();
+        R apply = update.apply(execution);
+        write(execution);
         return apply;
     }
 
-    public AnalysisResult read() throws AnalysisException {
+    public Execution read() throws AnalysisException {
         try {
             return objectReader.readValue(file);
         } catch (IOException e) {
@@ -291,7 +289,7 @@ public class AnalysisResultManager {
 
     }
 
-    private synchronized void write(AnalysisResult analysisResult) throws AnalysisException {
+    private synchronized void write(Execution execution) throws AnalysisException {
         int maxAttempts = 3;
         int attempts = 0;
         while (attempts < maxAttempts) {
@@ -300,12 +298,12 @@ public class AnalysisResultManager {
                 if (attempts < maxAttempts) {
                     // Perform atomic writes using an intermediate temporary swap file
                     try (OutputStream os = new BufferedOutputStream(new FileOutputStream(swapFile))) {
-                        objectWriter.writeValue(os, analysisResult);
+                        objectWriter.writeValue(os, execution);
                     }
                     Files.move(swapFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
                 } else {
                     try (OutputStream os = new BufferedOutputStream(new FileOutputStream(file))) {
-                        objectWriter.writeValue(os, analysisResult);
+                        objectWriter.writeValue(os, execution);
                     }
                 }
             } catch (IOException e) {

@@ -70,7 +70,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.analysis.variant.operations.StatsVariantStorageTest.checkCalculatedStats;
-import static org.opencb.opencga.catalog.monitor.executors.BatchExecutor.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_NAME;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
@@ -80,6 +79,11 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public abstract class AbstractVariantStorageOperationTest extends GenericTest {
+
+    private String JOB_STATUS_FILE = "status.json";
+    private String OUT_LOG_EXTENSION = ".out";
+    private String ERR_LOG_EXTENSION = ".err";
+
     protected CatalogManager catalogManager;
 
     protected String sessionId;

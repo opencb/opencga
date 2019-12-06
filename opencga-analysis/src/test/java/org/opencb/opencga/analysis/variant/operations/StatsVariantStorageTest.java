@@ -486,15 +486,5 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
             }
         }
     }
-    /**
-     * Do not execute Job using its command line, won't find the opencga-storage.sh
-     * Call directly to the OpenCGAStorageMain
-     */
-    private Job runStorageJob(Job storageJob, String sessionId) throws IOException, CatalogException {
-//        storageJob.setCommandLine(storageJob.getCommandLine() + " --job-id " + storageJob.getId());
-        Job job = opencga.runStorageJob(storageJob, sessionId);
-        assertEquals(Enums.ExecutionStatus.READY, job.getStatus().getName());
-        return job;
-    }
 
 }

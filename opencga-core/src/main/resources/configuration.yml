@@ -34,7 +34,7 @@ catalog:
   ## Execution engine to run internal catalog tasks.
   execution:
     # Accepted values are "local", "SGE", "azure-batch"
-    # see org.opencb.opencga.catalog.monitor.executors.ExecutorFactory
+    # see org.opencb.opencga.master.monitor.executors.ExecutorFactory
     id: "${OPENCGA.EXECUTION.MODE}"
     defaultQueue: ""            # Default queue to be used to submit jobs
     options:
@@ -114,7 +114,7 @@ analysis:
       maxConcurrentJobs: 2
   execution:
     # Accepted values are "local", "SGE", "azure-batch", "k8s"
-    # see org.opencb.opencga.catalog.monitor.executors.ExecutorFactory
+    # see org.opencb.opencga.master.monitor.executors.ExecutorFactory
     id: "${OPENCGA.EXECUTION.MODE}"
     defaultQueue: ""            # Default queue to be used to submit jobs
     availableQueues:            # Other queues for specific applications

@@ -32,6 +32,7 @@ import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
@@ -45,12 +46,11 @@ import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
-import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
@@ -96,7 +96,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         logger.info("ObjectMap: {}", params);
 
         try {
-            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "alignment", "index", Enums.Priority.HIGH,
+            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "alignment-index", Enums.Priority.HIGH,
                     params, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -184,7 +184,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
 
         try {
-            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "alignment", "coverage-run", Enums.Priority.HIGH, params,
+            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "alignment-coverage-run", Enums.Priority.HIGH, params,
                     token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -414,7 +414,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         logger.info("ObjectMap: {}", params);
 
         try {
-            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "alignment", "stats-run", Enums.Priority.HIGH, params,
+            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "alignment-stats-run", Enums.Priority.HIGH, params,
                     token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -545,7 +545,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             AlignmentAnalysisWSService.BwaRunParams params) {
-        return submitJob("alignment", BwaWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
+        return submitJob(BwaWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     // Samtools
@@ -578,7 +578,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             AlignmentAnalysisWSService.SamtoolsRunParams params) {
-        return submitJob("alignment", SamtoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
+        return submitJob(SamtoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     // Deeptools
@@ -612,7 +612,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             AlignmentAnalysisWSService.DeeptoolsRunParams params) {
-        return submitJob("alignment", DeeptoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
+        return submitJob(DeeptoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     //-------------------------------------------------------------------------

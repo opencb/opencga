@@ -26,7 +26,7 @@ import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.analysis.result.AnalysisResult;
+import org.opencb.opencga.core.analysis.result.Execution;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
@@ -76,6 +76,8 @@ public class JobWSServer extends OpenCGAWSServer {
         private String name;
         private String description;
 
+        private String toolId;
+
         private Enums.Priority priority;
 
         private String commandLine;
@@ -90,7 +92,7 @@ public class JobWSServer extends OpenCGAWSServer {
         private List<TinyFile> output;   // output files of this job
         private List<String> tags;
 
-        private AnalysisResult result;
+        private Execution result;
 
         private TinyFile log;
         private TinyFile errorLog;
@@ -107,6 +109,10 @@ public class JobWSServer extends OpenCGAWSServer {
 
         public String getDescription() {
             return description;
+        }
+
+        public String getToolId() {
+            return toolId;
         }
 
         public String getCommandLine() {
@@ -141,7 +147,7 @@ public class JobWSServer extends OpenCGAWSServer {
             return tags;
         }
 
-        public AnalysisResult getResult() {
+        public Execution getResult() {
             return result;
         }
 
@@ -158,11 +164,11 @@ public class JobWSServer extends OpenCGAWSServer {
         }
 
         public Job toJob() {
-            return new Job(id, null, name, description, null, commandLine, params, creationDate, null, priority, status,
+            return new Job(id, null, name, description, toolId, null, commandLine, params, creationDate, null, priority, status,
                     outDir != null ? outDir.toFile() : null,
                     getInput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
-                    getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()), tags, result,
-                    log != null ? log.toFile() : null, errorLog != null ? errorLog.toFile() : null, 1, attributes);
+                    getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
+                    tags, result, log != null ? log.toFile() : null, errorLog != null ? errorLog.toFile() : null, 1, attributes);
         }
 
     }
@@ -216,9 +222,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Analysis id") @QueryParam("analysisId")String analysisId,
             @ApiParam(value = "Json containing the execution parameters", required = true) JobExecutionParams params) {
         try {
-            // TODO: Depending on the analysis id, we will need to obtain the command/subcommand to generate the command line
-
-            DataResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "", "",  Enums.Priority.MEDIUM, params.params,
+            DataResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, analysisId,  Enums.Priority.MEDIUM, params.params,
                     token);
             return createOkResponse(queryResult);
         } catch(Exception e) {
