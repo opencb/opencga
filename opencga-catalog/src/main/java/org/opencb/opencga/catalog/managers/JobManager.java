@@ -315,16 +315,27 @@ public class JobManager extends ResourceManager<Job> {
             for (Map.Entry<String, Object> entry : job.getParams().entrySet()) {
                 // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in catalog
                 if (entry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
-                    try {
-                        // Validate the user has access to the file
-                        File file = catalogManager.getFileManager().get(study.getFqn(), (String) entry.getValue(),
-                                FileManager.INCLUDE_FILE_URI_PATH, token).first();
-                        inputFiles.add(file);
-                    } catch (CatalogException e) {
-                        throw new CatalogException("Cannot find file '" + entry.getValue() + "' from variable '" + entry.getKey() + "'. ",
-                                e);
+                    for (String fileStr : StringUtils.split((String) entry.getValue(), ',')) {
+                        try {
+                            // Validate the user has access to the file
+                            File file = catalogManager.getFileManager().get(study.getFqn(), fileStr,
+                                    FileManager.INCLUDE_FILE_URI_PATH, token).first();
+                            inputFiles.add(file);
+                        } catch (CatalogException e) {
+                            throw new CatalogException("Cannot find file '" + entry.getValue() + "' "
+                                    + "from job param '" + entry.getKey() + "'. ", e);
+                        }
                     }
                 } else if (entry.getValue() instanceof Map) {
+                    if (dynamicParams != null) {
+                        List<String> dynamicParamKeys = job.getParams()
+                                .entrySet()
+                                .stream()
+                                .filter(e -> e.getValue() instanceof Map)
+                                .map(Map.Entry::getKey)
+                                .collect(Collectors.toList());
+                        throw new CatalogException("Found multiple dynamic param maps in job params: " + dynamicParamKeys);
+                    }
                     // If we have found a map for further dynamic params...
                     dynamicParams = (Map<String, Object>) entry.getValue();
                 }

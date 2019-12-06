@@ -73,6 +73,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private JobManager jobManager;
     private FileManager fileManager;
     private CatalogIOManager catalogIOManager;
+    private final Map<String, Long> jobsCountByType = new HashMap<>();
+    private final Map<String, Long> retainedLogsTime = new HashMap<>();
 
     private Path defaultJobDir;
 
@@ -215,24 +217,37 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     protected int checkRunningJob(Job job) {
         Enums.ExecutionStatus jobStatus = getCurrentStatus(job);
 
-        if (Enums.ExecutionStatus.RUNNING.equals(jobStatus.getName())) {
-            Execution result = readAnalysisResult(job);
-            if (result != null) {
-                // Update the result of the job
-                JobUpdateParams updateParams = new JobUpdateParams().setResult(result);
-                String study = String.valueOf(job.getAttributes().get(Job.OPENCGA_STUDY));
-                try {
-                    jobManager.update(study, job.getId(), updateParams, QueryOptions.empty(), token);
-                } catch (CatalogException e) {
-                    logger.error("{} - Could not update result information: {}", job.getId(), e.getMessage(), e);
-                    return 0;
+        switch (jobStatus.getName()) {
+            case Enums.ExecutionStatus.RUNNING:
+                Execution result = readAnalysisResult(job);
+                if (result != null) {
+                    // Update the result of the job
+                    JobUpdateParams updateParams = new JobUpdateParams().setResult(result);
+                    String study = String.valueOf(job.getAttributes().get(Job.OPENCGA_STUDY));
+                    try {
+                        jobManager.update(study, job.getId(), updateParams, QueryOptions.empty(), token);
+                    } catch (CatalogException e) {
+                        logger.error("{} - Could not update result information: {}", job.getId(), e.getMessage(), e);
+                        return 0;
+                    }
                 }
-            }
+                return 1;
+            case Enums.ExecutionStatus.ABORTED:
+            case Enums.ExecutionStatus.ERROR:
+            case Enums.ExecutionStatus.DONE:
+            case Enums.ExecutionStatus.READY:
+                // Register job results
+                return processFinishedJob(job);
+            case Enums.ExecutionStatus.QUEUED:
+                // Running job went back to Queued?
+                logger.info("Running job '{}' went back to '{}' status", job.getId(), jobStatus.getName());
+                return setStatus(job, new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED));
+            case Enums.ExecutionStatus.PENDING:
+            case Enums.ExecutionStatus.UNKNOWN:
+            default:
+                logger.info("Unexpected status '{}' for job '{}'", jobStatus.getName(), job.getId());
+                return 0;
 
-            return 1;
-        } else {
-            // Register job results
-            return processFinishedJob(job);
         }
     }
 
@@ -257,21 +272,32 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     protected int checkQueuedJob(Job job) {
         Enums.ExecutionStatus status = getCurrentStatus(job);
 
-        if (Enums.ExecutionStatus.QUEUED.equals(status.getName())) {
-            // Job is still queued
-            return 0;
+        switch (status.getName()) {
+            case Enums.ExecutionStatus.QUEUED:
+                // Job is still queued
+                return 0;
+            case Enums.ExecutionStatus.RUNNING:
+                logger.info("Updating job {} from {} to {}", job.getId(), Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.RUNNING);
+                return setStatus(job, new Enums.ExecutionStatus(Enums.ExecutionStatus.RUNNING));
+            case Enums.ExecutionStatus.ABORTED:
+            case Enums.ExecutionStatus.ERROR:
+            case Enums.ExecutionStatus.DONE:
+            case Enums.ExecutionStatus.READY:
+                // Job has finished the execution, so we need to register the job results
+                return processFinishedJob(job);
+            case Enums.ExecutionStatus.UNKNOWN:
+                logger.info("Job '{}' in status {}", job.getId(), Enums.ExecutionStatus.UNKNOWN);
+                return 0;
+            default:
+                logger.info("Unexpected status '{}' for job '{}'", status.getName(), job.getId());
+                return 0;
         }
-
-        if (Enums.ExecutionStatus.RUNNING.equals(status.getName())) {
-            logger.info("Updating job {} from {} to {}", job.getId(), Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.RUNNING);
-            return setStatus(job, new Enums.ExecutionStatus(Enums.ExecutionStatus.RUNNING));
-        }
-
-        // Job has finished the execution, so we need to register the job results
-        return processFinishedJob(job);
     }
 
     protected void checkPendingJobs() {
+        // Clear job counts each cycle
+        jobsCountByType.clear();
+
         int handledPendingJobs = 0;
         try (DBIterator<Job> iterator = jobManager.iterator(pendingJobsQuery, queryOptions, token)) {
             while (handledPendingJobs < NUM_JOBS_HANDLED && iterator.hasNext()) {
@@ -489,18 +515,38 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private boolean canBeQueued(Job job) {
         if ("variant-index".equals(job.getToolId())) {
             int maxIndexJobs = catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().getMaxConcurrentJobs();
-            logger.info("TODO: Check maximum number of slots for variant index");
-            // TODO: Check maximum number of slots for variant index
-            int currentVariantIndexJobs = 0;
-            if (currentVariantIndexJobs > maxIndexJobs) {
-                logger.info("{} index jobs running or in queue already. "
-                        + "Current limit is {}. "
-                        + "Skipping new index job '{}' temporary", currentVariantIndexJobs, maxIndexJobs, job.getId());
-                return false;
-            }
+            return canBeQueued("variant-index", maxIndexJobs);
         }
-
         return true;
+    }
+
+    private boolean canBeQueued(String toolId, int maxJobs) {
+        Query query = new Query()
+                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED + "," + Enums.ExecutionStatus.RUNNING)
+                .append(JobDBAdaptor.QueryParams.TOOL_ID.key(), toolId);
+        long currentJobs = jobsCountByType.computeIfAbsent(toolId, k -> {
+            try {
+                return catalogManager.getJobManager().count(query, token).getNumMatches();
+            } catch (CatalogException e) {
+                logger.error("Error counting the current number of running and queued \"" + toolId + "\" jobs", e);
+                return 0L;
+            }
+        });
+        if (currentJobs >= maxJobs) {
+            long now = System.currentTimeMillis();
+            Long lastTimeLog = retainedLogsTime.getOrDefault(toolId, 0L);
+            if (now - lastTimeLog > 60000) {
+                logger.info("There are {} " + toolId + " jobs running or queued already. "
+                        + "Current limit is {}. "
+                        + "Halt new " + toolId + " jobs.", currentJobs, maxJobs);
+                retainedLogsTime.put(toolId, now);
+            }
+            return false;
+        } else {
+            jobsCountByType.remove(toolId);
+            retainedLogsTime.put(toolId, 0L);
+            return true;
+        }
     }
 
     private int abortJob(Job job, String description) {

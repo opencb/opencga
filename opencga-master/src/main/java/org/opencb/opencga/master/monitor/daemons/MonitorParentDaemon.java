@@ -16,20 +16,12 @@
 
 package org.opencb.opencga.master.monitor.daemons;
 
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.master.monitor.executors.BatchExecutor;
 import org.opencb.opencga.master.monitor.executors.ExecutorFactory;
-import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.models.common.Enums;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,76 +70,5 @@ public abstract class MonitorParentDaemon implements Runnable {
     static String getJobTemporaryFolderName(long jobId) {
         return "J_" + jobId;
     }
-
-    void checkQueuedJob(Job job, Path tempJobFolder, CatalogIOManager catalogIOManager) {
-
-        Path tmpOutdirPath = getJobTemporaryFolder(job.getUid(), tempJobFolder);
-        if (!tmpOutdirPath.toFile().exists()) {
-            logger.warn("Attempting to create the temporal output directory again");
-            try {
-                catalogIOManager.createDirectory(tmpOutdirPath.toUri());
-            } catch (CatalogIOException e) {
-                logger.error("Could not create the temporal output directory to run the job");
-            }
-        } else {
-            String status = batchExecutor.status(tmpOutdirPath, job);
-            if (!status.equalsIgnoreCase(Enums.ExecutionStatus.UNKNOWN) && !status.equalsIgnoreCase(Enums.ExecutionStatus.QUEUED)) {
-                try {
-                    logger.info("Updating job {} from {} to {}", job.getUid(), Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.RUNNING);
-                    setNewStatus(job.getUid(), Enums.ExecutionStatus.RUNNING, "The job is running");
-                } catch (CatalogException e) {
-                    logger.warn("Could not update job {} to status running", job.getUid());
-                }
-            }
-        }
-    }
-
-    void setNewStatus(long jobId, String status, String message) throws CatalogDBException {
-        ObjectMap parameters = new ObjectMap();
-        parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_NAME.key(), status);
-        parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_MSG.key(), message);
-        dbAdaptorFactory.getCatalogJobDBAdaptor().update(jobId, parameters, QueryOptions.empty());
-    }
-//
-//    void cleanPrivateJobInformation(Job job) {
-//        // Remove the session id from the job attributes
-//        job.getAttributes().remove(Job.OPENCGA_TMP_DIR);
-//        job.getAttributes().remove(Job.OPENCGA_OUTPUT_DIR);
-//        job.getAttributes().remove(Job.OPENCGA_STUDY);
-//
-//        ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
-//        try {
-//            dbAdaptorFactory.getCatalogJobDBAdaptor().update(job.getUid(), params, QueryOptions.empty());
-//        } catch (CatalogException e) {
-//            logger.error("Could not remove session id from attributes of job {}. ", job.getUid(), e);
-//        }
-//    }
-//
-//    void buildCommandLine(Map<String, String> params, StringBuilder commandLine, Set<String> knownParams) {
-//        for (Map.Entry<String, String> param : params.entrySet()) {
-//            if (param.getKey().equals("sid")) {
-//                continue;
-//            }
-//            commandLine.append(' ');
-//            if (knownParams == null || knownParams.contains(param.getKey())) {
-//                if (!("false").equalsIgnoreCase(param.getValue())) {
-//                    if (param.getKey().length() == 1) {
-//                        commandLine.append('-');
-//                    } else {
-//                        commandLine.append("--");
-//                    }
-//                    commandLine.append(param.getKey());
-//                    if (!param.getValue().equalsIgnoreCase("true")) {
-//                        commandLine.append(' ').append(param.getValue());
-//                    }
-//                }
-//            } else {
-//                if (!param.getKey().startsWith("-D")) {
-//                    commandLine.append("-D");
-//                }
-//                commandLine.append(param.getKey()).append('=').append(param.getValue());
-//            }
-//        }
-//    }
 
 }
