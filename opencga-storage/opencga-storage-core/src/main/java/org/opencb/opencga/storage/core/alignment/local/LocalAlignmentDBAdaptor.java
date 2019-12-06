@@ -20,8 +20,6 @@ import ga4gh.Reads;
 import htsjdk.samtools.SAMRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.ObjectWriter;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
@@ -31,13 +29,13 @@ import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
 import org.opencb.biodata.tools.alignment.filters.AlignmentFilters;
 import org.opencb.biodata.tools.alignment.filters.SamRecordFilters;
-import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.biodata.tools.feature.BigWigManager;
 import org.opencb.biodata.tools.feature.WigUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterator;
@@ -45,6 +43,7 @@ import org.opencb.opencga.storage.core.alignment.iterators.SamRecordAlignmentIte
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -254,57 +253,86 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         return new DataResult<>((int) watch.getTime(), Collections.emptyList(), 1, Collections.singletonList(count), 1);
     }
 
+//    @Override
+//    public DataResult<AlignmentGlobalStats> stats(Path path, Path workspace) throws Exception {
+//        StopWatch watch = StopWatch.createStarted();
+//
+//        FileUtils.checkFile(path);
+//        FileUtils.checkDirectory(workspace);
+//
+//        Path statsPath = workspace.resolve(path.getFileName() + ".stats");
+//        AlignmentGlobalStats alignmentGlobalStats;
+//
+//        if (statsPath.toFile().exists()) {
+//            // Read the file of stats
+//            ObjectMapper objectMapper = new ObjectMapper();
+//            alignmentGlobalStats = objectMapper.readValue(statsPath.toFile(), AlignmentGlobalStats.class);
+//        } else {
+//            BamManager alignmentManager = new BamManager(path);
+//            alignmentGlobalStats = alignmentManager.stats();
+//            ObjectMapper objectMapper = new ObjectMapper();
+//            ObjectWriter objectWriter = objectMapper.typedWriter(AlignmentGlobalStats.class);
+//            objectWriter.writeValue(statsPath.toFile(), alignmentGlobalStats);
+//        }
+//
+//        watch.stop();
+//        return new DataResult<>((int) watch.getTime(), Collections.emptyList(), 1, Collections.singletonList(alignmentGlobalStats), 1);
+//    }
+
+    //-------------------------------------------------------------------------
+    // STATS: run and info (stats query is performed by FileManager.search()
+    //-------------------------------------------------------------------------
+
     @Override
-    public DataResult<AlignmentGlobalStats> stats(Path path, Path workspace) throws Exception {
+    public DataResult<String> statsInfo(Path path) throws Exception {
         StopWatch watch = StopWatch.createStarted();
 
-        FileUtils.checkFile(path);
-        FileUtils.checkDirectory(workspace);
-
-        Path statsPath = workspace.resolve(path.getFileName() + ".stats");
-        AlignmentGlobalStats alignmentGlobalStats;
-
-        if (statsPath.toFile().exists()) {
-            // Read the file of stats
-            ObjectMapper objectMapper = new ObjectMapper();
-            alignmentGlobalStats = objectMapper.readValue(statsPath.toFile(), AlignmentGlobalStats.class);
-        } else {
-            BamManager alignmentManager = new BamManager(path);
-            alignmentGlobalStats = alignmentManager.stats();
-            ObjectMapper objectMapper = new ObjectMapper();
-            ObjectWriter objectWriter = objectMapper.typedWriter(AlignmentGlobalStats.class);
-            objectWriter.writeValue(statsPath.toFile(), alignmentGlobalStats);
+        File statsFile = new File(path + ".stats.txt");
+        if (!statsFile.exists()) {
+            throw new AnalysisException("Stats file does not exist: " + statsFile.getAbsolutePath());
         }
 
-        watch.stop();
-        return new DataResult<>((int) watch.getTime(), Collections.emptyList(), 1, Collections.singletonList(alignmentGlobalStats), 1);
+        try {
+            List<String> lines = org.apache.commons.io.FileUtils.readLines(statsFile, Charset.defaultCharset());
+            watch.stop();
+            return new DataResult<>((int) watch.getTime(), Collections.emptyList(), 1,
+                    Arrays.asList(org.apache.commons.lang.StringUtils.join(lines, "\n")), 1);
+        } catch (IOException e) {
+            throw new AnalysisException("Error reading stats file: " + statsFile.getName(), e);
+        }
     }
 
-    @Override
-    public DataResult<AlignmentGlobalStats> stats(Path path, Path workspace, Query query, QueryOptions options) throws Exception {
-        FileUtils.checkFile(path);
 
-        StopWatch watch = StopWatch.createStarted();
+    //-------------------------------------------------------------------------
 
-        if (options == null) {
-            options = new QueryOptions();
-        }
+//    @Override
+//    public DataResult<AlignmentGlobalStats> stats(Path path, Path workspace, Query query, QueryOptions options) throws Exception {
+//        FileUtils.checkFile(path);
+//
+//        StopWatch watch = StopWatch.createStarted();
+//
+//        if (options == null) {
+//            options = new QueryOptions();
+//        }
+//
+//        if (options.size() == 0 && query.size() == 0) {
+//            return stats(path, workspace);
+//        }
+//
+//        Region region = parseRegion(query);
+//        AlignmentFilters alignmentFilters = parseQuery(query);
+//        AlignmentOptions alignmentOptions = parseQueryOptions(options);
+//
+//        BamManager alignmentManager = new BamManager(path);
+//        AlignmentGlobalStats alignmentGlobalStats = alignmentManager.stats(region, alignmentFilters, alignmentOptions);
+//
+//        watch.stop();
+//        return new DataResult<>((int) watch.getTime(), Collections.emptyList(), 1, Arrays.asList(alignmentGlobalStats), 1);
+//    }
 
-        if (options.size() == 0 && query.size() == 0) {
-            return stats(path, workspace);
-        }
-
-        Region region = parseRegion(query);
-        AlignmentFilters alignmentFilters = parseQuery(query);
-        AlignmentOptions alignmentOptions = parseQueryOptions(options);
-
-        BamManager alignmentManager = new BamManager(path);
-        AlignmentGlobalStats alignmentGlobalStats = alignmentManager.stats(region, alignmentFilters, alignmentOptions);
-
-        watch.stop();
-        return new DataResult<>((int) watch.getTime(), Collections.emptyList(), 1, Arrays.asList(alignmentGlobalStats), 1);
-    }
-
+    //-------------------------------------------------------------------------
+    // PRIVATE METHODS
+    //-------------------------------------------------------------------------
 
 //    @Override
 //    public DataResult<RegionCoverage> coverage(Path path, Path workspace, Query query, QueryOptions options) throws Exception {

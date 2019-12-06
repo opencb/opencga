@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.common.Enums;
@@ -55,6 +56,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
+
+import static org.opencb.opencga.core.api.ParamConstants.*;
 
 /**
  * Created by imedina on 17/08/16.
@@ -80,7 +83,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     public Response index(@ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
                           @QueryParam(value = "file") String fileIdStr,
                           @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
-                          @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
+                          @ApiParam(value = STUDY_DESCRIPTION)
                           @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                           @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr,
                           @ApiParam("Compute coverage") @DefaultValue("false") @QueryParam("coverage") boolean coverage) {
@@ -114,18 +117,18 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = QueryOptions.COUNT, value = "Return total number of results", defaultValue = "false", dataType = "boolean", paramType = "query")
     })
     public Response query(@ApiParam(value = "File ID or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
-                                  @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                  @ApiParam(value = "Comma-separated list of regions 'chr:start-end'", required = true) @QueryParam("region") String regions,
-                                  @ApiParam(value = "Minimum mapping quality") @QueryParam("minMapQ") Integer minMapQ,
-                                  @ApiParam(value = "Maximum number of mismatches") @QueryParam("maxNM") Integer maxNM,
-                                  @ApiParam(value = "Maximum number of hits") @QueryParam("maxNH") Integer maxNH,
-                                  @ApiParam(value = "Return only properly paired alignments") @QueryParam("properlyPaired") @DefaultValue("false") Boolean properlyPaired,
-                                  @ApiParam(value = "Maximum insert size") @QueryParam("maxInsertSize") Integer maxInsertSize,
-                                  @ApiParam(value = "Skip unmapped alignments") @QueryParam("skipUnmapped") @DefaultValue("false") Boolean unmapped,
-                                  @ApiParam(value = "Skip duplicated alignments") @QueryParam("skipDuplicated") @DefaultValue("false") Boolean duplicated,
-                                  @ApiParam(value = "Return alignments contained within boundaries of region") @DefaultValue("false") @QueryParam("contained") Boolean contained,
-                                  @ApiParam(value = "Force SAM MD optional field to be set with the alignments") @DefaultValue("false") @QueryParam("mdField") Boolean mdField,
-                                  @ApiParam(value = "Compress the nucleotide qualities by using 8 quality levels") @QueryParam("binQualities") @DefaultValue("false") Boolean binQualities) {
+                          @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+                          @ApiParam(value = "Comma-separated list of regions 'chr:start-end'", required = true) @QueryParam("region") String regions,
+                          @ApiParam(value = "Minimum mapping quality") @QueryParam("minMapQ") Integer minMapQ,
+                          @ApiParam(value = "Maximum number of mismatches") @QueryParam("maxNM") Integer maxNM,
+                          @ApiParam(value = "Maximum number of hits") @QueryParam("maxNH") Integer maxNH,
+                          @ApiParam(value = "Return only properly paired alignments") @QueryParam("properlyPaired") @DefaultValue("false") Boolean properlyPaired,
+                          @ApiParam(value = "Maximum insert size") @QueryParam("maxInsertSize") Integer maxInsertSize,
+                          @ApiParam(value = "Skip unmapped alignments") @QueryParam("skipUnmapped") @DefaultValue("false") Boolean unmapped,
+                          @ApiParam(value = "Skip duplicated alignments") @QueryParam("skipDuplicated") @DefaultValue("false") Boolean duplicated,
+                          @ApiParam(value = "Return alignments contained within boundaries of region") @DefaultValue("false") @QueryParam("contained") Boolean contained,
+                          @ApiParam(value = "Force SAM MD optional field to be set with the alignments") @DefaultValue("false") @QueryParam("mdField") Boolean mdField,
+                          @ApiParam(value = "Compress the nucleotide qualities by using 8 quality levels") @QueryParam("binQualities") @DefaultValue("false") Boolean binQualities) {
         try {
             ParamUtils.checkIsSingleID(fileIdStr);
             Query query = new Query();
@@ -167,11 +170,11 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @Path("/coverage/run")
     @ApiOperation(value = "Compute coverage for a list of alignment files", response = Job.class)
     public Response coverageRun(@ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
-                          @QueryParam(value = "file") String fileIdStr,
-                          @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
-                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                          @QueryParam("study") String studyStr,
-                          @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr) {
+                                @QueryParam(value = "file") String fileIdStr,
+                                @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
+                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                @QueryParam("study") String studyStr,
+                                @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr) {
 
         if (StringUtils.isNotEmpty(studyId)) {
             studyStr = studyId;
@@ -198,7 +201,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @ApiOperation(value = "Fetch the coverage of an alignment file", response = RegionCoverage.class)
     public Response coverageQuery(
             @ApiParam(value = "File ID or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
             @ApiParam(value = "Comma separated list of genes") @QueryParam("gene") String geneStr,
             @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("500") @QueryParam("geneOffset") int geneOffset,
@@ -283,14 +286,14 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @Path("/coverage/log2Ratio")
     @ApiOperation(value = "Compute log2 coverage ratio from file #1 and file #2", response = RegionCoverage.class)
     public Response coverageLog2Ratio(@ApiParam(value = "File #1 (e.g., somatic file ID or name in Catalog)", required = true) @QueryParam("file1") String somaticFileIdStr,
-                                                       @ApiParam(value = "File #2 (e.g., germline file ID or name in Catalog)", required = true) @QueryParam("file2") String germlineFileIdStr,
-                                                       @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                                       @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
-                                                       @ApiParam(value = "Comma separated list of genes") @QueryParam("gene") String geneStr,
-                                                       @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("500") @QueryParam("geneOffset") int geneOffset,
-                                                       @ApiParam(value = "Only exons") @QueryParam("onlyExons") @DefaultValue("false") Boolean onlyExons,
-                                                       @ApiParam(value = "Exon offset (to extend the exon region at up and downstream") @DefaultValue("50") @QueryParam("exonOffset") int exonOffset,
-                                                       @ApiParam(value = "Window size") @DefaultValue("1") @QueryParam("windowSize") int windowSize) {
+                                      @ApiParam(value = "File #2 (e.g., germline file ID or name in Catalog)", required = true) @QueryParam("file2") String germlineFileIdStr,
+                                      @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+                                      @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
+                                      @ApiParam(value = "Comma separated list of genes") @QueryParam("gene") String geneStr,
+                                      @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("500") @QueryParam("geneOffset") int geneOffset,
+                                      @ApiParam(value = "Only exons") @QueryParam("onlyExons") @DefaultValue("false") Boolean onlyExons,
+                                      @ApiParam(value = "Exon offset (to extend the exon region at up and downstream") @DefaultValue("50") @QueryParam("exonOffset") int exonOffset,
+                                      @ApiParam(value = "Window size") @DefaultValue("1") @QueryParam("windowSize") int windowSize) {
         try {
             ParamUtils.checkIsSingleID(somaticFileIdStr);
             ParamUtils.checkIsSingleID(germlineFileIdStr);
@@ -357,7 +360,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @ApiOperation(value = "Fetch regions with a low coverage", hidden = true, response = RegionCoverage.class)
     public Response lowCoverage(
             @ApiParam(value = "File id or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
             @ApiParam(value = "Comma separated list of genes") @QueryParam("gene") String geneStr,
             @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("500") @QueryParam("geneOffset") int geneOffset,
@@ -402,9 +405,9 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @Path("/stats/run")
     @ApiOperation(value = "Compute stats for a list of alignment files", response = Job.class)
     public Response statsRun(@ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
-                                @QueryParam(value = "inputFile") String inputFile,
-                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                @QueryParam("study") String study) {
+                             @QueryParam(value = "inputFile") String inputFile,
+                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                             @QueryParam("study") String study) {
 
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("inputFile", inputFile);
@@ -463,44 +466,61 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
     @GET
     @Path("/stats/query")
-    @ApiOperation(value = "Fetch the stats of an alignment file", response = AlignmentGlobalStats.class)
-    public Response statsQuery(@ApiParam(value = "Annotations", required = true) @QueryParam("inputFile")
-                                     String annotations,
-                             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study) {
+    @ApiOperation(value = "Fetch alignment files according to their stats", response = File.class)
+    public Response statsQuery(@ApiParam(value = STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+                               @ApiParam(value = RAW_TOTAL_SEQUENCES_DESCRIPTION) @QueryParam(RAW_TOTAL_SEQUENCES) String rawTotalSequences,
+                               @ApiParam(value = FILTERED_SEQUENCES_DESCRIPTION) @QueryParam(FILTERED_SEQUENCES) String filteredSequences,
+                               @ApiParam(value = READS_MAPPED_DESCRIPTION) @QueryParam(READS_MAPPED) String readsMapped,
+                               @ApiParam(value = READS_MAPPED_AND_PAIRED_DESCRIPTION) @QueryParam(READS_MAPPED_AND_PAIRED) String readsMappedAndPaired,
+                               @ApiParam(value = READS_UNMAPPED_DESCRIPTION) @QueryParam(READS_UNMAPPED) String readsUnmapped,
+                               @ApiParam(value = READS_PROPERLY_PAIRED_DESCRIPTION) @QueryParam(READS_PROPERLY_PAIRED) String readsProperlyPaired,
+                               @ApiParam(value = READS_PAIRED_DESCRIPTION) @QueryParam(READS_PAIRED) String readsPaired,
+                               @ApiParam(value = READS_DUPLICATED_DESCRIPTION) @QueryParam(READS_DUPLICATED) String readsDuplicated,
+                               @ApiParam(value = READS_MQ0_DESCRIPTION) @QueryParam(READS_MQ0) String readsMQ0,
+                               @ApiParam(value = READS_QC_FAILED_DESCRIPTION) @QueryParam(READS_QC_FAILED) String readsQCFailed,
+                               @ApiParam(value = NON_PRIMARY_ALIGNMENTS_DESCRIPTION) @QueryParam(NON_PRIMARY_ALIGNMENTS) String nonPrimaryAlignments,
+                               @ApiParam(value = MISMATCHES_DESCRIPTION) @QueryParam(MISMATCHES) String mismatches,
+                               @ApiParam(value = ERROR_RATE_DESCRIPTION) @QueryParam(ERROR_RATE) String errorRate,
+                               @ApiParam(value = AVERAGE_LENGTH_DESCRIPTION) @QueryParam(AVERAGE_LENGTH) String averageLength,
+                               @ApiParam(value = AVERAGE_FIRST_FRAGMENT_LENGTH_DESCRIPTION) @QueryParam(AVERAGE_FIRST_FRAGMENT_LENGTH) String averageFirstFragmentLength,
+                               @ApiParam(value = AVERAGE_LAST_FRAGMENT_LENGTH_DESCRIPTION) @QueryParam(AVERAGE_LAST_FRAGMENT_LENGTH) String averageLastFragmentLength,
+                               @ApiParam(value = AVERAGE_QUALITY_DESCRIPTION) @QueryParam(AVERAGE_QUALITY) String averageQuality,
+                               @ApiParam(value = INSERT_SIZE_AVERAGE_DESCRIPTION) @QueryParam(INSERT_SIZE_AVERAGE) String insertSizeAverage,
+                               @ApiParam(value = INSERT_SIZE_STANDARD_DEVIATION_DESCRIPTION) @QueryParam(INSERT_SIZE_STANDARD_DEVIATION) String insertSizeStandardDeviation,
+                               @ApiParam(value = PAIRS_WITH_OTHER_ORIENTATION_DESCRIPTION) @QueryParam(PAIRS_WITH_OTHER_ORIENTATION) String pairsWithOtherOrientation,
+                               @ApiParam(value = PAIRS_ON_DIFFERENT_CHROMOSOMES_DESCRIPTION) @QueryParam(PAIRS_ON_DIFFERENT_CHROMOSOMES) String pairsOnDifferentChromosomes,
+                               @ApiParam(value = PERCENTAGE_OF_PROPERLY_PAIRED_READS_DESCRIPTION) @QueryParam(PERCENTAGE_OF_PROPERLY_PAIRED_READS) String percentageOfProperlyPairedReads) {
+
+        Query query = new Query();
+        query.putIfNotNull(RAW_TOTAL_SEQUENCES, rawTotalSequences);
+        query.putIfNotNull(FILTERED_SEQUENCES, filteredSequences);
+        query.putIfNotNull(READS_MAPPED, readsMapped);
+        query.putIfNotNull(READS_MAPPED_AND_PAIRED, readsMappedAndPaired);
+        query.putIfNotNull(READS_UNMAPPED, readsUnmapped);
+        query.putIfNotNull(READS_PROPERLY_PAIRED, readsProperlyPaired);
+        query.putIfNotNull(READS_PAIRED, readsPaired);
+        query.putIfNotNull(READS_DUPLICATED, readsDuplicated);
+        query.putIfNotNull(READS_MQ0, readsMQ0);
+        query.putIfNotNull(READS_QC_FAILED, readsQCFailed);
+        query.putIfNotNull(NON_PRIMARY_ALIGNMENTS, nonPrimaryAlignments);
+        query.putIfNotNull(MISMATCHES, mismatches);
+        query.putIfNotNull(ERROR_RATE, errorRate);
+        query.putIfNotNull(AVERAGE_LENGTH, averageLength);
+        query.putIfNotNull(AVERAGE_FIRST_FRAGMENT_LENGTH, averageFirstFragmentLength);
+        query.putIfNotNull(AVERAGE_LAST_FRAGMENT_LENGTH, averageLastFragmentLength);
+        query.putIfNotNull(AVERAGE_QUALITY, averageQuality);
+        query.putIfNotNull(INSERT_SIZE_AVERAGE, insertSizeAverage);
+        query.putIfNotNull(INSERT_SIZE_STANDARD_DEVIATION, insertSizeStandardDeviation);
+        query.putIfNotNull(PAIRS_WITH_OTHER_ORIENTATION, pairsWithOtherOrientation);
+        query.putIfNotNull(PAIRS_ON_DIFFERENT_CHROMOSOMES, pairsOnDifferentChromosomes);
+        query.putIfNotNull(PERCENTAGE_OF_PROPERLY_PAIRED_READS, percentageOfProperlyPairedReads);
+
         try {
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
-            return createOkResponse(alignmentStorageManager.statsQuery(study, annotations, token));
-        } catch (AnalysisException e) {
+            return createOkResponse(alignmentStorageManager.statsQuery(study, query, QueryOptions.empty(), token));
+        } catch (CatalogException e) {
             return createErrorResponse(e);
         }
-
-//        try {
-//            if (StringUtils.isNotEmpty(studyId)) {
-//                studyStr = studyId;
-//            }
-//
-//            Query query = new Query();
-//            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
-//
-//            QueryOptions queryOptions = new QueryOptions();
-//            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
-//
-//            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
-//
-//            if (StringUtils.isNotEmpty(region)) {
-//                String[] regionList = region.split(",");
-//                DataResult<AlignmentGlobalStats> dataResult = DataResult.empty();
-//                for (String regionAux : regionList) {
-//                    query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), regionAux);
-//                    dataResult.append(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, token));
-//                }
-//                return createOkResponse(dataResult);
-//            } else {
-//                return createOkResponse(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, token));
-//            }
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
     }
 
     //-------------------------------------------------------------------------
@@ -514,7 +534,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         }
 
         public BwaRunParams(String command, String fastaFile, String indexBaseFile, String fastq1File, String fastq2File, String samFile,
-                                String outdir, Map<String, String> bwaParams) {
+                            String outdir, Map<String, String> bwaParams) {
             this.command = command;
             this.fastaFile = fastaFile;
             this.indexBaseFile = indexBaseFile;
@@ -539,7 +559,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @Path("/bwa/run")
     @ApiOperation(value = BwaWrapperAnalysis.DESCRIPTION, response = Job.class)
     public Response bwaRun(
-                    @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,

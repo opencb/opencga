@@ -24,13 +24,18 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.app.cli.internal.InternalMain;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -353,11 +358,11 @@ public class InternalMainTest {
     }
 
     @Test
-    public void testAlignmentStats() throws CatalogException, IOException {
+    public void testStatsRun() throws CatalogException, IOException, AnalysisException {
         createStudy(datastores, "s1");
 
         String filename = "HG00096.chrom20.small.bam";
-        File bam = opencga.createFile(studyId, filename, sessionId);
+        File bamFile = opencga.createFile(studyId, filename, sessionId);
 
         String temporalDir = opencga.createTmpOutdir(studyId, "_run_stats", sessionId);
 
@@ -365,22 +370,29 @@ public class InternalMainTest {
         execute("alignment", "stats-run",
                 "--session-id", sessionId,
                 "--study", studyId,
-                "--input-file", bam.getName(),
+                "--input-file", bamFile.getName(),
                 "-o", temporalDir);
 
         assertTrue(Files.exists(Paths.get(temporalDir).resolve(filename + ".stats.txt")));
 
         // stats info
-        execute("alignment", "stats-info",
-                "--session-id", sessionId,
-                "--study", studyId,
-                "--input-file", bam.getName());
+        AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, opencga.getStorageEngineFactory());
+        DataResult<String> statsInfo = alignmentStorageManager.statsInfo(studyId, bamFile.getId(), sessionId);
+        assertEquals(1, statsInfo.getNumMatches());
+        assert(statsInfo.getResults().get(0).length() > 0);
+        System.out.println(statsInfo);
 
         // stats query
-        execute("alignment", "stats-query",
-                "--session-id", sessionId,
-                "--study", studyId,
-                "--input-file", bam.getName());
+        Query query = new Query();
+        query.put(Constants.ANNOTATION, "alignment_stats:average_quality>55");
+        QueryOptions queryOptions = QueryOptions.empty();
+        DataResult<File> resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
+        assertEquals(0, resultFiles.getNumResults());
+
+        query.put(Constants.ANNOTATION, "alignment_stats:average_quality>30");
+        resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
+        assertEquals(1, resultFiles.getNumResults());
+        System.out.println(resultFiles.getResults().get(0).getAnnotationSets().get(0));
     }
 
     @Test

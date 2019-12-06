@@ -62,6 +62,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
 
+import static org.opencb.opencga.core.api.ParamConstants.*;
+
 /**
  * Created by pfurio on 31/10/16.
  */
@@ -69,13 +71,15 @@ public class AlignmentStorageManager extends StorageManager {
 
     private AlignmentStorageEngine alignmentStorageEngine;
 
-    private static final String GLOBAL_STATS = "globalStats";
+    private static final Map<String, String> statsMap = new HashMap<>();
 
     public AlignmentStorageManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
         super(catalogManager, storageEngineFactory);
 
         // TODO: Create this alignmentStorageEngine by reflection
         this.alignmentStorageEngine = new LocalAlignmentStorageEngine();
+
+        initStatsMap();
     }
 
 
@@ -108,36 +112,36 @@ public class AlignmentStorageManager extends StorageManager {
         watch.stop();
         logger.info("Indexing took {} seconds", watch.getTime() / 1000.0);
 
-        // Create the stats and store them in catalog
-        logger.info("Calculating the stats...");
-        watch.reset();
-        watch.start();
-        DataResult<AlignmentGlobalStats> stats = alignmentStorageEngine.getDBAdaptor().stats(fileInfo.getPhysicalFilePath(), outDir);
-
-        if (stats != null && stats.getNumResults() == 1) {
-            // Store the stats in catalog
-            ObjectWriter objectWriter = new ObjectMapper().typedWriter(AlignmentGlobalStats.class);
-            ObjectMap globalStats = new ObjectMap(GLOBAL_STATS, objectWriter.writeValueAsString(stats.first()));
-            FileUpdateParams fileUpdateParams = new FileUpdateParams().setStats(globalStats);
-            catalogManager.getFileManager().update(studyIdStr, fileInfo.getPath(), fileUpdateParams,
-                    new QueryOptions(), sessionId);
-
-            // Remove the stats file
-            Path statsFile = outDir.resolve(fileInfo.getName() + ".stats");
-            if (statsFile.toFile().exists()) {
-                Files.delete(statsFile);
-            }
-        }
-        watch.stop();
-        logger.info("Stats calculation took {} seconds", watch.getTime() / 1000.0);
-
-        // Create the coverage
-        logger.info("Calculating the coverage...");
-        watch.reset();
-        watch.start();
-//        alignmentStorageEngine.getDBAdaptor().coverage(fileInfo.getPath(), studyInfo.getWorkspace());
-        watch.stop();
-        logger.info("Coverage calculation took {} seconds", watch.getTime() / 1000.0);
+//        // Create the stats and store them in catalog
+//        logger.info("Calculating the stats...");
+//        watch.reset();
+//        watch.start();
+//        DataResult<AlignmentGlobalStats> stats = alignmentStorageEngine.getDBAdaptor().stats(fileInfo.getPhysicalFilePath(), outDir);
+//
+//        if (stats != null && stats.getNumResults() == 1) {
+//            // Store the stats in catalog
+//            ObjectWriter objectWriter = new ObjectMapper().typedWriter(AlignmentGlobalStats.class);
+//            ObjectMap globalStats = new ObjectMap(GLOBAL_STATS, objectWriter.writeValueAsString(stats.first()));
+//            FileUpdateParams fileUpdateParams = new FileUpdateParams().setStats(globalStats);
+//            catalogManager.getFileManager().update(studyIdStr, fileInfo.getPath(), fileUpdateParams,
+//                    new QueryOptions(), sessionId);
+//
+//            // Remove the stats file
+//            Path statsFile = outDir.resolve(fileInfo.getName() + ".stats");
+//            if (statsFile.toFile().exists()) {
+//                Files.delete(statsFile);
+//            }
+//        }
+//        watch.stop();
+//        logger.info("Stats calculation took {} seconds", watch.getTime() / 1000.0);
+//
+//        // Create the coverage
+//        logger.info("Calculating the coverage...");
+//        watch.reset();
+//        watch.start();
+////        alignmentStorageEngine.getDBAdaptor().coverage(fileInfo.getPath(), studyInfo.getWorkspace());
+//        watch.stop();
+//        logger.info("Coverage calculation took {} seconds", watch.getTime() / 1000.0);
     }
 
     public DataResult<ReadAlignment> query(String studyIdStr, String fileIdStr, Query query, QueryOptions options, String sessionId)
@@ -176,48 +180,50 @@ public class AlignmentStorageManager extends StorageManager {
     // STATS: run, info and query
     //-------------------------------------------------------------------------
 
-    public DataResult<AlignmentGlobalStats> stats(String studyIdStr, String fileIdStr, Query query, QueryOptions options, String sessionId)
-            throws Exception {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        StudyInfo studyInfo = getStudyInfo(studyIdStr, fileIdStr, sessionId);
-        checkAlignmentBioformat(studyInfo.getFileInfos());
-        FileInfo fileInfo = studyInfo.getFileInfo();
-//        ObjectMap fileAndStudyId = getFileAndStudyId(studyIdStr, fileIdStr, sessionId);
-//        long studyId = fileAndStudyId.getLong("studyId");
-//        long fileId = fileAndStudyId.getLong("fileId");
-
-        if (query.isEmpty() && options.isEmpty()) {
-            QueryOptions includeOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.STATS.key());
-            DataResult<File> fileDataResult = catalogManager.getFileManager().get(fileInfo.getFileUid(), includeOptions, sessionId);
-
-            logger.info("Obtaining the stats from catalog...");
-
-            if (fileDataResult.getNumResults() == 1) {
-                Map<String, Object> stats = fileDataResult.first().getStats();
-                Object value = stats.get(GLOBAL_STATS);
-                if (value != null && value instanceof String) {
-                    ObjectReader reader = new ObjectMapper().reader(AlignmentGlobalStats.class);
-                    AlignmentGlobalStats globalStats = reader.readValue((String) value);
-                    return new DataResult<>(fileDataResult.getTime(), fileDataResult.getEvents(), 1, Arrays.asList(globalStats), 1);
-                }
-
-            }
-        }
-
-        // Calculate the stats
-        logger.info("Calculating the stats...");
-//        Path filePath = getFilePath(fileId, sessionId);
-//        Path workspace = getWorkspace(studyId, sessionId);
-        return alignmentStorageEngine.getDBAdaptor().stats(fileInfo.getPhysicalFilePath(), studyInfo.getWorkspace(), query, options);
-
-    }
+//    public DataResult<AlignmentGlobalStats> stats(String studyIdStr, String fileIdStr, Query query, QueryOptions options, String sessionId)
+//            throws Exception {
+//        query = ParamUtils.defaultObject(query, Query::new);
+//        options = ParamUtils.defaultObject(options, QueryOptions::new);
+//
+//        StudyInfo studyInfo = getStudyInfo(studyIdStr, fileIdStr, sessionId);
+//        checkAlignmentBioformat(studyInfo.getFileInfos());
+//        FileInfo fileInfo = studyInfo.getFileInfo();
+////        ObjectMap fileAndStudyId = getFileAndStudyId(studyIdStr, fileIdStr, sessionId);
+////        long studyId = fileAndStudyId.getLong("studyId");
+////        long fileId = fileAndStudyId.getLong("fileId");
+//
+//        if (query.isEmpty() && options.isEmpty()) {
+//            QueryOptions includeOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.STATS.key());
+//            DataResult<File> fileDataResult = catalogManager.getFileManager().get(fileInfo.getFileUid(), includeOptions, sessionId);
+//
+//            logger.info("Obtaining the stats from catalog...");
+//
+//            if (fileDataResult.getNumResults() == 1) {
+//                Map<String, Object> stats = fileDataResult.first().getStats();
+//                Object value = stats.get(GLOBAL_STATS);
+//                if (value != null && value instanceof String) {
+//                    ObjectReader reader = new ObjectMapper().reader(AlignmentGlobalStats.class);
+//                    AlignmentGlobalStats globalStats = reader.readValue((String) value);
+//                    return new DataResult<>(fileDataResult.getTime(), fileDataResult.getEvents(), 1, Arrays.asList(globalStats), 1);
+//                }
+//
+//            }
+//        }
+//
+//        // Calculate the stats
+//        logger.info("Calculating the stats...");
+////        Path filePath = getFilePath(fileId, sessionId);
+////        Path workspace = getWorkspace(studyId, sessionId);
+//        return alignmentStorageEngine.getDBAdaptor().stats(fileInfo.getPhysicalFilePath(), studyInfo.getWorkspace(), query, options);
+//
+//    }
 
     //-------------------------------------------------------------------------
 
     public void statsRun(String study, String inputFile, String outdir, String token) throws AnalysisException {
         ObjectMap params = new ObjectMap();
+        // TODO: move to the SamtoolsWrapperAnalysis, and then it has to do it with an 'index' parameter
+        //       params.put("index", true);
         params.put(SamtoolsWrapperAnalysis.CALLBACK, (Consumer<SamtoolsWrapperAnalysis>) w -> statsRunCallback(w));
 
         SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
@@ -230,6 +236,8 @@ public class AlignmentStorageManager extends StorageManager {
         samtools.start();
     }
 
+    // TODO: move to the SamtoolsWrapperAnalysis, and then it has to do it with an 'index' parameter
+    //       params.put("index", true);
     private void statsRunCallback(SamtoolsWrapperAnalysis samtools) {
         try {
             OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(samtools.getStudy(), samtools.getInputFile(),
@@ -239,7 +247,8 @@ public class AlignmentStorageManager extends StorageManager {
             java.io.File inputFile = new java.io.File(uri.getPath());
             java.io.File outputFile = new java.io.File(samtools.getOutDir() + "/" + inputFile.getName() + ".stats.txt");
 
-            Path linkedFile = Files.createSymbolicLink(inputFile.getParentFile().toPath().resolve(outputFile.getName()),
+            // TODO: remove when daemon copies the stats file
+            Files.createSymbolicLink(inputFile.getParentFile().toPath().resolve(outputFile.getName()),
                     Paths.get(outputFile.getAbsolutePath()));
 
             // Create a variable set with the summary numbers of the statistics
@@ -248,17 +257,19 @@ public class AlignmentStorageManager extends StorageManager {
             int count = 0;
 
             for (String line : lines) {
+                // Only take into account the "SN" section (summary numbers)
                 if (line.startsWith("SN")) {
                     count++;
                     String[] splits = line.split("\t");
                     String key = splits[1].split("\\(")[0].trim().replace(" ", "_").replace(":", "");
+                    // Special case
                     if (line.contains("bases mapped (cigar):")) {
                         key += "_cigar";
                     }
                     String value = splits[2].split(" ")[0];
                     annotations.put(key, value);
-
                 } else if (count > 0) {
+                    // SN (summary numbers) section has been processed
                     break;
                 }
             }
@@ -278,7 +289,6 @@ public class AlignmentStorageManager extends StorageManager {
     //-------------------------------------------------------------------------
 
     public DataResult<String> statsInfo(String study, String inputFile, String token) throws AnalysisException {
-        StopWatch watch = StopWatch.createStarted();
         OpenCGAResult<File> fileResult;
         try {
             fileResult = catalogManager.getFileManager().get(study, inputFile, QueryOptions.empty(), token);
@@ -286,51 +296,30 @@ public class AlignmentStorageManager extends StorageManager {
             throw new AnalysisException("Error accessing to the file: " + inputFile, e);
         }
 
-        URI uri = fileResult.getResults().get(0).getUri();
-        java.io.File statsFile = new java.io.File(uri.getPath() + ".stats.txt");
-
-        if (!statsFile.exists()) {
-            throw new AnalysisException("Stats file does not exist: " + statsFile.getAbsolutePath());
-        }
-
-        try {
-            List<String> lines = org.apache.commons.io.FileUtils.readLines(statsFile, Charset.defaultCharset());
-            watch.stop();
-            return new DataResult<>((int) watch.getTime(), Collections.emptyList(), 1, Arrays.asList(StringUtils.join(lines, "\n")), 1);
-        } catch (IOException e) {
-            throw new AnalysisException("Error reading stats file: " + statsFile.getName(), e);
+        if (fileResult.getNumMatches() == 1) {
+            try {
+                return alignmentStorageEngine.getDBAdaptor().statsInfo(Paths.get(fileResult.getResults().get(0).getUri().getPath()));
+            } catch (Exception e) {
+                throw new AnalysisException("Error getting DB adaptor when calling stats info", e);
+            }
+        } else {
+            throw new AnalysisException("Error accessing to the file: " + inputFile);
         }
     }
 
     //-------------------------------------------------------------------------
 
-    public DataResult<File> statsQuery(String study, String annotations, String token) throws AnalysisException {
-        return null;
-//        StopWatch watch = StopWatch.createStarted();
-//
-//        try {
-//            OpenCGAResult<File> fileResult = catalogManager.getFileManager().gget(study, inputFile, QueryOptions.empty(), token);
-//
-//        } catch (CatalogException e) {
-//            throw new AnalysisException("Stats query error", e);
-//        }
-//
-//        catalogManager.getFileManager().g
-//
-//        URI uri = fileResult.getResults().get(0).getUri();
-//        java.io.File statsFile = new java.io.File(uri.getPath() + ".stats.txt");
-//
-//        if (!statsFile.exists()) {
-//            throw new AnalysisException("Stats file does not exist: " + statsFile.getAbsolutePath());
-//        }
-//
-//        try {
-//            List<String> lines = org.apache.commons.io.FileUtils.readLines(statsFile, Charset.defaultCharset());
-//            watch.stop();
-//            return new DataResult<>((int) watch.getTime(), Collections.emptyList(), 1, Arrays.asList(StringUtils.join(lines, "\n")), 1);
-//        } catch (IOException e) {
-//            throw new AnalysisException("Error reading stats file: " + statsFile.getName(), e);
-//        }
+    public DataResult<File> statsQuery(String study, Query query, QueryOptions queryOptions, String token) throws CatalogException {
+        Query searchQuery = new Query();
+        List<String> filters = new ArrayList<>();
+        query.keySet().forEach(k -> {
+            if (statsMap.containsKey(k)) {
+                filters.add("alignment_stats:" + statsMap.get(k) + query.get(k));
+            }
+        });
+        searchQuery.put(Constants.ANNOTATION, StringUtils.join(filters, ";"));
+
+        return catalogManager.getFileManager().search(study, searchQuery, queryOptions, token);
     }
 
     //-------------------------------------------------------------------------
@@ -437,4 +426,28 @@ public class AlignmentStorageManager extends StorageManager {
         return workspace;
     }
 
+    private void initStatsMap() {
+        statsMap.put(RAW_TOTAL_SEQUENCES, "raw_total_sequences");
+        statsMap.put(FILTERED_SEQUENCES, "filtered_sequences");
+        statsMap.put(READS_MAPPED, "reads_mapped");
+        statsMap.put(READS_MAPPED_AND_PAIRED, "reads_mapped_and_paired");
+        statsMap.put(READS_UNMAPPED, "reads_unmapped");
+        statsMap.put(READS_PROPERLY_PAIRED, "reads_properly_paired");
+        statsMap.put(READS_PAIRED, "reads_paired");
+        statsMap.put(READS_DUPLICATED, "reads_duplicated");
+        statsMap.put(READS_MQ0, "reads_MQ0");
+        statsMap.put(READS_QC_FAILED, "reads_QC_failed");
+        statsMap.put(NON_PRIMARY_ALIGNMENTS, "non_primary_alignments");
+        statsMap.put(MISMATCHES, "mismatches");
+        statsMap.put(ERROR_RATE, "error_rate");
+        statsMap.put(AVERAGE_LENGTH, "average_length");
+        statsMap.put(AVERAGE_FIRST_FRAGMENT_LENGTH, "average_first_fragment_length");
+        statsMap.put(AVERAGE_LAST_FRAGMENT_LENGTH, "average_last_fragment_length");
+        statsMap.put(AVERAGE_QUALITY, "average_quality");
+        statsMap.put(INSERT_SIZE_AVERAGE, "insert_size_average");
+        statsMap.put(INSERT_SIZE_STANDARD_DEVIATION, "insert_size_standard_deviation");
+        statsMap.put(PAIRS_WITH_OTHER_ORIENTATION, "pairs_with_other_orientation");
+        statsMap.put(PAIRS_ON_DIFFERENT_CHROMOSOMES, "pairs_on_different_chromosomes");
+        statsMap.put(PERCENTAGE_OF_PROPERLY_PAIRED_READS, "percentage_of_properly_paired_reads");
+    }
 }

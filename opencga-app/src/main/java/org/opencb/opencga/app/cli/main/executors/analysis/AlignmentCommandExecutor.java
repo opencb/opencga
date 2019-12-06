@@ -29,16 +29,13 @@ import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmen
 import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.client.rest.OpenCGAClient;
-import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
@@ -52,6 +49,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import static org.opencb.opencga.core.api.ParamConstants.*;
 
 /**
  * Created by pfurio on 11/11/16.
@@ -284,45 +283,45 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     //-------------------------------------------------------------------------
 
     private DataResponse statsRun() throws IOException {
-//        ObjectMap objectMap = new ObjectMap();
-////        objectMap.putIfNotNull("fileId", alignmentCommandOptions.statsAlignmentCommandOptions.fileId);
-//        objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.token);
-//        objectMap.putIfNotNull("study", alignmentCommandOptions.statsAlignmentCommandOptions.study);
-//        objectMap.putIfNotNull("region", alignmentCommandOptions.statsAlignmentCommandOptions.region);
-//        objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.statsAlignmentCommandOptions.minMappingQuality);
-//        if (alignmentCommandOptions.statsAlignmentCommandOptions.contained) {
-//            objectMap.put("contained", alignmentCommandOptions.statsAlignmentCommandOptions.contained);
-//        }
-//
-//        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-//        DataResponse<AlignmentGlobalStats> globalStats = openCGAClient.getAlignmentClient()
-//                .stats(alignmentCommandOptions.statsAlignmentCommandOptions.inputFile, objectMap);
-//
-//        return globalStats;
-////        for (AlignmentGlobalStats alignmentGlobalStats : globalStats.allResults()) {
-////            System.out.println(alignmentGlobalStats.toJSON());
-////        }
-
         AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
 
-        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        return openCGAClient.getAlignmentClient().statsRun(cliOptions.inputFile, null);
+        return openCGAClient.getAlignmentClient().statsRun(cliOptions.study, cliOptions.inputFile);
     }
 
     private DataResponse<String> statsInfo() throws IOException {
         AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
 
-        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        return openCGAClient.getAlignmentClient().statsInfo(cliOptions.inputFile, null);
+        return openCGAClient.getAlignmentClient().statsInfo(cliOptions.study, cliOptions.inputFile);
     }
 
     private DataResponse<File> statsQuery() throws IOException {
-        AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
+        AlignmentCommandOptions.StatsQueryAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsQueryAlignmentCommandOptions;
 
         ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull("study", cliOptions.study);
+        objectMap.putIfNotNull(STUDY_PARAM, cliOptions.study);
+        objectMap.putIfNotNull(RAW_TOTAL_SEQUENCES, cliOptions.rawTotalSequences);
+        objectMap.putIfNotNull(FILTERED_SEQUENCES, cliOptions.filteredSequences);
+        objectMap.putIfNotNull(READS_MAPPED, cliOptions.readsMapped);
+        objectMap.putIfNotNull(READS_MAPPED_AND_PAIRED, cliOptions.readsMappedAndPaired);
+        objectMap.putIfNotNull(READS_UNMAPPED, cliOptions.readsUnmapped);
+        objectMap.putIfNotNull(READS_PROPERLY_PAIRED, cliOptions.readsProperlyPaired);
+        objectMap.putIfNotNull(READS_PAIRED, cliOptions.readsPaired);
+        objectMap.putIfNotNull(READS_DUPLICATED, cliOptions.readsDuplicated);
+        objectMap.putIfNotNull(READS_MQ0, cliOptions.readsMQ0);
+        objectMap.putIfNotNull(READS_QC_FAILED, cliOptions.readsQCFailed);
+        objectMap.putIfNotNull(NON_PRIMARY_ALIGNMENTS, cliOptions.nonPrimaryAlignments);
+        objectMap.putIfNotNull(MISMATCHES, cliOptions.mismatches);
+        objectMap.putIfNotNull(ERROR_RATE, cliOptions.errorRate);
+        objectMap.putIfNotNull(AVERAGE_LENGTH, cliOptions.averageLength);
+        objectMap.putIfNotNull(AVERAGE_FIRST_FRAGMENT_LENGTH, cliOptions.averageFirstFragmentLength);
+        objectMap.putIfNotNull(AVERAGE_LAST_FRAGMENT_LENGTH, cliOptions.averageLastFragmentLength);
+        objectMap.putIfNotNull(AVERAGE_QUALITY, cliOptions.averageQuality);
+        objectMap.putIfNotNull(INSERT_SIZE_AVERAGE, cliOptions.insertSizeAverage);
+        objectMap.putIfNotNull(INSERT_SIZE_STANDARD_DEVIATION, cliOptions.insertSizeStandardDeviation);
+        objectMap.putIfNotNull(PAIRS_WITH_OTHER_ORIENTATION, cliOptions.pairsWithOtherOrientation);
+        objectMap.putIfNotNull(PAIRS_ON_DIFFERENT_CHROMOSOMES, cliOptions.pairsOnDifferentChromosomes);
+        objectMap.putIfNotNull(PERCENTAGE_OF_PROPERLY_PAIRED_READS, cliOptions.percentageOfProperlyPairedReads);
 
-        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
         return openCGAClient.getAlignmentClient().statsQuery(objectMap);
     }
 

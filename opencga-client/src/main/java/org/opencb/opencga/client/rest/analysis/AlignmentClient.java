@@ -27,6 +27,8 @@ import org.opencb.opencga.core.models.Job;
 
 import java.io.IOException;
 
+import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
+
 /**
  * Created by pfurio on 11/11/16.
  */
@@ -54,27 +56,25 @@ public class AlignmentClient extends AbstractParentClient {
         return execute(ALIGNMENT_URL, "query", params, GET, ReadAlignment.class);
     }
 
-    public DataResponse<Job> statsRun(String fileIds, ObjectMap params) throws IOException {
-        if (params == null) {
-            params = new ObjectMap();
-        }
-        params.putIfNotEmpty("file", fileIds);
-        return execute(ALIGNMENT_URL, "stats-run", params, POST, Job.class);
+    public DataResponse<Job> statsRun(String study, String file) throws IOException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(STUDY_PARAM, study);
+        params.putIfNotEmpty("inputFile", file);
+        return execute(ALIGNMENT_URL, "stats/run", params, POST, Job.class);
     }
 
-    public DataResponse<String> statsInfo(String fileIds, ObjectMap params) throws IOException {
-        if (params == null) {
-            params = new ObjectMap();
-        }
-        params.putIfNotEmpty("file", fileIds);
-        return execute(ALIGNMENT_URL, "stats-info", params, GET, String.class);
+    public DataResponse<String> statsInfo(String study, String file) throws IOException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(STUDY_PARAM, study);
+        params.putIfNotEmpty("inputFile", file);
+        return execute(ALIGNMENT_URL, "stats/info", params, GET, String.class);
     }
 
     public DataResponse<File> statsQuery(ObjectMap params) throws IOException {
         if (params == null) {
             params = new ObjectMap();
         }
-        return execute(ALIGNMENT_URL, "stats-query", params, GET, File.class);
+        return execute(ALIGNMENT_URL, "stats/query", params, GET, File.class);
     }
 
     public DataResponse<RegionCoverage> coverage(String fileIds, ObjectMap params) throws IOException {

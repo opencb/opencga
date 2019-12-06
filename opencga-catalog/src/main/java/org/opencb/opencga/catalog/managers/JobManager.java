@@ -326,7 +326,8 @@ public class JobManager extends ResourceManager<Job> {
                             inputFiles.add(file);
                         } catch (CatalogException e) {
                             throw new CatalogException("Cannot find file '" + entry.getValue() + "' "
-                                    + "from job param '" + entry.getKey() + "'. ", e);
+                                    + "from job param '" + entry.getKey() + "'; (study = " + study.getName() + ", token = " + token + ") :"
+                                    + e.getMessage(), e);
                         }
                     }
                 } else if (entry.getValue() instanceof Map) {

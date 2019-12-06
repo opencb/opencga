@@ -272,7 +272,9 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         JCommander alignmentSubCommands = jCommander.getCommands().get("alignments");
         alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexAlignmentCommandOptions);
         alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentCommandOptions);
-        alignmentSubCommands.addCommand("stats", alignmentCommandOptions.statsAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("stats-run", alignmentCommandOptions.statsAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("stats-info", alignmentCommandOptions.statsAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("stats-query", alignmentCommandOptions.statsQueryAlignmentCommandOptions);
         alignmentSubCommands.addCommand("coverage", alignmentCommandOptions.coverageAlignmentCommandOptions);
         alignmentSubCommands.addCommand(BwaWrapperAnalysis.ID, alignmentCommandOptions.bwaCommandOptions);
         alignmentSubCommands.addCommand(SamtoolsWrapperAnalysis.ID, alignmentCommandOptions.samtoolsCommandOptions);

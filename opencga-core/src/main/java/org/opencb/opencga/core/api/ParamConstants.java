@@ -118,4 +118,53 @@ public class ParamConstants {
 
     public static final String VARIANTS_EXPORT_DESCRIPTION = "Filter and export variants from the variant storage to a file";
     public static final String VARIANTS_QUERY_DESCRIPTION = "Filter and fetch variants from indexed VCF files in the variant storage";
+
+    // ---------------------------------------------
+    // alignment stats query
+
+    public static final String RAW_TOTAL_SEQUENCES = "rawTotalSequences";
+    public static final String RAW_TOTAL_SEQUENCES_DESCRIPTION = "Raw total sequences: [<|>|<=|>=]{number}, e.g. >=1000";
+    public static final String FILTERED_SEQUENCES = "filteredSequences";
+    public static final String FILTERED_SEQUENCES_DESCRIPTION = "Filtered sequences: [<|>|<=|>=]{number}, e.g. <=500";
+    public static final String READS_MAPPED = "readsMapped";
+    public static final String READS_MAPPED_DESCRIPTION = "Reads mapped: [<|>|<=|>=]{number}, e.g. >3000";
+    public static final String READS_MAPPED_AND_PAIRED = "readsMappedAndPaired";
+    public static final String READS_MAPPED_AND_PAIRED_DESCRIPTION = "Reads mapped and paired: paired-end technology bit set + both mates"
+            + " mapped: [<|>|<=|>=]{number}, e.g. >=1000";
+    public static final String READS_UNMAPPED = "readsUnmapped";
+    public static final String READS_UNMAPPED_DESCRIPTION = "Reads unmapped: [<|>|<=|>=]{number}, e.g. >=1000";
+    public static final String READS_PROPERLY_PAIRED = "readsProperlyPaired";
+    public static final String READS_PROPERLY_PAIRED_DESCRIPTION = "Reads properly paired (proper-pair bit set: [<|>|<=|>=]{number}, e.g. >=1000";
+    public static final String READS_PAIRED = "readsPaired";
+    public static final String READS_PAIRED_DESCRIPTION = "Reads paired: paired-end technology bit set: [<|>|<=|>=]{number}, e.g. >=1000";
+    public static final String READS_DUPLICATED = "readsDuplicated";
+    public static final String READS_DUPLICATED_DESCRIPTION = "Reads duplicated: PCR or optical duplicate bit set: [<|>|<=|>=]{number}, e.g. >=1000";
+    public static final String READS_MQ0 = "readsMQ0";
+    public static final String READS_MQ0_DESCRIPTION = "Reads mapped and MQ = 0: [<|>|<=|>=]{number}, e.g. >=1000";
+    public static final String READS_QC_FAILED = "readsQCFailed";
+    public static final String READS_QC_FAILED_DESCRIPTION = "Reads QC failed: [<|>|<=|>=]{number}, e.g. >=1000";
+    public static final String NON_PRIMARY_ALIGNMENTS = "nonPrimaryAlignments";
+    public static final String NON_PRIMARY_ALIGNMENTS_DESCRIPTION = "Non-primary alignments: [<|>|<=|>=]{number}, e.g. <=100";
+    public static final String MISMATCHES = "mismatches";
+    public static final String MISMATCHES_DESCRIPTION = "Mismatches from NM fields: [<|>|<=|>=]{number}, e.g. <=100";
+    public static final String ERROR_RATE = "errorRate";
+    public static final String ERROR_RATE_DESCRIPTION = "Error rate: mismatches / bases mapped (cigar): [<|>|<=|>=]{number}, e.g. <=0.002";
+    public static final String AVERAGE_LENGTH = "averageLength";
+    public static final String AVERAGE_LENGTH_DESCRIPTION = "Average_length: [<|>|<=|>=]{number}, e.g. >=90.0";
+    public static final String AVERAGE_FIRST_FRAGMENT_LENGTH = "averageFirstFragmentLength";
+    public static final String AVERAGE_FIRST_FRAGMENT_LENGTH_DESCRIPTION = "Average first fragment length: [<|>|<=|>=]{number}, e.g. >=90.0";
+    public static final String AVERAGE_LAST_FRAGMENT_LENGTH = "averageLastFragmentLength";
+    public static final String AVERAGE_LAST_FRAGMENT_LENGTH_DESCRIPTION = "Average_last_fragment_length: [<|>|<=|>=]{number}, e.g. >=90.0";
+    public static final String AVERAGE_QUALITY = "averageQuality";
+    public static final String AVERAGE_QUALITY_DESCRIPTION = "Average quality: [<|>|<=|>=]{number}, e.g. >=35.5";
+    public static final String INSERT_SIZE_AVERAGE = "insertSizeAverage";
+    public static final String INSERT_SIZE_AVERAGE_DESCRIPTION = "Insert size average: [<|>|<=|>=]{number}, e.g. >=100.0";
+    public static final String INSERT_SIZE_STANDARD_DEVIATION = "insertSizeStandardDeviation";
+    public static final String INSERT_SIZE_STANDARD_DEVIATION_DESCRIPTION = "Insert size standard deviation: [<|>|<=|>=]{number}, e.g. <=1.5";
+    public static final String PAIRS_WITH_OTHER_ORIENTATION = "pairsWithOtherOrientation";
+    public static final String PAIRS_WITH_OTHER_ORIENTATION_DESCRIPTION = "Pairs with other orientation: [<|>|<=|>=]{number}, e.g. >=1000";
+    public static final String PAIRS_ON_DIFFERENT_CHROMOSOMES = "pairsOnDifferentChromosomes";
+    public static final String PAIRS_ON_DIFFERENT_CHROMOSOMES_DESCRIPTION = "Pairs on different chromosomes: [<|>|<=|>=]{number}, e.g. >=1000";
+    public static final String PERCENTAGE_OF_PROPERLY_PAIRED_READS = "percentageOfProperlyPairedReads";
+    public static final String PERCENTAGE_OF_PROPERLY_PAIRED_READS_DESCRIPTION = "Percentage of properly paired reads: [<|>|<=|>=]{number}, e.g. >=96.5";
 }
