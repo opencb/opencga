@@ -6,7 +6,7 @@ import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.annotations.Analysis;
+import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.variant.operations.VariantFileIndexerStorageOperation.DEFAULT_COHORT_DESCRIPTION;
 
-@Analysis(id = VariantImportStorageOperation.ID, type = Analysis.AnalysisType.VARIANT)
+@Tool(id = VariantImportStorageOperation.ID, type = Tool.ToolType.VARIANT)
 public class VariantImportStorageOperation extends StorageOperation {
 
     public static final String ID = "variant-import";

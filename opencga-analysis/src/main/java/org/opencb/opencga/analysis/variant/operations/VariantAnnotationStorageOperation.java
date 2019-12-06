@@ -25,7 +25,7 @@ import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.annotations.Analysis;
+import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.DataStore;
 import org.opencb.opencga.core.models.File;
@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-@Analysis(id = VariantAnnotationStorageOperation.ID, description = "", type = Analysis.AnalysisType.VARIANT)
+@Tool(id = VariantAnnotationStorageOperation.ID, description = "", type = Tool.ToolType.VARIANT)
 public class VariantAnnotationStorageOperation extends StorageOperation {
 
     public static final String ID = "variant-annotation-index";

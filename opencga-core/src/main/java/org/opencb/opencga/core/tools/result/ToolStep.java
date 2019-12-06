@@ -1,10 +1,10 @@
-package org.opencb.opencga.core.analysis.result;
+package org.opencb.opencga.core.tools.result;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.Date;
 
-public class AnalysisStep {
+public class ToolStep {
 
     private String id;
     private Date start;
@@ -12,12 +12,12 @@ public class AnalysisStep {
     private Status.Type status;
     private ObjectMap attributes;
 
-    public AnalysisStep() {
+    public ToolStep() {
         attributes = new ObjectMap();
         status = null;
     }
 
-    public AnalysisStep(String id, Date start, Date end, Status.Type status, ObjectMap attributes) {
+    public ToolStep(String id, Date start, Date end, Status.Type status, ObjectMap attributes) {
         this.id = id;
         this.start = start;
         this.end = end;
@@ -29,7 +29,7 @@ public class AnalysisStep {
         return id;
     }
 
-    public AnalysisStep setId(String id) {
+    public ToolStep setId(String id) {
         this.id = id;
         return this;
     }
@@ -38,7 +38,7 @@ public class AnalysisStep {
         return start;
     }
 
-    public AnalysisStep setStart(Date start) {
+    public ToolStep setStart(Date start) {
         this.start = start;
         return this;
     }
@@ -47,7 +47,7 @@ public class AnalysisStep {
         return end;
     }
 
-    public AnalysisStep setEnd(Date end) {
+    public ToolStep setEnd(Date end) {
         this.end = end;
         return this;
     }
@@ -56,7 +56,7 @@ public class AnalysisStep {
         return status;
     }
 
-    public AnalysisStep setStatus(Status.Type status) {
+    public ToolStep setStatus(Status.Type status) {
         this.status = status;
         return this;
     }
@@ -65,7 +65,7 @@ public class AnalysisStep {
         return attributes;
     }
 
-    public AnalysisStep setAttributes(ObjectMap attributes) {
+    public ToolStep setAttributes(ObjectMap attributes) {
         this.attributes = attributes;
         return this;
     }

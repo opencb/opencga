@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.analysis.result;
+package org.opencb.opencga.core.tools.result;
 
 import java.util.Date;
 

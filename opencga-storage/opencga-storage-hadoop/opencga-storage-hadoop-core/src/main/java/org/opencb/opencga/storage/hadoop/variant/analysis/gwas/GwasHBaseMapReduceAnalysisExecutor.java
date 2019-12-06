@@ -1,26 +1,26 @@
 package org.opencb.opencga.storage.hadoop.variant.analysis.gwas;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.analysis.variant.GwasAnalysisExecutor;
-import org.opencb.opencga.core.exception.AnalysisException;
-import org.opencb.opencga.core.exception.AnalysisExecutorException;
+import org.opencb.opencga.core.tools.variant.GwasAnalysisExecutor;
+import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.exception.ToolExecutorException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantAnalysisExecutor;
-import org.opencb.opencga.core.annotations.AnalysisExecutor;
+import org.opencb.opencga.core.annotations.ToolExecutor;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
 import java.util.List;
 
-@AnalysisExecutor(id = "hbase-mapreduce", analysis = "gwas",
-        framework = AnalysisExecutor.Framework.MAP_REDUCE,
-        source = AnalysisExecutor.Source.HBASE)
+@ToolExecutor(id = "hbase-mapreduce", tool = "gwas",
+        framework = ToolExecutor.Framework.MAP_REDUCE,
+        source = ToolExecutor.Source.HBASE)
 public class GwasHBaseMapReduceAnalysisExecutor extends GwasAnalysisExecutor implements HadoopVariantAnalysisExecutor {
 
     @Override
-    public void run() throws AnalysisException {
+    public void run() throws ToolException {
         String study = getStudy();
         List<String> samples1 = getSampleList1();
         List<String> samples2 = getSampleList2();
@@ -50,7 +50,7 @@ public class GwasHBaseMapReduceAnalysisExecutor extends GwasAnalysisExecutor imp
                     params
             ), engine.getOptions(), "Calculate sample variant stats");
         } catch (VariantQueryException | StorageEngineException e) {
-            throw new AnalysisExecutorException(e);
+            throw new ToolExecutorException(e);
         }
     }
 

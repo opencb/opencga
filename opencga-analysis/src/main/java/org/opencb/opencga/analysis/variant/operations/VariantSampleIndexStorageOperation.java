@@ -1,12 +1,12 @@
 package org.opencb.opencga.analysis.variant.operations;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.opencb.opencga.core.annotations.Analysis;
+import org.opencb.opencga.core.annotations.Tool;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Analysis(id = VariantSampleIndexStorageOperation.ID, type = Analysis.AnalysisType.VARIANT)
+@Tool(id = VariantSampleIndexStorageOperation.ID, type = Tool.ToolType.VARIANT)
 public class VariantSampleIndexStorageOperation extends StorageOperation {
 
     public static final String ID = "variant-sample-index";

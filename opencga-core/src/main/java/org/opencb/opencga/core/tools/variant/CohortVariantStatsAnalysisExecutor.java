@@ -1,18 +1,18 @@
-package org.opencb.opencga.core.analysis.variant;
+package org.opencb.opencga.core.tools.variant;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
-import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.exception.ToolException;
 
 import java.io.File;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.List;
 
-public abstract class CohortVariantStatsAnalysisExecutor extends OpenCgaAnalysisExecutor {
+public abstract class CohortVariantStatsAnalysisExecutor extends OpenCgaToolExecutor {
 
     private String study;
     private List<String> sampleNames;
@@ -48,7 +48,7 @@ public abstract class CohortVariantStatsAnalysisExecutor extends OpenCgaAnalysis
         return this;
     }
 
-    protected void writeStatsToFile(VariantSetStats stats) throws AnalysisException {
+    protected void writeStatsToFile(VariantSetStats stats) throws ToolException {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
@@ -62,7 +62,7 @@ public abstract class CohortVariantStatsAnalysisExecutor extends OpenCgaAnalysis
             pw.println(objectMapper.writer().writeValueAsString(stats));
             pw.close();
         } catch (Exception e) {
-            throw new AnalysisException("Error writing output file: " + outFilename, e);
+            throw new ToolException("Error writing output file: " + outFilename, e);
         }
     }
 }

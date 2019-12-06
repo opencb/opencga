@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.analysis.result;
+package org.opencb.opencga.core.tools.result;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -7,8 +7,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,11 +25,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class AnalysisResultManager {
+public class ExecutorResultManager {
     public static final String FILE_EXTENSION = ".result.json";
     public static final String SWAP_FILE_EXTENSION = ".swap" + FILE_EXTENSION;
 
-    private final String analysisId;
     private final Path outDir;
     private final ObjectWriter objectWriter;
     private final ObjectReader objectReader;
@@ -39,49 +38,48 @@ public class AnalysisResultManager {
     private File swapFile;
     private boolean initialized;
     private boolean closed;
-    private final Logger logger = LoggerFactory.getLogger(AnalysisResultManager.class);
+    private final Logger logger = LoggerFactory.getLogger(ExecutorResultManager.class);
     private int monitorThreadPeriod = 60000;
 
-    public AnalysisResultManager(String analysisId, Path outDir) throws AnalysisException {
-        this.analysisId = analysisId;
+    public ExecutorResultManager(String toolId, Path outDir) throws ToolException {
         this.outDir = outDir.toAbsolutePath();
         ObjectMapper objectMapper = new ObjectMapper();
 //        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        objectWriter = objectMapper.writerFor(Execution.class).withDefaultPrettyPrinter();
-        objectReader = objectMapper.readerFor(Execution.class);
+        objectWriter = objectMapper.writerFor(ExecutionResult.class).withDefaultPrettyPrinter();
+        objectReader = objectMapper.readerFor(ExecutionResult.class);
         initialized = false;
         closed = false;
 
         file = outDir.toFile();
 
         if (!file.exists()) {
-            throw new AnalysisException("Output directory '" + outDir + "' does not exist");
+            throw new ToolException("Output directory '" + outDir + "' does not exist");
         }
         if (!file.isDirectory()) {
-            throw new AnalysisException("Output directory '" + outDir + "' does not a directory");
+            throw new ToolException("Output directory '" + outDir + "' does not a directory");
         }
         if (!file.canWrite()) {
-            throw new AnalysisException("Write permission denied for output directory '" + outDir + "'");
+            throw new ToolException("Write permission denied for output directory '" + outDir + "'");
         }
-        if (!StringUtils.isAlphanumeric(analysisId.replaceAll("[-_]", ""))) {
-            throw new AnalysisException("Invalid AnalysisID. The analysis id can only contain alphanumeric characters, ',' and '_'.");
+        if (!StringUtils.isAlphanumeric(toolId.replaceAll("[-_]", ""))) {
+            throw new ToolException("Invalid ToolId. The tool id can only contain alphanumeric characters, ',' and '_'.");
         }
 
-        file = outDir.resolve(analysisId + FILE_EXTENSION).toFile();
-        swapFile = outDir.resolve(analysisId + SWAP_FILE_EXTENSION).toFile();
+        file = outDir.resolve(toolId + FILE_EXTENSION).toFile();
+        swapFile = outDir.resolve(toolId + SWAP_FILE_EXTENSION).toFile();
     }
 
-    public synchronized AnalysisResultManager init(ObjectMap params, ObjectMap executorParams) throws AnalysisException {
+    public synchronized ExecutorResultManager init(ObjectMap params, ObjectMap executorParams) throws ToolException {
         if (initialized) {
-            throw new AnalysisException("AnalysisResultManager already initialized!");
+            throw new ToolException(getClass().getName() + " already initialized!");
         }
         initialized = true;
 
         Date now = now();
-        Execution execution = new Execution()
+        ExecutionResult execution = new ExecutionResult()
                 .setParams(params)
                 .setExecutor(new ExecutorInfo()
-                        .setId(executorParams.getString(OpenCgaAnalysisExecutor.EXECUTOR_ID))
+                        .setId(executorParams.getString(OpenCgaToolExecutor.EXECUTOR_ID))
                         .setParams(executorParams))
                 .setStart(now);
         execution.getStatus()
@@ -93,16 +91,16 @@ public class AnalysisResultManager {
         return this;
     }
 
-    public AnalysisResultManager setMonitorThreadPeriod(int monitorThreadPeriod) {
+    public ExecutorResultManager setMonitorThreadPeriod(int monitorThreadPeriod) {
         this.monitorThreadPeriod = monitorThreadPeriod;
         return this;
     }
 
-    public void setSteps(List<String> steps) throws AnalysisException {
-        updateResult(analysisResult -> {
-            analysisResult.setSteps(new ArrayList<>(steps.size()));
+    public void setSteps(List<String> steps) throws ToolException {
+        updateResult(executionResult -> {
+            executionResult.setSteps(new ArrayList<>(steps.size()));
             for (String step : steps) {
-                analysisResult.getSteps().add(new AnalysisStep(step, null, null, Status.Type.PENDING, new ObjectMap()));
+                executionResult.getSteps().add(new ToolStep(step, null, null, Status.Type.PENDING, new ObjectMap()));
             }
             return null;
         });
@@ -112,27 +110,27 @@ public class AnalysisResultManager {
         return closed;
     }
 
-    public synchronized Execution close() throws AnalysisException {
+    public synchronized ExecutionResult close() throws ToolException {
         return close(null);
     }
 
-    public synchronized Execution close(Exception exception) throws AnalysisException {
+    public synchronized ExecutionResult close(Exception exception) throws ToolException {
         if (closed) {
-            throw new AnalysisException("AnalysisResultManager already closed!");
+            throw new ToolException(getClass().getName() + " already closed!");
         }
         thread.interrupt();
 
-        Execution execution = read();
+        ExecutionResult execution = read();
 
         Date now = now();
         execution.setEnd(now);
         execution.getStatus()
                 .setDate(now);
 
-        AnalysisStep step;
+        ToolStep step;
         if (StringUtils.isEmpty(execution.getStatus().getStep())) {
             if (CollectionUtils.isEmpty(execution.getSteps())) {
-                execution.setSteps(Collections.singletonList(new AnalysisStep().setId("check")));
+                execution.setSteps(Collections.singletonList(new ToolStep().setId("check")));
             }
             step = execution.getSteps().get(0);
             step.setStart(execution.getStart());
@@ -169,42 +167,42 @@ public class AnalysisResultManager {
         return execution;
     }
 
-    public void setExecutorInfo(ExecutorInfo executorInfo) throws AnalysisException {
-        updateResult(analysisResult -> analysisResult.setExecutor(executorInfo));
+    public void setExecutorInfo(ExecutorInfo executorInfo) throws ToolException {
+        updateResult(result -> result.setExecutor(executorInfo));
     }
 
-    public void addWarning(String warningMessage) throws AnalysisException {
-        updateResult(analysisResult -> analysisResult.getEvents().add(new Event(Event.Type.WARNING, warningMessage)));
+    public void addWarning(String warningMessage) throws ToolException {
+        updateResult(result -> result.getEvents().add(new Event(Event.Type.WARNING, warningMessage)));
     }
 
-    public void addError(Exception exception) throws AnalysisException {
-        updateResult(analysisResult -> addError(exception, analysisResult));
+    public void addError(Exception exception) throws ToolException {
+        updateResult(result -> addError(exception, result));
     }
 
-    private boolean addError(Exception exception, Execution execution) {
+    private boolean addError(Exception exception, ExecutionResult execution) {
         return execution.getEvents().add(new Event(Event.Type.ERROR, exception.getMessage()));
     }
 
-    public void addAttribute(String key, Object value) throws AnalysisException {
-        updateResult(analysisResult -> analysisResult.getAttributes().put(key, value));
+    public void addAttribute(String key, Object value) throws ToolException {
+        updateResult(result -> result.getAttributes().put(key, value));
     }
 
-    public void addStepAttribute(String key, Object value) throws AnalysisException {
-        updateResult(analysisResult -> {
-            AnalysisStep step;
-            if (StringUtils.isEmpty(analysisResult.getStatus().getStep())) {
-                step = analysisResult.getSteps().get(0);
+    public void addStepAttribute(String key, Object value) throws ToolException {
+        updateResult(result -> {
+            ToolStep step;
+            if (StringUtils.isEmpty(result.getStatus().getStep())) {
+                step = result.getSteps().get(0);
             } else {
-                step = getStep(analysisResult, analysisResult.getStatus().getStep());
+                step = getStep(result, result.getStatus().getStep());
             }
             return step.getAttributes().put(key, value);
         });
     }
 
-    public void addFile(Path file, FileResult.FileType fileType) throws AnalysisException {
+    public void addFile(Path file, FileResult.FileType fileType) throws ToolException {
         String fileStr = file.toAbsolutePath().toString();
         if (!file.toFile().exists()) {
-            throw new AnalysisException("No such file or directory: " + fileStr);
+            throw new ToolException("No such file or directory: " + fileStr);
         }
         String outDirStr = outDir.toString();
         String finalFileStr;
@@ -215,29 +213,29 @@ public class AnalysisResultManager {
             fileStr = fileStr.substring(1);
         }
         finalFileStr = fileStr;
-        updateResult(analysisResult -> analysisResult.getOutputFiles().add(new FileResult(finalFileStr, fileType)));
+        updateResult(result -> result.getOutputFiles().add(new FileResult(finalFileStr, fileType)));
     }
 
-    public void errorStep() throws AnalysisException {
-        updateResult(analysisResult -> getStep(analysisResult, analysisResult.getStatus().getStep())
+    public void errorStep() throws ToolException {
+        updateResult(result -> getStep(result, result.getStatus().getStep())
                 .setStatus(Status.Type.ERROR).setEnd(now()));
     }
 
-    public boolean checkStep(String stepId) throws AnalysisException {
-        return updateResult(analysisResult -> {
+    public boolean checkStep(String stepId) throws ToolException {
+        return updateResult(result -> {
 
-            if (StringUtils.isNotEmpty(analysisResult.getStatus().getStep())) {
+            if (StringUtils.isNotEmpty(result.getStatus().getStep())) {
                 // End previous step
 
-                AnalysisStep step = getStep(analysisResult, analysisResult.getStatus().getStep());
+                ToolStep step = getStep(result, result.getStatus().getStep());
                 if (step.getStatus().equals(Status.Type.RUNNING)) {
                     step.setStatus(Status.Type.DONE);
                     step.setEnd(now());
                 }
             }
 
-            analysisResult.getStatus().setStep(stepId);
-            AnalysisStep step = getStep(analysisResult, stepId);
+            result.getStatus().setStep(stepId);
+            ToolStep step = getStep(result, stepId);
             if (step.getStatus().equals(Status.Type.DONE)) {
                 return false;
             } else {
@@ -248,48 +246,48 @@ public class AnalysisResultManager {
         });
     }
 
-    private AnalysisStep getStep(Execution execution, String stepId) throws AnalysisException {
-        for (AnalysisStep step : execution.getSteps()) {
+    private ToolStep getStep(ExecutionResult execution, String stepId) throws ToolException {
+        for (ToolStep step : execution.getSteps()) {
             if (step.getId().equals(stepId)) {
                 return step;
             }
         }
 
-        List<String> steps = execution.getSteps().stream().map(AnalysisStep::getId).collect(Collectors.toList());
+        List<String> steps = execution.getSteps().stream().map(ToolStep::getId).collect(Collectors.toList());
 
-        throw new AnalysisException("Step '" + stepId + "' not found. Available steps: " + steps);
+        throw new ToolException("Step '" + stepId + "' not found. Available steps: " + steps);
     }
 
-    public void setParams(ObjectMap params) throws AnalysisException {
-        updateResult(analysisResult -> analysisResult.setParams(params));
+    public void setParams(ObjectMap params) throws ToolException {
+        updateResult(result -> result.setParams(params));
     }
 
-    private void updateStatusDate() throws AnalysisException {
-        updateResult(analysisResult -> analysisResult.getStatus().setDate(now()));
+    private void updateStatusDate() throws ToolException {
+        updateResult(result -> result.getStatus().setDate(now()));
     }
 
     @FunctionalInterface
-    public interface AnalysisResultFunction<R> {
-        R apply(Execution execution) throws AnalysisException;
+    public interface ExecutionResultFunction<R> {
+        R apply(ExecutionResult execution) throws ToolException;
     }
 
-    private synchronized <R> R updateResult(AnalysisResultFunction<R> update) throws AnalysisException {
-        Execution execution = read();
+    private synchronized <R> R updateResult(ExecutionResultFunction<R> update) throws ToolException {
+        ExecutionResult execution = read();
         R apply = update.apply(execution);
         write(execution);
         return apply;
     }
 
-    public Execution read() throws AnalysisException {
+    public ExecutionResult read() throws ToolException {
         try {
             return objectReader.readValue(file);
         } catch (IOException e) {
-            throw new AnalysisException("Error reading AnalysisResult", e);
+            throw new ToolException("Error reading ExecutionResult", e);
         }
 
     }
 
-    private synchronized void write(Execution execution) throws AnalysisException {
+    private synchronized void write(ExecutionResult execution) throws ToolException {
         int maxAttempts = 3;
         int attempts = 0;
         while (attempts < maxAttempts) {
@@ -308,7 +306,7 @@ public class AnalysisResultManager {
                 }
             } catch (IOException e) {
                 if (attempts < maxAttempts) {
-                    logger.warn("Error writing AnalysisResult: " + e.toString());
+                    logger.warn("Error writing ExecutionResult: " + e.toString());
                     try {
                         Thread.sleep(50);
                     } catch (InterruptedException interruption) {
@@ -316,7 +314,7 @@ public class AnalysisResultManager {
                         Thread.currentThread().interrupt();
                     }
                 } else {
-                    throw new AnalysisException("Error writing AnalysisResult", e);
+                    throw new ToolException("Error writing ExecutionResult", e);
                 }
             }
         }
@@ -343,7 +341,7 @@ public class AnalysisResultManager {
 
                 try {
                     updateStatusDate();
-                } catch (AnalysisException e) {
+                } catch (ToolException e) {
                     logger.error("Error updating status date", e);
                 }
             }

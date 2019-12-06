@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.analysis.result;
+package org.opencb.opencga.core.tools.result;
 
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -7,7 +7,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
-public class Execution {
+public class ExecutionResult {
 
     @Deprecated
     private String id;
@@ -15,8 +15,9 @@ public class Execution {
     private Date start;
     private Date end;
     private Status status;
+    @Deprecated
     private List<FileResult> outputFiles;
-    private List<AnalysisStep> steps;
+    private List<ToolStep> steps;
     private List<Event> events;
 
     @Deprecated
@@ -24,7 +25,7 @@ public class Execution {
     @Deprecated
     private ObjectMap attributes;
 
-    public Execution() {
+    public ExecutionResult() {
         executor = new ExecutorInfo();
         status = new Status();
         events = new LinkedList<>();
@@ -35,7 +36,7 @@ public class Execution {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("AnalysisResult{");
+        final StringBuilder sb = new StringBuilder("ExecutionResult{");
         sb.append("executor=").append(executor);
         sb.append(", start=").append(start);
         sb.append(", end=").append(end);
@@ -53,7 +54,7 @@ public class Execution {
         return id;
     }
 
-    public Execution setId(String id) {
+    public ExecutionResult setId(String id) {
         this.id = id;
         return this;
     }
@@ -62,7 +63,7 @@ public class Execution {
         return executor;
     }
 
-    public Execution setExecutor(ExecutorInfo executor) {
+    public ExecutionResult setExecutor(ExecutorInfo executor) {
         this.executor = executor;
         return this;
     }
@@ -71,7 +72,7 @@ public class Execution {
         return start;
     }
 
-    public Execution setStart(Date start) {
+    public ExecutionResult setStart(Date start) {
         this.start = start;
         return this;
     }
@@ -80,7 +81,7 @@ public class Execution {
         return end;
     }
 
-    public Execution setEnd(Date end) {
+    public ExecutionResult setEnd(Date end) {
         this.end = end;
         return this;
     }
@@ -89,7 +90,7 @@ public class Execution {
         return status;
     }
 
-    public Execution setStatus(Status status) {
+    public ExecutionResult setStatus(Status status) {
         this.status = status;
         return this;
     }
@@ -98,7 +99,7 @@ public class Execution {
         return events;
     }
 
-    public Execution setEvents(List<Event> events) {
+    public ExecutionResult setEvents(List<Event> events) {
         this.events = events;
         return this;
     }
@@ -107,16 +108,16 @@ public class Execution {
         return outputFiles;
     }
 
-    public Execution setOutputFiles(List<FileResult> outputFiles) {
+    public ExecutionResult setOutputFiles(List<FileResult> outputFiles) {
         this.outputFiles = outputFiles;
         return this;
     }
 
-    public List<AnalysisStep> getSteps() {
+    public List<ToolStep> getSteps() {
         return steps;
     }
 
-    public Execution setSteps(List<AnalysisStep> steps) {
+    public ExecutionResult setSteps(List<ToolStep> steps) {
         this.steps = steps;
         return this;
     }
@@ -125,7 +126,7 @@ public class Execution {
         return params;
     }
 
-    public Execution setParams(ObjectMap params) {
+    public ExecutionResult setParams(ObjectMap params) {
         this.params = params;
         return this;
     }
@@ -134,7 +135,7 @@ public class Execution {
         return attributes;
     }
 
-    public Execution setAttributes(ObjectMap attributes) {
+    public ExecutionResult setAttributes(ObjectMap attributes) {
         this.attributes = attributes;
         return this;
     }

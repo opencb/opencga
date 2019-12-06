@@ -45,7 +45,7 @@ import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -302,7 +302,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         }
     }
 
-    private void importData() throws URISyntaxException, AnalysisException {
+    private void importData() throws URISyntaxException, ToolException {
         VariantCommandOptions.VariantImportCommandOptions importVariantOptions = variantCommandOptions.importVariantCommandOptions;
 
 
@@ -312,7 +312,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
 
     }
 
-    private void remove() throws AnalysisException {
+    private void remove() throws ToolException {
         VariantCommandOptions.VariantDeleteCommandOptions cliOptions = variantCommandOptions.variantDeleteCommandOptions;
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
@@ -328,7 +328,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         }
     }
 
-    private void index() throws AnalysisException {
+    private void index() throws ToolException {
         VariantCommandOptions.VariantIndexCommandOptions cliOptions = variantCommandOptions.indexVariantCommandOptions;
 
         QueryOptions queryOptions = new QueryOptions();
@@ -364,7 +364,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         variantManager.index(cliOptions.study, cliOptions.fileId, cliOptions.outdir, queryOptions, sessionId);
     }
 
-    private void secondaryIndex() throws AnalysisException {
+    private void secondaryIndex() throws ToolException {
         VariantCommandOptions.VariantSecondaryIndexCommandOptions cliOptions = variantCommandOptions.variantSecondaryIndexCommandOptions;
 
         QueryOptions queryOptions = new QueryOptions();
@@ -393,7 +393,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         variantManager.removeSearchIndexSamples(cliOptions.study, Arrays.asList(cliOptions.sample.split(",")), queryOptions, sessionId);
     }
 
-    private void stats() throws AnalysisException {
+    private void stats() throws ToolException {
         VariantCommandOptions.VariantStatsCommandOptions cliOptions = variantCommandOptions.statsVariantCommandOptions;
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
@@ -484,7 +484,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
     }
 
     private void sampleIndex()
-            throws AnalysisException {
+            throws ToolException {
         VariantCommandOptions.SampleIndexCommandOptions cliOptions = variantCommandOptions.sampleIndexCommandOptions;
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
@@ -498,7 +498,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
     }
 
     private void familyIndex()
-            throws AnalysisException {
+            throws ToolException {
         VariantCommandOptions.FamilyIndexCommandOptions cliOptions = variantCommandOptions.familyIndexCommandOptions;
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
@@ -512,7 +512,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         variantManager.familyIndex(cliOptions.study, families, Paths.get(cliOptions.outdir), options, sessionId);
     }
 
-    private void annotate() throws AnalysisException {
+    private void annotate() throws ToolException {
 
         VariantCommandOptions.VariantAnnotateCommandOptions cliOptions = variantCommandOptions.annotateVariantCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
@@ -529,7 +529,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         variantManager.annotate(cliOptions.project, cliOptions.study, cliOptions.genericVariantAnnotateOptions.region, cliOptions.outdir, options, sessionId);
     }
 
-    private void annotationSave() throws AnalysisException {
+    private void annotationSave() throws ToolException {
         VariantCommandOptions.AnnotationSaveCommandOptions cliOptions = variantCommandOptions.annotationSaveSnapshotCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
@@ -540,7 +540,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         variantManager.saveAnnotation(cliOptions.project, cliOptions.annotationId, Paths.get(cliOptions.outdir), options, sessionId);
     }
 
-    private void annotationDelete() throws AnalysisException {
+    private void annotationDelete() throws ToolException {
         VariantCommandOptions.AnnotationDeleteCommandOptions cliOptions = variantCommandOptions.annotationDeleteCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
@@ -606,7 +606,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         }
     }
 
-    private void aggregateFamily() throws AnalysisException {
+    private void aggregateFamily() throws ToolException {
 
         VariantCommandOptions.AggregateFamilyCommandOptions cliOptions = variantCommandOptions.fillGapsVariantCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
@@ -619,7 +619,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         variantManager.aggregateFamily(cliOptions.study, cliOptions.genericAggregateFamilyOptions.samples, Paths.get(cliOptions.outdir), options, sessionId);
     }
 
-    private void aggregate() throws AnalysisException {
+    private void aggregate() throws ToolException {
 
         VariantCommandOptions.AggregateCommandOptions cliOptions = variantCommandOptions.aggregateCommandOptions;
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);

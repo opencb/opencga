@@ -23,17 +23,17 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-public @interface AnalysisExecutor {
+public @interface ToolExecutor {
 
     /**
-     * @return Analysis executor ID.
+     * @return Tool executor ID.
      */
     String id();
 
     /**
-     * @return Analysis ID.
+     * @return Tool ID.
      */
-    String analysis();
+    String tool();
 
     /**
      * @return List of accepted sources.
@@ -46,7 +46,7 @@ public @interface AnalysisExecutor {
     Framework framework();
 
     /**
-     * @return Analysis executor description.
+     * @return Tool executor description.
      */
     String description() default "";
 

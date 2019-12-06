@@ -1,11 +1,11 @@
 package org.opencb.opencga.analysis.variant.operations;
 
-import org.opencb.opencga.core.annotations.Analysis;
+import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
 import java.util.List;
 
-@Analysis(id = VariantSecondaryIndexSamplesStorageOperation.ID, type = Analysis.AnalysisType.VARIANT)
+@Tool(id = VariantSecondaryIndexSamplesStorageOperation.ID, type = Tool.ToolType.VARIANT)
 public class VariantSecondaryIndexSamplesStorageOperation extends StorageOperation {
 
     public static final String ID = "variant-search-index-samples";

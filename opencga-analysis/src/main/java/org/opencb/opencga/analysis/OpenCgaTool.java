@@ -24,24 +24,24 @@ import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
-import org.opencb.opencga.core.analysis.result.Execution;
-import org.opencb.opencga.core.analysis.result.AnalysisResultManager;
-import org.opencb.opencga.core.analysis.result.ExecutorInfo;
-import org.opencb.opencga.core.analysis.result.FileResult;
-import org.opencb.opencga.core.annotations.Analysis;
-import org.opencb.opencga.core.annotations.AnalysisExecutor;
+import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.annotations.ToolExecutor;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.exception.AnalysisException;
-import org.opencb.opencga.core.exception.AnalysisExecutorException;
+import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.exception.ToolExecutorException;
 import org.opencb.opencga.core.models.DataStore;
 import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.tools.result.ExecutorInfo;
+import org.opencb.opencga.core.tools.result.ExecutorResultManager;
+import org.opencb.opencga.core.tools.result.FileResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
@@ -58,9 +58,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor.EXECUTOR_ID;
+import static org.opencb.opencga.core.tools.OpenCgaToolExecutor.EXECUTOR_ID;
 
-public abstract class OpenCgaAnalysis {
+public abstract class OpenCgaTool {
 
     protected CatalogManager catalogManager;
     protected Configuration configuration;
@@ -72,30 +72,30 @@ public abstract class OpenCgaAnalysis {
 
     protected ObjectMap params;
     protected ObjectMap executorParams;
-    protected List<AnalysisExecutor.Source> sourceTypes;
-    protected List<AnalysisExecutor.Framework> availableFrameworks;
+    protected List<ToolExecutor.Source> sourceTypes;
+    protected List<ToolExecutor.Framework> availableFrameworks;
     protected Logger logger;
     private Path outDir;
     private Path scratchDir;
-    private final Logger privateLogger = LoggerFactory.getLogger(OpenCgaAnalysis.class);
+    private final Logger privateLogger = LoggerFactory.getLogger(OpenCgaTool.class);
 
-    private AnalysisResultManager arm;
+    private ExecutorResultManager erm;
 
-    public OpenCgaAnalysis() {
+    public OpenCgaTool() {
     }
 
-    public final OpenCgaAnalysis setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
-                      ObjectMap params, Path outDir, String token) {
+    public final OpenCgaTool setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
+                                   ObjectMap params, Path outDir, String token) {
         VariantStorageManager manager = new VariantStorageManager(catalogManager, engineFactory);
         return setUp(opencgaHome, catalogManager, manager, params, outDir, token);
     }
 
-    public final OpenCgaAnalysis setUp(VariantStorageManager variantStorageManager, ObjectMap params, Path outDir, String token) {
+    public final OpenCgaTool setUp(VariantStorageManager variantStorageManager, ObjectMap params, Path outDir, String token) {
         return setUp(null, variantStorageManager.getCatalogManager(), variantStorageManager, params, outDir, token);
     }
 
-    public final OpenCgaAnalysis setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
-                      ObjectMap params, Path outDir, String token) {
+    public final OpenCgaTool setUp(String opencgaHome, CatalogManager catalogManager, VariantStorageManager variantStorageManager,
+                                   ObjectMap params, Path outDir, String token) {
         this.opencgaHome = opencgaHome;
         this.catalogManager = catalogManager;
         this.configuration = catalogManager.getConfiguration();
@@ -111,8 +111,8 @@ public abstract class OpenCgaAnalysis {
         return this;
     }
 
-    public final OpenCgaAnalysis setUp(String opencgaHome, ObjectMap params, Path outDir, String token)
-            throws AnalysisException {
+    public final OpenCgaTool setUp(String opencgaHome, ObjectMap params, Path outDir, String token)
+            throws ToolException {
         this.opencgaHome = opencgaHome;
         this.token = token;
         this.params = params == null ? new ObjectMap() : new ObjectMap(params);
@@ -127,7 +127,7 @@ public abstract class OpenCgaAnalysis {
             this.catalogManager = new CatalogManager(configuration);
             this.variantStorageManager = new VariantStorageManager(catalogManager, StorageEngineFactory.get(storageConfiguration));
         } catch (IOException | CatalogException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
 
         setUpFrameworksAndSource();
@@ -140,35 +140,35 @@ public abstract class OpenCgaAnalysis {
         availableFrameworks = new ArrayList<>();
         sourceTypes = new ArrayList<>();
         if (storageConfiguration.getVariant().getDefaultEngine().equals("mongodb")) {
-            if (getAnalysisType().equals(Analysis.AnalysisType.VARIANT)) {
-                sourceTypes.add(AnalysisExecutor.Source.MONGODB);
+            if (getToolType().equals(Tool.ToolType.VARIANT)) {
+                sourceTypes.add(ToolExecutor.Source.MONGODB);
             }
         } else if (storageConfiguration.getVariant().getDefaultEngine().equals("hadoop")) {
-            availableFrameworks.add(AnalysisExecutor.Framework.MAP_REDUCE);
+            availableFrameworks.add(ToolExecutor.Framework.MAP_REDUCE);
             // TODO: Check from configuration if spark is available
-//            availableFrameworks.add(AnalysisExecutor.Framework.SPARK);
-            if (getAnalysisType().equals(Analysis.AnalysisType.VARIANT)) {
-                sourceTypes.add(AnalysisExecutor.Source.HBASE);
+//            availableFrameworks.add(ToolExecutor.Framework.SPARK);
+            if (getToolType().equals(Tool.ToolType.VARIANT)) {
+                sourceTypes.add(ToolExecutor.Source.HBASE);
             }
         }
 
-        availableFrameworks.add(AnalysisExecutor.Framework.LOCAL);
-        sourceTypes.add(AnalysisExecutor.Source.STORAGE);
+        availableFrameworks.add(ToolExecutor.Framework.LOCAL);
+        sourceTypes.add(ToolExecutor.Source.STORAGE);
 //        return this;
     }
 
     /**
-     * Execute the analysis. The analysis should have been properly setUp before being executed.
+     * Execute the tool. The tool should have been properly setUp before being executed.
      *
-     * @return AnalysisResult
-     * @throws AnalysisException on error
+     * @return ExecutionResult
+     * @throws ToolException on error
      */
-    public final Execution start() throws AnalysisException {
-        if (this.getClass().getAnnotation(Analysis.class) == null) {
-            throw new AnalysisException("Missing @" + Analysis.class.getSimpleName() + " annotation in " + this.getClass());
+    public final ExecutionResult start() throws ToolException {
+        if (this.getClass().getAnnotation(Tool.class) == null) {
+            throw new ToolException("Missing @" + Tool.class.getSimpleName() + " annotation in " + this.getClass());
         }
-        arm = new AnalysisResultManager(getId(), outDir);
-        arm.init(params, executorParams);
+        erm = new ExecutorResultManager(getId(), outDir);
+        erm.init(params, executorParams);
         Thread hook = new Thread(() -> {
             Exception exception = null;
             try {
@@ -176,15 +176,15 @@ public abstract class OpenCgaAnalysis {
             } catch (Exception e) {
                 exception = e;
             }
-            if (!arm.isClosed()) {
+            if (!erm.isClosed()) {
                 privateLogger.error("Unexpected system shutdown!");
                 try {
                     if (exception == null) {
                         exception = new RuntimeException("Unexpected system shutdown");
                     }
-                    arm.close(exception);
-                } catch (AnalysisException e) {
-                    privateLogger.error("Error closing AnalysisResult", e);
+                    erm.close(exception);
+                } catch (ToolException e) {
+                    privateLogger.error("Error closing ExecutionResult", e);
                 }
             }
         });
@@ -214,33 +214,33 @@ public abstract class OpenCgaAnalysis {
                 try {
                     scratchDir = Files.createDirectory(baseScratchDir.resolve("scratch_" + getId() + RandomStringUtils.randomAlphanumeric(10)));
                 } catch (IOException e) {
-                    throw new AnalysisException(e);
+                    throw new ToolException(e);
                 }
             }
             try {
                 check();
-                arm.setSteps(getSteps());
+                erm.setSteps(getSteps());
 
-                arm.setParams(params); // params may be modified after check method
+                erm.setParams(params); // params may be modified after check method
 
                 run();
-            } catch (AnalysisException e) {
+            } catch (ToolException e) {
                 throw e;
             } catch (Exception e) {
-                throw new AnalysisException(e);
+                throw new ToolException(e);
             }
             try {
                 FileUtils.deleteDirectory(scratchDir.toFile());
             } catch (IOException e) {
                 String warningMessage = "Error deleting scratch folder " + scratchDir + " : " + e.getMessage();
                 privateLogger.warn(warningMessage, e);
-                arm.addWarning(warningMessage);
+                erm.addWarning(warningMessage);
             }
-            arm.setParams(params);
-            return arm.close();
-        } catch (RuntimeException | AnalysisException e) {
-            arm.setParams(params);
-            arm.close(e);
+            erm.setParams(params);
+            return erm.close();
+        } catch (RuntimeException | ToolException e) {
+            erm.setParams(params);
+            erm.close(e);
             throw e;
         } finally {
             Runtime.getRuntime().removeShutdownHook(hook);
@@ -257,7 +257,7 @@ public abstract class OpenCgaAnalysis {
     }
 
     /**
-     * Method to be implemented by subclasses with the actual execution of the analysis.
+     * Method to be implemented by subclasses with the actual execution of the tool.
      * @throws Exception on error
      */
     protected abstract void run() throws Exception;
@@ -269,14 +269,14 @@ public abstract class OpenCgaAnalysis {
     }
 
     /**
-     * @return the analysis id
+     * @return the tool id
      */
     public final String getId() {
-        return this.getClass().getAnnotation(Analysis.class).id();
+        return this.getClass().getAnnotation(Tool.class).id();
     }
 
     /**
-     * @return the analysis steps
+     * @return the tool steps
      */
     protected List<String> getSteps() {
         List<String> steps = new ArrayList<>();
@@ -285,10 +285,10 @@ public abstract class OpenCgaAnalysis {
     }
 
     /**
-     * @return the analysis id
+     * @return the tool id
      */
-    public final Analysis.AnalysisType getAnalysisType() {
-        return this.getClass().getAnnotation(Analysis.class).type();
+    public final Tool.ToolType getToolType() {
+        return this.getClass().getAnnotation(Tool.class).type();
     }
 
     /**
@@ -309,7 +309,7 @@ public abstract class OpenCgaAnalysis {
         return token;
     }
 
-    public final OpenCgaAnalysis addSource(AnalysisExecutor.Source source) {
+    public final OpenCgaTool addSource(ToolExecutor.Source source) {
         if (sourceTypes == null) {
             sourceTypes = new ArrayList<>();
         }
@@ -317,7 +317,7 @@ public abstract class OpenCgaAnalysis {
         return this;
     }
 
-    public final OpenCgaAnalysis addFramework(AnalysisExecutor.Framework framework) {
+    public final OpenCgaTool addFramework(ToolExecutor.Framework framework) {
         if (availableFrameworks == null) {
             availableFrameworks = new ArrayList<>();
         }
@@ -330,68 +330,67 @@ public abstract class OpenCgaAnalysis {
         void run() throws Exception;
     }
 
-    protected final void step(StepRunnable step) throws AnalysisException {
+    protected final void step(StepRunnable step) throws ToolException {
         step(getId(), step);
     }
 
-    protected final void step(String stepId, StepRunnable step) throws AnalysisException {
+    protected final void step(String stepId, StepRunnable step) throws ToolException {
         if (checkStep(stepId)) {
             try {
                 step.run();
-            } catch (AnalysisException e) {
+            } catch (ToolException e) {
                 throw e;
             } catch (Exception e) {
-                throw new AnalysisException("Exception from step " + stepId, e);
+                throw new ToolException("Exception from step " + stepId, e);
             }
         }
     }
 
-    protected final boolean checkStep(String stepId) throws AnalysisException {
-        return arm.checkStep(stepId);
+    protected final boolean checkStep(String stepId) throws ToolException {
+        return erm.checkStep(stepId);
     }
 
-    protected final void errorStep() throws AnalysisException {
-        arm.errorStep();
+    protected final void errorStep() throws ToolException {
+        erm.errorStep();
     }
 
-    protected final void addWarning(String warning) throws AnalysisException {
-        arm.addWarning(warning);
+    protected final void addWarning(String warning) throws ToolException {
+        erm.addWarning(warning);
     }
 
-    protected final void addError(Exception e) throws AnalysisException {
-        arm.addError(e);
+    protected final void addError(Exception e) throws ToolException {
+        erm.addError(e);
     }
 
-    protected final void addAttribute(String key, Object value) throws AnalysisException {
-        arm.addAttribute(key, value);
+    protected final void addAttribute(String key, Object value) throws ToolException {
+        erm.addAttribute(key, value);
     }
 
-    protected final void addFile(Path file) throws AnalysisException {
-        arm.addFile(file, FileResult.FileType.fromName(file.getFileName().toString()));
+    protected final void addFile(Path file) throws ToolException {
+        erm.addFile(file, FileResult.FileType.fromName(file.getFileName().toString()));
     }
 
-    protected final void addFile(Path file, FileResult.FileType fileType) throws AnalysisException {
-        arm.addFile(file, fileType);
+    protected final void addFile(Path file, FileResult.FileType fileType) throws ToolException {
+        erm.addFile(file, fileType);
     }
 
-    protected final List<FileResult> getOutputFiles() throws AnalysisException {
-        return arm.read().getOutputFiles();
+    protected final List<FileResult> getOutputFiles() throws ToolException {
+        return erm.read().getOutputFiles();
     }
 
-    protected final Class<? extends OpenCgaAnalysisExecutor> getAnalysisExecutorClass(String analysisExecutorId) {
-        return getAnalysisExecutorClass(OpenCgaAnalysisExecutor.class, analysisExecutorId);
+    protected final Class<? extends OpenCgaToolExecutor> getToolExecutorClass(String toolExecutorId) {
+        return getToolExecutorClass(OpenCgaToolExecutor.class, toolExecutorId);
     }
 
-    protected final <T extends OpenCgaAnalysisExecutor> Class<? extends T> getAnalysisExecutorClass(Class<T> clazz,
-                                                                                                    String analysisExecutorId) {
+    protected final <T extends OpenCgaToolExecutor> Class<? extends T> getToolExecutorClass(Class<T> clazz, String toolExecutorId) {
         Objects.requireNonNull(clazz);
-        String analysisId = getId();
+        String toolId = getId();
 
         List<Class<? extends T>> candidateClasses = new ArrayList<>();
         // If the given class is not abstract, check if matches the criteria.
         if (!Modifier.isAbstract(clazz.getModifiers())) {
-            if (isValidClass(analysisId, analysisExecutorId, clazz)) {
-                if (StringUtils.isNotEmpty(analysisExecutorId) || Modifier.isFinal(clazz.getModifiers())) {
+            if (isValidClass(toolId, toolExecutorId, clazz)) {
+                if (StringUtils.isNotEmpty(toolExecutorId) || Modifier.isFinal(clazz.getModifiers())) {
                     // Shortcut to skip reflection
                     return clazz;
                 }
@@ -402,14 +401,14 @@ public abstract class OpenCgaAnalysis {
         Reflections reflections = new Reflections(new ConfigurationBuilder()
                 .setScanners(
                         new SubTypesScanner(),
-                        new TypeAnnotationsScanner().filterResultsBy(s -> StringUtils.equals(s, AnalysisExecutor.class.getName())))
+                        new TypeAnnotationsScanner().filterResultsBy(s -> StringUtils.equals(s, ToolExecutor.class.getName())))
                 .addUrls(ClasspathHelper.forJavaClassPath())
                 .filterInputsBy(input -> input.endsWith(".class"))
         );
 
         Set<Class<? extends T>> typesAnnotatedWith = reflections.getSubTypesOf(clazz);
         for (Class<? extends T> aClass : typesAnnotatedWith) {
-            if (isValidClass(analysisId, analysisExecutorId, aClass)) {
+            if (isValidClass(toolId, toolExecutorId, aClass)) {
                 candidateClasses.add(aClass);
             }
         }
@@ -418,7 +417,7 @@ public abstract class OpenCgaAnalysis {
         } else if (candidateClasses.size() == 1) {
             return candidateClasses.get(0);
         } else {
-            privateLogger.info("Found multiple OpenCgaAnalysisExecutor candidates.");
+            privateLogger.info("Found multiple " + OpenCgaToolExecutor.class.getName() + " candidates.");
             for (Class<? extends T> matchedClass : candidateClasses) {
                 privateLogger.info(" - " + matchedClass);
             }
@@ -426,16 +425,16 @@ public abstract class OpenCgaAnalysis {
 
             // Prefer the executor that matches better with the source
             // Prefer the executor that matches better with the framework
-            List<AnalysisExecutor.Framework> finalAvailableFrameworks =
+            List<ToolExecutor.Framework> finalAvailableFrameworks =
                     availableFrameworks == null ? Collections.emptyList() : availableFrameworks;
-            List<AnalysisExecutor.Source> finalSourceTypes =
+            List<ToolExecutor.Source> finalSourceTypes =
                     sourceTypes == null ? Collections.emptyList() : sourceTypes;
 
             Comparator<Class<? extends T>> comparator = Comparator.<Class<? extends T>>comparingInt(c1 -> {
-                AnalysisExecutor annot1 = c1.getAnnotation(AnalysisExecutor.class);
+                ToolExecutor annot1 = c1.getAnnotation(ToolExecutor.class);
                 return finalAvailableFrameworks.indexOf(annot1.framework());
             }).thenComparingInt(c -> {
-                AnalysisExecutor annot = c.getAnnotation(AnalysisExecutor.class);
+                ToolExecutor annot = c.getAnnotation(ToolExecutor.class);
                 return finalSourceTypes.indexOf(annot.source());
             }).thenComparing(Class::getName);
 
@@ -445,11 +444,11 @@ public abstract class OpenCgaAnalysis {
         }
     }
 
-    private <T> boolean isValidClass(String analysisId, String analysisExecutorId, Class<T> aClass) {
-        AnalysisExecutor annotation = aClass.getAnnotation(AnalysisExecutor.class);
+    private <T> boolean isValidClass(String toolId, String toolExecutorId, Class<T> aClass) {
+        ToolExecutor annotation = aClass.getAnnotation(ToolExecutor.class);
         if (annotation != null) {
-            if (annotation.analysis().equals(analysisId)) {
-                if (StringUtils.isEmpty(analysisExecutorId) || analysisExecutorId.equals(annotation.id())) {
+            if (annotation.tool().equals(toolId)) {
+                if (StringUtils.isEmpty(toolExecutorId) || toolExecutorId.equals(annotation.id())) {
                     if (CollectionUtils.isEmpty(sourceTypes) || sourceTypes.contains(annotation.source())) {
                         if (CollectionUtils.isEmpty(availableFrameworks) || availableFrameworks.contains(annotation.framework())) {
                             return true;
@@ -461,29 +460,29 @@ public abstract class OpenCgaAnalysis {
         return false;
     }
 
-    protected final OpenCgaAnalysisExecutor getAnalysisExecutor()
-            throws AnalysisExecutorException {
-        return getAnalysisExecutor(OpenCgaAnalysisExecutor.class);
+    protected final OpenCgaToolExecutor getToolExecutor()
+            throws ToolExecutorException {
+        return getToolExecutor(OpenCgaToolExecutor.class);
     }
 
-    protected final <T extends OpenCgaAnalysisExecutor> T getAnalysisExecutor(Class<T> clazz)
-            throws AnalysisExecutorException {
+    protected final <T extends OpenCgaToolExecutor> T getToolExecutor(Class<T> clazz)
+            throws ToolExecutorException {
         String executorId = executorParams == null ? null : executorParams.getString(EXECUTOR_ID);
         if (StringUtils.isEmpty(executorId) && params != null) {
             executorId = params.getString(EXECUTOR_ID);
         }
-        return getAnalysisExecutor(clazz, executorId);
+        return getToolExecutor(clazz, executorId);
     }
 
-    protected final <T extends OpenCgaAnalysisExecutor> T getAnalysisExecutor(Class<T> clazz, String analysisExecutorId)
-            throws AnalysisExecutorException {
-        Class<? extends T> executorClass = getAnalysisExecutorClass(clazz, analysisExecutorId);
+    protected final <T extends OpenCgaToolExecutor> T getToolExecutor(Class<T> clazz, String toolExecutorId)
+            throws ToolExecutorException {
+        Class<? extends T> executorClass = getToolExecutorClass(clazz, toolExecutorId);
         if (executorClass == null) {
-            throw AnalysisExecutorException.executorNotFound(clazz, getId(), analysisExecutorId, sourceTypes, availableFrameworks);
+            throw ToolExecutorException.executorNotFound(clazz, getId(), toolExecutorId, sourceTypes, availableFrameworks);
         }
         try {
             T t = executorClass.newInstance();
-            privateLogger.info("Using OpenCgaAnalysisExecutor '" + t.getId() + "' : " + executorClass);
+            privateLogger.info("Using " + clazz.getName() + " '" + t.getId() + "' : " + executorClass);
 
             String executorId = t.getId();
             if (executorParams == null) {
@@ -492,18 +491,18 @@ public abstract class OpenCgaAnalysis {
             executorParams.put(EXECUTOR_ID, executorId);
 
             // Update executor ID
-            if (arm != null) {
-                arm.setExecutorInfo(new ExecutorInfo(executorId, executorClass, executorParams, t.getSource(), t.getFramework()));
+            if (erm != null) {
+                erm.setExecutorInfo(new ExecutorInfo(executorId, executorClass, executorParams, t.getSource(), t.getFramework()));
             }
-            t.setUp(arm, executorParams, outDir);
+            t.setUp(erm, executorParams, outDir);
 
             return t;
-        } catch (InstantiationException | IllegalAccessException | AnalysisException e) {
-            throw AnalysisExecutorException.cantInstantiate(executorClass, e);
+        } catch (InstantiationException | IllegalAccessException | ToolException e) {
+            throw ToolExecutorException.cantInstantiate(executorClass, e);
         }
     }
 
-    protected final void setUpStorageEngineExecutor(String study) throws AnalysisException {
+    protected final void setUpStorageEngineExecutor(String study) throws ToolException {
         executorParams.put("opencgaHome", opencgaHome);
         executorParams.put("token", token);
         try {
@@ -512,7 +511,7 @@ public abstract class OpenCgaAnalysis {
             executorParams.put("storageEngineId", dataStore.getStorageEngine());
             executorParams.put("dbName", dataStore.getDbName());
         } catch (CatalogException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
     }
 
@@ -535,7 +534,7 @@ public abstract class OpenCgaAnalysis {
     }
 
 
-    protected final Analyst getAnalyst(String token) throws AnalysisException {
+    protected final Analyst getAnalyst(String token) throws ToolException {
         try {
             String userId = catalogManager.getUserManager().getUserId(token);
             DataResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
@@ -543,7 +542,7 @@ public abstract class OpenCgaAnalysis {
 
             return new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization());
         } catch (CatalogException e) {
-            throw new AnalysisException(e.getMessage(), e);
+            throw new ToolException(e.getMessage(), e);
         }
     }
 }

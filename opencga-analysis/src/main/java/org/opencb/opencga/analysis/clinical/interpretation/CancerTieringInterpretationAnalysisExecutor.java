@@ -17,8 +17,9 @@ import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.annotations.AnalysisExecutor;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.annotations.ToolExecutor;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.Panel;
@@ -36,11 +37,11 @@ import static org.opencb.biodata.formats.variant.clinvar.v24jaxb.ReviewStatusTyp
 import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.*;
 import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.PANEL;
 
-@AnalysisExecutor(id = "opencga-local",
-        analysis = CancerTieringInterpretationAnalysis.ID,
-        source = AnalysisExecutor.Source.STORAGE,
-        framework = AnalysisExecutor.Framework.LOCAL)
-public class CancerTieringInterpretationAnalysisExecutor extends org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor implements ClinicalInterpretationAnalysisExecutor {
+@ToolExecutor(id = "opencga-local",
+        tool = CancerTieringInterpretationAnalysis.ID,
+        source = ToolExecutor.Source.STORAGE,
+        framework = ToolExecutor.Framework.LOCAL)
+public class CancerTieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor implements ClinicalInterpretationAnalysisExecutor {
 
     private String studyId;
     private String clinicalAnalysisId;
@@ -89,18 +90,18 @@ public class CancerTieringInterpretationAnalysisExecutor extends org.opencb.open
 //    }
 
     @Override
-    public void run() throws AnalysisException {
+    public void run() throws ToolException {
         // Get clinical analysis
         ClinicalAnalysis clinicalAnalysis = null;
         try {
             clinicalAnalysis = clinicalInterpretationManager.getClinicalAnalysis(studyId, clinicalAnalysisId, sessionId);
         } catch (CatalogException e) {
-            throw new AnalysisException("Error accessing to the clinical analysis ID: " + clinicalAnalysisId, e);
+            throw new ToolException("Error accessing to the clinical analysis ID: " + clinicalAnalysisId, e);
         }
 
         Disorder disorder = clinicalAnalysis.getDisorder();
         if (disorder == null || StringUtils.isEmpty(disorder.getId())) {
-            throw new AnalysisException("Missing disorder for clinical analysis " + clinicalAnalysisId);
+            throw new ToolException("Missing disorder for clinical analysis " + clinicalAnalysisId);
         }
 
         // Primary findings consist of reported somatic and germline variants
@@ -110,13 +111,13 @@ public class CancerTieringInterpretationAnalysisExecutor extends org.opencb.open
         List<Sample> somaticSamples = getSomaticSamples(clinicalAnalysis.getProband());
         if (CollectionUtils.isNotEmpty(somaticSamples)) {
             if (somaticSamples.size() != 1) {
-                throw new AnalysisException("Found multiple somatic samples (" + somaticSamples.size() + "), only one is permitted.");
+                throw new ToolException("Found multiple somatic samples (" + somaticSamples.size() + "), only one is permitted.");
             }
             List<ReportedVariant> reportedSomaticVariants = null;
             try {
                 reportedSomaticVariants = getReportedSomaticVariants(somaticSamples);
             } catch (CatalogException | IOException | StorageEngineException e) {
-                throw new AnalysisException("Error retrieving somatic variants", e);
+                throw new ToolException("Error retrieving somatic variants", e);
             }
             primaryFindings.addAll(reportedSomaticVariants);
         }
@@ -125,7 +126,7 @@ public class CancerTieringInterpretationAnalysisExecutor extends org.opencb.open
         List<Sample> germlineSamples = getGermlineSamples(clinicalAnalysis.getProband());
         if (CollectionUtils.isNotEmpty(somaticSamples)) {
             if (somaticSamples.size() != 1) {
-                throw new AnalysisException("Found multiple germline samples(" + germlineSamples.size() + "), only one is permitted.");
+                throw new ToolException("Found multiple germline samples(" + germlineSamples.size() + "), only one is permitted.");
             }
             // Get panels from that clinical analysis disorder
             List<String> phenotypes = new ArrayList<>();
@@ -142,7 +143,7 @@ public class CancerTieringInterpretationAnalysisExecutor extends org.opencb.open
                 reportedGermlineVariants = getReportedGermlineVariants(clinicalAnalysis.getProband(), germlineSamples,
                         phenotypes);
             } catch (CatalogException | IOException | StorageEngineException e) {
-                throw new AnalysisException("Error retrieving germline variants", e);
+                throw new ToolException("Error retrieving germline variants", e);
             }
             primaryFindings.addAll(reportedGermlineVariants);
         }
@@ -155,9 +156,9 @@ public class CancerTieringInterpretationAnalysisExecutor extends org.opencb.open
     // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------
 
-    private List<Sample> getSomaticSamples(Individual proband) throws AnalysisException {
+    private List<Sample> getSomaticSamples(Individual proband) throws ToolException {
         if (proband == null) {
-            throw new AnalysisException("Missing proband when retrieving somatic samples");
+            throw new ToolException("Missing proband when retrieving somatic samples");
         }
 
         List<Sample> samples = new ArrayList<>();
@@ -169,9 +170,9 @@ public class CancerTieringInterpretationAnalysisExecutor extends org.opencb.open
         return samples;
     }
 
-    private List<Sample> getGermlineSamples(Individual proband) throws AnalysisException {
+    private List<Sample> getGermlineSamples(Individual proband) throws ToolException {
         if (proband == null) {
-            throw new AnalysisException("Missing proband when retrieving germline samples");
+            throw new ToolException("Missing proband when retrieving germline samples");
         }
 
         List<Sample> samples = new ArrayList<>();

@@ -1,13 +1,13 @@
-package org.opencb.opencga.core.analysis.variant;
+package org.opencb.opencga.core.tools.variant;
 
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
+import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-public abstract class VariantStatsAnalysisExecutor extends OpenCgaAnalysisExecutor {
+public abstract class VariantStatsAnalysisExecutor extends OpenCgaToolExecutor {
 
     private Path outputFile;
     private String study;

@@ -17,12 +17,12 @@
 package org.opencb.opencga.analysis.clinical.interpretation;
 
 import org.opencb.bionetdb.core.BioNetDbManager;
-import org.opencb.opencga.core.annotations.Analysis;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.exception.ToolException;
 
 import java.util.List;
 
-@Analysis(id = XQueryInterpretationAnalysis.ID, type = Analysis.AnalysisType.CLINICAL)
+@Tool(id = XQueryInterpretationAnalysis.ID, type = Tool.ToolType.CLINICAL)
 public class XQueryInterpretationAnalysis extends InterpretationAnalysis {
 
     public final static String ID = "bionet-interpretation";
@@ -35,8 +35,8 @@ public class XQueryInterpretationAnalysis extends InterpretationAnalysis {
 //    private ClinicalAnalysis clinicalAnalysis;
 
     @Override
-    protected void run() throws AnalysisException {
-        throw new AnalysisException("Not yet implemented!");
+    protected void run() throws ToolException {
+        throw new ToolException("Not yet implemented!");
 /*
         StopWatch watcher = StopWatch.createStarted();
         // Sanity check

@@ -6,9 +6,9 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
-import org.opencb.opencga.core.analysis.result.AnalysisResultManager;
-import org.opencb.opencga.core.analysis.result.Execution;
-import org.opencb.opencga.core.analysis.result.Status;
+import org.opencb.opencga.core.tools.result.ExecutorResultManager;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.tools.result.Status;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.common.Enums;
@@ -192,7 +192,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         for (org.opencb.opencga.core.models.File file : job.getOutput()) {
             assertTrue(Arrays.asList("outDir/file1.txt", "outDir/file2.txt", "outDir/A/", "outDir/A/file3.txt").contains(file.getPath()));
         }
-        assertEquals(0, job.getOutput().stream().filter(f -> f.getName().endsWith(AnalysisResultManager.FILE_EXTENSION))
+        assertEquals(0, job.getOutput().stream().filter(f -> f.getName().endsWith(ExecutorResultManager.FILE_EXTENSION))
                 .collect(Collectors.toList()).size());
 
         assertEquals(job.getId() + ".log", job.getLog().getName());
@@ -250,10 +250,10 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         return catalogManager.getJobManager().get(studyFqn, jobId, new QueryOptions(), sessionIdUser).first();
     }
 
-    private void createAnalysisResult(String jobId, String analysisId, Consumer<Execution> c) throws CatalogException, IOException {
-        Execution ar = new Execution();
+    private void createAnalysisResult(String jobId, String analysisId, Consumer<ExecutionResult> c) throws CatalogException, IOException {
+        ExecutionResult ar = new ExecutionResult();
         c.accept(ar);
-        File resultFile = Paths.get(getJob(jobId).getOutDir().getUri()).resolve(analysisId + AnalysisResultManager.FILE_EXTENSION).toFile();
+        File resultFile = Paths.get(getJob(jobId).getOutDir().getUri()).resolve(analysisId + ExecutorResultManager.FILE_EXTENSION).toFile();
         JacksonUtils.getDefaultObjectMapper().writeValue(resultFile, ar);
     }
 

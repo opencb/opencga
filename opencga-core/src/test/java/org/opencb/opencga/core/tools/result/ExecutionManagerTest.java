@@ -1,11 +1,11 @@
-package org.opencb.opencga.core.analysis.result;
+package org.opencb.opencga.core.tools.result;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
 
 public class ExecutionManagerTest {
 
-    private AnalysisResultManager arm;
+    private ExecutorResultManager erm;
     private static Path rootDir;
 
     @BeforeClass
@@ -31,43 +31,43 @@ public class ExecutionManagerTest {
 
     @Before
     public void setUp() throws Exception {
-        arm = new AnalysisResultManager("myTest", rootDir);
-        arm.setMonitorThreadPeriod(1000);
-        arm.init(new ObjectMap(), new ObjectMap());
-        arm.setSteps(Arrays.asList("step1", "step2"));
+        erm = new ExecutorResultManager("myTest", rootDir);
+        erm.setMonitorThreadPeriod(1000);
+        erm.init(new ObjectMap(), new ObjectMap());
+        erm.setSteps(Arrays.asList("step1", "step2"));
     }
 
     @After
     public void tearDown() throws Exception {
-        arm.close();
+        erm.close();
     }
 
     @Test
     public void testReadWrite() throws Exception {
-        arm.checkStep("step1");
+        erm.checkStep("step1");
 
         Path file = rootDir.resolve("file1.txt");
         Files.createFile(file);
-        arm.addFile(file.toAbsolutePath(), FileResult.FileType.TAB_SEPARATED);
+        erm.addFile(file.toAbsolutePath(), FileResult.FileType.TAB_SEPARATED);
     }
 
     @Test
-    public void testCheckStep() throws AnalysisException {
-        assertTrue(arm.checkStep("step1"));
-        assertTrue(arm.checkStep("step2"));
-        assertFalse(arm.checkStep("step1"));
+    public void testCheckStep() throws ToolException {
+        assertTrue(erm.checkStep("step1"));
+        assertTrue(erm.checkStep("step2"));
+        assertFalse(erm.checkStep("step1"));
     }
 
-    @Test(expected = AnalysisException.class)
-    public void testCheckStepWrong() throws AnalysisException {
-        arm.checkStep("OtherStep");
+    @Test(expected = ToolException.class)
+    public void testCheckStepWrong() throws ToolException {
+        erm.checkStep("OtherStep");
      }
 
     @Test
-    public void checkMonitorThread() throws InterruptedException, AnalysisException {
-        Date pre = arm.read().getStatus().getDate();
+    public void checkMonitorThread() throws InterruptedException, ToolException {
+        Date pre = erm.read().getStatus().getDate();
         Thread.sleep(2000);
-        Date post = arm.read().getStatus().getDate();
+        Date post = erm.read().getStatus().getDate();
         assertNotEquals(pre, post);
     }
 

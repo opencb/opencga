@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.interpretation.*;
 import org.opencb.opencga.app.cli.internal.options.InterpretationCommandOptions;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -78,7 +78,7 @@ public class InterpretationCommandExecutor extends InternalCommandExecutor {
         String clinicalAnalysisId = options.clinicalAnalysisId;
 
         if (StringUtils.isEmpty(options.panelIds)) {
-            throw new AnalysisException("Missing panel ids");
+            throw new ToolException("Missing panel ids");
         }
         List<String> panelList = Arrays.asList(StringUtils.split(options.panelIds, ","));
 
@@ -86,7 +86,7 @@ public class InterpretationCommandExecutor extends InternalCommandExecutor {
         try {
             moi = ClinicalProperty.ModeOfInheritance.valueOf(options.familySegregation);
         } catch (IllegalArgumentException e) {
-            throw new AnalysisException("Unknown family segregation value: " + options.familySegregation);
+            throw new ToolException("Unknown family segregation value: " + options.familySegregation);
         }
 
         TeamInterpretationConfiguration config = new TeamInterpretationConfiguration();
@@ -118,7 +118,7 @@ public class InterpretationCommandExecutor extends InternalCommandExecutor {
         String clinicalAnalysisId = options.clinicalAnalysisId;
 
         if (StringUtils.isEmpty(options.panelIds)) {
-            throw new AnalysisException("Missing panel ids");
+            throw new ToolException("Missing panel ids");
         }
         List<String> panelList = Arrays.asList(StringUtils.split(options.panelIds, ","));
 

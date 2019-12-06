@@ -1,27 +1,27 @@
-package org.opencb.opencga.core.analysis.result;
+package org.opencb.opencga.core.tools.result;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
-import org.opencb.opencga.core.annotations.AnalysisExecutor;
+import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.annotations.ToolExecutor;
 
 public class ExecutorInfo {
 
     private String id;
     @JsonProperty("class")
-    private Class<? extends OpenCgaAnalysisExecutor> clazz;
+    private Class<? extends OpenCgaToolExecutor> clazz;
     private ObjectMap params;
-    private AnalysisExecutor.Source source;
-    private AnalysisExecutor.Framework framework;
+    private ToolExecutor.Source source;
+    private ToolExecutor.Framework framework;
 
     public ExecutorInfo() {
     }
 
     public ExecutorInfo(String id,
-                        Class<? extends OpenCgaAnalysisExecutor> clazz,
+                        Class<? extends OpenCgaToolExecutor> clazz,
                         ObjectMap params,
-                        AnalysisExecutor.Source source,
-                        AnalysisExecutor.Framework framework) {
+                        ToolExecutor.Source source,
+                        ToolExecutor.Framework framework) {
         this.id = id;
         this.clazz = clazz;
         this.params = params;
@@ -38,11 +38,11 @@ public class ExecutorInfo {
         return this;
     }
 
-    public Class<? extends OpenCgaAnalysisExecutor> getClazz() {
+    public Class<? extends OpenCgaToolExecutor> getClazz() {
         return clazz;
     }
 
-    public ExecutorInfo setClazz(Class<? extends OpenCgaAnalysisExecutor> clazz) {
+    public ExecutorInfo setClazz(Class<? extends OpenCgaToolExecutor> clazz) {
         this.clazz = clazz;
         return this;
     }
@@ -56,20 +56,20 @@ public class ExecutorInfo {
         return this;
     }
 
-    public AnalysisExecutor.Source getSource() {
+    public ToolExecutor.Source getSource() {
         return source;
     }
 
-    public ExecutorInfo setSource(AnalysisExecutor.Source source) {
+    public ExecutorInfo setSource(ToolExecutor.Source source) {
         this.source = source;
         return this;
     }
 
-    public AnalysisExecutor.Framework getFramework() {
+    public ToolExecutor.Framework getFramework() {
         return framework;
     }
 
-    public ExecutorInfo setFramework(AnalysisExecutor.Framework framework) {
+    public ExecutorInfo setFramework(ToolExecutor.Framework framework) {
         this.framework = framework;
         return this;
     }

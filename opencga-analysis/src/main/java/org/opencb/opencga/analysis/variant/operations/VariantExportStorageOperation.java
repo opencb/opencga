@@ -20,10 +20,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.opencga.analysis.OpenCgaTool;
 import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.metadata.CatalogVariantMetadataFactory;
-import org.opencb.opencga.core.annotations.Analysis;
+import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.DataStore;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -43,8 +43,8 @@ import java.util.List;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-@Analysis(id = VariantExportStorageOperation.ID, type = Analysis.AnalysisType.VARIANT)
-public class VariantExportStorageOperation extends OpenCgaAnalysis {
+@Tool(id = VariantExportStorageOperation.ID, type = Tool.ToolType.VARIANT)
+public class VariantExportStorageOperation extends OpenCgaTool {
 
     public static final String ID = "variant-export";
     private Query query;

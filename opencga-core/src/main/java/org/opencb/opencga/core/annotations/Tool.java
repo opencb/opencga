@@ -23,13 +23,24 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-public @interface Analysis {
+public @interface Tool {
 
+    /**
+     * @return Tool ID. Must be unique in the classpath.
+     */
     String id();
-    AnalysisType type();
+
+    /**
+     * @return Tool type.
+     */
+    ToolType type();
+
+    /**
+     * @return Tool executor description.
+     */
     String description() default "";
 
-    enum AnalysisType {
+    enum ToolType {
         VARIANT,
         CLINICAL,
         EXPRESSION,

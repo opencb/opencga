@@ -1,11 +1,10 @@
 package org.opencb.opencga.analysis.variant.operations;
 
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
-import org.opencb.opencga.core.annotations.Analysis;
-import org.opencb.opencga.core.models.DataStore;
+import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
-@Analysis(id = VariantAnnotationSaveStorageOperation.ID, type = Analysis.AnalysisType.VARIANT)
+@Tool(id = VariantAnnotationSaveStorageOperation.ID, type = Tool.ToolType.VARIANT)
 public class VariantAnnotationSaveStorageOperation extends StorageOperation {
 
     public static final String ID = "variant-annotation-save";

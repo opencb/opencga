@@ -1,13 +1,13 @@
-package org.opencb.opencga.core.analysis.variant;
+package org.opencb.opencga.core.tools.variant;
 
-import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
+import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class GwasAnalysisExecutor extends OpenCgaAnalysisExecutor {
+public abstract class GwasAnalysisExecutor extends OpenCgaToolExecutor {
 
     private String study;
     private List<String> sampleList1;

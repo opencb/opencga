@@ -3,9 +3,9 @@ package org.opencb.opencga.analysis.wrappers;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.core.analysis.result.FileResult;
-import org.opencb.opencga.core.annotations.Analysis;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.tools.result.FileResult;
+import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.exception.ToolException;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -13,7 +13,7 @@ import java.io.FileOutputStream;
 import java.nio.charset.Charset;
 import java.util.*;
 
-@Analysis(id = SamtoolsWrapperAnalysis.ID, type = Analysis.AnalysisType.VARIANT, description = SamtoolsWrapperAnalysis.DESCRIPTION)
+@Tool(id = SamtoolsWrapperAnalysis.ID, type = Tool.ToolType.VARIANT, description = SamtoolsWrapperAnalysis.DESCRIPTION)
 public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     public final static String ID = "samtools";
@@ -30,7 +30,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         super.check();
 
         if (StringUtils.isEmpty(command)) {
-            throw new AnalysisException("Missing samtools command. Supported commands are 'sort', 'index' and 'view'");
+            throw new ToolException("Missing samtools command. Supported commands are 'sort', 'index' and 'view'");
         }
 
         switch (command) {
@@ -41,16 +41,16 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 break;
             default:
                 // TODO: support the remaining samtools commands
-                throw new AnalysisException("Samtools command '" + command + "' is not available. Supported commands are 'sort', 'index'"
+                throw new ToolException("Samtools command '" + command + "' is not available. Supported commands are 'sort', 'index'"
                         + " , 'view' and 'stats'");
         }
 
         if (StringUtils.isEmpty(inputFile)) {
-            throw new AnalysisException("Missing input file when executing 'samtools " + command + "'.");
+            throw new ToolException("Missing input file when executing 'samtools " + command + "'.");
         }
 
         if (StringUtils.isEmpty(outputFile)) {
-            throw new AnalysisException("Missing input file when executing 'samtools " + command + "'.");
+            throw new ToolException("Missing input file when executing 'samtools " + command + "'.");
         }
     }
 
@@ -113,10 +113,10 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                     if (file.exists()) {
                         msg = StringUtils.join(FileUtils.readLines(file, Charset.defaultCharset()), ". ");
                     }
-                    throw new AnalysisException(msg);
+                    throw new ToolException(msg);
                 }
             } catch (Exception e) {
-                throw new AnalysisException(e);
+                throw new ToolException(e);
             }
         });
     }
@@ -127,7 +127,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
     }
 
     @Override
-    public String getCommandLine() throws AnalysisException {
+    public String getCommandLine() throws ToolException {
         StringBuilder sb = new StringBuilder("docker run ");
 
         // Mount management

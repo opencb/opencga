@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.analysis.result;
+package org.opencb.opencga.core.tools.result;
 
 public class FileResult {
     public enum FileType {

@@ -1,18 +1,16 @@
-package org.opencb.opencga.core.analysis.variant;
+package org.opencb.opencga.core.tools.variant;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
-import org.opencb.opencga.core.exception.AnalysisException;
-import org.opencb.opencga.core.analysis.result.FileResult;
+import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.exception.ToolException;
 
 import java.nio.file.Path;
 import java.util.List;
 
-public abstract class SampleVariantStatsAnalysisExecutor extends OpenCgaAnalysisExecutor {
+public abstract class SampleVariantStatsAnalysisExecutor extends OpenCgaToolExecutor {
 
     protected String study;
     protected List<String> sampleNames;
@@ -80,7 +78,7 @@ public abstract class SampleVariantStatsAnalysisExecutor extends OpenCgaAnalysis
         return this;
     }
 
-    protected void writeStatsToFile(List<SampleVariantStats> stats) throws AnalysisException {
+    protected void writeStatsToFile(List<SampleVariantStats> stats) throws ToolException {
         ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         ObjectWriter objectWriter = objectMapper.writer().withDefaultPrettyPrinter();
 
@@ -88,7 +86,7 @@ public abstract class SampleVariantStatsAnalysisExecutor extends OpenCgaAnalysis
         try {
             objectWriter.writeValue(outFilename.toFile(), stats);
         } catch (Exception e) {
-            throw new AnalysisException("Error writing output file: " + outFilename, e);
+            throw new ToolException("Error writing output file: " + outFilename, e);
         }
     }
 }

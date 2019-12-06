@@ -22,19 +22,18 @@ import org.opencb.biodata.models.clinical.interpretation.ReportedLowCoverage;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.biodata.models.commons.Software;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ConfigurationUtils;
-import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.opencga.analysis.OpenCgaTool;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.analysis.result.FileResult;
+import org.opencb.opencga.core.tools.result.FileResult;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -47,7 +46,7 @@ import java.util.List;
 
 import static org.opencb.opencga.analysis.clinical.ClinicalUtils.readReportedVariants;
 
-public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
+public abstract class InterpretationAnalysis extends OpenCgaTool {
 
 
     public static String PRIMARY_FINDINGS_FILENAME = "primary-findings.json";
@@ -76,7 +75,7 @@ public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
     }
 
     protected void saveInterpretation(String studyId, ClinicalAnalysis clinicalAnalysis, List<DiseasePanel> diseasePanels, Query query,
-                                      InterpretationAnalysisConfiguration config) throws AnalysisException {
+                                      InterpretationAnalysisConfiguration config) throws ToolException {
 
         // Software
         Software software = new Software().setName(getId());
@@ -112,7 +111,7 @@ public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
             catalogManager.getInterpretationManager().create(studyId, clinicalAnalysis.getId(), new Interpretation(interpretation),
                     QueryOptions.empty(), token);
         } catch (CatalogException e) {
-            throw new AnalysisException("Error saving interpretation into database", e);
+            throw new ToolException("Error saving interpretation into database", e);
         }
 
         // Save interpretation analysis in JSON file
@@ -121,11 +120,11 @@ public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
             JacksonUtils.getDefaultObjectMapper().writer().writeValue(path.toFile(), interpretation);
             addFile(path, FileResult.FileType.JSON);
         } catch (IOException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
     }
 
-    public static ClinicalInterpretationManager getClinicalInterpretationManager(String opencgaHome) throws AnalysisException {
+    public static ClinicalInterpretationManager getClinicalInterpretationManager(String opencgaHome) throws ToolException {
         try {
             Configuration configuration = ConfigurationUtils.loadConfiguration(opencgaHome);
             StorageConfiguration storageConfiguration = ConfigurationUtils.loadStorageConfiguration(opencgaHome);
@@ -138,7 +137,7 @@ public abstract class InterpretationAnalysis extends OpenCgaAnalysis {
                     Paths.get(opencgaHome + "/analysis/resources/"));
 
         } catch (CatalogException | IOException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
     }
 

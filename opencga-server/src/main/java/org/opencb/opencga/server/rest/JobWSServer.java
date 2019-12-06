@@ -26,7 +26,7 @@ import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.analysis.result.Execution;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
@@ -92,7 +92,7 @@ public class JobWSServer extends OpenCGAWSServer {
         private List<TinyFile> output;   // output files of this job
         private List<String> tags;
 
-        private Execution result;
+        private ExecutionResult result;
 
         private TinyFile log;
         private TinyFile errorLog;
@@ -147,7 +147,7 @@ public class JobWSServer extends OpenCGAWSServer {
             return tags;
         }
 
-        public Execution getResult() {
+        public ExecutionResult getResult() {
             return result;
         }
 

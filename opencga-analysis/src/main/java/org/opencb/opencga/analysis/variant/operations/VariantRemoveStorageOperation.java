@@ -5,8 +5,8 @@ import org.apache.solr.common.StringUtils;
 import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.annotations.Analysis;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.DataStore;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileIndex;
@@ -21,7 +21,7 @@ import java.util.List;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-@Analysis(id = VariantRemoveStorageOperation.ID, type = Analysis.AnalysisType.VARIANT)
+@Tool(id = VariantRemoveStorageOperation.ID, type = Tool.ToolType.VARIANT)
 public class VariantRemoveStorageOperation extends StorageOperation {
 
     public static final String ID = "variant-file-remove";
@@ -49,13 +49,13 @@ public class VariantRemoveStorageOperation extends StorageOperation {
     protected void check() throws Exception {
         super.check();
         if (StringUtils.isEmpty(study)) {
-            throw new AnalysisException("Missing study");
+            throw new ToolException("Missing study");
         }
         if (removeWholeStudy && CollectionUtils.isNotEmpty(files)) {
-            throw new AnalysisException("Colliding params 'removeWholeStudy' and list of files. Can not mix them.");
+            throw new ToolException("Colliding params 'removeWholeStudy' and list of files. Can not mix them.");
         }
         if (!removeWholeStudy && CollectionUtils.isEmpty(files)) {
-            throw new AnalysisException("Missing list of files to remove");
+            throw new ToolException("Missing list of files to remove");
         }
 
         study = getStudyFqn(study);

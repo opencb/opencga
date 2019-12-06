@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.opencga.core.analysis.result.Execution;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.List;
@@ -51,7 +51,7 @@ public class Job extends PrivateStudyUid {
     private List<File> output;   // output files of this job
     private List<String> tags;
 
-    private Execution execution;
+    private ExecutionResult execution;
 
     private File log;
     private File errorLog;
@@ -86,7 +86,7 @@ public class Job extends PrivateStudyUid {
 
     public Job(String id, String uuid, String name, String description, String toolId, String userId, String commandLine, Map<String, Object> params,
                String creationDate, String modificationDate, Enums.Priority priority, Enums.ExecutionStatus status, File outDir,
-               List<File> input, List<File> output, List<String> tags, Execution execution, File log, File errorLog, int release,
+               List<File> input, List<File> output, List<String> tags, ExecutionResult execution, File log, File errorLog, int release,
                Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
@@ -297,11 +297,11 @@ public class Job extends PrivateStudyUid {
         return this;
     }
 
-    public Execution getExecution() {
+    public ExecutionResult getExecution() {
         return execution;
     }
 
-    public Job setExecution(Execution execution) {
+    public Job setExecution(ExecutionResult execution) {
         this.execution = execution;
         return this;
     }

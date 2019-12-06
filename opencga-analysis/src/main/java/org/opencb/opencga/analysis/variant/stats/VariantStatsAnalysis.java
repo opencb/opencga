@@ -26,7 +26,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.opencga.analysis.OpenCgaTool;
 import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.analysis.variant.operations.StorageOperation;
@@ -34,17 +34,16 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.analysis.result.FileResult;
-import org.opencb.opencga.core.analysis.variant.VariantStatsAnalysisExecutor;
-import org.opencb.opencga.core.annotations.Analysis;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.tools.result.FileResult;
+import org.opencb.opencga.core.tools.variant.VariantStatsAnalysisExecutor;
+import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.slf4j.LoggerFactory;
 
@@ -61,9 +60,9 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 /**
  * Created by jacobo on 06/03/15.
  */
-@Analysis(id = VariantStatsAnalysis.ID, type = Analysis.AnalysisType.VARIANT,
+@Tool(id = VariantStatsAnalysis.ID, type = Tool.ToolType.VARIANT,
         description = "Compute variant stats for any cohort and any set of variants.")
-public class VariantStatsAnalysis extends OpenCgaAnalysis {
+public class VariantStatsAnalysis extends OpenCgaTool {
 
     public final static String ID = "variant-stats";
 
@@ -190,7 +189,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
                 }
             }
             if (cohorts.isEmpty()) {
-                throw new AnalysisException("Unspecified cohort or list of samples");
+                throw new ToolException("Unspecified cohort or list of samples");
             }
         }
 
@@ -206,7 +205,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
                 if (cohorts.isEmpty()) {
                     cohorts.add("COHORT");
                 } else if (cohorts.size() > 1) {
-                    throw new AnalysisException("Only one cohort name is accepted when using dynamic cohorts.");
+                    throw new ToolException("Only one cohort name is accepted when using dynamic cohorts.");
                 }
             }
 
@@ -286,10 +285,10 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
 
                 if (!emptyCohorts.isEmpty()) {
                     if (dynamicCohort) {
-                        throw new AnalysisException("Missing cohort or samples. "
+                        throw new ToolException("Missing cohort or samples. "
                                 + "Use cohort " + StudyEntry.DEFAULT_COHORT + " to compute stats for all indexed samples");
                     } else {
-                        throw new AnalysisException("Unable to compute variant stats for cohorts " + emptyCohorts);
+                        throw new ToolException("Unable to compute variant stats for cohorts " + emptyCohorts);
                     }
                 }
 
@@ -302,7 +301,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
                             new QueryOptions(),
                             token);
                 } catch (CatalogException | StorageEngineException e) {
-                    throw new AnalysisException(e);
+                    throw new ToolException(e);
                 }
             }
         });
@@ -313,7 +312,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
                     // Modify cohort status to "CALCULATING"
                     updateCohorts(studyFqn, cohortsMap.keySet(), getToken(), Cohort.CohortStatus.CALCULATING, "Start calculating stats");
 
-                    getAnalysisExecutor(VariantStatsAnalysisExecutor.class)
+                    getToolExecutor(VariantStatsAnalysisExecutor.class)
                             .setStudy(studyFqn)
                             .setCohorts(cohortsMap)
                             .setOutputFile(outputFile)
@@ -333,12 +332,12 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
                     } catch (CatalogException ex) {
                         addError(ex);
                     }
-                    throw new AnalysisException("Error calculating statistics.", e);
+                    throw new ToolException("Error calculating statistics.", e);
                 }
             });
         } else {
             step(() -> {
-                getAnalysisExecutor(VariantStatsAnalysisExecutor.class)
+                getToolExecutor(VariantStatsAnalysisExecutor.class)
                         .setStudy(studyFqn)
                         .setCohorts(cohortsMap)
                         .setOutputFile(outputFile)
@@ -404,7 +403,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
      * @throws IOException if an IO error reading the aggregation map file (if any)
      */
     protected List<String> checkCohorts(String studyId, Aggregation aggregation, List<String> cohorts, String sessionId)
-            throws AnalysisException, CatalogException, IOException {
+            throws ToolException, CatalogException, IOException {
         List<String> cohortIds;
 
         // Check aggregation mapping properties
@@ -498,7 +497,7 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
      */
     protected Map<String, List<String>> checkCanCalculateCohorts(String studyFqn, List<String> cohortIds,
                                                                  boolean updateStats, boolean resume, String sessionId)
-            throws CatalogException, AnalysisException {
+            throws CatalogException, ToolException {
         Map<String, List<String>> cohortMap = new HashMap<>(cohortIds.size());
         for (String cohortId : cohortIds) {
             Cohort cohort = catalogManager.getCohortManager().get(studyFqn, cohortId, null, sessionId).first();
@@ -587,12 +586,12 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
         return aggregation;
     }
 
-    public static AnalysisException differentCohortsThanMappingFile() {
-        return new AnalysisException("Given cohorts (if any) must match with cohorts in the aggregation mapping file.");
+    public static ToolException differentCohortsThanMappingFile() {
+        return new ToolException("Given cohorts (if any) must match with cohorts in the aggregation mapping file.");
     }
 
-    public static AnalysisException missingCohorts() {
-        return new AnalysisException("Unable to index stats if no cohort is specified.");
+    public static ToolException missingCohorts() {
+        return new ToolException("Unable to index stats if no cohort is specified.");
     }
 
     public static IllegalArgumentException missingAggregationMappingFile(Aggregation aggregation) {
@@ -605,15 +604,15 @@ public class VariantStatsAnalysis extends OpenCgaAnalysis {
     }
 
 
-    public static AnalysisException unableToCalculateCohortReady(Cohort cohort) {
-        return new AnalysisException("Unable to calculate stats for cohort "
+    public static ToolException unableToCalculateCohortReady(Cohort cohort) {
+        return new ToolException("Unable to calculate stats for cohort "
                 + "{ uid: " + cohort.getUid() + " id: \"" + cohort.getId() + "\" }"
                 + " with status \"" + cohort.getStatus().getName() + "\". "
                 + "Resume or update stats for continue calculation");
     }
 
-    public static AnalysisException unableToCalculateCohortCalculating(Cohort cohort) {
-        return new AnalysisException("Unable to calculate stats for cohort "
+    public static ToolException unableToCalculateCohortCalculating(Cohort cohort) {
+        return new ToolException("Unable to calculate stats for cohort "
                 + "{ uid: " + cohort.getUid() + " id: \"" + cohort.getId() + "\" }"
                 + " with status \"" + cohort.getStatus().getName() + "\". "
                 + "Resume for continue calculation.");

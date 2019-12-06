@@ -1,26 +1,26 @@
 package org.opencb.opencga.analysis.variant.tdt;
 
-import org.opencb.opencga.analysis.OpenCgaAnalysis;
-import org.opencb.opencga.core.analysis.variant.TdtAnalysisExecutor;
-import org.opencb.opencga.core.annotations.Analysis;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.analysis.OpenCgaTool;
+import org.opencb.opencga.core.tools.variant.TdtAnalysisExecutor;
+import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.exception.ToolException;
 
 
-@Analysis(id = TdtAnalysis.ID, type = Analysis.AnalysisType.VARIANT)
-public class TdtAnalysis extends OpenCgaAnalysis {
+@Tool(id = TdtAnalysis.ID, type = Tool.ToolType.VARIANT)
+public class TdtAnalysis extends OpenCgaTool {
     public static final String ID = "tdt";
 
     private String phenotype;
 
     @Override
-    protected void check() throws AnalysisException {
+    protected void check() throws ToolException {
         // checks
     }
 
     @Override
-    public void run() throws AnalysisException {
+    public void run() throws ToolException {
         step(() -> {
-            getAnalysisExecutor(TdtAnalysisExecutor.class)
+            getToolExecutor(TdtAnalysisExecutor.class)
                     .execute();
         });
     }

@@ -20,14 +20,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.opencga.analysis.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.analysis.result.FileResult;
-import org.opencb.opencga.core.analysis.variant.GwasAnalysisExecutor;
-import org.opencb.opencga.core.annotations.Analysis;
-import org.opencb.opencga.core.annotations.Analysis.AnalysisType;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.tools.result.FileResult;
+import org.opencb.opencga.core.tools.variant.GwasAnalysisExecutor;
+import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.annotations.Tool.ToolType;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyResourceMetadata;
@@ -41,9 +41,9 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Analysis(id = GwasAnalysis.ID, type = AnalysisType.VARIANT,
+@Tool(id = GwasAnalysis.ID, type = ToolType.VARIANT,
         description = GwasAnalysis.DESCRIPTION)
-public class GwasAnalysis extends OpenCgaAnalysis {
+public class GwasAnalysis extends OpenCgaTool {
 
     public static final String ID = "gwas";
     public static final String DESCRIPTION = "Run a Genome Wide Association Study between two cohorts.";
@@ -201,13 +201,13 @@ public class GwasAnalysis extends OpenCgaAnalysis {
         }
 
         if (StringUtils.isEmpty(study)) {
-            throw new AnalysisException("Missing study!");
+            throw new ToolException("Missing study!");
         }
 
         try {
             study = catalogManager.getStudyManager().get(study, null, token).first().getFqn();
         } catch (CatalogException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
 
         caseCohortSamples = getCohortSamples(caseCohortSamples, caseCohort, caseCohortSamplesQuery, "case", true);
@@ -220,7 +220,7 @@ public class GwasAnalysis extends OpenCgaAnalysis {
                     overlapping.add(caseCohortSample);
                 }
             }
-            throw new AnalysisException("Unable to run Gwas analysis with overlapping cohorts. "
+            throw new ToolException("Unable to run Gwas analysis with overlapping cohorts. "
                     + (overlapping.size() < 10
                         ? "Samples " + overlapping + " are shared between both cohorts."
                         : "There are " + overlapping.size() + " overlapping samples between the cohorts."));
@@ -238,15 +238,15 @@ public class GwasAnalysis extends OpenCgaAnalysis {
                     new QueryOptions(),
                     token);
         } catch (CatalogException | StorageEngineException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
 
         if (index) {
             if (StringUtils.isEmpty(indexScoreId)) {
-                throw new AnalysisException("Unable to index gwas result as VariantScore. Required a valid index score id");
+                throw new ToolException("Unable to index gwas result as VariantScore. Required a valid index score id");
             }
             if (StringUtils.isEmpty(caseCohort) || StringUtils.isEmpty(controlCohort)) {
-                throw new AnalysisException("Unable to index gwas result as VariantScore if the cohorts are not defined in catalog");
+                throw new ToolException("Unable to index gwas result as VariantScore if the cohorts are not defined in catalog");
             }
 
             // check score is not already indexed
@@ -255,19 +255,19 @@ public class GwasAnalysis extends OpenCgaAnalysis {
                 for (VariantScoreMetadata score : scores) {
                     if (score.getName().equals(indexScoreId)) {
                         if (score.getIndexStatus().equals(TaskMetadata.Status.READY)) {
-                            throw new AnalysisException("Score name '" + indexScoreId + "' already exists in the database. "
+                            throw new ToolException("Score name '" + indexScoreId + "' already exists in the database. "
                                     + "The score name must be unique. Existing scores: "
                                     + scores.stream().map(StudyResourceMetadata::getName).collect(Collectors.toList()));
                         }
                     }
                 }
             } catch (CatalogException | StorageEngineException e) {
-                throw new AnalysisException(e);
+                throw new ToolException(e);
             }
 
             // TODO: Check score index permissions
         } else if (StringUtils.isNotEmpty(indexScoreId)) {
-            throw new AnalysisException("Provided indexScoreId with index=false. Use index=true and indexScoreId to index the score.");
+            throw new ToolException("Provided indexScoreId with index=false. Use index=true and indexScoreId to index the score.");
         }
 
         outputFile = getOutDir().resolve(buildOutputFilename());
@@ -291,10 +291,10 @@ public class GwasAnalysis extends OpenCgaAnalysis {
     }
 
     @Override
-    protected void run() throws AnalysisException {
+    protected void run() throws ToolException {
 
         step("gwas", () -> {
-            GwasAnalysisExecutor gwasExecutor = getAnalysisExecutor(GwasAnalysisExecutor.class);
+            GwasAnalysisExecutor gwasExecutor = getToolExecutor(GwasAnalysisExecutor.class);
 
             gwasExecutor.setConfiguration(gwasConfiguration)
                     .setStudy(study)
@@ -317,29 +317,29 @@ public class GwasAnalysis extends OpenCgaAnalysis {
                     variantStorageManager.loadVariantScore(study, outputFile.toUri(), indexScoreId, caseCohort, controlCohort, formatDescriptor,
                             executorParams, token);
                 } catch (CatalogException | StorageEngineException e) {
-                    throw new AnalysisException(e);
+                    throw new ToolException(e);
                 }
             });
         }
     }
 
-    private void createManhattanPlot() throws AnalysisException {
+    private void createManhattanPlot() throws ToolException {
     }
 
-    protected String buildOutputFilename() throws AnalysisException {
+    protected String buildOutputFilename() throws ToolException {
         GwasConfiguration.Method method = gwasConfiguration.getMethod();
         switch (method) {
             case CHI_SQUARE_TEST:
             case FISHER_TEST:
                 return method.label + ".tsv.gz";
             default:
-                throw new AnalysisException("Unknown GWAS method: " + method);
+                throw new ToolException("Unknown GWAS method: " + method);
         }
     }
 
     private List<String> getCohortSamples(List<String> inputSamples, String cohort, Query samplesQuery, String cohortType,
                                           boolean observedPhenotype)
-            throws AnalysisException {
+            throws ToolException {
         boolean validListOfSamples = inputSamples != null && !inputSamples.isEmpty();
         boolean validSampleQuery = samplesQuery != null && !samplesQuery.isEmpty();
         boolean validCohort = StringUtils.isNotEmpty(cohort);
@@ -401,17 +401,17 @@ public class GwasAnalysis extends OpenCgaAnalysis {
             Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, token);
             samples.removeIf(s -> !indexedSamples.contains(s));
         } catch (CatalogException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
         if (samples.size() <= 1) {
-            throw new AnalysisException("Unable to run GWAS analysis with " + cohortType + " cohort of size " + samples.size());
+            throw new ToolException("Unable to run GWAS analysis with " + cohortType + " cohort of size " + samples.size());
         }
         return samples;
     }
 
     private void checkParamsCombination(String cohortType,
                                         boolean validListOfSamples, boolean validSampleQuery, boolean validCohort, boolean validPhenotype)
-            throws AnalysisException {
+            throws ToolException {
         LinkedList<String> params = new LinkedList<>();
         if (validListOfSamples) {
             params.add(cohortType + "CohortSamples");
@@ -426,9 +426,9 @@ public class GwasAnalysis extends OpenCgaAnalysis {
             params.add("Phenotype");
         }
         if (params.isEmpty()) {
-            throw new AnalysisException("Missing " + cohortType + " cohort!");
+            throw new ToolException("Missing " + cohortType + " cohort!");
         } else if (params.size() > 1) {
-            throw new AnalysisException("Unable to mix params " + params + " to define the " + cohortType + " cohort. "
+            throw new ToolException("Unable to mix params " + params + " to define the " + cohortType + " cohort. "
                     + "Please, provide only one of them.");
         }
     }
