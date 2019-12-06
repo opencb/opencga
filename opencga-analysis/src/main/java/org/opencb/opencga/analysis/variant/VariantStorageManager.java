@@ -76,7 +76,6 @@ import static org.opencb.commons.datastore.core.QueryOptions.empty;
 import static org.opencb.opencga.catalog.db.api.StudyDBAdaptor.QueryParams.FQN;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.NONE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
 
 public class VariantStorageManager extends StorageManager {
 
@@ -860,7 +859,6 @@ public class VariantStorageManager extends StorageManager {
     public DataResult<FacetField> facet(Query query, QueryOptions queryOptions, String token)
             throws CatalogException, StorageEngineException, IOException {
         return secure(query, queryOptions, token, Enums.Action.FACET, engine -> {
-            addDefaultLimit(queryOptions, engine.getOptions());
             logger.debug("getFacets {}, {}", query, queryOptions);
             DataResult<FacetField> result = engine.facet(query, queryOptions);
             logger.debug("getFacets in {}ms", result.getTime());

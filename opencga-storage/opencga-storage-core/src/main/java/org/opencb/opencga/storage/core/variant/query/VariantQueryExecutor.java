@@ -14,8 +14,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.QUERY_DEFAULT_TIMEOUT;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.QUERY_MAX_TIMEOUT;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultSampleLimit;
 
 /**
  * Created on 01/04/19.
@@ -36,9 +34,6 @@ public abstract class VariantQueryExecutor implements VariantIterable {
 
     public final VariantQueryResult<Variant> get(Query query, QueryOptions options) {
         try {
-            addDefaultLimit(options, getOptions());
-            addDefaultSampleLimit(query, getOptions());
-
             return (VariantQueryResult<Variant>) getOrIterator(query, options, false);
         } catch (StorageEngineException e) {
             throw VariantQueryException.internalException(e);

@@ -76,6 +76,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultSampleLimit;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.buildSamplesIndexCollectionName;
 
@@ -909,6 +910,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
+        addDefaultLimit(options, getOptions());
+        addDefaultSampleLimit(query, getOptions());
         query = preProcessQuery(query, options);
         return getVariantQueryExecutor(query, options).get(query, options);
     }
@@ -1022,6 +1025,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public DataResult<FacetField> facet(Query query, QueryOptions options) {
         try {
+            addDefaultLimit(options, getOptions());
             return new VariantAggregationExecutor(getVariantSearchManager(), dbName, this, getMetadataManager())
                     .facet(query, options);
         } catch (StorageEngineException e) {
