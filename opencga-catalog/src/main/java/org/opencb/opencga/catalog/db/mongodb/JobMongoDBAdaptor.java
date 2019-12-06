@@ -844,6 +844,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         break;
                     case ID:
                     case NAME:
+                    case TOOL_ID:
                     case UUID:
                     case USER_ID:
                     case TOOL_NAME:

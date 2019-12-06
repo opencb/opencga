@@ -699,8 +699,8 @@ public class OpenCGAWSServer {
         }
     }
 
-    public Response submitJob(String command, String subcommand, String study, RestBodyParams bodyParams,
-                              String jobName, String jobDescription, String jobTagsStr) {
+    public Response submitJob(String toolId, String study, RestBodyParams bodyParams, String jobName, String jobDescription,
+                              String jobTagsStr) {
         return run(() -> {
             List<String> jobTags;
             if (StringUtils.isNotEmpty(jobTagsStr)) {
@@ -712,18 +712,13 @@ public class OpenCGAWSServer {
             if (StringUtils.isNotEmpty(study)) {
                 paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
             }
-            return catalogManager
-                    .getJobManager()
-                    .submit(study, command, subcommand, Enums.Priority.MEDIUM, paramsMap,
-                            null,
-                            jobName,
-                            jobDescription,
-                            jobTags, token);
+            return catalogManager.getJobManager()
+                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, null, jobName, jobDescription, jobTags, token);
         });
     }
 
-    public Response submitJob(String command, String subcommand, String study, Map<String, Object> paramsMap,
-                              String jobId, String jobName, String jobDescription, String jobTagsStr) {
+    public Response submitJob(String toolId, String study, Map<String, Object> paramsMap, String jobId, String jobName,
+                              String jobDescription, String jobTagsStr) {
         return run(() -> {
             List<String> jobTags;
             if (StringUtils.isNotEmpty(jobTagsStr)) {
@@ -731,13 +726,8 @@ public class OpenCGAWSServer {
             } else {
                 jobTags = Collections.emptyList();
             }
-            return catalogManager
-                    .getJobManager()
-                    .submit(study, command, subcommand, Enums.Priority.MEDIUM, paramsMap,
-                            jobId,
-                            jobName,
-                            jobDescription,
-                            jobTags, token);
+            return catalogManager.getJobManager()
+                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, jobId, jobName, jobDescription, jobTags, token);
         });
 
     }

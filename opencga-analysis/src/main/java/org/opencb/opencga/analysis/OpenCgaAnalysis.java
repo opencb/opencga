@@ -28,7 +28,7 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
-import org.opencb.opencga.core.analysis.result.AnalysisResult;
+import org.opencb.opencga.core.analysis.result.Execution;
 import org.opencb.opencga.core.analysis.result.AnalysisResultManager;
 import org.opencb.opencga.core.analysis.result.ExecutorInfo;
 import org.opencb.opencga.core.analysis.result.FileResult;
@@ -163,7 +163,7 @@ public abstract class OpenCgaAnalysis {
      * @return AnalysisResult
      * @throws AnalysisException on error
      */
-    public final AnalysisResult start() throws AnalysisException {
+    public final Execution start() throws AnalysisException {
         if (this.getClass().getAnnotation(Analysis.class) == null) {
             throw new AnalysisException("Missing @" + Analysis.class.getSimpleName() + " annotation in " + this.getClass());
         }

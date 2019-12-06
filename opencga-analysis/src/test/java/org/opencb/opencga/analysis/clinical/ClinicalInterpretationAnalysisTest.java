@@ -11,7 +11,7 @@ import org.opencb.opencga.analysis.clinical.interpretation.*;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.core.analysis.result.AnalysisResult;
+import org.opencb.opencga.core.analysis.result.Execution;
 import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -56,7 +56,7 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
                 .setPenetrance(ClinicalProperty.Penetrance.COMPLETE)
                 .setConfig(config);
 
-        AnalysisResult result = tieringAnalysis.start();
+        Execution result = tieringAnalysis.start();
 
         System.out.println(result);
 
@@ -101,7 +101,7 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
                 .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
                 .setConfig(config);
 
-        AnalysisResult result = customAnalysis.start();
+        Execution result = customAnalysis.start();
         System.out.println(result);
 
         checkInterpretation(18, result);
@@ -137,14 +137,14 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
                 .setQuery(query)
                 .setConfig(config);
 
-        AnalysisResult result = customAnalysis.start();
+        Execution result = customAnalysis.start();
 
         System.out.println(result);
 
         checkInterpretation(12, result);
     }
 
-    private void checkInterpretation(int expected, AnalysisResult result) {
+    private void checkInterpretation(int expected, Execution result) {
         System.out.println("out dir (to absolute path) = " + outDir.toAbsolutePath());
 
         String msg = "Success";
@@ -164,7 +164,7 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
         Assert.assertEquals(expected, interpretation.getPrimaryFindings().size());
     }
 
-    private Interpretation readInterpretation(AnalysisResult result, Path outDir)
+    private Interpretation readInterpretation(Execution result, Path outDir)
             throws AnalysisException {
         File file = new java.io.File(outDir + "/" + InterpretationAnalysis.INTERPRETATION_FILENAME);
         if (file.exists()) {

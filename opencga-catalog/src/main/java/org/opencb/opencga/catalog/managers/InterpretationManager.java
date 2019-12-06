@@ -25,7 +25,6 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Interpretation;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.permissions.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
@@ -36,8 +35,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
-
-import static org.opencb.opencga.core.models.common.Enums.Priority.MEDIUM;
 
 public class InterpretationManager extends ResourceManager<Interpretation> {
 
@@ -172,21 +169,6 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
         interpretationDataResult.setNumMatches(interpretationList.size());
 
         return keepOriginalOrder(uniqueList, interpretationStringFunction, interpretationDataResult, ignoreException, false);
-    }
-
-    public OpenCGAResult<Job> queue(String interpretationTool, String studyStr, String clinicalAnalysisId, Map<String, Object> params,
-                                    String token) throws CatalogException {
-        String userId = userManager.getUserId(token);
-        Study study = studyManager.resolveId(studyStr, userId);
-
-        ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(), clinicalAnalysisId,
-                ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId).first();
-
-        authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
-                ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
-
-        // Queue job
-        return catalogManager.getJobManager().submit(studyStr, "interpretation", interpretationTool, MEDIUM, params, token);
     }
 
     public OpenCGAResult<Interpretation> create(String studyStr, Interpretation entry, QueryOptions options, String sessionId)

@@ -26,7 +26,7 @@ import java.util.*;
 @Analysis(id = FileDeleteAction.ID, type = Analysis.AnalysisType.VARIANT, description = "Delete files.")
 public class FileDeleteAction extends OpenCgaAnalysis {
 
-    public final static String ID = "file-delete";
+    public final static String ID = "files-delete";
 
     private List<String> files;
     private String studyFqn;

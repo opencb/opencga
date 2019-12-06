@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.core.analysis.result.AnalysisResult;
+import org.opencb.opencga.core.analysis.result.Execution;
 import org.opencb.opencga.core.analysis.result.AnalysisResultManager;
 import org.opencb.opencga.core.analysis.result.FileResult;
 import org.opencb.opencga.core.common.UriUtils;
@@ -37,13 +37,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
@@ -136,13 +134,13 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
         checkAnnotation(v -> true);
     }
 
-    AnalysisResult annotate(QueryOptions config) throws AnalysisException, CatalogException, IOException {
+    Execution annotate(QueryOptions config) throws AnalysisException, CatalogException, IOException {
         return annotate(config, null);
     }
 
-    AnalysisResult annotate(QueryOptions config, String region) throws AnalysisException, CatalogException, IOException {
+    Execution annotate(QueryOptions config, String region) throws AnalysisException, CatalogException, IOException {
         String tmpDir = opencga.createTmpOutdir(studyId, "_ANNOT_", sessionId);
-        AnalysisResult result = variantManager.annotate(studyFqn, region, tmpDir, config, sessionId);
+        Execution result = variantManager.annotate(studyFqn, region, tmpDir, config, sessionId);
 
         if (config.getBoolean(StorageOperation.KEEP_INTERMEDIATE_FILES)) {
             String study = config.getString("study");
