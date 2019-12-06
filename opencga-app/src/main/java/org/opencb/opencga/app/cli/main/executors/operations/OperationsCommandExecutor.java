@@ -89,13 +89,12 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
     private DataResponse<Job> variantSecondaryIndex() throws IOException {
         OperationsCommandOptions.VariantSecondaryIndexCommandOptions variantSecondaryIndex = operationsCommandOptions.variantSecondaryIndex;
         ObjectMap params = new OperationsWSService.VariantSecondaryIndexParams(
-                variantSecondaryIndex.project,
                 variantSecondaryIndex.region,
                 variantSecondaryIndex.sample,
                 variantSecondaryIndex.overwrite
         ).toObjectMap();
         addDynamicParams(params);
-        return openCGAClient.getOperationClient().variantSecondaryIndex(variantSecondaryIndex.study, params);
+        return openCGAClient.getOperationClient().variantSecondaryIndex(variantSecondaryIndex.project, variantSecondaryIndex.study, params);
     }
 
     private DataResponse variantSecondaryIndexDelete() throws IOException {
@@ -118,16 +117,15 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 variantAnnotation.genericVariantAnnotateOptions.customAnnotationKey
         ).toObjectMap();
         addDynamicParams(params);
-        return openCGAClient.getOperationClient().variantAnnotationIndex(variantAnnotation.study, params);
+        return openCGAClient.getOperationClient().variantAnnotationIndex(variantAnnotation.project, variantAnnotation.study, params);
     }
 
     private DataResponse variantAnnotationSave() throws IOException {
         ObjectMap params = new OperationsWSService.VariantAnnotationSaveParams(
-                operationsCommandOptions.variantAnnotationSave.project,
                 operationsCommandOptions.variantAnnotationSave.annotationId
         ).toObjectMap();
         addDynamicParams(params);
-        return openCGAClient.getOperationClient().variantAnnotationSave(params);
+        return openCGAClient.getOperationClient().variantAnnotationSave(operationsCommandOptions.variantAnnotationSave.project, params);
     }
 
     private DataResponse variantAnnotationDelete() throws IOException {
