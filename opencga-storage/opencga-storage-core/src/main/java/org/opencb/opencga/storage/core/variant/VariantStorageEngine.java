@@ -910,6 +910,12 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
+        if (options == null) {
+            options = new QueryOptions();
+        }
+        if (query == null) {
+            query = new Query();
+        }
         addDefaultLimit(options, getOptions());
         addDefaultSampleLimit(query, getOptions());
         query = preProcessQuery(query, options);

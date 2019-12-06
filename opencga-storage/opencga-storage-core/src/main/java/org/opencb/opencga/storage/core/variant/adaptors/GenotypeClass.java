@@ -142,6 +142,35 @@ public enum GenotypeClass {
             }
         }
         return true;
+    }),
+
+
+    /**
+     * Contains the main alternate.
+     * <p>
+     * 0/1, 1/1, 1/2, 1, ./1, ...
+     */
+    MAIN_ALT(str -> {
+        if (!str.contains("1")) {
+            return false;
+        }
+        if (str.equals("0/1")
+                || str.equals("1/1")
+                || str.equals("1|1")
+                || str.equals("0|1")
+                || str.equals("1|0")) {
+            return true;
+        }
+        Genotype genotype = parseGenotype(str);
+        if (genotype == null) {
+            return false;
+        }
+        for (int i : genotype.getAllelesIdx()) {
+            if (i == 1) {
+                return true;
+            }
+        }
+        return false;
     });
 
     /**

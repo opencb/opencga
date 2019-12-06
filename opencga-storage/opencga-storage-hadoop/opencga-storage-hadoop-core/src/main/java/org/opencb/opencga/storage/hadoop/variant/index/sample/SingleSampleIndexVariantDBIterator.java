@@ -11,7 +11,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery.SingleSampleIndexQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -40,9 +40,9 @@ public class SingleSampleIndexVariantDBIterator extends VariantDBIterator {
         Iterator<Iterator<Variant>> iterators = regions.stream()
                 .map(region -> {
                     // One scan per region
-                    Scan scan = dbAdaptor.parse(query, region, false);
-                    HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter();
-                    SampleIndexEntryFilter filter = new SampleIndexEntryFilter(query, region);
+                    Scan scan = dbAdaptor.parse(query, region);
+                    HBaseToSampleIndexConverter converter = new HBaseToSampleIndexConverter(dbAdaptor.getConfiguration());
+                    SampleIndexEntryFilter filter = dbAdaptor.buildSampleIndexEntryFilter(query, region);
                     try {
                         ResultScanner scanner = table.getScanner(scan);
                         addCloseable(scanner);

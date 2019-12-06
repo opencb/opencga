@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.io.compress.Compression;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -9,7 +8,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.utils.AbstractHBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -25,7 +23,6 @@ import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndex
 public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
 
     private final List<Integer> sampleIds;
-    private final byte[] family;
     // Map from IndexChunk -> List (following sampleIds order) of Map<Genotype, StringBuilder>
     private final Map<IndexChunk, List<Map<String, SortedSet<Variant>>>> buffer = new LinkedHashMap<>();
     private final HashSet<String> genotypes = new HashSet<>();
@@ -35,7 +32,6 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
     public SampleIndexDBLoader(HBaseManager hBaseManager, String tableName, List<Integer> sampleIds, byte[] family, ObjectMap options) {
         super(hBaseManager, tableName);
         this.sampleIds = sampleIds;
-        this.family = family;
         converter = new SampleIndexToHBaseConverter(family);
         this.options = options;
     }
@@ -71,28 +67,7 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
     @Override
     public boolean open() {
         super.open();
-
-        try {
-            int files = options.getInt(
-                    HadoopVariantStorageOptions.EXPECTED_FILES_NUMBER.key(),
-                    HadoopVariantStorageOptions.EXPECTED_FILES_NUMBER.defaultValue());
-            int preSplitSize = options.getInt(
-                    HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.key(),
-                    HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_PRESPLIT_SIZE.defaultValue());
-
-            int splits = files / preSplitSize;
-            ArrayList<byte[]> preSplits = new ArrayList<>(splits);
-            for (int i = 0; i < splits; i++) {
-                preSplits.add(toRowKey(i * preSplitSize));
-            }
-
-            hBaseManager.createTableIfNeeded(tableName, family, preSplits, Compression.getCompressionAlgorithmByName(
-                    options.getString(
-                            HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_COMPRESSION.key(),
-                            HadoopVariantStorageOptions.SAMPLE_INDEX_TABLE_COMPRESSION.defaultValue())));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        SampleIndexSchema.createTableIfNeeded(tableName, hBaseManager, options);
         return true;
     }
 
@@ -128,34 +103,6 @@ public class SampleIndexDBLoader extends AbstractHBaseDataWriter<Variant, Put> {
 
     public static boolean validVariant(Variant variant) {
         return !variant.getType().equals(VariantType.NO_VARIATION);
-    }
-
-    /**
-     * Genotypes HOM_REF and MISSING are not loaded in the SampleIndexTable.
-     *
-     * @param gt genotype
-     * @return is valid genotype
-     */
-    public static boolean validGenotype(String gt) {
-//        return gt != null && gt.contains("1");
-        if (gt != null) {
-            switch (gt) {
-                case "" :
-                case "0" :
-                case "0/0" :
-                case "./0" :
-                case "0|0" :
-                case "0|." :
-                case ".|0" :
-                case "./." :
-                case ".|." :
-                case "." :
-                    return false;
-                default:
-                    return true;
-            }
-        }
-        return false;
     }
 
     @Override

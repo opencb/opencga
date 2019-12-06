@@ -151,7 +151,7 @@ public class VariantMapReduceUtil {
                     && SampleIndexQueryParser.validSampleIndexQuery(query);
             if (useSampleIndex) {
                 // Remove extra fields from the query
-                SampleIndexQueryParser.parseSampleIndexQuery(query, metadataManager);
+                new SampleIndexQueryParser(metadataManager).parse(query);
 
                 LOGGER.info("Use sample index to read from HBase");
             }
@@ -252,7 +252,7 @@ public class VariantMapReduceUtil {
                     && SampleIndexQueryParser.validSampleIndexQuery(query);
             if (useSampleIndex) {
                 // Remove extra fields from the query
-                SampleIndexQueryParser.parseSampleIndexQuery(query, metadataManager);
+                new SampleIndexQueryParser(metadataManager).parse(query);
 
                 LOGGER.info("Use sample index to read from HBase");
             }

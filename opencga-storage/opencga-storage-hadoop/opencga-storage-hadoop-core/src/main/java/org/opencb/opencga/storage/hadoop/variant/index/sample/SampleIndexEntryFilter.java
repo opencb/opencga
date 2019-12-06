@@ -1,17 +1,22 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
-import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
+import org.opencb.opencga.storage.hadoop.variant.index.family.MendelianErrorSampleIndexEntryIterator;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleAnnotationIndexQuery.PopulationFrequencyQuery;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SingleSampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntry.SampleIndexGtEntry;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery.SingleSampleIndexQuery;
 
 import java.util.*;
 
-import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.testIndex;
-import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.testParentsGenotypeCode;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.QueryOperation.AND;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.QueryOperation.OR;
+import static org.opencb.opencga.storage.hadoop.variant.index.IndexUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema.INTRA_CHROMOSOME_VARIANT_COMPARATOR;
 
 /**
@@ -55,7 +60,7 @@ public class SampleIndexEntryFilter {
         this.query = query;
         this.regionFilter = regionFilter;
 
-        int[] countsPerBit = IndexUtils.countPerBit(new byte[]{query.getAnnotationIndexMask()});
+        int[] countsPerBit = IndexUtils.countPerBit(new byte[]{query.getAnnotationIndex()});
 
         annotationIndexPositions = new ArrayList<>(8);
         for (int i = 0; i < countsPerBit.length; i++) {
@@ -67,25 +72,30 @@ public class SampleIndexEntryFilter {
 
     public Collection<Variant> filter(SampleIndexEntry sampleIndexEntry) {
         if (query.getMendelianError()) {
-            return filterMendelian(sampleIndexEntry.getGts(), sampleIndexEntry.getMendelianVariants());
+            return filterMendelian(sampleIndexEntry.mendelianIterator());
         } else {
-            return filter(sampleIndexEntry.getGts());
+            return filter(sampleIndexEntry, false);
         }
     }
 
-    private Set<Variant> filterMendelian(Map<String, SampleIndexGtEntry> gts,
-                                         MendelianErrorSampleIndexConverter.MendelianErrorSampleIndexVariantIterator iterator) {
+    public int filterAndCount(SampleIndexEntry sampleIndexEntry) {
+        if (query.getMendelianError()) {
+            return filterMendelian(sampleIndexEntry.mendelianIterator()).size();
+        } else {
+            return filter(sampleIndexEntry, true).size();
+        }
+    }
+
+    private Set<Variant> filterMendelian(MendelianErrorSampleIndexEntryIterator iterator) {
         Set<Variant> variants = new TreeSet<>(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
 
         if (iterator != null) {
             while (iterator.hasNext()) {
-                String gt = iterator.nextGenotype();
-                int mendelianErrorCode = iterator.nextCode();
+                int mendelianErrorCode = iterator.nextMendelianErrorCode();
                 if (query.isOnlyDeNovo() && !isDeNovo(mendelianErrorCode)) {
                     iterator.skip();
                 } else {
-                    SampleIndexGtEntry gtEntry = gts.computeIfAbsent(gt, SampleIndexGtEntry::new);
-                    Variant variant = filter(gtEntry, iterator);
+                    Variant variant = filter(iterator);
                     if (variant != null) {
                         variants.add(variant);
                     }
@@ -99,16 +109,21 @@ public class SampleIndexEntryFilter {
         return DE_NOVO_MENDELIAN_ERROR_CODES[mendelianErrorCode];
     }
 
-    private Collection<Variant> filter(Map<String, SampleIndexGtEntry> gts) {
+    private Collection<Variant> filter(SampleIndexEntry entry, boolean count) {
+        Map<String, SampleIndexGtEntry> gts = entry.getGts();
         List<List<Variant>> variantsByGt = new ArrayList<>(gts.size());
         int numVariants = 0;
+        // Use countIterator only if don't need to filter by region or by type
+        boolean countIterator = count && regionFilter == null && CollectionUtils.isEmpty(query.getVariantTypes());
         for (SampleIndexGtEntry gtEntry : gts.values()) {
+
             MutableInt expectedResultsFromAnnotation = new MutableInt(getExpectedResultsFromAnnotation(gtEntry));
 
-            ArrayList<Variant> variants = new ArrayList<>(gtEntry.getVariants().getApproxSize());
+            SampleIndexEntryIterator variantIterator = gtEntry.iterator(countIterator);
+            ArrayList<Variant> variants = new ArrayList<>(variantIterator.getApproxSize());
             variantsByGt.add(variants);
-            while (expectedResultsFromAnnotation.intValue() > 0 && gtEntry.getVariants().hasNext()) {
-                Variant variant = filter(gtEntry, expectedResultsFromAnnotation);
+            while (expectedResultsFromAnnotation.intValue() > 0 && variantIterator.hasNext()) {
+                Variant variant = filter(variantIterator, expectedResultsFromAnnotation);
                 if (variant != null) {
                     variants.add(variant);
                     numVariants++;
@@ -125,8 +140,12 @@ public class SampleIndexEntryFilter {
         for (List<Variant> variantList : variantsByGt) {
             variants.addAll(variantList);
         }
-        // List.sort is much faster than a TreeSet
-        variants.sort(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
+
+        // Only sort if not counting
+        if (!count) {
+            // List.sort is much faster than a TreeSet
+            variants.sort(INTRA_CHROMOSOME_VARIANT_COMPARATOR);
+        }
 
         return variants;
     }
@@ -141,42 +160,159 @@ public class SampleIndexEntryFilter {
         return expectedResultsFromAnnotation;
     }
 
-    private Variant filter(SampleIndexGtEntry gtEntry, MutableInt expectedResultsFromAnnotation) {
-        return filter(gtEntry, gtEntry.getVariants(), expectedResultsFromAnnotation);
+    private Variant filter(SampleIndexEntryIterator variants) {
+        return filter(variants, new MutableInt(Integer.MAX_VALUE));
     }
 
-    private Variant filter(SampleIndexGtEntry gtEntry, SampleIndexVariantBiConverter.SampleIndexVariantIterator variants) {
-        return filter(gtEntry, variants, new MutableInt(Integer.MAX_VALUE));
-    }
-
-    private Variant filter(SampleIndexGtEntry gtEntry, SampleIndexVariantBiConverter.SampleIndexVariantIterator variants,
-                           MutableInt expectedResultsFromAnnotation) {
-        int idx = variants.nextIndex();
+    private Variant filter(SampleIndexEntryIterator variants, MutableInt expectedResultsFromAnnotation) {
         // Either call to next() or to skip(), but no both
 
+        AnnotationIndexEntry annotationIndexEntry = variants.nextAnnotationIndexEntry();
+
         // Test annotation index (if any)
-        if (gtEntry.getAnnotationIndexGt() == null
-                || testIndex(gtEntry.getAnnotationIndexGt()[idx], query.getAnnotationIndexMask(), query.getAnnotationIndexMask())) {
+        if (annotationIndexEntry == null
+                || !annotationIndexEntry.hasSummaryIndex()
+                || testIndex(annotationIndexEntry.getSummaryIndex(), query.getAnnotationIndexMask(), query.getAnnotationIndex())) {
             expectedResultsFromAnnotation.decrement();
 
-            // Test file index (if any)
-            if (gtEntry.getFileIndexGt() == null
-                    || testIndex(gtEntry.getFileIndexGt()[idx], query.getFileIndexMask(), query.getFileIndex())) {
+            // Test other annotation index and popFreq (if any)
+            if (annotationIndexEntry == null || filterOtherAnnotFields(annotationIndexEntry) && filterPopFreq(annotationIndexEntry)) {
 
-                // Test parents filter (if any)
-                if (gtEntry.getParentsGt() == null
-                        || testParentsGenotypeCode(gtEntry.getParentsGt()[idx], query.getFatherFilter(), query.getMotherFilter())) {
+                // Test file index (if any)
+                if (filterFile(variants)) {
 
-                    // Only at this point, get the variant.
-                    Variant variant = variants.next();
+                    // Test parents filter (if any)
+                    if (!variants.hasParentsIndex()
+                            || testParentsGenotypeCode(variants.nextParentsIndex(), query.getFatherFilter(), query.getMotherFilter())) {
 
-                    // Apply rest of filters
-                    return filter(variant);
+                        // Only at this point, get the variant.
+                        Variant variant = variants.next();
+
+                        // Apply rest of filters
+                        return filter(variant);
+                    }
                 }
             }
         }
+        // The variant did not pass the tests. Skip
         variants.skip();
         return null;
+    }
+
+    private boolean filterFile(SampleIndexEntryIterator variants) {
+        if (query.getFileIndexMask() == EMPTY_MASK || !variants.hasFileIndex()) {
+            return true;
+        }
+        return query.getSampleFileIndexQuery().getValidFileIndex()[variants.nextFileIndex() & query.getFileIndexMask()];
+    }
+
+    public static boolean isNonIntergenic(byte[] annotationIndex, int idx) {
+        return isNonIntergenic(annotationIndex[idx]);
+    }
+
+    public static boolean isNonIntergenic(byte summaryIndex) {
+        return IndexUtils.testIndex(summaryIndex, AnnotationIndexConverter.INTERGENIC_MASK, (byte) 0);
+    }
+
+    private boolean filterPopFreq(AnnotationIndexEntry annotationIndexEntry) {
+        if (query.getAnnotationIndexQuery().getPopulationFrequencyQueries().isEmpty() || annotationIndexEntry.getPopFreqIndex() == null) {
+            return true;
+        }
+        for (PopulationFrequencyQuery q : query.getAnnotationIndexQuery().getPopulationFrequencyQueries()) {
+            int code = annotationIndexEntry.getPopFreqIndex()[q.getPosition()];
+            if (q.getMinCodeInclusive() <= code && code < q.getMaxCodeExclusive()) {
+                if (query.getAnnotationIndexQuery().getPopulationFrequencyQueryOperator().equals(OR)) {
+                    // Require ANY match
+                    // If any match, SUCCESS
+                    return true;
+                }
+            } else {
+                if (query.getAnnotationIndexQuery().getPopulationFrequencyQueryOperator().equals(AND)) {
+                    // Require ALL matches.
+                    // If any fail, FAIL
+                    return false;
+                }
+            }
+        }
+
+        if (query.getAnnotationIndexQuery().getPopulationFrequencyQueryOperator().equals(AND)) {
+            // Require ALL matches.
+            // If no fails, SUCCESS
+            return true;
+        } else {
+            // Require ANY match.
+            // If no matches, and partial, UNKNOWN. If unknown, SUCCESS
+            // If no matches, and fully covered, FAIL
+            return query.getAnnotationIndexQuery().isPopulationFrequencyQueryPartial();
+        }
+    }
+
+    private boolean filterOtherAnnotFields(AnnotationIndexEntry annotationIndexEntry) {
+        if (annotationIndexEntry == null || !annotationIndexEntry.hasSummaryIndex()) {
+            return true;
+        }
+        if (annotationIndexEntry.isIntergenic()) {
+            // unable to filter by this field
+            return true;
+        }
+        if (!annotationIndexEntry.hasBtIndex()
+                || testIndexAny(annotationIndexEntry.getBtIndex(), query.getAnnotationIndexQuery().getBiotypeMask())) {
+
+            if (!annotationIndexEntry.hasCtIndex()
+                    || testIndexAny(annotationIndexEntry.getCtIndex(), query.getAnnotationIndexQuery().getConsequenceTypeMask())) {
+
+                if (annotationIndexEntry.getCtBtCombination().getCtBtMatrix() == null
+                        || query.getAnnotationIndexQuery().getConsequenceTypeMask() == 0
+                        || query.getAnnotationIndexQuery().getBiotypeMask() == 0) {
+                    return true;
+                } else {
+                    AnnotationIndexEntry.CtBtCombination ctBtCombination = annotationIndexEntry.getCtBtCombination();
+                    // Check ct+bt combinations
+                    short ctIndex = annotationIndexEntry.getCtIndex();
+                    int numCt = ctBtCombination.getNumCt();
+                    int numBt = ctBtCombination.getNumBt();
+                    // Pitfall!
+                    // if (numCt == 1 || numBt == 1) { return true; } This may not be true.
+                    // There could be missing rows/columns in the index
+                    byte[] ctBtMatrix = ctBtCombination.getCtBtMatrix();
+                    // Check if any combination matches que query filter.
+                    // Walk through all values of CT and BT in this variant.
+                    // 3 conditions must meet:
+                    //  - The CT is part of the query filter
+                    //  - The BT is part of the query filter
+                    //  - The variant had the combination of both
+                    for (int ctIndexPos = 0; ctIndexPos < numCt; ctIndexPos++) {
+                        // Get the first CT value from the right.
+                        short ct = (short) Integer.lowestOneBit(ctIndex);
+                        // Remove the CT value from the index, so the next iteration gets the next value
+                        ctIndex &= ~ct;
+                        // Check if the CT is part of the query filter
+                        if (IndexUtils.testIndexAny(ct, query.getAnnotationIndexQuery().getConsequenceTypeMask())) {
+                            // Iterate over the Biotype values
+                            byte btIndex = annotationIndexEntry.getBtIndex();
+                            for (int btIndexPos = 0; btIndexPos < numBt; btIndexPos++) {
+                                // As before, take the first BT value from the right.
+                                byte bt = (byte) Integer.lowestOneBit(btIndex);
+                                btIndex &= ~bt;
+                                // Check if the BT is part of the query filter
+                                if (IndexUtils.testIndexAny(bt, query.getAnnotationIndexQuery().getBiotypeMask())) {
+                                    // Check if this CT was together with this BT
+                                    if ((ctBtMatrix[ctIndexPos] & (1 << btIndexPos)) != 0) {
+                                        return true;
+                                    }
+                                }
+                            }
+                            // assert btIndex == 0; // We should have removed all BT from the index
+                        }
+                    }
+                    // assert ctIndex == 0; // We should have removed all CT from the index
+
+                    // could not find any valid combination
+                    return false;
+                }
+            }
+        }
+        return false;
     }
 
     private Variant filter(Variant variant) {
@@ -184,7 +320,7 @@ public class SampleIndexEntryFilter {
         if (regionFilter == null || regionFilter.contains(variant.getChromosome(), variant.getStart())) {
 
             // Test type filter (if any)
-            if (query.getVariantTypes() == null || query.getVariantTypes().contains(variant.getType())) {
+            if (CollectionUtils.isEmpty(query.getVariantTypes()) || query.getVariantTypes().contains(variant.getType())) {
                 return variant;
             }
         }

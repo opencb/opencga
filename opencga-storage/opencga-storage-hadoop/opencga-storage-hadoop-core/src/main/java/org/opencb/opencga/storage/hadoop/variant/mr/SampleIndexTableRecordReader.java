@@ -18,9 +18,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStorageMetadataDBAdaptorFactory;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
@@ -71,7 +70,7 @@ public class SampleIndexTableRecordReader extends TableRecordReader {
         sampleIndexDBAdaptor = new SampleIndexDBAdaptor(helper, hBaseManager, tableNameGenerator, metadataManager);
 
         Query query = VariantMapReduceUtil.getQueryFromConfig(conf);
-        sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(query, metadataManager);
+        sampleIndexQuery = sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(query);
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(sampleIndexQuery.getStudy());
 
         allChromosomes = new TreeSet<>(VariantPhoenixKeyFactory.HBASE_KEY_CHROMOSOME_COMPARATOR);

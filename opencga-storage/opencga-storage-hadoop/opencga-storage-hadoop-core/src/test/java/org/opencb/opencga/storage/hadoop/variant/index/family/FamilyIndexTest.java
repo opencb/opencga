@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.stats;
+package org.opencb.opencga.storage.hadoop.variant.index.family;
 
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -20,8 +20,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexEntryFilter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 
 import java.net.URI;
@@ -47,6 +47,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
+    private SampleIndexQueryParser sampleIndexQueryParser;
 
     @Before
     public void before() throws Exception {
@@ -74,6 +75,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
 
             VariantHbaseTestUtils.printVariants(getVariantStorageEngine().getDBAdaptor(), newOutputUri(getTestName().getMethodName()));
         }
+        sampleIndexQueryParser = ((HadoopVariantStorageEngine) variantStorageEngine).getSampleIndexDBAdaptor().getSampleIndexQueryParser();
     }
 
     @Test
@@ -147,7 +149,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .append(VariantQueryParam.QUAL.key(), ">30")*/;
 
 
-        SampleIndexQuery sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(new Query(query), metadataManager);
+        SampleIndexQuery sampleIndexQuery = sampleIndexQueryParser.parse(new Query(query));
         assertEquals(1, sampleIndexQuery.getSamplesMap().size());
         assertNotNull(sampleIndexQuery.getMotherFilterMap().get(child));
         assertNull(sampleIndexQuery.getFatherFilterMap().get(child));
@@ -175,7 +177,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
                 /*.append(VariantQueryParam.FILE.key(), "1K.end.platinum-genomes-vcf-" + child + "_S1.genome.vcf.gz")
                 .append(VariantQueryParam.QUAL.key(), ">30")*/;
 
-        SampleIndexQuery sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(new Query(query), metadataManager);
+        SampleIndexQuery sampleIndexQuery = sampleIndexQueryParser.parse(new Query(query));
         assertEquals(1, sampleIndexQuery.getSamplesMap().size());
         assertNotNull(sampleIndexQuery.getFatherFilterMap().get(child));
         assertNotNull(sampleIndexQuery.getMotherFilterMap().get(child));
@@ -205,7 +207,7 @@ public class FamilyIndexTest extends VariantStorageBaseTest implements HadoopVar
                 .append(VariantQueryParam.QUAL.key(), ">30")*/;
 
         assertTrue(SampleIndexQueryParser.validSampleIndexQuery(new Query(query)));
-        SampleIndexQuery sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(new Query(query), metadataManager);
+        SampleIndexQuery sampleIndexQuery = sampleIndexQueryParser.parse(new Query(query));
         assertEquals(1, sampleIndexQuery.getSamplesMap().size());
         assertNotNull(sampleIndexQuery.getFatherFilterMap().get(child));
         assertNotNull(sampleIndexQuery.getMotherFilterMap().get(child));

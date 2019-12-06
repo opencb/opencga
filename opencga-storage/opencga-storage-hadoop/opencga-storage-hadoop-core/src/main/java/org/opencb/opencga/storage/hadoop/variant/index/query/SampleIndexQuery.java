@@ -1,5 +1,6 @@
-package org.opencb.opencga.storage.hadoop.variant.index.sample;
+package org.opencb.opencga.storage.hadoop.variant.index.query;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -31,10 +32,14 @@ public class SampleIndexQuery {
     private final Set<VariantType> variantTypes;
     private final String study;
     private final Map<String, List<String>> samplesMap;
+    /** Samples that should be subtracted from the final result. **/
+    private final Set<String> negatedSamples;
+    /** For each sample with father filter, indicates all the valid GTs codes. **/
     private final Map<String, boolean[]> fatherFilter;
+    /** For each sample with mother filter, indicates all the valid GTs codes. **/
     private final Map<String, boolean[]> motherFilter;
-    private final Map<String, byte[]> fileFilterMap; // byte[] = {mask , index}
-    private final byte annotationIndexMask;
+    private final Map<String, SampleFileIndexQuery> fileFilterMap;
+    private final SampleAnnotationIndexQuery annotationIndexQuery;
     private final Set<String> mendelianErrorSet;
     private final boolean onlyDeNovo;
     private final VariantQueryUtils.QueryOperation queryOperation;
@@ -44,32 +49,35 @@ public class SampleIndexQuery {
         this.variantTypes = query.variantTypes;
         this.study = query.study;
         this.samplesMap = query.samplesMap;
+        this.negatedSamples = query.negatedSamples;
         this.fatherFilter = query.fatherFilter;
         this.motherFilter = query.motherFilter;
         this.fileFilterMap = query.fileFilterMap;
-        this.annotationIndexMask = query.annotationIndexMask;
+        this.annotationIndexQuery = query.annotationIndexQuery;
         this.mendelianErrorSet = query.mendelianErrorSet;
         this.onlyDeNovo = query.onlyDeNovo;
         this.queryOperation = query.queryOperation;
     }
 
     public SampleIndexQuery(List<Region> regions, String study, Map<String, List<String>> samplesMap, QueryOperation queryOperation) {
-        this(regions, null, study, samplesMap, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), EMPTY_MASK,
-                Collections.emptySet(), false, queryOperation);
+        this(regions, null, study, samplesMap, null, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(),
+                new SampleAnnotationIndexQuery(), Collections.emptySet(), false, queryOperation);
     }
 
     public SampleIndexQuery(List<Region> regions, Set<VariantType> variantTypes, String study, Map<String, List<String>> samplesMap,
-                            Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
-                            Map<String, byte[]> fileFilterMap, byte annotationIndexMask, Set<String> mendelianErrorSet,
-                            boolean onlyDeNovo, QueryOperation queryOperation) {
+                            Set<String> negatedSamples, Map<String, boolean[]> fatherFilter, Map<String, boolean[]> motherFilter,
+                            Map<String, SampleFileIndexQuery> fileFilterMap,
+                            SampleAnnotationIndexQuery annotationIndexQuery,
+                            Set<String> mendelianErrorSet, boolean onlyDeNovo, QueryOperation queryOperation) {
         this.regions = regions;
         this.variantTypes = variantTypes;
         this.study = study;
         this.samplesMap = samplesMap;
+        this.negatedSamples = negatedSamples;
         this.fatherFilter = fatherFilter;
         this.motherFilter = motherFilter;
         this.fileFilterMap = fileFilterMap;
-        this.annotationIndexMask = annotationIndexMask;
+        this.annotationIndexQuery = annotationIndexQuery;
         this.mendelianErrorSet = mendelianErrorSet;
         this.onlyDeNovo = onlyDeNovo;
         this.queryOperation = queryOperation;
@@ -91,6 +99,35 @@ public class SampleIndexQuery {
         return samplesMap;
     }
 
+    public boolean emptyOrRegionFilter() {
+        if (!CollectionUtils.isEmpty(variantTypes)) {
+            return false;
+        }
+        if (!emptyFileIndex()) {
+            return false;
+        }
+        if (getFatherFilterMap() != null && !getFatherFilterMap().isEmpty()) {
+            return false;
+        }
+        if (getMotherFilterMap() != null && !getMotherFilterMap().isEmpty()) {
+            return false;
+        }
+        if (!getAnnotationIndexQuery().isEmpty()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public Set<String> getNegatedSamples() {
+        return negatedSamples;
+    }
+
+
+    public boolean isNegated(String sample) {
+        return getNegatedSamples().contains(sample);
+    }
+
     public Map<String, boolean[]> getFatherFilterMap() {
         return fatherFilter;
     }
@@ -107,28 +144,51 @@ public class SampleIndexQuery {
         return motherFilter.getOrDefault(sample, EMPTY_PARENT_FILTER);
     }
 
-    public byte getFileIndexMask(String sample) {
-        return fileFilterMap.getOrDefault(sample, EMPTY_INDEX_MASK)[0];
+    public Map<String, SampleFileIndexQuery> getSampleFileIndexQueryMap() {
+        return fileFilterMap;
     }
 
-    public byte getFileIndex(String sample) {
-        return fileFilterMap.getOrDefault(sample, EMPTY_INDEX_MASK)[1];
+    public SampleFileIndexQuery getSampleFileIndexQuery(String sample) {
+        SampleFileIndexQuery sampleFileIndexQuery = fileFilterMap.get(sample);
+        return sampleFileIndexQuery == null ? new SampleFileIndexQuery(sample) : sampleFileIndexQuery;
     }
+
+    public byte getFileIndexMask(String sample) {
+        SampleFileIndexQuery q = getSampleFileIndexQuery(sample);
+        return q == null ? EMPTY_MASK : q.getFileIndexMask();
+    }
+
+//    public byte getFileIndex(String sample) {
+//        SampleFileIndexQuery q = getSampleFileIndexQuery(sample);
+//        return q == null ? EMPTY_MASK : q.getFileIndex();
+//    }
 
     public boolean emptyFileIndex() {
-        return fileFilterMap.isEmpty() || fileFilterMap.values().stream().allMatch(fileIndex -> fileIndex[0] == EMPTY_MASK);
+        return fileFilterMap.isEmpty() || fileFilterMap.values().stream().allMatch(q -> q.getFileIndexMask() == EMPTY_MASK);
     }
 
     public byte getAnnotationIndexMask() {
-        return annotationIndexMask;
+        return annotationIndexQuery.getAnnotationIndexMask();
+    }
+
+    public byte getAnnotationIndex() {
+        return annotationIndexQuery.getAnnotationIndex();
     }
 
     public boolean emptyAnnotationIndex() {
-        return annotationIndexMask == EMPTY_MASK;
+        return getAnnotationIndexMask() == EMPTY_MASK;
+    }
+
+    public SampleAnnotationIndexQuery getAnnotationIndexQuery() {
+        return annotationIndexQuery;
     }
 
     public VariantQueryUtils.QueryOperation getQueryOperation() {
         return queryOperation;
+    }
+
+    public Set<String> getMendelianErrorSet() {
+        return mendelianErrorSet;
     }
 
     public boolean isOnlyDeNovo() {
@@ -141,7 +201,7 @@ public class SampleIndexQuery {
      * @param gts    Processed list of GTs. Real GTs only.
      * @return SingleSampleIndexQuery
      */
-    SingleSampleIndexQuery forSample(String sample, List<String> gts) {
+    public SingleSampleIndexQuery forSample(String sample, List<String> gts) {
         return new SingleSampleIndexQuery(this, sample, gts);
     }
 
@@ -151,84 +211,8 @@ public class SampleIndexQuery {
      * @param sample Sample to query
      * @return SingleSampleIndexQuery
      */
-    SingleSampleIndexQuery forSample(String sample) {
+    public SingleSampleIndexQuery forSample(String sample) {
         return new SingleSampleIndexQuery(this, sample);
     }
 
-    public static class SingleSampleIndexQuery extends SampleIndexQuery {
-
-        private final String sample;
-        private final List<String> gts;
-        private final byte fileIndexMask;
-        private final byte fileIndex;
-        private final boolean[] fatherFilter;
-        private final boolean[] motherFilter;
-        private final boolean mendelianError;
-
-        protected SingleSampleIndexQuery(SampleIndexQuery query, String sample) {
-            this(query, sample, query.getSamplesMap().get(sample));
-        }
-
-        protected SingleSampleIndexQuery(SampleIndexQuery query, String sample, List<String> gts) {
-            super(query.regions == null ? null : new ArrayList<>(query.regions),
-                    query.variantTypes == null ? null : new HashSet<>(query.variantTypes),
-                    query.study,
-                    Collections.singletonMap(sample, gts),
-                    query.fatherFilter,
-                    query.motherFilter,
-                    query.fileFilterMap,
-                    query.annotationIndexMask,
-                    query.mendelianErrorSet,
-                    query.onlyDeNovo,
-                    query.queryOperation);
-            this.sample = sample;
-            this.gts = gts;
-            fatherFilter = getFatherFilter(sample);
-            motherFilter = getMotherFilter(sample);
-            fileIndexMask = getFileIndexMask(sample);
-            fileIndex = getFileIndex(sample);
-            mendelianError = query.mendelianErrorSet.contains(sample);
-        }
-
-        @Override
-        public boolean emptyFileIndex() {
-            return fileIndexMask == EMPTY_MASK;
-        }
-
-        public String getSample() {
-            return sample;
-        }
-
-        public List<String> getGenotypes() {
-            return gts;
-        }
-
-        public boolean[] getFatherFilter() {
-            return fatherFilter;
-        }
-
-        public boolean hasFatherFilter() {
-            return fatherFilter != EMPTY_PARENT_FILTER;
-        }
-
-        public boolean[] getMotherFilter() {
-            return motherFilter;
-        }
-
-        public boolean hasMotherFilter() {
-            return motherFilter != EMPTY_PARENT_FILTER;
-        }
-
-        public byte getFileIndexMask() {
-            return fileIndexMask;
-        }
-
-        public byte getFileIndex() {
-            return fileIndex;
-        }
-
-        public boolean getMendelianError() {
-            return mendelianError;
-        }
-    }
 }
