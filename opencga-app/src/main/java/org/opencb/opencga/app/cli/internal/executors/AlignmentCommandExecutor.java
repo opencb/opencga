@@ -159,43 +159,6 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
 
         alignmentManager.statsRun(cliOptions.study, cliOptions.inputFile, cliOptions.outdir, cliOptions.commonOptions.token);
-
-//        ObjectMap params = new ObjectMap();
-//        params.putAll(cliOptions.commonOptions.params);
-//
-//        Consumer<SamtoolsWrapperAnalysis> consumer = samtools -> callback(samtools);
-//
-//        params.put(SamtoolsWrapperAnalysis.CALLBACK, consumer);
-//
-//        SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
-//        samtools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
-//                cliOptions.commonOptions.token);
-//
-//        samtools.setStudy(cliOptions.study);
-//
-//        samtools.setCommand("stats")
-//                .setInputFile(cliOptions.inputFile);
-//
-//        samtools.start();
-//
-//
-//
-//        ObjectMap objectMap = new ObjectMap();
-//        objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.token);
-//        objectMap.putIfNotNull("study", alignmentCommandOptions.statsAlignmentCommandOptions.study);
-//        objectMap.putIfNotNull("region", alignmentCommandOptions.statsAlignmentCommandOptions.region);
-//        objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.statsAlignmentCommandOptions.minMappingQuality);
-//        if (alignmentCommandOptions.statsAlignmentCommandOptions.contained) {
-//            objectMap.put("contained", alignmentCommandOptions.statsAlignmentCommandOptions.contained);
-//        }
-//
-//        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-//        DataResponse<AlignmentGlobalStats> globalStats = openCGAClient.getAlignmentClient()
-//                .stats(alignmentCommandOptions.statsAlignmentCommandOptions.inputFile, objectMap);
-//
-//        for (AlignmentGlobalStats alignmentGlobalStats : globalStats.allResults()) {
-//            System.out.println(alignmentGlobalStats.toJSON());
-//        }
     }
 
     private void coverage() throws CatalogException, IOException {

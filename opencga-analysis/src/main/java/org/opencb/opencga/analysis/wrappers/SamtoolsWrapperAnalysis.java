@@ -2,18 +2,28 @@ package org.opencb.opencga.analysis.wrappers;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.core.analysis.result.FileResult;
 import org.opencb.opencga.core.annotations.Analysis;
 import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
+
+import static org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine.ALIGNMENT_STATS_VARIABLE_SET;
 
 @Analysis(id = SamtoolsWrapperAnalysis.ID, type = Analysis.AnalysisType.VARIANT, description = SamtoolsWrapperAnalysis.DESCRIPTION)
 public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
@@ -24,7 +34,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     public final static String SAMTOOLS_DOCKER_IMAGE = "zlskidmore/samtools";
 
-    public final static String CALLBACK = "samtools_callback";
+    public static final String INDEX_STATS_PARAM = "stats-index";
 
     private String command;
     private String inputFile;
@@ -112,6 +122,9 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
                             FileUtils.copyFile(file, new File(outputFile));
                             addFile(new File(outputFile).toPath(), FileResult.FileType.PLAIN_TEXT);
+                            if (params.containsKey(INDEX_STATS_PARAM) && params.getBoolean(INDEX_STATS_PARAM)) {
+                                indexStats();
+                            }
                             success = true;
                         }
                         break;
@@ -124,11 +137,6 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                         msg = StringUtils.join(FileUtils.readLines(file, Charset.defaultCharset()), ". ");
                     }
                     throw new AnalysisException(msg);
-                } else {
-                    if (params.containsKey(CALLBACK)) {
-                        Consumer<SamtoolsWrapperAnalysis> callback = (Consumer<SamtoolsWrapperAnalysis>) params.get(CALLBACK);
-                        callback.accept(this);
-                    }
                 }
             } catch (Exception e) {
                 throw new AnalysisException(e);
@@ -209,7 +217,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
     }
 
     private boolean checkParam(String param) {
-        if (param.equals(DOCKER_IMAGE_VERSION_PARAM) || param.equals(CALLBACK)) {
+        if (param.equals(DOCKER_IMAGE_VERSION_PARAM) || param.equals(INDEX_STATS_PARAM)) {
             return false;
         } else if ("index".equals(command) || "view".equals(command) || "sort".equals(command)) {
             if ("o".equals(param)) {
@@ -217,6 +225,41 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
             }
         }
         return true;
+    }
+
+    private void indexStats() throws CatalogException, IOException {
+        // TODO: remove when daemon copies the stats file
+        Files.createSymbolicLink(new File(fileUriMap.get(inputFile).getPath()).getParentFile().toPath().resolve(new File(outputFile).getName()),
+                Paths.get(new File(outputFile).getAbsolutePath()));
+
+        // Create a variable set with the summary numbers of the statistics
+        Map<String, Object> annotations = new HashMap<>();
+        List<String> lines = org.apache.commons.io.FileUtils.readLines(new File(outputFile), Charset.defaultCharset());
+        int count = 0;
+
+        for (String line : lines) {
+            // Only take into account the "SN" section (summary numbers)
+            if (line.startsWith("SN")) {
+                count++;
+                String[] splits = line.split("\t");
+                String key = splits[1].split("\\(")[0].trim().replace(" ", "_").replace(":", "");
+                // Special case
+                if (line.contains("bases mapped (cigar):")) {
+                    key += "_cigar";
+                }
+                String value = splits[2].split(" ")[0];
+                annotations.put(key, value);
+            } else if (count > 0) {
+                // SN (summary numbers) section has been processed
+                break;
+            }
+        }
+
+        AnnotationSet annotationSet = new AnnotationSet(ALIGNMENT_STATS_VARIABLE_SET, ALIGNMENT_STATS_VARIABLE_SET, annotations);
+
+        FileUpdateParams updateParams = new FileUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet));
+
+        catalogManager.getFileManager().update(getStudy(), inputFile, updateParams, QueryOptions.empty(), token);
     }
 
     public String getCommand() {

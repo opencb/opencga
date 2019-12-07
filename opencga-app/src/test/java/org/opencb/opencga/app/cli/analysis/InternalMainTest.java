@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
+import static org.opencb.opencga.core.api.ParamConstants.AVERAGE_QUALITY;
 
 /**
  * Created on 09/05/16
@@ -384,12 +385,12 @@ public class InternalMainTest {
 
         // stats query
         Query query = new Query();
-        query.put(Constants.ANNOTATION, "alignment_stats:average_quality>55");
+        query.put(AVERAGE_QUALITY, ">55");
         QueryOptions queryOptions = QueryOptions.empty();
         DataResult<File> resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
         assertEquals(0, resultFiles.getNumResults());
 
-        query.put(Constants.ANNOTATION, "alignment_stats:average_quality>30");
+        query.put(AVERAGE_QUALITY, ">30");
         resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
         assertEquals(1, resultFiles.getNumResults());
         System.out.println(resultFiles.getResults().get(0).getAnnotationSets().get(0));

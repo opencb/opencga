@@ -437,31 +437,6 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         } catch (AnalysisException e) {
             return createErrorResponse(e);
         }
-
-//        try {
-//            Query query = new Query();
-//            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
-//
-//            QueryOptions queryOptions = new QueryOptions();
-//            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
-//
-//            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
-//            alignmentStorageManager.statsInfo(study, inputFile, token);
-//
-//            if (StringUtils.isNotEmpty(region)) {
-//                String[] regionList = region.split(",");
-//                DataResult<AlignmentGlobalStats> dataResult = DataResult.empty();
-//                for (String regionAux : regionList) {
-//                    query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), regionAux);
-//                    dataResult.append(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, token));
-//                }
-//                return createOkResponse(dataResult);
-//            } else {
-//                return createOkResponse(alignmentStorageManager.stats(studyStr, fileIdStr, query, queryOptions, token));
-//            }
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
     }
 
     @GET

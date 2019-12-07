@@ -1,9 +1,9 @@
 {
   "unique": true,
   "confidential": false,
-  "id": "alignment_stats",
-  "name": "alignment_stats",
-  "description": "Alignment stats",
+  "id": "opencga_alignment_stats",
+  "name": "opencga_alignment_stats",
+  "description": "OpenCGA alignment stats",
   "entities": ["FILE"],
   "variables": [
     {

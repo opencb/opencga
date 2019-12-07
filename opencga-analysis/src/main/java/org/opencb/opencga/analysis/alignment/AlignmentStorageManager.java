@@ -63,6 +63,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.core.api.ParamConstants.*;
+import static org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine.ALIGNMENT_STATS_VARIABLE_SET;
 
 /**
  * Created by pfurio on 31/10/16.
@@ -222,9 +223,7 @@ public class AlignmentStorageManager extends StorageManager {
 
     public void statsRun(String study, String inputFile, String outdir, String token) throws AnalysisException {
         ObjectMap params = new ObjectMap();
-        // TODO: move to the SamtoolsWrapperAnalysis, and then it has to do it with an 'index' parameter
-        //       params.put("index", true);
-        params.put(SamtoolsWrapperAnalysis.CALLBACK, (Consumer<SamtoolsWrapperAnalysis>) w -> statsRunCallback(w));
+        params.put(SamtoolsWrapperAnalysis.INDEX_STATS_PARAM, true);
 
         SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
         samtools.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), token);
@@ -234,56 +233,6 @@ public class AlignmentStorageManager extends StorageManager {
                 .setInputFile(inputFile);
 
         samtools.start();
-    }
-
-    // TODO: move to the SamtoolsWrapperAnalysis, and then it has to do it with an 'index' parameter
-    //       params.put("index", true);
-    private void statsRunCallback(SamtoolsWrapperAnalysis samtools) {
-        try {
-            OpenCGAResult<File> fileResult = catalogManager.getFileManager().get(samtools.getStudy(), samtools.getInputFile(),
-                    QueryOptions.empty(), samtools.getToken());
-
-            URI uri = fileResult.getResults().get(0).getUri();
-            java.io.File inputFile = new java.io.File(uri.getPath());
-            java.io.File outputFile = new java.io.File(samtools.getOutDir() + "/" + inputFile.getName() + ".stats.txt");
-
-            // TODO: remove when daemon copies the stats file
-            Files.createSymbolicLink(inputFile.getParentFile().toPath().resolve(outputFile.getName()),
-                    Paths.get(outputFile.getAbsolutePath()));
-
-            // Create a variable set with the summary numbers of the statistics
-            Map<String, Object> annotations = new HashMap<>();
-            List<String> lines = org.apache.commons.io.FileUtils.readLines(outputFile, Charset.defaultCharset());
-            int count = 0;
-
-            for (String line : lines) {
-                // Only take into account the "SN" section (summary numbers)
-                if (line.startsWith("SN")) {
-                    count++;
-                    String[] splits = line.split("\t");
-                    String key = splits[1].split("\\(")[0].trim().replace(" ", "_").replace(":", "");
-                    // Special case
-                    if (line.contains("bases mapped (cigar):")) {
-                        key += "_cigar";
-                    }
-                    String value = splits[2].split(" ")[0];
-                    annotations.put(key, value);
-                } else if (count > 0) {
-                    // SN (summary numbers) section has been processed
-                    break;
-                }
-            }
-
-            AnnotationSet annotationSet = new AnnotationSet("alignment_stats", "alignment_stats", annotations);
-
-            FileUpdateParams updateParams = new FileUpdateParams().setAnnotationSets(Collections.singletonList(annotationSet));
-
-            catalogManager.getFileManager().update(samtools.getStudy(), samtools.getInputFile(), updateParams, QueryOptions.empty(),
-                    samtools.getToken());
-        } catch (CatalogException | IOException e) {
-            // TODO: be nice
-            e.printStackTrace();
-        }
     }
 
     //-------------------------------------------------------------------------
@@ -314,7 +263,7 @@ public class AlignmentStorageManager extends StorageManager {
         List<String> filters = new ArrayList<>();
         query.keySet().forEach(k -> {
             if (statsMap.containsKey(k)) {
-                filters.add("alignment_stats:" + statsMap.get(k) + query.get(k));
+                filters.add(ALIGNMENT_STATS_VARIABLE_SET + ":" + statsMap.get(k) + query.get(k));
             }
         });
         searchQuery.put(Constants.ANNOTATION, StringUtils.join(filters, ";"));
