@@ -1,10 +1,13 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -15,13 +18,17 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIteratorWithCounts;
 import org.opencb.opencga.storage.core.variant.query.AbstractTwoPhasedVariantQueryExecutor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.query.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQuery;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addSamplesMetadataIfRequested;
@@ -39,6 +46,10 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
     private final SampleIndexDBAdaptor sampleIndexDBAdaptor;
     private final VariantHadoopDBAdaptor dbAdaptor;
     private Logger logger = LoggerFactory.getLogger(SampleIndexVariantQueryExecutor.class);
+
+    private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool(new BasicThreadFactory.Builder()
+            .namingPattern("sample-index-async-count-%s")
+            .build());
 
     public SampleIndexVariantQueryExecutor(VariantHadoopDBAdaptor dbAdaptor, SampleIndexDBAdaptor sampleIndexDBAdaptor,
                                            String storageEngineId, ObjectMap options) {
@@ -67,7 +78,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
 
     @Override
     protected long primaryCount(Query query, QueryOptions options) {
-        SampleIndexQuery sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(query, getMetadataManager());
+        SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(query);
         return sampleIndexDBAdaptor.count(sampleIndexQuery);
     }
 
@@ -83,7 +94,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
     @Override
     protected Object getOrIterator(Query inputQuery, QueryOptions options, boolean iterator) {
         Query query = new Query(inputQuery);
-        SampleIndexQuery sampleIndexQuery = SampleIndexQueryParser.parseSampleIndexQuery(query, getMetadataManager());
+        SampleIndexQuery sampleIndexQuery = sampleIndexDBAdaptor.getSampleIndexQueryParser().parse(query);
 
         if (isFullyCoveredQuery(query, options)) {
             logger.info("HBase SampleIndex, skip variants table");
@@ -111,6 +122,21 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
     }
 
     private Object getOrIteratorIntersect(SampleIndexQuery sampleIndexQuery, Query query, QueryOptions inputOptions, boolean iterator) {
+        Future<Long> asyncCountFuture;
+        boolean asyncCount;
+        if (shouldGetApproximateCount(inputOptions, iterator) && queryFiltersCovered(query)) {
+            asyncCount = true;
+            asyncCountFuture = THREAD_POOL.submit(() -> {
+                StopWatch stopWatch = StopWatch.createStarted();
+                long count = sampleIndexDBAdaptor.count(sampleIndexQuery);
+                logger.info("Async count took " + TimeUtils.durationToString(stopWatch));
+                return count;
+            });
+        } else {
+            asyncCount = false;
+            asyncCountFuture = null;
+        }
+
         QueryOptions limitLessOptions = new QueryOptions(inputOptions)
                 .append(QueryOptions.LIMIT, -1)
                 .append(QueryOptions.SKIP, -1);
@@ -128,7 +154,7 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
 
             int skip = getSkip(options);
             int limit = getLimit(options);
-            int samplingSize = getSamplingSize(options, DEFAULT_SAMPLING_SIZE, iterator);
+            int samplingSize = asyncCount ? 0 : getSamplingSize(options, DEFAULT_SAMPLING_SIZE, iterator);
 
             int tmpLimit = Math.max(limit, samplingSize);
             options.put(QueryOptions.LIMIT, tmpLimit);
@@ -147,6 +173,13 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
                 // Not an approximate count!
                 result.setApproximateCount(false);
                 result.setNumTotalResults(result.getNumResults() + skip);
+            } else if (asyncCount) {
+                result.setApproximateCount(false);
+                try {
+                    result.setNumTotalResults(asyncCountFuture.get());
+                } catch (InterruptedException | ExecutionException e) {
+                    throw VariantQueryException.internalException(e);
+                }
             } else {
                 // Approximate count
                 setNumTotalResults(variantDBIterator, variants, result, sampleIndexQuery, query, options);
@@ -184,7 +217,11 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
         if (includeFields.contains(VariantField.ANNOTATION) || includeFields.contains(VariantField.STUDIES)) {
             return false;
         }
+        return queryFiltersCovered(query);
 
+    }
+
+    private boolean queryFiltersCovered(Query query) {
         // Check if the query is fully covered
         Set<VariantQueryParam> params = VariantQueryUtils.validParams(query, true);
         params.remove(VariantQueryParam.STUDY);

@@ -22,7 +22,6 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.StudyEntryToHBaseConverter;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -311,7 +310,7 @@ public class FillGapsTask {
                 if (missingSamples.contains(sampleId)) {
                     String gt = studyEntry.getSamplesData().get(samplePosition).get(gtIdx);
                     // Only genotypes without the main alternate (0/2, 2/3, ...) should be written as pending.
-                    if (SampleIndexDBLoader.validGenotype(gt) && !hasMainAlternate(gt)) {
+                    if (SampleIndexSchema.validGenotype(gt) && !hasMainAlternate(gt)) {
                         Put sampleIndexPut = buildSampleIndexPut(variant, put, sampleId, gt);
                         sampleIndexPuts.add(sampleIndexPut);
                     }

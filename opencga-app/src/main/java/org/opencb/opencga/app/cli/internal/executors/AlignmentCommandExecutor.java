@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.internal.executors;
 
 import org.ga4gh.models.ReadAlignment;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.hpg.bigdata.analysis.tools.ExecutorMonitor;
@@ -29,7 +28,8 @@ import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.rest.RestResponse;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 
 import java.io.IOException;
@@ -141,7 +141,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         objectMap.putIfNotNull(QueryOptions.COUNT, alignmentCommandOptions.queryAlignmentCommandOptions.count);
 
         OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        DataResponse<ReadAlignment> alignments = openCGAClient.getAlignmentClient()
+        RestResponse<ReadAlignment> alignments = openCGAClient.getAlignmentClient()
                 .query(alignmentCommandOptions.queryAlignmentCommandOptions.fileId, objectMap);
 
         for (ReadAlignment readAlignment : alignments.allResults()) {
@@ -149,7 +149,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         }
     }
 
-    private void statsRun() throws AnalysisException {
+    private void statsRun() throws ToolException {
         AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
 
         AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
@@ -157,7 +157,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         alignmentManager.statsRun(cliOptions.study, cliOptions.inputFile, cliOptions.outdir, cliOptions.commonOptions.token);
     }
 
-    private void coverageRun() throws AnalysisException {
+    private void coverageRun() throws ToolException {
         AlignmentCommandOptions.CoverageAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageAlignmentCommandOptions;
 
         AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);

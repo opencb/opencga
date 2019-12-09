@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.variant.operations;
 
-import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.DataStore;
@@ -30,7 +30,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 /**
  * Created by pfurio on 23/08/16.
  */
-public abstract class StorageOperation extends OpenCgaAnalysis {
+public abstract class StorageOperation extends OpenCgaTool {
 
     public static final String KEEP_INTERMEDIATE_FILES = "keepIntermediateFiles";
 

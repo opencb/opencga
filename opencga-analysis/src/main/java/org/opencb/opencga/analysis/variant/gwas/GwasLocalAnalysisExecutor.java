@@ -11,9 +11,9 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.core.analysis.variant.GwasAnalysisExecutor;
-import org.opencb.opencga.core.annotations.AnalysisExecutor;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.tools.variant.GwasAnalysisExecutor;
+import org.opencb.opencga.core.annotations.ToolExecutor;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.analysis.variant.VariantStorageAnalysisExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -26,14 +26,14 @@ import org.opencb.oskar.analysis.stats.FisherTestResult;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-@AnalysisExecutor(id = "opencga-local",
-        analysis = GwasAnalysis.ID,
-        source = AnalysisExecutor.Source.STORAGE,
-        framework = AnalysisExecutor.Framework.LOCAL)
+@ToolExecutor(id = "opencga-local",
+        tool = GwasAnalysis.ID,
+        source = ToolExecutor.Source.STORAGE,
+        framework = ToolExecutor.Framework.LOCAL)
 public final class GwasLocalAnalysisExecutor extends GwasAnalysisExecutor implements VariantStorageAnalysisExecutor {
 
     @Override
-    public void run() throws AnalysisException {
+    public void run() throws ToolException {
         List<String> sampleList1 = getSampleList1();
         List<String> sampleList2 = getSampleList2();
         List<String> allSamples = new ArrayList<>();
@@ -65,7 +65,7 @@ public final class GwasLocalAnalysisExecutor extends GwasAnalysisExecutor implem
 
             ptr.run();
         } catch (CatalogException | ExecutionException | StorageEngineException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
     }
 

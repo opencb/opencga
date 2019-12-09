@@ -25,10 +25,7 @@ import org.opencb.opencga.analysis.StorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
-import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -190,20 +187,6 @@ public class OpenCGATestExternalResource extends ExternalResource {
 //        file = new FileMetadataReader(catalogManager).create(studyId, uri, "data/vcfs/", "", true, null, sessionId).first();
 //        new FileUtils(catalogManager).upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
         return catalogManager.getFileManager().get(studyId, resourceName, null, sessionId).first();
-    }
-
-    public static Job runStorageJob(CatalogManager catalogManager, Job job, Logger logger, String sessionId)
-            throws CatalogException, IOException {
-        try {
-            ExecutorManager.execute(catalogManager, job, sessionId);
-        } catch (ExecutionException e) {
-            throw new IOException(e.getCause());
-        }
-        return catalogManager.getJobManager().get(job.getUid(), null, sessionId).first();
-    }
-
-    public Job runStorageJob(Job storageJob, String sessionId) throws CatalogException, IOException {
-        return runStorageJob(getCatalogManager(), storageJob, logger, sessionId);
     }
 
     public void clearStorageDB(String dbName) {

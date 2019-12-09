@@ -17,9 +17,13 @@
 package org.opencb.opencga.client.rest.catalog;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.IOException;
 
@@ -37,7 +41,7 @@ public class SampleClient extends AnnotationClient<Sample> {
         this.clazz = Sample.class;
     }
 
-    public DataResponse<Sample> create(String studyId, String sampleId, ObjectMap bodyParams) throws IOException {
+    public RestResponse<Sample> create(String studyId, String sampleId, ObjectMap bodyParams) throws IOException {
         bodyParams.put("id", sampleId);
 
         ObjectMap params = new ObjectMap();
@@ -47,7 +51,7 @@ public class SampleClient extends AnnotationClient<Sample> {
         return execute(SAMPLES_URL, "create", params, POST, Sample.class);
     }
 
-    public DataResponse<Sample> update(String study, String id, String annotationSetAction, ObjectMap params) throws IOException {
+    public RestResponse<Sample> update(String study, String id, String annotationSetAction, ObjectMap params) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(params);
         ObjectMap p = new ObjectMap("body", json);
@@ -57,17 +61,17 @@ public class SampleClient extends AnnotationClient<Sample> {
         return execute(SAMPLES_URL, id, "update", p, POST, Sample.class);
     }
 
-    public DataResponse<Sample> loadFromPed(String studyId, ObjectMap params) throws IOException {
+    public RestResponse<Sample> loadFromPed(String studyId, ObjectMap params) throws IOException {
         params = addParamsToObjectMap(params, "study", studyId);
         return execute(SAMPLES_URL, "load", params, GET, Sample.class);
     }
 
-    public DataResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
+    public RestResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
         params = addParamsToObjectMap(params, "study", studyId, "fields", fields);
         return execute(SAMPLES_URL, "groupBy", params, GET, ObjectMap.class);
     }
 
-    public DataResponse<FacetField> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
+    public RestResponse<FacetField> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
         ObjectMap params = new ObjectMap(query);
         params.putAll(queryOptions);
         params.put("study", study);

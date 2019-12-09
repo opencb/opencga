@@ -27,6 +27,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.StorageManager;
+import org.opencb.opencga.analysis.models.FileInfo;
+import org.opencb.opencga.analysis.models.StudyInfo;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -34,7 +36,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.results.OpenCGAResult;
@@ -43,8 +45,6 @@ import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.local.LocalAlignmentStorageEngine;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.analysis.models.FileInfo;
-import org.opencb.opencga.analysis.models.StudyInfo;
 
 import java.io.IOException;
 import java.net.URI;
@@ -172,7 +172,7 @@ public class AlignmentStorageManager extends StorageManager {
     // STATS: run, info and query
     //-------------------------------------------------------------------------
 
-    public void statsRun(String study, String inputFile, String outdir, String token) throws AnalysisException {
+    public void statsRun(String study, String inputFile, String outdir, String token) throws ToolException {
         ObjectMap params = new ObjectMap();
         params.put(SamtoolsWrapperAnalysis.INDEX_STATS_PARAM, true);
 
@@ -188,22 +188,15 @@ public class AlignmentStorageManager extends StorageManager {
 
     //-------------------------------------------------------------------------
 
-    public DataResult<String> statsInfo(String study, String inputFile, String token) throws AnalysisException {
+    public DataResult<String> statsInfo(String study, String inputFile, String token) throws ToolException, StorageEngineException,
+            CatalogException {
         OpenCGAResult<File> fileResult;
-        try {
-            fileResult = catalogManager.getFileManager().get(study, inputFile, QueryOptions.empty(), token);
-        } catch (CatalogException e) {
-            throw new AnalysisException("Error accessing to the file: " + inputFile, e);
-        }
+        fileResult = catalogManager.getFileManager().get(study, inputFile, QueryOptions.empty(), token);
 
         if (fileResult.getNumMatches() == 1) {
-            try {
-                return alignmentStorageEngine.getDBAdaptor().statsInfo(Paths.get(fileResult.getResults().get(0).getUri().getPath()));
-            } catch (Exception e) {
-                throw new AnalysisException("Error getting DB adaptor when calling stats info", e);
-            }
+            return alignmentStorageEngine.getDBAdaptor().statsInfo(Paths.get(fileResult.getResults().get(0).getUri().getPath()));
         } else {
-            throw new AnalysisException("Error accessing to the file: " + inputFile);
+            throw new ToolException("Error accessing to the file: " + inputFile);
         }
     }
 
@@ -226,7 +219,7 @@ public class AlignmentStorageManager extends StorageManager {
     // COVERAGE: run, query and log2Ratio
     //-------------------------------------------------------------------------
 
-    public void coverageRun(String study, String inputFile, int windowSize, String outdir, String token) throws AnalysisException {
+    public void coverageRun(String study, String inputFile, int windowSize, String outdir, String token) throws ToolException {
         ObjectMap params = new ObjectMap();
         params.put("of", "bigwig");
         params.put("bs", windowSize);

@@ -219,47 +219,6 @@ public class FileUtils {
 
     }
 
-    public void upload(InputStream inputStream, File file, String sessionId, boolean ignoreStatus,
-                       boolean overwrite, boolean calculateChecksum) throws CatalogException {
-        URI targetUri;
-        CatalogIOManager targetIOManager;
-        try {
-            targetUri = catalogManager.getFileManager().getUri(file);
-            targetIOManager = catalogManager.getCatalogIOManagerFactory().get(targetUri.getScheme());
-        } catch (CatalogDBException | CatalogIOException e) {
-            throw new CatalogIOException("Can't upload file.", e);
-        }
-
-
-        //Check status
-        if (!ignoreStatus) {
-            checkStatus(file);
-        }
-
-        //Check if there is any file in target
-        checkTarget(file, targetUri, targetIOManager, overwrite);
-
-
-        try {
-            targetIOManager.createFile(targetUri, inputStream);
-        } catch (CatalogIOException e) {
-            e.printStackTrace();
-        }
-
-
-        String checksum = null;
-        if (calculateChecksum) {
-            try {
-                checksum = targetIOManager.calculateChecksum(targetUri);
-            } catch (CatalogIOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        updateFileAttributes(file, checksum, targetUri, new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(),
-                File.FileStatus.READY), sessionId);
-    }
-
     /**
      * Upload file to a created entry file in Catalog.
      *
@@ -537,7 +496,6 @@ public class FileUtils {
      * <p>
      * For READY files with a non existing file, set status to MISSING. "Lost file"
      * For MISSING files who recover the file, set status to READY. "Found file"
-     * For TRASHED files with a non existing file, set status to DELETED.
      *
      * @param studyStr          Study corresponding to the file to be checked.
      * @param file              File to check
@@ -574,16 +532,16 @@ public class FileUtils {
                 }
                 break;
             }
-            case File.FileStatus.TRASHED: {
-                URI fileUri = catalogManager.getFileManager().getUri(file);
-                if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
-                    modifiedFile = file;
-                    // TODO: Change status to remove.
-//                    catalogManager.modifyFile(file.getId(), new ObjectMap("status.name", File.FileStatus.DELETED), sessionId);
-//                    modifiedFile = catalogManager.getFile(file.getId(), sessionId).first();
-                    break;
-                }
-            }
+//            case File.FileStatus.TRASHED: {
+//                URI fileUri = catalogManager.getFileManager().getUri(file);
+//                if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
+//                    modifiedFile = file;
+//                    // TODO: Change status to remove.
+////                    catalogManager.modifyFile(file.getId(), new ObjectMap("status.name", File.FileStatus.DELETED), sessionId);
+////                    modifiedFile = catalogManager.getFile(file.getId(), sessionId).first();
+//                    break;
+//                }
+//            }
             default:
                 break;
         }

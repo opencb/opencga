@@ -16,12 +16,12 @@
 
 package org.opencb.opencga.client.rest.catalog;
 
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.IOException;
 
@@ -39,7 +39,7 @@ public class JobClient extends CatalogClient<Job> {
         this.clazz = Job.class;
     }
 
-    public DataResponse<Job> create(String studyId, ObjectMap bodyParams) throws IOException, ClientException {
+    public RestResponse<Job> create(String studyId, ObjectMap bodyParams) throws IOException, ClientException {
         if (bodyParams == null || bodyParams.size() == 0) {
             throw new ClientException("Missing body parameters");
         }
@@ -49,10 +49,10 @@ public class JobClient extends CatalogClient<Job> {
         return execute(JOBS_URL, "create", params, POST, Job.class);
     }
 
-    public DataResponse<Job> visit(String jobId, Query query) throws IOException {
+    public RestResponse<Job> visit(String jobId, Query query) throws IOException {
         return execute(JOBS_URL, jobId, "visit", query, GET, Job.class);
     }
-    public DataResponse<Job> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
+    public RestResponse<Job> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
         params = addParamsToObjectMap(params, "study", studyId, "fields", fields);
         return execute(JOBS_URL, "groupBy", params, GET, Job.class);
     }

@@ -296,10 +296,7 @@ public class JobManager extends ResourceManager<Job> {
 
         // Auto generate id
         if (StringUtils.isEmpty(job.getId())) {
-            String command = String.valueOf(job.getAttributes().get(Job.OPENCGA_COMMAND));
-            String subcommand = String.valueOf(job.getAttributes().get(Job.OPENCGA_SUBCOMMAND));
-            job.setId(command + INTERNAL_DELIMITER + subcommand + INTERNAL_DELIMITER + TimeUtils.getTime() + INTERNAL_DELIMITER
-                    + org.opencb.commons.utils.StringUtils.randomString(6));
+            job.setId(job.getToolId() + "." + TimeUtils.getTime() + "." + org.opencb.commons.utils.StringUtils.randomString(6));
         }
         job.setPriority(ParamUtils.defaultObject(job.getPriority(), Enums.Priority.MEDIUM));
         job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
@@ -365,21 +362,19 @@ public class JobManager extends ResourceManager<Job> {
         job.setInput(inputFiles);
     }
 
-    public OpenCGAResult<Job> submit(String studyStr, String command, String subcommand, Enums.Priority priority,
-                                     Map<String, Object> params, String token) throws CatalogException {
-        return submit(studyStr, command, subcommand, priority, params, null, null, null, null, token);
+    public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String token)
+            throws CatalogException {
+        return submit(studyStr, toolId, priority, params, null, null, null, null, token);
     }
 
-    public OpenCGAResult<Job> submit(String studyStr, String command, String subcommand, Enums.Priority priority,
-                Map<String, Object> params, String jobId, String jobName, String jobDescription, List<String> jobTags, String token)
-            throws CatalogException {
+    public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String jobId,
+                                     String jobName, String jobDescription, List<String> jobTags, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
-                .append("command", command)
-                .append("subcommand", subcommand)
+                .append("toolId", toolId)
                 .append("priority", priority)
                 .append("params", params)
                 .append("token", token);
@@ -388,13 +383,12 @@ public class JobManager extends ResourceManager<Job> {
         job.setId(jobId);
         job.setName(jobName);
         job.setDescription(jobDescription);
+        job.setToolId(toolId);
         job.setTags(jobTags);
 
         try {
             Map<String, Object> attributes = new HashMap<>();
             attributes.put(Job.OPENCGA_STUDY, study.getFqn());
-            attributes.put(Job.OPENCGA_COMMAND, command);
-            attributes.put(Job.OPENCGA_SUBCOMMAND, subcommand);
 
             job.setUserId(userId);
             job.setParams(params);

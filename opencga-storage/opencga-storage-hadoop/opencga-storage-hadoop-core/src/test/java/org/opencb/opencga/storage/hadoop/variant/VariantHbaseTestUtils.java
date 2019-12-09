@@ -406,7 +406,7 @@ public class VariantHbaseTestUtils {
 
             try (PrintStream out = new PrintStream(new FileOutputStream(outDir.resolve("annotation_index.txt").toFile()))) {
                 annotationIndexDBAdaptor.iterator().forEachRemaining(pair -> {
-                    out.println(pair.getKey() + " -> " + IndexUtils.byteToString(pair.getValue()));
+                    out.println(pair.getKey() + " -> " + pair.getValue());
                 });
             }
         }
@@ -456,7 +456,7 @@ public class VariantHbaseTestUtils {
                             map.put(s, String.valueOf(Bytes.toInt(value)));
                         } else if (s.startsWith("_AC_")) {
                             map.put(s, IntStream.of(IndexUtils.countPerBitToObject(value)).mapToObj(String::valueOf).collect(Collectors.toList()).toString());
-                        } else if (s.startsWith("_A_") || s.startsWith("_F_") || s.startsWith("_P_")) {
+                        } else if (s.startsWith("_")) {
                             StringBuilder sb = new StringBuilder();
                             for (byte b : value) {
                                 sb.append(IndexUtils.byteToString(b));

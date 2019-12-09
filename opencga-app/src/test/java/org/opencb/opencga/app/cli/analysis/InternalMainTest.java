@@ -33,11 +33,9 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.results.OpenCGAResult;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -361,7 +359,7 @@ public class InternalMainTest {
     }
 
     @Test
-    public void testStats() throws CatalogException, IOException, AnalysisException {
+    public void testStats() throws CatalogException, IOException, ToolException, StorageEngineException {
         createStudy(datastores, "s1");
 
         String filename = "HG00096.chrom20.small.bam";

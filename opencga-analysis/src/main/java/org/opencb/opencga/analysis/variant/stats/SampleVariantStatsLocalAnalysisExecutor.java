@@ -10,24 +10,24 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.analysis.variant.VariantStorageAnalysisExecutor;
-import org.opencb.opencga.core.analysis.variant.SampleVariantStatsAnalysisExecutor;
-import org.opencb.opencga.core.annotations.AnalysisExecutor;
+import org.opencb.opencga.core.tools.variant.SampleVariantStatsAnalysisExecutor;
+import org.opencb.opencga.core.annotations.ToolExecutor;
 import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
-import org.opencb.opencga.core.exception.AnalysisException;
-import org.opencb.opencga.core.exception.AnalysisExecutorException;
+import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.exception.ToolExecutorException;
 
 import java.util.List;
 
-@AnalysisExecutor(id="opencga-local", analysis= SampleVariantStatsAnalysis.ID,
-        framework = AnalysisExecutor.Framework.LOCAL,
-        source = AnalysisExecutor.Source.STORAGE)
+@ToolExecutor(id="opencga-local", tool = SampleVariantStatsAnalysis.ID,
+        framework = ToolExecutor.Framework.LOCAL,
+        source = ToolExecutor.Source.STORAGE)
 public class SampleVariantStatsLocalAnalysisExecutor extends SampleVariantStatsAnalysisExecutor implements VariantStorageAnalysisExecutor {
 
     @Override
-    public void run() throws AnalysisException {
+    public void run() throws ToolException {
 
         VariantStorageManager variantStorageManager = getVariantStorageManager();
 
@@ -60,7 +60,7 @@ public class SampleVariantStatsLocalAnalysisExecutor extends SampleVariantStatsA
 
             stats = calculator.getSampleVariantStats();
         } catch (Exception e) {
-            throw new AnalysisExecutorException(e);
+            throw new ToolExecutorException(e);
         }
 
         writeStatsToFile(stats);

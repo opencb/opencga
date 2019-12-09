@@ -3,10 +3,10 @@ package org.opencb.opencga.storage.hadoop.variant.analysis.stats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.analysis.variant.VariantStatsAnalysisExecutor;
+import org.opencb.opencga.core.tools.variant.VariantStatsAnalysisExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.exception.AnalysisException;
-import org.opencb.opencga.core.exception.AnalysisExecutorException;
+import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.exception.ToolExecutorException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -15,20 +15,20 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantAnalysisExecutor;
 import org.opencb.opencga.storage.hadoop.variant.stats.VariantStatsDriver;
-import org.opencb.opencga.core.annotations.AnalysisExecutor;
+import org.opencb.opencga.core.annotations.ToolExecutor;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-@AnalysisExecutor(id = "hbase-mapreduce", analysis = "variant-stats",
-        framework = AnalysisExecutor.Framework.MAP_REDUCE,
-        source = AnalysisExecutor.Source.HBASE)
+@ToolExecutor(id = "hbase-mapreduce", tool = "variant-stats",
+        framework = ToolExecutor.Framework.MAP_REDUCE,
+        source = ToolExecutor.Source.HBASE)
 public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnalysisExecutor implements HadoopVariantAnalysisExecutor {
 
     @Override
-    public void run() throws AnalysisException {
+    public void run() throws ToolException {
         if (isIndex()) {
             calculateAndIndex();
         } else {
@@ -36,7 +36,7 @@ public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnal
         }
     }
 
-    private void calculateAndIndex() throws AnalysisExecutorException {
+    private void calculateAndIndex() throws ToolExecutorException {
         QueryOptions calculateStatsOptions = new QueryOptions(executorParams);
 
         VariantStorageEngine variantStorageEngine = getHadoopVariantStorageEngine();
@@ -46,11 +46,11 @@ public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnal
             variantStorageEngine.calculateStats(getStudy(), getCohorts(), calculateStatsOptions);
             variantStorageEngine.close();
         } catch (IOException | StorageEngineException e) {
-            throw new AnalysisExecutorException(e);
+            throw new ToolExecutorException(e);
         }
     }
 
-    public void calculate() throws AnalysisException {
+    public void calculate() throws ToolException {
         HadoopVariantStorageEngine engine = getHadoopVariantStorageEngine();
 
         VariantHadoopDBAdaptor dbAdaptor;
@@ -80,7 +80,7 @@ public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnal
 
 
         } catch (StorageEngineException e) {
-            throw new AnalysisExecutorException(e);
+            throw new ToolExecutorException(e);
         }
 
         try {
@@ -98,7 +98,7 @@ public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnal
             ), engine.getOptions(), "Calculate sample variant stats");
 
         } catch (VariantQueryException | StorageEngineException e) {
-            throw new AnalysisExecutorException(e);
+            throw new ToolExecutorException(e);
         } finally {
             for (Integer cohortId : cohortIds) {
                 dbAdaptor.getMetadataManager().removeCohort(studyId, cohortId);

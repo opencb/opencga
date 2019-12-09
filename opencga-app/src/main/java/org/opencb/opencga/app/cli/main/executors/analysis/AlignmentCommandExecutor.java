@@ -26,7 +26,6 @@ import io.grpc.ManagedChannelBuilder;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmentBiConverter;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
@@ -37,6 +36,7 @@ import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.rest.RestResponse;
 import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
 import org.opencb.opencga.server.grpc.ServiceTypesModel;
@@ -69,7 +69,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing alignment command line");
 
         String subCommandString = getParsedSubCommand(alignmentCommandOptions.jCommander);
-        DataResponse queryResponse = null;
+        RestResponse queryResponse = null;
         switch (subCommandString) {
             case "index":
                 queryResponse = index();
@@ -112,7 +112,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
-    private DataResponse index() throws CatalogException, IOException {
+    private RestResponse index() throws CatalogException, IOException {
         logger.debug("Indexing alignment(s)");
 
         String fileIds = alignmentCommandOptions.indexAlignmentCommandOptions.fileId;
@@ -132,7 +132,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             rpc = "auto";
         }
 
-        DataResponse<ReadAlignment> queryResponse = null;
+        RestResponse<ReadAlignment> queryResponse = null;
 
         if (rpc.toLowerCase().equals("rest")) {
             queryResponse = queryRest(alignmentCommandOptions.queryAlignmentCommandOptions);
@@ -169,7 +169,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private DataResponse<ReadAlignment> queryRest(AlignmentCommandOptions.QueryAlignmentCommandOptions commandOptions)
+    private RestResponse<ReadAlignment> queryRest(AlignmentCommandOptions.QueryAlignmentCommandOptions commandOptions)
             throws CatalogException, IOException {
 
         String study = resolveStudy(alignmentCommandOptions.queryAlignmentCommandOptions.study);
@@ -182,7 +182,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         o.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), commandOptions.minMappingQuality);
         o.putIfNotNull("limit", commandOptions.limit);
 
-        DataResponse<ReadAlignment> query = openCGAClient.getAlignmentClient().query(fileIds, o);
+        RestResponse<ReadAlignment> query = openCGAClient.getAlignmentClient().query(fileIds, o);
         return query;
     }
 
@@ -287,19 +287,19 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     // STATS: run, info and query
     //-------------------------------------------------------------------------
 
-    private DataResponse statsRun() throws IOException {
+    private RestResponse<Job> statsRun() throws IOException {
         AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
 
         return openCGAClient.getAlignmentClient().statsRun(cliOptions.study, cliOptions.inputFile);
     }
 
-    private DataResponse<String> statsInfo() throws IOException {
+    private RestResponse<String> statsInfo() throws IOException {
         AlignmentCommandOptions.StatsInfoAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsInfoAlignmentCommandOptions;
 
         return openCGAClient.getAlignmentClient().statsInfo(cliOptions.study, cliOptions.inputFile);
     }
 
-    private DataResponse<File> statsQuery() throws IOException {
+    private RestResponse<File> statsQuery() throws IOException {
         AlignmentCommandOptions.StatsQueryAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsQueryAlignmentCommandOptions;
 
         ObjectMap objectMap = new ObjectMap();
@@ -334,20 +334,20 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     // STATS: run, info and query
     //-------------------------------------------------------------------------
 
-    private DataResponse<Job> coverageRun() throws IOException {
+    private RestResponse<Job> coverageRun() throws IOException {
         AlignmentCommandOptions.CoverageAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageAlignmentCommandOptions;
 
         return openCGAClient.getAlignmentClient().coverageRun(cliOptions.study, cliOptions.inputFile, cliOptions.windowSize);
     }
 
-    private DataResponse<RegionCoverage> coverageQuery() throws IOException {
+    private RestResponse<RegionCoverage> coverageQuery() throws IOException {
         AlignmentCommandOptions.CoverageQueryAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageQueryAlignmentCommandOptions;
 
         return openCGAClient.getAlignmentClient().coverageQuery(cliOptions.study, cliOptions.inputFile, cliOptions.region, cliOptions.gene,
                 cliOptions.geneOffset, cliOptions.onlyExons, cliOptions.exonOffset, cliOptions.range, cliOptions.windowSize);
     }
 
-    private DataResponse<RegionCoverage> coverageLog2Ratio() throws IOException {
+    private RestResponse<RegionCoverage> coverageLog2Ratio() throws IOException {
         AlignmentCommandOptions.CoverageLog2RatioAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageLog2RatioAlignmentCommandOptions;
 
         return openCGAClient.getAlignmentClient().coverageLog2Ratio(cliOptions.study, cliOptions.inputFile1, cliOptions.inputFile2, cliOptions.region,
@@ -360,7 +360,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
     // BWA
 
-    private DataResponse<Job> bwa() throws IOException {
+    private RestResponse<Job> bwa() throws IOException {
         ObjectMap params = new AlignmentAnalysisWSService.BwaRunParams(
                 alignmentCommandOptions.bwaCommandOptions.command,
                 alignmentCommandOptions.bwaCommandOptions.fastaFile,
@@ -376,7 +376,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
     // Samtools
 
-    private DataResponse<Job> samtools() throws IOException {
+    private RestResponse<Job> samtools() throws IOException {
         ObjectMap params = new AlignmentAnalysisWSService.SamtoolsRunParams(
                 alignmentCommandOptions.samtoolsCommandOptions.command,
                 alignmentCommandOptions.samtoolsCommandOptions.inputFile,
@@ -389,7 +389,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
     // Deeptools
 
-    private DataResponse<Job> deeptools() throws IOException {
+    private RestResponse<Job> deeptools() throws IOException {
         ObjectMap params = new AlignmentAnalysisWSService.DeeptoolsRunParams(
                 alignmentCommandOptions.deeptoolsCommandOptions.executable,
                 alignmentCommandOptions.deeptoolsCommandOptions.bamFile,

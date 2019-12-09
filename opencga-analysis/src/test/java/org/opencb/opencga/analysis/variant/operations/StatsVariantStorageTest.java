@@ -33,9 +33,8 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.update.CohortUpdateParams;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -211,7 +210,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         try {
             calculateStats(new QueryOptions(), all, coh[3], "-" + coh[4]);
             fail();
-        } catch (AnalysisException e) {
+        } catch (ToolException e) {
             logger.info("received expected exception. this is OK, there is no cohort " + ("-" + coh[4]) + '\n');
         }
         assertEquals(Cohort.CohortStatus.NONE, catalogManager.getCohortManager().get(studyId, "ALL", null, sessionId).first().getStatus().getName());
@@ -276,7 +275,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         try {
             calculateStats(coh[1]);
             fail();
-        } catch (AnalysisException e) {
+        } catch (ToolException e) {
             assertEquals(message, e.getCause().getCause().getMessage());
         }
 
@@ -299,7 +298,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         try {
             calculateStats(coh[1]);
             fail();
-        } catch (AnalysisException e) {
+        } catch (ToolException e) {
             e.printStackTrace();
             Throwable actual = e;
             assertThat(actual, instanceOf(expected.getClass()));
@@ -485,16 +484,6 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
                 }
             }
         }
-    }
-    /**
-     * Do not execute Job using its command line, won't find the opencga-storage.sh
-     * Call directly to the OpenCGAStorageMain
-     */
-    private Job runStorageJob(Job storageJob, String sessionId) throws IOException, CatalogException {
-//        storageJob.setCommandLine(storageJob.getCommandLine() + " --job-id " + storageJob.getId());
-        Job job = opencga.runStorageJob(storageJob, sessionId);
-        assertEquals(Enums.ExecutionStatus.READY, job.getStatus().getName());
-        return job;
     }
 
 }

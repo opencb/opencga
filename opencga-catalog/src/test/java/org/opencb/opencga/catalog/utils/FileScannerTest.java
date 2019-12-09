@@ -128,24 +128,6 @@ public class FileScannerTest {
     }
 
     @Test
-    public void testDeleteTrashed() throws IOException, CatalogException {
-        DataResult<File> queryResult;
-        try (InputStream inputStream = new BufferedInputStream(new FileInputStream(CatalogManagerTest.createDebugFile()))) {
-            queryResult = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
-                    new File().setPath(folder.getPath() + "file1.txt"), false, false, false, sessionIdUser);
-        }
-        File file = queryResult.first();
-        catalogManager.getFileManager().delete(study.getFqn(),
-                new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), new QueryOptions(), sessionIdUser);
-
-        DataResult<File> fileDataResult = catalogManager.getFileManager().search(study.getFqn(), new Query()
-                .append(FileDBAdaptor.QueryParams.UID.key(), file.getUid())
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY"), new QueryOptions(), sessionIdUser);
-        file = fileDataResult.first();
-        assertEquals(File.FileStatus.TRASHED, file.getStatus().getName());
-    }
-
-    @Test
     public void testReplaceExisting() throws IOException, CatalogException {
         // Create and register file1.txt and s/file2.txt
         File file;
@@ -213,10 +195,10 @@ public class FileScannerTest {
         List<File> files = fileScanner.scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
         assertEquals(1, files.size());
 
-        URI studyUri = study.getUri();
-        CatalogManagerTest.createDebugFile(studyUri.resolve("data/test/folder/").resolve("file2.txt").getPath());
+        Path studyUriPath = Paths.get(study.getUri());
+        CatalogManagerTest.createDebugFile(studyUriPath.resolve("data/test/folder/").resolve("file2.txt").toString());
         File root = catalogManager.getFileManager().search(study.getFqn(), new Query("name", "."), null, sessionIdUser).first();
-        files = fileScanner.scan(root, studyUri, FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
+        files = fileScanner.scan(root, studyUriPath.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
 
         assertEquals(1, files.size());
         files.forEach((f) -> assertTrue(f.getSize() > 0));
@@ -235,11 +217,11 @@ public class FileScannerTest {
         assertEquals(0, files.size());
 
         //Add one extra file. ReSync study folder.
-        URI studyUri = study.getUri();
+        Path studyUriPath = Paths.get(study.getUri());
         // Create the directories
-        catalogManager.getCatalogIOManagerFactory().getDefault().createDirectory(studyUri.resolve("data/test/folder/"), true);
-        Path filePath = CatalogManagerTest.createDebugFile(studyUri.resolve("data/test/folder/").resolve("file_scanner_test_file.txt")
-                .getPath()).toPath();
+        catalogManager.getCatalogIOManagerFactory().getDefault().createDirectory(studyUriPath.resolve("data/test/folder/").toUri(), true);
+        Path filePath = CatalogManagerTest
+                .createDebugFile(studyUriPath.resolve("data/test/folder/").resolve("file_scanner_test_file.txt").toString()).toPath();
         files = fileScanner.reSync(study, true, sessionIdUser);
 
         assertEquals(1, files.size());

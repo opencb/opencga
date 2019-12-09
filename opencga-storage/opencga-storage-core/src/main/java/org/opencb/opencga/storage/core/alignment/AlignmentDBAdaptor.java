@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 
 import java.io.IOException;
@@ -114,7 +115,7 @@ public interface AlignmentDBAdaptor {
 
     DataResult<Long> count(Path path, Query query, QueryOptions options);
 
-    DataResult<String> statsInfo(Path path) throws Exception;
+    DataResult<String> statsInfo(Path path) throws ToolException;
 
 //    DataResult<AlignmentGlobalStats> stats(Path path, Path workspace, Query query, QueryOptions options) throws Exception;
 //    DataResult<AlignmentGlobalStats> stats(Path path, Path workspace) throws Exception;

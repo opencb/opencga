@@ -40,8 +40,8 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.analysis.result.AnalysisResult;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.VariantQueryResult;
@@ -76,7 +76,6 @@ import static org.opencb.commons.datastore.core.QueryOptions.empty;
 import static org.opencb.opencga.catalog.db.api.StudyDBAdaptor.QueryParams.FQN;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.NONE;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
 
 public class VariantStorageManager extends StorageManager {
 
@@ -105,11 +104,11 @@ public class VariantStorageManager extends StorageManager {
      * @param inputUri  Variants input file in avro format.
      * @param study     Study where to load the variants
      * @param token User's session id
-     * @throws AnalysisException      if there is any error importing
+     * @throws ToolException      if there is any error importing
      * @return AnalysisResult
      */
-    public AnalysisResult importData(URI inputUri, String study, String token)
-            throws AnalysisException {
+    public ExecutionResult importData(URI inputUri, String study, String token)
+            throws ToolException {
 
         return new VariantImportStorageOperation()
                 .setStudy(study)
@@ -131,7 +130,7 @@ public class VariantStorageManager extends StorageManager {
      * @throws StorageEngineException If there is any error exporting variants
      */
     public List<URI> exportData(String outputFile, VariantOutputFormat outputFormat, String study, String token)
-            throws StorageEngineException, CatalogException, IOException, AnalysisException {
+            throws StorageEngineException, CatalogException, IOException, ToolException {
         Query query = new Query(VariantQueryParam.INCLUDE_STUDY.key(), study)
                 .append(VariantQueryParam.STUDY.key(), study);
         return exportData(outputFile, outputFormat, null, query, new QueryOptions(), token);
@@ -152,7 +151,7 @@ public class VariantStorageManager extends StorageManager {
      */
     public List<URI> exportData(String outputFile, VariantOutputFormat outputFormat, String variantsFile,
                                 Query query, QueryOptions queryOptions, String token)
-            throws CatalogException, IOException, StorageEngineException, AnalysisException {
+            throws CatalogException, IOException, StorageEngineException, ToolException {
         if (query == null) {
             query = new Query();
         }
@@ -183,7 +182,7 @@ public class VariantStorageManager extends StorageManager {
                 .setOutputFile(outputFile);
         operation.setUp(this, queryOptions, outDir, token);
 
-        AnalysisResult result = operation.start();
+        ExecutionResult result = operation.start();
 
         return result.getOutputFiles()
                 .stream()
@@ -196,12 +195,12 @@ public class VariantStorageManager extends StorageManager {
     // --------------------------//
 
     public List<StoragePipelineResult> index(String study, String fileId, String outDir, ObjectMap config, String token)
-            throws AnalysisException {
+            throws ToolException {
         return index(study, Arrays.asList(fileId.split(",")), outDir, config, token);
     }
 
     public List<StoragePipelineResult> index(String study, List<String> files, String outDir, ObjectMap config, String token)
-            throws AnalysisException {
+            throws ToolException {
         VariantFileIndexerStorageOperation operation = new VariantFileIndexerStorageOperation()
                 .setStudy(study)
                 .setFiles(files);
@@ -211,8 +210,8 @@ public class VariantStorageManager extends StorageManager {
         return operation.getStoragePipelineResults();
     }
 
-    public AnalysisResult secondaryIndexSamples(String study, List<String> samples, Path outDir, ObjectMap params, String token)
-            throws AnalysisException {
+    public ExecutionResult secondaryIndexSamples(String study, List<String> samples, Path outDir, ObjectMap params, String token)
+            throws ToolException {
         return new VariantSecondaryIndexSamplesStorageOperation()
                 .setStudy(study)
                 .setSamples(samples)
@@ -231,8 +230,8 @@ public class VariantStorageManager extends StorageManager {
 
     }
 
-    public AnalysisResult secondaryIndex(String project, String region, boolean overwrite, Path outdir, ObjectMap params, String token)
-            throws AnalysisException {
+    public ExecutionResult secondaryIndex(String project, String region, boolean overwrite, Path outdir, ObjectMap params, String token)
+            throws ToolException {
         return new VariantSecondaryIndexStorageOperation()
                 .setProject(project)
                 .setRegion(region)
@@ -241,8 +240,8 @@ public class VariantStorageManager extends StorageManager {
                 .start();
     }
 
-    public AnalysisResult removeStudy(String study, Path outdir, QueryOptions options, String token)
-            throws AnalysisException {
+    public ExecutionResult removeStudy(String study, Path outdir, QueryOptions options, String token)
+            throws ToolException {
         return new VariantRemoveStorageOperation()
                 .setStudy(study)
                 .setRemoveWholeStudy(true)
@@ -250,8 +249,8 @@ public class VariantStorageManager extends StorageManager {
                 .start();
     }
 
-    public AnalysisResult removeFile(String study, List<String> files, Path outdir, QueryOptions options, String token)
-            throws AnalysisException {
+    public ExecutionResult removeFile(String study, List<String> files, Path outdir, QueryOptions options, String token)
+            throws ToolException {
         return new VariantRemoveStorageOperation()
                 .setStudy(study)
                 .setFiles(files)
@@ -259,13 +258,13 @@ public class VariantStorageManager extends StorageManager {
                 .start();
     }
 
-    public AnalysisResult annotate(String study, String region, String outDir, ObjectMap config, String token)
-            throws AnalysisException {
+    public ExecutionResult annotate(String study, String region, String outDir, ObjectMap config, String token)
+            throws ToolException {
         return annotate(region, study, region, outDir, config, token);
     }
 
-    public AnalysisResult annotate(String project, String studies, String region, String outDir, ObjectMap config, String token)
-            throws AnalysisException {
+    public ExecutionResult annotate(String project, String studies, String region, String outDir, ObjectMap config, String token)
+            throws ToolException {
         return new VariantAnnotationStorageOperation()
                 .setProject(project)
                 .setStudies(StringUtils.isEmpty(studies) ? null : Arrays.asList(studies.split(",")))
@@ -274,8 +273,8 @@ public class VariantStorageManager extends StorageManager {
                 .start();
     }
 
-    public AnalysisResult saveAnnotation(String project, String annotationName, Path outDir, ObjectMap params, String token)
-            throws AnalysisException {
+    public ExecutionResult saveAnnotation(String project, String annotationName, Path outDir, ObjectMap params, String token)
+            throws ToolException {
         return new VariantAnnotationSaveStorageOperation()
                 .setProject(project)
                 .setAnnotationName(annotationName)
@@ -283,8 +282,8 @@ public class VariantStorageManager extends StorageManager {
                 .start();
     }
 
-    public AnalysisResult deleteAnnotation(String project, String annotationName, Path outDir, ObjectMap params, String token)
-            throws AnalysisException {
+    public ExecutionResult deleteAnnotation(String project, String annotationName, Path outDir, ObjectMap params, String token)
+            throws ToolException {
         return new VariantAnnotationDeleteStorageOperation()
                 .setProject(project)
                 .setAnnotationName(annotationName)
@@ -306,14 +305,14 @@ public class VariantStorageManager extends StorageManager {
 
     public void stats(String study, List<String> cohorts, List<String> samples,
                       String outDir, boolean index, ObjectMap config, String token)
-            throws AnalysisException {
+            throws ToolException {
         Query samplesQuery = CollectionUtils.isEmpty(samples) ? new Query() : new Query(SampleDBAdaptor.QueryParams.ID.key(), samples);
         stats(study, cohorts, samplesQuery, outDir, index, config, token);
     }
 
-    public AnalysisResult stats(String study, List<String> cohorts, Query samplesQuery,
-                                String outDir, boolean index, ObjectMap config, String token)
-            throws AnalysisException {
+    public ExecutionResult stats(String study, List<String> cohorts, Query samplesQuery,
+                                 String outDir, boolean index, ObjectMap config, String token)
+            throws ToolException {
         Query variantsQuery = new Query();
         variantsQuery.putIfNotEmpty(REGION.key(), config.getString(REGION.key()));
         variantsQuery.putIfNotEmpty(GENE.key(), config.getString(GENE.key()));
@@ -376,8 +375,8 @@ public class VariantStorageManager extends StorageManager {
         engine.removeVariantScore(study, scoreName, options);
     }
 
-    public AnalysisResult sampleIndex(String studyStr, List<String> samples, Path outDir, ObjectMap config, String token)
-            throws AnalysisException {
+    public ExecutionResult sampleIndex(String studyStr, List<String> samples, Path outDir, ObjectMap config, String token)
+            throws ToolException {
         return new VariantSampleIndexStorageOperation()
                 .setStudy(studyStr)
                 .setSamples(samples)
@@ -387,8 +386,8 @@ public class VariantStorageManager extends StorageManager {
                 .start();
     }
 
-    public AnalysisResult sampleIndexAnnotate(String studyStr, List<String> samples, Path outDir, ObjectMap config, String token)
-            throws AnalysisException {
+    public ExecutionResult sampleIndexAnnotate(String studyStr, List<String> samples, Path outDir, ObjectMap config, String token)
+            throws ToolException {
         return new VariantSampleIndexStorageOperation()
                 .setStudy(studyStr)
                 .setSamples(samples)
@@ -398,8 +397,8 @@ public class VariantStorageManager extends StorageManager {
                 .start();
     }
 
-    public AnalysisResult familyIndex(String studyStr, List<String> familiesStr, Path outdir, ObjectMap params, String token)
-            throws AnalysisException {
+    public ExecutionResult familyIndex(String studyStr, List<String> familiesStr, Path outdir, ObjectMap params, String token)
+            throws ToolException {
         return new VariantFamilyIndexStorageOperation()
                 .setStudy(studyStr)
                 .setFamily(familiesStr)
@@ -407,8 +406,8 @@ public class VariantStorageManager extends StorageManager {
                 .start();
     }
 
-    public AnalysisResult aggregateFamily(String studyStr, List<String> samples, Path outdir, ObjectMap params, String token)
-            throws AnalysisException {
+    public ExecutionResult aggregateFamily(String studyStr, List<String> samples, Path outdir, ObjectMap params, String token)
+            throws ToolException {
 
         return new VariantAggregateFamilyStorageOperation()
                 .setStudy(studyStr)
@@ -417,8 +416,8 @@ public class VariantStorageManager extends StorageManager {
                 .start();
     }
 
-    public AnalysisResult aggregate(String studyStr, boolean overwrite, Path outdir, ObjectMap params, String token)
-            throws AnalysisException {
+    public ExecutionResult aggregate(String studyStr, boolean overwrite, Path outdir, ObjectMap params, String token)
+            throws ToolException {
         return new VariantAggregateStorageOperation()
                 .setStudy(studyStr)
                 .setOverwrite(overwrite)
@@ -860,7 +859,6 @@ public class VariantStorageManager extends StorageManager {
     public DataResult<FacetField> facet(Query query, QueryOptions queryOptions, String token)
             throws CatalogException, StorageEngineException, IOException {
         return secure(query, queryOptions, token, Enums.Action.FACET, engine -> {
-            addDefaultLimit(queryOptions, engine.getOptions());
             logger.debug("getFacets {}, {}", query, queryOptions);
             DataResult<FacetField> result = engine.facet(query, queryOptions);
             logger.debug("getFacets in {}ms", result.getTime());

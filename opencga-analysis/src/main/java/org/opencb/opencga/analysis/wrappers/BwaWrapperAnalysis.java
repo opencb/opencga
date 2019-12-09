@@ -3,9 +3,9 @@ package org.opencb.opencga.analysis.wrappers;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.core.analysis.result.FileResult;
-import org.opencb.opencga.core.annotations.Analysis;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.tools.result.FileResult;
+import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.exception.ToolException;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -14,7 +14,7 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.*;
 
-@Analysis(id = BwaWrapperAnalysis.ID, type = Analysis.AnalysisType.ALIGNMENT,
+@Tool(id = BwaWrapperAnalysis.ID, type = Tool.ToolType.ALIGNMENT,
         description = "")
 public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
@@ -37,7 +37,7 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
         super.check();
 
         if (StringUtils.isEmpty(command)) {
-            throw new AnalysisException("Missig BWA command. Supported commands are 'index' and 'mem'");
+            throw new ToolException("Missig BWA command. Supported commands are 'index' and 'mem'");
         }
 
         switch (command) {
@@ -46,7 +46,7 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 break;
             default:
                 // TODO: support fastmap, pemerge, aln, samse, sampe, bwasw, shm, fa2pac, pac2bwt, pac2bwtgen, bwtupdate, bwt2sa
-                throw new AnalysisException("BWA command '" + command + "' is not available. Supported commands are 'index' and 'mem'");
+                throw new ToolException("BWA command '" + command + "' is not available. Supported commands are 'index' and 'mem'");
         }
     }
 
@@ -111,10 +111,10 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
                     if (file.exists()) {
                         msg = StringUtils.join(FileUtils.readLines(file, Charset.defaultCharset()), ". ");
                     }
-                    throw new AnalysisException(msg);
+                    throw new ToolException(msg);
                 }
             } catch (Exception e) {
-                throw new AnalysisException(e);
+                throw new ToolException(e);
             }
         });
     }
@@ -125,7 +125,7 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
     }
 
     @Override
-    public String getCommandLine() throws AnalysisException {
+    public String getCommandLine() throws ToolException {
         StringBuilder sb = new StringBuilder("docker run ");
 
         // Mount management

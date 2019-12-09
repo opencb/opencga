@@ -3,7 +3,7 @@ package org.opencb.opencga.app.cli.internal.executors;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.file.FileDeleteAction;
 import org.opencb.opencga.app.cli.internal.options.FileCommandOptions;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,7 +38,7 @@ public class FileCommandExecutor extends InternalCommandExecutor {
         }
     }
 
-    private void delete() throws AnalysisException {
+    private void delete() throws ToolException {
         FileCommandOptions.DeleteCommandOptions options = fileCommandOptions.deleteCommandOptions;
 
         Path outDir = Paths.get(options.outDir);
@@ -54,7 +54,7 @@ public class FileCommandExecutor extends InternalCommandExecutor {
         delete.start();
     }
 
-    private void unlink() throws AnalysisException {
+    private void unlink() throws ToolException {
         FileCommandOptions.UnlinkCommandOptions options = fileCommandOptions.unlinkCommandOptions;
 
         Path outDir = Paths.get(options.outDir);

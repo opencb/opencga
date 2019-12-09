@@ -5,7 +5,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -15,18 +15,18 @@ import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.annotations.Analysis;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileIndex;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.util.*;
 
-@Analysis(id = FileDeleteAction.ID, type = Analysis.AnalysisType.VARIANT, description = "Delete files.")
-public class FileDeleteAction extends OpenCgaAnalysis {
+@Tool(id = FileDeleteAction.ID, type = Tool.ToolType.VARIANT, description = "Delete files.")
+public class FileDeleteAction extends OpenCgaTool {
 
-    public final static String ID = "file-delete";
+    public final static String ID = "files-delete";
 
     private List<String> files;
     private String studyFqn;
@@ -59,10 +59,10 @@ public class FileDeleteAction extends OpenCgaAnalysis {
     @Override
     protected void check() throws Exception {
         if (StringUtils.isEmpty(studyFqn)) {
-            throw new AnalysisException("Missing mandatory study parameter");
+            throw new ToolException("Missing mandatory study parameter");
         }
         if (ListUtils.isEmpty(files)) {
-            throw new AnalysisException("Missing mandatory list of files");
+            throw new ToolException("Missing mandatory list of files");
         }
     }
 
@@ -247,7 +247,7 @@ public class FileDeleteAction extends OpenCgaAnalysis {
         logger.error("{}", e.getMessage(), e);
         try {
             addError(exception);
-        } catch (AnalysisException ex) {
+        } catch (ToolException ex) {
             logger.error("Unexpected error occurred when reporting the previous error", ex);
         }
     }

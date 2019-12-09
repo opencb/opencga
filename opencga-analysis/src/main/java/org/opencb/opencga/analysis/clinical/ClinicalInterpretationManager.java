@@ -47,7 +47,7 @@ import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.results.OpenCGAResult;
@@ -212,7 +212,7 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     public List<Variant> getDeNovoVariants(String clinicalAnalysisId, String studyId, Query query, QueryOptions queryOptions,
                                            String sessionId)
-            throws AnalysisException, CatalogException, StorageEngineException, IOException {
+            throws ToolException, CatalogException, StorageEngineException, IOException {
         logger.debug("Getting DeNovo variants");
 
         Query currentQuery = new Query(defaultDeNovoQuery).append(STUDY.key(), studyId);
@@ -228,7 +228,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         OpenCGAResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyId,
                 new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.FQN.key()), sessionId);
         if (studyQueryResult.getNumResults() == 0) {
-            throw new AnalysisException("Study " + studyId + " not found");
+            throw new ToolException("Study " + studyId + " not found");
         }
 
         List<Variant> variants;
@@ -301,7 +301,7 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     public Map<String, List<Variant>> getCompoundHeterozigousVariants(String clinicalAnalysisId, String studyId, Query query,
                                                                       QueryOptions queryOptions, String sessionId)
-            throws AnalysisException, CatalogException, StorageEngineException, IOException {
+            throws ToolException, CatalogException, StorageEngineException, IOException {
         logger.debug("Getting Compound Heterozigous variants");
 
         Query currentQuery = new Query(defaultCompoundHeterozigousQuery).append(STUDY.key(), studyId);
@@ -363,7 +363,7 @@ public class ClinicalInterpretationManager extends StorageManager {
     }
 
     public DefaultReportedVariantCreator createReportedVariantCreator(Query query, String assembly, boolean skipUntieredVariants,
-                                                                      String sessionId) throws AnalysisException {
+                                                                      String sessionId) throws ToolException {
         // Reported variant creator
         ClinicalProperty.ModeOfInheritance moi = ClinicalProperty.ModeOfInheritance.valueOf(query.getString(FAMILY_SEGREGATION.key(),
                 ClinicalProperty.ModeOfInheritance.UNKNOWN.name()));
@@ -391,31 +391,31 @@ public class ClinicalInterpretationManager extends StorageManager {
                     getActionableVariantManager().getActionableVariants(assembly), disorder, moi, ClinicalProperty.Penetrance.COMPLETE,
                     diseasePanels, biotypes, soNames, !skipUntieredVariants);
         } catch (IOException e) {
-            throw new AnalysisException("Error creating reported variant creator", e);
+            throw new ToolException("Error creating reported variant creator", e);
         }
     }
 
     public ClinicalAnalysis getClinicalAnalysis(String studyId, String clinicalAnalysisId, String sessionId)
-            throws AnalysisException, CatalogException {
+            throws ToolException, CatalogException {
         OpenCGAResult<ClinicalAnalysis> clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager()
                 .get(studyId, clinicalAnalysisId, QueryOptions.empty(), sessionId);
 
         if (clinicalAnalysisQueryResult.getNumResults() == 0) {
-            throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyId);
+            throw new ToolException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyId);
         }
 
         ClinicalAnalysis clinicalAnalysis = clinicalAnalysisQueryResult.first();
 
         if (clinicalAnalysis.getProband() == null || StringUtils.isEmpty(clinicalAnalysis.getProband().getId())) {
-            throw new AnalysisException("Missing proband in clinical analysis " + clinicalAnalysisId);
+            throw new ToolException("Missing proband in clinical analysis " + clinicalAnalysisId);
         }
 
         return clinicalAnalysis;
     }
 
-    public List<DiseasePanel> getDiseasePanels(Query query, String sessionId) throws AnalysisException {
+    public List<DiseasePanel> getDiseasePanels(Query query, String sessionId) throws ToolException {
         if (!query.containsKey(STUDY.key())) {
-            throw new AnalysisException("Missing study in query");
+            throw new ToolException("Missing study in query");
         }
         List<DiseasePanel> diseasePanels = new ArrayList<>();
         if (!query.containsKey(PANEL.key())) {
@@ -425,7 +425,7 @@ public class ClinicalInterpretationManager extends StorageManager {
     }
 
     public List<DiseasePanel> getDiseasePanels(String studyId, List<String> diseasePanelIds, String sessionId)
-            throws AnalysisException {
+            throws ToolException {
         List<DiseasePanel> diseasePanels = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(diseasePanelIds)) {
             OpenCGAResult<Panel> queryResults;
@@ -433,11 +433,11 @@ public class ClinicalInterpretationManager extends StorageManager {
                 queryResults = catalogManager.getPanelManager().get(studyId, diseasePanelIds, QueryOptions.empty(),
                         sessionId);
             } catch (CatalogException e) {
-                throw new AnalysisException("Error accessing panel manager", e);
+                throw new ToolException("Error accessing panel manager", e);
             }
 
             if (queryResults.getNumResults() != diseasePanelIds.size()) {
-                throw new AnalysisException("The number of disease panels retrieved doesn't match the number of disease panels queried");
+                throw new ToolException("The number of disease panels retrieved doesn't match the number of disease panels queried");
             }
 
             for (Panel panel : queryResults.getResults()) {
@@ -448,19 +448,19 @@ public class ClinicalInterpretationManager extends StorageManager {
     }
 
     public List<ReportedVariant> getPrimaryFindings(Query query, QueryOptions queryOptions, ReportedVariantCreator reportedVariantCreator,
-                                                    String sessionId) throws AnalysisException {
+                                                    String sessionId) throws ToolException {
         try {
             VariantQueryResult<Variant> variantQueryResult = getVariantStorageManager().get(query, queryOptions, sessionId);
             List<Variant> variants = variantQueryResult.getResults();
             return reportedVariantCreator.create(variants);
         } catch (InterpretationAnalysisException | CatalogException | StorageEngineException | IOException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
     }
 
     public List<ReportedVariant> getPrimaryFindings(String clinicalAnalysisId, Query query, QueryOptions queryOptions,
                                                     ReportedVariantCreator reportedVariantCreator, String sessionId)
-            throws AnalysisException {
+            throws ToolException {
         List<Variant> variants;
         List<ReportedVariant> reportedVariants;
 
@@ -489,14 +489,14 @@ public class ClinicalInterpretationManager extends StorageManager {
                     break;
             }
         } catch (Exception e) {
-            throw new AnalysisException("Error retrieving primary findings variants", e);
+            throw new ToolException("Error retrieving primary findings variants", e);
         }
 
         return reportedVariants;
     }
 
     public List<ReportedVariant> getSecondaryFindings(String studyId, String sampleId, ReportedVariantCreator reportedVariantCreator,
-                                                      String sessionId) throws AnalysisException {
+                                                      String sessionId) throws ToolException {
         try {
             List<Variant> variants = new ArrayList<>();
 
@@ -531,12 +531,12 @@ public class ClinicalInterpretationManager extends StorageManager {
 
             return reportedVariantCreator.create(variants);
         } catch (InterpretationAnalysisException | IOException | CatalogException | StorageEngineException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
     }
 
     public List<Variant> getSecondaryFindings(String inputSampleId, String clinicalAnalysisId, String studyId, String sessionId)
-            throws CatalogException, AnalysisException, IOException, StorageEngineException {
+            throws CatalogException, ToolException, IOException, StorageEngineException {
         String sampleId = inputSampleId;
         // sampleId has preference over clinicalAnalysisId
         if (StringUtils.isEmpty(sampleId)) {
@@ -550,7 +550,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                     }
                 }
             } else {
-                throw new AnalysisException("Missing germline sample");
+                throw new ToolException("Missing germline sample");
             }
         }
 
@@ -590,7 +590,7 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     public List<ReportedVariant> getSecondaryFindings(ClinicalAnalysis clinicalAnalysis,  List<String> sampleNames,
                                                       String studyId, ReportedVariantCreator creator, String sessionId)
-            throws StorageEngineException, AnalysisException, CatalogException, IOException {
+            throws StorageEngineException, ToolException, CatalogException, IOException {
         List<ReportedVariant> secondaryFindings = null;
         if (clinicalAnalysis.getConsent() != null
                 && clinicalAnalysis.getConsent().getSecondaryFindings() == ClinicalConsent.ConsentStatus.YES) {
@@ -605,18 +605,18 @@ public class ClinicalInterpretationManager extends StorageManager {
 
     public List<ReportedLowCoverage> getReportedLowCoverage(int maxCoverage, ClinicalAnalysis clinicalAnalysis,
                                                             List<DiseasePanel> diseasePanels, String studyId, String sessionId)
-            throws AnalysisException {
+            throws ToolException {
         String clinicalAnalysisId = clinicalAnalysis.getId();
 
         // Sanity check
         if (clinicalAnalysis.getProband() == null || CollectionUtils.isEmpty(clinicalAnalysis.getProband().getSamples())) {
-            throw new AnalysisException("Missing proband when computing reported low coverage");
+            throw new ToolException("Missing proband when computing reported low coverage");
         }
         String probandId;
         try {
             probandId = clinicalAnalysis.getProband().getSamples().get(0).getId();
         } catch (Exception e) {
-            throw new AnalysisException("Missing proband when computing reported low coverage", e);
+            throw new ToolException("Missing proband when computing reported low coverage", e);
         }
 
         // Reported low coverage map
@@ -632,10 +632,10 @@ public class ClinicalInterpretationManager extends StorageManager {
                             .append(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.BAM),
                     new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.UUID.key()), false, sessionId);
         } catch (CatalogException e) {
-            throw new AnalysisException(e.getMessage(), e);
+            throw new ToolException(e.getMessage(), e);
         }
         if (fileQueryResult.getNumResults() > 1) {
-            throw new AnalysisException("More than one BAM file found for proband " + probandId + " in clinical analysis "
+            throw new ToolException("More than one BAM file found for proband " + probandId + " in clinical analysis "
                     + clinicalAnalysisId);
         }
 
@@ -685,7 +685,7 @@ public class ClinicalInterpretationManager extends StorageManager {
         return reportedLowCoverages;
     }
 
-    public Analyst getAnalyst(String token) throws AnalysisException {
+    public Analyst getAnalyst(String token) throws ToolException {
         try {
             String userId = catalogManager.getUserManager().getUserId(token);
             OpenCGAResult<User> userQueryResult = catalogManager.getUserManager().get(userId, new QueryOptions(QueryOptions.INCLUDE,
@@ -693,7 +693,7 @@ public class ClinicalInterpretationManager extends StorageManager {
 
             return new Analyst(userId, userQueryResult.first().getEmail(), userQueryResult.first().getOrganization());
         } catch (CatalogException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
     }
 

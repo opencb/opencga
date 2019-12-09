@@ -18,7 +18,9 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.UserCommandOptions;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
@@ -28,6 +30,8 @@ import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.rest.RestResponse;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -53,17 +57,10 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
 
     @Override
     public void execute() throws Exception {
-
-
-
         logger.debug("Executing users command line");
-//        openCGAClient = new OpenCGAClient(clientConfiguration);
 
         String subCommandString = getParsedSubCommand(usersCommandOptions.getjCommander());
-//        if (!subCommandString.equals("login") && !subCommandString.equals("logout")) {
-//            checkSessionValid();
-//        }
-        DataResponse queryResponse = null;
+        RestResponse queryResponse = null;
         switch (subCommandString) {
             case "create":
                 queryResponse = create();
@@ -108,7 +105,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
             if (StringUtils.isNotEmpty(sessionId)) {
                 List<String> studies = new ArrayList<>();
 
-                DataResponse<Project> projects = openCGAClient.getProjectClient().search(
+                RestResponse<Project> projects = openCGAClient.getProjectClient().search(
                         new Query(ProjectDBAdaptor.QueryParams.OWNER.key(), user), QueryOptions.empty());
 
                 if (projects.getResponses().get(0).getNumResults() == 0) {
@@ -140,7 +137,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         logoutCliSessionFile();
     }
 
-    private DataResponse<User> create() throws CatalogException, IOException {
+    private RestResponse<User> create() throws CatalogException, IOException {
         logger.debug("Creating user...");
 
         ObjectMap params = new ObjectMap();
@@ -154,7 +151,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
                 usersCommandOptions.createCommandOptions.password, params);
     }
 
-    private DataResponse<User> info() throws ClientException, IOException {
+    private RestResponse<User> info() throws ClientException, IOException {
         logger.debug("User info");
 
         QueryOptions queryOptions = new QueryOptions();
@@ -168,12 +165,12 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, usersCommandOptions.infoCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, usersCommandOptions.infoCommandOptions.dataModelOptions.exclude);
 
-        DataResponse<User> userQueryResponse = openCGAClient.getUserClient().get(queryOptions);
+        RestResponse<User> userQueryResponse = openCGAClient.getUserClient().get(queryOptions);
         if (userQueryResponse.getResponses().size() == 1 && userQueryResponse.getResponses().get(0).getNumResults() == 1) {
             queryOptions.put("shared", true);
-            DataResponse<Project> sharedProjects = openCGAClient.getUserClient().getProjects(queryOptions);
+            RestResponse<Project> sharedProjects = openCGAClient.getUserClient().getProjects(queryOptions);
             if (sharedProjects.getResponses().size() > 0 && sharedProjects.getResponses().get(0).getNumResults() > 0) {
-                DataResult<User> userQueryResult = userQueryResponse.getResponses().get(0);
+                OpenCGAResult<User> userQueryResult = userQueryResponse.getResponses().get(0);
                 List<Project> newProjectList = Stream
                         .concat(userQueryResult.first().getProjects().stream(), sharedProjects.first().getResults().stream())
                         .collect(Collectors.toList());
@@ -184,7 +181,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         return userQueryResponse;
     }
 
-    private DataResponse<Project> projects() throws ClientException, IOException {
+    private RestResponse<Project> projects() throws ClientException, IOException {
         logger.debug("List all projects and studies of user");
 
         QueryOptions queryOptions = new QueryOptions();
@@ -209,14 +206,14 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
 //        openCGAClient.getUserClient().delete(usersCommandOptions.deleteCommandOptions.user, new ObjectMap());
     }
 
-    private DataResponse<User> update() throws IOException, CatalogException {
+    private RestResponse<User> update() throws IOException, CatalogException {
         logger.debug("Updating user");
 
         ObjectMap params = loadFile(usersCommandOptions.updateCommandOptions.json);
         return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, null, params);
     }
 
-    private DataResponse<User> changePassword () throws ClientException, IOException {
+    private RestResponse<User> changePassword () throws ClientException, IOException {
         return openCGAClient.getUserClient().changePassword(usersCommandOptions.changePasswordCommandOptions.password,
                 usersCommandOptions.changePasswordCommandOptions.npassword, new ObjectMap());
     }

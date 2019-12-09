@@ -1,11 +1,15 @@
 package org.opencb.opencga.storage.hadoop.variant.index.sample;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.opencga.storage.core.io.bit.BitInputStream;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -28,12 +32,17 @@ public class SampleIndexVariantBiConverter {
     public static final int INT24_LENGTH = 3;
     public static final byte BYTE_SEPARATOR = 0;
 
-    public int expectedSize(Variant variant) {
-        return INT24_LENGTH + variant.getReference().length() + SEPARATOR_LENGTH + getAlternate(variant).length();
+    public int expectedSize(Variant variant, boolean interVariantSeparator) {
+        return expectedSize(variant.getReference(), getAlternate(variant), interVariantSeparator);
     }
 
-    protected int expectedSize(String reference, String alternate) {
-        return INT24_LENGTH + reference.length() + 1 + alternate.length();
+    protected int expectedSize(String reference, String alternate, boolean interVariantSeparator) {
+        if (AlleleCodec.valid(reference, alternate)) {
+            return INT24_LENGTH; // interVariantSeparator not needed when coding alleles
+        } else {
+            return INT24_LENGTH + reference.length() + SEPARATOR_LENGTH + alternate.length()
+                    + (interVariantSeparator ? SEPARATOR_LENGTH : 0);
+        }
     }
 
     @Deprecated
@@ -52,8 +61,7 @@ public class SampleIndexVariantBiConverter {
     public byte[] toBytes(Collection<Variant> variants) {
         int size = 0;
         for (Variant variant : variants) {
-            size += expectedSize(variant);
-            size += SEPARATOR_LENGTH;
+            size += expectedSize(variant, true);
         }
         byte[] bytes = new byte[size];
         toBytes(variants, bytes, 0);
@@ -63,38 +71,50 @@ public class SampleIndexVariantBiConverter {
     protected int toBytes(Collection<Variant> variants, byte[] bytes, int offset) {
         int length = 0;
         for (Variant variant : variants) {
-            length += toBytes(variant, bytes, offset + length);
-            length += appendSeparator(bytes, offset + length);
+            length += toBytes(variant, bytes, offset + length, true);
         }
         return length;
     }
 
     public byte[] toBytes(Variant variant) {
+        return toBytes(variant, false);
+    }
+
+    public byte[] toBytes(Variant variant, boolean interVariantSeparator) {
         String alternate = getAlternate(variant);
-        byte[] bytes = new byte[expectedSize(variant.getReference(), alternate)];
-        toBytes(getRelativeStart(variant), variant.getReference(), alternate, bytes, 0);
+        byte[] bytes = new byte[expectedSize(variant.getReference(), alternate, interVariantSeparator)];
+        toBytes(getRelativeStart(variant), variant.getReference(), alternate, bytes, 0, interVariantSeparator);
         return bytes;
     }
 
     public void toBytes(Variant variant, ByteArrayOutputStream stream) throws IOException {
-        if (stream.size() != 0) {
-            // separator
-            stream.write(BYTE_SEPARATOR);
-        }
-        stream.write(toBytes(variant));
+        stream.write(toBytes(variant, true));
     }
 
     public int toBytes(Variant variant, byte[] bytes, int offset) {
-        return toBytes(getRelativeStart(variant), variant.getReference(), getAlternate(variant), bytes, offset);
+        return toBytes(variant, bytes, offset, false);
     }
 
-    protected int toBytes(int relativeStart, String reference, String alternate, byte[] bytes, int offset) {
-        int length = 0;
-        length += append24bitInteger(relativeStart, bytes, offset + length);
-        length += appendString(reference, bytes, offset + length);
-        length += appendSeparator(bytes, offset + length);
-        length += appendString(alternate, bytes, offset + length);
-        return length;
+    public int toBytes(Variant variant, byte[] bytes, int offset, boolean interVariantSeparator) {
+        return toBytes(getRelativeStart(variant), variant.getReference(), getAlternate(variant), bytes, offset, interVariantSeparator);
+    }
+
+    protected int toBytes(int relativeStart, String reference, String alternate, byte[] bytes, int offset, boolean interVariantSeparator) {
+        if (AlleleCodec.valid(reference, alternate)) {
+            int length = append24bitInteger(relativeStart, bytes, offset);
+            bytes[offset] |= AlleleCodec.encode(reference, alternate);
+            return length;
+        } else {
+            int length = 0;
+            length += append24bitInteger(relativeStart, bytes, offset + length);
+            length += appendString(reference, bytes, offset + length);
+            length += appendSeparator(bytes, offset + length);
+            length += appendString(alternate, bytes, offset + length);
+            if (interVariantSeparator) {
+                length += appendSeparator(bytes, offset + length);
+            }
+            return length;
+        }
     }
 
     public Variant toVariant(String chromosome, int batchStart, byte[] bytes) {
@@ -102,9 +122,13 @@ public class SampleIndexVariantBiConverter {
     }
 
     public Variant toVariant(String chromosome, int batchStart, byte[] bytes, int offset) {
-        int referenceLength = readNextSeparator(bytes, offset + INT24_LENGTH);
-        int alternateLength = readNextSeparator(bytes, offset + INT24_LENGTH + referenceLength + SEPARATOR_LENGTH);
-        return toVariant(chromosome, batchStart, bytes, offset, referenceLength, alternateLength);
+        if (hasEncodedAlleles(bytes, offset)) {
+            return toVariantEncodedAlleles(chromosome, batchStart, bytes, offset);
+        } else {
+            int referenceLength = readNextSeparator(bytes, offset + INT24_LENGTH);
+            int alternateLength = readNextSeparator(bytes, offset + INT24_LENGTH + referenceLength + SEPARATOR_LENGTH);
+            return toVariant(chromosome, batchStart, bytes, offset, referenceLength, alternateLength);
+        }
     }
 
     public List<Variant> toVariants(Cell cell) {
@@ -122,67 +146,192 @@ public class SampleIndexVariantBiConverter {
     }
 
     public List<Variant> toVariants(String chromosome, int batchStart, byte[] bytes, int offset, int length) {
-        LinkedList<Variant> variants = new LinkedList<>();
-        toVariantsIterator(chromosome, batchStart, bytes, offset, length).forEachRemaining(variants::add);
+        // Create dummy entry
+        SampleIndexEntry entry = new SampleIndexEntry(0, chromosome, batchStart, SampleIndexConfiguration.defaultConfiguration());
+        SampleIndexEntry.SampleIndexGtEntry gtEntry = entry.getGtEntry("0/1");
+        gtEntry.setVariants(bytes, offset, length);
+        SampleIndexEntryIterator it = gtEntry.iterator();
+        List<Variant> variants = new ArrayList<>(it.getApproxSize());
+        it.forEachRemaining(variants::add);
         return variants;
     }
 
-    public SampleIndexVariantIterator toVariantsIterator(String chromosome, int batchStart, byte[] bytes, int offset, int length) {
-        if (length <= 0) {
-            return SampleIndexVariantIterator.emptyIterator();
+    public SampleIndexEntryIterator toVariantsIterator(SampleIndexEntry entry, String gt) {
+        SampleIndexEntry.SampleIndexGtEntry gtEntry = entry.getGts().get(gt);
+        SampleIndexConfiguration configuration = entry.getConfiguration();
+        if (gtEntry == null || gtEntry.getVariantsLength() <= 0) {
+            return EmptySampleIndexEntryIterator.emptyIterator();
         } else {
-            // Compare only the first letters to run a "startsWith"
-            byte[] startsWith = Bytes.toBytes(chromosome + ':');
-            int compareLength = startsWith.length;
-            if (length > compareLength
-                    && Bytes.compareTo(bytes, offset, compareLength, startsWith, 0, compareLength) == 0) {
-                return new StringSampleIndexVariantIterator(bytes, offset, length);
+            if (StringSampleIndexGtEntryIterator.isStringCodified(entry.getChromosome(),
+                    gtEntry.getVariants(),
+                    gtEntry.getVariantsOffset(),
+                    gtEntry.getVariantsLength())) {
+                return new StringSampleIndexGtEntryIterator(gtEntry, configuration);
             } else {
-                return new ByteSampleIndexVariantIterator(chromosome, batchStart, bytes, offset, length);
+                return new ByteSampleIndexGtEntryIterator(entry.getChromosome(), entry.getBatchStart(), gtEntry, configuration);
             }
         }
     }
 
-    public interface SampleIndexVariantIterator extends Iterator<Variant> {
-        /**
-         * @return the index of the element that would be returned by a
-         * subsequent call to {@code next}.
-         */
-        int nextIndex();
+    public SampleIndexEntryIterator toVariantsCountIterator(SampleIndexEntry entry, String gt) {
+        return new CountSampleIndexGtEntryIterator(entry.getGtEntry(gt), entry.getConfiguration());
+    }
 
-        /**
-         * @return {@code true} if the iteration has more elements
-         */
-        boolean hasNext();
+    private abstract static class SampleIndexGtEntryIterator implements SampleIndexEntryIterator {
+        protected SampleIndexEntry.SampleIndexGtEntry gtEntry;
+        private SampleIndexConfiguration configuration;
+        private BitInputStream popFreq;
+        private BitInputStream ctBtIndex;
+        private int nonIntergenicCount;
 
-        /**
-         * Skip next element. Avoid conversion.
-         */
-        void skip();
+        // Reuse the annotation index entry. Avoid create a new instance for each variant.
+        private final AnnotationIndexEntry annotationIndexEntry;
+        private int annotationIndexEntryIdx;
 
-        /**
-         * @return next variant
-         */
-        Variant next();
+        SampleIndexGtEntryIterator() {
+            nonIntergenicCount = 0;
+            annotationIndexEntry = new AnnotationIndexEntry();
+            annotationIndexEntry.setCtBtCombination(new AnnotationIndexEntry.CtBtCombination(new byte[0], 0, 0));
+            annotationIndexEntryIdx = -1;
+        }
 
-        int getApproxSize();
+        SampleIndexGtEntryIterator(SampleIndexEntry.SampleIndexGtEntry gtEntry, SampleIndexConfiguration configuration) {
+            this();
+            this.gtEntry = gtEntry;
+            this.ctBtIndex = gtEntry.getCtBtIndex() == null
+                    ? null
+                    : new BitInputStream(gtEntry.getCtBtIndex(), gtEntry.getCtBtIndexOffset(), gtEntry.getCtBtIndexLength());
+            this.popFreq = gtEntry.getPopulationFrequencyIndex() == null
+                    ? null
+                    : new BitInputStream(gtEntry.getPopulationFrequencyIndex(),
+                    gtEntry.getPopulationFrequencyIndexOffset(),
+                    gtEntry.getPopulationFrequencyIndexLength());
+            this.configuration = configuration;
+        }
 
-        static SampleIndexVariantIterator emptyIterator() {
-            return EmptySampleIndexVariantIterator.EMPTY_ITERATOR;
+        @Override
+        public String nextGenotype() {
+            return gtEntry.getGt();
+        }
+
+        @Override
+        public boolean hasFileIndex() {
+            return gtEntry.getFileIndex() != null;
+        }
+
+        @Override
+        public byte nextFileIndex() {
+            return gtEntry.getFileIndex(nextIndex());
+        }
+
+        @Override
+        public boolean hasParentsIndex() {
+            return gtEntry.getParentsIndex() != null;
+        }
+
+        @Override
+        public byte nextParentsIndex() {
+            return gtEntry.getParentsIndex(nextIndex());
+        }
+
+        public AnnotationIndexEntry nextAnnotationIndexEntry() {
+            if (annotationIndexEntryIdx == nextIndex()) {
+                return annotationIndexEntry;
+            }
+
+            if (gtEntry.getAnnotationIndex() == null && popFreq == null) {
+                return null;
+            }
+
+            int idx = nextIndex();
+            annotationIndexEntry.setHasSummaryIndex(false);
+            annotationIndexEntry.setHasCtIndex(false);
+            annotationIndexEntry.setHasBtIndex(false);
+            AnnotationIndexEntry.CtBtCombination ctBtCombination = annotationIndexEntry.getCtBtCombination();
+            ctBtCombination.setNumCt(0);
+            ctBtCombination.setNumBt(0);
+
+            if (gtEntry.getAnnotationIndex() != null) {
+                annotationIndexEntry.setSummaryIndex(gtEntry.getAnnotationIndex(idx));
+                boolean nonIntergenic = SampleIndexEntryFilter.isNonIntergenic(annotationIndexEntry.getSummaryIndex());
+                annotationIndexEntry.setIntergenic(!nonIntergenic);
+
+                if (nonIntergenic) {
+                    int nextNonIntergenic = nextNonIntergenicIndex();
+                    if (gtEntry.getConsequenceTypeIndex() != null) {
+                        annotationIndexEntry.setCtIndex(gtEntry.getConsequenceTypeIndex(nextNonIntergenic));
+                    }
+                    if (gtEntry.getBiotypeIndex() != null) {
+                        annotationIndexEntry.setBtIndex(gtEntry.getBiotypeIndex(nextNonIntergenic));
+                    }
+
+                    if (ctBtIndex != null && annotationIndexEntry.getCtIndex() != 0 && annotationIndexEntry.getBtIndex() != 0) {
+                        int numCt = Integer.bitCount(Short.toUnsignedInt(annotationIndexEntry.getCtIndex()));
+                        int numBt = Integer.bitCount(Byte.toUnsignedInt(annotationIndexEntry.getBtIndex()));
+                        ctBtCombination.setNumCt(numCt);
+                        ctBtCombination.setNumBt(numBt);
+                        ctBtCombination.setCtBtMatrix(ctBtIndex.readBytes(numCt, numBt));
+                    }
+                }
+            }
+
+            byte[] popFreqIndex;
+            if (popFreq != null) {
+                popFreqIndex = popFreq.readBytes(configuration.getPopulationRanges().size(), AnnotationIndexConverter.POP_FREQ_SIZE);
+            } else {
+                popFreqIndex = null;
+            }
+            annotationIndexEntry.setPopFreqIndex(popFreqIndex);
+
+            annotationIndexEntryIdx = idx;
+            return annotationIndexEntry;
+        }
+
+        @Override
+        public int nextNonIntergenicIndex() {
+            if (gtEntry.getAnnotationIndex() == null) {
+                return -1;
+            } else if (SampleIndexEntryFilter.isNonIntergenic(gtEntry.getAnnotationIndex(nextIndex()))) {
+                return nonIntergenicCount;
+            } else {
+                throw new IllegalStateException("Next variant is not intergenic!");
+            }
+        }
+
+        protected void increaseNonIntergenicCounter() {
+            // If the variant to be returned is non-intergenic, increase the number of non-intergenic variants.
+            if (gtEntry.getAnnotationIndex() != null) {
+                if (SampleIndexEntryFilter.isNonIntergenic(gtEntry.getAnnotationIndex(nextIndex()))) {
+                    nonIntergenicCount++;
+                }
+            }
         }
     }
 
-    private static final class EmptySampleIndexVariantIterator implements SampleIndexVariantIterator {
+    private static final class EmptySampleIndexEntryIterator implements SampleIndexEntryIterator {
 
-        private EmptySampleIndexVariantIterator() {
+        private EmptySampleIndexEntryIterator() {
         }
 
-        private static final EmptySampleIndexVariantIterator EMPTY_ITERATOR = new EmptySampleIndexVariantIterator();
+        private static final EmptySampleIndexEntryIterator EMPTY_ITERATOR = new EmptySampleIndexEntryIterator();
 
+        public static SampleIndexEntryIterator emptyIterator() {
+            return EmptySampleIndexEntryIterator.EMPTY_ITERATOR;
+        }
 
         @Override
         public int nextIndex() {
-            return 0;
+            throw new NoSuchElementException("Empty iterator");
+        }
+
+        @Override
+        public String nextGenotype() {
+            throw new NoSuchElementException("Empty iterator");
+        }
+
+        @Override
+        public int nextNonIntergenicIndex() {
+            throw new NoSuchElementException("Empty iterator");
         }
 
         @Override
@@ -192,10 +341,36 @@ public class SampleIndexVariantBiConverter {
 
         @Override
         public void skip() {
+            throw new NoSuchElementException("Empty iterator");
         }
 
         public int getApproxSize() {
             return 0;
+        }
+
+        @Override
+        public boolean hasFileIndex() {
+            return false;
+        }
+
+        @Override
+        public byte nextFileIndex() {
+            throw new NoSuchElementException("Empty iterator");
+        }
+
+        @Override
+        public boolean hasParentsIndex() {
+            return false;
+        }
+
+        @Override
+        public byte nextParentsIndex() {
+            throw new NoSuchElementException("Empty iterator");
+        }
+
+        @Override
+        public AnnotationIndexEntry nextAnnotationIndexEntry() {
+            throw new NoSuchElementException("Empty iterator");
         }
 
         @Override
@@ -204,12 +379,13 @@ public class SampleIndexVariantBiConverter {
         }
     }
 
-    private class StringSampleIndexVariantIterator implements SampleIndexVariantIterator {
+    private static class StringSampleIndexGtEntryIterator extends SampleIndexGtEntryIterator {
         private final ListIterator<String> variants;
         private final int size;
 
-        StringSampleIndexVariantIterator(byte[] value, int offset, int length) {
-            List<String> values = split(value, offset, length);
+        StringSampleIndexGtEntryIterator(SampleIndexEntry.SampleIndexGtEntry entry, SampleIndexConfiguration configuration) {
+            super(entry, configuration);
+            List<String> values = split(entry.getVariants(), entry.getVariantsOffset(), entry.getVariantsLength());
             size = values.size();
             variants = values.listIterator();
         }
@@ -226,20 +402,80 @@ public class SampleIndexVariantBiConverter {
 
         @Override
         public void skip() {
+            nextAnnotationIndexEntry(); // ensure read annotation
+            increaseNonIntergenicCounter();
             variants.next();
         }
 
         @Override
         public Variant next() {
+            nextAnnotationIndexEntry(); // ensure read annotation
+            increaseNonIntergenicCounter();
             return new Variant(variants.next());
         }
 
         public int getApproxSize() {
             return size;
         }
+
+        public static boolean isStringCodified(String chromosome, byte[] bytes, int offset, int length) {
+            // Compare only the first letters to run a "startsWith"
+            byte[] startsWith = Bytes.toBytes(chromosome + ':');
+            int compareLength = startsWith.length;
+            if (length > compareLength
+                    && Bytes.compareTo(bytes, offset, compareLength, startsWith, 0, compareLength) == 0) {
+                List<String> values = split(bytes, offset, Math.min(length, 20));
+                String[] split = values.get(0).split(":");
+                if (split.length > 1 && StringUtils.isNumeric(split[1])) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
-    private class ByteSampleIndexVariantIterator implements SampleIndexVariantIterator {
+    private static final class CountSampleIndexGtEntryIterator extends SampleIndexGtEntryIterator {
+
+        private final int count;
+        private int i;
+        private static final Variant DUMMY_VARIANT = new Variant("1:10:A:T");
+
+        CountSampleIndexGtEntryIterator(SampleIndexEntry.SampleIndexGtEntry gtEntry, SampleIndexConfiguration configuration) {
+            super(gtEntry, configuration);
+            count = gtEntry.getCount();
+            i = 0;
+        }
+
+        @Override
+        public int nextIndex() {
+            return i;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return i != count;
+        }
+
+        @Override
+        public void skip() {
+            nextAnnotationIndexEntry(); // ensure read annotation
+            increaseNonIntergenicCounter();
+            i++;
+        }
+
+        @Override
+        public Variant next() {
+            skip();
+            return DUMMY_VARIANT;
+        }
+
+        @Override
+        public int getApproxSize() {
+            return count;
+        }
+    }
+
+    private class ByteSampleIndexGtEntryIterator extends SampleIndexGtEntryIterator {
         private final String chromosome;
         private final int batchStart;
         private final byte[] bytes;
@@ -250,16 +486,19 @@ public class SampleIndexVariantBiConverter {
         private int idx;
 
         private boolean hasNext;
+        private boolean encodedRefAlt;
         private int variantLength;
         private int referenceLength;
         private int alternateLength;
 
-        ByteSampleIndexVariantIterator(String chromosome, int batchStart, byte[] bytes, int offset, int length) {
+        ByteSampleIndexGtEntryIterator(String chromosome, int batchStart, SampleIndexEntry.SampleIndexGtEntry gtEntry,
+                                       SampleIndexConfiguration configuration) {
+            super(gtEntry, configuration);
             this.chromosome = chromosome;
             this.batchStart = batchStart;
-            this.bytes = bytes;
-            this.offset = offset;
-            this.length = length;
+            this.bytes = gtEntry.getVariants();
+            this.offset = gtEntry.getVariantsOffset();
+            this.length = gtEntry.getVariantsLength();
             this.currentOffset = offset;
 
             this.idx = -1;
@@ -278,18 +517,30 @@ public class SampleIndexVariantBiConverter {
 
         @Override
         public Variant next() {
-            Variant variant = toVariant(chromosome, batchStart, bytes, currentOffset, referenceLength, alternateLength);
+            nextAnnotationIndexEntry(); // ensure read annotation
+            increaseNonIntergenicCounter();
+            Variant variant;
+            if (encodedRefAlt) {
+                variant = toVariantEncodedAlleles(chromosome, batchStart, bytes, currentOffset);
+            } else {
+                variant = toVariant(chromosome, batchStart, bytes, currentOffset, referenceLength, alternateLength);
+            }
             movePointer();
             return variant;
         }
 
         @Override
         public void skip() {
+            nextAnnotationIndexEntry(); // ensure read annotation
+            increaseNonIntergenicCounter();
             movePointer();
         }
 
         @Override
         public int getApproxSize() {
+            if (gtEntry.getCount() > 0) {
+                return gtEntry.getCount();
+            }
             double expectedVariantSize = 8.0;
             double approximation = 1.2;
             return (int) (length / expectedVariantSize * approximation);
@@ -298,12 +549,18 @@ public class SampleIndexVariantBiConverter {
         private void movePointer() {
             currentOffset += variantLength;
 
-            if (length - (currentOffset - offset) > (INT24_LENGTH + SEPARATOR_LENGTH)) {
+            if (length - (currentOffset - offset) >= (INT24_LENGTH)) {
                 hasNext = true;
                 idx++;
-                referenceLength = readNextSeparator(bytes, currentOffset + INT24_LENGTH);
-                alternateLength = readNextSeparator(bytes, currentOffset + INT24_LENGTH + referenceLength + SEPARATOR_LENGTH);
-                variantLength = INT24_LENGTH + referenceLength + SEPARATOR_LENGTH + alternateLength + SEPARATOR_LENGTH;
+                if (hasEncodedAlleles(bytes, currentOffset)) {
+                    encodedRefAlt = true;
+                    variantLength = INT24_LENGTH;
+                } else {
+                    encodedRefAlt = false;
+                    referenceLength = readNextSeparator(bytes, currentOffset + INT24_LENGTH);
+                    alternateLength = readNextSeparator(bytes, currentOffset + INT24_LENGTH + referenceLength + SEPARATOR_LENGTH);
+                    variantLength = INT24_LENGTH + referenceLength + SEPARATOR_LENGTH + alternateLength + SEPARATOR_LENGTH;
+                }
             } else {
                 hasNext = false;
                 referenceLength = 0;
@@ -311,6 +568,18 @@ public class SampleIndexVariantBiConverter {
                 variantLength = 0;
             }
         }
+
+    }
+
+    private static boolean hasEncodedAlleles(byte[] bytes, int offset) {
+        return (bytes[offset] & 0xF0) != 0;
+    }
+
+    private Variant toVariantEncodedAlleles(String chromosome, int batchStart, byte[] bytes, int offset) {
+        String[] refAlt = AlleleCodec.decode(bytes[offset]);
+        int start = batchStart + (read24bitInteger(bytes, offset) & 0x0F_FF_FF);
+
+        return VariantPhoenixKeyFactory.buildVariant(chromosome, start, refAlt[0], refAlt[1], null);
     }
 
     private Variant toVariant(String chromosome, int batchStart, byte[] bytes, int offset, int referenceLength, int alternateLength) {

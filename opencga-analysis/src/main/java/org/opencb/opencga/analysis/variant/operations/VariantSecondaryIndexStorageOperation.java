@@ -2,13 +2,14 @@ package org.opencb.opencga.analysis.variant.operations;
 
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.annotations.Analysis;
+import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
-@Analysis(id = "variant-secondary-index", type = Analysis.AnalysisType.VARIANT)
+@Tool(id = VariantSecondaryIndexStorageOperation.ID, type = Tool.ToolType.VARIANT)
 public class VariantSecondaryIndexStorageOperation extends StorageOperation {
 
+    public static final String ID = "variant-secondary-index";
     private String projectStr;
     private String region;
     private boolean overwrite;

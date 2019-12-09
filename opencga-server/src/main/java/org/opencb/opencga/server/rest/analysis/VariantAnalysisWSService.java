@@ -25,12 +25,18 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.operations.VariantExportStorageOperation;
+import org.opencb.opencga.analysis.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -42,6 +48,7 @@ import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.rest.RestResponse;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -55,7 +62,6 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
@@ -66,7 +72,6 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.opencga.analysis.variant.CatalogUtils.parseSampleAnnotationQuery;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
@@ -136,7 +141,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Deprecated
     @GET
     @Path("/index")
-    @ApiOperation(value = DEPRECATED + "Use via POST", response = DataResponse.class, hidden = true)
+    @ApiOperation(value = DEPRECATED + "Use via POST", response = RestResponse.class, hidden = true)
     public Response index() {
         return createErrorResponse(new UnsupportedOperationException("Deprecated endpoint. Please, use via POST"));
     }
@@ -205,7 +210,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantIndexParams params) {
-        return submitJob("variant", "index", study, params, jobName, jobDescription, jobTags);
+        return submitJob(VariantFileIndexerStorageOperation.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     @GET
@@ -532,7 +537,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             VariantExportParams params) {
         logger.info("count {} , limit {} , skip {}", count, limit, skip);
         // FIXME: What if exporting from multiple studies?
-        return submitJob("variant", "export", study, params, jobName, jobDescription, jobTags);
+        return submitJob(VariantExportStorageOperation.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     @GET
@@ -611,7 +616,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             StatsRunParams params) {
-        return submitJob("variant", "stats-run", study, params, jobName, jobDescription, jobTags);
+        return submitJob(VariantStatsAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     public static class StatsExportParams extends RestBodyParams {
@@ -640,7 +645,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             StatsExportParams params) {
-        return submitJob("variant", "stats-export", study, params, jobName, jobDescription, jobTags);
+        return submitJob("variant-stats-export", study, params, jobName, jobDescription, jobTags);
     }
 
     public static class StatsDeleteParams extends RestBodyParams {
@@ -862,7 +867,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             SampleStatsRunParams params) {
-        return submitJob("variant", "sample-stats-run", study, params, jobName, jobDescription, jobTags);
+        return submitJob(SampleVariantStatsAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     @GET
@@ -933,7 +938,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             CohortStatsRunParams params) {
-        return submitJob("variant", "cohort-stats-run", study, params, jobName, jobDescription, jobTags);
+        return submitJob(CohortVariantStatsAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     @GET
@@ -1136,7 +1141,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             GwasRunParams params) {
-        return submitJob("variant", "gwas-run", study, params, jobName, jobDescription, jobTags);
+        return submitJob(GwasAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
 //    @POST
@@ -1180,7 +1185,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             PlinkRunParams params) {
-        return submitJob("variant", PlinkWrapperAnalysis.ID + "-run", study, params, jobName, jobDescription, jobTags);
+        return submitJob(PlinkWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     public static class RvtestsRunParams extends RestBodyParams {
@@ -1217,7 +1222,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             RvtestsRunParams params) {
-        return submitJob("variant", RvtestsWrapperAnalysis.ID + "-run", study, params, jobName, jobDescription, jobTags);
+        return submitJob(RvtestsWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
 //    @POST

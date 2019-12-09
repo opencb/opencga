@@ -26,7 +26,7 @@ import org.opencb.opencga.analysis.demo.AnalysisDemo;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.monitor.MonitorService;
+import org.opencb.opencga.master.monitor.MonitorService;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.models.Panel;

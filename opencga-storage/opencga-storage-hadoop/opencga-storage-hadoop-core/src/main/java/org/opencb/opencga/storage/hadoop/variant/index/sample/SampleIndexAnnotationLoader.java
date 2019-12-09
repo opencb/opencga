@@ -17,8 +17,9 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
-import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexEntry;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.AnnotationIndexPutBuilder;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.mr.SampleIndexAnnotationLoaderDriver;
 import org.opencb.opencga.storage.hadoop.variant.utils.HBaseVariantTableNameGenerator;
 import org.slf4j.Logger;
@@ -85,20 +86,20 @@ public class SampleIndexAnnotationLoader {
 
         ProgressLogger progressLogger = new ProgressLogger("Sample index annotation updated variants");
 
-        ParallelTaskRunner<Pair<Variant, Byte>, Put> ptr = new ParallelTaskRunner<>(
-                new DataReader<Pair<Variant, Byte>>() {
+        ParallelTaskRunner<Pair<Variant, AnnotationIndexEntry>, Put> ptr = new ParallelTaskRunner<>(
+                new DataReader<Pair<Variant, AnnotationIndexEntry>>() {
 
-                    private Iterator<Pair<Variant, Byte>> iterator = annotationIndexDBAdaptor.iterator();
+                    private Iterator<Pair<Variant, AnnotationIndexEntry>> iterator = annotationIndexDBAdaptor.iterator();
                     private int initialCapacity = 200000;
-                    private Pair<Variant, Byte> nextPair = null;
+                    private Pair<Variant, AnnotationIndexEntry> nextPair = null;
 
                     private String chromosome = "";
                     private int start = -1;
                     private int end = -1;
 
                     @Override
-                    public List<Pair<Variant, Byte>> read(int n) {
-                        List<Pair<Variant, Byte>> annotationMasks = new ArrayList<>(initialCapacity);
+                    public List<Pair<Variant, AnnotationIndexEntry>> read(int n) {
+                        List<Pair<Variant, AnnotationIndexEntry>> annotationMasks = new ArrayList<>(initialCapacity);
 
                         // Read next batch
                         if (nextPair == null && iterator.hasNext()) {
@@ -113,7 +114,7 @@ public class SampleIndexAnnotationLoader {
                             nextPair = null;
                         }
                         while (iterator.hasNext()) {
-                            Pair<Variant, Byte> pair = iterator.next();
+                            Pair<Variant, AnnotationIndexEntry> pair = iterator.next();
                             Variant variant = pair.getKey();
                             if (variant.getChromosome().equals(chromosome) && variant.getStart() > start && variant.getStart() < end) {
                                 annotationMasks.add(pair);
@@ -179,7 +180,7 @@ public class SampleIndexAnnotationLoader {
         String chromosome = "";
         int start = -1;
         int end = -1;
-        List<Pair<Variant, Byte>> annotationMasks = null;
+        List<Pair<Variant, AnnotationIndexEntry>> annotationEntries = null;
         do {
             for (Map.Entry<Integer, Iterator<Map<String, List<Variant>>>> sampleIteratorPair : sampleIterators.entrySet()) {
                 Iterator<Map<String, List<Variant>>> sampleIterator = sampleIteratorPair.getValue();
@@ -188,17 +189,17 @@ public class SampleIndexAnnotationLoader {
                     Map<String, List<Variant>> next = sampleIterator.next();
 
                     Variant firstVariant = next.values().iterator().next().get(0);
-                    if (annotationMasks == null
+                    if (annotationEntries == null
                             || !chromosome.equals(firstVariant.getChromosome())
                             || firstVariant.getStart() < start
                             || firstVariant.getStart() > end) {
                         chromosome = firstVariant.getChromosome();
                         start = firstVariant.getStart() - firstVariant.getStart() % SampleIndexSchema.BATCH_SIZE;
                         end = start + SampleIndexSchema.BATCH_SIZE;
-                        annotationMasks = annotationIndexDBAdaptor.get(chromosome, start, end);
+                        annotationEntries = annotationIndexDBAdaptor.get(chromosome, start, end);
                     }
 
-                    Put put = annotate(chromosome, start, sampleId, next, annotationMasks);
+                    Put put = annotate(chromosome, start, sampleId, next, annotationEntries);
                     mutator.mutate(put);
                 }
             }
@@ -213,29 +214,27 @@ public class SampleIndexAnnotationLoader {
     }
 
     private Put annotate(String chromosome, int start, Integer sampleId,
-                        Map<String, List<Variant>> sampleIndex, List<Pair<Variant, Byte>> annotationMasks) {
+                        Map<String, List<Variant>> sampleIndex, List<Pair<Variant, AnnotationIndexEntry>> annotationMasks) {
         byte[] rk = SampleIndexSchema.toRowKey(sampleId, chromosome, start);
         Put put = new Put(rk);
 
         for (Map.Entry<String, List<Variant>> entry : sampleIndex.entrySet()) {
             String gt = entry.getKey();
             List<Variant> variantsToAnnotate = entry.getValue();
-            if (!isAnnotatedGenotype(gt)) {
+            if (!SampleIndexSchema.isAnnotatedGenotype(gt)) {
                 continue;
             }
 
-            ListIterator<Pair<Variant, Byte>> iterator = annotationMasks.listIterator();
-            byte[] annotations = new byte[variantsToAnnotate.size()];
-            int i = 0;
+            ListIterator<Pair<Variant, AnnotationIndexEntry>> iterator = annotationMasks.listIterator();
+            AnnotationIndexPutBuilder builder = new AnnotationIndexPutBuilder(variantsToAnnotate.size());
             int missingVariants = 0;
             // Assume both lists are ordered, and "variantsToAnnotate" is fully contained in "annotationMasks"
             for (Variant variantToAnnotate : variantsToAnnotate) {
                 boolean restarted = false;
                 while (iterator.hasNext()) {
-                    Pair<Variant, Byte> annotationPair = iterator.next();
+                    Pair<Variant, AnnotationIndexEntry> annotationPair = iterator.next();
                     if (annotationPair.getKey().sameGenomicVariant(variantToAnnotate)) {
-                        annotations[i] = annotationPair.getValue();
-                        i++;
+                        builder.add(annotationPair.getRight());
                         break;
                     } else if (annotationPair.getKey().getStart() > variantToAnnotate.getStart()) {
                         if (!restarted) {
@@ -246,8 +245,8 @@ public class SampleIndexAnnotationLoader {
                             restarted = true;
                         } else {
                             logger.error("Missing variant to annotate " + variantToAnnotate);
-                            annotations[i] = (byte) 0xFF;
-                            i++;
+                            builder.add(AnnotationIndexEntry.empty(
+                                    SampleIndexConfiguration.PopulationFrequencyRange.DEFAULT_THRESHOLDS.length));
                             missingVariants++;
                             break;
                         }
@@ -261,9 +260,7 @@ public class SampleIndexAnnotationLoader {
 //                            throw new IllegalStateException(msg);
             }
 
-            put.addColumn(family, SampleIndexSchema.toAnnotationIndexColumn(gt), annotations);
-            put.addColumn(family, SampleIndexSchema.toAnnotationIndexCountColumn(gt),
-                    IndexUtils.countPerBitToBytes(IndexUtils.countPerBit(annotations)));
+            builder.buildAndReset(put, gt, family);
         }
         return put;
     }
@@ -280,10 +277,6 @@ public class SampleIndexAnnotationLoader {
                 return sampleMetadata;
             });
         }
-    }
-
-    public static boolean isAnnotatedGenotype(String gt) {
-        return gt.contains("1");
     }
 
 

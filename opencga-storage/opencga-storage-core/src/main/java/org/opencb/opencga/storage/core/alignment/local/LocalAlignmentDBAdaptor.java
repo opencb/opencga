@@ -35,7 +35,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterator;
@@ -252,22 +252,24 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
     //-------------------------------------------------------------------------
 
     @Override
-    public DataResult<String> statsInfo(Path path) throws Exception {
+    public DataResult<String> statsInfo(Path path) throws ToolException {
         StopWatch watch = StopWatch.createStarted();
 
         File statsFile = new File(path + ".stats.txt");
         if (!statsFile.exists()) {
-            throw new AnalysisException("Stats file does not exist: " + statsFile.getAbsolutePath());
+            throw new ToolException("Stats file does not exist: " + statsFile.getAbsolutePath());
         }
 
+        List<String> lines = null;
         try {
-            List<String> lines = org.apache.commons.io.FileUtils.readLines(statsFile, Charset.defaultCharset());
-            watch.stop();
-            return new DataResult<>((int) watch.getTime(), Collections.emptyList(), 1,
-                    Arrays.asList(org.apache.commons.lang.StringUtils.join(lines, "\n")), 1);
+            lines = org.apache.commons.io.FileUtils.readLines(statsFile, Charset.defaultCharset());
         } catch (IOException e) {
-            throw new AnalysisException("Error reading stats file: " + statsFile.getName(), e);
+            throw new ToolException("Something wrong happened reading stats file", e);
         }
+        watch.stop();
+
+        return new DataResult<>((int) watch.getTime(), Collections.emptyList(), 1,
+                Arrays.asList(org.apache.commons.lang.StringUtils.join(lines, "\n")), 1);
     }
 
 

@@ -11,8 +11,8 @@ import org.opencb.opencga.analysis.clinical.interpretation.*;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.core.analysis.result.AnalysisResult;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
@@ -56,7 +56,7 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
                 .setPenetrance(ClinicalProperty.Penetrance.COMPLETE)
                 .setConfig(config);
 
-        AnalysisResult result = tieringAnalysis.start();
+        ExecutionResult result = tieringAnalysis.start();
 
         System.out.println(result);
 
@@ -78,7 +78,7 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
             teamAnalysis.start();
 
             fail();
-        } catch (AnalysisException e) {
+        } catch (ToolException e) {
             Assert.assertEquals(e.getMessage(), "Missing disease panels for TEAM interpretation analysis");
         }
     }
@@ -101,7 +101,7 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
                 .setClinicalAnalysisId(clinicalTest.clinicalAnalysis.getId())
                 .setConfig(config);
 
-        AnalysisResult result = customAnalysis.start();
+        ExecutionResult result = customAnalysis.start();
         System.out.println(result);
 
         checkInterpretation(18, result);
@@ -137,14 +137,14 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
                 .setQuery(query)
                 .setConfig(config);
 
-        AnalysisResult result = customAnalysis.start();
+        ExecutionResult result = customAnalysis.start();
 
         System.out.println(result);
 
         checkInterpretation(12, result);
     }
 
-    private void checkInterpretation(int expected, AnalysisResult result) {
+    private void checkInterpretation(int expected, ExecutionResult result) {
         System.out.println("out dir (to absolute path) = " + outDir.toAbsolutePath());
 
         String msg = "Success";
@@ -154,7 +154,7 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
             interpretation = readInterpretation(result, outDir);
             System.out.println("Interpreation ID: " + interpretation.getId());
             System.out.println("# primary findings: " + interpretation.getPrimaryFindings().size());
-        } catch (AnalysisException e) {
+        } catch (ToolException e) {
             if (CollectionUtils.isNotEmpty(result.getEvents())) {
                 System.out.println(StringUtils.join(result.getEvents(), "\n"));
             }
@@ -164,8 +164,8 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
         Assert.assertEquals(expected, interpretation.getPrimaryFindings().size());
     }
 
-    private Interpretation readInterpretation(AnalysisResult result, Path outDir)
-            throws AnalysisException {
+    private Interpretation readInterpretation(ExecutionResult result, Path outDir)
+            throws ToolException {
         File file = new java.io.File(outDir + "/" + InterpretationAnalysis.INTERPRETATION_FILENAME);
         if (file.exists()) {
             return ClinicalUtils.readInterpretation(file.toPath());
@@ -174,7 +174,7 @@ public class ClinicalInterpretationAnalysisTest extends VariantStorageBaseTest i
         if (CollectionUtils.isNotEmpty(result.getEvents())) {
             msg += (": " + StringUtils.join(result.getEvents(), ". "));
         }
-        throw new AnalysisException(msg);
+        throw new ToolException(msg);
     }
 
 }

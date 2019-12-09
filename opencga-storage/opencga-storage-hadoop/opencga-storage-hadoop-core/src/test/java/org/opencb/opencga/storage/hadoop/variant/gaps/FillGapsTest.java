@@ -27,7 +27,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexSchema;
 
 import java.io.IOException;
 import java.net.URI;
@@ -455,7 +455,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
                     int countFromVariants = 0;
                     for (Variant variant : dbAdaptor.get(new Query(VariantQueryParam.INCLUDE_SAMPLE.key(), sampleId), null).getResults()) {
                         String gt = variant.getStudies().get(0).getSampleData(0).get(0);
-                        if (!gt.equals(GenotypeClass.UNKNOWN_GENOTYPE) && SampleIndexDBLoader.validGenotype(gt)) {
+                        if (!gt.equals(GenotypeClass.UNKNOWN_GENOTYPE) && SampleIndexSchema.validGenotype(gt)) {
                             countFromVariants++;
                         }
                     }

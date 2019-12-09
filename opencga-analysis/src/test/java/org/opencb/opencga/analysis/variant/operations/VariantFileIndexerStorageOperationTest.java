@@ -33,7 +33,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileIndex;
@@ -271,7 +271,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
         try {
             indexFiles(files, queryOptions, outputId);
-        } catch (AnalysisException e) {
+        } catch (ToolException e) {
             StoragePipelineException exception = (StoragePipelineException) e.getCause();
             assertEquals(files.size(), exception.getResults().size());
 
@@ -331,7 +331,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
             String outdir = opencga.createTmpOutdir(studyId, "_INDEX", sessionId);
             variantManager.index(studyId, fileIds, outdir, queryOptions, sessionId);
             fail();
-        } catch (AnalysisException e) {
+        } catch (ToolException e) {
             StoragePipelineException exception = (StoragePipelineException) e.getCause();
             assertEquals(files.size(), exception.getResults().size());
 
@@ -359,7 +359,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         try {
             indexFiles(files, queryOptions, outputId);
             fail();
-        } catch (AnalysisException e) {
+        } catch (ToolException e) {
             StoragePipelineException exception = (StoragePipelineException) e.getCause();
             assertEquals(files.size(), exception.getResults().size());
 

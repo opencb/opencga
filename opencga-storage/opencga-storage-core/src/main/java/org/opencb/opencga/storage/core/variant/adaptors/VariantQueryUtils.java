@@ -838,7 +838,7 @@ public final class VariantQueryUtils {
         } else {
             int numTotalSamples = query.getInt(NUM_TOTAL_SAMPLES.key(), -1);
             int numSamples = query.getInt(NUM_SAMPLES.key(), -1);
-            if (numTotalSamples < 0 && numSamples < 0) {
+            if (numTotalSamples >= 0 && numSamples >= 0) {
                 return result.setNumSamples(numSamples)
                         .setNumTotalSamples(numTotalSamples);
             }

@@ -25,6 +25,7 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.analysis.file.FileDeleteAction;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -807,12 +808,12 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)  @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of file ids, names or paths.") @PathParam("files") String files) {
         try {
-            List<String> fileIds = getIdList(files);
+            getIdList(files);
 
             ObjectMap params = new ObjectMap()
                     .append("files", files)
                     .append("study", studyStr);
-            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, "files", "unlink", Enums.Priority.MEDIUM, params, token);
+            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, "files-unlink", Enums.Priority.MEDIUM, params, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -942,7 +943,8 @@ public class FileWSServer extends OpenCGAWSServer {
                     .append("files", files)
                     .append("study", studyStr)
                     .append(Constants.SKIP_TRASH, skipTrash);
-            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, "files", "delete", Enums.Priority.MEDIUM, params, token);
+            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, FileDeleteAction.ID, Enums.Priority.MEDIUM, params,
+                    token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

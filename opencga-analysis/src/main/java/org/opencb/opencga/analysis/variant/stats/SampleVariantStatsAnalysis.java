@@ -5,15 +5,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
-import org.opencb.opencga.core.analysis.result.FileResult;
-import org.opencb.opencga.core.analysis.variant.SampleVariantStatsAnalysisExecutor;
-import org.opencb.opencga.core.annotations.Analysis;
+import org.opencb.opencga.core.tools.result.FileResult;
+import org.opencb.opencga.core.tools.variant.SampleVariantStatsAnalysisExecutor;
+import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
-@Analysis(id = SampleVariantStatsAnalysis.ID, type = Analysis.AnalysisType.VARIANT, description = SampleVariantStatsAnalysis.DESCRIPTION)
-public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
+@Tool(id = SampleVariantStatsAnalysis.ID, type = Tool.ToolType.VARIANT, description = SampleVariantStatsAnalysis.DESCRIPTION)
+public class SampleVariantStatsAnalysis extends OpenCgaTool {
 
     public static final String ID = "sample-variant-stats";
     public static final String DESCRIPTION = "Compute sample variant stats for the selected list of samples.";
@@ -110,7 +110,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
         try {
             study = catalogManager.getStudyManager().get(study, null, token).first().getFqn();
         } catch (CatalogException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
 
         try {
@@ -155,13 +155,13 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
             allSamples.removeIf(s -> !indexedSamples.contains(s));
 
         } catch (CatalogException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
         checkedSamplesList = new ArrayList<>(allSamples);
         checkedSamplesList.sort(String::compareTo);
 
         if (allSamples.isEmpty()) {
-            throw new AnalysisException("Missing samples!");
+            throw new ToolException("Missing samples!");
         }
 
         // check read permission
@@ -173,7 +173,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
                     new QueryOptions(),
                     token);
         } catch (CatalogException | StorageEngineException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
         outputFile = getOutDir().resolve(getId() + ".json");
     }
@@ -188,9 +188,9 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
     }
 
     @Override
-    protected void run() throws AnalysisException {
+    protected void run() throws ToolException {
         step(getId(), () -> {
-            getAnalysisExecutor(SampleVariantStatsAnalysisExecutor.class)
+            getToolExecutor(SampleVariantStatsAnalysisExecutor.class)
                     .setOutputFile(outputFile)
                     .setStudy(study)
                     .setSampleNames(checkedSamplesList)
@@ -204,7 +204,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
         }
     }
 
-    private void indexResults(Path outputFile) throws AnalysisException {
+    private void indexResults(Path outputFile) throws ToolException {
         List<SampleVariantStats> stats = new ArrayList<>(checkedSamplesList.size());
         try {
             JacksonUtils.getDefaultObjectMapper()
@@ -228,7 +228,7 @@ public class SampleVariantStatsAnalysis extends OpenCgaAnalysis {
                         .addAnnotationSet(study, sampleStats.getId(), annotationSet, new QueryOptions(), token);
             }
         } catch (IOException | CatalogException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
     }
 

@@ -706,8 +706,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         File outDir = catalogManager.getFileManager().createFolder(studyId, Paths.get("jobs", "myJob").toString(),
                 null, true, null, QueryOptions.empty(), sessionIdUser).first();
 
-        catalogManager.getJobManager().submit(studyId, "command", "subcommand", null, Collections.emptyMap(), sessionIdUser);
-        catalogManager.getJobManager().submit(studyId, "command", "subcommand2", null, Collections.emptyMap(), sessionIdUser);
+        catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), sessionIdUser);
+        catalogManager.getJobManager().submit(studyId, "command-subcommand2", null, Collections.emptyMap(), sessionIdUser);
 
         catalogManager.getJobManager().create(studyId, new Job().setId("job1").setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE)),
                 QueryOptions.empty(), sessionIdUser);

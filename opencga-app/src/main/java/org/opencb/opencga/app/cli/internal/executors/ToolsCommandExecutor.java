@@ -1,7 +1,7 @@
 package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.hpg.bigdata.analysis.exceptions.AnalysisToolException;
-import org.opencb.opencga.analysis.ToolAnalysis;
+import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.app.cli.internal.options.ToolsCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.slf4j.LoggerFactory;
@@ -37,8 +37,8 @@ public class ToolsCommandExecutor extends InternalCommandExecutor {
     private void executeTool() {
         ToolsCommandOptions.ExecuteToolCommandOptions cliOptions = this.toolCommandOptions.executeToolCommandOptions;
         try {
-            ToolAnalysis toolAnalysis = new ToolAnalysis(configuration);
-            toolAnalysis.execute(Long.parseLong(cliOptions.job), cliOptions.commonOptions.token);
+            ToolRunner toolRunner = new ToolRunner(configuration);
+            toolRunner.execute(Long.parseLong(cliOptions.job), cliOptions.commonOptions.token);
         } catch (CatalogException | AnalysisToolException e) {
             logger.error("{}", e.getMessage(), e);
         }

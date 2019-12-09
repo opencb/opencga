@@ -28,31 +28,33 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.core.Transcript;
 import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
-import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.GeneClient;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.exception.AnalysisException;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.rest.RestResponse;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
-import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
@@ -79,7 +81,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
     @POST
     @Path("/index")
-    @ApiOperation(value = "Index alignment files", response = DataResponse.class)
+    @ApiOperation(value = "Index alignment files", response = RestResponse.class)
     public Response index(@ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
                           @QueryParam(value = "file") String fileIdStr,
                           @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
@@ -100,7 +102,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         logger.info("ObjectMap: {}", params);
 
         try {
-            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "alignment", "index", Enums.Priority.HIGH,
+            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "alignment-index", Enums.Priority.HIGH,
                     params, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -184,7 +186,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         logger.info("ObjectMap: {}", params);
 
         try {
-            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(study, "alignment", "coverage-run", Enums.Priority.HIGH, params,
+            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(study, "alignment-coverage-run", Enums.Priority.HIGH, params,
                     token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -368,8 +370,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         logger.info("ObjectMap: {}", params);
 
         try {
-            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(study, "alignment", "stats-run",
-                    Enums.Priority.HIGH, params, token);
+            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(study, "alignment-stats-run", Enums.Priority.HIGH, params, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -382,10 +383,10 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     public Response statsInfo(@ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(FILE_ID_PARAM) String inputFile,
                               @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(STUDY_PARAM) String study) {
 
+        AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
         try {
-            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
             return createOkResponse(alignmentStorageManager.statsInfo(study, inputFile, token));
-        } catch (AnalysisException e) {
+        } catch (ToolException | StorageEngineException | CatalogException e) {
             return createErrorResponse(e);
         }
     }
@@ -490,7 +491,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             AlignmentAnalysisWSService.BwaRunParams params) {
-        return submitJob("alignment", BwaWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
+        return submitJob(BwaWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     // Samtools
@@ -523,7 +524,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             AlignmentAnalysisWSService.SamtoolsRunParams params) {
-        return submitJob("alignment", SamtoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
+        return submitJob(SamtoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     // Deeptools
@@ -557,7 +558,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             AlignmentAnalysisWSService.DeeptoolsRunParams params) {
-        return submitJob("alignment", DeeptoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
+        return submitJob(DeeptoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     //-------------------------------------------------------------------------
