@@ -329,6 +329,7 @@ public class StudyManager extends AbstractManager {
 
             // Update uri of study
             studyDBAdaptor.update(study.getUid(), new ObjectMap("uri", uri), QueryOptions.empty());
+            study.setUri(uri);
 
             long rootFileId = fileDBAdaptor.getId(study.getUid(), "");    //Set studyUri to the root folder too
             fileDBAdaptor.update(rootFileId, new ObjectMap("uri", uri), QueryOptions.empty());

@@ -365,23 +365,26 @@ public class FileManagerTest extends AbstractManagerTest {
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
         DataResult<File> fileDataResultLinked = fileManager.search(studyFqn, query, null, sessionIdUser);
 
-        System.out.println("Number of files/folders linked = " + fileDataResultLinked.getNumResults());
+        int numberLinkedFiles = fileDataResultLinked.getNumResults();
+        System.out.println("Number of files/folders linked = " + numberLinkedFiles);
 
-        setToPendingDelete(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), "myDirectory/data/test/folder/test_0.5K.txt"));
+        Query unlinkQuery = new Query(FileDBAdaptor.QueryParams.PATH.key(), "myDirectory/data/test/folder/test_0.5K.txt");
+
+        setToPendingDelete(studyFqn, unlinkQuery);
 
         // Now we try to unlink the file
         fileManager.unlink(studyFqn, "myDirectory/data/test/folder/test_0.5K.txt", sessionIdUser);
-        query = new Query(FileDBAdaptor.QueryParams.UID.key(), 35L);
-        fileDataResultLinked = fileManager.search(studyFqn, query, QueryOptions.empty(), sessionIdUser);
-        assertEquals(1, fileDataResultLinked.getNumResults());
-        assertTrue(fileDataResultLinked.first().getPath().contains(AbstractManager.INTERNAL_DELIMITER + "REMOVED"));
-        assertEquals(fileDataResultLinked.first().getPath().indexOf(AbstractManager.INTERNAL_DELIMITER + "REMOVED"),
-                fileDataResultLinked.first().getPath().lastIndexOf(AbstractManager.INTERNAL_DELIMITER + "REMOVED"));
+        fileDataResultLinked = fileManager.search(studyFqn, unlinkQuery, QueryOptions.empty(), sessionIdUser);
+        assertEquals(0, fileDataResultLinked.getNumResults());
 
+        unlinkQuery.put(FileDBAdaptor.QueryParams.DELETED.key(), true);
+        fileDataResultLinked = fileManager.search(studyFqn, unlinkQuery, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, fileDataResultLinked.getNumResults());
+        assertEquals(File.FileStatus.REMOVED, fileDataResultLinked.first().getStatus().getName());
+
+        // Check the other root linked files/folders have not been touched
         fileDataResultLinked = fileManager.search(studyFqn, query, QueryOptions.empty(), sessionIdUser);
-        // We check REMOVED is only contained once in the path
-        assertEquals(fileDataResultLinked.first().getPath().indexOf(AbstractManager.INTERNAL_DELIMITER + "REMOVED"),
-                fileDataResultLinked.first().getPath().lastIndexOf(AbstractManager.INTERNAL_DELIMITER + "REMOVED"));
+        assertEquals(numberLinkedFiles - 1, fileDataResultLinked.getNumResults());
 
         // We send the unlink command again
         thrown.expect(CatalogException.class);
@@ -659,19 +662,15 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testDownloadFile() throws CatalogException, IOException, InterruptedException, URISyntaxException {
-        Path path = Paths.get(fileManager.get(studyFqn, ".", FileManager.INCLUDE_FILE_URI, sessionIdUser).first().getUri());
-        Path sourcePath = Paths.get(getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI());
-        Files.copy(sourcePath, path.resolve("data/" + sourcePath.getFileName()));
-        DataResult<File> fileResult = fileManager.create(studyFqn, File.Type.FILE, File.Format.VCF,
-                File.Bioformat.VARIANT, "data/variant-test-file.vcf.gz", "description", new File.FileStatus(File.FileStatus.STAGE), 0,
-                Collections.emptyList(), -1, Collections.emptyMap(), null, true, null, new QueryOptions(), sessionIdUser);
+    public void testDownloadFile() throws CatalogException, IOException, URISyntaxException {
+        URI sourceUri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
+        OpenCGAResult<File> fileResult = fileManager.link(studyFqn, sourceUri, "data/", new ObjectMap("parents", true), sessionIdUser);
 
         DataInputStream dis = fileManager.download(studyFqn, fileResult.first().getPath(), -1, -1, sessionIdUser);
 
         byte[] bytes = new byte[(int) fileResult.first().getSize()];
         dis.read(bytes, 0, (int) fileResult.first().getSize());
-        assertTrue(Arrays.equals(Files.readAllBytes(sourcePath), bytes));
+        assertTrue(Arrays.equals(Files.readAllBytes(Paths.get(sourceUri)), bytes));
     }
 
     @Test
