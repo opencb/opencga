@@ -20,10 +20,10 @@ import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.IOException;
 
@@ -38,7 +38,7 @@ public class AlignmentClient extends AbstractParentClient {
         super(userId, sessionId, configuration);
     }
 
-    public DataResponse<Job> index(String fileIds, ObjectMap params) throws IOException {
+    public RestResponse<Job> index(String fileIds, ObjectMap params) throws IOException {
         if (params == null) {
             params = new ObjectMap();
         }
@@ -46,7 +46,7 @@ public class AlignmentClient extends AbstractParentClient {
         return execute(ALIGNMENT_URL, "index", params, POST, Job.class);
     }
 
-    public DataResponse<ReadAlignment> query(String fileIds, ObjectMap params) throws IOException {
+    public RestResponse<ReadAlignment> query(String fileIds, ObjectMap params) throws IOException {
         if (params == null) {
             params = new ObjectMap();
         }
@@ -54,7 +54,7 @@ public class AlignmentClient extends AbstractParentClient {
         return execute(ALIGNMENT_URL, "query", params, GET, ReadAlignment.class);
     }
 
-    public DataResponse<AlignmentGlobalStats> stats(String fileIds, ObjectMap params) throws IOException {
+    public RestResponse<AlignmentGlobalStats> stats(String fileIds, ObjectMap params) throws IOException {
         if (params == null) {
             params = new ObjectMap();
         }
@@ -62,7 +62,7 @@ public class AlignmentClient extends AbstractParentClient {
         return execute(ALIGNMENT_URL, "stats", params, GET, AlignmentGlobalStats.class);
     }
 
-    public DataResponse<RegionCoverage> coverage(String fileIds, ObjectMap params) throws IOException {
+    public RestResponse<RegionCoverage> coverage(String fileIds, ObjectMap params) throws IOException {
         if (params == null) {
             params = new ObjectMap();
         }
@@ -74,15 +74,15 @@ public class AlignmentClient extends AbstractParentClient {
     // W R A P P E R S     A N A L Y S I S
     //-------------------------------------------------------------------------
 
-    public DataResponse<Job> bwaRun(String study, ObjectMap params) throws IOException {
+    public RestResponse<Job> bwaRun(String study, ObjectMap params) throws IOException {
         return execute(ALIGNMENT_URL, "/bwa/run", new ObjectMap("body", params).append("study", study), POST, Job.class);
     }
 
-    public DataResponse<Job> samtoolsRun(String study, ObjectMap params) throws IOException {
+    public RestResponse<Job> samtoolsRun(String study, ObjectMap params) throws IOException {
         return execute(ALIGNMENT_URL, "/samtools/run", new ObjectMap("body", params).append("study", study), POST, Job.class);
     }
 
-    public DataResponse<Job> deeptoolsRun(String study, ObjectMap params) throws IOException {
+    public RestResponse<Job> deeptoolsRun(String study, ObjectMap params) throws IOException {
         return execute(ALIGNMENT_URL, "/deeptools/run", new ObjectMap("body", params).append("study", study), POST, Job.class);
     }
 }

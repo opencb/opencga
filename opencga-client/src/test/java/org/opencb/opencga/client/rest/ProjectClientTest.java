@@ -20,12 +20,12 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.catalog.ProjectClient;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.IOException;
 
@@ -83,21 +83,21 @@ public class ProjectClientTest {
     @Test
     public void get() throws Exception {
         projectClient = openCGAClient.getProjectClient();
-        DataResponse<Project> info = projectClient.get("25", null);
+        RestResponse<Project> info = projectClient.get("25", null);
         assertNotNull(info.firstResult());
     }
 
     @Test
     public void getStudies() throws Exception {
         projectClient = openCGAClient.getProjectClient();
-        DataResponse<Study> info = projectClient.getStudies("25", null);
+        RestResponse<Study> info = projectClient.getStudies("25", null);
         assertNotNull(info.firstResult());
     }
 
     @Test
     public void delete() throws Exception {
         projectClient = openCGAClient.getProjectClient();
-        DataResponse<Project> delete = projectClient.delete("28", null);
+        RestResponse<Project> delete = projectClient.delete("28", null);
         assertEquals("PENDING", delete.getError());
     }
 

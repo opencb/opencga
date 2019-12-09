@@ -18,7 +18,6 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -28,6 +27,7 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor.VariableSetParams;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,7 +50,7 @@ public class VariableCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing variables command line");
 
         String subCommandString = getParsedSubCommand(variableCommandOptions.jCommander);
-        DataResponse queryResponse = null;
+        RestResponse queryResponse = null;
         switch (subCommandString) {
             case "create":
                 queryResponse = create();
@@ -81,7 +81,7 @@ public class VariableCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
-    private DataResponse<VariableSet> create() throws CatalogException, IOException {
+    private RestResponse<VariableSet> create() throws CatalogException, IOException {
         logger.debug("Creating variable");
 
         ObjectMap params = new ObjectMap();
@@ -98,7 +98,7 @@ public class VariableCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariableClient().create(resolveStudy(variableCommandOptions.createCommandOptions.study), params);
     }
 
-    private DataResponse info() throws CatalogException, IOException {
+    private RestResponse info() throws CatalogException, IOException {
         logger.debug("Getting variable information");
 
         QueryOptions queryOptions = new QueryOptions();
@@ -108,7 +108,7 @@ public class VariableCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariableClient().get(variableCommandOptions.infoCommandOptions.id, queryOptions);
     }
 
-    private DataResponse<VariableSet> search() throws CatalogException, IOException {
+    private RestResponse<VariableSet> search() throws CatalogException, IOException {
         logger.debug("Searching variable");
 
         Query query = new Query();
@@ -128,13 +128,13 @@ public class VariableCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariableClient().search(query, queryOptions);
     }
 
-    private DataResponse<VariableSet> delete() throws CatalogException, IOException {
+    private RestResponse<VariableSet> delete() throws CatalogException, IOException {
         logger.debug("Deleting variable");
 
         return openCGAClient.getVariableClient().delete(variableCommandOptions.deleteCommandOptions.id, new ObjectMap());
     }
 
-    private DataResponse<VariableSet> fieldAdd() throws CatalogException, IOException {
+    private RestResponse<VariableSet> fieldAdd() throws CatalogException, IOException {
         logger.debug("Adding variables to variable set");
 
         ObjectMapper mapper = new ObjectMapper();
@@ -143,7 +143,7 @@ public class VariableCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariableClient().addVariable(variableCommandOptions.fieldAddCommandOptions.id, variables);
     }
 
-    private DataResponse<VariableSet> fieldDelete() throws CatalogException, IOException {
+    private RestResponse<VariableSet> fieldDelete() throws CatalogException, IOException {
         logger.debug("Deleting the variable field");
 
         ObjectMap objectMap = new ObjectMap();
@@ -151,7 +151,7 @@ public class VariableCommandExecutor extends OpencgaCommandExecutor {
                 variableCommandOptions.fieldDeleteCommandOptions.name, objectMap);
     }
 
-    private DataResponse<VariableSet> fieldRename() throws CatalogException, IOException {
+    private RestResponse<VariableSet> fieldRename() throws CatalogException, IOException {
         logger.debug("Rename the variable field");
 
         return openCGAClient.getVariableClient().fieldRename(

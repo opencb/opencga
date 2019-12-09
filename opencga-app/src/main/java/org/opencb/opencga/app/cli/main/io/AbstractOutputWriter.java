@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.app.cli.main.io;
 
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.PrintStream;
 import java.util.List;
@@ -47,7 +47,7 @@ public abstract class AbstractOutputWriter {
         this.ps = ps;
     }
 
-    abstract public void print(DataResponse dataResponse);
+    abstract public void print(RestResponse dataResponse);
 
     /**
      * Print errors or warnings and return true if any error was found.
@@ -55,7 +55,7 @@ public abstract class AbstractOutputWriter {
      * @param dataResponse dataResponse object
      * @return true if the query gave an error.
      */
-    protected boolean checkErrors(DataResponse dataResponse) {
+    protected boolean checkErrors(RestResponse dataResponse) {
         // Print warnings
         if (ListUtils.isNotEmpty(dataResponse.getWarnings())) {
             for (String warning : (List<String>) dataResponse.getWarnings()) {

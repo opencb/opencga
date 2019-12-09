@@ -19,7 +19,6 @@ package org.opencb.opencga.app.cli.internal.executors;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.hpg.bigdata.analysis.tools.ExecutorMonitor;
@@ -31,6 +30,7 @@ import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.core.rest.RestResponse;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 
 import java.io.IOException;
@@ -142,7 +142,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         objectMap.putIfNotNull(QueryOptions.COUNT, alignmentCommandOptions.queryAlignmentCommandOptions.count);
 
         OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        DataResponse<ReadAlignment> alignments = openCGAClient.getAlignmentClient()
+        RestResponse<ReadAlignment> alignments = openCGAClient.getAlignmentClient()
                 .query(alignmentCommandOptions.queryAlignmentCommandOptions.fileId, objectMap);
 
         for (ReadAlignment readAlignment : alignments.allResults()) {
@@ -161,7 +161,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         }
 
         OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        DataResponse<AlignmentGlobalStats> globalStats = openCGAClient.getAlignmentClient()
+        RestResponse<AlignmentGlobalStats> globalStats = openCGAClient.getAlignmentClient()
                 .stats(alignmentCommandOptions.statsAlignmentCommandOptions.fileId, objectMap);
 
         for (AlignmentGlobalStats alignmentGlobalStats : globalStats.allResults()) {
@@ -180,7 +180,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         }
 
         OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        DataResponse<RegionCoverage> globalStats = openCGAClient.getAlignmentClient()
+        RestResponse<RegionCoverage> globalStats = openCGAClient.getAlignmentClient()
                 .coverage(alignmentCommandOptions.coverageAlignmentCommandOptions.fileId, objectMap);
 
         for (RegionCoverage regionCoverage : globalStats.allResults()) {

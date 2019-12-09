@@ -16,10 +16,10 @@
 
 package org.opencb.opencga.client.rest.catalog;
 
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.IOException;
 
@@ -37,37 +37,37 @@ public class VariableSetClient extends CatalogClient<VariableSet> {
         this.clazz = VariableSet.class;
     }
 
-    public DataResponse<VariableSet> create(String studyId, ObjectMap bodyParams) throws IOException {
+    public RestResponse<VariableSet> create(String studyId, ObjectMap bodyParams) throws IOException {
         ObjectMap params = new ObjectMap();
         params = addParamsToObjectMap(params, "study", studyId, "body", bodyParams);
         return execute(VARIABLES_URL, "create", params, POST, VariableSet.class);
     }
 
-    public DataResponse<VariableSet> update(String id, String study, ObjectMap bodyParams) throws IOException {
+    public RestResponse<VariableSet> update(String id, String study, ObjectMap bodyParams) throws IOException {
         ObjectMap params = new ObjectMap();
         params.put("body", bodyParams);
         return execute(category, id, "update", params, POST, clazz);
     }
 
-    public DataResponse<VariableSet> addVariable(String variableSetid, Object variables) throws IOException {
+    public RestResponse<VariableSet> addVariable(String variableSetid, Object variables) throws IOException {
         ObjectMap params = new ObjectMap()
                 .append("body", variables)
                 .append("variableSetId", variableSetid);
         return execute(VARIABLES_URL, "field/add", params, POST, VariableSet.class);
     }
 
-    public DataResponse<VariableSet> deleteVariable(String variableSetid, String variable, ObjectMap params) throws IOException {
+    public RestResponse<VariableSet> deleteVariable(String variableSetid, String variable, ObjectMap params) throws IOException {
         params = addParamsToObjectMap(params, "variableSetId", variableSetid, "name", variable);
         return execute(VARIABLES_URL, "field/delete", params, GET, VariableSet.class);
     }
 
-    public DataResponse<VariableSet> fieldRename(String variableSetId, String oldVariableName, String newVariableName, ObjectMap params)
+    public RestResponse<VariableSet> fieldRename(String variableSetId, String oldVariableName, String newVariableName, ObjectMap params)
             throws IOException {
         params = addParamsToObjectMap(params, "variableSetId", variableSetId, "oldName", oldVariableName, "newName", newVariableName);
         return execute(VARIABLES_URL, variableSetId, "field", null, "rename", params, GET, VariableSet.class);
     }
 
-    public DataResponse<VariableSet> fieldDelete(String variableSetId, String variableName, ObjectMap params) throws IOException {
+    public RestResponse<VariableSet> fieldDelete(String variableSetId, String variableName, ObjectMap params) throws IOException {
         params = addParamsToObjectMap(params, "variableSetId", variableSetId, "variableName", variableName);
         return execute(VARIABLES_URL, variableSetId, "field", null, "delete", params, GET, VariableSet.class);
     }

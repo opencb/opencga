@@ -21,13 +21,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.ProjectCommandOptions;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.IOException;
 
@@ -50,7 +50,7 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing Project command line");
 
         String subCommandString = getParsedSubCommand(projectsCommandOptions.jCommander);
-        DataResponse queryResponse = null;
+        RestResponse queryResponse = null;
         switch (subCommandString) {
             case "create":
                 queryResponse = create();
@@ -78,7 +78,7 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
-    private DataResponse<Project> create() throws CatalogException, IOException {
+    private RestResponse<Project> create() throws CatalogException, IOException {
         logger.debug("Creating a new project");
 
         ProjectCommandOptions.CreateCommandOptions commandOptions = projectsCommandOptions.createCommandOptions;
@@ -104,7 +104,7 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getProjectClient().create(params);
     }
 
-    private DataResponse<Project> info() throws CatalogException, IOException {
+    private RestResponse<Project> info() throws CatalogException, IOException {
         logger.debug("Getting the project info");
 
         QueryOptions queryOptions = new QueryOptions();
@@ -113,7 +113,7 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getProjectClient().get(projectsCommandOptions.infoCommandOptions.project, queryOptions);
     }
 
-    private DataResponse<Project> search() throws CatalogException, IOException {
+    private RestResponse<Project> search() throws CatalogException, IOException {
         logger.debug("Search projects");
 
         ProjectCommandOptions.SearchCommandOptions commandOptions = projectsCommandOptions.searchCommandOptions;
@@ -137,7 +137,7 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-    private DataResponse<Project> update() throws CatalogException, IOException {
+    private RestResponse<Project> update() throws CatalogException, IOException {
         logger.debug("Updating project");
 
         ProjectCommandOptions.UpdateCommandOptions commandOptions = projectsCommandOptions.updateCommandOptions;
@@ -160,13 +160,13 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getProjectClient().update(projectsCommandOptions.updateCommandOptions.project, null, params);
     }
 
-    private DataResponse<Project> delete() throws CatalogException, IOException {
+    private RestResponse<Project> delete() throws CatalogException, IOException {
         logger.debug("Deleting project ");
 
         return openCGAClient.getProjectClient().delete(projectsCommandOptions.deleteCommandOptions.project, new ObjectMap());
     }
 
-    private DataResponse<Study> studies() throws CatalogException, IOException {
+    private RestResponse<Study> studies() throws CatalogException, IOException {
         logger.debug("Getting all studies the from a project ");
 
         QueryOptions queryOptions = new QueryOptions();

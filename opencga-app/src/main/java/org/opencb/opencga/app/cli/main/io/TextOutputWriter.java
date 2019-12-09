@@ -17,11 +17,11 @@
 package org.opencb.opencga.app.cli.main.io;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.AbstractAclEntry;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import java.util.Iterator;
 import java.util.List;
@@ -43,7 +43,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
     }
 
     @Override
-    public void print(DataResponse queryResponse) {
+    public void print(RestResponse queryResponse) {
         if (checkErrors(queryResponse)) {
             return;
         }
@@ -111,7 +111,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
 
     }
 
-    private String printMetadata(DataResponse queryResponse) {
+    private String printMetadata(RestResponse queryResponse) {
         StringBuilder sb = new StringBuilder();
         if (writerConfiguration.isMetadata()) {
             int numResults = 0;
@@ -465,7 +465,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         ps.println(sb.toString());
     }
 
-    private void printTreeFile(DataResponse<FileTree> queryResponse) {
+    private void printTreeFile(RestResponse<FileTree> queryResponse) {
         StringBuilder sb = new StringBuilder();
         for (DataResult<FileTree> fileTreeQueryResult : queryResponse.getResponses()) {
             printRecursiveTree(fileTreeQueryResult.getResults(), sb, "");
