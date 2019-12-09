@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.app.cli.main.io;
 
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.PrintStream;
-import java.util.List;
 
 /**
  * Created by pfurio on 28/07/16.
@@ -55,19 +55,24 @@ public abstract class AbstractOutputWriter {
      * @param dataResponse dataResponse object
      * @return true if the query gave an error.
      */
-    protected boolean checkErrors(RestResponse dataResponse) {
+    protected <T> boolean checkErrors(RestResponse<T> dataResponse) {
         // Print warnings
-        if (ListUtils.isNotEmpty(dataResponse.getWarnings())) {
-            for (String warning : (List<String>) dataResponse.getWarnings()) {
-                System.err.println(ANSI_YELLOW + "WARNING: " + warning + ANSI_RESET);
+        if (ListUtils.isNotEmpty(dataResponse.getEvents())) {
+            for (Event event : dataResponse.getEvents()) {
+                if (event.getType() == Event.Type.WARNING) {
+                    System.err.println(ANSI_YELLOW + "WARNING: " + event.getCode() + ": " + event.getMessage() + ANSI_RESET);
+                }
             }
         }
 
         boolean errors = false;
-        if (dataResponse.getError() != null) {
-            System.err.println(ANSI_RED + "ERROR " + dataResponse.getError().getCode() + ": " + dataResponse.getError().getDescription()
-                    + ANSI_RESET);
-            errors = true;
+        if (ListUtils.isNotEmpty(dataResponse.getEvents())) {
+            for (Event event : dataResponse.getEvents()) {
+                if (event.getType() == Event.Type.ERROR) {
+                    System.err.println(ANSI_RED + "ERROR " + event.getCode() + ": " + event.getMessage() + ANSI_RESET);
+                    errors = true;
+                }
+            }
         }
 
         return errors;

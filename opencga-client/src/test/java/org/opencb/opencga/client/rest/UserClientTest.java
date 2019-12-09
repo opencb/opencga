@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -29,6 +30,7 @@ import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.IOException;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -84,7 +86,10 @@ public class UserClientTest extends WorkEnvironmentTest {
         openCGAClient.logout();
 
         RestResponse<Project> projects = userClient.getProjects(new QueryOptions("userId", "user1"));
-        assertTrue(projects.getError().getDescription().contains("session id"));
+        assertTrue(projects.getEvents().stream()
+                .filter(event -> event.getType() == Event.Type.ERROR)
+                .map(Event::getMessage)
+                .collect(Collectors.joining()).contains("session id"));
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Missing user id");
@@ -93,8 +98,7 @@ public class UserClientTest extends WorkEnvironmentTest {
 
     @Test
     public void changePassword() throws Exception {
-        RestResponse<User> passwordResponse = userClient.changePassword("user1_pass", "user1_newPass", null);
-        assertEquals("", passwordResponse.getError());
+        userClient.changePassword("user1_pass", "user1_newPass", null);
         String lastSessionId = openCGAClient.getSessionId();
         String newSessionId = openCGAClient.login(openCGAClient.getUserId(), "user1_newPass");
         assertNotEquals(lastSessionId, newSessionId);

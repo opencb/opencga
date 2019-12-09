@@ -20,6 +20,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.catalog.ProjectClient;
@@ -28,6 +29,7 @@ import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.IOException;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -98,7 +100,10 @@ public class ProjectClientTest {
     public void delete() throws Exception {
         projectClient = openCGAClient.getProjectClient();
         RestResponse<Project> delete = projectClient.delete("28", null);
-        assertEquals("PENDING", delete.getError());
+        assertEquals("PENDING", delete.getEvents().stream()
+                .filter(event -> event.getType() == Event.Type.ERROR)
+                .map(Event::getMessage)
+                .collect(Collectors.joining()));
     }
 
 }

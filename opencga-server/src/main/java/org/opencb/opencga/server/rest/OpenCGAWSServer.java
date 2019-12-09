@@ -31,11 +31,7 @@ import org.apache.log4j.RollingFileAppender;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.result.Error;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
@@ -65,6 +61,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.File;
@@ -467,9 +464,9 @@ public class OpenCGAWSServer {
         queryResponse.setApiVersion(apiVersion);
         queryResponse.setParams(params);
         if (StringUtils.isEmpty(e.getMessage())) {
-            queryResponse.setError(new Error(-1, "error", e.toString()));
+            addErrorEvent(queryResponse, e.toString());
         } else {
-            queryResponse.setError(new Error(-1, "error", e.getMessage()));
+            addErrorEvent(queryResponse, e.getMessage());
         }
 
         OpenCGAResult<ObjectMap> result = OpenCGAResult.empty();
@@ -491,7 +488,7 @@ public class OpenCGAWSServer {
         RestResponse<ObjectMap> dataResponse = new RestResponse<>();
         dataResponse.setApiVersion(apiVersion);
         dataResponse.setParams(params);
-        dataResponse.setError(new Error(-1, "error", errorMessage));
+        addErrorEvent(dataResponse, errorMessage);
         dataResponse.setResponses(Arrays.asList(result));
 
         Response response = Response.fromResponse(createJsonResponse(dataResponse)).status(Response.Status.INTERNAL_SERVER_ERROR).build();
@@ -510,6 +507,14 @@ public class OpenCGAWSServer {
         }
 
         return buildResponse(Response.ok("{\"error\":\"Error parsing json error\"}", MediaType.APPLICATION_JSON_TYPE));
+    }
+
+    private <T> void addErrorEvent(RestResponse<T> response, String message) {
+        if (response.getEvents() == null) {
+            response.setEvents(new ArrayList<>());
+        }
+
+        response.getEvents().add(new Event(Event.Type.ERROR, message));
     }
 
     // TODO: Change signature

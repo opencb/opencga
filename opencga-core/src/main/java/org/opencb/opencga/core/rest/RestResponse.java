@@ -1,19 +1,18 @@
 package org.opencb.opencga.core.rest;
 
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class RestResponse<T> {
     private String apiVersion;
     private int time;
 
-    private List<String> warnings;
-    private Error error;
+    private List<Event> events;
 
     private ObjectMap params;
     private List<OpenCGAResult<T>> responses;
@@ -22,15 +21,22 @@ public class RestResponse<T> {
     }
 
     public RestResponse(ObjectMap params, List<OpenCGAResult<T>> responses) {
-        this("", -1, Collections.emptyList(), null, params, responses);
+        this("", -1, new ArrayList<>(), params, responses);
     }
 
     public RestResponse(String apiVersion, int time, List<String> warnings, Error error, ObjectMap params,
                         List<OpenCGAResult<T>> responses) {
         this.apiVersion = apiVersion;
         this.time = time;
-        this.warnings = warnings;
-        this.error = error;
+        this.events = new ArrayList<>();
+        this.params = params;
+        this.responses = responses;
+    }
+
+    public RestResponse(String apiVersion, int time, List<Event> events, ObjectMap params, List<OpenCGAResult<T>> responses) {
+        this.apiVersion = apiVersion;
+        this.time = time;
+        this.events = events;
         this.params = params;
         this.responses = responses;
     }
@@ -136,8 +142,7 @@ public class RestResponse<T> {
         final StringBuilder sb = new StringBuilder("RestResponse{");
         sb.append("apiVersion='").append(apiVersion).append('\'');
         sb.append(", time=").append(time);
-        sb.append(", warnings=").append(warnings);
-        sb.append(", error=").append(error);
+        sb.append(", events=").append(events);
         sb.append(", params=").append(params);
         sb.append(", responses=").append(responses);
         sb.append('}');
@@ -163,21 +168,12 @@ public class RestResponse<T> {
         return this;
     }
 
-    public List<String> getWarnings() {
-        return warnings;
+    public List<Event> getEvents() {
+        return events;
     }
 
-    public RestResponse<T> setWarnings(List<String> warnings) {
-        this.warnings = warnings;
-        return this;
-    }
-
-    public Error getError() {
-        return error;
-    }
-
-    public RestResponse<T> setError(Error error) {
-        this.error = error;
+    public RestResponse<T> setEvents(List<Event> events) {
+        this.events = events;
         return this;
     }
 

@@ -256,8 +256,8 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
                 openCGAClient.getSampleClient().get(samplesCommandOptions.individualCommandOptions.sample, params);
 
         if (sampleQueryResponse.allResultsSize() == 0) {
-            return new RestResponse<>(sampleQueryResponse.getApiVersion(), -1, sampleQueryResponse.getWarnings(),
-                    sampleQueryResponse.getError(), sampleQueryResponse.getParams(), new LinkedList<>());
+            return new RestResponse<>(sampleQueryResponse.getApiVersion(), -1, sampleQueryResponse.getEvents(),
+                    sampleQueryResponse.getParams(), new LinkedList<>());
         }
 
         // We get the individuals from the sample response
@@ -271,8 +271,7 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
             }
         }
 
-        return new RestResponse<>(sampleQueryResponse.getApiVersion(), -1, sampleQueryResponse.getWarnings(),
-                sampleQueryResponse.getError(), sampleQueryResponse.getParams(),
+        return new RestResponse<>(sampleQueryResponse.getApiVersion(), -1, sampleQueryResponse.getEvents(), sampleQueryResponse.getParams(),
                 Collections.singletonList(new OpenCGAResult<>(-1, Collections.emptyList(), individualList.size(), individualList,
                         individualList.size())));
     }
