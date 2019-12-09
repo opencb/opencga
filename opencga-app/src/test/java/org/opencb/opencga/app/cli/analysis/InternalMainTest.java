@@ -20,6 +20,8 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
@@ -359,13 +361,13 @@ public class InternalMainTest {
     }
 
     @Test
-    public void testStatsRun() throws CatalogException, IOException, AnalysisException {
+    public void testStats() throws CatalogException, IOException, AnalysisException {
         createStudy(datastores, "s1");
 
         String filename = "HG00096.chrom20.small.bam";
         File bamFile = opencga.createFile(studyId, filename, sessionId);
 
-        String temporalDir = opencga.createTmpOutdir(studyId, "_run_stats", sessionId);
+        String temporalDir = opencga.createTmpOutdir(studyId, "_stats", sessionId);
 
         // stats run
         execute("alignment", "stats-run",
@@ -394,6 +396,51 @@ public class InternalMainTest {
         resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
         assertEquals(1, resultFiles.getNumResults());
         System.out.println(resultFiles.getResults().get(0).getAnnotationSets().get(0));
+    }
+
+    @Test
+    public void testCoverage() throws Exception {
+        createStudy(datastores, "s1");
+
+        String filename = "HG00096.chrom20.small.bam";
+        File bamFile = opencga.createFile(studyId, filename, sessionId);
+        File baiFile = opencga.createFile(studyId, filename + ".bai", sessionId);
+
+        String temporalDir = opencga.createTmpOutdir(studyId, "_coverage", sessionId);
+
+        // coverage run
+        execute("alignment", "coverage-run",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--input-file", bamFile.getName(),
+                "--window-size", "50",
+                "-o", temporalDir);
+
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve(filename + ".bw")));
+
+        // coverage query
+        Region region = new Region("20:62000-63000");
+        AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, opencga.getStorageEngineFactory());
+        DataResult<RegionCoverage> coverage = alignmentStorageManager.coverageQuery(studyId, bamFile.getId(), region, 0, 100, 1, sessionId);
+        assertEquals(1, coverage.getNumMatches());
+        System.out.println(coverage);
+
+        alignmentStorageManager = new AlignmentStorageManager(catalogManager, opencga.getStorageEngineFactory());
+        coverage = alignmentStorageManager.coverageQuery(studyId, bamFile.getId(), region, 5, 6, 1, sessionId);
+        assertEquals(5, coverage.getNumMatches());
+        System.out.println(coverage);
+
+        //        // coverage log2Ratio
+//        Query query = new Query();
+//        query.put(AVERAGE_QUALITY, ">55");
+//        QueryOptions queryOptions = QueryOptions.empty();
+//        DataResult<File> resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
+//        assertEquals(0, resultFiles.getNumResults());
+//
+//        query.put(AVERAGE_QUALITY, ">30");
+//        resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
+//        assertEquals(1, resultFiles.getNumResults());
+//        System.out.println(resultFiles.getResults().get(0).getAnnotationSets().get(0));
     }
 
     @Test

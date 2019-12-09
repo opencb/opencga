@@ -40,8 +40,6 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
     private String inputFile;
     private String outputFile;
 
-    private Map<String, URI> fileUriMap = new HashMap<>();
-
     protected void check() throws Exception {
         super.check();
 
@@ -156,7 +154,6 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         // Mount management
         Map<String, String> srcTargetMap = new HashMap<>();
         updateFileMaps(inputFile, sb, fileUriMap, srcTargetMap);
-//        updateSrcTargetMap(inputFile, sb, srcTargetMap);
 
         sb.append("--mount type=bind,source=\"")
                 .append(getOutDir().toAbsolutePath()).append("\",target=\"").append(DOCKER_OUTPUT_PATH).append("\" ");

@@ -35,7 +35,6 @@ import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
@@ -87,8 +86,14 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             case "stats-query":
                 queryResponse = statsQuery();
                 break;
-            case "coverage":
-                queryResponse = coverage();
+            case "coverage-run":
+                queryResponse = coverageRun();
+                break;
+            case "coverage-query":
+                queryResponse = coverageQuery();
+                break;
+            case "coverage-log2ratio":
+                queryResponse = coverageLog2Ratio();
                 break;
             case BwaWrapperAnalysis.ID:
                 queryResponse = bwa();
@@ -289,7 +294,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private DataResponse<String> statsInfo() throws IOException {
-        AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
+        AlignmentCommandOptions.StatsInfoAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsInfoAlignmentCommandOptions;
 
         return openCGAClient.getAlignmentClient().statsInfo(cliOptions.study, cliOptions.inputFile);
     }
@@ -329,25 +334,24 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     // STATS: run, info and query
     //-------------------------------------------------------------------------
 
-    private DataResponse coverage() throws CatalogException, IOException {
-        ObjectMap objectMap = new ObjectMap();
-//        objectMap.putIfNotNull("fileId", alignmentCommandOptions.coverageAlignmentCommandOptions.fileId);
-        objectMap.putIfNotNull("sid", alignmentCommandOptions.coverageAlignmentCommandOptions.commonOptions.token);
-        objectMap.putIfNotNull("study", alignmentCommandOptions.coverageAlignmentCommandOptions.study);
-        objectMap.putIfNotNull("region", alignmentCommandOptions.coverageAlignmentCommandOptions.region);
-        objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.coverageAlignmentCommandOptions.minMappingQuality);
-        if (alignmentCommandOptions.coverageAlignmentCommandOptions.contained) {
-            objectMap.put("contained", alignmentCommandOptions.coverageAlignmentCommandOptions.contained);
-        }
+    private DataResponse<Job> coverageRun() throws IOException {
+        AlignmentCommandOptions.CoverageAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageAlignmentCommandOptions;
 
-        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        DataResponse<RegionCoverage> globalStats = openCGAClient.getAlignmentClient()
-                .coverage(alignmentCommandOptions.coverageAlignmentCommandOptions.fileId, objectMap);
+        return openCGAClient.getAlignmentClient().coverageRun(cliOptions.study, cliOptions.inputFile, cliOptions.windowSize);
+    }
 
-        return globalStats;
-//        for (RegionCoverage regionCoverage : globalStats.allResults()) {
-//            System.out.println(regionCoverage.toString());
-//        }
+    private DataResponse<RegionCoverage> coverageQuery() throws IOException {
+        AlignmentCommandOptions.CoverageQueryAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageQueryAlignmentCommandOptions;
+
+        return openCGAClient.getAlignmentClient().coverageQuery(cliOptions.study, cliOptions.inputFile, cliOptions.region, cliOptions.gene,
+                cliOptions.geneOffset, cliOptions.onlyExons, cliOptions.exonOffset, cliOptions.range, cliOptions.windowSize);
+    }
+
+    private DataResponse<RegionCoverage> coverageLog2Ratio() throws IOException {
+        AlignmentCommandOptions.CoverageLog2RatioAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageLog2RatioAlignmentCommandOptions;
+
+        return openCGAClient.getAlignmentClient().coverageLog2Ratio(cliOptions.study, cliOptions.inputFile1, cliOptions.inputFile2, cliOptions.region,
+                cliOptions.gene, cliOptions.geneOffset, cliOptions.onlyExons, cliOptions.exonOffset, cliOptions.windowSize);
     }
 
     //-------------------------------------------------------------------------

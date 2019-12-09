@@ -667,8 +667,9 @@ public class ClinicalInterpretationManager extends StorageManager {
             List<RegionCoverage> regionCoverages;
             for (Transcript transcript: geneQueryResponse.getResponse().get(0).first().getTranscripts()) {
                 for (Exon exon: transcript.getExons()) {
-                    regionCoverages = alignmentStorageManager.getLowCoverageRegions(studyId, bamFileId,
-                            new Region(exon.getChromosome(), exon.getStart(), exon.getEnd()), maxCoverage, sessionId).getResults();
+                    Region region = new Region(exon.getChromosome(), exon.getStart(), exon.getEnd());
+                    regionCoverages = alignmentStorageManager.coverageQuery(studyId, bamFileId, region, 0, maxCoverage, 1,
+                            sessionId).getResults();
                     for (RegionCoverage regionCoverage: regionCoverages) {
                         ReportedLowCoverage reportedLowCoverage = new ReportedLowCoverage(regionCoverage)
                                 .setGeneName(geneName)

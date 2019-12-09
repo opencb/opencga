@@ -18,32 +18,25 @@ package org.opencb.opencga.analysis.alignment;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.ObjectReader;
-import org.codehaus.jackson.map.ObjectWriter;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.StorageManager;
+import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.update.FileUpdateParams;
-import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.AnalysisException;
-import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.models.VariableSet;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
@@ -55,12 +48,10 @@ import org.opencb.opencga.analysis.models.StudyInfo;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.Consumer;
 
 import static org.opencb.opencga.core.api.ParamConstants.*;
 import static org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine.ALIGNMENT_STATS_VARIABLE_SET;
@@ -181,46 +172,6 @@ public class AlignmentStorageManager extends StorageManager {
     // STATS: run, info and query
     //-------------------------------------------------------------------------
 
-//    public DataResult<AlignmentGlobalStats> stats(String studyIdStr, String fileIdStr, Query query, QueryOptions options, String sessionId)
-//            throws Exception {
-//        query = ParamUtils.defaultObject(query, Query::new);
-//        options = ParamUtils.defaultObject(options, QueryOptions::new);
-//
-//        StudyInfo studyInfo = getStudyInfo(studyIdStr, fileIdStr, sessionId);
-//        checkAlignmentBioformat(studyInfo.getFileInfos());
-//        FileInfo fileInfo = studyInfo.getFileInfo();
-////        ObjectMap fileAndStudyId = getFileAndStudyId(studyIdStr, fileIdStr, sessionId);
-////        long studyId = fileAndStudyId.getLong("studyId");
-////        long fileId = fileAndStudyId.getLong("fileId");
-//
-//        if (query.isEmpty() && options.isEmpty()) {
-//            QueryOptions includeOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.STATS.key());
-//            DataResult<File> fileDataResult = catalogManager.getFileManager().get(fileInfo.getFileUid(), includeOptions, sessionId);
-//
-//            logger.info("Obtaining the stats from catalog...");
-//
-//            if (fileDataResult.getNumResults() == 1) {
-//                Map<String, Object> stats = fileDataResult.first().getStats();
-//                Object value = stats.get(GLOBAL_STATS);
-//                if (value != null && value instanceof String) {
-//                    ObjectReader reader = new ObjectMapper().reader(AlignmentGlobalStats.class);
-//                    AlignmentGlobalStats globalStats = reader.readValue((String) value);
-//                    return new DataResult<>(fileDataResult.getTime(), fileDataResult.getEvents(), 1, Arrays.asList(globalStats), 1);
-//                }
-//
-//            }
-//        }
-//
-//        // Calculate the stats
-//        logger.info("Calculating the stats...");
-////        Path filePath = getFilePath(fileId, sessionId);
-////        Path workspace = getWorkspace(studyId, sessionId);
-//        return alignmentStorageEngine.getDBAdaptor().stats(fileInfo.getPhysicalFilePath(), studyInfo.getWorkspace(), query, options);
-//
-//    }
-
-    //-------------------------------------------------------------------------
-
     public void statsRun(String study, String inputFile, String outdir, String token) throws AnalysisException {
         ObjectMap params = new ObjectMap();
         params.put(SamtoolsWrapperAnalysis.INDEX_STATS_PARAM, true);
@@ -272,26 +223,37 @@ public class AlignmentStorageManager extends StorageManager {
     }
 
     //-------------------------------------------------------------------------
-    // COVERAGE: run and query
+    // COVERAGE: run, query and log2Ratio
     //-------------------------------------------------------------------------
 
-    public DataResult<RegionCoverage> coverage(String studyIdStr, String fileIdStr, Region region, int windowSize, String sessionId)
-            throws Exception {
-        File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, sessionId);
-        return alignmentStorageEngine.getDBAdaptor().coverage(Paths.get(file.getUri()), region, windowSize);
+    public void coverageRun(String study, String inputFile, int windowSize, String outdir, String token) throws AnalysisException {
+        ObjectMap params = new ObjectMap();
+        params.put("of", "bigwig");
+        params.put("bs", windowSize);
+
+        DeeptoolsWrapperAnalysis deeptools = new DeeptoolsWrapperAnalysis();
+
+        deeptools.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), token);
+
+        deeptools.setStudy(study);
+        deeptools.setCommand("bamCoverage")
+                .setBamFile(inputFile)
+                .setCoverageFile(outdir + "/" + new java.io.File(inputFile).getName() + ".bw");
+
+        deeptools.start();
     }
 
-    public DataResult<RegionCoverage> coverage(String studyIdStr, String fileIdStr, Region region, int minCoverage, int maxCoverage,
-                                               String sessionId) throws Exception {
+    //-------------------------------------------------------------------------
+
+    public DataResult<RegionCoverage> coverageQuery(String studyIdStr, String fileIdStr, Region region, int minCoverage, int maxCoverage,
+                                                    int windowSize, String sessionId) throws Exception {
         File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, sessionId);
-        return alignmentStorageEngine.getDBAdaptor().coverage(Paths.get(file.getUri()), region, minCoverage, maxCoverage);
+        return alignmentStorageEngine.getDBAdaptor().coverageQuery(Paths.get(file.getUri()), region, minCoverage, maxCoverage, windowSize);
     }
 
-    public DataResult<RegionCoverage> getLowCoverageRegions(String studyIdStr, String fileIdStr, Region region, int minCoverage,
-                                                            String sessionId) throws Exception {
-        File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, sessionId);
-        return alignmentStorageEngine.getDBAdaptor().getLowCoverageRegions(Paths.get(file.getUri()), region, minCoverage);
-    }
+    //-------------------------------------------------------------------------
+    // Counts
+    //-------------------------------------------------------------------------
 
     public DataResult<Long> getTotalCounts(String studyIdStr, String fileIdStr, String sessionId) throws Exception {
         File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, sessionId);
@@ -299,7 +261,24 @@ public class AlignmentStorageManager extends StorageManager {
     }
 
 
-    File extractAlignmentOrCoverageFile(String studyIdStr, String fileIdStr, String sessionId) throws CatalogException {
+    public DataResult<Long> count(String studyIdStr, String fileIdStr, Query query, QueryOptions options, String sessionId)
+            throws CatalogException, IOException, StorageEngineException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        StudyInfo studyInfo = getStudyInfo(studyIdStr, fileIdStr, sessionId);
+//        ObjectMap fileAndStudyId = getFileAndStudyId(studyIdStr, fileIdStr, sessionId);
+//        long fileId = fileAndStudyId.getLong("fileId");
+//        Path filePath = getFilePath(fileId, sessionId);
+
+        return alignmentStorageEngine.getDBAdaptor().count(studyInfo.getFileInfo().getPhysicalFilePath(), query, options);
+    }
+
+    //-------------------------------------------------------------------------
+    // PRIVATE METHODS
+    //-------------------------------------------------------------------------
+
+    private File extractAlignmentOrCoverageFile(String studyIdStr, String fileIdStr, String sessionId) throws CatalogException {
         DataResult<File> fileDataResult = catalogManager.getFileManager().get(studyIdStr, fileIdStr,
                 new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.URI.key(),
                         FileDBAdaptor.QueryParams.BIOFORMAT.key(), FileDBAdaptor.QueryParams.FORMAT.key())), sessionId);
@@ -313,19 +292,6 @@ public class AlignmentStorageManager extends StorageManager {
                     + "Expecting an alignment or coverage file.");
         }
         return fileDataResult.first();
-    }
-
-    public DataResult<Long> count(String studyIdStr, String fileIdStr, Query query, QueryOptions options, String sessionId)
-            throws CatalogException, IOException, StorageEngineException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        StudyInfo studyInfo = getStudyInfo(studyIdStr, fileIdStr, sessionId);
-//        ObjectMap fileAndStudyId = getFileAndStudyId(studyIdStr, fileIdStr, sessionId);
-//        long fileId = fileAndStudyId.getLong("fileId");
-//        Path filePath = getFilePath(fileId, sessionId);
-
-        return alignmentStorageEngine.getDBAdaptor().count(studyInfo.getFileInfo().getPhysicalFilePath(), query, options);
     }
 
     private void checkAlignmentBioformat(List<FileInfo> fileInfo) throws CatalogException {

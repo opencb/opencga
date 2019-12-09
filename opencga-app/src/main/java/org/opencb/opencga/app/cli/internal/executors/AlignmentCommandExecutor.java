@@ -17,15 +17,12 @@
 package org.opencb.opencga.app.cli.internal.executors;
 
 import org.ga4gh.models.ReadAlignment;
-import org.opencb.biodata.models.alignment.RegionCoverage;
-import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.hpg.bigdata.analysis.tools.ExecutorMonitor;
 import org.opencb.hpg.bigdata.analysis.tools.Status;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
-import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
@@ -39,7 +36,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * Created on 09/05/16
@@ -73,8 +69,8 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
             case "stats-run":
                 statsRun();
                 break;
-            case "coverage":
-                coverage();
+            case "coverage-run":
+                coverageRun();
                 break;
             case "delete":
                 delete();
@@ -161,23 +157,12 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         alignmentManager.statsRun(cliOptions.study, cliOptions.inputFile, cliOptions.outdir, cliOptions.commonOptions.token);
     }
 
-    private void coverage() throws CatalogException, IOException {
-        ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull("sid", alignmentCommandOptions.coverageAlignmentCommandOptions.commonOptions.token);
-        objectMap.putIfNotNull("study", alignmentCommandOptions.coverageAlignmentCommandOptions.study);
-        objectMap.putIfNotNull("region", alignmentCommandOptions.coverageAlignmentCommandOptions.region);
-        objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.coverageAlignmentCommandOptions.minMappingQuality);
-        if (alignmentCommandOptions.coverageAlignmentCommandOptions.contained) {
-            objectMap.put("contained", alignmentCommandOptions.coverageAlignmentCommandOptions.contained);
-        }
+    private void coverageRun() throws AnalysisException {
+        AlignmentCommandOptions.CoverageAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageAlignmentCommandOptions;
 
-        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        DataResponse<RegionCoverage> globalStats = openCGAClient.getAlignmentClient()
-                .coverage(alignmentCommandOptions.coverageAlignmentCommandOptions.fileId, objectMap);
+        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
 
-        for (RegionCoverage regionCoverage : globalStats.allResults()) {
-            System.out.println(regionCoverage.toString());
-        }
+        alignmentManager.coverageRun(cliOptions.study, cliOptions.inputFile, cliOptions.windowSize, cliOptions.outdir, cliOptions.commonOptions.token);
     }
 
     private void delete() {
@@ -244,7 +229,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
         deeptools.setStudy(cliOptions.study);
 
-        deeptools.setExecutable(cliOptions.executable)
+        deeptools.setCommand(cliOptions.executable)
                 .setBamFile(cliOptions.bamFile)
                 .setCoverageFile(cliOptions.coverageFile);
 

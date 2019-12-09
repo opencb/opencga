@@ -27,7 +27,7 @@ import org.opencb.opencga.core.models.Job;
 
 import java.io.IOException;
 
-import static org.opencb.opencga.core.api.ParamConstants.STUDY_PARAM;
+import static org.opencb.opencga.core.api.ParamConstants.*;
 
 /**
  * Created by pfurio on 11/11/16.
@@ -56,6 +56,10 @@ public class AlignmentClient extends AbstractParentClient {
         return execute(ALIGNMENT_URL, "query", params, GET, ReadAlignment.class);
     }
 
+    //-------------------------------------------------------------------------
+    // S T A T S
+    //-------------------------------------------------------------------------
+
     public DataResponse<Job> statsRun(String study, String file) throws IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull(STUDY_PARAM, study);
@@ -77,12 +81,46 @@ public class AlignmentClient extends AbstractParentClient {
         return execute(ALIGNMENT_URL, "stats/query", params, GET, File.class);
     }
 
-    public DataResponse<RegionCoverage> coverage(String fileIds, ObjectMap params) throws IOException {
-        if (params == null) {
-            params = new ObjectMap();
-        }
-        params.putIfNotEmpty("file", fileIds);
-        return execute(ALIGNMENT_URL, "coverage", params, GET, RegionCoverage.class);
+    //-------------------------------------------------------------------------
+    // C O V E R A G E
+    //-------------------------------------------------------------------------
+
+    public DataResponse<Job> coverageRun(String study, String inputFile, int windowSize) throws IOException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(STUDY_PARAM, study);
+        params.putIfNotEmpty("inputFile", inputFile);
+        params.putIfNotNull("windowSize", windowSize);
+        return execute(ALIGNMENT_URL, "coverage/run", params, POST, Job.class);
+    }
+
+    public DataResponse<RegionCoverage> coverageQuery(String study, String inputFile, String region, String gene, int geneOffset,
+                                                      boolean onlyExons, int exonOffset, String range, int windowSize) throws IOException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(STUDY_PARAM, study);
+        params.putIfNotEmpty(FILE_ID_PARAM, inputFile);
+        params.putIfNotEmpty(REGION_PARAM, region);
+        params.putIfNotEmpty(GENE_PARAM, gene);
+        params.putIfNotNull(GENE_OFFSET_PARAM, geneOffset);
+        params.putIfNotNull(ONLY_EXONS_PARAM, onlyExons);
+        params.putIfNotNull(EXON_OFFSET_PARAM, exonOffset);
+        params.putIfNotEmpty(COVERAGE_RANGE_PARAM, range);
+        params.putIfNotNull(COVERAGE_WINDOW_SIZE_PARAM, windowSize);
+        return execute(ALIGNMENT_URL, "coverage/query", params, GET, RegionCoverage.class);
+    }
+
+    public DataResponse<RegionCoverage> coverageLog2Ratio(String study, String inputFile1, String inputFile2, String region, String gene,
+                                                  int geneOffset, boolean onlyExons, int exonOffset, int windowSize) throws IOException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(STUDY_PARAM, study);
+        params.putIfNotEmpty(FILE_ID_1_PARAM, inputFile1);
+        params.putIfNotEmpty(FILE_ID_2_PARAM, inputFile2);
+        params.putIfNotEmpty(REGION_PARAM, region);
+        params.putIfNotEmpty(GENE_PARAM, gene);
+        params.putIfNotNull(GENE_OFFSET_PARAM, geneOffset);
+        params.putIfNotNull(ONLY_EXONS_PARAM, onlyExons);
+        params.putIfNotNull(EXON_OFFSET_PARAM, exonOffset);
+        params.putIfNotNull(COVERAGE_WINDOW_SIZE_PARAM, windowSize);
+        return execute(ALIGNMENT_URL, "coverage/log2Ratio", params, GET, RegionCoverage.class);
     }
 
     //-------------------------------------------------------------------------

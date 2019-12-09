@@ -40,8 +40,11 @@ public class AlignmentCommandOptions {
     public IndexAlignmentCommandOptions indexAlignmentCommandOptions;
     public QueryAlignmentCommandOptions queryAlignmentCommandOptions;
     public StatsAlignmentCommandOptions statsAlignmentCommandOptions;
+    public StatsInfoAlignmentCommandOptions statsInfoAlignmentCommandOptions;
     public StatsQueryAlignmentCommandOptions statsQueryAlignmentCommandOptions;
     public CoverageAlignmentCommandOptions coverageAlignmentCommandOptions;
+    public CoverageQueryAlignmentCommandOptions coverageQueryAlignmentCommandOptions;
+    public CoverageLog2RatioAlignmentCommandOptions coverageLog2RatioAlignmentCommandOptions;
 
     // Wrappers
     public BwaCommandOptions bwaCommandOptions;
@@ -58,8 +61,11 @@ public class AlignmentCommandOptions {
         this.indexAlignmentCommandOptions = new IndexAlignmentCommandOptions();
         this.queryAlignmentCommandOptions = new QueryAlignmentCommandOptions();
         this.statsAlignmentCommandOptions = new StatsAlignmentCommandOptions();
+        this.statsInfoAlignmentCommandOptions = new StatsInfoAlignmentCommandOptions();
         this.statsQueryAlignmentCommandOptions = new StatsQueryAlignmentCommandOptions();
         this.coverageAlignmentCommandOptions = new CoverageAlignmentCommandOptions();
+        this.coverageQueryAlignmentCommandOptions = new CoverageQueryAlignmentCommandOptions();
+        this.coverageLog2RatioAlignmentCommandOptions = new CoverageLog2RatioAlignmentCommandOptions();
 
         this.bwaCommandOptions = new BwaCommandOptions();
         this.samtoolsCommandOptions = new SamtoolsCommandOptions();
@@ -126,31 +132,33 @@ public class AlignmentCommandOptions {
         public boolean count;
     }
 
-    @Parameters(commandNames = {"stats"}, commandDescription = "Obtain the global stats of an alignment")
+    @Parameters(commandNames = {"stats-run"}, commandDescription = ALIGNMENT_STATS_DESCRIPTION)
     public class StatsAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
-
-        @Parameter(names = {"--input-file"}, description = "Input alignment file in catalog", required = true, arity = 1)
+        @Parameter(names = {"--input-file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
         public String inputFile;
 
-//        @Parameter(names = {"--min-mapq"}, description = "Minimum mapping quality", arity = 1)
-//        public Integer minMappingQuality;
-//
-//        @Parameter(names = {"--contained"}, description = "Set flag to select just the alignments completely contained within the "
-//                + "boundaries of the region", arity = 0)
-//        public boolean contained;
-//
-//        @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000")
-//        public String region;
-
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;
     }
 
-    @Parameters(commandNames = {"stats-query"}, commandDescription = "Obtain the global stats of an alignment")
+    @Parameters(commandNames = {"stats-info"}, commandDescription = ALIGNMENT_STATS_INFO_DESCRIPTION)
+    public class StatsInfoAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @Parameter(names = {"--input-file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        public String inputFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {"stats-query"}, commandDescription = ALIGNMENT_STATS_QUERY_DESCRIPTION)
     public class StatsQueryAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
@@ -223,24 +231,82 @@ public class AlignmentCommandOptions {
         public String percentageOfProperlyPairedReads;
     }
 
-    @Parameters(commandNames = {"coverage"}, commandDescription = "Obtain the coverage of an alignment")
+    @Parameters(commandNames = {"coverage-run"}, commandDescription = ALIGNMENT_COVERAGE_DESCRIPTION)
     public class CoverageAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
+        @Parameter(names = {"--input-file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        public String inputFile;
 
-        @Parameter(names = {"--file"}, description = "Id of the alignment file in catalog", required = true, arity = 1)
-        public String fileId;
+        @Parameter(names = {"--window-size"}, description = COVERAGE_WINDOW_SIZE_DESCRIPTION, arity = 1)
+        public int windowSize = 1;
 
-        @Parameter(names = {"--min-mapq"}, description = "Minimum mapping quality", arity = 1)
-        public Integer minMappingQuality;
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
+    }
 
-        @Parameter(names = {"--contained"}, description = "Set flag to select just the alignments completely contained within the "
-                + "boundaries of the region", arity = 0)
-        public boolean contained;
-        @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000")
+    @Parameters(commandNames = {"coverage-query"}, commandDescription = ALIGNMENT_COVERAGE_QUERY_DESCRIPTION)
+    public class CoverageQueryAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @Parameter(names = {"--input-file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        public String inputFile;
+
+        @Parameter(names = {"-r", "--region"}, description = REGION_DESCRIPTION)
         public String region;
+
+        @Parameter(names = {"-g", "--gene"}, description = GENE_DESCRIPTION)
+        public String gene;
+
+        @Parameter(names = {"--gene-offset"}, description = GENE_OFFSET_DESCRIPTION)
+        public int geneOffset = GENE_OFFSET_DEFAULT;
+
+        @Parameter(names = {"--only-exons"}, description = ONLY_EXONS_DESCRIPTION)
+        public boolean onlyExons;
+
+        @Parameter(names = {"--exon-offset"}, description = EXON_OFFSET_DESCRIPTION)
+        public int exonOffset = EXON_OFFSET_DEFAULT;
+
+        @Parameter(names = {"--coverage-range"}, description = COVERAGE_RANGE_DESCRIPTION, arity = 1)
+        public String range;
+
+        @Parameter(names = {"--window-size"}, description = COVERAGE_WINDOW_SIZE_DESCRIPTION, arity = 1)
+        public int windowSize = 1;
+    }
+
+    @Parameters(commandNames = {"coverage-log2ratio"}, commandDescription = ALIGNMENT_COVERAGE_LOG_2_RATIO_DESCRIPTION)
+    public class CoverageLog2RatioAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @Parameter(names = {"--input-file1"}, description = FILE_ID_1_DESCRIPTION, required = true, arity = 1)
+        public String inputFile1;
+
+        @Parameter(names = {"--input-file2"}, description = FILE_ID_2_DESCRIPTION, required = true, arity = 1)
+        public String inputFile2;
+
+        @Parameter(names = {"-r", "--region"}, description = REGION_DESCRIPTION)
+        public String region;
+
+        @Parameter(names = {"-g", "--gene"}, description = GENE_DESCRIPTION)
+        public String gene;
+
+        @Parameter(names = {"--gene-offset"}, description = GENE_OFFSET_DESCRIPTION)
+        public int geneOffset = GENE_OFFSET_DEFAULT;
+
+        @Parameter(names = {"--only-exons"}, description = ONLY_EXONS_DESCRIPTION)
+        public boolean onlyExons;
+
+        @Parameter(names = {"--exon-offset"}, description = EXON_OFFSET_DESCRIPTION)
+        public int exonOffset = EXON_OFFSET_DEFAULT;
+
+        @Parameter(names = {"--window-size"}, description = COVERAGE_WINDOW_SIZE_DESCRIPTION, arity = 1)
+        public int windowSize = 1;
     }
 
     //-------------------------------------------------------------------------

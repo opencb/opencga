@@ -22,29 +22,29 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     public final static String DEEPTOOLS_DOCKER_IMAGE = "dhspence/docker-deeptools";
 
-    private String executable;
+    private String command;
     private String bamFile;
     private String coverageFile;
 
     protected void check() throws Exception {
         super.check();
 
-        if (StringUtils.isEmpty(executable)) {
+        if (StringUtils.isEmpty(command)) {
             throw new AnalysisException("Missing deeptools executable. Supported executable is 'bamCoverage'");
         }
 
-        switch (executable) {
+        switch (command) {
             case "bamCoverage":
                 if (StringUtils.isEmpty(bamFile)) {
-                    throw new AnalysisException("Missing BAM file when executing 'deeptools " + executable + "'.");
+                    throw new AnalysisException("Missing BAM file when executing 'deeptools " + command + "'.");
                 }
                 if (StringUtils.isEmpty(coverageFile)) {
-                    throw new AnalysisException("Missing coverage file when executing 'deeptools " + executable + "'.");
+                    throw new AnalysisException("Missing coverage file when executing 'deeptools " + command + "'.");
                 }
                 break;
             default:
                 // TODO: support the remaining deeptools executable
-                throw new AnalysisException("Deeptools executable '" + executable + "' is not available. Supported executable is"
+                throw new AnalysisException("Deeptools executable '" + command + "' is not available. Supported executable is"
                         + " 'bamCoverage'");
         }
 
@@ -83,7 +83,7 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
                 // Check deeptools errors
                 boolean success = false;
-                switch (executable) {
+                switch (command) {
                     case "bamCoverage": {
                         if (new File(coverageFile).exists()) {
                             success = true;
@@ -116,7 +116,7 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
         // Mount management
         Map<String, String> srcTargetMap = new HashMap<>();
-        updateSrcTargetMap(bamFile, sb, srcTargetMap);
+        updateFileMaps(bamFile, sb, fileUriMap, srcTargetMap);
 
         sb.append("--mount type=bind,source=\"")
                 .append(getOutDir().toAbsolutePath()).append("\",target=\"").append(DOCKER_OUTPUT_PATH).append("\" ");
@@ -128,7 +128,7 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         }
 
         // Deeptools executable
-        sb.append(" ").append(executable);
+        sb.append(" ").append(command);
 
         // Deeptools options
         for (String param : params.keySet()) {
@@ -141,9 +141,9 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
             }
         }
 
-        switch (executable) {
+        switch (command) {
             case "bamCoverage": {
-                File file = new File(bamFile);
+                File file = new File(fileUriMap.get(bamFile).getPath());
                 sb.append(" -b ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
                 sb.append(" -o ").append(DOCKER_OUTPUT_PATH).append("/").append(new File(coverageFile).getName());
                 break;
@@ -156,7 +156,7 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
     private boolean checkParam(String param) {
         if (param.equals(DOCKER_IMAGE_VERSION_PARAM)) {
             return false;
-        } else if ("bamCoverage".equals(executable)) {
+        } else if ("bamCoverage".equals(command)) {
             if ("o".equals(param) || "b".equals(param)) {
                 return false;
             }
@@ -164,12 +164,12 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         return true;
     }
 
-    public String getExecutable() {
-        return executable;
+    public String getCommand() {
+        return command;
     }
 
-    public DeeptoolsWrapperAnalysis setExecutable(String executable) {
-        this.executable = executable;
+    public DeeptoolsWrapperAnalysis setCommand(String command) {
+        this.command = command;
         return this;
     }
 

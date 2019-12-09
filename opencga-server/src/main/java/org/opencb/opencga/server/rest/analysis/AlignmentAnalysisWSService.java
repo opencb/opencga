@@ -166,29 +166,25 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         }
     }
 
+    //-------------------------------------------------------------------------
+    // COVERAGE: run, query and log2Ratio
+    //-------------------------------------------------------------------------
+
     @POST
     @Path("/coverage/run")
     @ApiOperation(value = "Compute coverage for a list of alignment files", response = Job.class)
-    public Response coverageRun(@ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
-                                @QueryParam(value = "file") String fileIdStr,
-                                @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
-                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                @QueryParam("study") String studyStr,
-                                @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr) {
-
-        if (StringUtils.isNotEmpty(studyId)) {
-            studyStr = studyId;
-        }
+    public Response coverageRun(@ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(value = FILE_ID_PARAM) String file,
+                                @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(STUDY_PARAM) String study,
+                                @ApiParam(value = COVERAGE_WINDOW_SIZE_DESCRIPTION) @DefaultValue("" + COVERAGE_WINDOW_SIZE_DEFAULT) @QueryParam(COVERAGE_WINDOW_SIZE_PARAM) int windowSize) {
 
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put("file", fileIdStr);
-        addParamIfNotNull(params, "outdir", outDirStr);
+        params.put(FILE_ID_PARAM, file);
+        params.put(COVERAGE_WINDOW_SIZE_PARAM, windowSize);
 
         logger.info("ObjectMap: {}", params);
 
-
         try {
-            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "alignment", "coverage-run", Enums.Priority.HIGH, params,
+            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(study, "alignment", "coverage-run", Enums.Priority.HIGH, params,
                     token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -198,64 +194,65 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
     @GET
     @Path("/coverage/query")
-    @ApiOperation(value = "Fetch the coverage of an alignment file", response = RegionCoverage.class)
+    @ApiOperation(value = ALIGNMENT_COVERAGE_QUERY_DESCRIPTION, response = RegionCoverage.class)
     public Response coverageQuery(
-            @ApiParam(value = "File ID or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
-            @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
-            @ApiParam(value = "Comma separated list of genes") @QueryParam("gene") String geneStr,
-            @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("500") @QueryParam("geneOffset") int geneOffset,
-            @ApiParam(value = "Only exons") @QueryParam("onlyExons") @DefaultValue("false") Boolean onlyExons,
-            @ApiParam(value = "Exon offset (to extend the exon region at up and downstream") @DefaultValue("50") @QueryParam("exonOffset") int exonOffset,
-            @ApiParam(value = "Range of coverage values to be reported. Minimum and maximum values are separated by '-', e.g.: 20-40 (for coverage values greater or equal to 20 and less or equal to 40). A single value means to report coverage values greater or equal to that value.") @QueryParam("threshold") String threshold,
-            @ApiParam(value = "Window size (if a threshold is provided, window size must be 1)") @DefaultValue("1") @QueryParam("windowSize") int windowSize) {
+            @ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(FILE_ID_PARAM) String inputFile,
+            @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = REGION_DESCRIPTION) @QueryParam(REGION_PARAM) String strRegion,
+            @ApiParam(value = GENE_DESCRIPTION) @QueryParam(GENE_PARAM) String strGene,
+            @ApiParam(value = GENE_OFFSET_DESCRIPTION) @DefaultValue("" + GENE_OFFSET_DEFAULT) @QueryParam(GENE_OFFSET_PARAM) int geneOffset,
+            @ApiParam(value = ONLY_EXONS_DESCRIPTION) @QueryParam(ONLY_EXONS_PARAM) @DefaultValue("false") Boolean onlyExons,
+            @ApiParam(value = EXON_OFFSET_DESCRIPTION) @DefaultValue("" + EXON_OFFSET_DEFAULT) @QueryParam(EXON_OFFSET_PARAM) int exonOffset,
+            @ApiParam(value = COVERAGE_RANGE_DESCRIPTION) @QueryParam(COVERAGE_RANGE_PARAM) String range,
+            @ApiParam(value = COVERAGE_WINDOW_SIZE_DESCRIPTION) @DefaultValue("" + COVERAGE_WINDOW_SIZE_DEFAULT) @QueryParam(COVERAGE_WINDOW_SIZE_PARAM) int windowSize) {
         try {
-            ParamUtils.checkIsSingleID(fileIdStr);
+            ParamUtils.checkIsSingleID(inputFile);
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
 
             List<Region> regionList = new ArrayList<>();
 
             // Parse regions from region parameter
-            if (StringUtils.isNotEmpty(regionStr)) {
-                regionList.addAll(Region.parseRegions(regionStr));
+            if (StringUtils.isNotEmpty(strRegion)) {
+                regionList.addAll(Region.parseRegions(strRegion));
             }
 
             // Get regions from genes/exons parameters
-            if (StringUtils.isNotEmpty(geneStr)) {
-                regionList = getRegionsFromGenes(geneStr, geneOffset, onlyExons, exonOffset, regionList, studyStr);
+            if (StringUtils.isNotEmpty(strGene)) {
+                regionList = getRegionsFromGenes(strGene, geneOffset, onlyExons, exonOffset, regionList, study);
             }
 
             if (CollectionUtils.isNotEmpty(regionList)) {
                 DataResult<RegionCoverage> dataResult = DataResult.empty();
-                if (StringUtils.isEmpty(threshold)) {
+                if (StringUtils.isEmpty(range)) {
                     for (Region region : regionList) {
-                        DataResult<RegionCoverage> coverage = alignmentStorageManager.coverage(studyStr, fileIdStr, region, windowSize, token);
+                        DataResult<RegionCoverage> coverage = alignmentStorageManager.coverageQuery(study, inputFile, region, 0,
+                                Integer.MAX_VALUE, windowSize, token);
                         if (coverage.getResults().size() > 0) {
                             dataResult.append(coverage);
                         }
                     }
                 } else {
                     // Report regions for a given coverage range
-                    String[] split = threshold.split("-");
+                    String[] split = range.split("-");
                     int minCoverage;
                     int maxCoverage;
                     try {
                         if (split.length == 1) {
-                            minCoverage = Integer.parseInt(split[0]);
-                            maxCoverage = Integer.MAX_VALUE;
+                            minCoverage = 0;
+                            maxCoverage = Integer.parseInt(split[0]);
                         } else if (split.length == 2) {
                             minCoverage = Integer.parseInt(split[0]);
                             maxCoverage = Integer.parseInt(split[1]);
                         } else {
-                            return createErrorResponse(new AlignmentCoverageException("Invalid threshold: " + threshold
+                            return createErrorResponse(new AlignmentCoverageException("Invalid coverage range: " + range
                                     + ". Valid ranges include minimum and maximum values, e.g.: 20-60"));
                         }
                     } catch (NumberFormatException e) {
-                        return createErrorResponse(new AlignmentCoverageException("Invalid threshold: " + threshold
+                        return createErrorResponse(new AlignmentCoverageException("Invalid coverage range: " + range
                                 + ". Valid ranges include minimum and maximum values, e.g.: 20-60"));
                     }
                     if (minCoverage > maxCoverage) {
-                        return createErrorResponse(new AlignmentCoverageException("Invalid threshold: " + threshold
+                        return createErrorResponse(new AlignmentCoverageException("Invalid coverage range: " + range
                                 + ". The maximum value must be greater or equal to the minimum value, e.g.: 20-60"));
                     }
 
@@ -265,8 +262,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                     }
 
                     for (Region region : regionList) {
-                        DataResult<RegionCoverage> coverage = alignmentStorageManager.coverage(studyStr, fileIdStr, region, minCoverage,
-                                maxCoverage, token);
+                        DataResult<RegionCoverage> coverage = alignmentStorageManager.coverageQuery(study, inputFile, region, minCoverage,
+                                maxCoverage, windowSize, token);
                         if (coverage.getResults().size() > 0) {
                             dataResult.append(coverage);
                         }
@@ -275,7 +272,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
                 return createOkResponse(dataResult);
             } else {
-                return createErrorResponse("coverage", "Missing region, no region provides");
+                return createErrorResponse("coverage/query", "Missing region(s)");
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -284,53 +281,53 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
     @GET
     @Path("/coverage/log2Ratio")
-    @ApiOperation(value = "Compute log2 coverage ratio from file #1 and file #2", response = RegionCoverage.class)
-    public Response coverageLog2Ratio(@ApiParam(value = "File #1 (e.g., somatic file ID or name in Catalog)", required = true) @QueryParam("file1") String somaticFileIdStr,
-                                      @ApiParam(value = "File #2 (e.g., germline file ID or name in Catalog)", required = true) @QueryParam("file2") String germlineFileIdStr,
-                                      @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                      @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
-                                      @ApiParam(value = "Comma separated list of genes") @QueryParam("gene") String geneStr,
-                                      @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("500") @QueryParam("geneOffset") int geneOffset,
-                                      @ApiParam(value = "Only exons") @QueryParam("onlyExons") @DefaultValue("false") Boolean onlyExons,
-                                      @ApiParam(value = "Exon offset (to extend the exon region at up and downstream") @DefaultValue("50") @QueryParam("exonOffset") int exonOffset,
-                                      @ApiParam(value = "Window size") @DefaultValue("1") @QueryParam("windowSize") int windowSize) {
+    @ApiOperation(value = ALIGNMENT_COVERAGE_LOG_2_RATIO_DESCRIPTION, response = RegionCoverage.class)
+    public Response coverageLog2Ratio(@ApiParam(value = FILE_ID_1_DESCRIPTION, required = true) @QueryParam(FILE_ID_1_PARAM) String somaticFile,
+                                      @ApiParam(value = FILE_ID_2_DESCRIPTION, required = true) @QueryParam(FILE_ID_2_PARAM) String germlineFile,
+                                      @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+                                      @ApiParam(value = REGION_DESCRIPTION) @QueryParam(REGION_PARAM) String strRegion,
+                                      @ApiParam(value = GENE_DESCRIPTION) @QueryParam(GENE_PARAM) String strGene,
+                                      @ApiParam(value = GENE_OFFSET_DESCRIPTION) @DefaultValue("" + GENE_OFFSET_DEFAULT) @QueryParam(GENE_OFFSET_PARAM) int geneOffset,
+                                      @ApiParam(value = ONLY_EXONS_DESCRIPTION) @QueryParam(ONLY_EXONS_PARAM) @DefaultValue("false") Boolean onlyExons,
+                                      @ApiParam(value = EXON_OFFSET_DESCRIPTION) @DefaultValue("" + EXON_OFFSET_DEFAULT) @QueryParam(EXON_OFFSET_PARAM) int exonOffset,
+                                      @ApiParam(value = COVERAGE_WINDOW_SIZE_DESCRIPTION) @DefaultValue("" + COVERAGE_WINDOW_SIZE_DEFAULT) @QueryParam(COVERAGE_WINDOW_SIZE_PARAM) int windowSize) {
         try {
-            ParamUtils.checkIsSingleID(somaticFileIdStr);
-            ParamUtils.checkIsSingleID(germlineFileIdStr);
+            ParamUtils.checkIsSingleID(somaticFile);
+            ParamUtils.checkIsSingleID(germlineFile);
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
 
             List<Region> regionList = new ArrayList<>();
 
             // Parse regions from region parameter
-            if (StringUtils.isNotEmpty(regionStr)) {
-                regionList.addAll(Region.parseRegions(regionStr));
+            if (StringUtils.isNotEmpty(strRegion)) {
+                regionList.addAll(Region.parseRegions(strRegion));
             }
 
             // Get regions from genes/exons parameters
-            if (StringUtils.isNotEmpty(geneStr)) {
-                regionList = getRegionsFromGenes(geneStr, geneOffset, onlyExons, exonOffset, regionList, studyStr);
+            if (StringUtils.isNotEmpty(strGene)) {
+                regionList = getRegionsFromGenes(strGene, geneOffset, onlyExons, exonOffset, regionList, study);
             }
 
             if (CollectionUtils.isNotEmpty(regionList)) {
                 // Getting total counts for file #1: somatic file
-                DataResult<Long> somaticResult = alignmentStorageManager.getTotalCounts(studyStr, somaticFileIdStr, token);
+                DataResult<Long> somaticResult = alignmentStorageManager.getTotalCounts(study, somaticFile, token);
                 if (CollectionUtils.isEmpty(somaticResult.getResults()) || somaticResult.getResults().get(0) == 0) {
-                    return createErrorResponse("log2CoverageRatio", "Impossible get total counts for file " + somaticFileIdStr);
+                    return createErrorResponse("log2CoverageRatio", "Impossible get total counts for file " + somaticFile);
                 }
                 long somaticTotalCounts = somaticResult.getResults().get(0);
 
                 // Getting total counts for file #2: germline file
-                DataResult<Long> germlineResult = alignmentStorageManager.getTotalCounts(studyStr, germlineFileIdStr, token);
+                DataResult<Long> germlineResult = alignmentStorageManager.getTotalCounts(study, germlineFile, token);
                 if (CollectionUtils.isEmpty(germlineResult.getResults()) || germlineResult.getResults().get(0) == 0) {
-                    return createErrorResponse("log2CoverageRatio", "Impossible get total counts for file " + germlineFileIdStr);
+                    return createErrorResponse("log2CoverageRatio", "Impossible get total counts for file " + germlineFile);
                 }
                 long germlineTotalCounts = germlineResult.getResults().get(0);
 
                 // Compute log2 coverage ratio for each region given
                 DataResult<RegionCoverage> dataResult = DataResult.empty();
                 for (Region region : regionList) {
-                    DataResult<RegionCoverage> somaticCoverage = alignmentStorageManager.coverage(studyStr, somaticFileIdStr, region, windowSize, token);
-                    DataResult<RegionCoverage> germlineCoverage = alignmentStorageManager.coverage(studyStr, germlineFileIdStr, region, windowSize, token);
+                    DataResult<RegionCoverage> somaticCoverage = alignmentStorageManager.coverageQuery(study, somaticFile, region, 0, Integer.MAX_VALUE, windowSize, token);
+                    DataResult<RegionCoverage> germlineCoverage = alignmentStorageManager.coverageQuery(study, germlineFile, region, 0, Integer.MAX_VALUE, windowSize, token);
                     if (somaticCoverage.getResults().size() == 1 && germlineCoverage.getResults().size() == 1) {
                         try {
                             StopWatch watch = StopWatch.createStarted();
@@ -340,57 +337,15 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                     + germlineResult.getTime() + germlineCoverage.getTime() + ((int) watch.getTime());
                             dataResult.append(new DataResult<>(dbTime, Collections.emptyList(), 1, Collections.singletonList(coverage), 1));
                         } catch (AlignmentCoverageException e) {
-                            logger.error("log2CoverageRatio: " + e.getMessage() + ": somatic file = " + somaticFileIdStr + ", germline file = " + germlineFileIdStr + ", region = " + region.toString());
+                            logger.error("log2CoverageRatio: " + e.getMessage() + ": somatic file = " + somaticFile + ", germline file = " + germlineFile + ", region = " + region.toString());
                         }
                     } else {
-                        logger.error("log2CoverageRatio: something wrong happened: somatic file = " + somaticFileIdStr + ", germline file = " + germlineFileIdStr + ", region = " + region.toString());
+                        logger.error("log2CoverageRatio: something wrong happened: somatic file = " + somaticFile + ", germline file = " + germlineFile + ", region = " + region.toString());
                     }
                 }
                 return createOkResponse(dataResult);
             } else {
                 return createErrorResponse("log2CoverageRatio", "Missing region, no region provides");
-            }
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/lowCoverage")
-    @ApiOperation(value = "Fetch regions with a low coverage", hidden = true, response = RegionCoverage.class)
-    public Response lowCoverage(
-            @ApiParam(value = "File id or name in Catalog", required = true) @QueryParam("file") String fileIdStr,
-            @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Comma separated list of regions 'chr:start-end'") @QueryParam("region") String regionStr,
-            @ApiParam(value = "Comma separated list of genes") @QueryParam("gene") String geneStr,
-            @ApiParam(value = "Gene offset (to extend the gene region at up and downstream") @DefaultValue("500") @QueryParam("geneOffset") int geneOffset,
-            @ApiParam(value = "Only exons") @QueryParam("onlyExons") @DefaultValue("false") Boolean onlyExons,
-            @ApiParam(value = "Exon offset (to extend the exon region at up and downstream") @DefaultValue("50") @QueryParam("exonOffset") int exonOffset,
-            @ApiParam(value = "Number of reads under which a region will will be considered low covered") @DefaultValue("20") @QueryParam("minCoverage") int minCoverage) {
-        try {
-            ParamUtils.checkIsSingleID(fileIdStr);
-            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
-            List<Region> regionList = new ArrayList<>();
-
-            // Parse regions from region parameter
-            if (StringUtils.isNotEmpty(regionStr)) {
-                regionList.addAll(Region.parseRegions(regionStr));
-            }
-
-            // Get regions from genes/exons parameters
-            if (StringUtils.isNotEmpty(geneStr)) {
-                regionList = getRegionsFromGenes(geneStr, geneOffset, onlyExons, exonOffset, regionList, studyStr);
-            }
-
-            if (CollectionUtils.isNotEmpty(regionList)) {
-                // Compute low coverage regions from the given input regions
-                DataResult<RegionCoverage> dataResult = DataResult.empty();
-                for (Region region : regionList) {
-                    dataResult.append(alignmentStorageManager.getLowCoverageRegions(studyStr, fileIdStr, region, minCoverage, token));
-                }
-                return createOkResponse(dataResult);
-            } else {
-                return createErrorResponse("lowCoveredRegions", "Missing regions or genes");
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -403,14 +358,12 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
     @POST
     @Path("/stats/run")
-    @ApiOperation(value = "Compute stats for a list of alignment files", response = Job.class)
-    public Response statsRun(@ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
-                             @QueryParam(value = "inputFile") String inputFile,
-                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                             @QueryParam("study") String study) {
+    @ApiOperation(value = ALIGNMENT_STATS_DESCRIPTION, response = Job.class)
+    public Response statsRun(@ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(value = FILE_ID_PARAM) String inputFile,
+                             @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(STUDY_PARAM) String study) {
 
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put("inputFile", inputFile);
+        params.put(FILE_ID_PARAM, inputFile);
 
         logger.info("ObjectMap: {}", params);
 
@@ -425,11 +378,9 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
     @GET
     @Path("/stats/info")
-    @ApiOperation(value = "Fetch the stats of an alignment file", response = AlignmentGlobalStats.class)
-    public Response statsInfo(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("inputFile")
-                                      String inputFile,
-                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                              @QueryParam("study") String study) {
+    @ApiOperation(value = ALIGNMENT_STATS_INFO_DESCRIPTION, response = String.class)
+    public Response statsInfo(@ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(FILE_ID_PARAM) String inputFile,
+                              @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(STUDY_PARAM) String study) {
 
         try {
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
@@ -441,7 +392,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
     @GET
     @Path("/stats/query")
-    @ApiOperation(value = "Fetch alignment files according to their stats", response = File.class)
+    @ApiOperation(value = ALIGNMENT_STATS_QUERY_DESCRIPTION, response = File.class)
     public Response statsQuery(@ApiParam(value = STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
                                @ApiParam(value = RAW_TOTAL_SEQUENCES_DESCRIPTION) @QueryParam(RAW_TOTAL_SEQUENCES) String rawTotalSequences,
                                @ApiParam(value = FILTERED_SEQUENCES_DESCRIPTION) @QueryParam(FILTERED_SEQUENCES) String filteredSequences,

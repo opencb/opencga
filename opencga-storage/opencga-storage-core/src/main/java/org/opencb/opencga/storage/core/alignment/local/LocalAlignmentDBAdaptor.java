@@ -151,72 +151,40 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
-    public DataResult<RegionCoverage> coverage(Path path, Region region, int windowSize) throws Exception {
-//        QueryOptions options = new QueryOptions();
-//        options.put(QueryParams.WINDOW_SIZE.key(), DEFAULT_WINDOW_SIZE);
-//        options.put(QueryParams.CONTAINED.key(), false);
-//        return coverage(path, workspace, new Query(), options);
+    public DataResult<RegionCoverage> coverageQuery(Path path, Region region, int minCoverage, int maxCoverage, int windowSize)
+            throws Exception {
         FileUtils.checkFile(path);
 
         StopWatch watch = StopWatch.createStarted();
+
         RegionCoverage regionCoverage;
-        if (path.toFile().getName().endsWith(".bam")) {
+        if (path.toString().endsWith("bw") || path.toString().endsWith("bigwig")) {
+            regionCoverage = BamUtils.getCoverageFromBigWig(region, windowSize, path);
+        } else {
             BamManager bamManager = new BamManager(path);
             regionCoverage = bamManager.coverage(region, windowSize);
             bamManager.close();
-        } else {
-            regionCoverage = BamUtils.getCoverageFromBigWig(region, windowSize, path);
         }
-        watch.stop();
-        return new DataResult<>(((int) watch.getTime()), Collections.emptyList(), 1, Collections.singletonList(regionCoverage), 1);
-    }
 
-    @Override
-    public DataResult<RegionCoverage> coverage(Path path, Region region, int minCoverage, int maxCoverage) throws Exception {
-        FileUtils.checkFile(path);
-
-        StopWatch watch = StopWatch.createStarted();
-        RegionCoverage regionCoverage;
-        if (path.toFile().getName().endsWith(".bam")) {
-            BamManager bamManager = new BamManager(path);
-            regionCoverage = bamManager.coverage(region, 1);
-            bamManager.close();
-        } else {
-            regionCoverage = BamUtils.getCoverageFromBigWig(region, 1, path);
-        }
-        List<RegionCoverage> regionCoverages = BamUtils.filterByCoverage(regionCoverage, minCoverage, maxCoverage);
-
-        // Remove empty regions
+        // If necessary, filter by coverage range and remove empty regions
         List<RegionCoverage> selectedRegions = new ArrayList<>();
-        for (RegionCoverage coverage : regionCoverages) {
-            if (coverage.getValues() != null && coverage.getValues().length > 0) {
-                selectedRegions.add(coverage);
+        if (minCoverage <= 0 && maxCoverage >= Integer.MAX_VALUE) {
+            selectedRegions.add(regionCoverage);
+        } else {
+            // Filter region by coverage range
+            List<RegionCoverage> regionCoverages = BamUtils.filterByCoverage(regionCoverage, minCoverage, maxCoverage);
+
+            // Remove empty regions
+            for (RegionCoverage coverage : regionCoverages) {
+                if (coverage.getValues() != null && coverage.getValues().length > 0) {
+                    selectedRegions.add(coverage);
+                }
             }
         }
 
         watch.stop();
         return new DataResult<>(((int) watch.getTime()), Collections.emptyList(), selectedRegions.size(), selectedRegions,
                 selectedRegions.size());
-    }
-
-    @Override
-    public DataResult<RegionCoverage> getLowCoverageRegions(Path path, Region region, int maxCoverage) throws Exception {
-        FileUtils.checkFile(path);
-
-        StopWatch watch = StopWatch.createStarted();
-        RegionCoverage regionCoverage;
-        if (path.toFile().getName().endsWith(".bam")) {
-            BamManager bamManager = new BamManager(path);
-            regionCoverage = bamManager.coverage(region, 1);
-            bamManager.close();
-        } else {
-            regionCoverage = BamUtils.getCoverageFromBigWig(region, 1, path);
-        }
-        List<RegionCoverage> regionCoverages = BamUtils.filterByCoverage(regionCoverage, 0, maxCoverage);
-
-        watch.stop();
-        return new DataResult<>(((int) watch.getTime()), Collections.emptyList(), regionCoverages.size(), regionCoverages,
-                regionCoverages.size());
     }
 
     @Override

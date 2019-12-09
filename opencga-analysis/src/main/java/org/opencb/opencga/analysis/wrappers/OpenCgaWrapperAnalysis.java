@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,6 +28,8 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaAnalysis {
     public final String STDERR_FILENAME = "stderr.txt";
 
     private String study;
+
+    protected Map<String, URI> fileUriMap = new HashMap<>();
 
     public abstract String getDockerImageName();
 

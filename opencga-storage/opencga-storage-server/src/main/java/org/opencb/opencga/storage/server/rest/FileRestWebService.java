@@ -106,7 +106,7 @@ public class FileRestWebService extends GenericRestWebService {
 
                     DataResult queryResult;
                     if (histogram) {
-                        queryResult = dbAdaptor.coverage(Paths.get(path), new Region(region), interval);
+                        queryResult = dbAdaptor.coverageQuery(Paths.get(path), new Region(region), 0, interval, 1);
                     } else {
                         queryResult = dbAdaptor.get(Paths.get(path), new Query("region", region), options);
                     }

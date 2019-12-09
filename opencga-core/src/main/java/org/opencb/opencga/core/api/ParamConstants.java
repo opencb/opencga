@@ -39,7 +39,7 @@ public class ParamConstants {
     // ---------------------------------------------
 
     public static final String FILES_DESCRIPTION = "Comma separated list of file ids or names" + UP_TO_100;
-    public static final String FILE_ID_DESCRIPTION = "File id";
+    public static final String FILE_ID_DESCRIPTION = "File ID";
     public static final String FILE_NAME_DESCRIPTION = "File name";
     public static final String FILE_PATH_DESCRIPTION = "File path";
     public static final String FILE_TYPE_DESCRIPTION = "File type, either FILE or DIRECTORY";
@@ -118,6 +118,47 @@ public class ParamConstants {
 
     public static final String VARIANTS_EXPORT_DESCRIPTION = "Filter and export variants from the variant storage to a file";
     public static final String VARIANTS_QUERY_DESCRIPTION = "Filter and fetch variants from indexed VCF files in the variant storage";
+
+    // ---------------------------------------------
+
+    public static final String OUTPUT_DIRECTORY_DESCRIPTION = "Output directory";
+
+    public static final String REGION_DESCRIPTION = "Comma separated list of regions 'chr:start-end, e.g.: 2,3:63500-65000";
+    public static final String REGION_PARAM = "region";
+
+    public static final String GENE_DESCRIPTION = "Comma separated list of genes, e.g.: BCRA2,TP53";
+    public static final String GENE_PARAM = "gene";
+
+    // ---------------------------------------------
+    // alignment
+
+    public static final String ALIGNMENT_COVERAGE_DESCRIPTION = "Compute coverage for a given alignemnt file";
+    public static final String ALIGNMENT_COVERAGE_QUERY_DESCRIPTION = "Query the coverage of an alignment file for regions or genes";
+    public static final String ALIGNMENT_COVERAGE_LOG_2_RATIO_DESCRIPTION = "Compute Log2 coverage ratio from file #1 (somatic) and file #2 (germline)";
+    public static final String ALIGNMENT_STATS_DESCRIPTION = "Compute stats for a given alignment file";
+    public static final String ALIGNMENT_STATS_INFO_DESCRIPTION = "Show the stats for a given alignment file";
+    public static final String ALIGNMENT_STATS_QUERY_DESCRIPTION = "Fetch alignment files according to their stats";
+    // ---------------------------------------------
+    // alignment coverage
+
+    public static final String GENE_OFFSET_DESCRIPTION = "Gene offset to extend the gene region at up and downstream";
+    public static final String GENE_OFFSET_PARAM = "geneOffset";
+    public static final int GENE_OFFSET_DEFAULT = 500;
+    public static final String ONLY_EXONS_DESCRIPTION = "Take only exons regions when taking into account genes";
+    public static final String ONLY_EXONS_PARAM = "onlyExons";
+    public static final String EXON_OFFSET_DESCRIPTION = "Exon offset to extend the gene region at up and downstream";
+    public static final String EXON_OFFSET_PARAM = "exonOffset";
+    public static final int EXON_OFFSET_DEFAULT = 50;
+    public static final String COVERAGE_RANGE_DESCRIPTION = "Range of coverage values to be reported. Minimum and maximum values are separated by '-', e.g.: 20-40 (for coverage values greater or equal to 20 and less or equal to 40). A single value means to report coverage values less or equal to that value";
+    public static final String COVERAGE_RANGE_PARAM = "range";
+    public static final String COVERAGE_WINDOW_SIZE_DESCRIPTION = "Window size for the region coverage (if a coverage range is provided, window size must be 1)";
+    public static final String COVERAGE_WINDOW_SIZE_PARAM = "windowSize";
+    public static final int COVERAGE_WINDOW_SIZE_DEFAULT = 1;
+    public static final String FILE_ID_PARAM = "inputFile";
+    public static final String FILE_ID_1_DESCRIPTION = "Input file #1";
+    public static final String FILE_ID_1_PARAM = "inputFile1";
+    public static final String FILE_ID_2_DESCRIPTION = "Input file #2";
+    public static final String FILE_ID_2_PARAM = "inputFile2";
 
     // ---------------------------------------------
     // alignment stats query

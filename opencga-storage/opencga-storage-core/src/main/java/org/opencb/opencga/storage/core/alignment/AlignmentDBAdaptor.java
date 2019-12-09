@@ -119,11 +119,14 @@ public interface AlignmentDBAdaptor {
 //    DataResult<AlignmentGlobalStats> stats(Path path, Path workspace, Query query, QueryOptions options) throws Exception;
 //    DataResult<AlignmentGlobalStats> stats(Path path, Path workspace) throws Exception;
 
-    DataResult<RegionCoverage> coverage(Path path, Region region, int windowSize) throws Exception;
+//    DataResult<RegionCoverage> coverage(Path path, Region region, int windowSize) throws Exception;
+//
+//    DataResult<RegionCoverage> coverage(Path path, Region region, int minCoverage, int maxCoverage) throws Exception;
+//
+//    DataResult<RegionCoverage> getLowCoverageRegions(Path path, Region region, int minCoverage) throws Exception;
 
-    DataResult<RegionCoverage> coverage(Path path, Region region, int minCoverage, int maxCoverage) throws Exception;
-
-    DataResult<RegionCoverage> getLowCoverageRegions(Path path, Region region, int minCoverage) throws Exception;
+    DataResult<RegionCoverage> coverageQuery(Path path, Region region, int minCoverage, int maxCoverage, int windowSize)
+            throws Exception;
 
     DataResult<Long> getTotalCounts(Path path) throws AlignmentCoverageException, IOException;
 
