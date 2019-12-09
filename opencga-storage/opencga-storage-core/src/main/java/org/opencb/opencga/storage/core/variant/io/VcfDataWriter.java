@@ -31,6 +31,7 @@ public abstract class VcfDataWriter<T> implements DataWriter<T> {
     private final OutputStream outputStream;
     private VariantContextWriter variantContextWriter;
     private VariantContextConverter<T> converter;
+    private List<String> samples;
 
     protected VcfDataWriter(VariantMetadata metadata, List<String> annotations, OutputStream outputStream) {
         this.metadata = metadata;
@@ -73,11 +74,18 @@ public abstract class VcfDataWriter<T> implements DataWriter<T> {
         }
     }
 
+    public VcfDataWriter<T> setSamples(List<String> samples) {
+        this.samples = samples;
+        return this;
+    }
+
     @Override
     public boolean pre() {
         String study = metadata.getStudies().get(0).getId();
-        List<String> samples = metadata.getStudies().get(0).getIndividuals().stream()
-                .flatMap(individual -> individual.getSamples().stream()).map(Sample::getId).collect(Collectors.toList());
+        if (samples == null) {
+            samples = metadata.getStudies().get(0).getIndividuals().stream()
+                    .flatMap(individual -> individual.getSamples().stream()).map(Sample::getId).collect(Collectors.toList());
+        }
 
         VCFHeader vcfHeader = new VariantStudyMetadataToVCFHeaderConverter().convert(metadata.getStudies().get(0), annotations);
         // Warning: Calling to vcfHeader.getSequenceDictionary() may fail if any contig has null length

@@ -26,6 +26,11 @@ import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationA
 import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.file.FileDeleteAction;
+import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.operations.*;
+import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
+import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.*;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -38,9 +43,6 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.models.update.JobUpdateParams;
-import org.opencb.opencga.core.analysis.result.AnalysisResultManager;
-import org.opencb.opencga.core.analysis.result.Execution;
-import org.opencb.opencga.core.analysis.result.Status;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
@@ -49,6 +51,9 @@ import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.tools.result.ExecutorResultManager;
+import org.opencb.opencga.core.tools.result.Status;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -103,27 +108,27 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(SamtoolsWrapperAnalysis.ID, "alignment " + SamtoolsWrapperAnalysis.ID);
             put(DeeptoolsWrapperAnalysis.ID, "alignment " + DeeptoolsWrapperAnalysis.ID);
 
-            put("variant-index", "variant index");
-            put("variant-export", "variant export");
-            put("variant-stats", "variant stats-run");
+            put(VariantFileIndexerStorageOperation.ID, "variant index");
+            put(VariantExportStorageOperation.ID, "variant export");
+            put(VariantStatsAnalysis.ID, "variant stats-run");
             put("variant-stats-export", "variant stats-export");
-            put("variant-sample-stats", "variant sample-stats-run");
-            put("variant-cohort-stats", "variant cohort-stats-run");
-            put("gwas", "variant gwas-run");
+            put(SampleVariantStatsAnalysis.ID, "variant sample-stats-run");
+            put(CohortVariantStatsAnalysis.ID, "variant cohort-stats-run");
+            put(GwasAnalysis.ID, "variant gwas-run");
             put(PlinkWrapperAnalysis.ID, "variant " + PlinkWrapperAnalysis.ID + "-run");
             put(RvtestsWrapperAnalysis.ID, "variant " + RvtestsWrapperAnalysis.ID + "-run");
-            put("variant-delete", "variant delete");
-            put("variant-secondary-index-delete", "variant secondary-index-delete");
-            put("variant-annotation-delete", "variant annotation-delete");
+            put(VariantRemoveStorageOperation.ID, "variant delete");
+            put(VariantSecondaryIndexStorageOperation.ID, "variant secondary-index");
+            put(VariantSecondaryIndexSamplesDeleteStorageOperation.ID, "variant secondary-index-delete");
             put("variant-score-delete", "variant score-delete");
-            put("variant-secondary-index", "variant secondary-index");
             put("variant-score-index", "variant score-index");
-            put("variant-sample-index", "variant sample-index");
-            put("variant-family-index", "variant family-index");
-            put("variant-aggregate-family", "variant aggregate-family");
-            put("variant-aggregate", "variant aggregate");
-            put("variant-annotation-index", "variant annotation-index");
-            put("variant-annotation-save", "variant annotation-save");
+            put(VariantSampleIndexStorageOperation.ID, "variant sample-index");
+            put(VariantFamilyIndexStorageOperation.ID, "variant family-index");
+            put(VariantAggregateFamilyStorageOperation.ID, "variant aggregate-family");
+            put(VariantAggregateStorageOperation.ID, "variant aggregate");
+            put(VariantAnnotationStorageOperation.ID, "variant annotation-index");
+            put(VariantAnnotationDeleteStorageOperation.ID, "variant annotation-delete");
+            put(VariantAnnotationSaveStorageOperation.ID, "variant annotation-save");
 
             put(TeamInterpretationAnalysis.ID, "interpretation " + TeamInterpretationAnalysis.ID);
             put(TieringInterpretationAnalysis.ID, "interpretation " + TieringInterpretationAnalysis.ID);
@@ -219,7 +224,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         switch (jobStatus.getName()) {
             case Enums.ExecutionStatus.RUNNING:
-                Execution result = readAnalysisResult(job);
+                ExecutionResult result = readAnalysisResult(job);
                 if (result != null) {
                     // Update the result of the job
                     JobUpdateParams updateParams = new JobUpdateParams().setResult(result);
@@ -584,7 +589,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         // Check if analysis result file is there
         if (resultJson != null && Files.exists(resultJson)) {
-            Execution execution = readAnalysisResult(resultJson);
+            ExecutionResult execution = readAnalysisResult(resultJson);
             if (execution != null) {
                 return new Enums.ExecutionStatus(execution.getStatus().getName().name());
             } else {
@@ -624,8 +629,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             resultJson = stream
                     .filter(path -> {
                         String str = path.toString();
-                        return str.endsWith(AnalysisResultManager.FILE_EXTENSION)
-                                && !str.endsWith(AnalysisResultManager.SWAP_FILE_EXTENSION);
+                        return str.endsWith(ExecutorResultManager.FILE_EXTENSION)
+                                && !str.endsWith(ExecutorResultManager.SWAP_FILE_EXTENSION);
                     })
                     .findFirst()
                     .orElse(null);
@@ -635,7 +640,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return resultJson;
     }
 
-    private Execution readAnalysisResult(Job job) {
+    private ExecutionResult readAnalysisResult(Job job) {
         Path resultJson = getAnalysisResultPath(job);
         if (resultJson != null) {
             return readAnalysisResult(resultJson);
@@ -643,7 +648,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return null;
     }
 
-    private Execution readAnalysisResult(Path file) {
+    private ExecutionResult readAnalysisResult(Path file) {
         if (file == null) {
             return null;
         }
@@ -653,7 +658,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             attempts++;
             try {
                 try (InputStream is = new BufferedInputStream(new FileInputStream(file.toFile()))) {
-                    return JacksonUtils.getDefaultObjectMapper().readValue(is, Execution.class);
+                    return JacksonUtils.getDefaultObjectMapper().readValue(is, ExecutionResult.class);
                 }
             } catch (IOException e) {
                 if (attempts == maxAttempts) {
@@ -686,7 +691,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         logger.info("{} - Registering job results from '{}'", job.getId(), outDirUri);
 
-        Execution execution;
+        ExecutionResult execution;
         if (analysisResultPath != null) {
             execution = readAnalysisResult(analysisResultPath);
             if (execution != null) {
@@ -705,8 +710,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         List<File> registeredFiles;
         try {
-            Predicate<URI> uriPredicate = uri -> !uri.getPath().endsWith(AnalysisResultManager.FILE_EXTENSION)
-                    && !uri.getPath().endsWith(AnalysisResultManager.SWAP_FILE_EXTENSION)
+            Predicate<URI> uriPredicate = uri -> !uri.getPath().endsWith(ExecutorResultManager.FILE_EXTENSION)
+                    && !uri.getPath().endsWith(ExecutorResultManager.SWAP_FILE_EXTENSION)
                     && !uri.getPath().contains("/scratch_");
             registeredFiles = fileManager.syncUntrackedFiles(study, job.getOutDir().getPath(), uriPredicate, token).getResults();
         } catch (CatalogException e) {

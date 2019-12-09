@@ -36,9 +36,9 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
-import org.opencb.opencga.core.analysis.result.AnalysisResultManager;
+import org.opencb.opencga.core.tools.result.ExecutorResultManager;
 import org.opencb.opencga.core.config.DatabaseCredentials;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -221,11 +221,11 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     }
 
 
-    protected File transformFile(File inputFile, QueryOptions queryOptions) throws CatalogException, IOException, AnalysisException {
+    protected File transformFile(File inputFile, QueryOptions queryOptions) throws CatalogException, IOException, ToolException {
         return transformFile(inputFile, queryOptions, "data/index/");
     }
 
-    protected File transformFile(File inputFile, QueryOptions queryOptions, String outputId) throws CatalogException, IOException, AnalysisException {
+    protected File transformFile(File inputFile, QueryOptions queryOptions, String outputId) throws CatalogException, IOException, ToolException {
 
         try {
             catalogManager.getFileManager().createFolder(studyFqn, outputId, null, true, null, null, sessionId);
@@ -396,7 +396,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
             logger.info("Scanning files from {} to move to {}", tmpOutdirPath, outDir.getUri());
             // Avoid copy the job.status file!
             Predicate<URI> fileStatusFilter = uri -> !uri.getPath().endsWith(JOB_STATUS_FILE)
-                    && !uri.getPath().endsWith(AnalysisResultManager.FILE_EXTENSION)
+                    && !uri.getPath().endsWith(ExecutorResultManager.FILE_EXTENSION)
                     && !uri.getPath().endsWith(OUT_LOG_EXTENSION)
                     && !uri.getPath().endsWith(ERR_LOG_EXTENSION);
             files = fileScanner.scan(outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, false, true, fileStatusFilter,

@@ -19,14 +19,14 @@ package org.opencb.opencga.analysis.clinical.interpretation;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.annotations.Analysis;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.util.List;
 
-@Analysis(id = CancerTieringInterpretationAnalysis.ID, type = Analysis.AnalysisType.CLINICAL)
+@Tool(id = CancerTieringInterpretationAnalysis.ID, type = Tool.ToolType.CLINICAL)
 public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis {
 
     public final static String ID = "cancer-tiering-interpretation";
@@ -44,12 +44,12 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
         // Check study
         if (StringUtils.isEmpty(studyId)) {
             // Missing study
-            throw new AnalysisException("Missing study ID");
+            throw new ToolException("Missing study ID");
         }
 
         // Check clinical analysis
         if (StringUtils.isEmpty(clinicalAnalysisId)) {
-            throw new AnalysisException("Missing clinical analysis ID");
+            throw new ToolException("Missing clinical analysis ID");
         }
 
         // Get clinical analysis to ckeck proband sample ID, family ID
@@ -58,10 +58,10 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),
                     token);
         } catch (CatalogException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
         if (clinicalAnalysisQueryResult.getNumResults() != 1) {
-            throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyId);
+            throw new ToolException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyId);
         }
 
         clinicalAnalysis = clinicalAnalysisQueryResult.first();
@@ -71,9 +71,9 @@ public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis 
     }
 
     @Override
-    protected void run() throws AnalysisException {
+    protected void run() throws ToolException {
         step(() -> {
-            getAnalysisExecutor(CancerTieringInterpretationAnalysisExecutor.class)
+            getToolExecutor(CancerTieringInterpretationAnalysisExecutor.class)
                     .setStudyId(studyId)
                     .setClinicalAnalysisId(clinicalAnalysisId)
                     .setVariantIdsToDiscard(variantIdsToDiscard)

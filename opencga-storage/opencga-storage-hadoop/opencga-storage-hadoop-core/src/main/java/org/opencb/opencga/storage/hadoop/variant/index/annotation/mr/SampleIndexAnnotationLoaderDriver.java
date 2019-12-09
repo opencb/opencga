@@ -34,11 +34,13 @@ import java.util.*;
 public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriver {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SampleIndexAnnotationLoaderDriver.class);
+    public static final String OUTPUT = "output";
     public static final String SAMPLES = "samples";
 
     private List<Integer> sampleIds;
     private boolean hasGenotype;
     private String region;
+    private String outputTable;
 
     @Override
     protected Class<SampleIndexAnnotationLoaderMapper> getMapperClass() {
@@ -49,6 +51,7 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
     protected Map<String, String> getParams() {
         Map<String, String> params = new HashMap<>();
         params.put("--" + SAMPLES, "<samples>");
+        params.put("--" + OUTPUT, "<output-table>");
         params.put("--" + VariantQueryParam.REGION.key(), "<region>");
         return params;
     }
@@ -56,6 +59,11 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
     @Override
     protected void parseAndValidateParameters() throws IOException {
         super.parseAndValidateParameters();
+
+        outputTable = getParam(OUTPUT);
+        if (StringUtils.isEmpty(outputTable)) {
+            outputTable = getTableNameGenerator().getSampleIndexTableName(getStudyId());
+        }
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         String samples = getParam(SAMPLES);
@@ -82,9 +90,9 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
         hasGenotype = HBaseToVariantConverter.getFixedFormat(attributes).contains(VCFConstants.GENOTYPE_KEY);
 
         if (hasGenotype) {
-            LOGGER.info("Study with genotypes : " + HBaseToVariantConverter.getFixedFormat(attributes));
+            LOGGER.info("Study with genotypes. Study fixed format: " + HBaseToVariantConverter.getFixedFormat(attributes));
         } else {
-            LOGGER.info("Study without genotypes : " + HBaseToVariantConverter.getFixedFormat(attributes));
+            LOGGER.info("Study without genotypes. Study fixed format: " + HBaseToVariantConverter.getFixedFormat(attributes));
         }
 
         region = getParam(VariantQueryParam.REGION.key(), "");
@@ -113,7 +121,7 @@ public class SampleIndexAnnotationLoaderDriver extends AbstractVariantsTableDriv
         VariantAlignedInputFormat.setDelegatedInputFormat(job, TableInputFormat.class);
         VariantAlignedInputFormat.setBatchSize(job, SampleIndexSchema.BATCH_SIZE);
 
-        VariantMapReduceUtil.setOutputHBaseTable(job, getTableNameGenerator().getSampleIndexTableName(getStudyId()));
+        VariantMapReduceUtil.setOutputHBaseTable(job, outputTable);
 
         VariantMapReduceUtil.setNoneReduce(job);
 

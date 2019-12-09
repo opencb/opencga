@@ -2,9 +2,9 @@ package org.opencb.opencga.analysis.wrappers;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.io.File;
@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public abstract class OpenCgaWrapperAnalysis extends OpenCgaAnalysis {
+public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
 
     public final String DOCKER_IMAGE_VERSION_PARAM = "DOCKER_IMAGE_VERSION";
     public final static String DOCKER_INPUT_PATH = "/data/input";
@@ -30,7 +30,7 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaAnalysis {
 
     public abstract String getDockerImageName();
 
-    protected String getCommandLine() throws AnalysisException {
+    protected String getCommandLine() throws ToolException {
         return getCommandLine("--");
     }
 
@@ -47,7 +47,7 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaAnalysis {
         return sb.toString();
     }
 
-    protected void updateSrcTargetMap(String filename, StringBuilder sb, Map<String, String> srcTargetMap) throws AnalysisException {
+    protected void updateSrcTargetMap(String filename, StringBuilder sb, Map<String, String> srcTargetMap) throws ToolException {
         if (StringUtils.isEmpty(filename)) {
             // Skip
             return;
@@ -58,10 +58,10 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaAnalysis {
             fileResult = catalogManager.getFileManager().get(getStudy(), filename,
                     QueryOptions.empty(), token);
         } catch (CatalogException e) {
-            throw new AnalysisException("Error accessing file '" + filename + "' of the study " + getStudy() + "'", e);
+            throw new ToolException("Error accessing file '" + filename + "' of the study " + getStudy() + "'", e);
         }
         if (fileResult.getNumResults() <= 0) {
-            throw new AnalysisException("File '" + filename + "' not found in study '" + getStudy() + "'");
+            throw new ToolException("File '" + filename + "' not found in study '" + getStudy() + "'");
         }
         URI uri = fileResult.getResults().get(0).getUri();
         logger.info("filename = " + filename + " ---> uri = " + uri + " ---> path = " + uri.getPath());
@@ -76,7 +76,7 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaAnalysis {
     }
 
     protected void updateFileMaps(String filename, StringBuilder sb, Map<String, URI> fileUriMap, Map<String, String> srcTargetMap)
-            throws AnalysisException {
+            throws ToolException {
         if (StringUtils.isEmpty(filename)) {
             // Skip
             return;
@@ -87,10 +87,10 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaAnalysis {
             fileResult = catalogManager.getFileManager().get(getStudy(), filename,
                     QueryOptions.empty(), token);
         } catch (CatalogException e) {
-            throw new AnalysisException("Error accessing file '" + filename + "' of the study " + getStudy() + "'", e);
+            throw new ToolException("Error accessing file '" + filename + "' of the study " + getStudy() + "'", e);
         }
         if (fileResult.getNumResults() <= 0) {
-            throw new AnalysisException("File '" + filename + "' not found in study '" + getStudy() + "'");
+            throw new ToolException("File '" + filename + "' not found in study '" + getStudy() + "'");
         }
         URI uri = fileResult.getResults().get(0).getUri();
         logger.info("filename = " + filename + " ---> uri = " + uri + " ---> path = " + uri.getPath());

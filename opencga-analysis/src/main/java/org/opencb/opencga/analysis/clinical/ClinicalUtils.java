@@ -17,7 +17,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.Individual;
@@ -39,21 +39,21 @@ public class ClinicalUtils {
     public static final int LOW_COVERAGE_DEFAULT = 20;
     public static final int DEFAULT_COVERAGE_THRESHOLD = 20;
 
-    public static Individual getProband(ClinicalAnalysis clinicalAnalysis) throws AnalysisException {
+    public static Individual getProband(ClinicalAnalysis clinicalAnalysis) throws ToolException {
         Individual proband = clinicalAnalysis.getProband();
 
         String clinicalAnalysisId = clinicalAnalysis.getId();
         // Sanity checks
         if (proband == null) {
-            throw new AnalysisException("Missing proband in clinical analysis " + clinicalAnalysisId);
+            throw new ToolException("Missing proband in clinical analysis " + clinicalAnalysisId);
         }
 
         if (ListUtils.isEmpty(proband.getSamples())) {
-            throw new AnalysisException("Missing samples in proband " + proband.getId() + " in clinical analysis " + clinicalAnalysisId);
+            throw new ToolException("Missing samples in proband " + proband.getId() + " in clinical analysis " + clinicalAnalysisId);
         }
 
         if (proband.getSamples().size() > 1) {
-            throw new AnalysisException("Found more than one sample for proband " + proband.getId() + " in clinical analysis "
+            throw new ToolException("Found more than one sample for proband " + proband.getId() + " in clinical analysis "
                     + clinicalAnalysisId);
         }
 
@@ -80,11 +80,11 @@ public class ClinicalUtils {
         return proband;
     }
 
-    public List<String> getSampleNames(ClinicalAnalysis clinicalAnalysis) throws AnalysisException {
+    public List<String> getSampleNames(ClinicalAnalysis clinicalAnalysis) throws ToolException {
         return getSampleNames(clinicalAnalysis, null);
     }
 
-    public static List<String> getSampleNames(ClinicalAnalysis clinicalAnalysis, Individual proband) throws AnalysisException {
+    public static List<String> getSampleNames(ClinicalAnalysis clinicalAnalysis, Individual proband) throws ToolException {
         List<String> sampleList = new ArrayList<>();
         // Sanity check
         if (clinicalAnalysis != null && clinicalAnalysis.getFamily() != null
@@ -97,7 +97,7 @@ public class ClinicalUtils {
                     continue;
                 }
                 if (member.getSamples().size() > 1) {
-                    throw new AnalysisException("More than one sample found for member " + member.getId());
+                    throw new ToolException("More than one sample found for member " + member.getId());
                 }
                 sampleList.add(member.getSamples().get(0).getId());
                 individualMap.put(member.getId(), member);
@@ -173,7 +173,7 @@ public class ClinicalUtils {
         return geneIds;
     }
 
-    public static Map<String, String> getSampleMap(ClinicalAnalysis clinicalAnalysis, Individual proband) throws AnalysisException {
+    public static Map<String, String> getSampleMap(ClinicalAnalysis clinicalAnalysis, Individual proband) throws ToolException {
         Map<String, String> individualSampleMap = new HashMap<>();
         // Sanity check
         if (clinicalAnalysis != null && clinicalAnalysis.getFamily() != null
@@ -186,7 +186,7 @@ public class ClinicalUtils {
                     continue;
                 }
                 if (member.getSamples().size() > 1) {
-                    throw new AnalysisException("More than one sample found for member " + member.getId());
+                    throw new ToolException("More than one sample found for member " + member.getId());
                 }
                 individualSampleMap.put(member.getId(), member.getSamples().get(0).getId());
                 individualMap.put(member.getId(), member);
@@ -251,7 +251,7 @@ public class ClinicalUtils {
         return creator.groupCHVariants(reportedVariantMap);
     }
 
-    public static List<ReportedVariant> readReportedVariants(Path path) throws AnalysisException {
+    public static List<ReportedVariant> readReportedVariants(Path path) throws ToolException {
         List<ReportedVariant> reportedVariants = new ArrayList<>();
         if (path != null || path.toFile().exists()) {
             try {
@@ -261,13 +261,13 @@ public class ClinicalUtils {
                     reportedVariants.add(objReader.readValue(lineIterator.next()));
                 }
             } catch (IOException e) {
-                throw new AnalysisException("Error reading reported variants from file: " + path, e);
+                throw new ToolException("Error reading reported variants from file: " + path, e);
             }
         }
         return reportedVariants;
     }
 
-    public static void writeReportedVariants(List<ReportedVariant> reportedVariants, Path path) throws AnalysisException {
+    public static void writeReportedVariants(List<ReportedVariant> reportedVariants, Path path) throws ToolException {
         // Write primary findings
         try {
             PrintWriter pw = new PrintWriter(path.toFile());
@@ -279,17 +279,17 @@ public class ClinicalUtils {
             }
             pw.close();
         } catch (FileNotFoundException | JsonProcessingException e) {
-            throw new AnalysisException("Error writing reported variants to file: " + path, e);
+            throw new ToolException("Error writing reported variants to file: " + path, e);
         }
     }
 
-    public static Interpretation readInterpretation(Path path) throws AnalysisException {
+    public static Interpretation readInterpretation(Path path) throws ToolException {
         if (path != null || path.toFile().exists()) {
             try {
                 ObjectReader objReader = JacksonUtils.getDefaultObjectMapper().readerFor(Interpretation.class);
                 return objReader.readValue(path.toFile());
             } catch (IOException e) {
-                throw new AnalysisException("Error reading interpretation from file: " + path, e);
+                throw new ToolException("Error reading interpretation from file: " + path, e);
             }
         }
         return null;

@@ -14,17 +14,26 @@ import org.opencb.opencga.storage.hadoop.variant.index.family.GenotypeCodec;
 public final class IndexUtils {
 
     public static final byte EMPTY_MASK = 0;
-    private static final double DELTA = 0.000001;
+    public static final double DELTA = 0.0000001;
+    public static final int MAX = 500000;
 
     private IndexUtils() {
     }
 
     public static String byteToString(byte b) {
-        String str = Integer.toBinaryString(b);
-        if (str.length() > 8) {
-            str = str.substring(str.length() - 8);
+        return binaryToString(b, Byte.SIZE);
+    }
+
+    public static String shortToString(short s) {
+        return binaryToString(s, Short.SIZE);
+    }
+
+    protected static String binaryToString(int number, int i) {
+        String str = Integer.toBinaryString(number);
+        if (str.length() > i) {
+            str = str.substring(str.length() - i);
         }
-        return StringUtils.leftPad(str, 8, '0');
+        return StringUtils.leftPad(str, i, '0');
     }
 
     public static String maskToString(byte[] maskAndIndex) {
@@ -72,6 +81,18 @@ public final class IndexUtils {
 
     public static boolean testIndex(byte indexValue, byte indexMask, byte indexFilter) {
         return (indexValue & indexMask) == indexFilter;
+    }
+
+    public static boolean testIndexAny(byte indexValue, byte indexMask) {
+        return (indexValue & indexMask) != 0;
+    }
+
+    public static boolean testIndexAny(short indexValue, short indexMask) {
+        return (indexValue & indexMask) != 0;
+    }
+
+    public static boolean testIndexAny(byte[] index, int indexPosition, short indexMask) {
+        return (Bytes.toShort(index, indexPosition * Short.BYTES, Short.BYTES) & indexMask) != 0;
     }
 
     /**
@@ -141,6 +162,36 @@ public final class IndexUtils {
         }
     }
 
+    public static double[] queryRange(String op, double value) {
+        return queryRange(op, value, Double.MIN_VALUE, Double.MAX_VALUE);
+    }
+
+    public static double[] queryRange(String op, double value, double min, double max) {
+        switch (op) {
+            case "":
+            case "=":
+            case "==":
+                return new double[]{value, value + DELTA};
+            case "<=":
+            case "<<=":
+                // Range is with exclusive end. For inclusive "<=" operator, need to add a DELTA to the value
+                value += DELTA;
+            case "<":
+            case "<<":
+                return new double[]{min, value};
+
+            case ">":
+            case ">>":
+                // Range is with inclusive start. For exclusive ">" operator, need to add a DELTA to the value
+                value += DELTA;
+            case ">=":
+            case ">>=":
+                return new double[]{value, max};
+            default:
+                throw new VariantQueryException("Unknown query operator" + op);
+        }
+    }
+
     public static byte[] countPerBitToBytes(int[] counts) {
         byte[] bytes = new byte[8 * Bytes.SIZEOF_INT];
         int offset = 0;
@@ -151,8 +202,11 @@ public final class IndexUtils {
     }
 
     public static int[] countPerBitToObject(byte[] bytes) {
+        return countPerBitToObject(bytes, 0, bytes.length);
+    }
+
+    public static int[] countPerBitToObject(byte[] bytes, int offset, int length) {
         int[] counts = new int[8];
-        int offset = 0;
         for (int i = 0; i < counts.length; i++) {
             counts[i] = Bytes.toInt(bytes, offset);
             offset += Bytes.SIZEOF_INT;
@@ -174,4 +228,44 @@ public final class IndexUtils {
         }
         return counts;
     }
+
+    public static byte[] getRangeCodes(double[] queryRange, double[] thresholds) {
+        return new byte[]{getRangeCode(queryRange[0], thresholds), getRangeCodeExclusive(queryRange[1], thresholds)};
+    }
+
+    public static byte getRangeCodeExclusive(double queryValue, double[] thresholds) {
+        return (byte) (1 + getRangeCode(queryValue - DELTA, thresholds));
+    }
+
+    /**
+     * Gets the range code given a value and a list of ranges.
+     * Each point in the array indicates a range threshold.
+     *
+     * range 1 = ( -inf , th[0] )       ~   value < th[0]
+     * range 2 = [ th[0] , th[1] )      ~   value >= th[0] && value < th[1]
+     * range n = [ th[n-1] , +inf )     ~   value >= th[n-1]
+     *
+     * @param value     Value to convert
+     * @param thresholds    List of thresholds
+     * @return range code
+     */
+    public static byte getRangeCode(double value, double[] thresholds) {
+        byte code = (byte) (thresholds.length);
+        for (byte i = 0; i < thresholds.length; i++) {
+            if (lessThan(value, thresholds[i])) {
+                code = i;
+                break;
+            }
+        }
+        return code;
+    }
+
+    public static boolean lessThan(double a, double b) {
+        return a < b && !equalsTo(a, b);
+    }
+
+    public static boolean equalsTo(double a, double b) {
+        return Math.abs(a - b) < (DELTA / 10);
+    }
+
 }

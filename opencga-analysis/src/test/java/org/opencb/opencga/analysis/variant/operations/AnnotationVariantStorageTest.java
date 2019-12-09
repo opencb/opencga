@@ -24,11 +24,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.core.analysis.result.Execution;
-import org.opencb.opencga.core.analysis.result.AnalysisResultManager;
-import org.opencb.opencga.core.analysis.result.FileResult;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.tools.result.ExecutorResultManager;
+import org.opencb.opencga.core.tools.result.FileResult;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -125,7 +125,7 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
         config.append(StorageOperation.KEEP_INTERMEDIATE_FILES, true);
         variantManager.annotate(studyFqn, null, outdir, config, sessionId);
 
-        String[] files = Paths.get(UriUtils.createUri(outdir)).toFile().list((dir, name) -> !name.contains(AnalysisResultManager.FILE_EXTENSION));
+        String[] files = Paths.get(UriUtils.createUri(outdir)).toFile().list((dir, name) -> !name.contains(ExecutorResultManager.FILE_EXTENSION));
         assertEquals(1, files.length);
         config = new QueryOptions(VariantAnnotationManager.LOAD_FILE, Paths.get(outdir, files[0]).toAbsolutePath().toString());
 
@@ -134,13 +134,13 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
         checkAnnotation(v -> true);
     }
 
-    Execution annotate(QueryOptions config) throws AnalysisException, CatalogException, IOException {
+    ExecutionResult annotate(QueryOptions config) throws ToolException, CatalogException, IOException {
         return annotate(config, null);
     }
 
-    Execution annotate(QueryOptions config, String region) throws AnalysisException, CatalogException, IOException {
+    ExecutionResult annotate(QueryOptions config, String region) throws ToolException, CatalogException, IOException {
         String tmpDir = opencga.createTmpOutdir(studyId, "_ANNOT_", sessionId);
-        Execution result = variantManager.annotate(studyFqn, region, tmpDir, config, sessionId);
+        ExecutionResult result = variantManager.annotate(studyFqn, region, tmpDir, config, sessionId);
 
         if (config.getBoolean(StorageOperation.KEEP_INTERMEDIATE_FILES)) {
             String study = config.getString("study");

@@ -1,9 +1,12 @@
 package org.opencb.opencga.analysis.variant.operations;
 
-import org.opencb.opencga.core.annotations.Analysis;
+import org.opencb.opencga.core.annotations.Tool;
 
-@Analysis(id = "variant-secondary-index-samples-delete", type = Analysis.AnalysisType.VARIANT)
+@Tool(id = VariantSecondaryIndexSamplesDeleteStorageOperation.ID, type = Tool.ToolType.VARIANT)
 public class VariantSecondaryIndexSamplesDeleteStorageOperation extends StorageOperation {
+
+    public static final String ID = "variant-secondary-index-samples-delete";
+
     @Override
     protected void run() throws Exception {
 

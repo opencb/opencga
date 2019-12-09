@@ -70,6 +70,7 @@ public class VariantQueryResult<T> extends DataResult<T> {
                 dataResult.getNumDeleted(),
                 dataResult.getAttributes());
         setResults(dataResult.getResults());
+        setNumResults(dataResult.getNumResults());
     }
 
     public VariantQueryResult(DataResult<T> queryResult, Map<String, List<String>> samples) {

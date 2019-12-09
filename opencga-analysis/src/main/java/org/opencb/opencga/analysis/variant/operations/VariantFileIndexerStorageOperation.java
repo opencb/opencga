@@ -32,10 +32,10 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.update.FileUpdateParams;
-import org.opencb.opencga.core.analysis.result.FileResult;
-import org.opencb.opencga.core.annotations.Analysis;
+import org.opencb.opencga.core.tools.result.FileResult;
+import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -52,7 +52,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.ID;
 import static org.opencb.opencga.catalog.db.api.FileDBAdaptor.QueryParams.UID;
 import static org.opencb.opencga.catalog.db.api.ProjectDBAdaptor.QueryParams.CURRENT_RELEASE;
 import static org.opencb.opencga.catalog.db.api.ProjectDBAdaptor.QueryParams.ORGANISM;
@@ -61,7 +60,7 @@ import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_S
 /**
  * Created by imedina on 17/08/16.
  */
-@Analysis(id = "variant-index", type = Analysis.AnalysisType.VARIANT)
+@Tool(id = VariantFileIndexerStorageOperation.ID, type = Tool.ToolType.VARIANT)
 public class VariantFileIndexerStorageOperation extends StorageOperation {
 
     public static final String DEFAULT_COHORT_DESCRIPTION = "Default cohort with almost all indexed samples";
@@ -76,6 +75,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
     public static final String LOAD = "load";
     // FIXME : Needed?
     public static final String TRANSFORMED_FILES = "transformedFiles";
+    public static final String ID = "variant-index";
 
 
     private String studyFqn;
@@ -123,7 +123,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), outDir.toUri().toString());
             DataResult<File> count = catalogManager.getFileManager().count(study, query, token);
             if (count.getNumMatches() > 0) {
-                throw new AnalysisException("The output directory is pointing to one in catalog. Please, choose other out of catalog "
+                throw new ToolException("The output directory is pointing to one in catalog. Please, choose other out of catalog "
                         + "boundaries.");
             }
         } else {
@@ -743,7 +743,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 long fileUid = relatedFile.getFile().getUid();
                 // FIXME!!!
                 vcfId = catalogManager.getFileManager().search(study, new Query(UID.key(), fileUid),
-                        new QueryOptions(QueryOptions.INCLUDE, ID.key()), sessionId).first().getId();
+                        new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.ID.key()), sessionId).first().getId();
                 break;
             }
         }
