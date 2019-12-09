@@ -2,7 +2,6 @@ package org.opencb.opencga.core.rest;
 
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.util.ArrayList;
@@ -22,15 +21,6 @@ public class RestResponse<T> {
 
     public RestResponse(ObjectMap params, List<OpenCGAResult<T>> responses) {
         this("", -1, new ArrayList<>(), params, responses);
-    }
-
-    public RestResponse(String apiVersion, int time, List<String> warnings, Error error, ObjectMap params,
-                        List<OpenCGAResult<T>> responses) {
-        this.apiVersion = apiVersion;
-        this.time = time;
-        this.events = new ArrayList<>();
-        this.params = params;
-        this.responses = responses;
     }
 
     public RestResponse(String apiVersion, int time, List<Event> events, ObjectMap params, List<OpenCGAResult<T>> responses) {

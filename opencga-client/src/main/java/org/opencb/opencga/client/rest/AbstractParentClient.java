@@ -26,9 +26,9 @@ import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
 import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.rest.RestResponse;
@@ -305,8 +305,8 @@ public abstract class AbstractParentClient {
             } catch (JsonParseException e) {
                 if (json.startsWith("<html>")) {
                     if (json.contains("504 Gateway Time-out")) {
-                        return new RestResponse<>("", 0, Collections.emptyList(), new Error(504, "Gateway time-out",
-                                "The server didn't respond in time."), null, Collections.emptyList());
+                        return new RestResponse<>("", 0, Collections.singletonList(new Event(Event.Type.ERROR, 504, "Gateway time-out",
+                                "The server didn't respond in time.")), null, Collections.emptyList());
                     }
                 }
                 throw e;

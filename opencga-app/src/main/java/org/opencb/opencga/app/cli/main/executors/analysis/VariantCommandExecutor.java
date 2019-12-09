@@ -27,6 +27,7 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -364,8 +365,14 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             if (queryCommandOptions.numericOptions.count) {
                 ServiceTypesModel.LongResponse countResponse = variantServiceBlockingStub.count(request);
                 ServiceTypesModel.Response response = countResponse.getResponse();
-                queryResponse = new RestResponse<>("", 0, Collections.singletonList(response.getWarning()),
-                        new Error(-1, "error", response.getError()), new ObjectMap(params), Collections.singletonList(
+                List<Event> events = new ArrayList<>();
+                if (StringUtils.isNotEmpty(response.getWarning())) {
+                    events.add(new Event(Event.Type.WARNING, response.getWarning()));
+                }
+                if (StringUtils.isNotEmpty(response.getError())) {
+                    events.add(new Event(Event.Type.ERROR, response.getError()));
+                }
+                queryResponse = new RestResponse<>("", 0, events, new ObjectMap(params), Collections.singletonList(
                                 new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(countResponse.getValue()), 1)));
                 return queryResponse;
             } else if (queryCommandOptions.genericVariantQueryOptions.samplesMetadata || StringUtils.isNoneEmpty(queryCommandOptions.genericVariantQueryOptions.groupBy) || queryCommandOptions.genericVariantQueryOptions.histogram) {
