@@ -25,7 +25,10 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
@@ -45,6 +48,7 @@ import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.rest.RestResponse;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -58,7 +62,6 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
@@ -69,7 +72,6 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
 import static org.opencb.opencga.analysis.variant.CatalogUtils.parseSampleAnnotationQuery;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
@@ -139,7 +141,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Deprecated
     @GET
     @Path("/index")
-    @ApiOperation(value = DEPRECATED + "Use via POST", response = DataResponse.class, hidden = true)
+    @ApiOperation(value = DEPRECATED + "Use via POST", response = RestResponse.class, hidden = true)
     public Response index() {
         return createErrorResponse(new UnsupportedOperationException("Deprecated endpoint. Please, use via POST"));
     }

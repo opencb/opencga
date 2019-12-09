@@ -17,13 +17,13 @@
 package org.opencb.opencga.client.rest.catalog;
 
 import org.codehaus.jackson.map.ObjectMapper;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -42,7 +42,7 @@ public class UserClient extends CatalogClient<User> {
         this.clazz = User.class;
     }
 
-    public DataResponse<User> create(String user, String password, ObjectMap params) throws IOException {
+    public RestResponse<User> create(String user, String password, ObjectMap params) throws IOException {
         params = addParamsToObjectMap(params, "id", user, "password", password);
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(params);
@@ -50,8 +50,8 @@ public class UserClient extends CatalogClient<User> {
         return execute(USERS_URL, "create", p, POST, User.class);
     }
 
-    public DataResponse<ObjectMap> login(String user, String password) {
-        DataResponse<ObjectMap> response = null;
+    public RestResponse<ObjectMap> login(String user, String password) {
+        RestResponse<ObjectMap> response = null;
         ObjectMap p = new ObjectMap("password", password);
         ObjectMapper mapper = new ObjectMapper();
         try {
@@ -64,8 +64,8 @@ public class UserClient extends CatalogClient<User> {
         return response;
     }
 
-    public DataResponse<ObjectMap> refresh() throws ClientException {
-        DataResponse<ObjectMap> response;
+    public RestResponse<ObjectMap> refresh() throws ClientException {
+        RestResponse<ObjectMap> response;
         ObjectMap p = new ObjectMap();
         ObjectMapper mapper = new ObjectMapper();
         try {
@@ -78,16 +78,16 @@ public class UserClient extends CatalogClient<User> {
         return response;
     }
 
-    public DataResponse<User> get(QueryOptions options) throws IOException, ClientException {
+    public RestResponse<User> get(QueryOptions options) throws IOException, ClientException {
         return super.get(getUserId(options), options);
     }
 
-    public DataResponse<Project> getProjects(QueryOptions options) throws IOException, ClientException {
+    public RestResponse<Project> getProjects(QueryOptions options) throws IOException, ClientException {
         String userId = getUserId(options);
         return execute(USERS_URL, userId, "projects", options, GET, Project.class);
     }
 
-    public DataResponse<User> changePassword(String currentPassword, String newPassword, ObjectMap params)
+    public RestResponse<User> changePassword(String currentPassword, String newPassword, ObjectMap params)
             throws ClientException, IOException {
         ObjectMapper mapper = new ObjectMapper();
         params = addParamsToObjectMap(params, "password", currentPassword, "newPassword", newPassword);
@@ -96,7 +96,7 @@ public class UserClient extends CatalogClient<User> {
         return execute(USERS_URL, getUserId(params), "password", objectMap, POST, User.class);
     }
 
-    public DataResponse<User> resetPassword(ObjectMap params) throws ClientException, IOException {
+    public RestResponse<User> resetPassword(ObjectMap params) throws ClientException, IOException {
         return execute(USERS_URL, getUserId(params), "change-password", params, GET, User.class);
     }
 }

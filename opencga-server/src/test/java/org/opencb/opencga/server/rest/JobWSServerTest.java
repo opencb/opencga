@@ -18,22 +18,9 @@ package org.opencb.opencga.server.rest;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
-import org.opencb.commons.datastore.core.DataResponse;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.managers.CatalogManagerTest;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Job;
 
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
-import java.io.IOException;
-import java.util.Collections;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * Created by jacobo on 23/06/15.
@@ -87,7 +74,7 @@ public class JobWSServerTest {
 //                .request().post(Entity.json(new JobWSServer.InputJob(jobName, jobName, description, commandLine, Collections.emptyMap(),
 //                        new Job.JobStatus(Job.JobStatus.DONE))), String.class);
 //
-//        DataResponse<Job> response = WSServerTestUtils.parseResult(json, Job.class);
+//        RestResponse<Job> response = WSServerTestUtils.parseResult(json, Job.class);
 //        Job job = response.getResponses().get(0).first();
 //
 //        assertEquals(jobName, job.getName());

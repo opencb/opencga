@@ -24,7 +24,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.commons.datastore.core.DataResponse;
+import org.opencb.opencga.core.rest.RestResponse;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
@@ -58,7 +58,7 @@ public class YamlOutputWriter extends AbstractOutputWriter {
     }
 
     @Override
-    public void print(DataResponse queryResponse) {
+    public void print(RestResponse queryResponse) {
         if (checkErrors(queryResponse)) {
             return;
         }

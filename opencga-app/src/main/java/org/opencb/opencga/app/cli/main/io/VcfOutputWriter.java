@@ -8,7 +8,7 @@ import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
-import org.opencb.commons.datastore.core.DataResponse;
+import org.opencb.opencga.core.rest.RestResponse;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.io.VcfDataWriter;
 
@@ -35,7 +35,7 @@ public class VcfOutputWriter extends AbstractOutputWriter {
     }
 
     @Override
-    public void print(DataResponse queryResponse) {
+    public void print(RestResponse queryResponse) {
         if (checkErrors(queryResponse)) {
             return;
         }

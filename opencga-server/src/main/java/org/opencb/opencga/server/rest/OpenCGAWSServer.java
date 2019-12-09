@@ -32,7 +32,6 @@ import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.variant.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
@@ -47,6 +46,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.rest.RestResponse;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.server.rest.analysis.RestBodyParams;
@@ -82,7 +82,7 @@ public class OpenCGAWSServer {
 
     @DefaultValue("v1")
     @PathParam("apiVersion")
-    @ApiParam(name = "apiVersion", value = "OpenCGA major version", allowableValues = "v1", defaultValue = "v1")
+    @ApiParam(name = "apiVersion", value = "OpenCGA major version", allowableValues = "v2", defaultValue = "v2")
     protected String apiVersion;
     protected String exclude;
     protected String include;
@@ -170,7 +170,9 @@ public class OpenCGAWSServer {
             this.params.put(key, uriInfo.getQueryParameters().getFirst(key));
         }
         for (String key : uriInfo.getPathParameters().keySet()) {
-            this.params.put(key, uriInfo.getPathParameters().getFirst(key));
+            if (!"apiVersion".equals(key)) {
+                this.params.put(key, uriInfo.getPathParameters().getFirst(key));
+            }
         }
 
         // This is only executed the first time to initialize configuration and some variables
@@ -457,14 +459,14 @@ public class OpenCGAWSServer {
         logger.error("Catch error: " + e.getMessage(), e);
 
         // Now we prepare the response to client
-        DataResponse<ObjectMap> queryResponse = new DataResponse<>();
+        RestResponse<ObjectMap> queryResponse = new RestResponse<>();
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
         queryResponse.setApiVersion(apiVersion);
         queryResponse.setParams(params);
         if (StringUtils.isEmpty(e.getMessage())) {
-            queryResponse.setError(new Error(-1, "error", e.toString()));
+            addErrorEvent(queryResponse, e.toString());
         } else {
-            queryResponse.setError(new Error(-1, "error", e.getMessage()));
+            addErrorEvent(queryResponse, e.getMessage());
         }
 
         OpenCGAResult<ObjectMap> result = OpenCGAResult.empty();
@@ -482,11 +484,11 @@ public class OpenCGAWSServer {
         return response;
     }
 
-    protected Response createErrorResponse(String errorMessage, DataResult result) {
-        DataResponse<ObjectMap> dataResponse = new DataResponse<>();
+    protected Response createErrorResponse(String errorMessage, OpenCGAResult result) {
+        RestResponse<ObjectMap> dataResponse = new RestResponse<>();
         dataResponse.setApiVersion(apiVersion);
         dataResponse.setParams(params);
-        dataResponse.setError(new Error(-1, "error", errorMessage));
+        addErrorEvent(dataResponse, errorMessage);
         dataResponse.setResponses(Arrays.asList(result));
 
         Response response = Response.fromResponse(createJsonResponse(dataResponse)).status(Response.Status.INTERNAL_SERVER_ERROR).build();
@@ -507,23 +509,31 @@ public class OpenCGAWSServer {
         return buildResponse(Response.ok("{\"error\":\"Error parsing json error\"}", MediaType.APPLICATION_JSON_TYPE));
     }
 
+    private <T> void addErrorEvent(RestResponse<T> response, String message) {
+        if (response.getEvents() == null) {
+            response.setEvents(new ArrayList<>());
+        }
+
+        response.getEvents().add(new Event(Event.Type.ERROR, message));
+    }
+
     // TODO: Change signature
-    //    protected <T> Response createOkResponse(DataResult<T> result)
-    //    protected <T> Response createOkResponse(List<DataResult<T>> results)
+    //    protected <T> Response createOkResponse(OpenCGAResult<T> result)
+    //    protected <T> Response createOkResponse(List<OpenCGAResult<T>> results)
     protected Response createOkResponse(Object obj) {
-        DataResponse queryResponse = new DataResponse();
+        RestResponse queryResponse = new RestResponse();
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
         queryResponse.setApiVersion(apiVersion);
         queryResponse.setParams(params);
 
-        // Guarantee that the DataResponse object contains a list of results
+        // Guarantee that the RestResponse object contains a list of results
         List list;
         if (obj instanceof List) {
             list = (List) obj;
         } else {
             list = new ArrayList();
             if (!(obj instanceof DataResult)) {
-                list.add(new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList(obj), 1));
+                list.add(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(obj), 1));
             } else {
                 list.add(obj);
             }
@@ -563,7 +573,7 @@ public class OpenCGAWSServer {
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             logger.error("Error parsing queryResponse object");
-            return createErrorResponse("", "Error parsing DataResponse object:\n" + Arrays.toString(e.getStackTrace()));
+            return createErrorResponse("", "Error parsing RestResponse object:\n" + Arrays.toString(e.getStackTrace()));
         }
 
         return response;
@@ -582,7 +592,7 @@ public class OpenCGAWSServer {
         logResponse(statusInfo, null);
     }
 
-    private void logResponse(Response.StatusType statusInfo, DataResponse<?> queryResponse) {
+    private void logResponse(Response.StatusType statusInfo, RestResponse<?> queryResponse) {
         StringBuilder sb = new StringBuilder();
         try {
             if (statusInfo.getFamily().equals(Response.Status.Family.SUCCESSFUL)) {
@@ -597,7 +607,7 @@ public class OpenCGAWSServer {
             } else {
                 sb.append(", ").append(queryResponse.getTime()).append("ms");
                 if (queryResponse.getResponses().size() == 1) {
-                    DataResult<?> result = queryResponse.getResponses().get(0);
+                    OpenCGAResult<?> result = queryResponse.getResponses().get(0);
                     if (result != null) {
                         sb.append(", num: ").append(result.getNumResults());
                         if (result.getNumTotalResults() >= 0) {
@@ -614,13 +624,13 @@ public class OpenCGAWSServer {
         }
     }
 
-    protected Response createJsonResponse(DataResponse queryResponse) {
+    protected Response createJsonResponse(RestResponse queryResponse) {
         try {
             return buildResponse(Response.ok(jsonObjectWriter.writeValueAsString(queryResponse), MediaType.APPLICATION_JSON_TYPE));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             logger.error("Error parsing queryResponse object");
-            return createErrorResponse("", "Error parsing DataResponse object:\n" + Arrays.toString(e.getStackTrace()));
+            return createErrorResponse("", "Error parsing RestResponse object:\n" + Arrays.toString(e.getStackTrace()));
         }
     }
 
