@@ -380,6 +380,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         };
         filterStringParams(parameters, jobParameters, acceptedParams);
 
+        String[] acceptedBooleanParams = {QueryParams.VISITED.key()};
+        filterBooleanParams(parameters, jobParameters, acceptedBooleanParams);
+
         String[] acceptedStringListParams = {QueryParams.TAGS.key()};
         filterStringListParams(parameters, jobParameters, acceptedStringListParams);
 

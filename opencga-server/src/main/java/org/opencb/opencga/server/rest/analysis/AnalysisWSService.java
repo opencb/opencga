@@ -17,24 +17,18 @@
 package org.opencb.opencga.server.rest.analysis;
 
 import org.opencb.opencga.catalog.managers.JobManager;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 
 /**
  * Created by imedina on 17/08/16.
  */
-@Path("/{apiVersion}/analysis")
-@Produces(MediaType.APPLICATION_JSON)
 public class AnalysisWSService extends OpenCGAWSServer {
 
     protected JobManager jobManager;

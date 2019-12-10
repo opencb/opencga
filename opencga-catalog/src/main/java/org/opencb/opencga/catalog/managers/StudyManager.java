@@ -986,7 +986,7 @@ public class StudyManager extends AbstractManager {
 
     public OpenCGAResult<Group> syncGroupWith(String studyStr, String externalGroup, String catalogGroup, String authenticationOriginId,
                                               boolean force, String token) throws CatalogException {
-        if (!ROOT.equals(catalogManager.getUserManager().getUserId(token))) {
+        if (!OPENCGA.equals(catalogManager.getUserManager().getUserId(token))) {
             throw new CatalogAuthorizationException("Only the root of OpenCGA can synchronise groups");
         }
 
@@ -1010,7 +1010,7 @@ public class StudyManager extends AbstractManager {
             throw new CatalogException("Unexpected LDAP error: " + e.getMessage());
         }
 
-        Study study = resolveId(studyStr, ROOT);
+        Study study = resolveId(studyStr, OPENCGA);
 
         // Fix the groupId
         if (!catalogGroup.startsWith("@")) {
@@ -1609,7 +1609,7 @@ public class StudyManager extends AbstractManager {
             threadPool.shutdown();
             return true;
         }
-        throw new CatalogException("Only the " + ROOT + " user can index in Solr");
+        throw new CatalogException("Only the " + OPENCGA + " user can index in Solr");
     }
 
     public Map<String, Object> facet(String studyStr, String fileFields, String sampleFields, String individualFields, String cohortFields,
@@ -1653,11 +1653,11 @@ public class StudyManager extends AbstractManager {
 
             catalogSolrManager.insertCatalogCollection(this.cohortDBAdaptor.iterator(query,
                     cohortQueryOptions), new CatalogCohortToSolrCohortConverter(study), CatalogSolrManager.COHORT_SOLR_COLLECTION);
-            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.COHORT, "", "", study.getId(), study.getUuid(), auditParams,
+            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.COHORT, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return true;
         } catch (CatalogException e) {
-            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.COHORT, "", "", study.getId(), study.getUuid(), auditParams,
+            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.COHORT, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1684,11 +1684,11 @@ public class StudyManager extends AbstractManager {
 
             catalogSolrManager.insertCatalogCollection(this.fileDBAdaptor.iterator(query,
                     fileQueryOptions), new CatalogFileToSolrFileConverter(study), CatalogSolrManager.FILE_SOLR_COLLECTION);
-            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.FILE, "", "", study.getId(), study.getUuid(), auditParams,
+            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.FILE, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return true;
         } catch (CatalogException e) {
-            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.FILE, "", "", study.getId(), study.getUuid(), auditParams,
+            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.FILE, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1712,12 +1712,12 @@ public class StudyManager extends AbstractManager {
 
             catalogSolrManager.insertCatalogCollection(this.familyDBAdaptor.iterator(query,
                     familyQueryOptions), new CatalogFamilyToSolrFamilyConverter(study), CatalogSolrManager.FAMILY_SOLR_COLLECTION);
-            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(), auditParams,
+            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
             return true;
         } catch (CatalogException e) {
-            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(), auditParams,
+            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1747,11 +1747,11 @@ public class StudyManager extends AbstractManager {
             catalogSolrManager.insertCatalogCollection(this.individualDBAdaptor.iterator(query,
                     individualQueryOptions), new CatalogIndividualToSolrIndividualConverter(study),
                     CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
-            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.INDIVIDUAL, "", "", study.getId(), study.getUuid(), auditParams,
+            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.INDIVIDUAL, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return true;
         } catch (CatalogException e) {
-            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.INDIVIDUAL, "", "", study.getId(), study.getUuid(), auditParams,
+            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.INDIVIDUAL, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }
@@ -1777,11 +1777,11 @@ public class StudyManager extends AbstractManager {
 
             catalogSolrManager.insertCatalogCollection(this.sampleDBAdaptor.iterator(query,
                     sampleQueryOptions), new CatalogSampleToSolrSampleConverter(study), CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
-            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(), auditParams,
+            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return true;
         } catch (CatalogException e) {
-            auditManager.audit(ROOT, Enums.Action.INDEX, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(), auditParams,
+            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
         }

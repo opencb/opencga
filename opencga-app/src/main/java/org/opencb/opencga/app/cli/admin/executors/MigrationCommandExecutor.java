@@ -133,7 +133,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             // We get a non-expiring token
             String token = catalogManager.getUserManager().login("admin", options.commonOptions.adminPassword);
-            String nonExpiringToken = catalogManager.getUserManager().getSystemTokenForUser("admin", token);
+            String nonExpiringToken = catalogManager.getUserManager().getNonExpiringToken("admin", token);
 
             // Catalog
             if (!skipCatalogJS) {

@@ -46,7 +46,7 @@ public class PanelManagerTest extends GenericTest {
         catalogManager = catalogManagerResource.getCatalogManager();
         panelManager = catalogManager.getPanelManager();
         setUpCatalogManager(catalogManager);
-        adminToken = catalogManager.getUserManager().login("admin", "admin");
+        adminToken = catalogManager.getUserManager().loginAsAdmin("admin");
     }
 
     private void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
@@ -61,8 +61,8 @@ public class PanelManagerTest extends GenericTest {
 
     @Test
     @Ignore
-    public void importFromPanelAppTest() throws CatalogException, IOException {
-        String token = catalogManager.getUserManager().login("admin", "admin");
+    public void importFromPanelAppTest() throws CatalogException {
+        String token = catalogManager.getUserManager().loginAsAdmin("admin");
         panelManager.importPanelApp(token, false);
         assertEquals(221, panelManager.count(PanelManager.INSTALLATION_PANELS, new Query(), token).getNumTotalResults());
     }

@@ -2,7 +2,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import org.bson.Document;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
@@ -18,7 +17,7 @@ import static org.opencb.opencga.catalog.db.mongodb.AuthorizationMongoDBAdaptor.
  */
 public class AuthorizationMongoDBUtils {
 
-    static final String ADMIN = "admin";
+    static final String OPENCGA = "opencga";
     static final String PRIVATE_OWNER_ID = "_ownerId";
     private static final String PRIVATE_ACL = "_acl";
     private static final String VARIABLE_SETS = "variableSets";
@@ -39,7 +38,7 @@ public class AuthorizationMongoDBUtils {
         if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
             return true;
         }
-        if (ADMIN.equals(user)) {
+        if (OPENCGA.equals(user)) {
             return true;
         }
         // If user does not exist in the members group, the user will not have any permission
@@ -54,7 +53,7 @@ public class AuthorizationMongoDBUtils {
         if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
             return true;
         }
-        if (ADMIN.equals(user) && checkAdminPermissions(studyPermission)) {
+        if (OPENCGA.equals(user)) {
             return true;
         }
         if (getAdminUsers(study).contains(user)) {
@@ -97,7 +96,7 @@ public class AuthorizationMongoDBUtils {
         if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
             return entry;
         }
-        if (ADMIN.equals(user) && checkAdminPermissions(studyPermission)) {
+        if (OPENCGA.equals(user)) {
             return entry;
         }
         if (getAdminUsers(study).contains(user)) {
@@ -150,7 +149,7 @@ public class AuthorizationMongoDBUtils {
         if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
             return new Document();
         }
-        if (ADMIN.equals(user) && checkAdminPermissions(studyPermission)) {
+        if (OPENCGA.equals(user)) {
             return new Document();
         }
         if (getAdminUsers(study).contains(user)) {
@@ -415,17 +414,5 @@ public class AuthorizationMongoDBUtils {
 
         return new Document(PRIVATE_ACL, new Document("$nin", patternList));
     }
-
-    private static boolean checkAdminPermissions(String studyPermission) {
-        Set<String> adminPermissions = CatalogAuthorizationManager.getSpecialPermissions(ADMIN).getPermissions()
-                .stream()
-                .map(String::valueOf)
-                .collect(Collectors.toSet());
-        if (adminPermissions.contains(studyPermission)) {
-            return true;
-        }
-        return false;
-    }
-
 
 }

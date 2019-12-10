@@ -168,7 +168,7 @@ public class JobWSServer extends OpenCGAWSServer {
                     outDir != null ? outDir.toFile() : null,
                     getInput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
                     getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
-                    tags, result, log != null ? log.toFile() : null, errorLog != null ? errorLog.toFile() : null, 1, attributes);
+                    tags, result, false, log != null ? log.toFile() : null, errorLog != null ? errorLog.toFile() : null, 1, attributes);
         }
 
     }
@@ -268,6 +268,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "name") @DefaultValue("") @QueryParam("name") String name,
             @ApiParam(value = "tool name") @DefaultValue("") @QueryParam("toolName") String tool,
             @ApiParam(value = "status") @DefaultValue("") @QueryParam("status") String status,
+            @ApiParam(value = "visited") @DefaultValue("false") @QueryParam("visited") Boolean visited,
             @ApiParam(value = "Boolean to retrieve deleted jobs", defaultValue = "false") @QueryParam("deleted") boolean deleted,
             @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION) @QueryParam("creationDate") String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION) @QueryParam("modificationDate") String modificationDate,

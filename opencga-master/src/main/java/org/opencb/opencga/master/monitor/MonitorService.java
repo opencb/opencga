@@ -54,20 +54,19 @@ public class MonitorService {
     protected static Logger logger;
 
 
-    public MonitorService(String password, Configuration configuration, String appHome)
+    public MonitorService(Configuration configuration, String appHome, String token)
             throws CatalogException {
         this.configuration = configuration;
         this.appHome = appHome;
 
-        init(password);
+        init(token);
     }
 
-    private void init(String password) throws CatalogException {
+    private void init(String token) throws CatalogException {
         logger = LoggerFactory.getLogger(this.getClass());
 
         this.catalogManager = new CatalogManager(this.configuration);
-        String expiringToken = this.catalogManager.getUserManager().login("admin", password);
-        String nonExpiringToken = this.catalogManager.getUserManager().getSystemTokenForUser("admin", expiringToken);
+        String nonExpiringToken = this.catalogManager.getUserManager().getAdminNonExpiringToken(token);
 
         executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), nonExpiringToken,
                 catalogManager, appHome);

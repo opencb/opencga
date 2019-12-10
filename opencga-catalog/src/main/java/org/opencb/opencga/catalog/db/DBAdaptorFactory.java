@@ -20,7 +20,6 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
 
 import java.util.Map;
@@ -35,14 +34,6 @@ public interface DBAdaptorFactory {
      * @return boolean
      */
     boolean isCatalogDBReady();
-
-    /**
-     * Initializes de Database with the initial structure.
-     *
-     * @param admin Administrator object containing the encrypted password and the email.
-     * @throws CatalogDBException if there was any problem, or it was already initialized.
-     */
-    void initializeCatalogDB(Admin admin) throws CatalogDBException;
 
     /**
      * Installs the catalog database with their corresponding indexes.

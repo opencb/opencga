@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.BasicDBObject;
-import com.mongodb.DuplicateKeyException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
@@ -30,15 +29,12 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.getMongoDBDocument;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
 
 /**
@@ -161,31 +157,6 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
 
         logger = LoggerFactory.getLogger(this.getClass());
         connect();
-    }
-
-    @Override
-    public void initializeCatalogDB(Admin admin) throws CatalogDBException {
-        //If "metadata" document doesn't exist, create.
-        if (!isCatalogDBReady()) {
-            /* Check all collections are empty */
-            for (Map.Entry<String, MongoDBCollection> entry : collections.entrySet()) {
-                if (entry.getValue().count().getNumMatches() != 0L) {
-                    throw new CatalogDBException("Fail to initialize Catalog Database in MongoDB. Collection " + entry.getKey()
-                            + " is not empty.");
-                }
-            }
-
-            try {
-                Document metadataDocument = getMongoDBDocument(new Metadata(), "Metadata");
-                metadataDocument.put("id", METADATA_OBJECT_ID);
-                metadataDocument.put("admin", getMongoDBDocument(admin, "Admin"));
-                metaCollection.insert(metadataDocument, null);
-            } catch (DuplicateKeyException e) {
-                logger.warn("Trying to replace MetadataObject. DuplicateKey");
-            }
-        } else {
-            throw new CatalogDBException("Catalog already initialized");
-        }
     }
 
     @Override

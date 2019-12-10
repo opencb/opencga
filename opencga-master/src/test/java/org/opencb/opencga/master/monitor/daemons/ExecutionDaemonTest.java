@@ -6,13 +6,13 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
-import org.opencb.opencga.core.tools.result.ExecutorResultManager;
-import org.opencb.opencga.core.tools.result.ExecutionResult;
-import org.opencb.opencga.core.tools.result.Status;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.tools.result.ExecutorResultManager;
+import org.opencb.opencga.core.tools.result.Status;
 import org.opencb.opencga.master.monitor.executors.BatchExecutor;
 
 import java.io.File;
@@ -38,8 +38,8 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     public void setUp() throws IOException, CatalogException {
         super.setUp();
 
-        String expiringToken = this.catalogManager.getUserManager().login("admin", "admin");
-        String nonExpiringToken = this.catalogManager.getUserManager().getSystemTokenForUser("admin", expiringToken);
+        String expiringToken = this.catalogManager.getUserManager().loginAsAdmin("admin");
+        String nonExpiringToken = this.catalogManager.getUserManager().getNonExpiringToken("opencga", expiringToken);
         catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().setMaxConcurrentJobs(1);
 
         daemon = new ExecutionDaemon(1000, nonExpiringToken, catalogManager, "/tmp");

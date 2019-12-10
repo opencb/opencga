@@ -43,21 +43,23 @@ public final class CatalogDemo {
      * Populates the database with dummy data.
      *
      * @param configuration Catalog configuration file.
+     * @param adminPassword Administrator password.
      * @param force Used in the case where a database already exists with the same name. When force = true, it will override it.
      * @throws CatalogException when there is already a database with the same name and force is false.
      * @throws URISyntaxException when there is a problem parsing the URI read from the configuration file.
      */
-    public static void createDemoDatabase(Configuration configuration, boolean force) throws CatalogException, URISyntaxException {
+    public static void createDemoDatabase(Configuration configuration, String adminPassword, boolean force)
+            throws CatalogException, URISyntaxException {
         CatalogManager catalogManager = new CatalogManager(configuration);
         if (catalogManager.existsCatalogDB()) {
             if (force) {
-                catalogManager.deleteCatalogDB(force);
+                String token = catalogManager.getUserManager().loginAsAdmin(adminPassword);
+                catalogManager.deleteCatalogDB(token);
             } else {
-//                throw new CatalogException("A database called " + catalogConfiguration.getDatabase().getDatabase() + " already exists");
                 throw new CatalogException("A database called " + catalogManager.getCatalogDatabase() + " already exists");
             }
         }
-        catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), configuration.getAdmin().getPassword());
+        catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), adminPassword, "opencga@admin.com", "");
         try {
             populateDatabase(catalogManager);
         } catch (IOException e) {
