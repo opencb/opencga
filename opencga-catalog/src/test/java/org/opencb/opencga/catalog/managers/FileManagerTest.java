@@ -1187,12 +1187,11 @@ public class FileManagerTest extends AbstractManagerTest {
         fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), null, sessionIdUser);
 
         // The files should have been moved to trashed status
-        numResults = fileManager.search(studyFqn, query, null, sessionIdUser).getNumResults();
-        assertEquals(0, numResults);
-
-        query.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
-        numResults = fileManager.search(studyFqn, query, null, sessionIdUser).getNumResults();
-        assertEquals(6, numResults);
+        OpenCGAResult<File> search = fileManager.search(studyFqn, query, null, sessionIdUser);
+        assertEquals(6, search.getNumResults());
+        for (File trashedFile : search.getResults()) {
+            assertEquals(File.FileStatus.TRASHED, trashedFile.getStatus().getName());
+        }
     }
 
     // It will try to delete a folder in status ready and skip the trash
@@ -1208,7 +1207,7 @@ public class FileManagerTest extends AbstractManagerTest {
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + filePath + "*")
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
+                .append(FileDBAdaptor.QueryParams.STATUS.key(), File.FileStatus.READY);
         int numResults = fileManager.search(studyFqn, query, null, sessionIdUser).getNumResults();
         assertEquals(6, numResults);
 
@@ -1223,7 +1222,8 @@ public class FileManagerTest extends AbstractManagerTest {
         numResults = fileManager.search(studyFqn, query, null, sessionIdUser).getNumResults();
         assertEquals(0, numResults);
 
-        query.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE);
+        query.put(FileDBAdaptor.QueryParams.DELETED.key(), true);
+        query.put(FileDBAdaptor.QueryParams.STATUS.key(), File.FileStatus.DELETED);
         numResults = fileManager.search(studyFqn, query, null, sessionIdUser).getNumResults();
         assertEquals(6, numResults);
     }

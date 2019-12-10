@@ -1092,11 +1092,13 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
+                    case STATUS:
                     case STATUS_NAME:
                         // Convert the status to a positive status
                         myQuery.put(queryParam.key(),
                                 Status.getPositiveStatus(File.FileStatus.STATUS_LIST, myQuery.getString(queryParam.key())));
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
+                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), myQuery, QueryParams.STATUS_NAME.type(),
+                                andBsonList);
                         break;
                     case INDEX_STATUS_NAME:
                         // Convert the status to a positive status
@@ -1135,7 +1137,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case EXTERNAL:
                     case RELEASE:
                     case TAGS:
-                    case STATUS:
                     case STATUS_MSG:
                     case STATUS_DATE:
                     case RELATED_FILES:
