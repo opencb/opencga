@@ -18,14 +18,16 @@ package org.opencb.opencga.client.rest.analysis;
 
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
-import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.AbstractParentClient;
+import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.IOException;
+
+import static org.opencb.opencga.core.api.ParamConstants.*;
 
 /**
  * Created by pfurio on 11/11/16.
@@ -43,6 +45,7 @@ public class AlignmentClient extends AbstractParentClient {
             params = new ObjectMap();
         }
         params.putIfNotEmpty("file", fileIds);
+
         return execute(ALIGNMENT_URL, "index", params, POST, Job.class);
     }
 
@@ -51,23 +54,80 @@ public class AlignmentClient extends AbstractParentClient {
             params = new ObjectMap();
         }
         params.putIfNotEmpty("file", fileIds);
+
         return execute(ALIGNMENT_URL, "query", params, GET, ReadAlignment.class);
     }
 
-    public RestResponse<AlignmentGlobalStats> stats(String fileIds, ObjectMap params) throws IOException {
-        if (params == null) {
-            params = new ObjectMap();
-        }
-        params.putIfNotEmpty("file", fileIds);
-        return execute(ALIGNMENT_URL, "stats", params, GET, AlignmentGlobalStats.class);
+    //-------------------------------------------------------------------------
+    // S T A T S
+    //-------------------------------------------------------------------------
+
+    public RestResponse<Job> statsRun(String study, String file) throws IOException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(STUDY_PARAM, study);
+        params.putIfNotEmpty("inputFile", file);
+
+        return execute(ALIGNMENT_URL, "stats/run", params, POST, Job.class);
     }
 
-    public RestResponse<RegionCoverage> coverage(String fileIds, ObjectMap params) throws IOException {
+    public RestResponse<String> statsInfo(String study, String file) throws IOException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(STUDY_PARAM, study);
+        params.putIfNotEmpty("inputFile", file);
+
+        return execute(ALIGNMENT_URL, "stats/info", params, GET, String.class);
+    }
+
+    public RestResponse<File> statsQuery(ObjectMap params) throws IOException {
         if (params == null) {
             params = new ObjectMap();
         }
-        params.putIfNotEmpty("file", fileIds);
-        return execute(ALIGNMENT_URL, "coverage", params, GET, RegionCoverage.class);
+        return execute(ALIGNMENT_URL, "stats/query", params, GET, File.class);
+    }
+
+    //-------------------------------------------------------------------------
+    // C O V E R A G E
+    //-------------------------------------------------------------------------
+
+    public RestResponse<Job> coverageRun(String study, String inputFile, int windowSize) throws IOException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(STUDY_PARAM, study);
+        params.putIfNotEmpty("inputFile", inputFile);
+        params.putIfNotNull("windowSize", windowSize);
+
+        return execute(ALIGNMENT_URL, "coverage/run", params, POST, Job.class);
+    }
+
+    public RestResponse<RegionCoverage> coverageQuery(String study, String inputFile, String region, String gene, int geneOffset,
+                                                      boolean onlyExons, int exonOffset, String range, int windowSize) throws IOException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(STUDY_PARAM, study);
+        params.putIfNotEmpty(FILE_ID_PARAM, inputFile);
+        params.putIfNotEmpty(REGION_PARAM, region);
+        params.putIfNotEmpty(GENE_PARAM, gene);
+        params.putIfNotNull(GENE_OFFSET_PARAM, geneOffset);
+        params.putIfNotNull(ONLY_EXONS_PARAM, onlyExons);
+        params.putIfNotNull(EXON_OFFSET_PARAM, exonOffset);
+        params.putIfNotEmpty(COVERAGE_RANGE_PARAM, range);
+        params.putIfNotNull(COVERAGE_WINDOW_SIZE_PARAM, windowSize);
+
+        return execute(ALIGNMENT_URL, "coverage/query", params, GET, RegionCoverage.class);
+    }
+
+    public RestResponse<RegionCoverage> coverageLog2Ratio(String study, String inputFile1, String inputFile2, String region, String gene,
+                                                  int geneOffset, boolean onlyExons, int exonOffset, int windowSize) throws IOException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(STUDY_PARAM, study);
+        params.putIfNotEmpty(FILE_ID_1_PARAM, inputFile1);
+        params.putIfNotEmpty(FILE_ID_2_PARAM, inputFile2);
+        params.putIfNotEmpty(REGION_PARAM, region);
+        params.putIfNotEmpty(GENE_PARAM, gene);
+        params.putIfNotNull(GENE_OFFSET_PARAM, geneOffset);
+        params.putIfNotNull(ONLY_EXONS_PARAM, onlyExons);
+        params.putIfNotNull(EXON_OFFSET_PARAM, exonOffset);
+        params.putIfNotNull(COVERAGE_WINDOW_SIZE_PARAM, windowSize);
+
+        return execute(ALIGNMENT_URL, "coverage/log2Ratio", params, GET, RegionCoverage.class);
     }
 
     //-------------------------------------------------------------------------
