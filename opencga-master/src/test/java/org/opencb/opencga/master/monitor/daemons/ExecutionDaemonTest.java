@@ -6,7 +6,7 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
-import org.opencb.opencga.core.tools.result.ExecutorResultManager;
+import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.Status;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -192,7 +192,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         for (org.opencb.opencga.core.models.File file : job.getOutput()) {
             assertTrue(Arrays.asList("outDir/file1.txt", "outDir/file2.txt", "outDir/A/", "outDir/A/file3.txt").contains(file.getPath()));
         }
-        assertEquals(0, job.getOutput().stream().filter(f -> f.getName().endsWith(ExecutorResultManager.FILE_EXTENSION))
+        assertEquals(0, job.getOutput().stream().filter(f -> f.getName().endsWith(ExecutionResultManager.FILE_EXTENSION))
                 .collect(Collectors.toList()).size());
 
         assertEquals(job.getId() + ".log", job.getLog().getName());
@@ -253,7 +253,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     private void createAnalysisResult(String jobId, String analysisId, Consumer<ExecutionResult> c) throws CatalogException, IOException {
         ExecutionResult ar = new ExecutionResult();
         c.accept(ar);
-        File resultFile = Paths.get(getJob(jobId).getOutDir().getUri()).resolve(analysisId + ExecutorResultManager.FILE_EXTENSION).toFile();
+        File resultFile = Paths.get(getJob(jobId).getOutDir().getUri()).resolve(analysisId + ExecutionResultManager.FILE_EXTENSION).toFile();
         JacksonUtils.getDefaultObjectMapper().writeValue(resultFile, ar);
     }
 

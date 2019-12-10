@@ -114,7 +114,7 @@ public class VariantStatsDriver extends AbstractVariantsTableDriver {
                 localOutput = getLocalOutput(outdir, () -> "variant_stats."
                         + (cohorts.size() < 10 ? "." + String.join("_", cohortNames) : "")
                         + TimeUtils.getTime() + ".json");
-                outdir = getTempOutdir("opencga_sample_variant_stats_");
+                outdir = getTempOutdir("opencga_sample_variant_stats", localOutput.getName());
                 outdir.getFileSystem(getConf()).deleteOnExit(outdir);
             }
             if (localOutput != null) {

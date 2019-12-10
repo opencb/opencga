@@ -9,12 +9,11 @@ import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
-import org.opencb.opencga.core.tools.result.FileResult;
-import org.opencb.opencga.core.tools.variant.SampleVariantStatsAnalysisExecutor;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.tools.variant.SampleVariantStatsAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -195,8 +194,6 @@ public class SampleVariantStatsAnalysis extends OpenCgaTool {
                     .setStudy(study)
                     .setSampleNames(checkedSamplesList)
                     .execute();
-
-            addFile(outputFile, FileResult.FileType.JSON);
         });
 
         if (indexResults) {

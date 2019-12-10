@@ -52,7 +52,7 @@ import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
-import org.opencb.opencga.core.tools.result.ExecutorResultManager;
+import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.Status;
 
 import java.io.BufferedInputStream;
@@ -629,8 +629,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             resultJson = stream
                     .filter(path -> {
                         String str = path.toString();
-                        return str.endsWith(ExecutorResultManager.FILE_EXTENSION)
-                                && !str.endsWith(ExecutorResultManager.SWAP_FILE_EXTENSION);
+                        return str.endsWith(ExecutionResultManager.FILE_EXTENSION)
+                                && !str.endsWith(ExecutionResultManager.SWAP_FILE_EXTENSION);
                     })
                     .findFirst()
                     .orElse(null);
@@ -710,8 +710,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         List<File> registeredFiles;
         try {
-            Predicate<URI> uriPredicate = uri -> !uri.getPath().endsWith(ExecutorResultManager.FILE_EXTENSION)
-                    && !uri.getPath().endsWith(ExecutorResultManager.SWAP_FILE_EXTENSION)
+            Predicate<URI> uriPredicate = uri -> !uri.getPath().endsWith(ExecutionResultManager.FILE_EXTENSION)
+                    && !uri.getPath().endsWith(ExecutionResultManager.SWAP_FILE_EXTENSION)
                     && !uri.getPath().contains("/scratch_");
             registeredFiles = fileManager.syncUntrackedFiles(study, job.getOutDir().getPath(), uriPredicate, token).getResults();
         } catch (CatalogException e) {

@@ -3,7 +3,6 @@ package org.opencb.opencga.analysis.wrappers;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.core.tools.result.FileResult;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
 
@@ -12,7 +11,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 @Tool(id = BwaWrapperAnalysis.ID, type = Tool.ToolType.ALIGNMENT,
         description = "")
@@ -65,21 +67,6 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
                 cmd.run();
 
-                // Add the output files to the analysis result file
-                List<String> outNames = getFilenames(getOutDir());
-                for (String name : outNames) {
-                    if (!filenamesBeforeRunning.contains(name)) {
-                        if (FileUtils.sizeOf(new File(getOutDir() + "/" + name)) > 0) {
-                            FileResult.FileType fileType = FileResult.FileType.TAB_SEPARATED;
-                            if (name.endsWith("txt") || name.endsWith("log") || name.endsWith("sam")) {
-                                fileType = FileResult.FileType.PLAIN_TEXT;
-                            }  else if (name.endsWith("sa") || name.endsWith("bwt") || name.endsWith("pac")) {
-                                fileType = FileResult.FileType.BINARY;
-                            }
-                            addFile(getOutDir().resolve(name), fileType);
-                        }
-                    }
-                }
                 // Check BWA errors by reading the stdout and stderr files
                 boolean success = false;
                 switch (command) {

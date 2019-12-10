@@ -105,6 +105,7 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
         }
     }
 
+    @Deprecated
     protected List<String> getFilenames(Path dir) throws IOException {
         Stream<Path> walk = Files.walk(dir);
         return walk.map(x -> x.getFileName().toString()).collect(Collectors.toList());

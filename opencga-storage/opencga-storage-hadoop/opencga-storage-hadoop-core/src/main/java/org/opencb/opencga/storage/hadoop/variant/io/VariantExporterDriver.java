@@ -85,7 +85,7 @@ public class VariantExporterDriver extends AbstractVariantsTableDriver {
         outdir = new Path(outdirStr);
         if (isLocal(outdir)) {
             localOutput = getLocalOutput(outdir);
-            outdir = getTempOutdir("opencga_export_");
+            outdir = getTempOutdir("opencga_export", localOutput.getName());
             outdir.getFileSystem(getConf()).deleteOnExit(outdir);
         }
         if (localOutput != null) {

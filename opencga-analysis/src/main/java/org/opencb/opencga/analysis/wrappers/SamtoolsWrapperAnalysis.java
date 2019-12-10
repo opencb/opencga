@@ -3,7 +3,6 @@ package org.opencb.opencga.analysis.wrappers;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.core.tools.result.FileResult;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
 
@@ -69,22 +68,6 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
                 cmd.run();
 
-                // Add the output files to the analysis result file
-                List<String> outNames = getFilenames(getOutDir());
-                for (String name : outNames) {
-                    if (!filenamesBeforeRunning.contains(name)) {
-                        if (FileUtils.sizeOf(new File(getOutDir() + "/" + name)) > 0) {
-                            FileResult.FileType fileType = FileResult.FileType.TAB_SEPARATED;
-                            if (name.endsWith("txt") || name.endsWith("log") || name.endsWith("sam")) {
-                                fileType = FileResult.FileType.PLAIN_TEXT;
-                            } else if (name.endsWith("bam") || name.endsWith("cram") || name.endsWith("bai") || name.endsWith("crai")) {
-                                fileType = FileResult.FileType.BINARY;
-                            }
-                            addFile(getOutDir().resolve(name), fileType);
-                        }
-                    }
-                }
-
                 // Check samtools errors
                 boolean success = false;
                 switch (command) {
@@ -97,18 +80,17 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                         break;
                     }
                     case "stats": {
-                        File file = new File(getOutDir() + "/" + STDOUT_FILENAME);
+                        File file = getOutDir().resolve(STDOUT_FILENAME).toFile();
                         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
                         if (lines.size() > 0 && lines.get(0).startsWith("# This file was produced by samtools stats")) {
                             FileUtils.copyFile(file, new File(outputFile));
-                            addFile(new File(outputFile).toPath(), FileResult.FileType.PLAIN_TEXT);
                             success = true;
                         }
                         break;
                     }
                 }
                 if (!success) {
-                    File file = new File(getOutDir() + "/" + STDERR_FILENAME);
+                    File file = getOutDir().resolve(STDERR_FILENAME).toFile();
                     String msg = "Something wrong executing Samtools";
                     if (file.exists()) {
                         msg = StringUtils.join(FileUtils.readLines(file, Charset.defaultCharset()), ". ");

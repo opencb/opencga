@@ -8,8 +8,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
-import org.opencb.opencga.core.tools.result.FileResult;
-import org.opencb.opencga.core.tools.variant.CohortVariantStatsAnalysisExecutor;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exception.ToolException;
@@ -17,6 +15,7 @@ import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.tools.variant.CohortVariantStatsAnalysisExecutor;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -173,8 +172,6 @@ public class CohortVariantStatsAnalysis extends OpenCgaTool {
                     .setOutputFile(outputFile)
                     .setSampleNames(checkedSamplesList)
                     .execute();
-
-            addFile(outputFile, FileResult.FileType.JSON);
         });
 
         if (indexResults) {

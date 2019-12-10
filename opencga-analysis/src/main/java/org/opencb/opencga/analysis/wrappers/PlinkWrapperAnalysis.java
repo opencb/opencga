@@ -3,7 +3,6 @@ package org.opencb.opencga.analysis.wrappers;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.core.tools.result.FileResult;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
 
@@ -11,7 +10,10 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 @Tool(id = PlinkWrapperAnalysis.ID, type = Tool.ToolType.VARIANT, description = PlinkWrapperAnalysis.DESCRIPTION)
 public class PlinkWrapperAnalysis extends OpenCgaWrapperAnalysis {
@@ -46,19 +48,6 @@ public class PlinkWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
                 cmd.run();
 
-                // Add the output files to the analysis result file
-                List<String> outNames = getFilenames(getOutDir());
-                for (String name : outNames) {
-                    if (!filenamesBeforeRunning.contains(name)) {
-                        if (FileUtils.sizeOf(new File(getOutDir() + "/" + name)) > 0) {
-                            FileResult.FileType fileType = FileResult.FileType.TAB_SEPARATED;
-                            if (name.endsWith("txt") || name.endsWith("log")) {
-                                fileType = FileResult.FileType.PLAIN_TEXT;
-                            }
-                            addFile(getOutDir().resolve(name), fileType);
-                        }
-                    }
-                }
                 // Check Plink errors by reading the stderr file
                 File stderrFile = new File(getOutDir() + "/" + STDERR_FILENAME);
                 if (FileUtils.sizeOf(stderrFile) > 0) {

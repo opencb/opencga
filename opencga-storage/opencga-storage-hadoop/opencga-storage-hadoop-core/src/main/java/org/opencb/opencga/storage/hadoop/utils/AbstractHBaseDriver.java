@@ -196,7 +196,11 @@ public abstract class AbstractHBaseDriver extends Configured implements Tool {
     }
 
     protected Path getTempOutdir(String prefix) {
-        return new Path(getConf().get("hadoop.tmp.dir"), prefix + TimeUtils.getTime());
+        return getTempOutdir(prefix, "");
+    }
+
+    protected Path getTempOutdir(String prefix, String sufix) {
+        return new Path(getConf().get("hadoop.tmp.dir"), prefix + "." + TimeUtils.getTime() + "." + sufix);
     }
 
     protected Path getLocalOutput(Path outdir) throws IOException {

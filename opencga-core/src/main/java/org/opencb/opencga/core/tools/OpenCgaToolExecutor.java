@@ -4,7 +4,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.annotations.ToolExecutor;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.exception.ToolExecutorException;
-import org.opencb.opencga.core.tools.result.ExecutorResultManager;
+import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 
 import java.nio.file.Path;
 
@@ -13,7 +13,7 @@ public abstract class OpenCgaToolExecutor {
     public static final String EXECUTOR_ID = "executorId";
     protected ObjectMap executorParams;
     protected Path outDir;
-    private ExecutorResultManager arm;
+    private ExecutionResultManager arm;
 
     protected OpenCgaToolExecutor() {
     }
@@ -34,7 +34,7 @@ public abstract class OpenCgaToolExecutor {
         return this.getClass().getAnnotation(ToolExecutor.class).source();
     }
 
-    public final void setUp(ExecutorResultManager arm, ObjectMap executorParams, Path outDir) {
+    public final void setUp(ExecutionResultManager arm, ObjectMap executorParams, Path outDir) {
         this.arm = arm;
         this.executorParams = executorParams;
         this.outDir = outDir;

@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
 
 public class ExecutionManagerTest {
 
-    private ExecutorResultManager erm;
+    private ExecutionResultManager erm;
     private static Path rootDir;
 
     @BeforeClass
@@ -31,7 +31,7 @@ public class ExecutionManagerTest {
 
     @Before
     public void setUp() throws Exception {
-        erm = new ExecutorResultManager("myTest", rootDir);
+        erm = new ExecutionResultManager("myTest", rootDir);
         erm.setMonitorThreadPeriod(1000);
         erm.init(new ObjectMap(), new ObjectMap());
         erm.setSteps(Arrays.asList("step1", "step2"));
@@ -40,15 +40,6 @@ public class ExecutionManagerTest {
     @After
     public void tearDown() throws Exception {
         erm.close();
-    }
-
-    @Test
-    public void testReadWrite() throws Exception {
-        erm.checkStep("step1");
-
-        Path file = rootDir.resolve("file1.txt");
-        Files.createFile(file);
-        erm.addFile(file.toAbsolutePath(), FileResult.FileType.TAB_SEPARATED);
     }
 
     @Test
