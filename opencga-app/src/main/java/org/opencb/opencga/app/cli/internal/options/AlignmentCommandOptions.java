@@ -263,13 +263,13 @@ public class AlignmentCommandOptions {
         public String gene;
 
         @Parameter(names = {"--gene-offset"}, description = GENE_OFFSET_DESCRIPTION)
-        public int geneOffset = GENE_OFFSET_DEFAULT;
+        public int geneOffset = Integer.parseInt(GENE_OFFSET_DEFAULT);
 
         @Parameter(names = {"--only-exons"}, description = ONLY_EXONS_DESCRIPTION)
         public boolean onlyExons;
 
         @Parameter(names = {"--exon-offset"}, description = EXON_OFFSET_DESCRIPTION)
-        public int exonOffset = EXON_OFFSET_DEFAULT;
+        public int exonOffset = Integer.parseInt(EXON_OFFSET_DEFAULT);
 
         @Parameter(names = {"--coverage-range"}, description = COVERAGE_RANGE_DESCRIPTION, arity = 1)
         public String range;
@@ -297,13 +297,13 @@ public class AlignmentCommandOptions {
         public String gene;
 
         @Parameter(names = {"--gene-offset"}, description = GENE_OFFSET_DESCRIPTION)
-        public int geneOffset = GENE_OFFSET_DEFAULT;
+        public int geneOffset = Integer.parseInt(GENE_OFFSET_DEFAULT);
 
         @Parameter(names = {"--only-exons"}, description = ONLY_EXONS_DESCRIPTION)
         public boolean onlyExons;
 
         @Parameter(names = {"--exon-offset"}, description = EXON_OFFSET_DESCRIPTION)
-        public int exonOffset = EXON_OFFSET_DEFAULT;
+        public int exonOffset = Integer.parseInt(EXON_OFFSET_DEFAULT);
 
         @Parameter(names = {"--window-size"}, description = COVERAGE_WINDOW_SIZE_DESCRIPTION, arity = 1)
         public int windowSize = 1;
