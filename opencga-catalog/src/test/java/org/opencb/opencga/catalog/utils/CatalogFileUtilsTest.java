@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Account;
@@ -97,99 +98,6 @@ public class CatalogFileUtilsTest {
     }
 
     @Test
-    public void unlinkNonExternalFile() throws CatalogException, IOException {
-        File file = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN,
-                File.Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", null, 0, null, (long) -1, null,
-                null, true, "blabla", null, userSessionId).first();
-
-        // Now we try to unlink it
-        thrown.expect(CatalogException.class);
-        thrown.expectMessage("use delete instead");
-        catalogManager.getFileManager().unlink(studyFqn, file.getPath(), userSessionId);
-    }
-
-    @Test
-    public void deleteFilesTest2() throws CatalogException, IOException {
-        DataResult<File> queryResult = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN,
-                File.Bioformat.NONE, "my.txt", "", new File.FileStatus(File.FileStatus.STAGE), 0, null, -1, null, null, false,
-                StringUtils.randomString(200), null, userSessionId);
-        File file = catalogManager.getFileManager().get(studyFqn, queryResult.first().getPath(), null, userSessionId).first();
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(file.getUri());
-        assertTrue(ioManager.exists(file.getUri()));
-
-        catalogManager.getFileManager().delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()),
-                null, userSessionId);
-        assertTrue(ioManager.exists(file.getUri()));
-    }
-
-    @Test
-    public void deleteFoldersTest() throws CatalogException, IOException {
-        List<File> folderFiles = new LinkedList<>();
-        File folder = prepareFiles(folderFiles);
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(catalogManager.getFileManager().getUri(folder));
-        for (File file : folderFiles) {
-            assertTrue(ioManager.exists(catalogManager.getFileManager().getUri(file)));
-        }
-
-        catalogManager.getFileManager().delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()), null,
-                userSessionId);
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.UID.key(), folder.getUid())
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
-        DataResult<File> fileDataResult = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), userSessionId);
-
-        assertTrue(ioManager.exists(fileDataResult.first().getUri()));
-        for (File file : folderFiles) {
-            assertTrue("File uri: " + file.getUri() + " should exist", ioManager.exists(file.getUri()));
-        }
-
-    }
-
-    @Test
-    public void deleteFoldersTest2() throws CatalogException, IOException {
-        List<File> folderFiles = new LinkedList<>();
-        File folder = prepareFiles(folderFiles);
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(catalogManager.getFileManager().getUri(folder));
-        for (File file : folderFiles) {
-            assertTrue(ioManager.exists(catalogManager.getFileManager().getUri(file)));
-        }
-
-        //Create deleted files inside the folder
-        DataResult<File> queryResult1 = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toDelete.txt", "", new File.FileStatus(File.FileStatus.STAGE), 0, null, -1, null, null, true, "to delete", null, userSessionId);
-        new FileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(200).getBytes()), queryResult1.first(), userSessionId, false, false, true);
-
-        File toDelete = catalogManager.getFileManager().get(studyFqn, queryResult1.first().getPath(), null, userSessionId).first();
-        catalogManager.getFileManager().delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), toDelete.getUid()),
-                null, userSessionId);
-//        catalogFileUtils.delete(toDelete.getId(), userSessionId);
-
-        DataResult<File> queryResult = catalogManager.getFileManager().create(studyFqn, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toTrash.txt", "", new File.FileStatus(File.FileStatus.STAGE), 0, null, -1, null, null, true, "to trash", null, userSessionId);
-        new FileUtils(catalogManager).upload(new ByteArrayInputStream(StringUtils.randomString(200).getBytes()), queryResult.first(), userSessionId, false, false, true);
-        File toTrash = catalogManager.getFileManager().get(studyFqn, queryResult.first().getPath(), null, userSessionId).first();
-        catalogManager.getFileManager().delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), toTrash.getUid()),
-                null, userSessionId);
-
-        catalogManager.getFileManager().delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()),
-                null, userSessionId);
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.PATH.key(), folder.getPath())
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
-        DataResult<File> fileDataResult = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), userSessionId);
-
-        assertTrue(ioManager.exists(fileDataResult.first().getUri()));
-        for (File file : folderFiles) {
-            assertTrue("File uri: " + file.getUri() + " should exist", ioManager.exists(file.getUri()));
-        }
-
-//        catalogFileUtils.delete(folder.getId(), userSessionId);
-//        assertTrue(!ioManager.exists(catalogManager.getFileUri(catalogManager.getFile(folder.getId(), userSessionId).first())));
-//        for (File file : folderFiles) {
-//            URI fileUri = catalogManager.getFileUri(catalogManager.getFile(file.getId(), userSessionId).first());
-//            assertTrue("File uri: " + fileUri + " should NOT exist", !ioManager.exists(fileUri));
-//        }
-    }
-
-    @Test
     public void checkFileTest() throws CatalogException, IOException {
         File file;
         File returnedFile;
@@ -236,62 +144,33 @@ public class CatalogFileUtilsTest {
         assertNotSame(file, returnedFile);
         assertEquals(File.FileStatus.READY, returnedFile.getStatus().getName());
 
-        /** Check TRASHED file with found file **/
-        catalogManager.getFileManager().delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), null,
-                userSessionId);
-
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.UID.key(), file.getUid())
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY");
-        DataResult<File> fileDataResult = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), userSessionId);
-
-        file = fileDataResult.first();
-        returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
-
-        assertSame(file, returnedFile);
-        assertEquals(File.FileStatus.TRASHED, returnedFile.getStatus().getName());
-
-
-        /** Check TRASHED file with missing file **/
-//        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, userSessionId);
-        assertTrue(Paths.get(file.getUri()).toFile().delete());
-
-        returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
-
-//        assertNotSame(file, returnedFile);
-        assertEquals(File.FileStatus.TRASHED, returnedFile.getStatus().getName());
+//        /** Check TRASHED file with found file **/
+//        FileUpdateParams updateParams = new FileUpdateParams()
+//                .setStatus(new File.FileStatus(File.FileStatus.PENDING_DELETE));
+//        catalogManager.getFileManager().update(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), updateParams,
+//                QueryOptions.empty(), userSessionId);
+//        catalogManager.getFileManager().delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), null,
+//                userSessionId);
+//
+//        Query query = new Query()
+//                .append(FileDBAdaptor.QueryParams.UID.key(), file.getUid());
+//        DataResult<File> fileDataResult = catalogManager.getFileManager().search(studyFqn, query, QueryOptions.empty(), userSessionId);
+//
+//        file = fileDataResult.first();
+//        returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
+//
+//        assertSame(file, returnedFile);
+//        assertEquals(File.FileStatus.TRASHED, returnedFile.getStatus().getName());
+//
+//
+//        /** Check TRASHED file with missing file **/
+////        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, userSessionId);
+//        assertTrue(Paths.get(file.getUri()).toFile().delete());
+//
+//        returnedFile = catalogFileUtils.checkFile(studyFqn, file, true, userSessionId);
+//
+////        assertNotSame(file, returnedFile);
+//        assertEquals(File.FileStatus.TRASHED, returnedFile.getStatus().getName());
     }
-
-
-    private File prepareFiles(List<File> folderFiles) throws CatalogException {
-        File folder = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("folder").toString(), null, false,
-                null, QueryOptions.empty(), userSessionId).first();
-        folderFiles.add(
-                catalogManager.getFileManager().create(studyFqn, new File().setPath("folder/my.txt"), false, StringUtils.randomString(200),
-                        null, userSessionId).first()
-        );
-        folderFiles.add(
-                catalogManager.getFileManager().create(studyFqn, new File().setPath("folder/my2.txt"), false, StringUtils.randomString(200),
-                        null, userSessionId).first()
-        );
-        folderFiles.add(
-                catalogManager.getFileManager().create(studyFqn, new File().setPath("folder/my3.txt"), false, StringUtils.randomString(200),
-                        null, userSessionId).first()
-        );
-        folderFiles.add(
-                catalogManager.getFileManager().create(studyFqn, new File().setPath("folder/subfolder/my4.txt"), true,
-                        StringUtils.randomString(200), null, userSessionId).first()
-        );
-        folderFiles.add(
-                catalogManager.getFileManager().create(studyFqn, new File().setPath("folder/subfolder/my5.txt"), false,
-                        StringUtils.randomString(200), null, userSessionId).first()
-        );
-        folderFiles.add(
-                catalogManager.getFileManager().create(studyFqn, new File().setPath("folder/subfolder/subsubfolder/my6.txt"), true,
-                        StringUtils.randomString(200), null, userSessionId).first()
-        );
-        return folder;
-    }
-
 
 }

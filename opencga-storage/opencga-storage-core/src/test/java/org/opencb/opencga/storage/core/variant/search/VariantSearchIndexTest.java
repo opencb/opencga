@@ -235,6 +235,6 @@ public abstract class VariantSearchIndexTest extends VariantStorageBaseTest {
     }
 
     public VariantSearchLoadResult searchIndex(boolean overwrite) throws Exception {
-        return variantStorageEngine.searchIndex(new Query(), new QueryOptions(), overwrite);
+        return variantStorageEngine.secondaryIndex(new Query(), new QueryOptions(), overwrite);
     }
 }

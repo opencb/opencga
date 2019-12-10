@@ -5,14 +5,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.OpenCgaAnalysis;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
-import org.opencb.opencga.core.analysis.result.FileResult;
-import org.opencb.opencga.core.analysis.variant.CohortVariantStatsAnalysisExecutor;
-import org.opencb.opencga.core.annotations.Analysis;
+import org.opencb.opencga.core.tools.result.FileResult;
+import org.opencb.opencga.core.tools.variant.CohortVariantStatsAnalysisExecutor;
+import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Variable;
@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
-@Analysis(id = CohortVariantStatsAnalysis.ID, type = Analysis.AnalysisType.VARIANT)
-public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
+@Tool(id = CohortVariantStatsAnalysis.ID, type = Tool.ToolType.VARIANT)
+public class CohortVariantStatsAnalysis extends OpenCgaTool {
 
     public static final String ID = "cohort-variant-stats";
     public static final String DESCRIPTION = "Compute cohort variant stats for the selected list of samples.";
@@ -101,14 +101,14 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
         Set<String> allSamples = new HashSet<>();
 
         if (study == null || study.isEmpty()) {
-            throw new AnalysisException("Missing study");
+            throw new ToolException("Missing study");
         }
         if (indexResults) {
             if (StringUtils.isEmpty(cohortName)) {
-                throw new AnalysisException("Unable to index CohortVariantStats without a cohort");
+                throw new ToolException("Unable to index CohortVariantStats without a cohort");
             }
             if (samplesQuery != null && !samplesQuery.isEmpty() || CollectionUtils.isNotEmpty(sampleNames)) {
-                throw new AnalysisException("Unable to index CohortVariantStats mixing cohort with sampleNames or samplesQuery");
+                throw new ToolException("Unable to index CohortVariantStats mixing cohort with sampleNames or samplesQuery");
             }
         }
         try {
@@ -143,11 +143,11 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
 
             addAttribute("sampleNames", allSamples);
         } catch (CatalogException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
 
         if (allSamples.size() <= 1) {
-            throw new AnalysisException("Unable to compute variant stats with cohort of size " + allSamples.size());
+            throw new ToolException("Unable to compute variant stats with cohort of size " + allSamples.size());
         }
 
         outputFile = getOutDir().resolve("cohort_stats.json");
@@ -157,7 +157,7 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
     }
 
     @Override
-    public List<String> getSteps() {
+    protected List<String> getSteps() {
         List<String> steps = super.getSteps();
         if (indexResults) {
             steps.add("index");
@@ -166,9 +166,9 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
     }
 
     @Override
-    protected void run() throws AnalysisException {
+    protected void run() throws ToolException {
         step(getId(), () -> {
-            getAnalysisExecutor(CohortVariantStatsAnalysisExecutor.class)
+            getToolExecutor(CohortVariantStatsAnalysisExecutor.class)
                     .setStudy(study)
                     .setOutputFile(outputFile)
                     .setSampleNames(checkedSamplesList)
@@ -198,7 +198,7 @@ public class CohortVariantStatsAnalysis extends OpenCgaAnalysis {
                     catalogManager.getCohortManager()
                             .addAnnotationSet(study, cohortName, annotationSet, new QueryOptions(), token);
                 } catch (IOException | CatalogException e) {
-                    throw new AnalysisException(e);
+                    throw new ToolException(e);
                 }
             });
         }

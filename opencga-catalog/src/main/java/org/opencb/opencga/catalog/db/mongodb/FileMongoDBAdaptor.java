@@ -171,9 +171,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     @Override
     public long getId(long studyId, String path) throws CatalogDBException {
         Query query = new Query(QueryParams.STUDY_UID.key(), studyId).append(QueryParams.PATH.key(), path);
-        QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_UID);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, PRIVATE_UID);
         OpenCGAResult<File> fileDataResult = get(query, options);
-        return fileDataResult.getNumTotalResults() == 1 ? fileDataResult.getResults().get(0).getUid() : -1;
+        return fileDataResult.getNumMatches() == 1 ? fileDataResult.getResults().get(0).getUid() : -1;
     }
 
     @Override
@@ -349,8 +349,27 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             document.getSet().put(QueryParams.ID.key(), StringUtils.replace(path, "/", ":"));
         }
 
-        String[] acceptedParamsList = { QueryParams.TAGS.key() };
-        filterStringListParams(parameters, document.getSet(), acceptedParamsList);
+        // Check if the tags exist.
+        if (parameters.containsKey(QueryParams.TAGS.key())) {
+            List<String> tagList = parameters.getAsStringList(QueryParams.TAGS.key());
+
+            if (!tagList.isEmpty()) {
+                Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+                String operation = (String) actionMap.getOrDefault(QueryParams.TAGS.key(), "ADD");
+                switch (operation) {
+                    case "SET":
+                        document.getSet().put(QueryParams.TAGS.key(), tagList);
+                        break;
+                    case "REMOVE":
+                        document.getPullAll().put(QueryParams.TAGS.key(), tagList);
+                        break;
+                    case "ADD":
+                    default:
+                        document.getAddToSet().put(QueryParams.TAGS.key(), tagList);
+                        break;
+                }
+            }
+        }
 
         Map<String, Class<? extends Enum>> acceptedEnums = new HashMap<>();
         acceptedEnums.put(QueryParams.TYPE.key(), File.Type.class);
@@ -368,6 +387,15 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             document.getSet().put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             document.getSet().put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
+        if (parameters.containsKey(QueryParams.STATUS.key())) {
+            if (parameters.get(QueryParams.STATUS.key()) instanceof Enums.ExecutionStatus) {
+                document.getSet().put(QueryParams.STATUS.key(), getMongoDBDocument(parameters.get(QueryParams.STATUS.key()),
+                        "File.FileStatus"));
+            } else {
+                document.getSet().put(QueryParams.STATUS.key(), parameters.get(QueryParams.STATUS.key()));
+            }
+        }
+
         if (parameters.containsKey(QueryParams.RELATED_FILES.key())) {
             List<File.RelatedFile> relatedFiles = parameters.getAsList(QueryParams.RELATED_FILES.key(), File.RelatedFile.class);
             List<Document> relatedFileDocument = fileConverter.convertRelatedFiles(relatedFiles);
@@ -453,8 +481,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         switch (status) {
             case File.FileStatus.TRASHED:
             case File.FileStatus.REMOVED:
-            case File.FileStatus.PENDING_DELETE:
-            case File.FileStatus.DELETING:
+//            case File.FileStatus.PENDING_DELETE:
+//            case File.FileStatus.DELETING:
             case File.FileStatus.DELETED:
                 break;
             default:
@@ -479,8 +507,8 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         switch (status) {
             case File.FileStatus.TRASHED:
             case File.FileStatus.REMOVED:
-            case File.FileStatus.PENDING_DELETE:
-            case File.FileStatus.DELETING:
+//            case File.FileStatus.PENDING_DELETE:
+//            case File.FileStatus.DELETING:
             case File.FileStatus.DELETED:
                 break;
             default:
@@ -522,44 +550,52 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
             // Look for all the nested files and folders
             query.append(QueryParams.PATH.key(), "~^" + path + "*");
         }
-        QueryOptions options = new QueryOptions()
-                .append(QueryOptions.SORT, QueryParams.PATH.key())
-                .append(QueryOptions.ORDER, QueryOptions.DESCENDING);
 
-        DBIterator<Document> iterator = nativeIterator(clientSession, query, options);
+        if (File.FileStatus.TRASHED.equals(status)) {
+            Bson update = Updates.set(QueryParams.STATUS.key(), getMongoDBDocument(new File.FileStatus(status), "status"));
+            QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+            return endWrite(tmpStartTime, fileCollection.update(parseQuery(query), update, multi));
+        } else {
+            // DELETED AND REMOVED status
+            QueryOptions options = new QueryOptions()
+                    .append(QueryOptions.SORT, QueryParams.PATH.key())
+                    .append(QueryOptions.ORDER, QueryOptions.DESCENDING);
 
-        // TODO: Delete any documents that might have been previously deleted under the same paths
-        long numFiles = 0;
+            DBIterator<Document> iterator = nativeIterator(clientSession, query, options);
 
-        while (iterator.hasNext()) {
-            Document tmpFile = iterator.next();
-            long tmpFileUid = tmpFile.getLong(PRIVATE_UID);
+            // TODO: Delete any documents that might have been previously deleted under the same paths
+            long numFiles = 0;
 
-            dbAdaptorFactory.getCatalogJobDBAdaptor().removeFileReferences(clientSession, studyUid, tmpFileUid, tmpFile);
+            while (iterator.hasNext()) {
+                Document tmpFile = iterator.next();
+                long tmpFileUid = tmpFile.getLong(PRIVATE_UID);
 
-            // Set status
-            tmpFile.put(QueryParams.STATUS.key(), getMongoDBDocument(new File.FileStatus(status), "status"));
+                dbAdaptorFactory.getCatalogJobDBAdaptor().removeFileReferences(clientSession, studyUid, tmpFileUid, tmpFile);
 
-            // Insert the document in the DELETE collection
-            deletedFileCollection.insert(clientSession, tmpFile, null);
-            logger.debug("Inserted file uid '{}' in DELETE collection", tmpFileUid);
+                // Set status
+                tmpFile.put(QueryParams.STATUS.key(), getMongoDBDocument(new File.FileStatus(status), "status"));
 
-            // Remove the document from the main FILE collection
-            Bson bsonQuery = parseQuery(new Query(QueryParams.UID.key(), tmpFileUid));
-            DataResult remove = fileCollection.remove(clientSession, bsonQuery, null);
-            if (remove.getNumMatches() == 0) {
-                throw new CatalogDBException("File " + tmpFileUid + " not found");
+                // Insert the document in the DELETE collection
+                deletedFileCollection.insert(clientSession, tmpFile, null);
+                logger.debug("Inserted file uid '{}' in DELETE collection", tmpFileUid);
+
+                // Remove the document from the main FILE collection
+                Bson bsonQuery = parseQuery(new Query(QueryParams.UID.key(), tmpFileUid));
+                DataResult remove = fileCollection.remove(clientSession, bsonQuery, null);
+                if (remove.getNumMatches() == 0) {
+                    throw new CatalogDBException("File " + tmpFileUid + " not found");
+                }
+                if (remove.getNumDeleted() == 0) {
+                    throw new CatalogDBException("File " + tmpFileUid + " could not be deleted");
+                }
+
+                logger.debug("File uid '{}' deleted from main FILE collection", tmpFileUid);
+                numFiles++;
             }
-            if (remove.getNumDeleted() == 0) {
-                throw new CatalogDBException("File " + tmpFileUid + " could not be deleted");
-            }
 
-            logger.debug("File uid '{}' deleted from main FILE collection", tmpFileUid);
-            numFiles++;
+            logger.debug("File {}({}) deleted", path, fileUid);
+            return endWrite(tmpStartTime, numFiles, 0, 0, numFiles, Collections.emptyList());
         }
-
-        logger.debug("File {}({}) deleted", path, fileUid);
-        return endWrite(tmpStartTime, numFiles, 0, 0, numFiles, Collections.emptyList());
     }
 
 //    OpenCGAResult<Object> privateDelete(ClientSession clientSession, File file, String status) throws CatalogDBException {
@@ -832,7 +868,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     @Override
     public DBIterator<File> iterator(Query query, QueryOptions options) throws CatalogDBException {
         MongoCursor<Document> mongoCursor = getMongoCursor(null, query, options);
-        return new FileMongoDBIterator<>(mongoCursor, null, fileConverter, null, this, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
+        return new FileMongoDBIterator<File>(mongoCursor, null, fileConverter, null, this, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
                 options);
     }
 
@@ -846,7 +882,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         queryOptions.put(NATIVE_QUERY, true);
 
         MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
-        return new FileMongoDBIterator<>(mongoCursor, clientSession, null, null, this, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
+        return new FileMongoDBIterator<Document>(mongoCursor, clientSession, null, null, this, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
                 queryOptions);
     }
 
@@ -860,7 +896,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
                 FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
 
-        return new FileMongoDBIterator<>(mongoCursor, null, fileConverter, iteratorFilter, this,
+        return new FileMongoDBIterator<File>(mongoCursor, null, fileConverter, iteratorFilter, this,
                 dbAdaptorFactory.getCatalogSampleDBAdaptor(), studyUid, user, options);
     }
 
@@ -882,7 +918,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                 StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS.name(),
                 FileAclEntry.FilePermissions.VIEW_ANNOTATIONS.name());
 
-        return new FileMongoDBIterator<>(mongoCursor, null, null, iteratorFilter, this,
+        return new FileMongoDBIterator<Document>(mongoCursor, null, null, iteratorFilter, this,
                 dbAdaptorFactory.getCatalogSampleDBAdaptor(), studyUid, user, options);
     }
 
@@ -1056,11 +1092,13 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case CREATION_DATE:
                         addAutoOrQuery(PRIVATE_CREATION_DATE, queryParam.key(), myQuery, queryParam.type(), andBsonList);
                         break;
+                    case STATUS:
                     case STATUS_NAME:
                         // Convert the status to a positive status
                         myQuery.put(queryParam.key(),
                                 Status.getPositiveStatus(File.FileStatus.STATUS_LIST, myQuery.getString(queryParam.key())));
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), myQuery, queryParam.type(), andBsonList);
+                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), myQuery, QueryParams.STATUS_NAME.type(),
+                                andBsonList);
                         break;
                     case INDEX_STATUS_NAME:
                         // Convert the status to a positive status
@@ -1099,7 +1137,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case EXTERNAL:
                     case RELEASE:
                     case TAGS:
-                    case STATUS:
                     case STATUS_MSG:
                     case STATUS_DATE:
                     case RELATED_FILES:

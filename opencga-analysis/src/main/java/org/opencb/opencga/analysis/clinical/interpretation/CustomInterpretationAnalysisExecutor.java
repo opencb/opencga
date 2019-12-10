@@ -10,9 +10,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
-import org.opencb.opencga.core.annotations.AnalysisExecutor;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.annotations.ToolExecutor;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -24,11 +24,11 @@ import java.util.Map;
 
 import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.FAMILY_SEGREGATION;
 
-@AnalysisExecutor(id = "opencga-local",
-        analysis = CustomInterpretationAnalysis.ID,
-        source = AnalysisExecutor.Source.STORAGE,
-        framework = AnalysisExecutor.Framework.LOCAL)
-public class CustomInterpretationAnalysisExecutor extends OpenCgaAnalysisExecutor implements ClinicalInterpretationAnalysisExecutor {
+@ToolExecutor(id = "opencga-local",
+        tool = CustomInterpretationAnalysis.ID,
+        source = ToolExecutor.Source.STORAGE,
+        framework = ToolExecutor.Framework.LOCAL)
+public class CustomInterpretationAnalysisExecutor extends OpenCgaToolExecutor implements ClinicalInterpretationAnalysisExecutor {
 
 
     private String clinicalAnalysisId;
@@ -46,7 +46,7 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaAnalysisExecuto
     }
 
     @Override
-    public void run() throws AnalysisException {
+    public void run() throws ToolException {
         sessionId = getToken();
         clinicalInterpretationManager = getClinicalInterpretationManager();
 
@@ -59,7 +59,7 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaAnalysisExecuto
         try {
             assembly = clinicalInterpretationManager.getAssembly(studyId, sessionId);
         } catch (CatalogException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
         reportedVariantCreator = clinicalInterpretationManager.createReportedVariantCreator(query,
                 assembly, queryOptions.getBoolean(ClinicalUtils.SKIP_UNTIERED_VARIANTS_PARAM), sessionId);
@@ -88,7 +88,7 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaAnalysisExecuto
                     break;
             }
         } catch (CatalogException | StorageEngineException | IOException | InterpretationAnalysisException e) {
-            throw new AnalysisException("Error retrieving primary findings variants", e);
+            throw new ToolException("Error retrieving primary findings variants", e);
         }
 
         // Write primary findings
@@ -100,7 +100,7 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaAnalysisExecuto
             variants = clinicalInterpretationManager.getSecondaryFindings(query.getString(VariantQueryParam.SAMPLE.key()),
                     clinicalAnalysisId, query.getString(VariantQueryParam.STUDY.key()), sessionId);
         } catch (CatalogException | IOException | StorageEngineException e) {
-            throw new AnalysisException("Error retrieving secondary findings variants", e);
+            throw new ToolException("Error retrieving secondary findings variants", e);
         }
         reportedVariants = reportedVariantCreator.create(variants);
 

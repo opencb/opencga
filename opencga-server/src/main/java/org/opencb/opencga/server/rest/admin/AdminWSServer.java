@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -134,9 +135,9 @@ public class AdminWSServer extends OpenCGAWSServer {
     @Path("/audit/groupBy")
     @ApiOperation(value = "Group by operation")
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = "Count the number of elements matching the group", dataType = "boolean",
                     paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Maximum number of documents (groups) to be returned", dataType = "integer",
                     paramType = "query", defaultValue = "50")
     })
     public Response groupBy(

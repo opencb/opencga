@@ -37,7 +37,9 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
+import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import javax.naming.NamingException;
 import java.io.IOException;
@@ -706,8 +708,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         File outDir = catalogManager.getFileManager().createFolder(studyId, Paths.get("jobs", "myJob").toString(),
                 null, true, null, QueryOptions.empty(), sessionIdUser).first();
 
-        catalogManager.getJobManager().submit(studyId, "command", "subcommand", null, Collections.emptyMap(), sessionIdUser);
-        catalogManager.getJobManager().submit(studyId, "command", "subcommand2", null, Collections.emptyMap(), sessionIdUser);
+        catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), sessionIdUser);
+        catalogManager.getJobManager().submit(studyId, "command-subcommand2", null, Collections.emptyMap(), sessionIdUser);
 
         catalogManager.getJobManager().create(studyId, new Job().setId("job1").setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE)),
                 QueryOptions.empty(), sessionIdUser);
@@ -740,6 +742,66 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         assertEquals(1, allJobs.getNumMatches());
         assertEquals(1, allJobs.getNumResults());
+    }
+
+    @Test
+    public void submitJobOwner() throws CatalogException {
+        OpenCGAResult<Job> job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
+                sessionIdUser);
+
+        assertEquals(1, job.getNumResults());
+        assertEquals(Enums.ExecutionStatus.PENDING, job.first().getStatus().getName());
+    }
+
+    @Test
+    public void submitJobFromAdminsGroup() throws CatalogException {
+        // Add user to admins group
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", new GroupParams("user3", GroupParams.Action.ADD), sessionIdUser);
+
+        OpenCGAResult<Job> job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
+                sessionIdUser);
+
+        assertEquals(1, job.getNumResults());
+        assertEquals(Enums.ExecutionStatus.PENDING, job.first().getStatus().getName());
+    }
+
+    @Test
+    public void submitJobWithoutPermissions() throws CatalogException {
+        // Check there are no ABORTED jobs
+        Query query = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.ABORTED);
+        assertEquals(0, catalogManager.getJobManager().count(studyFqn, query, sessionIdUser).getNumMatches());
+
+        // Grant view permissions, but no EXECUTION permission
+        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
+                new Study.StudyAclParams("", AclParams.Action.SET, "view-only"), sessionIdUser);
+
+        try {
+            catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), sessionIdUser3);
+            fail("Sumbmission should have failed with a message saying the user does not have EXECUTION permissions");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("Permission denied"));
+        }
+
+        // The previous execution should have created an ABORTED job
+        OpenCGAResult<Job> search = catalogManager.getJobManager().search(studyFqn, query, null, sessionIdUser);
+        assertEquals(1, search.getNumResults());
+        assertEquals("variant-index", search.first().getToolId());
+    }
+
+    @Test
+    public void submitJobWithPermissions() throws CatalogException {
+        // Check there are no ABORTED jobs
+        Query query = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.ABORTED);
+        assertEquals(0, catalogManager.getJobManager().count(studyFqn, query, sessionIdUser).getNumMatches());
+
+        // Grant view permissions, but no EXECUTION permission
+        catalogManager.getStudyManager().updateAcl(Collections.singletonList(studyFqn), "user3",
+                new Study.StudyAclParams(StudyAclEntry.StudyPermissions.EXECUTION.name(), AclParams.Action.SET, "view-only"), sessionIdUser);
+
+        OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
+                sessionIdUser3);
+        assertEquals(1, search.getNumResults());
+        assertEquals(Enums.ExecutionStatus.PENDING, search.first().getStatus().getName());
     }
 
     /**

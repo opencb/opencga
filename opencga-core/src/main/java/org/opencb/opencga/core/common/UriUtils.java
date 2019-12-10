@@ -63,6 +63,14 @@ public class UriUtils {
         }
     }
 
+    public static URI createDirectoryUriSafe(String input) {
+        try {
+            return createDirectoryUri(input);
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
     public static URI createDirectoryUri(String input) throws URISyntaxException {
         URI uri = createUri(input);
         // If path does not ends with / , create a new URI with path + "/"

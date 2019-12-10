@@ -25,10 +25,7 @@ import org.opencb.opencga.analysis.StorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
-import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
-import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -42,6 +39,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -191,20 +189,6 @@ public class OpenCGATestExternalResource extends ExternalResource {
         return catalogManager.getFileManager().get(studyId, resourceName, null, sessionId).first();
     }
 
-    public static Job runStorageJob(CatalogManager catalogManager, Job job, Logger logger, String sessionId)
-            throws CatalogException, IOException {
-        try {
-            ExecutorManager.execute(catalogManager, job, sessionId);
-        } catch (ExecutionException e) {
-            throw new IOException(e.getCause());
-        }
-        return catalogManager.getJobManager().get(job.getUid(), null, sessionId).first();
-    }
-
-    public Job runStorageJob(Job storageJob, String sessionId) throws CatalogException, IOException {
-        return runStorageJob(getCatalogManager(), storageJob, logger, sessionId);
-    }
-
     public void clearStorageDB(String dbName) {
         clearStorageDB(getStorageConfiguration().getVariant().getDefaultEngine(), dbName);
     }
@@ -229,7 +213,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
             suffix = suffix.substring(0, suffix.length() - 1);
         }
         String folder = "I_tmp_" + new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss.SSS").format(new Date()) + suffix;
-        Path tmpOutDir = opencgaHome.resolve("jobs").resolve(folder);
+        Path tmpOutDir = Paths.get(getCatalogManager().getConfiguration().getJobDir()).resolve(folder);
         Files.createDirectories(tmpOutDir);
         return tmpOutDir.toString();
 //        return getCatalogManager().getJobManager().createJobOutDir(studyId, "I_tmp_" + date + sufix, sessionId).toString();

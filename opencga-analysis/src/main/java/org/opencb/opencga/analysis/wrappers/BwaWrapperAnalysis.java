@@ -3,17 +3,18 @@ package org.opencb.opencga.analysis.wrappers;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.core.analysis.result.FileResult;
-import org.opencb.opencga.core.annotations.Analysis;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.tools.result.FileResult;
+import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.exception.ToolException;
 
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.*;
 
-@Analysis(id = BwaWrapperAnalysis.ID, type = Analysis.AnalysisType.ALIGNMENT,
+@Tool(id = BwaWrapperAnalysis.ID, type = Tool.ToolType.ALIGNMENT,
         description = "")
 public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
@@ -30,11 +31,13 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
     private String fastq2File;
     private String samFile;
 
+    private Map<String, URI> fileUriMap = new HashMap<>();
+
     protected void check() throws Exception {
         super.check();
 
         if (StringUtils.isEmpty(command)) {
-            throw new AnalysisException("Missig BWA command. Supported commands are 'index' and 'mem'");
+            throw new ToolException("Missig BWA command. Supported commands are 'index' and 'mem'");
         }
 
         switch (command) {
@@ -43,7 +46,7 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 break;
             default:
                 // TODO: support fastmap, pemerge, aln, samse, sampe, bwasw, shm, fa2pac, pac2bwt, pac2bwtgen, bwtupdate, bwt2sa
-                throw new AnalysisException("BWA command '" + command + "' is not available. Supported commands are 'index' and 'mem'");
+                throw new ToolException("BWA command '" + command + "' is not available. Supported commands are 'index' and 'mem'");
         }
     }
 
@@ -56,7 +59,7 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 Set<String> filenamesBeforeRunning = new HashSet<>(getFilenames(getOutDir()));
 
                 // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
-                Command cmd = new Command(getCommandLine())
+                Command cmd = new Command(commandLine)
                         .setOutputOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDOUT_FILENAME).toFile())))
                         .setErrorOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDERR_FILENAME).toFile())));
 
@@ -83,7 +86,7 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
                     case "index": {
                         File file = params.containsKey("p")
                                 ? new File(params.getString("p"))
-                                : new File(fastaFile);
+                                : new File(fileUriMap.get(fastaFile).getPath());
                         String prefix = getOutDir().toAbsolutePath() + "/" + file.getName();
 
                         if (new File(prefix + ".sa").exists()
@@ -108,10 +111,10 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
                     if (file.exists()) {
                         msg = StringUtils.join(FileUtils.readLines(file, Charset.defaultCharset()), ". ");
                     }
-                    throw new AnalysisException(msg);
+                    throw new ToolException(msg);
                 }
             } catch (Exception e) {
-                throw new AnalysisException(e);
+                throw new ToolException(e);
             }
         });
     }
@@ -122,15 +125,15 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
     }
 
     @Override
-    public String getCommandLine() {
+    public String getCommandLine() throws ToolException {
         StringBuilder sb = new StringBuilder("docker run ");
 
         // Mount management
         Map<String, String> srcTargetMap = new HashMap<>();
-        updateSrcTargetMap(fastaFile, sb, srcTargetMap);
-        updateSrcTargetMap(indexBaseFile, sb, srcTargetMap);
-        updateSrcTargetMap(fastq1File, sb, srcTargetMap);
-        updateSrcTargetMap(fastq2File, sb, srcTargetMap);
+        updateFileMaps(fastaFile, sb, fileUriMap, srcTargetMap);
+        updateFileMaps(indexBaseFile, sb, fileUriMap, srcTargetMap);
+        updateFileMaps(fastq1File, sb, fileUriMap, srcTargetMap);
+        updateFileMaps(fastq2File, sb, fileUriMap, srcTargetMap);
 
         sb.append("--mount type=bind,source=\"")
                 .append(getOutDir().toAbsolutePath()).append("\",target=\"").append(DOCKER_OUTPUT_PATH).append("\" ");
@@ -159,12 +162,12 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
             case "index": {
                 File file = params.containsKey("p")
                         ? new File(params.getString("p"))
-                        : new File(fastaFile);
+                        : new File(fileUriMap.get(fastaFile).getPath());
 
                 sb.append(" -p ").append(DOCKER_OUTPUT_PATH).append("/").append(file.getName());
 
                 if (StringUtils.isNotEmpty(fastaFile)) {
-                    file = new File(fastaFile);
+                    file = new File(fileUriMap.get(fastaFile).getPath());
                     sb.append(" ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
                 }
 

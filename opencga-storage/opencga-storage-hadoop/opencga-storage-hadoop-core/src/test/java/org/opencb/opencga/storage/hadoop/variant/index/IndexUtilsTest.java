@@ -2,9 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created on 17/04/19.
@@ -35,5 +33,14 @@ public class IndexUtilsTest {
 
         byte[] bytes = IndexUtils.countPerBitToBytes(counts);
         assertArrayEquals(expectedCounts, IndexUtils.countPerBitToObject(bytes));
+    }
+
+    @Test
+    public void testNumericMethods() {
+        assertTrue(IndexUtils.lessThan(1.0, 3.0));
+        assertFalse(IndexUtils.lessThan(2, 2 + IndexUtils.DELTA - IndexUtils.DELTA));
+        assertTrue(IndexUtils.equalsTo(2, 2 + IndexUtils.DELTA - IndexUtils.DELTA));
+        assertNotEquals(2.0, 2 + IndexUtils.DELTA - IndexUtils.DELTA, 0);
+        assertEquals(2.0, 2 + IndexUtils.DELTA - IndexUtils.DELTA, IndexUtils.DELTA);
     }
 }

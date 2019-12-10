@@ -88,6 +88,7 @@ public abstract class StorageManager {
 
     public abstract void testConnection() throws StorageEngineException;
 
+    @Deprecated
     protected StudyInfo getStudyInfo(@Nullable String studyIdStr, String fileIdStr, String sessionId)
             throws CatalogException, IOException {
         return getStudyInfo(studyIdStr, Collections.singletonList(fileIdStr), sessionId);

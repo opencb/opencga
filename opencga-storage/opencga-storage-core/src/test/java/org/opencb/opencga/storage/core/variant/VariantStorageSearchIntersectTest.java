@@ -168,7 +168,7 @@ public abstract class VariantStorageSearchIntersectTest extends VariantStorageBa
         }
 
         solr.configure(this.variantStorageEngine);
-        this.variantStorageEngine.searchIndex();
+        this.variantStorageEngine.secondaryIndex();
     }
 
     @Test

@@ -6,7 +6,7 @@ import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.exception.AnalysisExecutorException;
+import org.opencb.opencga.core.exception.ToolExecutorException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
@@ -18,7 +18,7 @@ public interface ClinicalInterpretationAnalysisExecutor {
     ObjectMap getExecutorParams();
 
 
-    default ClinicalInterpretationManager getClinicalInterpretationManager() throws AnalysisExecutorException {
+    default ClinicalInterpretationManager getClinicalInterpretationManager() throws ToolExecutorException {
         String opencgaHome = getExecutorParams().getString("opencgaHome");
         try {
             Configuration configuration = ConfigurationUtils.loadConfiguration(opencgaHome);
@@ -32,7 +32,7 @@ public interface ClinicalInterpretationAnalysisExecutor {
                     Paths.get(opencgaHome + "/analysis/resources/"));
 
         } catch (CatalogException | IOException e) {
-            throw new AnalysisExecutorException(e);
+            throw new ToolExecutorException(e);
         }
     }
 }

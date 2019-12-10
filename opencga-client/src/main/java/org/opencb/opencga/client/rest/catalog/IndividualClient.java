@@ -16,9 +16,13 @@
 
 package org.opencb.opencga.client.rest.catalog;
 
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.IOException;
 
@@ -36,19 +40,19 @@ public class IndividualClient extends AnnotationClient<Individual> {
         this.clazz = Individual.class;
     }
 
-    public DataResponse<Individual> create(String studyId, ObjectMap bodyParams) throws IOException {
+    public RestResponse<Individual> create(String studyId, ObjectMap bodyParams) throws IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull(STUDY, studyId);
         params.putIfNotNull("body", bodyParams);
         return execute(INDIVIDUALS_URL, "create", params, POST, Individual.class);
     }
 
-    public DataResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
+    public RestResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
         params = addParamsToObjectMap(params, "study", studyId, "fields", fields);
         return execute(INDIVIDUALS_URL, "groupBy", params, GET, ObjectMap.class);
     }
 
-    public DataResponse<FacetField> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
+    public RestResponse<FacetField> stats(String study, Query query, QueryOptions queryOptions) throws IOException {
         ObjectMap params = new ObjectMap(query);
         params.putAll(queryOptions);
         params.put("study", study);

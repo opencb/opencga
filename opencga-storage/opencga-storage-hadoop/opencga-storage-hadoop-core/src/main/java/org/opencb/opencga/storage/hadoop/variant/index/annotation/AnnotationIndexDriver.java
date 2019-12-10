@@ -109,4 +109,13 @@ public class AnnotationIndexDriver extends AbstractVariantsTableDriver {
         }
     }
 
+    public static void main(String[] args) throws Exception {
+        try {
+            System.exit(new AnnotationIndexDriver().privateMain(args, null));
+        } catch (Exception e) {
+            LOGGER.error("Error executing " + AnnotationIndexDriver.class, e);
+            System.exit(1);
+        }
+    }
+
 }

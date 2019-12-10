@@ -20,17 +20,22 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.app.cli.internal.InternalMain;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +49,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
+import static org.opencb.opencga.core.api.ParamConstants.AVERAGE_QUALITY;
 
 /**
  * Created on 09/05/16
@@ -328,27 +334,111 @@ public class InternalMainTest {
         File bam = opencga.createFile(studyId, "HG00096.chrom20.small.bam", sessionId);
 //        File bai = opencga.createFile(studyId, "HG00096.chrom20.small.bam.bai", sessionId);
 
-        String temporalDir = opencga.createTmpOutdir(studyId, "index", sessionId);
+        //String temporalDir = opencga.createTmpOutdir(studyId, "index", sessionId);
 
         // Index file1
         execute("alignment", "index",
                 "--session-id", sessionId,
                 "--study", studyId,
-                "--file", bam.getName(),
-                "-o", temporalDir);
+                "--file", bam.getName());
 
+
+        java.io.File baiFile = new java.io.File(bam.getUri().getPath() + ".bai");
 
 //        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, bam.getId(), null, sessionId).first().getIndex().getStatus().getName());
 //        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), bam.getUid()), null, sessionId).first();
 //        assertEquals(Job.JobStatus.READY, job.getStatus().getName());
 
-        assertEquals(3, Files.list(Paths.get(temporalDir)).collect(Collectors.toList()).size());
-        assertTrue(Files.exists(Paths.get(temporalDir).resolve("HG00096.chrom20.small.bam.bai")));
-        assertTrue(Files.exists(Paths.get(temporalDir).resolve("HG00096.chrom20.small.bam.bw")));
-        assertTrue(Files.exists(Paths.get(temporalDir).resolve("status.json")));
+        assertEquals(3, Files.list(baiFile.getParentFile().toPath()).collect(Collectors.toList()).size());
+        assertTrue(baiFile.exists());
+//        assertTrue(Files.exists(Paths.get(temporalDir).resolve("HG00096.chrom20.small.bam.bw")));
+//        assertTrue(Files.exists(Paths.get(temporalDir).resolve("status.json")));
 
 //        execute("alignment", "query", "--session-id", sessionId, "--file", "user@p1:s1:" + bam.getPath(), "--region", "20");
 
+    }
+
+    @Test
+    public void testStats() throws CatalogException, IOException, ToolException, StorageEngineException {
+        createStudy(datastores, "s1");
+
+        String filename = "HG00096.chrom20.small.bam";
+        File bamFile = opencga.createFile(studyId, filename, sessionId);
+
+        String temporalDir = opencga.createTmpOutdir(studyId, "_stats", sessionId);
+
+        // stats run
+        execute("alignment", "stats-run",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--input-file", bamFile.getName(),
+                "-o", temporalDir);
+
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve(filename + ".stats.txt")));
+
+        // stats info
+        AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, opencga.getStorageEngineFactory());
+        DataResult<String> statsInfo = alignmentStorageManager.statsInfo(studyId, bamFile.getId(), sessionId);
+        assertEquals(1, statsInfo.getNumMatches());
+        assert(statsInfo.getResults().get(0).length() > 0);
+        System.out.println(statsInfo);
+
+        // stats query
+        Query query = new Query();
+        query.put(AVERAGE_QUALITY, ">55");
+        QueryOptions queryOptions = QueryOptions.empty();
+        DataResult<File> resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
+        assertEquals(0, resultFiles.getNumResults());
+
+        query.put(AVERAGE_QUALITY, ">30");
+        resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
+        assertEquals(1, resultFiles.getNumResults());
+        System.out.println(resultFiles.getResults().get(0).getAnnotationSets().get(0));
+    }
+
+    @Test
+    public void testCoverage() throws Exception {
+        createStudy(datastores, "s1");
+
+        String filename = "HG00096.chrom20.small.bam";
+        File bamFile = opencga.createFile(studyId, filename, sessionId);
+        File baiFile = opencga.createFile(studyId, filename + ".bai", sessionId);
+
+        String temporalDir = opencga.createTmpOutdir(studyId, "_coverage", sessionId);
+
+        // coverage run
+        execute("alignment", "coverage-run",
+                "--session-id", sessionId,
+                "--study", studyId,
+                "--input-file", bamFile.getName(),
+                "--window-size", "50",
+                "-o", temporalDir);
+
+        assertTrue(Files.exists(Paths.get(temporalDir).resolve(filename + ".bw")));
+
+        // coverage query
+        Region region = new Region("20:62000-63000");
+        AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, opencga.getStorageEngineFactory());
+        DataResult<RegionCoverage> coverage = alignmentStorageManager.coverageQuery(studyId, bamFile.getId(), region, 0, 100, 1, sessionId);
+        assertEquals(1, coverage.getNumMatches());
+        System.out.println(coverage);
+
+        alignmentStorageManager = new AlignmentStorageManager(catalogManager, opencga.getStorageEngineFactory());
+        coverage = alignmentStorageManager.coverageQuery(studyId, bamFile.getId(), region, 5, 6, 1, sessionId);
+        assertEquals(5, coverage.getNumMatches());
+        System.out.println(coverage);
+
+        //        // coverage log2Ratio
+//        Query query = new Query();
+//        query.put(AVERAGE_QUALITY, ">55");
+//        QueryOptions queryOptions = QueryOptions.empty();
+//        DataResult<File> resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
+//        assertEquals(0, resultFiles.getNumResults());
+//
+//        query.put(AVERAGE_QUALITY, ">30");
+//        resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
+//        assertEquals(1, resultFiles.getNumResults());
+//        System.out.println(resultFiles.getResults().get(0).getAnnotationSets().get(0));
     }
 
     @Test
@@ -433,10 +523,10 @@ public class InternalMainTest {
         String temporalDir1 = opencga.createTmpOutdir(studyId, "_alignment1", sessionId);
 
         execute("alignment", "bwa",
-                "--session-id", sessionId,
+                "--token", sessionId,
                 "--study", studyId,
                 "--command", "index",
-                "--fasta-file", fastaFile.getUri().getPath(),
+                "--fasta-file", fastaFile.getId(),
                 "-o", temporalDir1);
 
         assertEquals(8, Files.list(Paths.get(temporalDir1)).collect(Collectors.toList()).size());
@@ -462,6 +552,8 @@ public class InternalMainTest {
                 "--fastq1-file", fastqFile.getUri().getPath(),
                 "--sam-file", samFile,
                 "-o", temporalDir2);
+
+//        fail("------- stop -----");
 
         assertEquals(4, Files.list(Paths.get(temporalDir2)).collect(Collectors.toList()).size());
         assertTrue(new java.io.File(samFile).exists());

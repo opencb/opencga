@@ -18,10 +18,10 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
 import org.opencb.opencga.server.rest.analysis.AlignmentAnalysisWSService;
 import org.opencb.opencga.server.rest.analysis.VariantAnalysisWSService;
@@ -72,7 +72,7 @@ public class MetaWSServer extends OpenCGAWSServer {
         info.put("Git branch", GitRepositoryState.get().getBranch());
         info.put("Git commit", GitRepositoryState.get().getCommitId());
         info.put("Description", "Big Data platform for processing and analysing NGS data");
-        DataResult queryResult = new DataResult();
+        OpenCGAResult queryResult = new OpenCGAResult();
         queryResult.setTime(0);
         queryResult.setResults(Collections.singletonList(info));
 
@@ -84,10 +84,17 @@ public class MetaWSServer extends OpenCGAWSServer {
     @ApiOperation(httpMethod = "GET", value = "Ping Opencga webservices.")
     public Response ping() {
 
-        DataResult queryResult = new DataResult();
+        OpenCGAResult queryResult = new OpenCGAResult();
         queryResult.setTime(0);
 
         return createOkResponse(queryResult);
+    }
+
+    @GET
+    @Path("/fail")
+    @ApiOperation(httpMethod = "GET", value = "Ping Opencga webservices.")
+    public Response fail() {
+        throw new RuntimeException("Do fail!");
     }
 
     @GET
@@ -95,7 +102,7 @@ public class MetaWSServer extends OpenCGAWSServer {
     @ApiOperation(httpMethod = "GET", value = "Database status.")
     public Response status() {
 
-        DataResult queryResult = new DataResult();
+        OpenCGAResult queryResult = new OpenCGAResult();
         queryResult.setTime(0);
 
         String storageEngineId;
@@ -179,7 +186,6 @@ public class MetaWSServer extends OpenCGAWSServer {
         classes.put("panels", PanelWSServer.class);
         classes.put("alignment", AlignmentAnalysisWSService.class);
         classes.put("variant", VariantAnalysisWSService.class);
-        classes.put("clinical", ClinicalAnalysisWSServer.class);
         classes.put("operations", OperationsWSService.class);
         classes.put("meta", MetaWSServer.class);
         classes.put("ga4gh", Ga4ghWSServer.class);

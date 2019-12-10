@@ -21,8 +21,8 @@ import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.annotations.Analysis;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -32,7 +32,7 @@ import java.util.List;
 import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.FAMILY;
 import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.FAMILY_DISORDER;
 
-@Analysis(id = CustomInterpretationAnalysis.ID, type = Analysis.AnalysisType.CLINICAL)
+@Tool(id = CustomInterpretationAnalysis.ID, type = Tool.ToolType.CLINICAL)
 public class CustomInterpretationAnalysis extends InterpretationAnalysis {
 
     public final static String ID = "custom-interpretation";
@@ -62,19 +62,19 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
         if (StringUtils.isNotEmpty(studyId)) {
             if (query.containsKey(VariantQueryParam.STUDY.key()) && !studyId.equals(query.get(VariantQueryParam.STUDY.key()))) {
                 // Query contains a different study than the input parameter
-                throw new AnalysisException("Mismatch study: query (" + query.getString(VariantQueryParam.STUDY.key())
+                throw new ToolException("Mismatch study: query (" + query.getString(VariantQueryParam.STUDY.key())
                         + ") and input parameter (" + studyId + ")");
             } else {
                 query.put(VariantQueryParam.STUDY.key(), studyId);
             }
         } else if (!query.containsKey(VariantQueryParam.STUDY.key())) {
             // Missing study
-            throw new AnalysisException("Missing study ID");
+            throw new ToolException("Missing study ID");
         }
 
         // Check clinical analysis
         if (StringUtils.isEmpty(clinicalAnalysisId)) {
-            throw new AnalysisException("Missing clinical analysis ID");
+            throw new ToolException("Missing clinical analysis ID");
         }
 
         // Get clinical analysis to ckeck proband sample ID, family ID
@@ -83,10 +83,10 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
             clinicalAnalysisQueryResult = catalogManager.getClinicalAnalysisManager().get(studyId, clinicalAnalysisId, QueryOptions.empty(),
                     token);
         } catch (CatalogException e) {
-            throw new AnalysisException(e);
+            throw new ToolException(e);
         }
         if (clinicalAnalysisQueryResult.getNumResults() != 1) {
-            throw new AnalysisException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyId);
+            throw new ToolException("Clinical analysis " + clinicalAnalysisId + " not found in study " + studyId);
         }
 
         clinicalAnalysis = clinicalAnalysisQueryResult.first();
@@ -96,7 +96,7 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
             String probandSampleId = clinicalAnalysis.getProband().getSamples().get(0).getId();
             if (query.containsKey(VariantQueryParam.SAMPLE.key()) && !probandSampleId.equals(query.get(VariantQueryParam.SAMPLE.key()))) {
                 // Query contains a different sample than clinical analysis
-                throw new AnalysisException("Mismatch sample: query (" + query.getString(VariantQueryParam.SAMPLE.key())
+                throw new ToolException("Mismatch sample: query (" + query.getString(VariantQueryParam.SAMPLE.key())
                         + ") and clinical analysis (" + probandSampleId + ")");
 //            } else {
 //                query.put(VariantQueryParam.SAMPLE.key(), probandSampleId);
@@ -108,7 +108,7 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
             String familyId = clinicalAnalysis.getFamily().getId();
             if (query.containsKey(FAMILY.key()) && !familyId.equals(query.get(FAMILY.key()))) {
                 // Query contains a different family than clinical analysis
-                throw new AnalysisException("Mismatch family: query (" + query.getString(FAMILY.key()) + ") and clinical analysis ("
+                throw new ToolException("Mismatch family: query (" + query.getString(FAMILY.key()) + ") and clinical analysis ("
                         + familyId + ")");
 //            } else {
 //                query.put(FAMILY.key(), familyId);
@@ -121,7 +121,7 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
             if (query.containsKey(FAMILY_DISORDER.key())
                     && !disorderId.equals(query.get(FAMILY_DISORDER.key()))) {
                 // Query contains a different disorder than clinical analysis
-                throw new AnalysisException("Mismatch disorder: query (" + query.getString(FAMILY_DISORDER.key())
+                throw new ToolException("Mismatch disorder: query (" + query.getString(FAMILY_DISORDER.key())
                         + ") and clinical analysis (" + disorderId + ")");
 //            } else {
 //                query.put(FAMILY_DISORDER.key(), disorderId);
@@ -136,9 +136,9 @@ public class CustomInterpretationAnalysis extends InterpretationAnalysis {
     }
 
     @Override
-    protected void run() throws AnalysisException {
+    protected void run() throws ToolException {
         step(() -> {
-            getAnalysisExecutor(CustomInterpretationAnalysisExecutor.class)
+            getToolExecutor(CustomInterpretationAnalysisExecutor.class)
                     .setClinicalAnalysisId(clinicalAnalysisId)
                     .setQuery(query)
                     .setQueryOptions(queryOptions)

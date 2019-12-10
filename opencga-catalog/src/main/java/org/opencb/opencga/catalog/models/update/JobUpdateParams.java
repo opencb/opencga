@@ -1,9 +1,10 @@
 package org.opencb.opencga.catalog.models.update;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.analysis.result.AnalysisResult;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.common.Enums;
 
@@ -29,7 +30,7 @@ public class JobUpdateParams {
     private List<File> output;   // output files of this job
     private List<String> tags;
 
-    private AnalysisResult result;
+    private ExecutionResult result;
 
     private File log;
     private File errorLog;
@@ -39,6 +40,7 @@ public class JobUpdateParams {
     public JobUpdateParams() {
     }
 
+    @JsonIgnore
     public ObjectMap getUpdateMap() throws CatalogException {
         try {
             return new ObjectMap(getDefaultNonNullObjectMapper().writeValueAsString(this));
@@ -158,11 +160,11 @@ public class JobUpdateParams {
         return this;
     }
 
-    public AnalysisResult getResult() {
+    public ExecutionResult getResult() {
         return result;
     }
 
-    public JobUpdateParams setResult(AnalysisResult result) {
+    public JobUpdateParams setResult(ExecutionResult result) {
         this.result = result;
         return this;
     }

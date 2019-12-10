@@ -76,6 +76,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultSampleLimit;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.buildSamplesIndexCollectionName;
 
@@ -522,7 +523,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param options   Other options
      * @throws StorageEngineException if there is any error
      */
-    public void fillGaps(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
+    public void aggregateFamily(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         throw new UnsupportedOperationException();
     }
 
@@ -533,15 +534,15 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      * @param overwrite Overwrite gaps for all files and variants
      * @throws StorageEngineException if there is any error
      */
-    public void fillMissing(String study, ObjectMap options, boolean overwrite) throws StorageEngineException {
+    public void aggregate(String study, ObjectMap options, boolean overwrite) throws StorageEngineException {
         throw new UnsupportedOperationException();
     }
 
-    public VariantSearchLoadResult searchIndex() throws StorageEngineException, IOException, VariantSearchException {
-        return searchIndex(new Query(), new QueryOptions(), false);
+    public VariantSearchLoadResult secondaryIndex() throws StorageEngineException, IOException, VariantSearchException {
+        return secondaryIndex(new Query(), new QueryOptions(), false);
     }
 
-    public VariantSearchLoadResult searchIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
+    public VariantSearchLoadResult secondaryIndex(Query inputQuery, QueryOptions inputQueryOptions, boolean overwrite)
             throws StorageEngineException, IOException, VariantSearchException {
         Query query = inputQuery == null ? new Query() : new Query(inputQuery);
         QueryOptions queryOptions = inputQueryOptions == null ? new QueryOptions() : new QueryOptions(inputQueryOptions);
@@ -586,7 +587,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     protected void searchIndexLoadedFiles(List<URI> inputFiles, ObjectMap options) throws StorageEngineException {
         try {
             if (options.getBoolean(INDEX_SEARCH.key())) {
-                searchIndex(new Query(), new QueryOptions(), false);
+                secondaryIndex(new Query(), new QueryOptions(), false);
             }
         } catch (IOException | VariantSearchException e) {
             throw new StorageEngineException("Error indexing in search", e);
@@ -909,6 +910,14 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
+        if (options == null) {
+            options = new QueryOptions();
+        }
+        if (query == null) {
+            query = new Query();
+        }
+        addDefaultLimit(options, getOptions());
+        addDefaultSampleLimit(query, getOptions());
         query = preProcessQuery(query, options);
         return getVariantQueryExecutor(query, options).get(query, options);
     }
@@ -1022,6 +1031,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     public DataResult<FacetField> facet(Query query, QueryOptions options) {
         try {
+            addDefaultLimit(options, getOptions());
             return new VariantAggregationExecutor(getVariantSearchManager(), dbName, this, getMetadataManager())
                     .facet(query, options);
         } catch (StorageEngineException e) {

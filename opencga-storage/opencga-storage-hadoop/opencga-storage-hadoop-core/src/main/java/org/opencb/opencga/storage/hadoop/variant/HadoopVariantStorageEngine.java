@@ -31,10 +31,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.core.config.DatabaseCredentials;
-import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
+import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
@@ -115,8 +115,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.MERG
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.RESUME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.STUDY;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.convertGenesToRegionsQuery;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.isValidParam;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 import static org.opencb.opencga.storage.hadoop.variant.gaps.FillGapsDriver.*;
 
@@ -395,8 +394,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public void fillMissing(String study, ObjectMap options, boolean overwrite) throws StorageEngineException {
-        logger.info("FillMissing: Study " + study);
+    public void aggregate(String study, ObjectMap options, boolean overwrite) throws StorageEngineException {
+        logger.info("Aggregate: Study " + study);
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
@@ -406,11 +405,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public VariantSearchLoadResult searchIndex(Query query, QueryOptions queryOptions, boolean overwrite)
+    public VariantSearchLoadResult secondaryIndex(Query query, QueryOptions queryOptions, boolean overwrite)
             throws StorageEngineException, IOException, VariantSearchException {
         queryOptions = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
         queryOptions.putIfAbsent(VariantHadoopDBAdaptor.NATIVE, true);
-        return super.searchIndex(query, queryOptions, overwrite);
+        return super.secondaryIndex(query, queryOptions, overwrite);
     }
 
     @Override
@@ -434,9 +433,9 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public void fillGaps(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
+    public void aggregateFamily(String study, List<String> samples, ObjectMap options) throws StorageEngineException {
         if (samples == null || samples.size() < 2) {
-            throw new IllegalArgumentException("Fill gaps operation requires at least two samples.");
+            throw new IllegalArgumentException("Aggregate family operation requires at least two samples.");
         } else if (samples.size() > FILL_GAPS_MAX_SAMPLES) {
             throw new IllegalArgumentException("Unable to execute fill gaps operation with more than "
                     + FILL_GAPS_MAX_SAMPLES + " samples.");
@@ -837,7 +836,16 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
         List<String> studyNames = metadataManager.getStudyNames();
 
         if (isValidParam(query, STUDY) && studyNames.size() == 1) {
-            query.remove(STUDY.key());
+            String study = query.getString(STUDY.key());
+            if (!isNegated(study)) {
+                try {
+                    // Check that study exists
+                    getMetadataManager().getStudyId(study);
+                } catch (StorageEngineException e) {
+                    throw VariantQueryException.internalException(e);
+                }
+                query.remove(STUDY.key());
+            }
         }
 
         convertGenesToRegionsQuery(query, cellBaseUtils);

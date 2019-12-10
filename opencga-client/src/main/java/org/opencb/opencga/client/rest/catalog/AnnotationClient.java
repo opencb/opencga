@@ -16,10 +16,10 @@
 
 package org.opencb.opencga.client.rest.catalog;
 
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.IOException;
 
@@ -33,8 +33,8 @@ public abstract class AnnotationClient<T> extends CatalogClient<T> {
     }
 
     @Deprecated
-    public DataResponse<AnnotationSet> createAnnotationSet(String studyId, String id, String variableSetId, String annotationSetId,
-                                                            ObjectMap annotations) throws IOException {
+    public RestResponse<AnnotationSet> createAnnotationSet(String studyId, String id, String variableSetId, String annotationSetId,
+                                                           ObjectMap annotations) throws IOException {
         ObjectMap bodyParams = new ObjectMap();
         bodyParams.putIfNotEmpty("id", annotationSetId);
         bodyParams.putIfNotNull("annotations", annotations);
@@ -46,19 +46,19 @@ public abstract class AnnotationClient<T> extends CatalogClient<T> {
         return execute(category, id, "annotationsets", null, "create", params, POST, AnnotationSet.class);
     }
 
-    public DataResponse<AnnotationSet> getAnnotationSets(String id, ObjectMap params) throws IOException {
+    public RestResponse<AnnotationSet> getAnnotationSets(String id, ObjectMap params) throws IOException {
         return execute(category, id, "annotationsets", params, GET, AnnotationSet.class);
     }
 
-    public DataResponse<AnnotationSet> searchAnnotationSets(String id, ObjectMap params) throws IOException {
+    public RestResponse<AnnotationSet> searchAnnotationSets(String id, ObjectMap params) throws IOException {
         return execute(category, id, "annotationsets", null, "search", params, GET, AnnotationSet.class);
     }
 
-    public DataResponse<AnnotationSet> deleteAnnotationSet(String id, String annotationSetName, ObjectMap params) throws IOException {
+    public RestResponse<AnnotationSet> deleteAnnotationSet(String id, String annotationSetName, ObjectMap params) throws IOException {
         return execute(category, id, "annotationsets", annotationSetName, "delete", params, GET, AnnotationSet.class);
     }
 
-    public DataResponse<AnnotationSet> updateAnnotationSet(String studyId, String id, String annotationSetId, ObjectMap queryParams,
+    public RestResponse<AnnotationSet> updateAnnotationSet(String studyId, String id, String annotationSetId, ObjectMap queryParams,
                                                             ObjectMap annotations) throws IOException {
         ObjectMap params = new ObjectMap("body", annotations);
         queryParams.putIfNotEmpty("study", studyId);

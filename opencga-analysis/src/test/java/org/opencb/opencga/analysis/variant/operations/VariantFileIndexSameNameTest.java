@@ -6,7 +6,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileIndex;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStoragePipeline;
@@ -92,7 +92,7 @@ public class VariantFileIndexSameNameTest extends AbstractVariantStorageOperatio
         try {
             indexFile(inputFile1, new QueryOptions(DummyVariantStoragePipeline.VARIANTS_LOAD_FAIL, true), outputId);
             fail("Expected exception");
-        } catch (AnalysisException e) {
+        } catch (ToolException e) {
             assertThat(e.getCause(), hasMessage(containsString("Exception executing load")));
         }
         thrown.expect(hasMessage(containsString("Exception executing transform")));
@@ -102,7 +102,7 @@ public class VariantFileIndexSameNameTest extends AbstractVariantStorageOperatio
 
     @Test
     public void testIndexBothSameTime() throws Exception {
-        thrown.expect(AnalysisException.class);
+        thrown.expect(ToolException.class);
         thrown.expectCause(isA(CatalogException.class));
         thrown.expectMessage("Unable to INDEX multiple files with the same name");
         indexFiles(Arrays.asList(inputFile1, inputFile2), new QueryOptions(), outputId);

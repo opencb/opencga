@@ -26,11 +26,13 @@ import org.opencb.opencga.catalog.models.update.ClinicalUpdateParams;
 import org.opencb.opencga.catalog.models.update.InterpretationUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
 import javax.servlet.http.HttpServletRequest;
@@ -85,7 +87,7 @@ public class InterpretationWSService extends AnalysisWSService {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a new clinical analysis", position = 1, response = ClinicalAnalysis.class)
     public Response create(
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
                     String studyStr,
             @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
                     ClinicalAnalysisParameters params) {
@@ -101,14 +103,13 @@ public class InterpretationWSService extends AnalysisWSService {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update clinical analysis attributes", position = 1, response = ClinicalAnalysis.class)
     public Response update(
-            @ApiParam(value = "Study [[user@]project:]{study} where study and project can be either the id or alias.")
-            @QueryParam("study") String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Clinical analysis type") @QueryParam("type") String type,
             @ApiParam(value = "Priority") @QueryParam("priority") String priority,
             @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
-            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
             @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
             @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Due date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)") @QueryParam("dueDate") String dueDate,
             @ApiParam(value = "Description") @QueryParam("description") String description,
@@ -124,7 +125,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
                     ClinicalUpdateParams params) {
         try {
-            query.remove("study");
+            query.remove(ParamConstants.STUDY_PARAM);
             if (params != null && params.getInterpretations() != null) {
                 Map<String, Object> actionMap = new HashMap<>();
                 actionMap.put(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), ParamUtils.UpdateAction.SET.name());
@@ -143,7 +144,7 @@ public class InterpretationWSService extends AnalysisWSService {
     @ApiOperation(value = "Update clinical analysis attributes", position = 1, response = ClinicalAnalysis.class)
     public Response update(
             @ApiParam(value = "Comma separated list of clinical analysis ids") @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
                     String studyStr,
             @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
                     ClinicalUpdateParams params) {
@@ -166,8 +167,7 @@ public class InterpretationWSService extends AnalysisWSService {
     @ApiOperation(value = "Add or remove Interpretations to/from a Clinical Analysis", position = 1, response = ClinicalAnalysis.class)
     public Response interpretationUpdate(
             @ApiParam(value = "Clinical analysis ID") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
-                    String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed if the array of interpretations is being updated.", defaultValue = "ADD")
             @QueryParam("action") ParamUtils.BasicUpdateAction interpretationAction,
             @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
@@ -194,16 +194,16 @@ public class InterpretationWSService extends AnalysisWSService {
     @Path("/{clinicalAnalyses}/info")
     @ApiOperation(value = "Clinical analysis info", position = 3, response = ClinicalAnalysis[].class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
                     example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION,
                     example = "id,status", dataType = "string", paramType = "query")
     })
     public Response info(
-            @ApiParam(value = "Comma separated list of clinical analysis IDs up to a maximum of 100") @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr) {
+            @ApiParam(value = ParamConstants.CLINICAL_ANALYSES_DESCRIPTION) @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
         try {
-            query.remove("study");
+            query.remove(ParamConstants.STUDY_PARAM);
             query.remove("clinicalAnalyses");
 
             List<String> analysisList = getIdList(clinicalAnalysisStr);
@@ -218,21 +218,21 @@ public class InterpretationWSService extends AnalysisWSService {
     @Path("/search")
     @ApiOperation(value = "Clinical analysis search.", position = 12, response = ClinicalAnalysis[].class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", defaultValue = "false", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, defaultValue = "false", dataType = "boolean", paramType = "query")
     })
     public Response search(
-            @ApiParam(value = "Study [[user@]project:]{study} where study and project can be either the id or alias.")
-            @QueryParam("study") String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
+            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Clinical analysis type") @QueryParam("type") String type,
             @ApiParam(value = "Priority") @QueryParam("priority") String priority,
             @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
-            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+            @ApiParam(value = ParamConstants.CREATION_DATE_DESCRIPTION)
             @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)")
+            @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
             @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Due date (Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805...)") @QueryParam("dueDate") String dueDate,
             @ApiParam(value = "Description") @QueryParam("description") String description,
@@ -245,7 +245,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiParam(value = "Release value") @QueryParam("release") String release,
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes) {
         try {
-            query.remove("study");
+            query.remove(ParamConstants.STUDY_PARAM);
 
             DataResult<ClinicalAnalysis> queryResult;
             if (count) {
@@ -264,14 +264,14 @@ public class InterpretationWSService extends AnalysisWSService {
 //    @ApiOperation(value = "Group clinical analysis by several fields", position = 10, hidden = true,
 //            notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
 //    @ApiImplicitParams({
-//            @ApiImplicitParam(name = "count", value = "Count the number of elements matching the group", dataType = "boolean",
+//            @ApiImplicitParam(name = QueryOptions.COUNT, value = "Count the number of elements matching the group", dataType = "boolean",
 //                    paramType = "query"),
-//            @ApiImplicitParam(name = "limit", value = "Maximum number of documents (groups) to be returned", dataType = "integer",
+//            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Maximum number of documents (groups) to be returned", dataType = "integer",
 //                    paramType = "query", defaultValue = "50")
 //    })
 //    public Response groupBy(
 //            @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
-//            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+//            @ApiParam(value = Params.STUDY_DESCRIPTION) @QueryParam(Params.STUDY_PARAM)
 //                    String studyId,
 //            @ApiParam(value = "Comma separated list of ids.") @QueryParam("id") String id,
 //            @ApiParam(value = "DEPRECATED: Comma separated list of names.") @QueryParam("name") String name,
@@ -284,7 +284,7 @@ public class InterpretationWSService extends AnalysisWSService {
 //            @ApiParam(value = "Sample") @QueryParam("sample") String sample,
 //            @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release) {
 //        try {
-//            query.remove("study");
+//            query.remove(Params.STUDY_PARAM);
 //            query.remove("fields");
 //
 //            DataResult result = clinicalManager.groupBy(studyId, query, fields, queryOptions, sessionId);
@@ -299,13 +299,12 @@ public class InterpretationWSService extends AnalysisWSService {
     @ApiOperation(value = "Returns the acl of the clinical analyses. If member is provided, it will only return the acl for the member.",
             position = 18)
     public Response getAcls(
-            @ApiParam(value = "Comma separated list of clinical analysis IDs or names up to a maximum of 100", required = true)
+            @ApiParam(value = ParamConstants.CLINICAL_ANALYSES_DESCRIPTION, required = true)
             @PathParam("clinicalAnalyses") String clinicalAnalysis,
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "User or group id") @QueryParam("member") String member,
-            @ApiParam(value = "Boolean to retrieve all possible entries that are queried for, false to raise an "
-                    + "exception whenever one of the entries looked for cannot be shown for whichever reason",
-                    defaultValue = "false") @QueryParam("silent") boolean silent) {
+            @ApiParam(value = ParamConstants.SILENT_DESCRIPTION,
+                    defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
         try {
             List<String> idList = getIdList(clinicalAnalysis);
             return createOkResponse(clinicalManager.getAcls(studyStr, idList, member, silent, token));
@@ -322,7 +321,7 @@ public class InterpretationWSService extends AnalysisWSService {
     @Path("/acl/{members}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
     public Response updateAcl(
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) ClinicalAnalysisAcl params) {
         try {
@@ -447,7 +446,7 @@ public class InterpretationWSService extends AnalysisWSService {
 //    @ApiOperation(value = "Create a new clinical interpretation", position = 1,
 //            response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
 //    public Response create(
-//            @ApiParam(value = "[[user@]project:]study id") @QueryParam("study") String studyId,
+//            @ApiParam(value = "[[user@]project:]study id") @QueryParam(Params.STUDY_PARAM) String studyId,
 //            @ApiParam(value = "Clinical analysis the interpretation belongs to") @QueryParam("clinicalAnalysis") String clinicalAnalysis,
 //            @ApiParam(name = "params", value = "JSON containing clinical interpretation information", required = true)
 //                    ClinicalInterpretationParameters params) {
@@ -464,7 +463,7 @@ public class InterpretationWSService extends AnalysisWSService {
     @ApiOperation(value = "Update Interpretation fields", position = 1,
             response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
     public Response update(
-            @ApiParam(value = "[[user@]project:]study id") @QueryParam("study") String studyStr,
+            @ApiParam(value = "[[user@]project:]study id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Interpretation id") @PathParam("interpretation") String interpretationId,
 //            @ApiParam(value = "Create a new version of clinical interpretation", defaultValue = "false")
 //                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
@@ -483,7 +482,7 @@ public class InterpretationWSService extends AnalysisWSService {
     @ApiOperation(value = "Update comments of an Interpretation", position = 1,
             response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
     public Response commentsUpdate(
-            @ApiParam(value = "[[user@]project:]study id") @QueryParam("study") String studyStr,
+            @ApiParam(value = "[[user@]project:]study id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Interpretation id") @PathParam("interpretation") String interpretationId,
             // TODO: Think about having an action in this web service. Are we ever going to allow people to set or remove comments?
             @ApiParam(value = "Action to be performed.", defaultValue = "ADD") @QueryParam("action") ParamUtils.UpdateAction action,
@@ -508,7 +507,7 @@ public class InterpretationWSService extends AnalysisWSService {
     @ApiOperation(value = "Update reported variants of an interpretation", position = 1,
             response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
     public Response reportedVariantUpdate(
-            @ApiParam(value = "[[user@]project:]study id") @QueryParam("study") String studyStr,
+            @ApiParam(value = "[[user@]project:]study id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Interpretation id") @PathParam("interpretation") String interpretationId,
             @ApiParam(value = "Action to be performed.", defaultValue = "ADD") @QueryParam("action") ParamUtils.UpdateAction action,
             @ApiParam(name = "params", value = "JSON containing a list of reported variants", required = true)
@@ -532,7 +531,7 @@ public class InterpretationWSService extends AnalysisWSService {
     public Response index(@ApiParam(value = "Comma separated list of interpretation IDs to be indexed in the clinical variant database") @QueryParam(value = "interpretationId") String interpretationId,
                           @ApiParam(value = "Comma separated list of clinical analysis IDs to be indexed in the clinical variant database") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
                           @ApiParam(value = "Reset the clinical variant database and import the specified interpretations") @QueryParam("false") boolean reset,
-                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String study) {
+                          @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study) {
 //        try {
 //            clinicalInterpretationManager.index(study, sessionId);
 //            return Response.ok().build();
@@ -546,11 +545,11 @@ public class InterpretationWSService extends AnalysisWSService {
     @Path("/interpretation/query")
     @ApiOperation(value = "Query for reported variants", position = 14, response = QueryResponse.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.COUNT, value = "Total number of results", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SKIP_COUNT, value = "Do not count total number of results", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = VariantField.SUMMARY, value = "Fast fetch of main variant parameters", dataType = "boolean", paramType = "query"),
@@ -566,8 +565,8 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "alternate", value = ALTERNATE_DESCR, dataType = "string", paramType = "query"),
 
             // Study filters
-            @ApiImplicitParam(name = "project", value = VariantCatalogQueryUtils.PROJECT_DESC, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "study", value = STUDY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = ParamConstants.PROJECT_PARAM, value = VariantCatalogQueryUtils.PROJECT_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = ParamConstants.STUDY_PARAM, value = STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "file", value = FILE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
@@ -662,7 +661,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "reportedEventOtherClassification", value = RE_OTHER_CLASSIFICATION_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "reportedEventRolesInCancer", value = RE_ROLES_IN_CANCER_DESCR, dataType = "string", paramType = "query")
     })
-    public Response query(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String study) {
+    public Response query(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study) {
         return Response.ok().build();
     }
 
@@ -670,11 +669,11 @@ public class InterpretationWSService extends AnalysisWSService {
     @Path("/interpretation/stats")
     @ApiOperation(value = "Clinical interpretation analysis", position = 14, response = QueryResponse.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.COUNT, value = "Total number of results", dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SKIP_COUNT, value = "Do not count total number of results", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = VariantField.SUMMARY, value = "Fast fetch of main variant parameters", dataType = "boolean", paramType = "query"),
@@ -690,8 +689,8 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "alternate", value = ALTERNATE_DESCR, dataType = "string", paramType = "query"),
 
             // Study filters
-            @ApiImplicitParam(name = "project", value = VariantCatalogQueryUtils.PROJECT_DESC, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "study", value = STUDY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = ParamConstants.PROJECT_PARAM, value = VariantCatalogQueryUtils.PROJECT_DESC, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = ParamConstants.STUDY_PARAM, value = STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "file", value = FILE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
@@ -749,7 +748,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "field", value = "Facet field for categorical fields", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "fieldRange", value = "Facet field range for continuous fields", dataType = "string", paramType = "query")
     })
-    public Response stats(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyStr,
+    public Response stats(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                           @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
                           @ApiParam(value = "Disease (HPO term)") @QueryParam("disease") String disease,
                           @ApiParam(value = "Family ID") @QueryParam("familyId") String familyId,
@@ -773,7 +772,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = ClinicalUtils.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + ClinicalUtils.LOW_COVERAGE_DEFAULT),
     })
     public Response team(
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyId,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyId,
             @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
             @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds,
             @ApiParam(value= VariantCatalogQueryUtils.FAMILY_SEGREGATION_DESCR) @QueryParam("familySegregation") String segregation) {
@@ -788,10 +787,8 @@ public class InterpretationWSService extends AnalysisWSService {
 
             setConfigParams(params, uriInfo.getQueryParameters());
 
-            // Queue job
-            Object result = catalogInterpretationManager.queue(studyId, TeamInterpretationAnalysis.ID, clinicalAnalysisId, params,
-                    token);
-
+            // Submit job
+            OpenCGAResult<Job> result = jobManager.submit(studyId, TeamInterpretationAnalysis.ID, Enums.Priority.MEDIUM, params, token);
             return createAnalysisOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -807,7 +804,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = ClinicalUtils.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + ClinicalUtils.LOW_COVERAGE_DEFAULT),
     })
     public Response tiering(
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyId,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyId,
             @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
             @ApiParam(value = "Comma separated list of disease panel IDs") @QueryParam("panelIds") String panelIds,
             @ApiParam(value = "Penetrance", defaultValue = "COMPLETE") @QueryParam("penetrance") ClinicalProperty.Penetrance penetrance) {
@@ -822,9 +819,8 @@ public class InterpretationWSService extends AnalysisWSService {
 
             setConfigParams(params, uriInfo.getQueryParameters());
 
-            // Queue job
-            Object result = catalogInterpretationManager.queue(studyId, TieringInterpretationAnalysis.ID, clinicalAnalysisId, params,
-                    token);
+            // Submit job
+            OpenCGAResult<Job> result = jobManager.submit(studyId, TieringInterpretationAnalysis.ID, Enums.Priority.MEDIUM, params, token);
 
             return createAnalysisOkResponse(result);
         } catch (Exception e) {
@@ -836,11 +832,11 @@ public class InterpretationWSService extends AnalysisWSService {
     @Path("/interpretation/custom/run")
     @ApiOperation(value = "Interpretation custom analysis", position = 15, response = QueryResponse.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = VariantField.SUMMARY, value = "Fast fetch of main variant parameters", dataType = "boolean", paramType = "query"),
 
@@ -857,8 +853,8 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "alternate", value = ALTERNATE_DESCR, dataType = "string", paramType = "query"),
 
             // Study filters
-            @ApiImplicitParam(name = "project", value = VariantCatalogQueryUtils.PROJECT_DESC, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "study", value = STUDY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = ParamConstants.PROJECT_PARAM, value = VariantCatalogQueryUtils.PROJECT_DESC, dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = Params.STUDY_PARAM, value = STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "file", value = FILE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
@@ -925,7 +921,7 @@ public class InterpretationWSService extends AnalysisWSService {
     })
     public Response customAnalysis(
             @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
                     String studyId) {
         try {
             // Get analysis params and config from query
@@ -938,9 +934,8 @@ public class InterpretationWSService extends AnalysisWSService {
 
             setConfigParams(params, uriInfo.getQueryParameters());
 
-            // Queue job
-            Object result = catalogInterpretationManager.queue(studyId, CustomInterpretationAnalysis.ID, clinicalAnalysisId, params,
-                    token);
+            // Submit job
+            OpenCGAResult<Job> result = jobManager.submit(studyId, CustomInterpretationAnalysis.ID, Enums.Priority.MEDIUM, params, token);
 
             return createAnalysisOkResponse(result);
         } catch (Exception e) {
@@ -957,7 +952,7 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = ClinicalUtils.MAX_LOW_COVERAGE_PARAM, value = "Max. low coverage", dataType = "integer", paramType = "query", defaultValue =  "" + ClinicalUtils.LOW_COVERAGE_DEFAULT),
     })
     public Response cancerTiering(
-            @ApiParam(value = "Study [[user@]project:]study") @QueryParam("study") String studyId,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyId,
             @ApiParam(value = "Clinical analysis ID") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
             @ApiParam(value = "Comma separated list of variant IDs to discard") @QueryParam("panelIds") String variantIdsToDiscard) {
         try {
@@ -970,9 +965,9 @@ public class InterpretationWSService extends AnalysisWSService {
 
             setConfigParams(params, uriInfo.getQueryParameters());
 
-            // Queue job
-            Object result = catalogInterpretationManager.queue(studyId, CancerTieringInterpretationAnalysis.ID, clinicalAnalysisId,
-                    params, token);
+            // Submit job
+            OpenCGAResult<Job> result = jobManager.submit(studyId, CancerTieringInterpretationAnalysis.ID, Enums.Priority.MEDIUM, params,
+                    token);
 
             return createAnalysisOkResponse(result);
         } catch (Exception e) {
@@ -984,11 +979,11 @@ public class InterpretationWSService extends AnalysisWSService {
     @Path("/interpretation/primaryFindings")
     @ApiOperation(value = "Search for secondary findings for a given query", position = 15, response = QueryResponse.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.SKIP, value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = VariantField.SUMMARY, value = "Fast fetch of main variant parameters", dataType = "boolean", paramType = "query"),
 
@@ -1003,8 +998,8 @@ public class InterpretationWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "alternate", value = ALTERNATE_DESCR, dataType = "string", paramType = "query"),
 
             // Study filters
-            @ApiImplicitParam(name = "project", value = VariantCatalogQueryUtils.PROJECT_DESC, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "study", value = STUDY_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = ParamConstants.PROJECT_PARAM, value = VariantCatalogQueryUtils.PROJECT_DESC, dataType = "string", paramType = "query"),
+//            @ApiImplicitParam(name = Params.STUDY_PARAM, value = STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "file", value = FILE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "filter", value = FILTER_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "qual", value = QUAL_DESCR, dataType = "string", paramType = "query"),
@@ -1070,7 +1065,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
     })
     public Response primaryFindings(
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
                     String studyId) {
         try {
             // Get all query options
@@ -1095,8 +1090,8 @@ public class InterpretationWSService extends AnalysisWSService {
     @Path("/interpretation/secondaryFindings")
     @ApiOperation(value = "Search for secondary findings for a given sample", position = 14, response = QueryResponse.class)
     public Response secondaryFindings(
-            @ApiParam(value = "Sample ID") @QueryParam("sample") String sampleId,
-            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study") String studyId) {
+            @ApiParam(value = ParamConstants.SAMPLE_ID_DESCRIPTION) @QueryParam("sample") String sampleId,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyId) {
         try {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);

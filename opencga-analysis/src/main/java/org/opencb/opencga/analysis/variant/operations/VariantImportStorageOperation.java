@@ -5,48 +5,52 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.models.StudyInfo;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantMetadataImporter;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.variant.operations.VariantFileIndexerStorageOperation.DEFAULT_COHORT_DESCRIPTION;
 
+@Tool(id = VariantImportStorageOperation.ID, type = Tool.ToolType.VARIANT)
 public class VariantImportStorageOperation extends StorageOperation {
 
-    public VariantImportStorageOperation(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
-        super(catalogManager, storageEngineFactory, LoggerFactory.getLogger(VariantRemoveStorageOperation.class));
+    public static final String ID = "variant-import";
+    private String study;
+    private URI inputUri;
+
+    public VariantImportStorageOperation setStudy(String study) {
+        this.study = study;
+        return this;
     }
 
-    public void importData(StudyInfo studyInfo, URI inputUri, String sessionId) throws IOException, StorageEngineException {
+    public VariantImportStorageOperation setInputUri(URI inputUri) {
+        this.inputUri = inputUri;
+        return this;
+    }
+
+    @Override
+    protected void run() throws Exception {
 
         VariantMetadataImporter variantMetadataImporter;
-        variantMetadataImporter = new CatalogVariantMetadataImporter(studyInfo.getStudyFQN(), inputUri, sessionId);
+        variantMetadataImporter = new CatalogVariantMetadataImporter(study, inputUri, token);
 
         try {
-            DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
-            VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
+            VariantStorageEngine variantStorageEngine = getVariantStorageEngine(study);
             ObjectMap options = variantStorageEngine.getOptions();
             VariantMetadata metadata;
-            StudyConfiguration studyConfiguration;
             try (VariantStorageMetadataManager scm = variantStorageEngine.getMetadataManager()) {
                 metadata = variantMetadataImporter.importMetaData(inputUri, scm);
-                studyConfiguration = scm.getStudyConfiguration(((int) studyInfo.getStudyUid()), null).first();
             }
 
-            variantStorageEngine.importData(inputUri, metadata, Collections.singletonList(studyConfiguration), options);
+            variantStorageEngine.importData(inputUri, metadata, null, options);
 
         } catch (Exception e) {
             logger.error("Error importing data");

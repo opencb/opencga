@@ -34,7 +34,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
-import org.opencb.opencga.core.analysis.result.AnalysisResult;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -168,7 +168,7 @@ public class VariantAnalysisTest {
                 .setSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(1, 3)));
         variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
 
-        AnalysisResult ar = variantStatsAnalysis.start();
+        ExecutionResult ar = variantStatsAnalysis.start();
         checkAnalysisResult(ar);
 
         MutableInt count = new MutableInt();
@@ -192,7 +192,7 @@ public class VariantAnalysisTest {
                 .setCohorts(Arrays.asList("c1", "c2"));
         variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
 
-        AnalysisResult ar = variantStatsAnalysis.start();
+        ExecutionResult ar = variantStatsAnalysis.start();
         checkAnalysisResult(ar);
 
         MutableInt count = new MutableInt();
@@ -219,7 +219,7 @@ public class VariantAnalysisTest {
                 .setVariantsQuery(variantsQuery);
         variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
 
-        AnalysisResult ar = variantStatsAnalysis.start();
+        ExecutionResult ar = variantStatsAnalysis.start();
         checkAnalysisResult(ar);
 
         MutableInt count = new MutableInt();
@@ -327,6 +327,7 @@ public class VariantAnalysisTest {
         analysis.setStudy(STUDY)
                 .setCaseCohort("CASE")
                 .setControlCohort("CONTROL")
+                .setIndex(true)
                 .setIndexScoreId("GwasScore");
         checkAnalysisResult(analysis.start());
 
@@ -340,7 +341,7 @@ public class VariantAnalysisTest {
         }
     }
 
-    public void checkAnalysisResult(AnalysisResult ar) {
+    public void checkAnalysisResult(ExecutionResult ar) {
         if (storageEngine.equals("hadoop")) {
             Assert.assertEquals("hbase-mapreduce", ar.getExecutor().getId());
         } else {

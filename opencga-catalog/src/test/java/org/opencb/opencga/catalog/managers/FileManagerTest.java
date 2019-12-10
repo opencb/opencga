@@ -329,6 +329,13 @@ public class FileManagerTest extends AbstractManagerTest {
 
         System.out.println("Number of files/folders linked = " + fileDataResultLinked.getNumResults());
 
+        // We set to PENDING DELETE the subdirectory that will be unlinked
+        Query updateQuery = new Query()
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
+                .append(FileDBAdaptor.QueryParams.PATH.key(), "~myDirectory/A/*")
+                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
+        setToPendingDelete(studyFqn, updateQuery);
+
         // Now we try to unlink them
         fileManager.unlink(studyFqn, "myDirectory/A/", sessionIdUser);
         fileDataResultLinked = fileManager.search(studyFqn, query, null, sessionIdUser);
@@ -358,21 +365,26 @@ public class FileManagerTest extends AbstractManagerTest {
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
         DataResult<File> fileDataResultLinked = fileManager.search(studyFqn, query, null, sessionIdUser);
 
-        System.out.println("Number of files/folders linked = " + fileDataResultLinked.getNumResults());
+        int numberLinkedFiles = fileDataResultLinked.getNumResults();
+        System.out.println("Number of files/folders linked = " + numberLinkedFiles);
+
+        Query unlinkQuery = new Query(FileDBAdaptor.QueryParams.PATH.key(), "myDirectory/data/test/folder/test_0.5K.txt");
+
+        setToPendingDelete(studyFqn, unlinkQuery);
 
         // Now we try to unlink the file
         fileManager.unlink(studyFqn, "myDirectory/data/test/folder/test_0.5K.txt", sessionIdUser);
-        query = new Query(FileDBAdaptor.QueryParams.UID.key(), 35L);
-        fileDataResultLinked = fileManager.search(studyFqn, query, QueryOptions.empty(), sessionIdUser);
-        assertEquals(1, fileDataResultLinked.getNumResults());
-        assertTrue(fileDataResultLinked.first().getPath().contains(AbstractManager.INTERNAL_DELIMITER + "REMOVED"));
-        assertEquals(fileDataResultLinked.first().getPath().indexOf(AbstractManager.INTERNAL_DELIMITER + "REMOVED"),
-                fileDataResultLinked.first().getPath().lastIndexOf(AbstractManager.INTERNAL_DELIMITER + "REMOVED"));
+        fileDataResultLinked = fileManager.search(studyFqn, unlinkQuery, QueryOptions.empty(), sessionIdUser);
+        assertEquals(0, fileDataResultLinked.getNumResults());
 
+        unlinkQuery.put(FileDBAdaptor.QueryParams.DELETED.key(), true);
+        fileDataResultLinked = fileManager.search(studyFqn, unlinkQuery, QueryOptions.empty(), sessionIdUser);
+        assertEquals(1, fileDataResultLinked.getNumResults());
+        assertEquals(File.FileStatus.REMOVED, fileDataResultLinked.first().getStatus().getName());
+
+        // Check the other root linked files/folders have not been touched
         fileDataResultLinked = fileManager.search(studyFqn, query, QueryOptions.empty(), sessionIdUser);
-        // We check REMOVED is only contained once in the path
-        assertEquals(fileDataResultLinked.first().getPath().indexOf(AbstractManager.INTERNAL_DELIMITER + "REMOVED"),
-                fileDataResultLinked.first().getPath().lastIndexOf(AbstractManager.INTERNAL_DELIMITER + "REMOVED"));
+        assertEquals(numberLinkedFiles - 1, fileDataResultLinked.getNumResults());
 
         // We send the unlink command again
         thrown.expect(CatalogException.class);
@@ -650,19 +662,15 @@ public class FileManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testDownloadFile() throws CatalogException, IOException, InterruptedException, URISyntaxException {
-        Path path = Paths.get(fileManager.get(studyFqn, ".", FileManager.INCLUDE_FILE_URI, sessionIdUser).first().getUri());
-        Path sourcePath = Paths.get(getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI());
-        Files.copy(sourcePath, path.resolve("data/" + sourcePath.getFileName()));
-        DataResult<File> fileResult = fileManager.create(studyFqn, File.Type.FILE, File.Format.VCF,
-                File.Bioformat.VARIANT, "data/variant-test-file.vcf.gz", "description", new File.FileStatus(File.FileStatus.STAGE), 0,
-                Collections.emptyList(), -1, Collections.emptyMap(), null, true, null, new QueryOptions(), sessionIdUser);
+    public void testDownloadFile() throws CatalogException, IOException, URISyntaxException {
+        URI sourceUri = getClass().getResource("/biofiles/variant-test-file.vcf.gz").toURI();
+        OpenCGAResult<File> fileResult = fileManager.link(studyFqn, sourceUri, "data/", new ObjectMap("parents", true), sessionIdUser);
 
         DataInputStream dis = fileManager.download(studyFqn, fileResult.first().getPath(), -1, -1, sessionIdUser);
 
         byte[] bytes = new byte[(int) fileResult.first().getSize()];
         dis.read(bytes, 0, (int) fileResult.first().getSize());
-        assertTrue(Arrays.equals(Files.readAllBytes(sourcePath), bytes));
+        assertTrue(Arrays.equals(Files.readAllBytes(Paths.get(sourceUri)), bytes));
     }
 
     @Test
@@ -1115,7 +1123,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
     // Try to delete files/folders whose status is STAGED, MISSING...
     @Test
-    public void testDelete1() throws CatalogException, IOException {
+    public void testDelete1() throws CatalogException {
         String filePath = "data/";
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
@@ -1123,8 +1131,9 @@ public class FileManagerTest extends AbstractManagerTest {
         DataResult<File> fileDataResult = fileManager.search(studyFqn, query, null, sessionIdUser);
 
         // Change the status to MISSING
-        ObjectMap params = new ObjectMap(FileDBAdaptor.UpdateParams.STATUS_NAME.key(), File.FileStatus.MISSING);
-        catalogManager.getFileManager().update(studyFqn, filePath, params, null, sessionIdUser);
+        FileUpdateParams updateParams = new FileUpdateParams()
+                .setStatus(new File.FileStatus(File.FileStatus.MISSING));
+        catalogManager.getFileManager().update(studyFqn, filePath, updateParams, null, sessionIdUser);
 
         try {
             fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), fileDataResult.first().getUid()), null, sessionIdUser);
@@ -1133,8 +1142,9 @@ public class FileManagerTest extends AbstractManagerTest {
             assertTrue(e.getMessage().contains("Cannot delete"));
         }
         // Change the status to STAGED
-        params = new ObjectMap(FileDBAdaptor.UpdateParams.STATUS_NAME.key(), File.FileStatus.STAGE);
-        catalogManager.getFileManager().update(studyFqn, filePath, params, null, sessionIdUser);
+        updateParams = new FileUpdateParams()
+                .setStatus(new File.FileStatus(File.FileStatus.STAGE));
+        catalogManager.getFileManager().update(studyFqn, filePath, updateParams, null, sessionIdUser);
 
         try {
             fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), fileDataResult.first().getUid()), null, sessionIdUser);
@@ -1144,8 +1154,8 @@ public class FileManagerTest extends AbstractManagerTest {
         }
 
         // Change the status to READY
-        params = new ObjectMap(FileDBAdaptor.UpdateParams.STATUS_NAME.key(), File.FileStatus.READY);
-        catalogManager.getFileManager().update(studyFqn, filePath, params, null, sessionIdUser);
+        query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "~^" + filePath + "*");
+        setToPendingDelete(studyFqn, query);
 
         DataResult deleteResult = fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(),
                 fileDataResult.first().getUid()), null, sessionIdUser);
@@ -1170,17 +1180,18 @@ public class FileManagerTest extends AbstractManagerTest {
         int numResults = fileManager.search(studyFqn, query, null, sessionIdUser).getNumResults();
         assertEquals(6, numResults);
 
+        query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*");
+        setToPendingDelete(studyFqn, query);
+
         // We delete it
-        fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), null,
-                sessionIdUser);
+        fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), null, sessionIdUser);
 
         // The files should have been moved to trashed status
-        numResults = fileManager.search(studyFqn, query, null, sessionIdUser).getNumResults();
-        assertEquals(0, numResults);
-
-        query.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
-        numResults = fileManager.search(studyFqn, query, null, sessionIdUser).getNumResults();
-        assertEquals(6, numResults);
+        OpenCGAResult<File> search = fileManager.search(studyFqn, query, null, sessionIdUser);
+        assertEquals(6, search.getNumResults());
+        for (File trashedFile : search.getResults()) {
+            assertEquals(File.FileStatus.TRASHED, trashedFile.getStatus().getName());
+        }
     }
 
     // It will try to delete a folder in status ready and skip the trash
@@ -1196,9 +1207,11 @@ public class FileManagerTest extends AbstractManagerTest {
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + filePath + "*")
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
+                .append(FileDBAdaptor.QueryParams.STATUS.key(), File.FileStatus.READY);
         int numResults = fileManager.search(studyFqn, query, null, sessionIdUser).getNumResults();
         assertEquals(6, numResults);
+
+        setToPendingDelete(studyFqn, query);
 
         // We delete it
         QueryOptions queryOptions = new QueryOptions(Constants.SKIP_TRASH, true);
@@ -1209,7 +1222,8 @@ public class FileManagerTest extends AbstractManagerTest {
         numResults = fileManager.search(studyFqn, query, null, sessionIdUser).getNumResults();
         assertEquals(0, numResults);
 
-        query.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE);
+        query.put(FileDBAdaptor.QueryParams.DELETED.key(), true);
+        query.put(FileDBAdaptor.QueryParams.STATUS.key(), File.FileStatus.DELETED);
         numResults = fileManager.search(studyFqn, query, null, sessionIdUser).getNumResults();
         assertEquals(6, numResults);
     }
@@ -1218,23 +1232,26 @@ public class FileManagerTest extends AbstractManagerTest {
     public void testDeleteFile() throws CatalogException, IOException {
         List<File> result = fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.TYPE.key(),
                 "FILE"), new QueryOptions(), sessionIdUser).getResults();
+
+        // 1st we set the status to PENDING DELETE.
+        setToPendingDelete(studyFqn, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"));
+
         for (File file : result) {
-            fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()),
-                    null, sessionIdUser);
+            fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), null, sessionIdUser);
         }
 //        CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
         fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(), sessionIdUser).getResults().forEach(f -> {
                     assertEquals(f.getStatus().getName(), File.FileStatus.TRASHED);
-                    assertTrue(f.getName().startsWith(".deleted"));
         });
 
         result = fileManager.search(studyFqn2, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(), sessionIdUser).getResults();
+        // 1st we set the status to PENDING DELETE.
+        setToPendingDelete(studyFqn2, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"));
         for (File file : result) {
             fileManager.delete(studyFqn2, new Query(FileDBAdaptor.QueryParams.UID.key(), file.getUid()), null, sessionIdUser);
         }
-        fileManager.search(studyFqn, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(), sessionIdUser).getResults().forEach(f -> {
+        fileManager.search(studyFqn2, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(), sessionIdUser).getResults().forEach(f -> {
                     assertEquals(f.getStatus().getName(), File.FileStatus.TRASHED);
-                    assertTrue(f.getName().startsWith(".deleted"));
         });
     }
 
@@ -1275,9 +1292,17 @@ public class FileManagerTest extends AbstractManagerTest {
                 "folder/subfolder/subsubfolder/my_staged.txt", null, new File.FileStatus(File.FileStatus.STAGE), (long) 0, null, (long) -1,
                 null, null, null), true, "bla bla", null, sessionIdUser).first();
 
-        DataResult deleteResult = fileManager.delete(studyFqn,
-                new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()), null, sessionIdUser);
-        assertEquals(0, deleteResult.getNumUpdated());
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + folder.getPath() + "*")
+                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
+        setToPendingDelete(studyFqn, query);
+
+        try {
+            fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()), null, sessionIdUser);
+            fail("Delete should fail because it cannot delete files in STAGE status");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("STAGE"));
+        }
 
         File fileTmp = fileManager.get(studyFqn, folder.getPath(), null, sessionIdUser).first();
         assertEquals("Folder name should not be modified", folder.getPath(), fileTmp.getPath());
@@ -1303,16 +1328,14 @@ public class FileManagerTest extends AbstractManagerTest {
             assertTrue(ioManager.exists(fileManager.getUri(file)));
         }
 
-//        // 1st we set the status to PENDING DELETE.
-//        catalogManager.getTaskManager().deleteFile(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()),
-//                new ObjectMap(), sessionIdUser);
+        // 1st we set the status to PENDING DELETE.
+        setToPendingDelete(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), "~^" + folder.getPath() + "*"));
 
         // Now we delete the files
         fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()), null, sessionIdUser);
 
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.UID.key(), folder.getUid())
-                .append(FileDBAdaptor.QueryParams.DELETED.key(), true);
+                .append(FileDBAdaptor.QueryParams.UID.key(), folder.getUid());
         File fileTmp = fileManager.search(studyFqn, query, QueryOptions.empty(), sessionIdUser).first();
 
         assertEquals("Folder name should not be modified", folder.getPath(), fileTmp.getPath());
@@ -1342,9 +1365,9 @@ public class FileManagerTest extends AbstractManagerTest {
             assertTrue(ioManager.exists(fileManager.getUri(file)));
         }
 
-//        // 1st we set the status to PENDING DELETE.
-//        catalogManager.getTaskManager().deleteFile(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()),
-//                new ObjectMap(), sessionIdUser);
+        // 1st we set the status to PENDING DELETE.
+        setToPendingDelete(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), "~^" + folder.getPath() + "*"));
+
         Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "~^" + folder.getPath() + "*");
         OpenCGAResult<File> results = fileManager.search(studyFqn, query,
                 new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.STATUS.key()), sessionIdUser);
@@ -1367,11 +1390,10 @@ public class FileManagerTest extends AbstractManagerTest {
         }
 
         // 1st we set the status to PENDING DELETE.
-        ObjectMap params = new ObjectMap(Constants.SKIP_TRASH, true);
-//        catalogManager.getTaskManager().deleteFile(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()), params,
-//                sessionIdUser);
+        setToPendingDelete(studyFqn, new Query(FileDBAdaptor.QueryParams.PATH.key(), "~^" + folder.getPath() + "*"));
 
         // Now we delete the files
+        ObjectMap params = new ObjectMap(Constants.SKIP_TRASH, true);
         fileManager.delete(studyFqn, new Query(FileDBAdaptor.QueryParams.UID.key(), folder.getUid()), params, sessionIdUser);
 
         Query query = new Query()
@@ -1436,24 +1458,23 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(3, allFilesInFolder.size());
     }
 
-    private void deleteFolderAndCheck(File deletable) throws CatalogException, IOException {
+    private void deleteFolderAndCheck(File deletable) throws CatalogException {
         List<File> allFilesInFolder;
         Study study = fileManager.getStudy(deletable, sessionIdUser);
 
-        // 1st, we create the task so it is moved to Pending delete
-        Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), deletable.getPath());
-//        catalogManager.getTaskManager().deleteFile(study.getFqn(), query, new ObjectMap(), sessionIdUser);
+        // 1st, we set the status to PENDING_DELETE
+        Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "~^" + deletable.getPath() + "*");
+        setToPendingDelete(study.getFqn(), query);
 
         fileManager.delete(study.getFqn(), query, null, sessionIdUser);
 
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.PATH.key(), deletable.getPath())
-                .append(FileDBAdaptor.QueryParams.DELETED.key(), true);
+                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.PATH.key());
         DataResult<File> fileDataResult = fileManager.search(study.getFqn(), query, options, sessionIdUser);
         assertEquals(1, fileDataResult.getNumResults());
 
-//        allFilesInFolder = catalogManager.getAllFilesInFolder(deletable, null, sessionIdUser).getResults();
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.DIRECTORY.key(), fileDataResult.first().getPath() + ".*")
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
@@ -1462,6 +1483,12 @@ public class FileManagerTest extends AbstractManagerTest {
         for (File subFile : allFilesInFolder) {
             assertTrue(subFile.getStatus().getName().equals(File.FileStatus.TRASHED));
         }
+    }
+
+    private void setToPendingDelete(String study, Query query) throws CatalogException {
+        FileUpdateParams updateParams = new FileUpdateParams()
+                .setStatus(new File.FileStatus(File.FileStatus.PENDING_DELETE));
+        fileManager.update(study, query, updateParams, QueryOptions.empty(), sessionIdUser);
     }
 
     @Test

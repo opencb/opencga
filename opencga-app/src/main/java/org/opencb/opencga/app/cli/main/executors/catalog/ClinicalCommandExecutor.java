@@ -1,6 +1,5 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -11,6 +10,7 @@ import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.IOException;
 
@@ -30,7 +30,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing clinical analysis command line");
 
         String subCommandString = getParsedSubCommand(clinicalCommandOptions.jCommander);
-        DataResponse queryResponse = null;
+        RestResponse queryResponse = null;
         switch (subCommandString) {
             case "info":
                 queryResponse = info();
@@ -56,7 +56,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
-    private DataResponse<ClinicalAnalysis> groupBy() throws IOException {
+    private RestResponse<ClinicalAnalysis> groupBy() throws IOException {
         logger.debug("Clinical analysis groupby");
 
         ClinicalCommandOptions.GroupByCommandOptions commandOptions = clinicalCommandOptions.groupByCommandOptions;
@@ -73,7 +73,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getClinicalAnalysisClient().groupBy(commandOptions.study, commandOptions.fields, params);
     }
 
-    private DataResponse<ClinicalAnalysis> search() throws IOException {
+    private RestResponse<ClinicalAnalysis> search() throws IOException {
         logger.debug("Clinical analysis search");
 
         ClinicalCommandOptions.SearchCommandOptions commandOptions = clinicalCommandOptions.searchCommandOptions;
@@ -108,7 +108,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         }
     }
 
-    private DataResponse<ClinicalAnalysis> info() throws CatalogException, IOException {
+    private RestResponse<ClinicalAnalysis> info() throws CatalogException, IOException {
         logger.debug("Getting clinical analysis information");
 
         ClinicalCommandOptions.InfoCommandOptions commandOptions = clinicalCommandOptions.infoCommandOptions;
@@ -120,7 +120,7 @@ public class ClinicalCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getClinicalAnalysisClient().get(commandOptions.clinical, params);
     }
 
-    private DataResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
+    private RestResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
         AclCommandOptions.AclsUpdateCommandOptions commandOptions = clinicalCommandOptions.aclsUpdateCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();

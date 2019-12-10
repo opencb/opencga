@@ -22,11 +22,13 @@ import org.apache.phoenix.schema.types.PhoenixArray;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.AbstractVariantsTableDriver;
@@ -119,7 +121,6 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
     @Override
     protected void parseAndValidateParameters() throws IOException {
         super.parseAndValidateParameters();
-        outputTable = getParam(OUTPUT);
         study = getStudyId();
         if (study < 0) {
             BiMap<String, Integer> map = getMetadataManager().getStudies();
@@ -130,6 +131,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                 throw new IllegalArgumentException("Select one study from " + map.keySet());
             }
         }
+        outputTable = getParam(OUTPUT);
         if (outputTable == null || outputTable.isEmpty()) {
             outputTable = getTableNameGenerator().getSampleIndexTableName(study);
         }
@@ -146,20 +148,29 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         // Max number of samples to be processed in each Scan.
         partialScanSize = Integer.valueOf(getParam(PARTIAL_SCAN_SIZE, "1000"));
 
-        if (getConf().get(SAMPLES).equals(VariantQueryUtils.ALL)) {
+        String samplesParam = getParam(SAMPLES);
+        VariantStorageMetadataManager metadataManager = getMetadataManager();
+        if (samplesParam.equals(VariantQueryUtils.ALL)) {
             allSamples = true;
             samples = null;
         } else {
             allSamples = false;
-            samples = getConf().getInts(SAMPLES);
-            if (samples == null || samples.length == 0) {
+            List<Integer> sampleIds = new LinkedList<>();
+            for (String sample : samplesParam.split(",")) {
+                Integer sampleId = metadataManager.getSampleId(study, sample);
+                if (sampleId == null) {
+                    throw VariantQueryException.sampleNotFound(sample, study);
+                }
+                sampleIds.add(sampleId);
+            }
+            samples = sampleIds.stream().mapToInt(Integer::intValue).toArray();
+            if (samples.length == 0) {
                 throw new IllegalArgumentException("empty samples!");
             }
         }
 
         sampleIds = new TreeSet<>(Integer::compareTo);
 
-        VariantStorageMetadataManager metadataManager = getMetadataManager();
         if (allSamples) {
             sampleIds.addAll(metadataManager.getIndexedSamples(study));
         } else {
@@ -304,6 +315,15 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         return job;
     }
 
+    @Override
+    protected void preExecution() throws IOException, StorageEngineException {
+        super.preExecution();
+
+        ObjectMap options = new ObjectMap();
+        options.putAll(getParams());
+        SampleIndexSchema.createTableIfNeeded(outputTable, getHBaseManager(), options);
+    }
+
     public static void main(String[] args) throws Exception {
         try {
             System.exit(new SampleIndexDriver().privateMain(args, null));
@@ -321,7 +341,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
         private Set<Integer> samplesSet;
         private Set<Integer> samplesToCount;
         private SampleIndexVariantBiConverter variantsConverter;
-        private SampleIndexToHBaseConverter putConverter;
+        private VariantFileIndexConverter fileIndexConverter;
         private List<String> fixedAttributes;
         private Map<Integer, List<Integer>> sampleIdToFileIdMap;
         private boolean hasGenotype;
@@ -335,6 +355,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
             new GenomeHelper(context.getConfiguration());
             family = GenomeHelper.COLUMN_FAMILY_BYTES;
             hasGenotype = context.getConfiguration().getBoolean(HAS_GENOTYPE, true);
+            fileIndexConverter = new VariantFileIndexConverter();
 
             int[] samples = context.getConfiguration().getInts(SAMPLES);
             if (samples == null || samples.length == 0) {
@@ -352,9 +373,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                     samplesToCount.add(samples[i]);
                 }
             }
-            new GenomeHelper(context.getConfiguration());
-            byte[] family = GenomeHelper.COLUMN_FAMILY_BYTES;
-            putConverter = new SampleIndexToHBaseConverter(family);
+
             variantsConverter = new SampleIndexVariantBiConverter();
 
             String[] strings = context.getConfiguration().getStrings(FIXED_ATTRIBUTES);
@@ -389,7 +408,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                             PVarcharArray.INSTANCE.toObject(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                     Map<String, String> fileAttributes = HBaseToStudyEntryConverter.convertFileAttributes(fileColumn, fixedAttributes);
 
-                    byte fileIndexValue = putConverter.createFileIndexValue(variant.getType(), fileAttributes, null);
+                    byte fileIndexValue = fileIndexConverter.createFileIndexValue(variant.getType(), fileAttributes, null);
 
                     fileIndexMap.put(fileId, fileIndexValue);
                 }
@@ -412,7 +431,7 @@ public class SampleIndexDriver extends AbstractVariantsTableDriver {
                             validGt = true;
                         } else {
                             gt = Bytes.toString(ptr.get(), ptr.getOffset(), ptr.getLength());
-                            validGt = SampleIndexAnnotationLoader.isAnnotatedGenotype(gt);
+                            validGt = SampleIndexSchema.isAnnotatedGenotype(gt);
                         }
                     } else {
                         gt = GenotypeClass.NA_GT_VALUE;

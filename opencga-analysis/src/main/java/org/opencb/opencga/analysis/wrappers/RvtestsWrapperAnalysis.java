@@ -3,9 +3,9 @@ package org.opencb.opencga.analysis.wrappers;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.core.analysis.result.FileResult;
-import org.opencb.opencga.core.annotations.Analysis;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.tools.result.FileResult;
+import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.exception.ToolException;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -13,7 +13,7 @@ import java.io.FileOutputStream;
 import java.nio.charset.Charset;
 import java.util.*;
 
-@Analysis(id = RvtestsWrapperAnalysis.ID, type = Analysis.AnalysisType.VARIANT, description = RvtestsWrapperAnalysis.DESCRIPTION)
+@Tool(id = RvtestsWrapperAnalysis.ID, type = Tool.ToolType.VARIANT, description = RvtestsWrapperAnalysis.DESCRIPTION)
 public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     public final static String ID = "rvtests";
@@ -83,10 +83,10 @@ public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                     if (file.exists()) {
                         msg = StringUtils.join(FileUtils.readLines(file, Charset.defaultCharset()), ". ");
                     }
-                    throw new AnalysisException(msg);
+                    throw new ToolException(msg);
                 }
             } catch (Exception e) {
-                throw new AnalysisException(e);
+                throw new ToolException(e);
             }
         });
     }

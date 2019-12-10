@@ -3,9 +3,9 @@ package org.opencb.opencga.analysis.wrappers;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.core.analysis.result.FileResult;
-import org.opencb.opencga.core.annotations.Analysis;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.tools.result.FileResult;
+import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.exception.ToolException;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -13,7 +13,7 @@ import java.io.FileOutputStream;
 import java.nio.charset.Charset;
 import java.util.*;
 
-@Analysis(id = PlinkWrapperAnalysis.ID, type = Analysis.AnalysisType.VARIANT, description = PlinkWrapperAnalysis.DESCRIPTION)
+@Tool(id = PlinkWrapperAnalysis.ID, type = Tool.ToolType.VARIANT, description = PlinkWrapperAnalysis.DESCRIPTION)
 public class PlinkWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     public static final String ID = "plink";
@@ -62,10 +62,10 @@ public class PlinkWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 // Check Plink errors by reading the stderr file
                 File stderrFile = new File(getOutDir() + "/" + STDERR_FILENAME);
                 if (FileUtils.sizeOf(stderrFile) > 0) {
-                    throw new AnalysisException(StringUtils.join(FileUtils.readLines(stderrFile, Charset.defaultCharset()), ". "));
+                    throw new ToolException(StringUtils.join(FileUtils.readLines(stderrFile, Charset.defaultCharset()), ". "));
                 }
             } catch (Exception e) {
-                throw new AnalysisException(e);
+                throw new ToolException(e);
             }
         });
     }

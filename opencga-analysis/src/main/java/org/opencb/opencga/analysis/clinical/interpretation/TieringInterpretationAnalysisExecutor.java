@@ -19,9 +19,9 @@ import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
-import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
-import org.opencb.opencga.core.annotations.AnalysisExecutor;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.annotations.ToolExecutor;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -36,11 +36,11 @@ import java.util.stream.Collectors;
 
 import static org.opencb.biodata.models.clinical.interpretation.ClinicalProperty.ModeOfInheritance.*;
 
-@AnalysisExecutor(id = "opencga-local",
-        analysis = TieringInterpretationAnalysisExecutor.ID,
-        source = AnalysisExecutor.Source.STORAGE,
-        framework = AnalysisExecutor.Framework.LOCAL)
-public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecutor implements ClinicalInterpretationAnalysisExecutor {
+@ToolExecutor(id = "opencga-local",
+        tool = TieringInterpretationAnalysisExecutor.ID,
+        source = ToolExecutor.Source.STORAGE,
+        framework = ToolExecutor.Framework.LOCAL)
+public class TieringInterpretationAnalysisExecutor extends OpenCgaToolExecutor implements ClinicalInterpretationAnalysisExecutor {
 
     public final static String ID = "tiering-interpretation";
 
@@ -106,7 +106,7 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecut
 //    }
 
     @Override
-    public void run() throws AnalysisException {
+    public void run() throws ToolException {
         sessionId = getToken();
         clinicalInterpretationManager = getClinicalInterpretationManager();
 
@@ -115,7 +115,7 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecut
         try {
             assembly = clinicalInterpretationManager.getAssembly(studyId, sessionId);
         } catch (CatalogException e) {
-            throw new AnalysisException("Error retrieving assembly", e);
+            throw new ToolException("Error retrieving assembly", e);
         }
 
         // Get and check clinical analysis and proband
@@ -123,7 +123,7 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecut
         try {
             clinicalAnalysis = clinicalInterpretationManager.getClinicalAnalysis(studyId, clinicalAnalysisId, sessionId);
         } catch (CatalogException e) {
-            throw new AnalysisException("Error getting clinical analysis", e);
+            throw new ToolException("Error getting clinical analysis", e);
         }
         Individual proband = ClinicalUtils.getProband(clinicalAnalysis);
 
@@ -171,7 +171,7 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecut
                 }
             }
         } catch (InterruptedException e) {
-            throw new AnalysisException("Error launching threads when execuging the Tiering interpretation analysis", e);
+            throw new ToolException("Error launching threads when execuging the Tiering interpretation analysis", e);
         }
 
         List<Variant> variantList = new ArrayList<>();
@@ -207,14 +207,14 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecut
                     clinicalAnalysis.getDisorder(), null, penetrance, assembly);
             primaryFindings = creator.create(variantList, variantMoIMap);
         } catch (InterpretationAnalysisException | IOException e) {
-            throw new AnalysisException(e.getMessage(), e);
+            throw new ToolException(e.getMessage(), e);
         }
 
         // Add compound heterozyous variants
         try {
             primaryFindings.addAll(ClinicalUtils.getCompoundHeterozygousReportedVariants(chVariantMap, creator));
         } catch (InterpretationAnalysisException e) {
-            throw new AnalysisException("Error retrieving compound heterozygous variants", e);
+            throw new ToolException("Error retrieving compound heterozygous variants", e);
         }
         primaryFindings = creator.mergeReportedVariants(primaryFindings);
 
@@ -227,7 +227,7 @@ public class TieringInterpretationAnalysisExecutor extends OpenCgaAnalysisExecut
             secondaryFindings = clinicalInterpretationManager.getSecondaryFindings(clinicalAnalysis,
                     new ArrayList<>(sampleMap.keySet()), studyId, creator, sessionId);
         } catch (CatalogException | IOException | StorageEngineException e) {
-            throw new AnalysisException("Error retrieving secondary findings variants", e);
+            throw new ToolException("Error retrieving secondary findings variants", e);
         }
 
         // Write primary findings

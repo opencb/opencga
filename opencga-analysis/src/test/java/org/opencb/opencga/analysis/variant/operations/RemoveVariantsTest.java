@@ -10,6 +10,8 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.core.models.*;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -42,7 +44,7 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
         File file77 = create("platinum/1K.end.platinum-genomes-vcf-NA12877_S1.genome.vcf.gz");
         indexFile(file77, new QueryOptions(), outputId);
 
-        removeFile(file77, new QueryOptions(), outputId);
+        removeFile(file77, new QueryOptions());
 
         // File already transformed. Just load
         loadFile(file77, new QueryOptions(), outputId);
@@ -66,7 +68,7 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
         }
         indexFiles(files, new QueryOptions(), outputId);
 
-        removeFile(files.subList(0, files.size()/2), new QueryOptions(), outputId);
+        removeFile(files.subList(0, files.size()/2), new QueryOptions());
 
     }
 
@@ -77,7 +79,7 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
         files.add(create("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
         indexFiles(files, new QueryOptions(), outputId);
 
-        removeFile(files.get(0), new QueryOptions(), outputId);
+        removeFile(files.get(0), new QueryOptions());
     }
 
     @Test
@@ -91,18 +93,19 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
         removeStudy(studyId, new QueryOptions());
     }
 
-    private void removeFile(File file, QueryOptions options, String outputId) throws Exception {
-        removeFile(Collections.singletonList(file), options, outputId);
+    private void removeFile(File file, QueryOptions options) throws Exception {
+        removeFile(Collections.singletonList(file), options);
     }
 
-    private void removeFile(List<File> files, QueryOptions options, String outputId) throws Exception {
+    private void removeFile(List<File> files, QueryOptions options) throws Exception {
         List<String> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
 
         Study study = catalogManager.getFileManager().getStudy(files.get(0), sessionId);
         String studyId = study.getFqn();
 
-        List<File> removedFiles = variantManager.removeFile(fileIds, studyId, sessionId, new QueryOptions());
-        assertEquals(files.size(), removedFiles.size());
+        Path outdir = Paths.get(opencga.createTmpOutdir(studyId, "_REMOVE_", sessionId));
+        variantManager.removeFile(studyId, fileIds, outdir, new QueryOptions(), sessionId);
+//        assertEquals(files.size(), removedFiles.size());
 
         Cohort all = catalogManager.getCohortManager().search(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(),
                 StudyEntry.DEFAULT_COHORT), null, sessionId).first();
@@ -118,14 +121,15 @@ public class RemoveVariantsTest extends AbstractVariantStorageOperationTest {
                 .collect(Collectors.toSet());
         assertEquals(loadedSamples, allSampleIds);
 
-        for (File file : removedFiles) {
-            assertEquals(FileIndex.IndexStatus.TRANSFORMED, file.getIndex().getStatus().getName());
+        for (String file : fileIds) {
+            assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFileManager().get(studyId, file, null, sessionId).first().getIndex().getStatus().getName());
         }
 
     }
 
     private void removeStudy(Object study, QueryOptions options) throws Exception {
-        variantManager.removeStudy(study.toString(), sessionId, new QueryOptions());
+        Path outdir = Paths.get(opencga.createTmpOutdir(studyId, "_REMOVE_", sessionId));
+        variantManager.removeStudy(study.toString(), outdir, options, sessionId);
 
         Query query = new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
         assertEquals(0L, catalogManager.getFileManager().count(study.toString(), query, sessionId).getNumTotalResults());

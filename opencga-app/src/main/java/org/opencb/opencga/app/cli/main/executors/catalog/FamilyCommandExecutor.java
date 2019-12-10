@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -30,6 +29,7 @@ import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Family;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -59,7 +59,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing family command line");
 
         String subCommandString = getParsedSubCommand(familyCommandOptions.jCommander);
-        DataResponse queryResponse = null;
+        RestResponse queryResponse = null;
         switch (subCommandString) {
             case "create":
                 queryResponse = create();
@@ -111,7 +111,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-    private DataResponse<Family> create() throws CatalogException, IOException {
+    private RestResponse<Family> create() throws CatalogException, IOException {
         logger.debug("Creating a new family");
 
         FamilyCommandOptions.CreateCommandOptions commandOptions = familyCommandOptions.createCommandOptions;
@@ -137,7 +137,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFamilyClient().create(studyId, params);
     }
 
-    private DataResponse<Family> info() throws CatalogException, IOException {
+    private RestResponse<Family> info() throws CatalogException, IOException {
         logger.debug("Getting family information");
 
         ObjectMap params = new ObjectMap();
@@ -148,7 +148,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFamilyClient().get(familyCommandOptions.infoCommandOptions.family, params);
     }
 
-    private DataResponse<Family> search() throws CatalogException, IOException {
+    private RestResponse<Family> search() throws CatalogException, IOException {
         logger.debug("Searching family");
 
         Query query = new Query();
@@ -175,7 +175,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
         }
     }
 
-    private DataResponse stats() throws IOException {
+    private RestResponse stats() throws IOException {
         logger.debug("Family stats");
 
         FamilyCommandOptions.StatsCommandOptions commandOptions = familyCommandOptions.statsCommandOptions;
@@ -201,7 +201,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
     }
 
 //
-//    private DataResponse<Family> update() throws CatalogException, IOException {
+//    private RestResponse<Family> update() throws CatalogException, IOException {
 //        logger.debug("Updating individual information");
 //
 //        ObjectMap params = new ObjectMap();
@@ -220,7 +220,7 @@ public class FamilyCommandExecutor extends OpencgaCommandExecutor {
 //                resolveStudy(familyCommandOptions.updateCommandOptions.study), params);
 //    }
 //
-    private DataResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
+    private RestResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
         AclCommandOptions.AclsUpdateCommandOptions commandOptions = familyCommandOptions.aclsUpdateCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();

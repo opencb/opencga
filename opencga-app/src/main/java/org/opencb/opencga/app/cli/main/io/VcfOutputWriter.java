@@ -8,7 +8,7 @@ import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantStudyMetadata;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
-import org.opencb.commons.datastore.core.DataResponse;
+import org.opencb.opencga.core.rest.RestResponse;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.io.VcfDataWriter;
 
@@ -35,7 +35,7 @@ public class VcfOutputWriter extends AbstractOutputWriter {
     }
 
     @Override
-    public void print(DataResponse queryResponse) {
+    public void print(RestResponse queryResponse) {
         if (checkErrors(queryResponse)) {
             return;
         }
@@ -51,11 +51,6 @@ public class VcfOutputWriter extends AbstractOutputWriter {
     }
 
     private void print(VariantQueryResult<Variant> variantQueryResult, Iterator<VariantProto.Variant> variantIterator) {
-
-        // Prepare other VCF fields
-//            List<String> cohorts = new ArrayList<>(); // Arrays.asList("ALL", "MXL");
-//            List<String> formats = getFormats(study);
-
         if (variantQueryResult != null) {
             if (metadata.getStudies().isEmpty()) {
                 // If excluding studies, we need to create a dummy study.
@@ -71,6 +66,9 @@ public class VcfOutputWriter extends AbstractOutputWriter {
             }
             String study = metadata.getStudies().get(0).getId();
             VcfDataWriter<Variant> writer = VcfDataWriter.newWriterForAvro(metadata, annotations, outputStream);
+            if (variantQueryResult.getSamples() != null) {
+                writer.setSamples(variantQueryResult.getSamples().get(study));
+            }
             writer.open();
             writer.pre();
             for (Variant variant : variantQueryResult.getResults()) {

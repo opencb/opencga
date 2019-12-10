@@ -16,11 +16,7 @@
 
 package org.opencb.opencga.app.cli.internal.executors;
 
-import org.apache.commons.lang3.StringUtils;
 import org.ga4gh.models.ReadAlignment;
-import org.opencb.biodata.models.alignment.RegionCoverage;
-import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.hpg.bigdata.analysis.tools.ExecutorMonitor;
@@ -28,12 +24,12 @@ import org.opencb.hpg.bigdata.analysis.tools.Status;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
-import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.rest.RestResponse;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 
 import java.io.IOException;
@@ -70,11 +66,11 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
             case "query":
                 query();
                 break;
-            case "stats":
-                stats();
+            case "stats-run":
+                statsRun();
                 break;
-            case "coverage":
-                coverage();
+            case "coverage-run":
+                coverageRun();
                 break;
             case "delete":
                 delete();
@@ -145,7 +141,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         objectMap.putIfNotNull(QueryOptions.COUNT, alignmentCommandOptions.queryAlignmentCommandOptions.count);
 
         OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        DataResponse<ReadAlignment> alignments = openCGAClient.getAlignmentClient()
+        RestResponse<ReadAlignment> alignments = openCGAClient.getAlignmentClient()
                 .query(alignmentCommandOptions.queryAlignmentCommandOptions.fileId, objectMap);
 
         for (ReadAlignment readAlignment : alignments.allResults()) {
@@ -153,42 +149,20 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         }
     }
 
-    private void stats() throws CatalogException, IOException {
-        ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.token);
-        objectMap.putIfNotNull("study", alignmentCommandOptions.statsAlignmentCommandOptions.study);
-        objectMap.putIfNotNull("region", alignmentCommandOptions.statsAlignmentCommandOptions.region);
-        objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.statsAlignmentCommandOptions.minMappingQuality);
-        if (alignmentCommandOptions.statsAlignmentCommandOptions.contained) {
-            objectMap.put("contained", alignmentCommandOptions.statsAlignmentCommandOptions.contained);
-        }
+    private void statsRun() throws ToolException {
+        AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
 
-        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        DataResponse<AlignmentGlobalStats> globalStats = openCGAClient.getAlignmentClient()
-                .stats(alignmentCommandOptions.statsAlignmentCommandOptions.fileId, objectMap);
+        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
 
-        for (AlignmentGlobalStats alignmentGlobalStats : globalStats.allResults()) {
-            System.out.println(alignmentGlobalStats.toJSON());
-        }
+        alignmentManager.statsRun(cliOptions.study, cliOptions.inputFile, cliOptions.outdir, cliOptions.commonOptions.token);
     }
 
-    private void coverage() throws CatalogException, IOException {
-        ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull("sid", alignmentCommandOptions.coverageAlignmentCommandOptions.commonOptions.token);
-        objectMap.putIfNotNull("study", alignmentCommandOptions.coverageAlignmentCommandOptions.study);
-        objectMap.putIfNotNull("region", alignmentCommandOptions.coverageAlignmentCommandOptions.region);
-        objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.coverageAlignmentCommandOptions.minMappingQuality);
-        if (alignmentCommandOptions.coverageAlignmentCommandOptions.contained) {
-            objectMap.put("contained", alignmentCommandOptions.coverageAlignmentCommandOptions.contained);
-        }
+    private void coverageRun() throws ToolException {
+        AlignmentCommandOptions.CoverageAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageAlignmentCommandOptions;
 
-        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        DataResponse<RegionCoverage> globalStats = openCGAClient.getAlignmentClient()
-                .coverage(alignmentCommandOptions.coverageAlignmentCommandOptions.fileId, objectMap);
+        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
 
-        for (RegionCoverage regionCoverage : globalStats.allResults()) {
-            System.out.println(regionCoverage.toString());
-        }
+        alignmentManager.coverageRun(cliOptions.study, cliOptions.inputFile, cliOptions.windowSize, cliOptions.outdir, cliOptions.commonOptions.token);
     }
 
     private void delete() {
@@ -204,10 +178,13 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void bwa() throws Exception {
         AlignmentCommandOptions.BwaCommandOptions cliOptions = alignmentCommandOptions.bwaCommandOptions;
         ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.basicOptions.params);
+        params.putAll(cliOptions.commonOptions.params);
 
         BwaWrapperAnalysis bwa = new BwaWrapperAnalysis();
-        bwa.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+        bwa.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                cliOptions.commonOptions.token);
+
+        bwa.setStudy(cliOptions.study);
 
         bwa.setCommand(cliOptions.command)
                 .setFastaFile(cliOptions.fastaFile)
@@ -224,10 +201,13 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void samtools() throws Exception {
         AlignmentCommandOptions.SamtoolsCommandOptions cliOptions = alignmentCommandOptions.samtoolsCommandOptions;
         ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.basicOptions.params);
+        params.putAll(cliOptions.commonOptions.params);
 
         SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
-        samtools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+        samtools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                cliOptions.commonOptions.token);
+
+        samtools.setStudy(cliOptions.study);
 
         samtools.setCommand(cliOptions.command)
                 .setInputFile(cliOptions.inputFile)
@@ -241,12 +221,15 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void deeptools() throws Exception {
         AlignmentCommandOptions.DeeptoolsCommandOptions cliOptions = alignmentCommandOptions.deeptoolsCommandOptions;
         ObjectMap params = new ObjectMap();
-        params.putAll(cliOptions.basicOptions.params);
+        params.putAll(cliOptions.commonOptions.params);
 
         DeeptoolsWrapperAnalysis deeptools = new DeeptoolsWrapperAnalysis();
-        deeptools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+        deeptools.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir),
+                cliOptions.commonOptions.token);
 
-        deeptools.setExecutable(cliOptions.executable)
+        deeptools.setStudy(cliOptions.study);
+
+        deeptools.setCommand(cliOptions.executable)
                 .setBamFile(cliOptions.bamFile)
                 .setCoverageFile(cliOptions.coverageFile);
 

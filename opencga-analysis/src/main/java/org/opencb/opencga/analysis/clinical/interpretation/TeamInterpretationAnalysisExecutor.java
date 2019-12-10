@@ -13,9 +13,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.analysis.OpenCgaAnalysisExecutor;
-import org.opencb.opencga.core.annotations.AnalysisExecutor;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
+import org.opencb.opencga.core.annotations.ToolExecutor;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -36,11 +36,11 @@ import static org.opencb.biodata.tools.pedigree.ModeOfInheritance.proteinCoding;
 import static org.opencb.opencga.analysis.clinical.interpretation.InterpretationAnalysis.PRIMARY_FINDINGS_FILENAME;
 import static org.opencb.opencga.analysis.clinical.interpretation.InterpretationAnalysis.SECONDARY_FINDINGS_FILENAME;
 
-@AnalysisExecutor(id = "opencga-local",
-        analysis = TeamInterpretationAnalysis.ID,
-        source = AnalysisExecutor.Source.STORAGE,
-        framework = AnalysisExecutor.Framework.LOCAL)
-public class TeamInterpretationAnalysisExecutor extends OpenCgaAnalysisExecutor implements ClinicalInterpretationAnalysisExecutor {
+@ToolExecutor(id = "opencga-local",
+        tool = TeamInterpretationAnalysis.ID,
+        source = ToolExecutor.Source.STORAGE,
+        framework = ToolExecutor.Framework.LOCAL)
+public class TeamInterpretationAnalysisExecutor extends OpenCgaToolExecutor implements ClinicalInterpretationAnalysisExecutor {
 
     private String studyId;
     private String clinicalAnalysisId;
@@ -52,7 +52,7 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaAnalysisExecutor 
     private ClinicalInterpretationManager clinicalInterpretationManager;
 
     @Override
-    public void run() throws AnalysisException {
+    public void run() throws ToolException {
         sessionId = getToken();
         clinicalInterpretationManager = getClinicalInterpretationManager();
 
@@ -61,7 +61,7 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaAnalysisExecutor 
         try {
             assembly = clinicalInterpretationManager.getAssembly(studyId, sessionId);
         } catch (CatalogException e) {
-            throw new AnalysisException("Error retrieving assembly", e);
+            throw new ToolException("Error retrieving assembly", e);
         }
 
         // Get and check clinical analysis and proband
@@ -69,7 +69,7 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaAnalysisExecutor 
         try {
             clinicalAnalysis = clinicalInterpretationManager.getClinicalAnalysis(studyId, clinicalAnalysisId, sessionId);
         } catch (CatalogException e) {
-            throw new AnalysisException("Error getting clinical analysis", e);
+            throw new ToolException("Error getting clinical analysis", e);
         }
         Individual proband = ClinicalUtils.getProband(clinicalAnalysis);
 
@@ -88,7 +88,7 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaAnalysisExecutor 
                     clinicalInterpretationManager.getActionableVariantManager().getActionableVariants(assembly),
                     clinicalAnalysis.getDisorder(), null, ClinicalProperty.Penetrance.COMPLETE);
         } catch (IOException e) {
-            throw new AnalysisException("Error creating Team reported variant creator", e);
+            throw new ToolException("Error creating Team reported variant creator", e);
         }
 
         List<ReportedVariant> primaryFindings;
@@ -113,7 +113,7 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaAnalysisExecutor 
         try {
             primaryFindings = getReportedVariants(query, queryOptions, creator);
         } catch (InterpretationAnalysisException | CatalogException | IOException | StorageEngineException e) {
-            throw new AnalysisException("Error retrieving primary findings variants", e);
+            throw new ToolException("Error retrieving primary findings variants", e);
         }
 
         if (CollectionUtils.isEmpty(primaryFindings)) {
@@ -154,7 +154,7 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaAnalysisExecutor 
             try {
                 primaryFindings = getReportedVariants(query, queryOptions, creator);
             } catch (InterpretationAnalysisException | CatalogException | IOException | StorageEngineException e) {
-                throw new AnalysisException("Error retrieving primary findings variants", e);
+                throw new ToolException("Error retrieving primary findings variants", e);
             }
 
             if (CollectionUtils.isEmpty(primaryFindings)) {
@@ -166,7 +166,7 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaAnalysisExecutor 
                 try {
                     primaryFindings = getReportedVariants(query, queryOptions, creator);
                 } catch (InterpretationAnalysisException | CatalogException | IOException | StorageEngineException e) {
-                    throw new AnalysisException("Error retrieving primary findings variants", e);
+                    throw new ToolException("Error retrieving primary findings variants", e);
                 }
             }
         }
@@ -180,7 +180,7 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaAnalysisExecutor 
             secondaryFindings = clinicalInterpretationManager.getSecondaryFindings(clinicalAnalysis, sampleList, studyId,
                     creator, sessionId);
         } catch (StorageEngineException | CatalogException | IOException e) {
-            throw new AnalysisException("Error retrieving secondary findings variants", e);
+            throw new ToolException("Error retrieving secondary findings variants", e);
         }
 
         // Write primary findings
@@ -188,7 +188,7 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaAnalysisExecutor 
     }
 
     private List<ReportedVariant> getReportedVariants(Query query, QueryOptions queryOptions, TeamReportedVariantCreator creator)
-            throws InterpretationAnalysisException, CatalogException, IOException, StorageEngineException, AnalysisException {
+            throws InterpretationAnalysisException, CatalogException, IOException, StorageEngineException, ToolException {
         List<ReportedVariant> reportedVariants;
         if (moi != null && (moi == DE_NOVO || moi == COMPOUND_HETEROZYGOUS)) {
             if (moi == DE_NOVO) {

@@ -19,11 +19,11 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.ToolCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Tool;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.IOException;
 
@@ -45,7 +45,7 @@ public class ToolCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing tools command line");
 
         String subCommandString = getParsedSubCommand(toolsCommandOptions.jCommander);
-        DataResponse queryResponse = null;
+        RestResponse queryResponse = null;
         switch (subCommandString) {
             case "help":
                 queryResponse = help();
@@ -70,13 +70,13 @@ public class ToolCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
-    private DataResponse help() throws CatalogException, IOException {
+    private RestResponse help() throws CatalogException, IOException {
         logger.debug("Tool help");
         System.out.println("PENDING");
         return null;
     }
 
-    private DataResponse<Tool> info() throws CatalogException, IOException {
+    private RestResponse<Tool> info() throws CatalogException, IOException {
         logger.debug("Getting tool information");
 
         QueryOptions queryOptions = new QueryOptions();
@@ -87,7 +87,7 @@ public class ToolCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getToolClient().get(toolsCommandOptions.infoCommandOptions.id, queryOptions);
     }
 
-    private DataResponse<Tool> search() throws CatalogException, IOException {
+    private RestResponse<Tool> search() throws CatalogException, IOException {
         logger.debug("Searching tool");
 
         Query query = new Query();
@@ -104,14 +104,14 @@ public class ToolCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getToolClient().search(query, queryOptions);
     }
 
-    private DataResponse<Tool> update() throws CatalogException, IOException {
+    private RestResponse<Tool> update() throws CatalogException, IOException {
         logger.debug("Updating tool");
 
         return openCGAClient.getToolClient().update(toolsCommandOptions.updateCommandOptions.id,
                 null, QueryOptions.empty());
     }
 
-    private DataResponse<Tool> delete() throws CatalogException, IOException {
+    private RestResponse<Tool> delete() throws CatalogException, IOException {
         logger.debug("Deleting tool");
 
         return openCGAClient.getToolClient().delete(toolsCommandOptions.deleteCommandOptions.id, QueryOptions.empty());

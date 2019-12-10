@@ -30,7 +30,7 @@ import java.util.Map;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @JsonIgnoreProperties({"samples", "numTotalSamples", "numSamples", "source", "approximateCount", "approximateCountSamplingSize"})
-public class VariantQueryResult<T> extends DataResult<T> {
+public class VariantQueryResult<T> extends OpenCGAResult<T> {
 
     private static String SAMPLES = "samples";
     private static String NUM_TOTAL_SAMPLES = "numTotalSamples";
@@ -70,6 +70,7 @@ public class VariantQueryResult<T> extends DataResult<T> {
                 dataResult.getNumDeleted(),
                 dataResult.getAttributes());
         setResults(dataResult.getResults());
+        setNumResults(dataResult.getNumResults());
     }
 
     public VariantQueryResult(DataResult<T> queryResult, Map<String, List<String>> samples) {

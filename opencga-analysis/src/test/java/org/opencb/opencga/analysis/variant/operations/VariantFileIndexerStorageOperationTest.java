@@ -33,7 +33,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.exception.AnalysisException;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileIndex;
@@ -76,7 +76,6 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         QueryOptions queryOptions = new QueryOptions(VariantStorageOptions.ANNOTATE.key(), false);
         queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), false);
 
-        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, outputId);
         variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(500, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.NONE, getDefaultCohort(studyId).getStatus().getName());
@@ -117,7 +116,6 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), true);
         queryOptions.put(VariantStorageOptions.STATS_AGGREGATION.key(), "none");
 
-        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, outputId);
         variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(500, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
@@ -131,7 +129,6 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         queryOptions.put(VariantStorageOptions.STATS_CALCULATE.key(), true);
         queryOptions.put(VariantStorageOptions.STATS_AGGREGATION.key(), "wrong_type");
 
-        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, outputId);
         try {
             variantManager.index(studyId, getFile(0).getId(), newTmpOutdir(), queryOptions, sessionId);
             fail("Expected StoragePipelineException exception");
@@ -274,7 +271,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
         try {
             indexFiles(files, queryOptions, outputId);
-        } catch (AnalysisException e) {
+        } catch (ToolException e) {
             StoragePipelineException exception = (StoragePipelineException) e.getCause();
             assertEquals(files.size(), exception.getResults().size());
 
@@ -334,7 +331,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
             String outdir = opencga.createTmpOutdir(studyId, "_INDEX", sessionId);
             variantManager.index(studyId, fileIds, outdir, queryOptions, sessionId);
             fail();
-        } catch (AnalysisException e) {
+        } catch (ToolException e) {
             StoragePipelineException exception = (StoragePipelineException) e.getCause();
             assertEquals(files.size(), exception.getResults().size());
 
@@ -362,7 +359,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         try {
             indexFiles(files, queryOptions, outputId);
             fail();
-        } catch (AnalysisException e) {
+        } catch (ToolException e) {
             StoragePipelineException exception = (StoragePipelineException) e.getCause();
             assertEquals(files.size(), exception.getResults().size());
 
