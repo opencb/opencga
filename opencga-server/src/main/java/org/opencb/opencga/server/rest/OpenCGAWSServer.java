@@ -76,11 +76,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObjectMapper;
 
 @ApplicationPath("/")
-@Path("/{apiVersion}")
 @Produces(MediaType.APPLICATION_JSON)
 public class OpenCGAWSServer {
 
-    @DefaultValue("v1")
+    @DefaultValue("v2")
     @PathParam("apiVersion")
     @ApiParam(name = "apiVersion", value = "OpenCGA major version", allowableValues = "v2", defaultValue = "v2")
     protected String apiVersion;

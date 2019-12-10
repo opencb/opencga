@@ -50,7 +50,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 @Path("/{apiVersion}/studies")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = ParamConstants.STUDIES_PARAM, position = 3, description = "Methods for working with 'studies' endpoint")
+@Api(value = "Studies", description = "Methods for working with 'studies' endpoint")
 public class StudyWSServer extends OpenCGAWSServer {
 
     private StudyManager studyManager;
