@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
+import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Study;
 import org.slf4j.Logger;
@@ -250,10 +251,16 @@ public class FileScanner {
                 switch (policy) {
                     case DELETE:
                         logger.info("Deleting file { uid:" + existingFile.getUid() + ", path:\"" + existingFile.getPath() + "\" }");
+                        Query tmpQuery = new Query(FileDBAdaptor.QueryParams.UID.key(), existingFile.getUid());
+
+                        // Set the status of the file to PENDING DELETE
+                        FileUpdateParams updateParams = new FileUpdateParams()
+                                .setStatus(new File.FileStatus(File.FileStatus.PENDING_DELETE));
+                        catalogManager.getFileManager().update(study.getFqn(), tmpQuery, updateParams, QueryOptions.empty(), sessionId);
+
                         // Delete completely the file/folder !
-                        catalogManager.getFileManager().delete(study.getFqn(),
-                                new Query(FileDBAdaptor.QueryParams.UID.key(), existingFile.getUid()),
-                                new ObjectMap(Constants.SKIP_TRASH, true), sessionId);
+                        catalogManager.getFileManager().delete(study.getFqn(), tmpQuery, new ObjectMap(Constants.SKIP_TRASH, true),
+                                sessionId);
                         overwrite = false;
                         break;
                     case REPLACE:

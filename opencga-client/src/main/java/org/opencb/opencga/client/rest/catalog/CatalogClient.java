@@ -17,12 +17,12 @@
 package org.opencb.opencga.client.rest.catalog;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.AbstractParentClient;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -56,23 +56,23 @@ public abstract class CatalogClient<T> extends AbstractParentClient {
         }
     }
 
-    public DataResponse<T> get(String id, ObjectMap params) throws IOException {
+    public RestResponse<T> get(String id, ObjectMap params) throws IOException {
         return execute(category, id, "info", params, GET, clazz);
     }
 
-    public DataResponse<T> search(Query query, QueryOptions options) throws IOException {
+    public RestResponse<T> search(Query query, QueryOptions options) throws IOException {
         ObjectMap myQuery = new ObjectMap(query);
         myQuery.putAll(options);
         return execute(category, "search", myQuery, GET, clazz);
     }
 
-    public DataResponse<T> count(Query query) throws IOException {
+    public RestResponse<T> count(Query query) throws IOException {
         ObjectMap myQuery = new ObjectMap(query);
         myQuery.put("count", true);
         return execute(category, "search", myQuery, GET, clazz);
     }
 
-    public DataResponse<T> update(String id, @Nullable String study, ObjectMap bodyParams) throws IOException {
+    public RestResponse<T> update(String id, @Nullable String study, ObjectMap bodyParams) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(bodyParams);
         ObjectMap p = new ObjectMap("body", json);
@@ -81,7 +81,7 @@ public abstract class CatalogClient<T> extends AbstractParentClient {
         return execute(category, id, "update", p, POST, clazz);
     }
 
-    public DataResponse<T> update(String id, @Nullable String study, ObjectMap queryParams, ObjectMap bodyParams) throws IOException {
+    public RestResponse<T> update(String id, @Nullable String study, ObjectMap queryParams, ObjectMap bodyParams) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(bodyParams);
         ObjectMap p = new ObjectMap("body", json);
@@ -91,17 +91,17 @@ public abstract class CatalogClient<T> extends AbstractParentClient {
         return execute(category, id, "update", p, POST, clazz);
     }
 
-    public DataResponse<T> delete(String id, ObjectMap params) throws IOException {
+    public RestResponse<T> delete(String id, ObjectMap params) throws IOException {
         return execute(category, id, "delete", params, GET, clazz);
     }
 
     // Acl methods
 
-    public DataResponse<ObjectMap> getAcls(String id, ObjectMap params) throws IOException {
+    public RestResponse<ObjectMap> getAcls(String id, ObjectMap params) throws IOException {
         return execute(category, id, "acl", params, GET, ObjectMap.class);
     }
 
-    public DataResponse<ObjectMap> updateAcl(String memberId, ObjectMap queryParams, ObjectMap bodyParams) throws IOException {
+    public RestResponse<ObjectMap> updateAcl(String memberId, ObjectMap queryParams, ObjectMap bodyParams) throws IOException {
         ObjectMap myParams = new ObjectMap(queryParams);
         myParams.put("body", bodyParams);
         return execute(category, null, "acl", memberId, "update", myParams, POST, ObjectMap.class);

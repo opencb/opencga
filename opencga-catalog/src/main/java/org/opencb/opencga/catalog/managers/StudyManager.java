@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
@@ -51,6 +52,8 @@ import org.opencb.opencga.core.models.summaries.StudySummary;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
 import org.opencb.opencga.core.results.OpenCGAResult;
+import org.reflections.Reflections;
+import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -339,6 +342,22 @@ public class StudyManager extends AbstractManager {
                     .resolve(Long.toString(study.getUid())).resolve("JOBS/").toUri();
             catalogIOManager.createDirectory(jobUri, true);
             fileDBAdaptor.update(jobFolder, new ObjectMap("uri", jobUri), QueryOptions.empty());
+
+            // Read and process installation variable sets
+            Set<String> variablesets = new Reflections(new ResourcesScanner(), "variablesets/").getResources(Pattern.compile(".*\\.json"));
+            for (String variableset : variablesets) {
+                VariableSet vs = null;
+                try {
+                    vs = JacksonUtils.getDefaultNonNullObjectMapper().readValue(
+                            getClass().getClassLoader().getResourceAsStream(variableset), VariableSet.class);
+                } catch (IOException e) {
+                    logger.error("Could not parse variable set '{}'", variableset, e);
+                }
+                if (vs != null) {
+                    createVariableSet(study, vs.getId(), vs.getName(), vs.isUnique(), vs.isConfidential(), vs.getDescription(),
+                            vs.getAttributes(), vs.getVariables().stream().collect(Collectors.toList()), vs.getEntities(), token);
+                }
+            }
 
             auditManager.auditCreate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));

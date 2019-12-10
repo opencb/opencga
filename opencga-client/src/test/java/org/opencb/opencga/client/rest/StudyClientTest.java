@@ -20,14 +20,11 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.catalog.StudyClient;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.IOException;
 
@@ -84,7 +81,7 @@ public class StudyClientTest {
     @Test
     public void get() throws Exception {
         studyClient = openCGAClient.getStudyClient();
-        DataResponse<Study> info = studyClient.get("2", null);
+        RestResponse<Study> info = studyClient.get("2", null);
         assertNotNull(info.firstResult());
     }
 

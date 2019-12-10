@@ -323,7 +323,8 @@ public class JobManager extends ResourceManager<Job> {
                             inputFiles.add(file);
                         } catch (CatalogException e) {
                             throw new CatalogException("Cannot find file '" + entry.getValue() + "' "
-                                    + "from job param '" + entry.getKey() + "'. ", e);
+                                    + "from job param '" + entry.getKey() + "'; (study = " + study.getName() + ", token = " + token + ") :"
+                                    + e.getMessage(), e);
                         }
                     }
                 } else if (entry.getValue() instanceof Map) {
@@ -386,6 +387,8 @@ public class JobManager extends ResourceManager<Job> {
         job.setTags(jobTags);
 
         try {
+            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.EXECUTION);
+
             Map<String, Object> attributes = new HashMap<>();
             attributes.put(Job.OPENCGA_STUDY, study.getFqn());
 

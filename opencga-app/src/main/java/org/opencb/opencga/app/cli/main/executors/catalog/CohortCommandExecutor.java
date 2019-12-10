@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -31,6 +30,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.IOException;
 
@@ -56,7 +56,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing cohorts command line");
 
         String subCommandString = getParsedSubCommand(cohortsCommandOptions.jCommander);
-        DataResponse queryResponse = null;
+        RestResponse queryResponse = null;
         switch (subCommandString) {
             case "create":
                 queryResponse = create();
@@ -116,7 +116,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
-    private DataResponse search() throws IOException {
+    private RestResponse search() throws IOException {
         CohortCommandOptions.SearchCommandOptions commandOptions = cohortsCommandOptions.searchCommandOptions;
 
         logger.debug("Searching cohorts");
@@ -143,7 +143,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-    private DataResponse<Cohort> create() throws CatalogException, IOException {
+    private RestResponse<Cohort> create() throws CatalogException, IOException {
         logger.debug("Creating a new cohort");
 
         ObjectMap params = new ObjectMap();
@@ -156,7 +156,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
                 cohortsCommandOptions.createCommandOptions.variableSetId, cohortsCommandOptions.createCommandOptions.variable, params);
     }
 
-    private DataResponse<Cohort> info() throws CatalogException, IOException {
+    private RestResponse<Cohort> info() throws CatalogException, IOException {
         logger.debug("Getting cohort information");
 
         ObjectMap params = new ObjectMap();
@@ -166,7 +166,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getCohortClient().get(cohortsCommandOptions.infoCommandOptions.cohort, params);
     }
 
-    private DataResponse<Sample> samples() throws CatalogException, IOException {
+    private RestResponse<Sample> samples() throws CatalogException, IOException {
         logger.debug("Listing samples belonging to a cohort");
 
         Query query = new Query();
@@ -181,7 +181,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getCohortClient().getSamples(cohortsCommandOptions.samplesCommandOptions.cohort, query, queryOptions);
     }
 
-    private DataResponse<Cohort> update() throws CatalogException, IOException {
+    private RestResponse<Cohort> update() throws CatalogException, IOException {
         logger.debug("Updating cohort");
 
         ObjectMap params = new ObjectMap();
@@ -193,7 +193,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
                 resolveStudy(cohortsCommandOptions.updateCommandOptions.study), params);
     }
 
-    private DataResponse<Cohort> delete() throws CatalogException, IOException {
+    private RestResponse<Cohort> delete() throws CatalogException, IOException {
         logger.debug("Deleting cohort");
 
         ObjectMap params = new ObjectMap();
@@ -202,7 +202,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getCohortClient().delete(cohortsCommandOptions.deleteCommandOptions.cohort, params);
     }
 
-    private DataResponse<ObjectMap> groupBy() throws CatalogException, IOException {
+    private RestResponse<ObjectMap> groupBy() throws CatalogException, IOException {
         logger.debug("Group by cohorts");
 
         ObjectMap params = new ObjectMap();
@@ -219,7 +219,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
                 cohortsCommandOptions.groupByCommandOptions.fields,params);
     }
 
-    private DataResponse stats() throws IOException {
+    private RestResponse stats() throws IOException {
         logger.debug("Cohort stats");
 
         CohortCommandOptions.StatsCommandOptions commandOptions = cohortsCommandOptions.statsCommandOptions;
@@ -242,7 +242,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getCohortClient().stats(commandOptions.study, query, options);
     }
 
-    private DataResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
+    private RestResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
         AclCommandOptions.AclsUpdateCommandOptions commandOptions = cohortsCommandOptions.aclsUpdateCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();

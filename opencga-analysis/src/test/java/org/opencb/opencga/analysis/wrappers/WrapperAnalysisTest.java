@@ -297,7 +297,7 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
 
         DeeptoolsWrapperAnalysis deeptools = new DeeptoolsWrapperAnalysis();
         deeptools.setUp(opencga.getOpencgaHome().toString(), params, outDir6, clinicalTest.token);
-        deeptools.setExecutable("bamCoverage")
+        deeptools.setCommand("bamCoverage")
                 .setBamFile(sortedBamFile)
                 .setCoverageFile(coverageFile);
 

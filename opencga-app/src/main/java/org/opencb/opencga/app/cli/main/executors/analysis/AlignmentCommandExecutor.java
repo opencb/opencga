@@ -26,8 +26,6 @@ import io.grpc.ManagedChannelBuilder;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmentBiConverter;
-import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
@@ -36,8 +34,9 @@ import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.rest.RestResponse;
 import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
 import org.opencb.opencga.server.grpc.ServiceTypesModel;
@@ -49,6 +48,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import static org.opencb.opencga.core.api.ParamConstants.*;
 
 /**
  * Created by pfurio on 11/11/16.
@@ -68,7 +69,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing alignment command line");
 
         String subCommandString = getParsedSubCommand(alignmentCommandOptions.jCommander);
-        DataResponse queryResponse = null;
+        RestResponse queryResponse = null;
         switch (subCommandString) {
             case "index":
                 queryResponse = index();
@@ -76,11 +77,23 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             case "query":
                 query();
                 break;
-            case "stats":
-                queryResponse = stats();
+            case "stats-run":
+                queryResponse = statsRun();
                 break;
-            case "coverage":
-                queryResponse = coverage();
+            case "stats-info":
+                queryResponse = statsInfo();
+                break;
+            case "stats-query":
+                queryResponse = statsQuery();
+                break;
+            case "coverage-run":
+                queryResponse = coverageRun();
+                break;
+            case "coverage-query":
+                queryResponse = coverageQuery();
+                break;
+            case "coverage-log2ratio":
+                queryResponse = coverageLog2Ratio();
                 break;
             case BwaWrapperAnalysis.ID:
                 queryResponse = bwa();
@@ -99,7 +112,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
-    private DataResponse index() throws CatalogException, IOException {
+    private RestResponse index() throws CatalogException, IOException {
         logger.debug("Indexing alignment(s)");
 
         String fileIds = alignmentCommandOptions.indexAlignmentCommandOptions.fileId;
@@ -119,7 +132,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             rpc = "auto";
         }
 
-        DataResponse<ReadAlignment> queryResponse = null;
+        RestResponse<ReadAlignment> queryResponse = null;
 
         if (rpc.toLowerCase().equals("rest")) {
             queryResponse = queryRest(alignmentCommandOptions.queryAlignmentCommandOptions);
@@ -156,7 +169,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private DataResponse<ReadAlignment> queryRest(AlignmentCommandOptions.QueryAlignmentCommandOptions commandOptions)
+    private RestResponse<ReadAlignment> queryRest(AlignmentCommandOptions.QueryAlignmentCommandOptions commandOptions)
             throws CatalogException, IOException {
 
         String study = resolveStudy(alignmentCommandOptions.queryAlignmentCommandOptions.study);
@@ -169,7 +182,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         o.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), commandOptions.minMappingQuality);
         o.putIfNotNull("limit", commandOptions.limit);
 
-        DataResponse<ReadAlignment> query = openCGAClient.getAlignmentClient().query(fileIds, o);
+        RestResponse<ReadAlignment> query = openCGAClient.getAlignmentClient().query(fileIds, o);
         return query;
     }
 
@@ -270,47 +283,75 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         channel.shutdown().awaitTermination(1, TimeUnit.SECONDS);
     }
 
+    //-------------------------------------------------------------------------
+    // STATS: run, info and query
+    //-------------------------------------------------------------------------
 
-    private DataResponse stats() throws CatalogException, IOException {
-        ObjectMap objectMap = new ObjectMap();
-//        objectMap.putIfNotNull("fileId", alignmentCommandOptions.statsAlignmentCommandOptions.fileId);
-        objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.token);
-        objectMap.putIfNotNull("study", alignmentCommandOptions.statsAlignmentCommandOptions.study);
-        objectMap.putIfNotNull("region", alignmentCommandOptions.statsAlignmentCommandOptions.region);
-        objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.statsAlignmentCommandOptions.minMappingQuality);
-        if (alignmentCommandOptions.statsAlignmentCommandOptions.contained) {
-            objectMap.put("contained", alignmentCommandOptions.statsAlignmentCommandOptions.contained);
-        }
+    private RestResponse<Job> statsRun() throws IOException {
+        AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
 
-        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        DataResponse<AlignmentGlobalStats> globalStats = openCGAClient.getAlignmentClient()
-                .stats(alignmentCommandOptions.statsAlignmentCommandOptions.fileId, objectMap);
-
-        return globalStats;
-//        for (AlignmentGlobalStats alignmentGlobalStats : globalStats.allResults()) {
-//            System.out.println(alignmentGlobalStats.toJSON());
-//        }
+        return openCGAClient.getAlignmentClient().statsRun(cliOptions.study, cliOptions.inputFile);
     }
 
-    private DataResponse coverage() throws CatalogException, IOException {
+    private RestResponse<String> statsInfo() throws IOException {
+        AlignmentCommandOptions.StatsInfoAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsInfoAlignmentCommandOptions;
+
+        return openCGAClient.getAlignmentClient().statsInfo(cliOptions.study, cliOptions.inputFile);
+    }
+
+    private RestResponse<File> statsQuery() throws IOException {
+        AlignmentCommandOptions.StatsQueryAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsQueryAlignmentCommandOptions;
+
         ObjectMap objectMap = new ObjectMap();
-//        objectMap.putIfNotNull("fileId", alignmentCommandOptions.coverageAlignmentCommandOptions.fileId);
-        objectMap.putIfNotNull("sid", alignmentCommandOptions.coverageAlignmentCommandOptions.commonOptions.token);
-        objectMap.putIfNotNull("study", alignmentCommandOptions.coverageAlignmentCommandOptions.study);
-        objectMap.putIfNotNull("region", alignmentCommandOptions.coverageAlignmentCommandOptions.region);
-        objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.coverageAlignmentCommandOptions.minMappingQuality);
-        if (alignmentCommandOptions.coverageAlignmentCommandOptions.contained) {
-            objectMap.put("contained", alignmentCommandOptions.coverageAlignmentCommandOptions.contained);
-        }
+        objectMap.putIfNotNull(STUDY_PARAM, cliOptions.study);
+        objectMap.putIfNotNull(RAW_TOTAL_SEQUENCES, cliOptions.rawTotalSequences);
+        objectMap.putIfNotNull(FILTERED_SEQUENCES, cliOptions.filteredSequences);
+        objectMap.putIfNotNull(READS_MAPPED, cliOptions.readsMapped);
+        objectMap.putIfNotNull(READS_MAPPED_AND_PAIRED, cliOptions.readsMappedAndPaired);
+        objectMap.putIfNotNull(READS_UNMAPPED, cliOptions.readsUnmapped);
+        objectMap.putIfNotNull(READS_PROPERLY_PAIRED, cliOptions.readsProperlyPaired);
+        objectMap.putIfNotNull(READS_PAIRED, cliOptions.readsPaired);
+        objectMap.putIfNotNull(READS_DUPLICATED, cliOptions.readsDuplicated);
+        objectMap.putIfNotNull(READS_MQ0, cliOptions.readsMQ0);
+        objectMap.putIfNotNull(READS_QC_FAILED, cliOptions.readsQCFailed);
+        objectMap.putIfNotNull(NON_PRIMARY_ALIGNMENTS, cliOptions.nonPrimaryAlignments);
+        objectMap.putIfNotNull(MISMATCHES, cliOptions.mismatches);
+        objectMap.putIfNotNull(ERROR_RATE, cliOptions.errorRate);
+        objectMap.putIfNotNull(AVERAGE_LENGTH, cliOptions.averageLength);
+        objectMap.putIfNotNull(AVERAGE_FIRST_FRAGMENT_LENGTH, cliOptions.averageFirstFragmentLength);
+        objectMap.putIfNotNull(AVERAGE_LAST_FRAGMENT_LENGTH, cliOptions.averageLastFragmentLength);
+        objectMap.putIfNotNull(AVERAGE_QUALITY, cliOptions.averageQuality);
+        objectMap.putIfNotNull(INSERT_SIZE_AVERAGE, cliOptions.insertSizeAverage);
+        objectMap.putIfNotNull(INSERT_SIZE_STANDARD_DEVIATION, cliOptions.insertSizeStandardDeviation);
+        objectMap.putIfNotNull(PAIRS_WITH_OTHER_ORIENTATION, cliOptions.pairsWithOtherOrientation);
+        objectMap.putIfNotNull(PAIRS_ON_DIFFERENT_CHROMOSOMES, cliOptions.pairsOnDifferentChromosomes);
+        objectMap.putIfNotNull(PERCENTAGE_OF_PROPERLY_PAIRED_READS, cliOptions.percentageOfProperlyPairedReads);
 
-        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        DataResponse<RegionCoverage> globalStats = openCGAClient.getAlignmentClient()
-                .coverage(alignmentCommandOptions.coverageAlignmentCommandOptions.fileId, objectMap);
+        return openCGAClient.getAlignmentClient().statsQuery(objectMap);
+    }
 
-        return globalStats;
-//        for (RegionCoverage regionCoverage : globalStats.allResults()) {
-//            System.out.println(regionCoverage.toString());
-//        }
+    //-------------------------------------------------------------------------
+    // STATS: run, info and query
+    //-------------------------------------------------------------------------
+
+    private RestResponse<Job> coverageRun() throws IOException {
+        AlignmentCommandOptions.CoverageAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageAlignmentCommandOptions;
+
+        return openCGAClient.getAlignmentClient().coverageRun(cliOptions.study, cliOptions.inputFile, cliOptions.windowSize);
+    }
+
+    private RestResponse<RegionCoverage> coverageQuery() throws IOException {
+        AlignmentCommandOptions.CoverageQueryAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageQueryAlignmentCommandOptions;
+
+        return openCGAClient.getAlignmentClient().coverageQuery(cliOptions.study, cliOptions.inputFile, cliOptions.region, cliOptions.gene,
+                cliOptions.geneOffset, cliOptions.onlyExons, cliOptions.exonOffset, cliOptions.range, cliOptions.windowSize);
+    }
+
+    private RestResponse<RegionCoverage> coverageLog2Ratio() throws IOException {
+        AlignmentCommandOptions.CoverageLog2RatioAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageLog2RatioAlignmentCommandOptions;
+
+        return openCGAClient.getAlignmentClient().coverageLog2Ratio(cliOptions.study, cliOptions.inputFile1, cliOptions.inputFile2, cliOptions.region,
+                cliOptions.gene, cliOptions.geneOffset, cliOptions.onlyExons, cliOptions.exonOffset, cliOptions.windowSize);
     }
 
     //-------------------------------------------------------------------------
@@ -319,7 +360,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
     // BWA
 
-    private DataResponse<Job> bwa() throws IOException {
+    private RestResponse<Job> bwa() throws IOException {
         ObjectMap params = new AlignmentAnalysisWSService.BwaRunParams(
                 alignmentCommandOptions.bwaCommandOptions.command,
                 alignmentCommandOptions.bwaCommandOptions.fastaFile,
@@ -335,7 +376,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
     // Samtools
 
-    private DataResponse<Job> samtools() throws IOException {
+    private RestResponse<Job> samtools() throws IOException {
         ObjectMap params = new AlignmentAnalysisWSService.SamtoolsRunParams(
                 alignmentCommandOptions.samtoolsCommandOptions.command,
                 alignmentCommandOptions.samtoolsCommandOptions.inputFile,
@@ -348,7 +389,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
     // Deeptools
 
-    private DataResponse<Job> deeptools() throws IOException {
+    private RestResponse<Job> deeptools() throws IOException {
         ObjectMap params = new AlignmentAnalysisWSService.DeeptoolsRunParams(
                 alignmentCommandOptions.deeptoolsCommandOptions.executable,
                 alignmentCommandOptions.deeptoolsCommandOptions.bamFile,

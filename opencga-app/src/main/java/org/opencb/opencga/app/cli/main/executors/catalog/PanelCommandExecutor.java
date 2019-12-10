@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
-import org.opencb.commons.datastore.core.DataResponse;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -28,6 +27,7 @@ import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Panel;
+import org.opencb.opencga.core.rest.RestResponse;
 
 import java.io.IOException;
 
@@ -51,7 +51,7 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing panel command line");
 
         String subCommandString = getParsedSubCommand(panelsCommandOptions.jCommander);
-        DataResponse queryResponse = null;
+        RestResponse queryResponse = null;
         switch (subCommandString) {
 //            case "create":
 //                queryResponse = create();
@@ -78,7 +78,7 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
     }
 
     /**********************************************  Administration Commands  ***********************************************/
-//    private DataResponse<DiseasePanel> create() throws CatalogException, IOException {
+//    private RestResponse<DiseasePanel> create() throws CatalogException, IOException {
 //        logger.debug("Creating a new panel");
 //        String name = panelsCommandOptions.createCommandOptions.name;
 //        String disease = panelsCommandOptions.createCommandOptions.disease;
@@ -91,7 +91,7 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
 //        return openCGAClient.getPanelClient().create(resolveStudy(panelsCommandOptions.createCommandOptions.studyId), name, disease, params);
 //    }
 
-    private DataResponse<Panel> info() throws CatalogException, IOException  {
+    private RestResponse<Panel> info() throws CatalogException, IOException  {
         logger.debug("Getting panel information");
 
         ObjectMap params = new ObjectMap();
@@ -101,7 +101,7 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getPanelClient().get(panelsCommandOptions.infoCommandOptions.id, params);
     }
 
-    private DataResponse<Panel> search() throws CatalogException, IOException  {
+    private RestResponse<Panel> search() throws CatalogException, IOException  {
         logger.debug("Searching panels");
 
         Query query = new Query();
@@ -133,7 +133,7 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-    private DataResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
+    private RestResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
         AclCommandOptions.AclsUpdateCommandOptions commandOptions = panelsCommandOptions.aclsUpdateCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();

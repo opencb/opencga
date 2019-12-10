@@ -110,7 +110,6 @@ public class FileScannerTest {
             queryResult = catalogManager.getFileManager().upload(study.getFqn(), inputStream,
                     new File().setPath(folder.getPath() + "file1.txt"), false, false, false, sessionIdUser);
         }
-
         File file = queryResult.first();
 
         CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString());
@@ -118,13 +117,14 @@ public class FileScannerTest {
                 true, sessionIdUser);
 
         files.forEach((File f) -> assertFalse(f.getAttributes().containsKey("checksum")));
-        assertEquals(File.FileStatus.DELETED, getFile(file.getUid()).getStatus().getName());
+        assertEquals(File.FileStatus.DELETED, getDeletedFile(file.getUid()).getStatus().getName());
     }
 
-    public File getFile(long id) throws CatalogException {
-        return catalogManager.getFileManager().search(String.valueOf(study.getFqn()), new Query(FileDBAdaptor.QueryParams.UID.key(), id)
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED + "," + File.FileStatus.TRASHED + "," + Status.READY), null, sessionIdUser)
-                .first();
+    public File getDeletedFile(long id) throws CatalogException {
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.UID.key(), id)
+                .append(FileDBAdaptor.QueryParams.DELETED.key(), true);
+        return catalogManager.getFileManager().search(study.getFqn(), query, null, sessionIdUser).first();
     }
 
     @Test

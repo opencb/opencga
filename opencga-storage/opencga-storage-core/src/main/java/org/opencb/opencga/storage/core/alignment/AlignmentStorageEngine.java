@@ -26,6 +26,8 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AlignmentStorageEngine extends StorageEngine<AlignmentDBAdaptor> {
 
+    public static final String ALIGNMENT_STATS_VARIABLE_SET = "opencga_alignment_stats";
+
     private Logger logger = LoggerFactory.getLogger(AlignmentStorageEngine.class);
 
     public AlignmentStorageEngine() {

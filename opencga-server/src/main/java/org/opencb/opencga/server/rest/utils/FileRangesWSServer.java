@@ -39,9 +39,9 @@ import java.util.concurrent.TimeUnit;
 
 @Path("/{apiVersion}/utils")
 @Produces("application/json")
-public class FileRanges extends OpenCGAWSServer {
+public class FileRangesWSServer extends OpenCGAWSServer {
 
-    public FileRanges(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam) throws IOException, VersionException {
+    public FileRangesWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders headerParam) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, headerParam);
     }
 

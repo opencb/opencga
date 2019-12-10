@@ -55,7 +55,7 @@ public class CliSession {
         this.token = token;
         this.login = login;
         this.studies = studies;
-        this.version = "v1";
+        this.version = "v2";
     }
 
     @Override

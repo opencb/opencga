@@ -66,6 +66,7 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
 
     public enum StudyPermissions {
         CONFIDENTIAL_VARIABLE_SET_ACCESS,
+        EXECUTION,
 
         // FILES
         WRITE_FILES(FileAclEntry.FilePermissions.WRITE.name(), FILE),

@@ -20,11 +20,11 @@ import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
-import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
+import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 
 import java.io.IOException;
@@ -38,7 +38,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface AlignmentDBAdaptor {
 
     enum QueryParams implements QueryParam {
-//        FILE_ID("fileId", TEXT, ""),
+        //        FILE_ID("fileId", TEXT, ""),
         REGION("region", TEXT, ""),
         MIN_MAPQ("minMapQ", INTEGER, ""),
         MAX_NM("maxNM", INTEGER, ""),
@@ -115,15 +115,19 @@ public interface AlignmentDBAdaptor {
 
     DataResult<Long> count(Path path, Query query, QueryOptions options);
 
-    DataResult<AlignmentGlobalStats> stats(Path path, Path workspace) throws Exception;
+    DataResult<String> statsInfo(Path path) throws ToolException;
 
-    DataResult<AlignmentGlobalStats> stats(Path path, Path workspace, Query query, QueryOptions options) throws Exception;
+//    DataResult<AlignmentGlobalStats> stats(Path path, Path workspace, Query query, QueryOptions options) throws Exception;
+//    DataResult<AlignmentGlobalStats> stats(Path path, Path workspace) throws Exception;
 
-    DataResult<RegionCoverage> coverage(Path path, Region region, int windowSize) throws Exception;
+//    DataResult<RegionCoverage> coverage(Path path, Region region, int windowSize) throws Exception;
+//
+//    DataResult<RegionCoverage> coverage(Path path, Region region, int minCoverage, int maxCoverage) throws Exception;
+//
+//    DataResult<RegionCoverage> getLowCoverageRegions(Path path, Region region, int minCoverage) throws Exception;
 
-    DataResult<RegionCoverage> coverage(Path path, Region region, int minCoverage, int maxCoverage) throws Exception;
-
-    DataResult<RegionCoverage> getLowCoverageRegions(Path path, Region region, int minCoverage) throws Exception;
+    DataResult<RegionCoverage> coverageQuery(Path path, Region region, int minCoverage, int maxCoverage, int windowSize)
+            throws Exception;
 
     DataResult<Long> getTotalCounts(Path path) throws AlignmentCoverageException, IOException;
 

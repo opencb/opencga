@@ -33,6 +33,7 @@ import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.results.OpenCGAResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -118,7 +119,7 @@ public class UserWSServer extends OpenCGAWSServer {
             }
 
             ObjectMap sessionMap = new ObjectMap("token", token);
-            DataResult<ObjectMap> response = new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList(sessionMap), 1);
+            OpenCGAResult<ObjectMap> response = new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(sessionMap), 1);
 
             return createOkResponse(response);
         } catch (Exception e) {
