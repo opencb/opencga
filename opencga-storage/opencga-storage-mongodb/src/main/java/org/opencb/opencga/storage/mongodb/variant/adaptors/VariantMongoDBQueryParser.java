@@ -325,7 +325,9 @@ public class VariantMongoDBQueryParser {
                         + '.' + DocumentToVariantAnnotationConverter.CLINICAL_DATA_FIELD
                         + '.' + DocumentToVariantAnnotationConverter.CLINICAL_CLINVAR_FIELD
                         + '.' + "clinicalSignificance";
-                for (String clinicalSignificance : splitValue(value).getValue()) {
+                Pair<QueryOperation, List<String>> pair = splitValue(value);
+                List<DBObject> list = new ArrayList<>(pair.getValue().size());
+                for (String clinicalSignificance : pair.getValue()) {
                     ClinicalSignificance enumValue = EnumUtils.getEnum(ClinicalSignificance.class, clinicalSignificance);
                     if (enumValue != null) {
                         for (Map.Entry<String, ClinicalSignificance> entry : VariantAnnotationUtils.CLINVAR_CLINSIG_TO_ACMG.entrySet()) {
@@ -335,8 +337,14 @@ public class VariantMongoDBQueryParser {
                             }
                         }
                     }
-                    builder.and(key).regex(Pattern.compile("^" + clinicalSignificance, Pattern.CASE_INSENSITIVE));
+                    list.add(new QueryBuilder().and(key).regex(Pattern.compile("^" + clinicalSignificance, Pattern.CASE_INSENSITIVE)).get());
                 }
+                if (QueryOperation.OR.equals(pair.getKey())) {
+                    builder.or(list.toArray(new DBObject[0]));
+                } else {
+                    builder.and(list.toArray(new DBObject[0]));
+                }
+
             }
 
             if (isValidParam(query, ANNOT_HPO)) {

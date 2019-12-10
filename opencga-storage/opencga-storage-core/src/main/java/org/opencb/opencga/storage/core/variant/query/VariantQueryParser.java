@@ -127,7 +127,8 @@ public class VariantQueryParser {
 
                 clinicalSignificanceList.add(clinicalSignificance);
             }
-            query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificanceList);
+            query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(),
+                    String.join(operator == null ? "" : operator.separator(), clinicalSignificanceList));
         }
 
         if (isValidParam(query, ANNOT_SIFT)) {

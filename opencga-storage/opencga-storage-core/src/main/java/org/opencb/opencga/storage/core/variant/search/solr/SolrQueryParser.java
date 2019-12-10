@@ -33,6 +33,7 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchUtils;
@@ -336,18 +337,19 @@ public class SolrQueryParser {
         key = ANNOT_CLINICAL_SIGNIFICANCE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
 //            filterList.add(parseCategoryTermValue("traits", query.getString(key), "cs\\:", true));
-            String[] clinSig = query.getString(key).split("[,;]");
+            Pair<QueryOperation, List<String>> pair = splitValue(query.getString(key));
+            List<String> clinSig = pair.getRight();
             StringBuilder sb = new StringBuilder();
             sb.append("(");
-            for (int i = 0; i < clinSig.length; i++) {
+            for (int i = 0; i < clinSig.size(); i++) {
                 if (i > 0) {
-                    sb.append(" OR ");
+                    sb.append(QueryOperation.OR.equals(pair.getLeft()) ? " OR " : " AND ");
                 }
                 // FIXME:
                 //   We are storing raw ClinicalSignificance values
                 //   We should use the enum {@link org.opencb.biodata.models.variant.avro.ClinicalSignificance}
                 //   Replace "_" with " " works to search by "Likely benign" instead of "likely_benign"
-                String value = clinSig[i].replace("_", " ");
+                String value = clinSig.get(i).replace("_", " ");
                 sb.append("traits:\"*cs\\:").append(value).append("*\"");
             }
             sb.append(")");
