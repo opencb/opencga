@@ -40,14 +40,21 @@ public class AlignmentClient extends AbstractParentClient {
         super(userId, sessionId, configuration);
     }
 
-    public RestResponse<Job> index(String fileIds, ObjectMap params) throws IOException {
-        if (params == null) {
-            params = new ObjectMap();
-        }
-        params.putIfNotEmpty("file", fileIds);
+    //-------------------------------------------------------------------------
+    // INDEX
+    //-------------------------------------------------------------------------
+
+    public RestResponse<Job> index(String study, String inputFile) throws IOException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(STUDY_PARAM, study);
+        params.putIfNotEmpty(FILE_ID_PARAM, inputFile);
 
         return execute(ALIGNMENT_URL, "index", params, POST, Job.class);
     }
+
+    //-------------------------------------------------------------------------
+    // QUERY
+    //-------------------------------------------------------------------------
 
     public RestResponse<ReadAlignment> query(String fileIds, ObjectMap params) throws IOException {
         if (params == null) {
@@ -65,7 +72,7 @@ public class AlignmentClient extends AbstractParentClient {
     public RestResponse<Job> statsRun(String study, String file) throws IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull(STUDY_PARAM, study);
-        params.putIfNotEmpty("inputFile", file);
+        params.putIfNotEmpty(FILE_ID_PARAM, file);
 
         return execute(ALIGNMENT_URL, "stats/run", params, POST, Job.class);
     }
@@ -73,7 +80,7 @@ public class AlignmentClient extends AbstractParentClient {
     public RestResponse<String> statsInfo(String study, String file) throws IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull(STUDY_PARAM, study);
-        params.putIfNotEmpty("inputFile", file);
+        params.putIfNotEmpty(FILE_ID_PARAM, file);
 
         return execute(ALIGNMENT_URL, "stats/info", params, GET, String.class);
     }
@@ -92,8 +99,8 @@ public class AlignmentClient extends AbstractParentClient {
     public RestResponse<Job> coverageRun(String study, String inputFile, int windowSize) throws IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull(STUDY_PARAM, study);
-        params.putIfNotEmpty("inputFile", inputFile);
-        params.putIfNotNull("windowSize", windowSize);
+        params.putIfNotEmpty(FILE_ID_PARAM, inputFile);
+        params.putIfNotNull(COVERAGE_WINDOW_SIZE_PARAM, windowSize);
 
         return execute(ALIGNMENT_URL, "coverage/run", params, POST, Job.class);
     }

@@ -72,27 +72,20 @@ public class AlignmentCommandOptions {
         this.deeptoolsCommandOptions = new DeeptoolsCommandOptions();
     }
 
-    @Parameters(commandNames = {"index"}, commandDescription = "Index alignment file")
+    @Parameters(commandNames = {"index"}, commandDescription = ALIGNMENT_INDEX_DESCRIPTION)
     public class IndexAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
+        @Parameter(names = {"--input-file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        public String inputFile;
 
-        @Parameter(names = {"-i", "--file"}, description = "Unique ID for the file", required = true, arity = 1)
-        public String fileId;
-
-        @Parameter(names = "--skip-coverage", description = "Skip calculating the coverage after creating the .bai file")
-        public boolean skipCoverage = false;
-
-        @Parameter(names = "--skip-stats", description = "Skip calculating the bam stats after creating the .bai file")
-        public boolean skipStats = false;
-
-        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1)
-        public String outdirId;
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
     }
 
-    @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed alignments")
+    @Parameters(commandNames = {"query"}, commandDescription = ALIGNMENT_QUERY_DESCRIPTION)
     public class QueryAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate

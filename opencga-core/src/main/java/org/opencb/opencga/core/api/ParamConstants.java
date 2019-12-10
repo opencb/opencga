@@ -132,12 +132,15 @@ public class ParamConstants {
     // ---------------------------------------------
     // alignment
 
+    public static final String ALIGNMENT_INDEX_DESCRIPTION = "Index alignment file";
+    public static final String ALIGNMENT_QUERY_DESCRIPTION = "Search over indexed alignments";
     public static final String ALIGNMENT_COVERAGE_DESCRIPTION = "Compute coverage for a given alignemnt file";
     public static final String ALIGNMENT_COVERAGE_QUERY_DESCRIPTION = "Query the coverage of an alignment file for regions or genes";
     public static final String ALIGNMENT_COVERAGE_LOG_2_RATIO_DESCRIPTION = "Compute Log2 coverage ratio from file #1 (somatic) and file #2 (germline)";
     public static final String ALIGNMENT_STATS_DESCRIPTION = "Compute stats for a given alignment file";
     public static final String ALIGNMENT_STATS_INFO_DESCRIPTION = "Show the stats for a given alignment file";
     public static final String ALIGNMENT_STATS_QUERY_DESCRIPTION = "Fetch alignment files according to their stats";
+
     // ---------------------------------------------
     // alignment coverage
 

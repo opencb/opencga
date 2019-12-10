@@ -112,16 +112,11 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
-    private RestResponse index() throws CatalogException, IOException {
+    private RestResponse index() throws IOException {
         logger.debug("Indexing alignment(s)");
+        AlignmentCommandOptions.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
 
-        String fileIds = alignmentCommandOptions.indexAlignmentCommandOptions.fileId;
-
-        ObjectMap o = new ObjectMap();
-        o.putIfNotNull("study", alignmentCommandOptions.indexAlignmentCommandOptions.study);
-        o.putIfNotNull("outDir", alignmentCommandOptions.indexAlignmentCommandOptions.outdirId);
-
-        return openCGAClient.getAlignmentClient().index(fileIds, o);
+        return openCGAClient.getAlignmentClient().index(cliOptions.study, cliOptions.inputFile);
     }
 
     private void query() throws CatalogException, IOException, InterruptedException {

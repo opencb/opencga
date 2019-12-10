@@ -79,36 +79,33 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         super(apiVersion, uriInfo, httpServletRequest, httpHeaders);
     }
 
+    //-------------------------------------------------------------------------
+    // INDEX
+    //-------------------------------------------------------------------------
+
     @POST
     @Path("/index")
-    @ApiOperation(value = "Index alignment files", response = RestResponse.class)
-    public Response index(@ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
-                          @QueryParam(value = "file") String fileIdStr,
-                          @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
-                          @ApiParam(value = STUDY_DESCRIPTION)
-                          @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                          @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr,
-                          @ApiParam("Compute coverage") @DefaultValue("false") @QueryParam("coverage") boolean coverage) {
-
-        if (StringUtils.isNotEmpty(studyId)) {
-            studyStr = studyId;
-        }
+    @ApiOperation(value = ALIGNMENT_INDEX_DESCRIPTION, response = RestResponse.class)
+    public Response index(@ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(value = FILE_ID_PARAM) String inputFile,
+                          @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(STUDY_PARAM) String study) {
 
         Map<String, Object> params = new LinkedHashMap<>();
-        params.put("file", fileIdStr);
-        addParamIfTrue(params, "coverage", coverage);
-        addParamIfNotNull(params, "outdir", outDirStr);
+        params.put(FILE_ID_PARAM, inputFile);
 
         logger.info("ObjectMap: {}", params);
 
         try {
-            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(studyStr, "alignment-index", Enums.Priority.HIGH,
+            OpenCGAResult<Job> queryResult = catalogManager.getJobManager().submit(study, "alignment-index", Enums.Priority.HIGH,
                     params, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
+
+    //-------------------------------------------------------------------------
+    // QUERY
+    //-------------------------------------------------------------------------
 
     @GET
     @Path("/query")
