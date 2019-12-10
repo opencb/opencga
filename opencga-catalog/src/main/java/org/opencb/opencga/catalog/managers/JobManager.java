@@ -387,6 +387,8 @@ public class JobManager extends ResourceManager<Job> {
         job.setTags(jobTags);
 
         try {
+            authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.EXECUTION);
+
             Map<String, Object> attributes = new HashMap<>();
             attributes.put(Job.OPENCGA_STUDY, study.getFqn());
 

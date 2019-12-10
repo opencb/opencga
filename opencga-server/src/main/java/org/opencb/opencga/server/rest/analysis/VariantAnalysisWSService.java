@@ -79,7 +79,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
  */
 @Path("/{apiVersion}/analysis/variant")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Analysis - Variant", position = 4, description = "Methods for working with 'files' endpoint")
+@Api(value = "Analysis - Variant", description = "Methods for working with 'files' endpoint")
 public class VariantAnalysisWSService extends AnalysisWSService {
 
     private static final String DEPRECATED = " [DEPRECATED] ";
@@ -88,7 +88,6 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
     static {
         Map<String, org.opencb.commons.datastore.core.QueryParam> map = new LinkedHashMap<>();
-
         map.put("ids", ID);
         map.put(ParamConstants.STUDIES_PARAM, STUDY);
         map.put("files", FILE);
@@ -205,10 +204,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Path("/index")
     @ApiOperation(value = "Index variant files into the variant storage", response = Job.class)
     public Response variantFileIndex(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             VariantIndexParams params) {
         return submitJob(VariantFileIndexerStorageOperation.ID, study, params, jobName, jobDescription, jobTags);
     }
@@ -471,9 +470,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         public String groupBy;
     }
 
+    @Deprecated
     @POST
     @Path("/query")
-    @ApiOperation(value = ParamConstants.VARIANTS_QUERY_DESCRIPTION, response = Variant[].class, hidden = true)
+    @ApiOperation(value = DEPRECATED + ParamConstants.VARIANTS_QUERY_DESCRIPTION, response = Variant[].class, hidden = true)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -535,7 +535,6 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             VariantExportParams params) {
-        logger.info("count {} , limit {} , skip {}", count, limit, skip);
         // FIXME: What if exporting from multiple studies?
         return submitJob(VariantExportStorageOperation.ID, study, params, jobName, jobDescription, jobTags);
     }
@@ -552,7 +551,6 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query")
     })
     public Response getAnnotation(@ApiParam(value = "Annotation identifier") @DefaultValue(VariantAnnotationManager.CURRENT) @QueryParam("annotationId") String annotationId) {
-        logger.debug("limit {} , skip {}", limit, skip);
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
@@ -660,6 +658,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 //        return createPendingResponse();
 //    }
 
+    @Deprecated
     @GET
     @Path("/familyGenotypes")
     @ApiOperation(value = DEPRECATED + "Use family/genotypes", hidden = true, response = Map.class)
@@ -723,6 +722,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 //    }
 
 
+    @Deprecated
     @GET
     @Path("/samples")
     @ApiOperation(value = DEPRECATED + "Use /sample/query", hidden = true, response = Sample.class)
@@ -738,7 +738,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
     @GET
     @Path("/sample/query")
-    @ApiOperation(value = "Get samples given a set of variants", position = 14, response = Sample.class)
+    @ApiOperation(value = "Get samples given a set of variants", response = Sample.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
@@ -776,7 +776,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             if (StringUtils.isNotEmpty(sampleAnnotation)) {
                 Query sampleQuery = parseSampleAnnotationQuery(sampleAnnotation, SampleDBAdaptor.QueryParams::getParam);
                 QueryOptions options = new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.UID);
-                List<String> samplesList = catalogManager.getSampleManager().search(studyStr, sampleQuery, options, token)
+                List<String> samplesList = catalogManager.getSampleManager()
+                        .search(studyStr, sampleQuery, options, token)
                         .getResults()
                         .stream()
                         .map(Sample::getId)
@@ -810,6 +811,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         }
     }
 
+    @Deprecated
     @GET
     @Path("/{variant}/sampleData")
     @ApiOperation(value = DEPRECATED + " User sample/data", hidden = true, response = VariantSampleData.class)
@@ -882,20 +884,19 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
             List<SampleVariantStats> stats = new ArrayList<>(result.getNumResults());
             for (Sample s : result.getResults()) {
-
                 for (AnnotationSet annotationSet : s.getAnnotationSets()) {
                     if (annotationSet.getVariableSetId().equals(SampleVariantStatsAnalysis.VARIABLE_SET_ID)) {
                         stats.add(AvroToAnnotationConverter.convertAnnotationToAvro(annotationSet, SampleVariantStats.class));
                     }
                 }
             }
+
             OpenCGAResult<SampleVariantStats> statsResult = new OpenCGAResult<>();
             statsResult.setResults(stats);
             statsResult.setNumMatches(result.getNumMatches());
             statsResult.setEvents(result.getEvents());
             statsResult.setTime(result.getTime());
             statsResult.setNode(result.getNode());
-
             return statsResult;
         });
     }
@@ -954,20 +955,19 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
             List<VariantSetStats> stats = new ArrayList<>(result.getNumResults());
             for (Cohort c : result.getResults()) {
-
                 for (AnnotationSet annotationSet : c.getAnnotationSets()) {
                     if (annotationSet.getVariableSetId().equals(CohortVariantStatsAnalysis.VARIABLE_SET_ID)) {
                         stats.add(AvroToAnnotationConverter.convertAnnotationToAvro(annotationSet, VariantSetStats.class));
                     }
                 }
             }
+
             OpenCGAResult<VariantSetStats> statsResult = new OpenCGAResult<>();
             statsResult.setResults(stats);
             statsResult.setNumMatches(result.getNumMatches());
             statsResult.setEvents(result.getEvents());
             statsResult.setTime(result.getTime());
             statsResult.setNode(result.getNode());
-
             return statsResult;
         });
     }
@@ -1005,11 +1005,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @ApiOperation(value = "Calculate and fetch aggregation stats", response = QueryResponse.class)
     @ApiImplicitParams({
             // Variant filters
-//            @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "type", value = TYPE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "reference", value = REFERENCE_DESCR, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "alternate", value = ALTERNATE_DESCR, dataType = "string", paramType = "query"),
 
             // Study filters
             @ApiImplicitParam(name = ParamConstants.PROJECT_PARAM, value = VariantCatalogQueryUtils.PROJECT_DESC, dataType = "string", paramType = "query"),
@@ -1084,7 +1081,6 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "includeStudy", value = INCLUDE_STUDY_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeFile", value = INCLUDE_FILE_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "includeSample", value = INCLUDE_SAMPLE_DESCR, dataType = "string", paramType = "query"),
-
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
     })

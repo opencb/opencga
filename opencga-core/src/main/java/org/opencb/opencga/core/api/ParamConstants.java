@@ -146,17 +146,17 @@ public class ParamConstants {
 
     public static final String GENE_OFFSET_DESCRIPTION = "Gene offset to extend the gene region at up and downstream";
     public static final String GENE_OFFSET_PARAM = "geneOffset";
-    public static final int GENE_OFFSET_DEFAULT = 500;
+    public static final String GENE_OFFSET_DEFAULT = "500";
     public static final String ONLY_EXONS_DESCRIPTION = "Take only exons regions when taking into account genes";
     public static final String ONLY_EXONS_PARAM = "onlyExons";
     public static final String EXON_OFFSET_DESCRIPTION = "Exon offset to extend the gene region at up and downstream";
     public static final String EXON_OFFSET_PARAM = "exonOffset";
-    public static final int EXON_OFFSET_DEFAULT = 50;
+    public static final String EXON_OFFSET_DEFAULT = "50";
     public static final String COVERAGE_RANGE_DESCRIPTION = "Range of coverage values to be reported. Minimum and maximum values are separated by '-', e.g.: 20-40 (for coverage values greater or equal to 20 and less or equal to 40). A single value means to report coverage values less or equal to that value";
     public static final String COVERAGE_RANGE_PARAM = "range";
     public static final String COVERAGE_WINDOW_SIZE_DESCRIPTION = "Window size for the region coverage (if a coverage range is provided, window size must be 1)";
     public static final String COVERAGE_WINDOW_SIZE_PARAM = "windowSize";
-    public static final int COVERAGE_WINDOW_SIZE_DEFAULT = 1;
+    public static final String COVERAGE_WINDOW_SIZE_DEFAULT = "1";
     public static final String FILE_ID_PARAM = "inputFile";
     public static final String FILE_ID_1_DESCRIPTION = "Input file #1";
     public static final String FILE_ID_1_PARAM = "inputFile1";
