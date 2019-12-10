@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.app.cli.analysis;
 
+import ga4gh.Reads;
 import org.apache.commons.io.FileUtils;
+import org.ga4gh.models.ReadAlignment;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,6 +52,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.core.api.ParamConstants.AVERAGE_QUALITY;
+import static org.opencb.opencga.core.api.ParamConstants.REGION_PARAM;
 
 /**
  * Created on 09/05/16
@@ -328,7 +331,7 @@ public class InternalMainTest {
     }
 
     @Test
-    public void testAlignmentIndexThenQuery() throws CatalogException, IOException {
+    public void testAlignmentIndexThenQuery() throws CatalogException, IOException, StorageEngineException {
         createStudy(datastores, "s1");
 
         String filename = "HG00096.chrom20.small.bam";
@@ -349,6 +352,24 @@ public class InternalMainTest {
 
         assertTrue(baiFile.exists());
         assertEquals(2, Files.list(Paths.get(temporalDir)).collect(Collectors.toList()).size());
+
+
+        // query
+        AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, opencga.getStorageEngineFactory());
+
+        Query query = new Query();
+        query.put(REGION_PARAM, "20:62300-62400");
+        QueryOptions queryOptions = QueryOptions.empty();
+        DataResult<ReadAlignment> alignments = alignmentStorageManager.query(studyId, bamFile.getId(), query, queryOptions, sessionId);
+        assertEquals(4, alignments.getNumResults());
+        System.out.println(alignments);
+
+        query.put(REGION_PARAM, "20:62300-62400");
+        queryOptions.put(QueryOptions.COUNT, true);
+        DataResult<Long> count = alignmentStorageManager.count(studyId, bamFile.getId(), query, queryOptions, sessionId);
+        System.out.println(count);
+        assertEquals(1, count.getNumResults());
+        assert(4 == count.getResults().get(0));
     }
 
     @Test

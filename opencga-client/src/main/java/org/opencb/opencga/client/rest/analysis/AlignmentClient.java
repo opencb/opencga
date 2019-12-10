@@ -56,13 +56,26 @@ public class AlignmentClient extends AbstractParentClient {
     // QUERY
     //-------------------------------------------------------------------------
 
-    public RestResponse<ReadAlignment> query(String fileIds, ObjectMap params) throws IOException {
+    public RestResponse<ReadAlignment> query(String study, String file, ObjectMap params) throws IOException {
         if (params == null) {
             params = new ObjectMap();
         }
-        params.putIfNotEmpty("file", fileIds);
+        params.putIfNotEmpty(STUDY_PARAM, study);
+        params.putIfNotEmpty(FILE_ID_PARAM, file);
 
         return execute(ALIGNMENT_URL, "query", params, GET, ReadAlignment.class);
+    }
+
+    //-------------------------------------------------------------------------
+
+    public RestResponse<Long> count(String study, String file, ObjectMap params) throws IOException {
+        if (params == null) {
+            params = new ObjectMap();
+        }
+        params.putIfNotEmpty(STUDY_PARAM, study);
+        params.putIfNotEmpty(FILE_ID_PARAM, file);
+
+        return execute(ALIGNMENT_URL, "query", params, GET, Long.class);
     }
 
     //-------------------------------------------------------------------------
@@ -71,7 +84,7 @@ public class AlignmentClient extends AbstractParentClient {
 
     public RestResponse<Job> statsRun(String study, String file) throws IOException {
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull(STUDY_PARAM, study);
+        params.putIfNotEmpty(STUDY_PARAM, study);
         params.putIfNotEmpty(FILE_ID_PARAM, file);
 
         return execute(ALIGNMENT_URL, "stats/run", params, POST, Job.class);
@@ -79,7 +92,7 @@ public class AlignmentClient extends AbstractParentClient {
 
     public RestResponse<String> statsInfo(String study, String file) throws IOException {
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull(STUDY_PARAM, study);
+        params.putIfNotEmpty(STUDY_PARAM, study);
         params.putIfNotEmpty(FILE_ID_PARAM, file);
 
         return execute(ALIGNMENT_URL, "stats/info", params, GET, String.class);
@@ -98,7 +111,7 @@ public class AlignmentClient extends AbstractParentClient {
 
     public RestResponse<Job> coverageRun(String study, String inputFile, int windowSize) throws IOException {
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull(STUDY_PARAM, study);
+        params.putIfNotEmpty(STUDY_PARAM, study);
         params.putIfNotEmpty(FILE_ID_PARAM, inputFile);
         params.putIfNotNull(COVERAGE_WINDOW_SIZE_PARAM, windowSize);
 
@@ -108,7 +121,7 @@ public class AlignmentClient extends AbstractParentClient {
     public RestResponse<RegionCoverage> coverageQuery(String study, String inputFile, String region, String gene, int geneOffset,
                                                       boolean onlyExons, int exonOffset, String range, int windowSize) throws IOException {
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull(STUDY_PARAM, study);
+        params.putIfNotEmpty(STUDY_PARAM, study);
         params.putIfNotEmpty(FILE_ID_PARAM, inputFile);
         params.putIfNotEmpty(REGION_PARAM, region);
         params.putIfNotEmpty(GENE_PARAM, gene);
@@ -121,12 +134,14 @@ public class AlignmentClient extends AbstractParentClient {
         return execute(ALIGNMENT_URL, "coverage/query", params, GET, RegionCoverage.class);
     }
 
-    public RestResponse<RegionCoverage> coverageLog2Ratio(String study, String inputFile1, String inputFile2, String region, String gene,
-                                                  int geneOffset, boolean onlyExons, int exonOffset, int windowSize) throws IOException {
+    public RestResponse<RegionCoverage> coverageRatio(String study, String inputFile1, String inputFile2, boolean skipLog2, String region,
+                                                      String gene, int geneOffset, boolean onlyExons, int exonOffset, int windowSize)
+            throws IOException {
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull(STUDY_PARAM, study);
+        params.putIfNotEmpty(STUDY_PARAM, study);
         params.putIfNotEmpty(FILE_ID_1_PARAM, inputFile1);
         params.putIfNotEmpty(FILE_ID_2_PARAM, inputFile2);
+        params.putIfNotNull(SKIP_LOG2_DESCRIPTION, skipLog2);
         params.putIfNotEmpty(REGION_PARAM, region);
         params.putIfNotEmpty(GENE_PARAM, gene);
         params.putIfNotNull(GENE_OFFSET_PARAM, geneOffset);
@@ -134,7 +149,7 @@ public class AlignmentClient extends AbstractParentClient {
         params.putIfNotNull(EXON_OFFSET_PARAM, exonOffset);
         params.putIfNotNull(COVERAGE_WINDOW_SIZE_PARAM, windowSize);
 
-        return execute(ALIGNMENT_URL, "coverage/log2Ratio", params, GET, RegionCoverage.class);
+        return execute(ALIGNMENT_URL, "coverage/ratio", params, GET, RegionCoverage.class);
     }
 
     //-------------------------------------------------------------------------

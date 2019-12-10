@@ -55,6 +55,8 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
+import static org.opencb.opencga.core.api.ParamConstants.REGION_CONTAINED_PARAM;
+import static org.opencb.opencga.core.api.ParamConstants.REGION_PARAM;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
 /**
@@ -278,10 +280,10 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
             }
 
             Query query = new Query();
-            query.put(AlignmentDBAdaptor.QueryParams.REGION.key(),
+            query.put(REGION_PARAM,
                     request.getReferenceId() + ":" + request.getStart().intValue() + "-" + request.getEnd().intValue());
 
-            this.queryOptions.put(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), true);
+            this.queryOptions.put(REGION_CONTAINED_PARAM, true);
 
             if (request.getPageSize() == null || request.getPageSize() <= 0 || request.getPageSize() > 4000) {
                 this.queryOptions.put(QueryOptions.LIMIT, 1000);

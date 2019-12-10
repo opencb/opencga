@@ -174,7 +174,7 @@ public class AlignmentStorageManager extends StorageManager {
     }
 
     //-------------------------------------------------------------------------
-    // COVERAGE: run, query and log2Ratio
+    // COVERAGE: run, query and ratio
     //-------------------------------------------------------------------------
 
     public void coverageRun(String study, String inputFile, int windowSize, String outdir, String token) throws ToolException {
