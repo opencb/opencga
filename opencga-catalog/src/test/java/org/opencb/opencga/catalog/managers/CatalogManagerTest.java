@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.models.update.CohortUpdateParams;
 import org.opencb.opencga.catalog.models.update.IndividualUpdateParams;
+import org.opencb.opencga.catalog.models.update.JobUpdateParams;
 import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -804,10 +805,34 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals(Enums.ExecutionStatus.PENDING, search.first().getStatus().getName());
     }
 
-    /**
-     * VariableSet methods
-     * ***************************
-     */
+    @Test
+    public void visitJob() throws CatalogException {
+        Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(), sessionIdUser)
+                .first();
+
+        Query query = new Query(JobDBAdaptor.QueryParams.VISITED.key(), false);
+        assertEquals(1, catalogManager.getJobManager().count(studyFqn, query, sessionIdUser).getNumMatches());
+
+        // Now we visit the job
+        catalogManager.getJobManager().visit(studyFqn, job.getId(), sessionIdUser);
+        assertEquals(0, catalogManager.getJobManager().count(studyFqn, query, sessionIdUser).getNumMatches());
+
+        query.put(JobDBAdaptor.QueryParams.VISITED.key(), true);
+        assertEquals(1, catalogManager.getJobManager().count(studyFqn, query, sessionIdUser).getNumMatches());
+
+        // Now we update setting job to visited false again
+        JobUpdateParams updateParams = new JobUpdateParams().setVisited(false);
+        catalogManager.getJobManager().update(studyFqn, job.getId(), updateParams, QueryOptions.empty(), sessionIdUser);
+        assertEquals(0, catalogManager.getJobManager().count(studyFqn, query, sessionIdUser).getNumMatches());
+
+        query = new Query(JobDBAdaptor.QueryParams.VISITED.key(), false);
+        assertEquals(1, catalogManager.getJobManager().count(studyFqn, query, sessionIdUser).getNumMatches());
+    }
+
+        /**
+         * VariableSet methods
+         * ***************************
+         */
 
     @Test
     public void testCreateVariableSet() throws CatalogException {

@@ -198,17 +198,14 @@ public class JobManager extends ResourceManager<Job> {
                 .append("jobId", jobId)
                 .append("token", token);
         try {
+            JobUpdateParams updateParams = new JobUpdateParams().setVisited(true);
             Job job = internalGet(study.getUid(), jobId, INCLUDE_JOB_IDS, userId).first();
-            authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.VIEW);
-            ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.VISITED.key(), true);
-            OpenCGAResult result = jobDBAdaptor.update(job.getUid(), params, QueryOptions.empty());
-            OpenCGAResult<Job> queryResult = jobDBAdaptor.get(job.getUid(), QueryOptions.empty());
-            queryResult.setTime(queryResult.getTime() + result.getTime());
 
+            OpenCGAResult result = update(study, job, updateParams, QueryOptions.empty(), userId);
             auditManager.audit(userId, Enums.Action.VISIT, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return queryResult;
+            return result;
         } catch (CatalogException e) {
             auditManager.audit(userId, Enums.Action.VISIT, Enums.Resource.JOB, jobId, "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
