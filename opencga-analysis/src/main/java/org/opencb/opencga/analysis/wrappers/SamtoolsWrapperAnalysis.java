@@ -21,7 +21,7 @@ import java.util.*;
 
 import static org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine.ALIGNMENT_STATS_VARIABLE_SET;
 
-@Tool(id = SamtoolsWrapperAnalysis.ID, type = Tool.ToolType.VARIANT, description = SamtoolsWrapperAnalysis.DESCRIPTION)
+@Tool(id = SamtoolsWrapperAnalysis.ID, type = Tool.ToolType.ALIGNMENT, description = SamtoolsWrapperAnalysis.DESCRIPTION)
 public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     public final static String ID = "samtools";

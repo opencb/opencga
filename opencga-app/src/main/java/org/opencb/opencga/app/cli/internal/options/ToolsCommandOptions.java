@@ -1,16 +1,18 @@
 package org.opencb.opencga.app.cli.internal.options;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.Parameters;
-import com.beust.jcommander.ParametersDelegate;
+import com.beust.jcommander.*;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.core.annotations.Tool;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Parameters(commandNames = {"tools"}, commandDescription = "Implements different tools for working with tools")
 public class ToolsCommandOptions {
 
     public ListToolCommandOptions listToolCommandOptions;
     public ShowToolCommandOptions showToolCommandOptions;
+    public ExecuteJobCommandOptions executeJobCommandOptions;
     public ExecuteToolCommandOptions executeToolCommandOptions;
 
     public JCommander jCommander;
@@ -22,11 +24,12 @@ public class ToolsCommandOptions {
 
         this.listToolCommandOptions = new ListToolCommandOptions();
         this.showToolCommandOptions = new ShowToolCommandOptions();
+        this.executeJobCommandOptions = new ExecuteJobCommandOptions();
         this.executeToolCommandOptions = new ExecuteToolCommandOptions();
     }
 
-    @Parameters(commandNames = {"execute"}, commandDescription = "Execute an external tool")
-    public class ExecuteToolCommandOptions {
+    @Parameters(commandNames = {"execute-job"}, commandDescription = "Execute a tool given a Catalog Job")
+    public class ExecuteJobCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -36,14 +39,32 @@ public class ToolsCommandOptions {
         public String job;
     }
 
+    @Parameters(commandNames = {"execute-tool"}, commandDescription = "Execute a tool")
+    public class ExecuteToolCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--tool"}, description = "Tool identifier. It can be either the tool id itself, or the class name.", required = true,
+                arity = 1)
+        public String toolId;
+
+        @Parameter(names = {"--outdir"}, description = "Output directory", required = true,
+                arity = 1)
+        public String outDir;
+
+        @DynamicParameter(names = "-P", description = "Tool parameters. -P key=value")
+        public Map<String, String> params = new HashMap<>(); //Dynamic parameters must be initialized
+    }
+
     @Parameters(commandNames = {"list"}, commandDescription = "Print a summary list of all tools")
     public class ListToolCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--filter"}, description = "Some kind of filter", arity = 1)
-        public String study;
+        @Parameter(names = {"--type"}, description = "Filter by tool type", arity = 1)
+        public Tool.ToolType type;
 
     }
 
@@ -53,8 +74,8 @@ public class ToolsCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--tool-id"}, description = "Full name of the study where the file is classified", arity = 1)
-        public String study;
+        @Parameter(names = {"--tool"}, description = "Tool identifier. It can be either the tool id itself, or the class name.", arity = 1)
+        public String tool;
 
     }
 
