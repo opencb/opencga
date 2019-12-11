@@ -37,6 +37,7 @@ import java.nio.file.Paths;
 /**
  * Created by pfurio on 31/10/16.
  */
+@Deprecated
 public class LocalAlignmentStoragePipeline implements StoragePipeline {
 
     private final ObjectMap configuration;

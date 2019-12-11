@@ -74,67 +74,25 @@ public class AlignmentStorageManager extends StorageManager {
         initStatsMap();
     }
 
+    //-------------------------------------------------------------------------
+    // INDEX
+    //-------------------------------------------------------------------------
 
-    public void index(String studyIdStr, String fileIdStr, Path outDir, ObjectMap options, String sessionId) throws Exception {
-        options = ParamUtils.defaultObject(options, ObjectMap::new);
-        StopWatch watch = new StopWatch();
+    public void index(String study, String inputFile, String outdir, String token) throws ToolException {
+        ObjectMap params = new ObjectMap();
 
-        StudyInfo studyInfo = getStudyInfo(studyIdStr, fileIdStr, sessionId);
-        checkAlignmentBioformat(studyInfo.getFileInfos());
-        FileInfo fileInfo = studyInfo.getFileInfo();
-//        ObjectMap fileAndStudyId = getFileAndStudyId(studyIdStr, fileIdStr, sessionId);
-//        long studyId = fileAndStudyId.getLong("studyId");
-//        long fileId = fileAndStudyId.getLong("fileId");
-//        Path filePath = getFilePath(fileId, sessionId);
-//        Path workspace = getWorkspace(studyId, sessionId);
+        AlignmentIndexOperation indexOperation = new AlignmentIndexOperation();
+        indexOperation.setUp(null, catalogManager, storageEngineFactory, params, Paths.get(outdir), token);
 
-        Path linkedBamFilePath = Files.createSymbolicLink(outDir.resolve(fileInfo.getName()), fileInfo.getPhysicalFilePath());
+        indexOperation.setStudy(study);
+        indexOperation.setInputFile(inputFile);
 
-        List<URI> fileUris = Arrays.asList(linkedBamFilePath.toUri());
-
-        // TODO: Check if index is already created and link bai file
-        logger.info("Creating index...");
-        watch.start();
-        try {
-            alignmentStorageEngine.index(fileUris, outDir.toUri(), false, options.getBoolean("transform"), options.getBoolean("load"));
-        } finally {
-            // Remove symbolic link
-            Files.delete(linkedBamFilePath);
-        }
-        watch.stop();
-        logger.info("Indexing took {} seconds", watch.getTime() / 1000.0);
-
-//        // Create the stats and store them in catalog
-//        logger.info("Calculating the stats...");
-//        watch.reset();
-//        watch.start();
-//        DataResult<AlignmentGlobalStats> stats = alignmentStorageEngine.getDBAdaptor().stats(fileInfo.getPhysicalFilePath(), outDir);
-//
-//        if (stats != null && stats.getNumResults() == 1) {
-//            // Store the stats in catalog
-//            ObjectWriter objectWriter = new ObjectMapper().typedWriter(AlignmentGlobalStats.class);
-//            ObjectMap globalStats = new ObjectMap(GLOBAL_STATS, objectWriter.writeValueAsString(stats.first()));
-//            FileUpdateParams fileUpdateParams = new FileUpdateParams().setStats(globalStats);
-//            catalogManager.getFileManager().update(studyIdStr, fileInfo.getPath(), fileUpdateParams,
-//                    new QueryOptions(), sessionId);
-//
-//            // Remove the stats file
-//            Path statsFile = outDir.resolve(fileInfo.getName() + ".stats");
-//            if (statsFile.toFile().exists()) {
-//                Files.delete(statsFile);
-//            }
-//        }
-//        watch.stop();
-//        logger.info("Stats calculation took {} seconds", watch.getTime() / 1000.0);
-//
-//        // Create the coverage
-//        logger.info("Calculating the coverage...");
-//        watch.reset();
-//        watch.start();
-////        alignmentStorageEngine.getDBAdaptor().coverage(fileInfo.getPath(), studyInfo.getWorkspace());
-//        watch.stop();
-//        logger.info("Coverage calculation took {} seconds", watch.getTime() / 1000.0);
+        indexOperation.start();
     }
+
+    //-------------------------------------------------------------------------
+    // QUERY
+    //-------------------------------------------------------------------------
 
     public DataResult<ReadAlignment> query(String studyIdStr, String fileIdStr, Query query, QueryOptions options, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
@@ -147,10 +105,14 @@ public class AlignmentStorageManager extends StorageManager {
         return alignmentStorageEngine.getDBAdaptor().get(studyInfo.getFileInfo().getPhysicalFilePath(), query, options);
     }
 
+    //-------------------------------------------------------------------------
+
     public AlignmentIterator<ReadAlignment> iterator(String studyId, String fileId, Query query, QueryOptions options,
                                                      String sessionId) throws CatalogException, IOException, StorageEngineException {
         return iterator(studyId, fileId, query, options, sessionId, ReadAlignment.class);
     }
+
+    //-------------------------------------------------------------------------
 
     public <T> AlignmentIterator<T> iterator(String studyIdStr, String fileIdStr, Query query, QueryOptions options, String sessionId,
                                              Class<T> clazz) throws CatalogException, IOException, StorageEngineException {
@@ -159,12 +121,8 @@ public class AlignmentStorageManager extends StorageManager {
 
         StudyInfo studyInfo = getStudyInfo(studyIdStr, fileIdStr, sessionId);
         checkAlignmentBioformat(studyInfo.getFileInfos());
-//        ObjectMap fileAndStudyId = getFileAndStudyId(studyIdStr, fileIdStr, sessionId);
-//        long fileId = fileAndStudyId.getLong("fileId");
-//        Path filePath = getFilePath(fileId, sessionId);
 
         return alignmentStorageEngine.getDBAdaptor().iterator(studyInfo.getFileInfo().getPhysicalFilePath(), query, options, clazz);
-//        return alignmentDBAdaptor.iterator((Path) fileInfo.get("filePath"), query, options, clazz);
     }
 
 
@@ -216,7 +174,7 @@ public class AlignmentStorageManager extends StorageManager {
     }
 
     //-------------------------------------------------------------------------
-    // COVERAGE: run, query and log2Ratio
+    // COVERAGE: run, query and ratio
     //-------------------------------------------------------------------------
 
     public void coverageRun(String study, String inputFile, int windowSize, String outdir, String token) throws ToolException {
