@@ -326,8 +326,8 @@ public class SampleManagerTest extends AbstractManagerTest {
         annotDataResult = catalogManager.getSampleManager().search(studyFqn, query, QueryOptions.empty(), sessionIdUser);
         assertEquals(0, annotDataResult.getNumResults());
 
-        Study study = catalogManager.getStudyManager().get(studyFqn, null, sessionIdUser).first();
-        query.put(Constants.ANNOTATION, "variableSet===" + study.getVariableSets().get(0).getId());
+        VariableSet vs = catalogManager.getStudyManager().getVariableSet(studyFqn, "vs", null, sessionIdUser).first();
+        query.put(Constants.ANNOTATION, "variableSet===" + vs.getId());
         annotDataResult = catalogManager.getSampleManager().search(studyFqn, query, QueryOptions.empty(), sessionIdUser);
         assertEquals(7, annotDataResult.getNumResults());
 
@@ -349,9 +349,9 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void testProjections() throws CatalogException {
-        Study study = catalogManager.getStudyManager().get("1000G:phase1", null, sessionIdUser).first();
+        VariableSet variableSet = catalogManager.getStudyManager().getVariableSet("1000G:phase1", "vs", null, sessionIdUser).first();
 
-        Query query = new Query(Constants.ANNOTATION, "variableSet===" + study.getVariableSets().get(0).getId());
+        Query query = new Query(Constants.ANNOTATION, "variableSet===" + variableSet.getId());
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, "annotationSets");
         DataResult<Sample> annotDataResult = catalogManager.getSampleManager().search(studyFqn, query, options,
                 sessionIdUser);
@@ -759,9 +759,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void testQuerySamples() throws CatalogException {
-        Study study = catalogManager.getStudyManager().get(studyFqn, QueryOptions.empty(), sessionIdUser).first();
-
-        VariableSet variableSet = study.getVariableSets().get(0);
+        VariableSet variableSet = catalogManager.getStudyManager().getVariableSet(studyFqn, "vs", QueryOptions.empty(), sessionIdUser).first();
 
         List<Sample> samples;
         Query query = new Query();
@@ -963,12 +961,10 @@ public class SampleManagerTest extends AbstractManagerTest {
 
     @Test
     public void getVariableSetSummary() throws CatalogException {
-        Study study = catalogManager.getStudyManager().get(studyFqn, null, sessionIdUser).first();
-
-        String variableSetId = study.getVariableSets().get(0).getId();
+        VariableSet variableSet = catalogManager.getStudyManager().getVariableSet(studyFqn, "vs", null, sessionIdUser).first();
 
         DataResult<VariableSetSummary> variableSetSummary = catalogManager.getStudyManager()
-                .getVariableSetSummary(studyFqn, variableSetId, sessionIdUser);
+                .getVariableSetSummary(studyFqn, variableSet.getId(), sessionIdUser);
 
         assertEquals(1, variableSetSummary.getNumResults());
         VariableSetSummary summary = variableSetSummary.first();
