@@ -117,6 +117,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                           @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                           @ApiParam(value = REGION_DESCRIPTION) @QueryParam(REGION_PARAM) String regionStr,
                           @ApiParam(value = GENE_DESCRIPTION) @QueryParam(GENE_PARAM) String geneStr,
+                          @ApiParam(value = CODING_OFFSET_DESCRIPTION) @DefaultValue(CODING_OFFSET_DEFAULT) @QueryParam(CODING_OFFSET_PARAM) int codingOffset,
+                          @ApiParam(value = ONLY_EXONS_DESCRIPTION) @QueryParam(ONLY_EXONS_PARAM) @DefaultValue("false") Boolean onlyExons,
                           @ApiParam(value = MINIMUM_MAPPING_QUALITY_DESCRIPTION) @QueryParam(MINIMUM_MAPPING_QUALITY_PARAM) Integer minMappingQuality,
                           @ApiParam(value = MAXIMUM_NUMBER_MISMATCHES_DESCRIPTION) @QueryParam(MAXIMUM_NUMBER_MISMATCHES_PARAM) Integer maxNumMismatches,
                           @ApiParam(value = MAXIMUM_NUMBER_HITS_DESCRIPTION) @QueryParam(MAXIMUM_NUMBER_HITS_PARAM) Integer maxNumHits,
@@ -156,7 +158,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
             // Get regions from gene parameter
             if (StringUtils.isNotEmpty(geneStr)) {
-                regionList = getRegionsFromGenes(geneStr, 0, false, 0, regionList, studyStr);
+                regionList = getRegionsFromGenes(geneStr, onlyExons, codingOffset, regionList, studyStr);
             }
 
             List<OpenCGAResult> results = new ArrayList<>();
@@ -214,9 +216,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = REGION_DESCRIPTION) @QueryParam(REGION_PARAM) String regionStr,
             @ApiParam(value = GENE_DESCRIPTION) @QueryParam(GENE_PARAM) String gene,
-            @ApiParam(value = GENE_OFFSET_DESCRIPTION) @DefaultValue(GENE_OFFSET_DEFAULT) @QueryParam(GENE_OFFSET_PARAM) int geneOffset,
+            @ApiParam(value = CODING_OFFSET_DESCRIPTION) @DefaultValue(CODING_OFFSET_DEFAULT) @QueryParam(CODING_OFFSET_PARAM) int codingOffset,
             @ApiParam(value = ONLY_EXONS_DESCRIPTION) @QueryParam(ONLY_EXONS_PARAM) @DefaultValue("false") Boolean onlyExons,
-            @ApiParam(value = EXON_OFFSET_DESCRIPTION) @DefaultValue(EXON_OFFSET_DEFAULT) @QueryParam(EXON_OFFSET_PARAM) int exonOffset,
             @ApiParam(value = COVERAGE_RANGE_DESCRIPTION) @QueryParam(COVERAGE_RANGE_PARAM) String range,
             @ApiParam(value = COVERAGE_WINDOW_SIZE_DESCRIPTION) @DefaultValue(COVERAGE_WINDOW_SIZE_DEFAULT) @QueryParam(COVERAGE_WINDOW_SIZE_PARAM) int windowSize,
             @ApiParam(value = SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION) @DefaultValue("false") @QueryParam(SPLIT_RESULTS_INTO_REGIONS_PARAM) boolean splitResults) {
@@ -232,7 +233,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
             // Get regions from genes/exons parameters
             if (StringUtils.isNotEmpty(gene)) {
-                regionList = getRegionsFromGenes(gene, geneOffset, onlyExons, exonOffset, regionList, study);
+                regionList = getRegionsFromGenes(gene, onlyExons, codingOffset, regionList, study);
             }
 
             if (CollectionUtils.isNotEmpty(regionList)) {
@@ -301,9 +302,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                   @ApiParam(value = SKIP_LOG2_DESCRIPTION) @QueryParam(SKIP_LOG2_PARAM) @DefaultValue("false") Boolean skipLog2,
                                   @ApiParam(value = REGION_DESCRIPTION) @QueryParam(REGION_PARAM) String strRegion,
                                   @ApiParam(value = GENE_DESCRIPTION) @QueryParam(GENE_PARAM) String strGene,
-                                  @ApiParam(value = GENE_OFFSET_DESCRIPTION) @DefaultValue(GENE_OFFSET_DEFAULT) @QueryParam(GENE_OFFSET_PARAM) int geneOffset,
+                                  @ApiParam(value = CODING_OFFSET_DESCRIPTION) @DefaultValue(CODING_OFFSET_DEFAULT) @QueryParam(CODING_OFFSET_PARAM) int codingOffset,
                                   @ApiParam(value = ONLY_EXONS_DESCRIPTION) @QueryParam(ONLY_EXONS_PARAM) @DefaultValue("false") Boolean onlyExons,
-                                  @ApiParam(value = EXON_OFFSET_DESCRIPTION) @DefaultValue(EXON_OFFSET_DEFAULT) @QueryParam(EXON_OFFSET_PARAM) int exonOffset,
                                   @ApiParam(value = COVERAGE_WINDOW_SIZE_DESCRIPTION) @DefaultValue("" + COVERAGE_WINDOW_SIZE_DEFAULT) @QueryParam(COVERAGE_WINDOW_SIZE_PARAM) int windowSize,
                                   @ApiParam(value = SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION) @DefaultValue("false") @QueryParam(SPLIT_RESULTS_INTO_REGIONS_PARAM) boolean splitResults) {
         try {
@@ -319,7 +319,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
             // Get regions from genes/exons parameters
             if (StringUtils.isNotEmpty(strGene)) {
-                regionList = getRegionsFromGenes(strGene, geneOffset, onlyExons, exonOffset, regionList, study);
+                regionList = getRegionsFromGenes(strGene, onlyExons, codingOffset, regionList, study);
             }
 
             if (CollectionUtils.isNotEmpty(regionList)) {
@@ -573,7 +573,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     // P R I V A T E     M E T H O D S
     //-------------------------------------------------------------------------
 
-    private List<Region> getRegionsFromGenes(String geneStr, int geneOffset, boolean onlyExons, int exonOffset, List<Region> initialRegions,
+    private List<Region> getRegionsFromGenes(String geneStr, boolean onlyExons, int codingOffset, List<Region> initialRegions,
                                              String studyStr) throws CatalogException, StorageEngineException, IOException {
         // Process initial regions
         Map<String, Region> regionMap = new HashMap<>();
@@ -603,25 +603,19 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                 // Create region from gene coordinates
                 Region region = null;
                 if (onlyExons) {
-                    if (geneOffset > 0) {
-                        region = new Region(gene.getChromosome(), gene.getStart() - geneOffset, gene.getStart());
-                        updateRegionMap(region, regionMap);
-                        region = new Region(gene.getChromosome(), gene.getEnd(), gene.getEnd() + geneOffset);
-                        updateRegionMap(region, regionMap);
-                    }
                     if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {
                         for (Transcript transcript : gene.getTranscripts()) {
                             if (CollectionUtils.isNotEmpty(transcript.getExons())) {
                                 for (Exon exon : transcript.getExons()) {
-                                    region = new Region(exon.getChromosome(), exon.getGenomicCodingStart() - exonOffset,
-                                            exon.getGenomicCodingEnd() + exonOffset);
+                                    region = new Region(exon.getChromosome(), exon.getGenomicCodingStart() - codingOffset,
+                                            exon.getGenomicCodingEnd() + codingOffset);
                                     updateRegionMap(region, regionMap);
                                 }
                             }
                         }
                     }
                 } else {
-                    region = new Region(gene.getChromosome(), gene.getStart() - geneOffset, gene.getEnd() + geneOffset);
+                    region = new Region(gene.getChromosome(), gene.getStart() - codingOffset, gene.getEnd() + codingOffset);
                     updateRegionMap(region, regionMap);
                 }
             }

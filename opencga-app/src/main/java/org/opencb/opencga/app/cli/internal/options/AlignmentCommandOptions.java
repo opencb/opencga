@@ -99,6 +99,12 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"-g", "--gene"}, description = GENE_DESCRIPTION)
         public String gene;
 
+        @Parameter(names = {"--coding-offset"}, description = CODING_OFFSET_DESCRIPTION)
+        public int codingOffset = Integer.parseInt(CODING_OFFSET_DEFAULT);
+
+        @Parameter(names = {"--only-exons"}, description = ONLY_EXONS_DESCRIPTION)
+        public boolean onlyExons;
+
         @Parameter(names = {"--min-mapq"}, description = MINIMUM_MAPPING_QUALITY_DESCRIPTION, arity = 1)
         public int minMappingQuality;
 
@@ -272,14 +278,11 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"-g", "--gene"}, description = GENE_DESCRIPTION)
         public String gene;
 
-        @Parameter(names = {"--gene-offset"}, description = GENE_OFFSET_DESCRIPTION)
-        public int geneOffset = Integer.parseInt(GENE_OFFSET_DEFAULT);
+        @Parameter(names = {"--coding-offset"}, description = CODING_OFFSET_DESCRIPTION)
+        public int codingOffset = Integer.parseInt(CODING_OFFSET_DEFAULT);
 
         @Parameter(names = {"--only-exons"}, description = ONLY_EXONS_DESCRIPTION)
         public boolean onlyExons;
-
-        @Parameter(names = {"--exon-offset"}, description = EXON_OFFSET_DESCRIPTION)
-        public int exonOffset = Integer.parseInt(EXON_OFFSET_DEFAULT);
 
         @Parameter(names = {"--coverage-range"}, description = COVERAGE_RANGE_DESCRIPTION, arity = 1)
         public String range;
@@ -312,14 +315,11 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"-g", "--gene"}, description = GENE_DESCRIPTION)
         public String gene;
 
-        @Parameter(names = {"--gene-offset"}, description = GENE_OFFSET_DESCRIPTION)
-        public int geneOffset = Integer.parseInt(GENE_OFFSET_DEFAULT);
+        @Parameter(names = {"--gene-offset"}, description = CODING_OFFSET_DESCRIPTION)
+        public int codingOffset = Integer.parseInt(CODING_OFFSET_DEFAULT);
 
         @Parameter(names = {"--only-exons"}, description = ONLY_EXONS_DESCRIPTION)
         public boolean onlyExons;
-
-        @Parameter(names = {"--exon-offset"}, description = EXON_OFFSET_DESCRIPTION)
-        public int exonOffset = Integer.parseInt(EXON_OFFSET_DEFAULT);
 
         @Parameter(names = {"--window-size"}, description = COVERAGE_WINDOW_SIZE_DESCRIPTION, arity = 1)
         public int windowSize = 1;

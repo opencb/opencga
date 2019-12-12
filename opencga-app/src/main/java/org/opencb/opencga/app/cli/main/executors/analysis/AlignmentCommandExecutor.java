@@ -173,6 +173,8 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         params.putIfNotEmpty(REGION_PARAM, cliOptions.region);
         params.putIfNotEmpty(GENE_PARAM, cliOptions.gene);
+        params.putIfNotNull(CODING_OFFSET_PARAM, cliOptions.codingOffset);
+        params.putIfNotNull(ONLY_EXONS_PARAM, cliOptions.onlyExons);
         params.putIfNotNull(MINIMUM_MAPPING_QUALITY_PARAM, cliOptions.minMappingQuality);
         params.putIfNotNull(MAXIMUM_NUMBER_MISMATCHES_PARAM, cliOptions.maxNumMismatches);
         params.putIfNotNull(MAXIMUM_NUMBER_HITS_PARAM, cliOptions.maxNumHits);
@@ -363,9 +365,8 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(REGION_PARAM, cliOptions.region);
         params.putIfNotEmpty(GENE_PARAM, cliOptions.gene);
-        params.putIfNotNull(GENE_OFFSET_PARAM, cliOptions.geneOffset);
+        params.putIfNotNull(CODING_OFFSET_PARAM, cliOptions.codingOffset);
         params.putIfNotNull(ONLY_EXONS_PARAM, cliOptions.onlyExons);
-        params.putIfNotNull(EXON_OFFSET_PARAM, cliOptions.exonOffset);
         params.putIfNotEmpty(COVERAGE_RANGE_PARAM, cliOptions.range);
         params.putIfNotNull(COVERAGE_WINDOW_SIZE_PARAM, cliOptions.windowSize);
         params.putIfNotNull(SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION, cliOptions.splitResults);
@@ -380,9 +381,8 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull(SKIP_LOG2_DESCRIPTION, cliOptions.skipLog2);
         params.putIfNotEmpty(REGION_PARAM, cliOptions.region);
         params.putIfNotEmpty(GENE_PARAM, cliOptions.gene);
-        params.putIfNotNull(GENE_OFFSET_PARAM, cliOptions.geneOffset);
+        params.putIfNotNull(CODING_OFFSET_PARAM, cliOptions.codingOffset);
         params.putIfNotNull(ONLY_EXONS_PARAM, cliOptions.onlyExons);
-        params.putIfNotNull(EXON_OFFSET_PARAM, cliOptions.exonOffset);
         params.putIfNotNull(COVERAGE_WINDOW_SIZE_PARAM, cliOptions.windowSize);
         params.putIfNotNull(SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION, cliOptions.splitResults);
 
