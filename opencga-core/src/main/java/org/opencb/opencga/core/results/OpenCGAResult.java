@@ -9,13 +9,7 @@ import java.util.List;
 
 public class OpenCGAResult<T> extends DataResult<T> {
 
-    private Node node;
-
-    public static class Node {
-        private String id;
-        private String commit;
-        private String version;
-    }
+    private FederationNode node;
 
     public OpenCGAResult() {
     }
@@ -42,10 +36,21 @@ public class OpenCGAResult<T> extends DataResult<T> {
         super(time, events, numResults, results, numMatches, numInserted, numUpdated, numDeleted, attributes);
     }
 
+    public OpenCGAResult(int time, List<Event> events, int numResults, List<T> results, long numMatches, long numInserted, long numUpdated,
+                         long numDeleted, ObjectMap attributes, FederationNode node) {
+        super(time, events, numResults, results, numMatches, numInserted, numUpdated, numDeleted, attributes);
+        this.node = node;
+    }
+
     public OpenCGAResult(DataResult<T> result) {
         this(result.getTime(), result.getEvents(), result.getNumResults(), result.getResults(), result.getNumMatches(),
                 result.getNumInserted(), result.getNumUpdated(), result.getNumDeleted(), result.getAttributes());
     }
+
+    public static OpenCGAResult empty() {
+        return new OpenCGAResult<>(0, new ArrayList<>(), 0, new ArrayList<>(), 0, 0, 0, 0, new ObjectMap());
+    }
+
 
     @Override
     public String toString() {
@@ -63,11 +68,6 @@ public class OpenCGAResult<T> extends DataResult<T> {
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
-    }
-
-
-    public static OpenCGAResult empty() {
-        return new OpenCGAResult(0, new ArrayList<>(), 0, new ArrayList(), 0, 0, 0, 0, new ObjectMap());
     }
 
     public int getTime() {
@@ -171,11 +171,11 @@ public class OpenCGAResult<T> extends DataResult<T> {
         return this;
     }
     
-    public Node getNode() {
+    public FederationNode getNode() {
         return node;
     }
 
-    public OpenCGAResult<T> setNode(Node node) {
+    public OpenCGAResult<T> setNode(FederationNode node) {
         this.node = node;
         return this;
     }

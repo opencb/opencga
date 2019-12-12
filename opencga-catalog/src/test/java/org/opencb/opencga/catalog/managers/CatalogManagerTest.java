@@ -1217,8 +1217,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
     @Test
     public void testAnnotateIndividual() throws CatalogException {
-        Study study = catalogManager.getStudyManager().get(studyFqn, null, sessionIdUser).first();
-        VariableSet variableSet = study.getVariableSets().get(0);
+        VariableSet variableSet = catalogManager.getStudyManager().getVariableSet(studyFqn, "vs", null, sessionIdUser).first();
 
         String individualId1 = catalogManager.getIndividualManager().create(studyFqn, new Individual().setId("INDIVIDUAL_1")
                 .setKaryotypicSex(IndividualProperty.KaryotypicSex.UNKNOWN).setLifeStatus(IndividualProperty.LifeStatus.UNKNOWN)
