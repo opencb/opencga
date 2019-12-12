@@ -121,7 +121,6 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
             @QueryParam("variableSet") String variableSet,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value (Current release from the moment the families were first created)")
             @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
@@ -143,14 +142,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 query.put(Constants.ANNOTATION, StringUtils.join(annotationList, ";"));
             }
 
-            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
-            DataResult<Family> queryResult;
-            if (count) {
-                queryResult = familyManager.count(studyStr, query, token);
-            } else {
-                queryResult = familyManager.search(studyStr, query, queryOptions, token);
-            }
-            return createOkResponse(queryResult);
+            return createOkResponse(familyManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

@@ -68,7 +68,8 @@ public abstract class AbstractManager {
     protected static final String OPENCGA = "opencga";
     protected static final String ANONYMOUS = "*";
 
-    protected static final int BATCH_OPERATION_SIZE = 100;
+    public static final int BATCH_OPERATION_SIZE = 100;
+    public static final int DEFAULT_LIMIT = 2000;
 
     protected static final String INTERNAL_DELIMITER = "__";
 

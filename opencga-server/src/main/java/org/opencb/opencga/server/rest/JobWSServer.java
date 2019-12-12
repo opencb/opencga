@@ -275,12 +275,9 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiParam(value = "ownerId") @DefaultValue("") @QueryParam("ownerId") String ownerId,
             @ApiParam(value = "date") @DefaultValue("") @QueryParam("date") String date,
             @ApiParam(value = "Comma separated list of input file ids") @DefaultValue("") @QueryParam("inputFiles") String inputFiles,
-            @ApiParam(value = "Comma separated list of output file ids") @DefaultValue("")
-            @QueryParam("outputFiles") String outputFiles,
-            @ApiParam(value = "Release value") @QueryParam("release") String release,
-            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
+            @ApiParam(value = "Comma separated list of output file ids") @DefaultValue("") @QueryParam("outputFiles") String outputFiles,
+            @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
-            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
             query.remove(ParamConstants.STUDY_PARAM);
 
             if (StringUtils.isNotEmpty(studyId)) {
@@ -294,13 +291,7 @@ public class JobWSServer extends OpenCGAWSServer {
                 query.remove(JobDBAdaptor.QueryParams.NAME.key());
                 logger.debug("Name attribute empty, it's been removed");
             }
-            DataResult<Job> result;
-            if (count) {
-                result = catalogManager.getJobManager().count(studyStr, query, token);
-            } else {
-                result = catalogManager.getJobManager().search(studyStr, query, queryOptions, token);
-            }
-            return createOkResponse(result);
+            return createOkResponse(catalogManager.getJobManager().search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

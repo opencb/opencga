@@ -663,7 +663,7 @@ public class ProjectManager extends AbstractManager {
         }
 
         ObjectMapper objectMapper = new ObjectMapper();
-        QueryOptions skipCount = new QueryOptions(QueryOptions.SKIP_COUNT, true);
+        QueryOptions skipCount = new QueryOptions();
 
         // We obtain the owner of the study
         OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().get(studyStr,
