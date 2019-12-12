@@ -183,6 +183,8 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull(REGION_CONTAINED_PARAM, cliOptions.contained);
         params.putIfNotNull(FORCE_MD_FIELD_PARAM, cliOptions.forceMDField);
         params.putIfNotNull(BIN_QUALITIES_PARAM, cliOptions.binQualities);
+        params.putIfNotNull(SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION, cliOptions.splitResults);
+
         params.putIfNotNull(QueryOptions.LIMIT, cliOptions.limit);
         params.putIfNotNull(QueryOptions.SKIP, cliOptions.skip);
         params.putIfNotNull(QueryOptions.COUNT, cliOptions.count);
@@ -358,16 +360,33 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<RegionCoverage> coverageQuery() throws IOException {
         AlignmentCommandOptions.CoverageQueryAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageQueryAlignmentCommandOptions;
 
-        return openCGAClient.getAlignmentClient().coverageQuery(cliOptions.study, cliOptions.file, cliOptions.region, cliOptions.gene,
-                cliOptions.geneOffset, cliOptions.onlyExons, cliOptions.exonOffset, cliOptions.range, cliOptions.windowSize);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(REGION_PARAM, cliOptions.region);
+        params.putIfNotEmpty(GENE_PARAM, cliOptions.gene);
+        params.putIfNotNull(GENE_OFFSET_PARAM, cliOptions.geneOffset);
+        params.putIfNotNull(ONLY_EXONS_PARAM, cliOptions.onlyExons);
+        params.putIfNotNull(EXON_OFFSET_PARAM, cliOptions.exonOffset);
+        params.putIfNotEmpty(COVERAGE_RANGE_PARAM, cliOptions.range);
+        params.putIfNotNull(COVERAGE_WINDOW_SIZE_PARAM, cliOptions.windowSize);
+        params.putIfNotNull(SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION, cliOptions.splitResults);
+
+        return openCGAClient.getAlignmentClient().coverageQuery(cliOptions.study, cliOptions.file, params);
     }
 
     private RestResponse<RegionCoverage> coverageRatio() throws IOException {
         AlignmentCommandOptions.CoverageRatioAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageRatioAlignmentCommandOptions;
 
-        return openCGAClient.getAlignmentClient().coverageRatio(cliOptions.study, cliOptions.file1, cliOptions.file2,
-                cliOptions.skipLog2, cliOptions.region, cliOptions.gene, cliOptions.geneOffset, cliOptions.onlyExons, cliOptions.exonOffset,
-                cliOptions.windowSize);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(SKIP_LOG2_DESCRIPTION, cliOptions.skipLog2);
+        params.putIfNotEmpty(REGION_PARAM, cliOptions.region);
+        params.putIfNotEmpty(GENE_PARAM, cliOptions.gene);
+        params.putIfNotNull(GENE_OFFSET_PARAM, cliOptions.geneOffset);
+        params.putIfNotNull(ONLY_EXONS_PARAM, cliOptions.onlyExons);
+        params.putIfNotNull(EXON_OFFSET_PARAM, cliOptions.exonOffset);
+        params.putIfNotNull(COVERAGE_WINDOW_SIZE_PARAM, cliOptions.windowSize);
+        params.putIfNotNull(SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION, cliOptions.splitResults);
+
+        return openCGAClient.getAlignmentClient().coverageRatio(cliOptions.study, cliOptions.file1, cliOptions.file2, params);
     }
 
     //-------------------------------------------------------------------------

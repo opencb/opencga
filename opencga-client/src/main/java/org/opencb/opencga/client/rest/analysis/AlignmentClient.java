@@ -99,9 +99,6 @@ public class AlignmentClient extends AbstractParentClient {
     }
 
     public RestResponse<File> statsQuery(ObjectMap params) throws IOException {
-        if (params == null) {
-            params = new ObjectMap();
-        }
         return execute(ALIGNMENT_URL, "stats/query", params, GET, File.class);
     }
 
@@ -118,36 +115,23 @@ public class AlignmentClient extends AbstractParentClient {
         return execute(ALIGNMENT_URL, "coverage/run", params, POST, Job.class);
     }
 
-    public RestResponse<RegionCoverage> coverageQuery(String study, String inputFile, String region, String gene, int geneOffset,
-                                                      boolean onlyExons, int exonOffset, String range, int windowSize) throws IOException {
-        ObjectMap params = new ObjectMap();
+    public RestResponse<RegionCoverage> coverageQuery(String study, String file, ObjectMap params) throws IOException {
+        if (params == null) {
+            params = new ObjectMap();
+        }
         params.putIfNotEmpty(STUDY_PARAM, study);
-        params.putIfNotEmpty(FILE_ID_PARAM, inputFile);
-        params.putIfNotEmpty(REGION_PARAM, region);
-        params.putIfNotEmpty(GENE_PARAM, gene);
-        params.putIfNotNull(GENE_OFFSET_PARAM, geneOffset);
-        params.putIfNotNull(ONLY_EXONS_PARAM, onlyExons);
-        params.putIfNotNull(EXON_OFFSET_PARAM, exonOffset);
-        params.putIfNotEmpty(COVERAGE_RANGE_PARAM, range);
-        params.putIfNotNull(COVERAGE_WINDOW_SIZE_PARAM, windowSize);
+        params.putIfNotEmpty(FILE_ID_PARAM, file);
 
         return execute(ALIGNMENT_URL, "coverage/query", params, GET, RegionCoverage.class);
     }
 
-    public RestResponse<RegionCoverage> coverageRatio(String study, String inputFile1, String inputFile2, boolean skipLog2, String region,
-                                                      String gene, int geneOffset, boolean onlyExons, int exonOffset, int windowSize)
-            throws IOException {
-        ObjectMap params = new ObjectMap();
+    public RestResponse<RegionCoverage> coverageRatio(String study, String file1, String file2, ObjectMap params) throws IOException {
+        if (params == null) {
+            params = new ObjectMap();
+        }
         params.putIfNotEmpty(STUDY_PARAM, study);
-        params.putIfNotEmpty(FILE_ID_1_PARAM, inputFile1);
-        params.putIfNotEmpty(FILE_ID_2_PARAM, inputFile2);
-        params.putIfNotNull(SKIP_LOG2_DESCRIPTION, skipLog2);
-        params.putIfNotEmpty(REGION_PARAM, region);
-        params.putIfNotEmpty(GENE_PARAM, gene);
-        params.putIfNotNull(GENE_OFFSET_PARAM, geneOffset);
-        params.putIfNotNull(ONLY_EXONS_PARAM, onlyExons);
-        params.putIfNotNull(EXON_OFFSET_PARAM, exonOffset);
-        params.putIfNotNull(COVERAGE_WINDOW_SIZE_PARAM, windowSize);
+        params.putIfNotEmpty(FILE_ID_1_PARAM, file1);
+        params.putIfNotEmpty(FILE_ID_2_PARAM, file2);
 
         return execute(ALIGNMENT_URL, "coverage/ratio", params, GET, RegionCoverage.class);
     }

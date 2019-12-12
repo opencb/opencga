@@ -126,7 +126,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                           @ApiParam(value = SKIP_DUPLICATED_DESCRIPTION) @QueryParam(SKIP_DUPLICATED_PARAM) @DefaultValue("false") Boolean duplicated,
                           @ApiParam(value = REGION_CONTAINED_DESCRIPTION) @DefaultValue("false") @QueryParam(REGION_CONTAINED_PARAM) Boolean contained,
                           @ApiParam(value = FORCE_MD_FIELD_DESCRIPTION) @DefaultValue("false") @QueryParam(FORCE_MD_FIELD_PARAM) Boolean forceMDField,
-                          @ApiParam(value = BIN_QUALITIES_DESCRIPTION) @QueryParam(BIN_QUALITIES_PARAM) @DefaultValue("false") Boolean binQualities) {
+                          @ApiParam(value = BIN_QUALITIES_DESCRIPTION) @QueryParam(BIN_QUALITIES_PARAM) @DefaultValue("false") Boolean binQualities,
+                          @ApiParam(value = SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION) @DefaultValue("false") @QueryParam(SPLIT_RESULTS_INTO_REGIONS_PARAM) boolean splitResults) {
         try {
             ParamUtils.checkIsSingleID(fileIdStr);
 
@@ -158,12 +159,10 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                 regionList = getRegionsFromGenes(geneStr, 0, false, 0, regionList, studyStr);
             }
 
-            if (regionList.size() == 0) {
-                return createErrorResponse("query", "Missing regions, you can use the parameters 'region' or 'gene'");
-            }
-
-            OpenCGAResult<ReadAlignment> alignmentResult = OpenCGAResult.empty();
-            OpenCGAResult<Long> countResult = OpenCGAResult.empty();
+            List<OpenCGAResult> results = new ArrayList<>();
+//            OpenCGAResult result = OpenCGAResult.empty();
+//            OpenCGAResult<Long> countResult = OpenCGAResult.empty();
+//            countResult.getAttributes().put("opencga_fetched_regions", StringUtils.join(regionList, ","));
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
             for (Region region : regionList) {
                 String queryRegion = region.toString();
@@ -171,14 +170,14 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                     query.putIfNotNull(REGION_PARAM, queryRegion);
 
                     if (count) {
-                        countResult.append(alignmentStorageManager.count(studyStr, fileIdStr, query, queryOptions, token));
+                        results.add(alignmentStorageManager.count(studyStr, fileIdStr, query, queryOptions, token));
                     } else {
-                        alignmentResult.append(alignmentStorageManager.query(studyStr, fileIdStr, query, queryOptions, token));
+                        results.add(alignmentStorageManager.query(studyStr, fileIdStr, query, queryOptions, token));
                     }
                 }
             }
 
-            return createOkResponse(count ? countResult : alignmentResult);
+            return createOkResponse(postProcessingResult(results, splitResults, regionList));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -219,7 +218,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ONLY_EXONS_DESCRIPTION) @QueryParam(ONLY_EXONS_PARAM) @DefaultValue("false") Boolean onlyExons,
             @ApiParam(value = EXON_OFFSET_DESCRIPTION) @DefaultValue(EXON_OFFSET_DEFAULT) @QueryParam(EXON_OFFSET_PARAM) int exonOffset,
             @ApiParam(value = COVERAGE_RANGE_DESCRIPTION) @QueryParam(COVERAGE_RANGE_PARAM) String range,
-            @ApiParam(value = COVERAGE_WINDOW_SIZE_DESCRIPTION) @DefaultValue(COVERAGE_WINDOW_SIZE_DEFAULT) @QueryParam(COVERAGE_WINDOW_SIZE_PARAM) int windowSize) {
+            @ApiParam(value = COVERAGE_WINDOW_SIZE_DESCRIPTION) @DefaultValue(COVERAGE_WINDOW_SIZE_DEFAULT) @QueryParam(COVERAGE_WINDOW_SIZE_PARAM) int windowSize,
+            @ApiParam(value = SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION) @DefaultValue("false") @QueryParam(SPLIT_RESULTS_INTO_REGIONS_PARAM) boolean splitResults) {
         try {
             ParamUtils.checkIsSingleID(inputFile);
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
@@ -236,14 +236,14 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             }
 
             if (CollectionUtils.isNotEmpty(regionList)) {
-                OpenCGAResult<RegionCoverage> result = OpenCGAResult.empty();
+                List<OpenCGAResult> results = new ArrayList<>();
                 if (StringUtils.isEmpty(range)) {
                     for (Region region : regionList) {
                         OpenCGAResult<RegionCoverage> coverage = alignmentStorageManager
                                 .coverageQuery(study, inputFile, region, 0, Integer.MAX_VALUE, windowSize, token);
-                        if (coverage.getResults().size() > 0) {
-                            result.append(coverage);
-                        }
+//                        if (coverage.getResults().size() > 0) {
+                            results.add(coverage);
+//                        }
                     }
                 } else {
                     // Report regions for a given coverage range
@@ -278,12 +278,12 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                     for (Region region : regionList) {
                         OpenCGAResult<RegionCoverage> coverage = alignmentStorageManager
                                 .coverageQuery(study, inputFile, region, minCoverage, maxCoverage, windowSize, token);
-                        if (coverage.getResults().size() > 0) {
-                            result.append(coverage);
-                        }
+//                        if (coverage.getResults().size() > 0) {
+                            results.add(coverage);
+//                        }
                     }
                 }
-                return createOkResponse(result);
+                return createOkResponse(postProcessingResult(results, splitResults, regionList));
             } else {
                 return createErrorResponse("coverage/query", "Missing region(s)");
             }
@@ -304,7 +304,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                   @ApiParam(value = GENE_OFFSET_DESCRIPTION) @DefaultValue(GENE_OFFSET_DEFAULT) @QueryParam(GENE_OFFSET_PARAM) int geneOffset,
                                   @ApiParam(value = ONLY_EXONS_DESCRIPTION) @QueryParam(ONLY_EXONS_PARAM) @DefaultValue("false") Boolean onlyExons,
                                   @ApiParam(value = EXON_OFFSET_DESCRIPTION) @DefaultValue(EXON_OFFSET_DEFAULT) @QueryParam(EXON_OFFSET_PARAM) int exonOffset,
-                                  @ApiParam(value = COVERAGE_WINDOW_SIZE_DESCRIPTION) @DefaultValue("" + COVERAGE_WINDOW_SIZE_DEFAULT) @QueryParam(COVERAGE_WINDOW_SIZE_PARAM) int windowSize) {
+                                  @ApiParam(value = COVERAGE_WINDOW_SIZE_DESCRIPTION) @DefaultValue("" + COVERAGE_WINDOW_SIZE_DEFAULT) @QueryParam(COVERAGE_WINDOW_SIZE_PARAM) int windowSize,
+                                  @ApiParam(value = SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION) @DefaultValue("false") @QueryParam(SPLIT_RESULTS_INTO_REGIONS_PARAM) boolean splitResults) {
         try {
             ParamUtils.checkIsSingleID(somaticFile);
             ParamUtils.checkIsSingleID(germlineFile);
@@ -337,7 +338,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                 long germlineTotalCounts = germlineResult.getResults().get(0);
 
                 // Compute (log2) coverage ratio for each region given
-                OpenCGAResult<RegionCoverage> result = OpenCGAResult.empty();
+                List<OpenCGAResult> results = new ArrayList<>();
                 for (Region region : regionList) {
                     OpenCGAResult<RegionCoverage> somaticCoverage = alignmentStorageManager
                             .coverageQuery(study, somaticFile, region, 0, Integer.MAX_VALUE, windowSize, token);
@@ -350,7 +351,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                     germlineCoverage.getResults().get(0), germlineTotalCounts, !skipLog2);
                             int dbTime = somaticResult.getTime() + somaticCoverage.getTime()
                                     + germlineResult.getTime() + germlineCoverage.getTime() + ((int) watch.getTime());
-                            result.append(new OpenCGAResult<>(dbTime, Collections.emptyList(), 1, Collections.singletonList(coverage), 1));
+                            results.add(new OpenCGAResult<>(dbTime, Collections.emptyList(), 1, Collections.singletonList(coverage), 1));
                         } catch (AlignmentCoverageException e) {
                             logger.error("Coverage ratio: {}: somatic file = {}, germline file = {}, region = {}",
                                     e.getMessage(), somaticFile, germlineFile, region.toString());
@@ -360,7 +361,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                 somaticFile, germlineFile, region.toString());
                     }
                 }
-                return createOkResponse(result);
+                return createOkResponse(postProcessingResult(results, splitResults, regionList));
             } else {
                 return createErrorResponse("Coverage ratio", "Missing region, no region provides");
             }
@@ -628,7 +629,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         return new ArrayList<>(regionMap.values());
     }
 
-    public void updateRegionMap(Region region, Map<String, Region> map) {
+    private void updateRegionMap(Region region, Map<String, Region> map) {
         if (!map.containsKey(region.toString())) {
             List<String> toRemove = new ArrayList<>();
             for (Region reg : map.values()) {
@@ -648,5 +649,27 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             // Insert the new (or extended) region
             map.put(region.toString(), region);
         }
+    }
+
+    private OpenCGAResult postProcessingResult(List<OpenCGAResult> results, boolean splitResults, List<Region> regionList) {
+        OpenCGAResult finalResult = OpenCGAResult.empty();
+        if (results.size() == 1) {
+            finalResult = results.get(0);
+        } else if (results.size() > 1){
+            if (splitResults) {
+                // Keep results split
+                int time = results.stream().mapToInt(OpenCGAResult::getTime).sum();
+                finalResult = new OpenCGAResult(time, Collections.emptyList(), results.size(), results, results.size());
+            } else {
+                // Merge results
+                for (OpenCGAResult result : results) {
+                    finalResult.append(result);
+                }
+            }
+        }
+
+        // Add fetched regions in the final result attributes
+        finalResult.getAttributes().put("opencga_fetched_regions", StringUtils.join(regionList, ","));
+        return finalResult;
     }
 }
