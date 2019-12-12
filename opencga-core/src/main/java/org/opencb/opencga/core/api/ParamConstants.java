@@ -143,6 +143,7 @@ public class ParamConstants {
 
     // ---------------------------------------------
     // alignment query
+
     public static final String MINIMUM_MAPPING_QUALITY_DESCRIPTION = "Minimum mapping quality";
     public static final String MINIMUM_MAPPING_QUALITY_PARAM = "minMappingQuality";
     public static final String MAXIMUM_NUMBER_MISMATCHES_DESCRIPTION = "Maximum number of mismatches";
@@ -169,13 +170,11 @@ public class ParamConstants {
     // ---------------------------------------------
     // alignment coverage
 
-    public static final String GENE_OFFSET_DESCRIPTION = "Gene offset to extend the gene region at up and downstream";
-    public static final String GENE_OFFSET_PARAM = "geneOffset";
-    public static final String GENE_OFFSET_DEFAULT = "500";
-    public static final String ONLY_EXONS_DESCRIPTION = "Take only exons regions when taking into account genes";
+    public static final String CODING_OFFSET_DESCRIPTION = "Coding offset to extend the gene or exon region at up and downstream";
+    public static final String CODING_OFFSET_PARAM = "codingOffset";
+    public static final String CODING_OFFSET_DEFAULT = "200";
+    public static final String ONLY_EXONS_DESCRIPTION = "Only exons are taking into account when genes are specified";
     public static final String ONLY_EXONS_PARAM = "onlyExons";
-    public static final String EXON_OFFSET_DESCRIPTION = "Exon offset to extend the gene region at up and downstream";
-    public static final String EXON_OFFSET_PARAM = "exonOffset";
     public static final String EXON_OFFSET_DEFAULT = "50";
     public static final String COVERAGE_RANGE_DESCRIPTION = "Range of coverage values to be reported. Minimum and maximum values are separated by '-', e.g.: 20-40 (for coverage values greater or equal to 20 and less or equal to 40). A single value means to report coverage values less or equal to that value";
     public static final String COVERAGE_RANGE_PARAM = "range";
