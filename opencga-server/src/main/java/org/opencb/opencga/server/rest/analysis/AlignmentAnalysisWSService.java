@@ -30,7 +30,6 @@ import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.GeneClient;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -165,8 +164,6 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
             OpenCGAResult<ReadAlignment> alignmentResult = OpenCGAResult.empty();
             OpenCGAResult<Long> countResult = OpenCGAResult.empty();
-//            DataResult<ReadAlignment> alignmentResult = DataResult.empty();
-//            DataResult<Long> countResult = DataResult.empty();
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
             for (Region region : regionList) {
                 String queryRegion = region.toString();
@@ -239,13 +236,13 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             }
 
             if (CollectionUtils.isNotEmpty(regionList)) {
-                DataResult<RegionCoverage> dataResult = DataResult.empty();
+                OpenCGAResult<RegionCoverage> result = OpenCGAResult.empty();
                 if (StringUtils.isEmpty(range)) {
                     for (Region region : regionList) {
-                        DataResult<RegionCoverage> coverage = alignmentStorageManager
+                        OpenCGAResult<RegionCoverage> coverage = alignmentStorageManager
                                 .coverageQuery(study, inputFile, region, 0, Integer.MAX_VALUE, windowSize, token);
                         if (coverage.getResults().size() > 0) {
-                            dataResult.append(coverage);
+                            result.append(coverage);
                         }
                     }
                 } else {
@@ -279,14 +276,14 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                     }
 
                     for (Region region : regionList) {
-                        DataResult<RegionCoverage> coverage = alignmentStorageManager
+                        OpenCGAResult<RegionCoverage> coverage = alignmentStorageManager
                                 .coverageQuery(study, inputFile, region, minCoverage, maxCoverage, windowSize, token);
                         if (coverage.getResults().size() > 0) {
-                            dataResult.append(coverage);
+                            result.append(coverage);
                         }
                     }
                 }
-                return createOkResponse(dataResult);
+                return createOkResponse(result);
             } else {
                 return createErrorResponse("coverage/query", "Missing region(s)");
             }
@@ -326,25 +323,25 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
             if (CollectionUtils.isNotEmpty(regionList)) {
                 // Getting total counts for file #1: somatic file
-                DataResult<Long> somaticResult = alignmentStorageManager.getTotalCounts(study, somaticFile, token);
+                OpenCGAResult<Long> somaticResult = alignmentStorageManager.getTotalCounts(study, somaticFile, token);
                 if (CollectionUtils.isEmpty(somaticResult.getResults()) || somaticResult.getResults().get(0) == 0) {
                     return createErrorResponse("Coverage ratio", "Impossible get total counts for file " + somaticFile);
                 }
                 long somaticTotalCounts = somaticResult.getResults().get(0);
 
                 // Getting total counts for file #2: germline file
-                DataResult<Long> germlineResult = alignmentStorageManager.getTotalCounts(study, germlineFile, token);
+                OpenCGAResult<Long> germlineResult = alignmentStorageManager.getTotalCounts(study, germlineFile, token);
                 if (CollectionUtils.isEmpty(germlineResult.getResults()) || germlineResult.getResults().get(0) == 0) {
                     return createErrorResponse("Coverage ratio", "Impossible get total counts for file " + germlineFile);
                 }
                 long germlineTotalCounts = germlineResult.getResults().get(0);
 
                 // Compute (log2) coverage ratio for each region given
-                DataResult<RegionCoverage> dataResult = DataResult.empty();
+                OpenCGAResult<RegionCoverage> result = OpenCGAResult.empty();
                 for (Region region : regionList) {
-                    DataResult<RegionCoverage> somaticCoverage = alignmentStorageManager
+                    OpenCGAResult<RegionCoverage> somaticCoverage = alignmentStorageManager
                             .coverageQuery(study, somaticFile, region, 0, Integer.MAX_VALUE, windowSize, token);
-                    DataResult<RegionCoverage> germlineCoverage = alignmentStorageManager
+                    OpenCGAResult<RegionCoverage> germlineCoverage = alignmentStorageManager
                             .coverageQuery(study, germlineFile, region, 0, Integer.MAX_VALUE, windowSize, token);
                     if (somaticCoverage.getResults().size() == 1 && germlineCoverage.getResults().size() == 1) {
                         try {
@@ -353,7 +350,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                     germlineCoverage.getResults().get(0), germlineTotalCounts, !skipLog2);
                             int dbTime = somaticResult.getTime() + somaticCoverage.getTime()
                                     + germlineResult.getTime() + germlineCoverage.getTime() + ((int) watch.getTime());
-                            dataResult.append(new DataResult<>(dbTime, Collections.emptyList(), 1, Collections.singletonList(coverage), 1));
+                            result.append(new OpenCGAResult<>(dbTime, Collections.emptyList(), 1, Collections.singletonList(coverage), 1));
                         } catch (AlignmentCoverageException e) {
                             logger.error("Coverage ratio: {}: somatic file = {}, germline file = {}, region = {}",
                                     e.getMessage(), somaticFile, germlineFile, region.toString());
@@ -363,7 +360,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                 somaticFile, germlineFile, region.toString());
                     }
                 }
-                return createOkResponse(dataResult);
+                return createOkResponse(result);
             } else {
                 return createErrorResponse("Coverage ratio", "Missing region, no region provides");
             }
@@ -586,7 +583,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         }
 
         // Get species and assembly from catalog
-        DataResult<Project> projectQueryResult = catalogManager.getProjectManager().get(
+        OpenCGAResult<Project> projectQueryResult = catalogManager.getProjectManager().get(
                 new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), studyStr),
                 new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), token);
         if (projectQueryResult.getNumResults() != 1) {
