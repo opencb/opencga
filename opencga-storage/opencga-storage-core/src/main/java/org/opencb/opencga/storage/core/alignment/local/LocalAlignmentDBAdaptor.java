@@ -31,11 +31,11 @@ import org.opencb.biodata.tools.alignment.filters.AlignmentFilters;
 import org.opencb.biodata.tools.alignment.filters.SamRecordFilters;
 import org.opencb.biodata.tools.feature.BigWigManager;
 import org.opencb.biodata.tools.feature.WigUtils;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterator;
@@ -78,7 +78,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
 
     @Override
-    public DataResult<ReadAlignment> get(Path path, Query query, QueryOptions options) {
+    public OpenCGAResult<ReadAlignment> get(Path path, Query query, QueryOptions options) {
         try {
             FileUtils.checkFile(path);
 
@@ -98,11 +98,11 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
             bamManager.close();
             watch.stop();
-            return new DataResult<>(((int) watch.getTime()), Collections.emptyList(), readAlignmentList.size(), readAlignmentList,
+            return new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), readAlignmentList.size(), readAlignmentList,
                     readAlignmentList.size());
         } catch (Exception e) {
             e.printStackTrace();
-            return new DataResult<>();
+            return new OpenCGAResult<>();
         }
     }
 
@@ -150,7 +150,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
-    public DataResult<RegionCoverage> coverageQuery(Path path, Region region, int minCoverage, int maxCoverage, int windowSize)
+    public OpenCGAResult<RegionCoverage> coverageQuery(Path path, Region region, int minCoverage, int maxCoverage, int windowSize)
             throws Exception {
         FileUtils.checkFile(path);
 
@@ -182,12 +182,12 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         }
 
         watch.stop();
-        return new DataResult<>(((int) watch.getTime()), Collections.emptyList(), selectedRegions.size(), selectedRegions,
+        return new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), selectedRegions.size(), selectedRegions,
                 selectedRegions.size());
     }
 
     @Override
-    public DataResult<Long> getTotalCounts(Path path) throws AlignmentCoverageException, IOException {
+    public OpenCGAResult<Long> getTotalCounts(Path path) throws AlignmentCoverageException, IOException {
         FileUtils.checkFile(path);
 
         StopWatch watch = StopWatch.createStarted();
@@ -202,11 +202,11 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             totalCounts = WigUtils.getTotalCounts(new BigWigManager(path).getBbFileReader());
         }
         watch.stop();
-        return new DataResult<>(((int) watch.getTime()), Collections.emptyList(), 1, Collections.singletonList(totalCounts), 1);
+        return new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1, Collections.singletonList(totalCounts), 1);
     }
 
     @Override
-    public DataResult<Long> count(Path path, Query query, QueryOptions options) {
+    public OpenCGAResult<Long> count(Path path, Query query, QueryOptions options) {
         StopWatch watch = StopWatch.createStarted();
 
         ProtoAlignmentIterator iterator = iterator(path, query, options);
@@ -217,7 +217,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         }
 
         watch.stop();
-        return new DataResult<>((int) watch.getTime(), Collections.emptyList(), 1, Collections.singletonList(count), 1);
+        return new OpenCGAResult<>((int) watch.getTime(), Collections.emptyList(), 1, Collections.singletonList(count), 1);
     }
 
     //-------------------------------------------------------------------------
@@ -225,7 +225,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
     //-------------------------------------------------------------------------
 
     @Override
-    public DataResult<String> statsInfo(Path path) throws ToolException {
+    public OpenCGAResult<String> statsInfo(Path path) throws ToolException {
         StopWatch watch = StopWatch.createStarted();
 
         File statsFile = new File(path + ".stats.txt");
@@ -241,7 +241,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         }
         watch.stop();
 
-        return new DataResult<>((int) watch.getTime(), Collections.emptyList(), 1,
+        return new OpenCGAResult<>((int) watch.getTime(), Collections.emptyList(), 1,
                 Arrays.asList(org.apache.commons.lang.StringUtils.join(lines, "\n")), 1);
     }
 

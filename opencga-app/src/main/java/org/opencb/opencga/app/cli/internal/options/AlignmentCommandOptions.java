@@ -129,6 +129,9 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"--bin-qualities"}, description = BIN_QUALITIES_DESCRIPTION, arity = 0)
         public boolean binQualities;
 
+        @Parameter(names = {"--split-results"}, description = SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION)
+        public boolean splitResults;
+
         @Parameter(names = {"--skip"}, description = SKIP_DESCRIPTION, required = false, arity = 1)
         public int skip;
 
@@ -283,6 +286,9 @@ public class AlignmentCommandOptions {
 
         @Parameter(names = {"--window-size"}, description = COVERAGE_WINDOW_SIZE_DESCRIPTION, arity = 1)
         public int windowSize = 1;
+
+        @Parameter(names = {"--split-results"}, description = SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION)
+        public boolean splitResults;
     }
 
     @Parameters(commandNames = {"coverage-ratio"}, commandDescription = ALIGNMENT_COVERAGE_RATIO_DESCRIPTION)
@@ -317,6 +323,9 @@ public class AlignmentCommandOptions {
 
         @Parameter(names = {"--window-size"}, description = COVERAGE_WINDOW_SIZE_DESCRIPTION, arity = 1)
         public int windowSize = 1;
+
+        @Parameter(names = {"--split-results"}, description = SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION)
+        public boolean splitResults;
     }
 
     //-------------------------------------------------------------------------

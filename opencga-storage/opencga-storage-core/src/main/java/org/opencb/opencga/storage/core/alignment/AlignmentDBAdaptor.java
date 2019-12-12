@@ -20,10 +20,10 @@ import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 
 import java.io.IOException;
@@ -44,7 +44,7 @@ public interface AlignmentDBAdaptor {
     String QO_INTERVAL_SIZE = "interval_size";
     String QO_COVERAGE_CHUNK_SIZE = "chunk_size";
 
-    DataResult<ReadAlignment> get(Path path, Query query, QueryOptions options);
+    OpenCGAResult<ReadAlignment> get(Path path, Query query, QueryOptions options);
 
     AlignmentIterator iterator(Path path);
 
@@ -52,12 +52,12 @@ public interface AlignmentDBAdaptor {
 
     <T> AlignmentIterator<T> iterator(Path path, Query query, QueryOptions options, Class<T> clazz);
 
-    DataResult<Long> count(Path path, Query query, QueryOptions options);
+    OpenCGAResult<Long> count(Path path, Query query, QueryOptions options);
 
-    DataResult<String> statsInfo(Path path) throws ToolException;
+    OpenCGAResult<String> statsInfo(Path path) throws ToolException;
 
-    DataResult<RegionCoverage> coverageQuery(Path path, Region region, int minCoverage, int maxCoverage, int windowSize)
+    OpenCGAResult<RegionCoverage> coverageQuery(Path path, Region region, int minCoverage, int maxCoverage, int windowSize)
             throws Exception;
 
-    DataResult<Long> getTotalCounts(Path path) throws AlignmentCoverageException, IOException;
+    OpenCGAResult<Long> getTotalCounts(Path path) throws AlignmentCoverageException, IOException;
 }

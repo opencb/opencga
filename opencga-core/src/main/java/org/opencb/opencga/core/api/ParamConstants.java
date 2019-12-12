@@ -136,7 +136,7 @@ public class ParamConstants {
     public static final String ALIGNMENT_QUERY_DESCRIPTION = "Search over indexed alignments";
     public static final String ALIGNMENT_COVERAGE_DESCRIPTION = "Compute coverage for a given alignemnt file";
     public static final String ALIGNMENT_COVERAGE_QUERY_DESCRIPTION = "Query the coverage of an alignment file for regions or genes";
-    public static final String ALIGNMENT_COVERAGE_RATIO_DESCRIPTION = "Compute coverage ratio from file #1 (somatic) and file #2 (germline)";
+    public static final String ALIGNMENT_COVERAGE_RATIO_DESCRIPTION = "Compute coverage ratio from file #1 vs file #2, (e.g. somatic vs germline)";
     public static final String ALIGNMENT_STATS_DESCRIPTION = "Compute stats for a given alignment file";
     public static final String ALIGNMENT_STATS_INFO_DESCRIPTION = "Show the stats for a given alignment file";
     public static final String ALIGNMENT_STATS_QUERY_DESCRIPTION = "Fetch alignment files according to their stats";
@@ -163,6 +163,8 @@ public class ParamConstants {
     public static final String FORCE_MD_FIELD_PARAM = "forceMDField";
     public static final String BIN_QUALITIES_DESCRIPTION = "Compress the nucleotide qualities by using 8 quality levels";
     public static final String BIN_QUALITIES_PARAM = "binQualities";
+    public static final String SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION = "Split results into regions (or gene/exon regions)";
+    public static final String SPLIT_RESULTS_INTO_REGIONS_PARAM = "splitResults";
 
     // ---------------------------------------------
     // alignment coverage
@@ -181,9 +183,9 @@ public class ParamConstants {
     public static final String COVERAGE_WINDOW_SIZE_PARAM = "windowSize";
     public static final String COVERAGE_WINDOW_SIZE_DEFAULT = "1";
     public static final String FILE_ID_PARAM = "file";
-    public static final String FILE_ID_1_DESCRIPTION = "Input file #1 (somatic file)";
+    public static final String FILE_ID_1_DESCRIPTION = "Input file #1 (e.g. somatic file)";
     public static final String FILE_ID_1_PARAM = "file1";
-    public static final String FILE_ID_2_DESCRIPTION = "Input file #2 (germline file)";
+    public static final String FILE_ID_2_DESCRIPTION = "Input file #2 (e.g. germline file)";
     public static final String FILE_ID_2_PARAM = "file2";
     public static final String SKIP_LOG2_DESCRIPTION = "Do not apply Log2 to normalise the coverage ratio";
     public static final String SKIP_LOG2_PARAM = "skipLog2";
