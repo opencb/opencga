@@ -116,7 +116,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     })
     public Response query(@ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(FILE_ID_PARAM) String fileIdStr,
                           @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                          @ApiParam(value = REGION_DESCRIPTION, required = true) @QueryParam(REGION_PARAM) String regionStr,
+                          @ApiParam(value = REGION_DESCRIPTION) @QueryParam(REGION_PARAM) String regionStr,
                           @ApiParam(value = GENE_DESCRIPTION) @QueryParam(GENE_PARAM) String geneStr,
                           @ApiParam(value = MINIMUM_MAPPING_QUALITY_DESCRIPTION) @QueryParam(MINIMUM_MAPPING_QUALITY_PARAM) Integer minMappingQuality,
                           @ApiParam(value = MAXIMUM_NUMBER_MISMATCHES_DESCRIPTION) @QueryParam(MAXIMUM_NUMBER_MISMATCHES_PARAM) Integer maxNumMismatches,
