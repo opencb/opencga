@@ -185,13 +185,6 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
                 annotationOptions.put(VariantAnnotationManager.LOAD_FILE, loadFile.getUri().toString());
             }
         }
-
-        params.put(VariantQueryParam.STUDY.key(), studies);
-        params.put(VariantCatalogQueryUtils.PROJECT.key(), projectStr);
-        params.put(DefaultVariantAnnotationManager.FILE_NAME, outputFileName);
-        params.put(VariantQueryParam.REGION.key(), region);
-        params.put(VariantAnnotationManager.LOAD_FILE, loadFileStr);
-        params.put(VariantStorageOptions.ANNOTATION_OVERWEITE.key(), overwriteAnnotations);
     }
 
     @Override
@@ -212,12 +205,6 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
 
         step(getId(), () -> {
             variantStorageEngine.annotate(annotationQuery, annotationOptions);
-            if (keepIntermediateFiles) {
-                java.io.File[] list = getOutDir().toFile().listFiles((fir, name) -> name.contains(outputFileName));
-                if (list != null && list.length != 0) {
-                    addFile(list[0].toPath());
-                }
-            }
         });
     }
 

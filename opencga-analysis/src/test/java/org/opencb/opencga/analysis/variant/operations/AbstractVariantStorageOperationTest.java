@@ -36,7 +36,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
-import org.opencb.opencga.core.tools.result.ExecutorResultManager;
+import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.config.DatabaseCredentials;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.*;
@@ -396,7 +396,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
             logger.info("Scanning files from {} to move to {}", tmpOutdirPath, outDir.getUri());
             // Avoid copy the job.status file!
             Predicate<URI> fileStatusFilter = uri -> !uri.getPath().endsWith(JOB_STATUS_FILE)
-                    && !uri.getPath().endsWith(ExecutorResultManager.FILE_EXTENSION)
+                    && !uri.getPath().endsWith(ExecutionResultManager.FILE_EXTENSION)
                     && !uri.getPath().endsWith(OUT_LOG_EXTENSION)
                     && !uri.getPath().endsWith(ERR_LOG_EXTENSION);
             files = fileScanner.scan(outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, false, true, fileStatusFilter,

@@ -3,16 +3,17 @@ package org.opencb.opencga.analysis.wrappers;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
-import org.opencb.hpg.bigdata.analysis.exceptions.AnalysisException;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.core.tools.result.FileResult;
 
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 @Tool(id = DeeptoolsWrapperAnalysis.ID, type = Tool.ToolType.ALIGNMENT, description = DeeptoolsWrapperAnalysis.DESCRIPTION)
 public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
@@ -31,21 +32,21 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         super.check();
 
         if (StringUtils.isEmpty(command)) {
-            throw new AnalysisException("Missing deeptools command. Supported command is 'bamCoverage'");
+            throw new ToolException("Missing deeptools command. Supported command is 'bamCoverage'");
         }
 
         switch (command) {
             case "bamCoverage":
                 if (StringUtils.isEmpty(bamFile)) {
-                    throw new AnalysisException("Missing BAM file when executing 'deeptools " + command + "'.");
+                    throw new ToolException("Missing BAM file when executing 'deeptools " + command + "'.");
                 }
                 if (StringUtils.isEmpty(coverageFile)) {
-                    throw new AnalysisException("Missing coverage file when executing 'deeptools " + command + "'.");
+                    throw new ToolException("Missing coverage file when executing 'deeptools " + command + "'.");
                 }
                 break;
             default:
                 // TODO: support the remaining deeptools executable
-                throw new AnalysisException("Deeptools command '" + command + "' is not available. Supported command is"
+                throw new ToolException("Deeptools command '" + command + "' is not available. Supported command is"
                         + " 'bamCoverage'");
         }
 
@@ -65,22 +66,6 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                         .setErrorOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDERR_FILENAME).toFile())));
 
                 cmd.run();
-
-                // Add the output files to the analysis result file
-                List<String> outNames = getFilenames(getOutDir());
-                for (String name : outNames) {
-                    if (!filenamesBeforeRunning.contains(name)) {
-                        if (FileUtils.sizeOf(new File(getOutDir() + "/" + name)) > 0) {
-                            FileResult.FileType fileType = FileResult.FileType.TAB_SEPARATED;
-                            if (name.endsWith("txt") || name.endsWith("log")) {
-                                fileType = FileResult.FileType.PLAIN_TEXT;
-                            } else if (name.endsWith("bw") || name.endsWith("bigwig")  || name.endsWith("bedgraph")) {
-                                fileType = FileResult.FileType.BINARY;
-                            }
-                            addFile(getOutDir().resolve(name), fileType);
-                        }
-                    }
-                }
 
                 // Check deeptools errors
                 boolean success = false;

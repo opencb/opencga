@@ -3,7 +3,6 @@ package org.opencb.opencga.analysis.wrappers;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.core.tools.result.FileResult;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
 
@@ -48,19 +47,6 @@ public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
                 cmd.run();
 
-                // Add the output files to the analysis result file
-                List<String> outNames = getFilenames(getOutDir());
-                for (String name : outNames) {
-                    if (!filenamesBeforeRunning.contains(name)) {
-                        if (FileUtils.sizeOf(new File(getOutDir() + "/" + name)) > 0) {
-                            FileResult.FileType fileType = FileResult.FileType.TAB_SEPARATED;
-                            if (name.endsWith("txt") || name.endsWith("log")) {
-                                fileType = FileResult.FileType.PLAIN_TEXT;
-                            }
-                            addFile(getOutDir().resolve(name), fileType);
-                        }
-                    }
-                }
                 // Check Rvtests errors by reading the stdout and stderr files
                 boolean success = false;
                 File file;

@@ -23,12 +23,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.tools.result.FileResult;
-import org.opencb.opencga.core.tools.variant.GwasAnalysisExecutor;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.annotations.Tool.ToolType;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.tools.variant.GwasAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyResourceMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
@@ -302,10 +301,6 @@ public class GwasAnalysis extends OpenCgaTool {
                     .setSampleList2(controlCohortSamples)
                     .setOutputFile(outputFile)
                     .execute();
-
-            if (outputFile.toFile().exists()) {
-                addFile(outputFile, FileResult.FileType.TAB_SEPARATED);
-            }
         });
 
 //        step("manhattan-plot", this::createManhattanPlot);

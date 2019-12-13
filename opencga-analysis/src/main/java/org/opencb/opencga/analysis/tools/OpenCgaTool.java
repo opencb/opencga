@@ -37,14 +37,14 @@ import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutorInfo;
-import org.opencb.opencga.core.tools.result.ExecutorResultManager;
-import org.opencb.opencga.core.tools.result.FileResult;
+import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -76,7 +76,7 @@ public abstract class OpenCgaTool {
     private final ToolExecutorFactory toolExecutorFactory;
     private final Logger privateLogger;
 
-    private ExecutorResultManager erm;
+    private ExecutionResultManager erm;
 
     public OpenCgaTool() {
         privateLogger = LoggerFactory.getLogger(OpenCgaTool.class);
@@ -166,7 +166,7 @@ public abstract class OpenCgaTool {
         if (this.getClass().getAnnotation(Tool.class) == null) {
             throw new ToolException("Missing @" + Tool.class.getSimpleName() + " annotation in " + this.getClass());
         }
-        erm = new ExecutorResultManager(getId(), outDir);
+        erm = new ExecutionResultManager(getId(), outDir);
         erm.init(params, executorParams);
         Thread hook = new Thread(() -> {
             Exception exception = null;
@@ -219,9 +219,6 @@ public abstract class OpenCgaTool {
             try {
                 check();
                 erm.setSteps(getSteps());
-
-                erm.setParams(params); // params may be modified after check method
-
                 run();
             } catch (ToolException e) {
                 throw e;
@@ -235,10 +232,8 @@ public abstract class OpenCgaTool {
                 privateLogger.warn(warningMessage, e);
                 erm.addWarning(warningMessage);
             }
-            erm.setParams(params);
             return erm.close();
         } catch (RuntimeException | ToolException e) {
-            erm.setParams(params);
             erm.close(e);
             throw e;
         } finally {
@@ -365,16 +360,8 @@ public abstract class OpenCgaTool {
         erm.addAttribute(key, value);
     }
 
-    protected final void addFile(Path file) throws ToolException {
-        erm.addFile(file, FileResult.FileType.fromName(file.getFileName().toString()));
-    }
-
-    protected final void addFile(Path file, FileResult.FileType fileType) throws ToolException {
-        erm.addFile(file, fileType);
-    }
-
-    protected final List<FileResult> getOutputFiles() throws ToolException {
-        return erm.read().getOutputFiles();
+    protected final void addMoveFile(Path file, String targetPath, URI targetUri) throws ToolException {
+        erm.addMoveFile(file, targetPath, targetUri);
     }
 
     protected final OpenCgaToolExecutor getToolExecutor()

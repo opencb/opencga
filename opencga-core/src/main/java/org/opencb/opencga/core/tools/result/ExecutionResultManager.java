@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -25,7 +26,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ExecutorResultManager {
+public class ExecutionResultManager {
     public static final String FILE_EXTENSION = ".result.json";
     public static final String SWAP_FILE_EXTENSION = ".swap" + FILE_EXTENSION;
 
@@ -38,10 +39,10 @@ public class ExecutorResultManager {
     private File swapFile;
     private boolean initialized;
     private boolean closed;
-    private final Logger logger = LoggerFactory.getLogger(ExecutorResultManager.class);
+    private final Logger logger = LoggerFactory.getLogger(ExecutionResultManager.class);
     private int monitorThreadPeriod = 60000;
 
-    public ExecutorResultManager(String toolId, Path outDir) throws ToolException {
+    public ExecutionResultManager(String toolId, Path outDir) throws ToolException {
         this.outDir = outDir.toAbsolutePath();
         ObjectMapper objectMapper = new ObjectMapper();
 //        objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
@@ -69,7 +70,7 @@ public class ExecutorResultManager {
         swapFile = outDir.resolve(toolId + SWAP_FILE_EXTENSION).toFile();
     }
 
-    public synchronized ExecutorResultManager init(ObjectMap params, ObjectMap executorParams) throws ToolException {
+    public synchronized ExecutionResultManager init(ObjectMap params, ObjectMap executorParams) throws ToolException {
         if (initialized) {
             throw new ToolException(getClass().getName() + " already initialized!");
         }
@@ -77,7 +78,6 @@ public class ExecutorResultManager {
 
         Date now = now();
         ExecutionResult execution = new ExecutionResult()
-                .setParams(params)
                 .setExecutor(new ExecutorInfo()
                         .setId(executorParams.getString(OpenCgaToolExecutor.EXECUTOR_ID))
                         .setParams(executorParams))
@@ -91,7 +91,7 @@ public class ExecutorResultManager {
         return this;
     }
 
-    public ExecutorResultManager setMonitorThreadPeriod(int monitorThreadPeriod) {
+    public ExecutionResultManager setMonitorThreadPeriod(int monitorThreadPeriod) {
         this.monitorThreadPeriod = monitorThreadPeriod;
         return this;
     }
@@ -199,23 +199,6 @@ public class ExecutorResultManager {
         });
     }
 
-    public void addFile(Path file, FileResult.FileType fileType) throws ToolException {
-        String fileStr = file.toAbsolutePath().toString();
-        if (!file.toFile().exists()) {
-            throw new ToolException("No such file or directory: " + fileStr);
-        }
-        String outDirStr = outDir.toString();
-        String finalFileStr;
-        if (fileStr.startsWith(outDirStr)) {
-            fileStr = fileStr.substring(outDirStr.length());
-        }
-        if (fileStr.startsWith("/")) {
-            fileStr = fileStr.substring(1);
-        }
-        finalFileStr = fileStr;
-        updateResult(result -> result.getOutputFiles().add(new FileResult(finalFileStr, fileType)));
-    }
-
     public void errorStep() throws ToolException {
         updateResult(result -> getStep(result, result.getStatus().getStep())
                 .setStatus(Status.Type.ERROR).setEnd(now()));
@@ -258,8 +241,14 @@ public class ExecutorResultManager {
         throw new ToolException("Step '" + stepId + "' not found. Available steps: " + steps);
     }
 
-    public void setParams(ObjectMap params) throws ToolException {
-        updateResult(result -> result.setParams(params));
+    public void addMoveFile(Path file, String targetPath, URI targetUri) throws ToolException {
+        updateResult(execution -> {
+            execution.getFilesMove()
+                    .add(new FileMove()
+                            .setSource(file.toString())
+                            .setTarget(new FileMove.CatalogFile(targetPath, targetUri)));
+            return null;
+        });
     }
 
     private void updateStatusDate() throws ToolException {

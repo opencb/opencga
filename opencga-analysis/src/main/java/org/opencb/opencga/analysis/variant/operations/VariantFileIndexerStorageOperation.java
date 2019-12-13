@@ -32,7 +32,6 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.update.FileUpdateParams;
-import org.opencb.opencga.core.tools.result.FileResult;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.ToolException;
@@ -329,12 +328,6 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             variantStorageEngine.close();
         }
 
-        for (StoragePipelineResult result : storagePipelineResults) {
-            if (step == Type.TRANSFORM || step == Type.INDEX) {
-                addFile(Paths.get(result.getTransformResult()), FileResult.FileType.AVRO);
-                addFile(Paths.get(VariantReaderUtils.getMetaFromTransformedFile(result.getTransformResult())), FileResult.FileType.JSON);
-            }
-        }
     }
 
     private Type getType(Boolean load, Boolean transform) {
