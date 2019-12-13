@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.app.cli.analysis;
 
+import ga4gh.Reads;
 import org.apache.commons.io.FileUtils;
+import org.ga4gh.models.ReadAlignment;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,6 +52,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.core.api.ParamConstants.AVERAGE_QUALITY;
+import static org.opencb.opencga.core.api.ParamConstants.REGION_PARAM;
 
 /**
  * Created on 09/05/16
@@ -328,34 +331,45 @@ public class InternalMainTest {
     }
 
     @Test
-    public void testAlignmentIndex() throws CatalogException, IOException {
-//        Job job;
+    public void testAlignmentIndexThenQuery() throws CatalogException, IOException, StorageEngineException {
+        createStudy(datastores, "s1");
 
-        File bam = opencga.createFile(studyId, "HG00096.chrom20.small.bam", sessionId);
-//        File bai = opencga.createFile(studyId, "HG00096.chrom20.small.bam.bai", sessionId);
+        String filename = "HG00096.chrom20.small.bam";
+        File bamFile = opencga.createFile(studyId, filename, sessionId);
 
-        //String temporalDir = opencga.createTmpOutdir(studyId, "index", sessionId);
+        String temporalDir = opencga.createTmpOutdir(studyId, "_index", sessionId);
 
-        // Index file1
+        // stats run
         execute("alignment", "index",
                 "--session-id", sessionId,
                 "--study", studyId,
-                "--file", bam.getName());
+                "--input-file", bamFile.getName(),
+                "-o", temporalDir);
 
+        java.io.File baiFile = new java.io.File(bamFile.getUri().getPath() + ".bai");
+        System.out.println("BAI file = " + baiFile.getAbsolutePath());
+        System.out.println("outdir = " + temporalDir);
 
-        java.io.File baiFile = new java.io.File(bam.getUri().getPath() + ".bai");
-
-//        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFileManager().get(studyId, bam.getId(), null, sessionId).first().getIndex().getStatus().getName());
-//        job = catalogManager.getJobManager().get(studyId, new Query(JobDBAdaptor.QueryParams.INPUT.key(), bam.getUid()), null, sessionId).first();
-//        assertEquals(Job.JobStatus.READY, job.getStatus().getName());
-
-        assertEquals(3, Files.list(baiFile.getParentFile().toPath()).collect(Collectors.toList()).size());
         assertTrue(baiFile.exists());
-//        assertTrue(Files.exists(Paths.get(temporalDir).resolve("HG00096.chrom20.small.bam.bw")));
-//        assertTrue(Files.exists(Paths.get(temporalDir).resolve("status.json")));
+        assertEquals(2, Files.list(Paths.get(temporalDir)).collect(Collectors.toList()).size());
 
-//        execute("alignment", "query", "--session-id", sessionId, "--file", "user@p1:s1:" + bam.getPath(), "--region", "20");
 
+        // query
+        AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, opencga.getStorageEngineFactory());
+
+        Query query = new Query();
+        query.put(REGION_PARAM, "20:62300-62400");
+        QueryOptions queryOptions = QueryOptions.empty();
+        DataResult<ReadAlignment> alignments = alignmentStorageManager.query(studyId, bamFile.getId(), query, queryOptions, sessionId);
+        assertEquals(4, alignments.getNumResults());
+        System.out.println(alignments);
+
+        query.put(REGION_PARAM, "20:62300-62400");
+        queryOptions.put(QueryOptions.COUNT, true);
+        DataResult<Long> count = alignmentStorageManager.count(studyId, bamFile.getId(), query, queryOptions, sessionId);
+        System.out.println(count);
+        assertEquals(1, count.getNumResults());
+        assert(4 == count.getResults().get(0));
     }
 
     @Test
@@ -427,18 +441,6 @@ public class InternalMainTest {
         coverage = alignmentStorageManager.coverageQuery(studyId, bamFile.getId(), region, 5, 6, 1, sessionId);
         assertEquals(5, coverage.getNumMatches());
         System.out.println(coverage);
-
-        //        // coverage log2Ratio
-//        Query query = new Query();
-//        query.put(AVERAGE_QUALITY, ">55");
-//        QueryOptions queryOptions = QueryOptions.empty();
-//        DataResult<File> resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
-//        assertEquals(0, resultFiles.getNumResults());
-//
-//        query.put(AVERAGE_QUALITY, ">30");
-//        resultFiles = alignmentStorageManager.statsQuery(studyId, query, queryOptions, sessionId);
-//        assertEquals(1, resultFiles.getNumResults());
-//        System.out.println(resultFiles.getResults().get(0).getAnnotationSets().get(0));
     }
 
     @Test

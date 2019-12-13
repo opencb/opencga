@@ -35,6 +35,8 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.Account;
+import org.opencb.opencga.core.models.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +45,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
+
+import static org.opencb.opencga.catalog.managers.AbstractManager.OPENCGA;
 
 public class CatalogManager implements AutoCloseable {
 
@@ -68,8 +72,6 @@ public class CatalogManager implements AutoCloseable {
     private AuthorizationManager authorizationManager;
 
     private Configuration configuration;
-
-    private static final String ROOT = "admin";
 
     public CatalogManager(Configuration configuration) throws CatalogException {
         this.configuration = configuration;
@@ -135,7 +137,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public void updateJWTParameters(ObjectMap params, String token) throws CatalogException {
-        if (!ROOT.equals(userManager.getUserId(token))) {
+        if (!OPENCGA.equals(userManager.getUserId(token))) {
             throw new CatalogException("Operation only allowed for the OpenCGA admin");
         }
 
@@ -163,7 +165,7 @@ public class CatalogManager implements AutoCloseable {
         return catalogDBAdaptorFactory.isCatalogDBReady();
     }
 
-    public void installCatalogDB(String secretKey, String password) throws CatalogException {
+    public void installCatalogDB(String secretKey, String password, String email, String organization) throws CatalogException {
         if (existsCatalogDB()) {
             throw new CatalogException("Nothing to install. There already exists a catalog database");
         }
@@ -171,23 +173,30 @@ public class CatalogManager implements AutoCloseable {
         ParamUtils.checkParameter(secretKey, "secretKey");
         ParamUtils.checkParameter(password, "password");
 
-        configuration.getAdmin().setPassword(password);
         configuration.getAdmin().setSecretKey(secretKey);
 
         catalogDBAdaptorFactory.installCatalogDB(configuration);
+
+        User user = new User(OPENCGA, new Account().setType(Account.Type.ADMINISTRATOR).setExpirationDate(""))
+                .setEmail(StringUtils.isEmpty(email) ? "opencga@admin.com" : email)
+                .setOrganization(organization)
+                .setPassword(password);
+        userManager.create(user, null);
     }
 
     public void installIndexes(String token) throws CatalogException {
-        if (!ROOT.equals(userManager.getUserId(token))) {
+        if (!OPENCGA.equals(userManager.getUserId(token))) {
             throw new CatalogAuthorizationException("Only the admin can install new indexes");
         }
         catalogDBAdaptorFactory.createIndexes();
     }
 
-    public void deleteCatalogDB(boolean force) throws CatalogException, URISyntaxException {
-        if (!force) {
-            userManager.login("admin", configuration.getAdmin().getPassword());
+    public void deleteCatalogDB(String token) throws CatalogException, URISyntaxException {
+        String userId = userManager.getUserId(token);
+        if (!authorizationManager.checkIsAdmin(userId)) {
+            throw new CatalogException("Only the admin can delete the database");
         }
+
         catalogDBAdaptorFactory.deleteCatalogDB();
         clearCatalog();
     }

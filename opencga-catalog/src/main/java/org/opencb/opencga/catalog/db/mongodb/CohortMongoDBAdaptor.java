@@ -531,18 +531,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery(startTime, documentList);
-
-        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
-            return queryResult;
-        }
-
-        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
-        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            OpenCGAResult<Long> count = count(clientSession, studyUid, query, user, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
-            queryResult.setNumMatches(count.getNumMatches());
-        }
-        return queryResult;
+        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -558,18 +547,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                 documentList.add(dbIterator.next());
             }
         }
-        OpenCGAResult<Cohort> queryResult = endQuery(startTime, documentList);
-
-        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
-            return queryResult;
-        }
-
-        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
-        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            OpenCGAResult<Long> count = count(clientSession, query);
-            queryResult.setNumMatches(count.getNumMatches());
-        }
-        return queryResult;
+        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -582,18 +560,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery(startTime, documentList);
-
-        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
-            return queryResult;
-        }
-
-        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
-        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            OpenCGAResult<Long> count = count(query);
-            queryResult.setNumMatches(count.getNumMatches());
-        }
-        return queryResult;
+        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -607,18 +574,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery(startTime, documentList);
-
-        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
-            return queryResult;
-        }
-
-        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
-        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            OpenCGAResult<Long> count = count(query);
-            queryResult.setNumMatches(count.getNumMatches());
-        }
-        return queryResult;
+        return endQuery(startTime, documentList);
     }
 
     @Override

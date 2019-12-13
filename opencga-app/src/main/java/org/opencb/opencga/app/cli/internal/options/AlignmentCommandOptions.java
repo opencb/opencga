@@ -20,16 +20,12 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import io.swagger.annotations.ApiParam;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 
-import javax.ws.rs.QueryParam;
-
 import static org.opencb.opencga.core.api.ParamConstants.*;
-import static org.opencb.opencga.core.api.ParamConstants.PERCENTAGE_OF_PROPERLY_PAIRED_READS;
 
 /**
  * Created by imedina on 21/11/16.
@@ -44,7 +40,7 @@ public class AlignmentCommandOptions {
     public StatsQueryAlignmentCommandOptions statsQueryAlignmentCommandOptions;
     public CoverageAlignmentCommandOptions coverageAlignmentCommandOptions;
     public CoverageQueryAlignmentCommandOptions coverageQueryAlignmentCommandOptions;
-    public CoverageLog2RatioAlignmentCommandOptions coverageLog2RatioAlignmentCommandOptions;
+    public CoverageRatioAlignmentCommandOptions coverageRatioAlignmentCommandOptions;
 
     // Wrappers
     public BwaCommandOptions bwaCommandOptions;
@@ -65,70 +61,90 @@ public class AlignmentCommandOptions {
         this.statsQueryAlignmentCommandOptions = new StatsQueryAlignmentCommandOptions();
         this.coverageAlignmentCommandOptions = new CoverageAlignmentCommandOptions();
         this.coverageQueryAlignmentCommandOptions = new CoverageQueryAlignmentCommandOptions();
-        this.coverageLog2RatioAlignmentCommandOptions = new CoverageLog2RatioAlignmentCommandOptions();
+        this.coverageRatioAlignmentCommandOptions = new CoverageRatioAlignmentCommandOptions();
 
         this.bwaCommandOptions = new BwaCommandOptions();
         this.samtoolsCommandOptions = new SamtoolsCommandOptions();
         this.deeptoolsCommandOptions = new DeeptoolsCommandOptions();
     }
 
-    @Parameters(commandNames = {"index"}, commandDescription = "Index alignment file")
+    @Parameters(commandNames = {"index"}, commandDescription = ALIGNMENT_INDEX_DESCRIPTION)
     public class IndexAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
+        @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        public String file;
 
-        @Parameter(names = {"-i", "--file"}, description = "Unique ID for the file", required = true, arity = 1)
-        public String fileId;
-
-        @Parameter(names = "--skip-coverage", description = "Skip calculating the coverage after creating the .bai file")
-        public boolean skipCoverage = false;
-
-        @Parameter(names = "--skip-stats", description = "Skip calculating the bam stats after creating the .bai file")
-        public boolean skipStats = false;
-
-        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1)
-        public String outdirId;
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
+        public String outdir;
     }
 
-    @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed alignments")
+    @Parameters(commandNames = {"query"}, commandDescription = ALIGNMENT_QUERY_DESCRIPTION)
     public class QueryAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
-        @Parameter(names = {"--rpc"}, description = "RPC method used: {auto, GRPC, REST}. When auto, it will first try with GRPC and if "
-                + "that does not work, it will try with REST", required = false, arity = 1)
+        @Parameter(names = {"--rpc"}, description = RPC_METHOD_DESCRIPTION, arity = 1)
         public String rpc;
 
-        @Parameter(names = {"--file"}, description = "Id of the alignment file in catalog", required = true, arity = 1)
-        public String fileId;
+        @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        public String file;
 
-        @Parameter(names = {"--min-mapq"}, description = "Minimum mapping quality", arity = 1)
-        public int minMappingQuality;
-
-        @Parameter(names = {"--contained"}, description = "Set flag to select just the alignments completely contained within the "
-                + "boundaries of the region", arity = 0)
-        public boolean contained;
-
-        @Parameter(names = {"--md-field"}, description = "Force SAM MD optional field to be set with the alignments", arity = 0)
-        public boolean mdField;
-
-        @Parameter(names = {"--bin-qualities"}, description = "Compress the nucleotide qualities by using 8 quality levels "
-                + "(there will be loss of information)", arity = 0)
-        public boolean binQualities;
-
-        @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000")
+        @Parameter(names = {"-r", "--region"}, description = REGION_DESCRIPTION)
         public String region;
 
-        @Parameter(names = {"--skip"}, description = "Skip some number of elements.", required = false, arity = 1)
+        @Parameter(names = {"-g", "--gene"}, description = GENE_DESCRIPTION)
+        public String gene;
+
+        @Parameter(names = {"--coding-offset"}, description = CODING_OFFSET_DESCRIPTION)
+        public int codingOffset = Integer.parseInt(CODING_OFFSET_DEFAULT);
+
+        @Parameter(names = {"--only-exons"}, description = ONLY_EXONS_DESCRIPTION)
+        public boolean onlyExons;
+
+        @Parameter(names = {"--min-mapq"}, description = MINIMUM_MAPPING_QUALITY_DESCRIPTION, arity = 1)
+        public int minMappingQuality;
+
+        @Parameter(names = {"--max-num-mismatches"}, description = MAXIMUM_NUMBER_MISMATCHES_DESCRIPTION, arity = 1)
+        public int maxNumMismatches;
+
+        @Parameter(names = {"--max-num-hits"}, description = MAXIMUM_NUMBER_HITS_DESCRIPTION, arity = 1)
+        public int maxNumHits;
+
+        @Parameter(names = {"--properly-paired"}, description = PROPERLY_PAIRED_DESCRIPTION, arity = 0)
+        public boolean properlyPaired;
+
+        @Parameter(names = {"--max-insert-size"}, description = MAXIMUM_INSERT_SIZE_DESCRIPTION, arity = 1)
+        public int maxInsertSize;
+
+        @Parameter(names = {"--skip-unmapped"}, description = SKIP_UNMAPPED_DESCRIPTION, arity = 0)
+        public boolean skipUnmapped;
+
+        @Parameter(names = {"--skip-duplicated"}, description = SKIP_DUPLICATED_DESCRIPTION, arity = 0)
+        public boolean skipDuplicated;
+
+        @Parameter(names = {"--region-contained"}, description = REGION_CONTAINED_DESCRIPTION, arity = 0)
+        public boolean contained;
+
+        @Parameter(names = {"--force-md-field"}, description = FORCE_MD_FIELD_DESCRIPTION, arity = 0)
+        public boolean forceMDField;
+
+        @Parameter(names = {"--bin-qualities"}, description = BIN_QUALITIES_DESCRIPTION, arity = 0)
+        public boolean binQualities;
+
+        @Parameter(names = {"--split-results"}, description = SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION)
+        public boolean splitResults;
+
+        @Parameter(names = {"--skip"}, description = SKIP_DESCRIPTION, required = false, arity = 1)
         public int skip;
 
-        @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", required = false, arity = 1)
+        @Parameter(names = {"--limit"}, description = LIMIT_DESCRIPTION, required = false, arity = 1)
         public int limit;
 
-        @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", required = false, arity = 0)
+        @Parameter(names = {"--count"}, description = COUNT_DESCRIPTION, required = false, arity = 0)
         public boolean count;
     }
 
@@ -138,8 +154,8 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
-        @Parameter(names = {"--input-file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
-        public String inputFile;
+        @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        public String file;
 
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;
@@ -151,8 +167,8 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
-        @Parameter(names = {"--input-file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
-        public String inputFile;
+        @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        public String file;
 
         @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;
@@ -237,8 +253,8 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
-        @Parameter(names = {"--input-file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
-        public String inputFile;
+        @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        public String file;
 
         @Parameter(names = {"--window-size"}, description = COVERAGE_WINDOW_SIZE_DESCRIPTION, arity = 1)
         public int windowSize = 1;
@@ -253,8 +269,8 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
-        @Parameter(names = {"--input-file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
-        public String inputFile;
+        @Parameter(names = {"--file"}, description = FILE_ID_DESCRIPTION, required = true, arity = 1)
+        public String file;
 
         @Parameter(names = {"-r", "--region"}, description = REGION_DESCRIPTION)
         public String region;
@@ -262,33 +278,36 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"-g", "--gene"}, description = GENE_DESCRIPTION)
         public String gene;
 
-        @Parameter(names = {"--gene-offset"}, description = GENE_OFFSET_DESCRIPTION)
-        public int geneOffset = Integer.parseInt(GENE_OFFSET_DEFAULT);
+        @Parameter(names = {"--coding-offset"}, description = CODING_OFFSET_DESCRIPTION)
+        public int codingOffset = Integer.parseInt(CODING_OFFSET_DEFAULT);
 
         @Parameter(names = {"--only-exons"}, description = ONLY_EXONS_DESCRIPTION)
         public boolean onlyExons;
-
-        @Parameter(names = {"--exon-offset"}, description = EXON_OFFSET_DESCRIPTION)
-        public int exonOffset = Integer.parseInt(EXON_OFFSET_DEFAULT);
 
         @Parameter(names = {"--coverage-range"}, description = COVERAGE_RANGE_DESCRIPTION, arity = 1)
         public String range;
 
         @Parameter(names = {"--window-size"}, description = COVERAGE_WINDOW_SIZE_DESCRIPTION, arity = 1)
         public int windowSize = 1;
+
+        @Parameter(names = {"--split-results"}, description = SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION)
+        public boolean splitResults;
     }
 
-    @Parameters(commandNames = {"coverage-log2ratio"}, commandDescription = ALIGNMENT_COVERAGE_LOG_2_RATIO_DESCRIPTION)
-    public class CoverageLog2RatioAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
+    @Parameters(commandNames = {"coverage-ratio"}, commandDescription = ALIGNMENT_COVERAGE_RATIO_DESCRIPTION)
+    public class CoverageRatioAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
-        @Parameter(names = {"--input-file1"}, description = FILE_ID_1_DESCRIPTION, required = true, arity = 1)
-        public String inputFile1;
+        @Parameter(names = {"--file1"}, description = FILE_ID_1_DESCRIPTION, required = true, arity = 1)
+        public String file1;
 
-        @Parameter(names = {"--input-file2"}, description = FILE_ID_2_DESCRIPTION, required = true, arity = 1)
-        public String inputFile2;
+        @Parameter(names = {"--file2"}, description = FILE_ID_2_DESCRIPTION, required = true, arity = 1)
+        public String file2;
+
+        @Parameter(names = {"--skip-log2"}, description = SKIP_LOG2_DESCRIPTION)
+        public boolean skipLog2;
 
         @Parameter(names = {"-r", "--region"}, description = REGION_DESCRIPTION)
         public String region;
@@ -296,17 +315,17 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"-g", "--gene"}, description = GENE_DESCRIPTION)
         public String gene;
 
-        @Parameter(names = {"--gene-offset"}, description = GENE_OFFSET_DESCRIPTION)
-        public int geneOffset = Integer.parseInt(GENE_OFFSET_DEFAULT);
+        @Parameter(names = {"--gene-offset"}, description = CODING_OFFSET_DESCRIPTION)
+        public int codingOffset = Integer.parseInt(CODING_OFFSET_DEFAULT);
 
         @Parameter(names = {"--only-exons"}, description = ONLY_EXONS_DESCRIPTION)
         public boolean onlyExons;
 
-        @Parameter(names = {"--exon-offset"}, description = EXON_OFFSET_DESCRIPTION)
-        public int exonOffset = Integer.parseInt(EXON_OFFSET_DEFAULT);
-
         @Parameter(names = {"--window-size"}, description = COVERAGE_WINDOW_SIZE_DESCRIPTION, arity = 1)
         public int windowSize = 1;
+
+        @Parameter(names = {"--split-results"}, description = SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION)
+        public boolean splitResults;
     }
 
     //-------------------------------------------------------------------------

@@ -21,35 +21,10 @@ package org.opencb.opencga.core.config;
  */
 public class Admin {
 
-    private String password;
-    private String email;
     private String secretKey;
     private String algorithm;
 
     public Admin() {
-    }
-
-    public Admin(String password, String email) {
-        this.password = password;
-        this.email = email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public Admin setPassword(String password) {
-        this.password = password;
-        return this;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public Admin setEmail(String email) {
-        this.email = email;
-        return this;
     }
 
     public String getSecretKey() {
@@ -72,7 +47,6 @@ public class Admin {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Admin{");
-        sb.append("email='").append(email).append('\'');
         sb.append(", algorithm='").append(algorithm).append('\'');
         sb.append('}');
         return sb.toString();

@@ -31,11 +31,11 @@ import org.opencb.biodata.tools.alignment.filters.AlignmentFilters;
 import org.opencb.biodata.tools.alignment.filters.SamRecordFilters;
 import org.opencb.biodata.tools.feature.BigWigManager;
 import org.opencb.biodata.tools.feature.WigUtils;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterator;
@@ -50,6 +50,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import static org.opencb.opencga.core.api.ParamConstants.*;
 
 /**
  * Created by pfurio on 26/10/16.
@@ -76,7 +78,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
 
     @Override
-    public DataResult<ReadAlignment> get(Path path, Query query, QueryOptions options) {
+    public OpenCGAResult<ReadAlignment> get(Path path, Query query, QueryOptions options) {
         try {
             FileUtils.checkFile(path);
 
@@ -87,23 +89,20 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             AlignmentFilters<SAMRecord> alignmentFilters = parseQuery(query);
             AlignmentOptions alignmentOptions = parseQueryOptions(options);
 
-//            String queryResultId;
             List<ReadAlignment> readAlignmentList;
             if (region != null) {
                 readAlignmentList = bamManager.query(region, alignmentFilters, alignmentOptions, ReadAlignment.class);
-//                queryResultId = region.toString();
             } else {
                 readAlignmentList = bamManager.query(alignmentFilters, alignmentOptions, ReadAlignment.class);
-//                queryResultId = "Get alignments";
             }
 
             bamManager.close();
             watch.stop();
-            return new DataResult<>(((int) watch.getTime()), Collections.emptyList(), readAlignmentList.size(), readAlignmentList,
+            return new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), readAlignmentList.size(), readAlignmentList,
                     readAlignmentList.size());
         } catch (Exception e) {
             e.printStackTrace();
-            return new DataResult<>();
+            return new OpenCGAResult<>();
         }
     }
 
@@ -151,7 +150,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
-    public DataResult<RegionCoverage> coverageQuery(Path path, Region region, int minCoverage, int maxCoverage, int windowSize)
+    public OpenCGAResult<RegionCoverage> coverageQuery(Path path, Region region, int minCoverage, int maxCoverage, int windowSize)
             throws Exception {
         FileUtils.checkFile(path);
 
@@ -183,12 +182,12 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         }
 
         watch.stop();
-        return new DataResult<>(((int) watch.getTime()), Collections.emptyList(), selectedRegions.size(), selectedRegions,
+        return new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), selectedRegions.size(), selectedRegions,
                 selectedRegions.size());
     }
 
     @Override
-    public DataResult<Long> getTotalCounts(Path path) throws AlignmentCoverageException, IOException {
+    public OpenCGAResult<Long> getTotalCounts(Path path) throws AlignmentCoverageException, IOException {
         FileUtils.checkFile(path);
 
         StopWatch watch = StopWatch.createStarted();
@@ -203,11 +202,11 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             totalCounts = WigUtils.getTotalCounts(new BigWigManager(path).getBbFileReader());
         }
         watch.stop();
-        return new DataResult<>(((int) watch.getTime()), Collections.emptyList(), 1, Collections.singletonList(totalCounts), 1);
+        return new OpenCGAResult<>(((int) watch.getTime()), Collections.emptyList(), 1, Collections.singletonList(totalCounts), 1);
     }
 
     @Override
-    public DataResult<Long> count(Path path, Query query, QueryOptions options) {
+    public OpenCGAResult<Long> count(Path path, Query query, QueryOptions options) {
         StopWatch watch = StopWatch.createStarted();
 
         ProtoAlignmentIterator iterator = iterator(path, query, options);
@@ -218,41 +217,15 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         }
 
         watch.stop();
-        return new DataResult<>((int) watch.getTime(), Collections.emptyList(), 1, Collections.singletonList(count), 1);
+        return new OpenCGAResult<>((int) watch.getTime(), Collections.emptyList(), 1, Collections.singletonList(count), 1);
     }
-
-//    @Override
-//    public DataResult<AlignmentGlobalStats> stats(Path path, Path workspace) throws Exception {
-//        StopWatch watch = StopWatch.createStarted();
-//
-//        FileUtils.checkFile(path);
-//        FileUtils.checkDirectory(workspace);
-//
-//        Path statsPath = workspace.resolve(path.getFileName() + ".stats");
-//        AlignmentGlobalStats alignmentGlobalStats;
-//
-//        if (statsPath.toFile().exists()) {
-//            // Read the file of stats
-//            ObjectMapper objectMapper = new ObjectMapper();
-//            alignmentGlobalStats = objectMapper.readValue(statsPath.toFile(), AlignmentGlobalStats.class);
-//        } else {
-//            BamManager alignmentManager = new BamManager(path);
-//            alignmentGlobalStats = alignmentManager.stats();
-//            ObjectMapper objectMapper = new ObjectMapper();
-//            ObjectWriter objectWriter = objectMapper.typedWriter(AlignmentGlobalStats.class);
-//            objectWriter.writeValue(statsPath.toFile(), alignmentGlobalStats);
-//        }
-//
-//        watch.stop();
-//        return new DataResult<>((int) watch.getTime(), Collections.emptyList(), 1, Collections.singletonList(alignmentGlobalStats), 1);
-//    }
 
     //-------------------------------------------------------------------------
     // STATS: run and info (stats query is performed by FileManager.search()
     //-------------------------------------------------------------------------
 
     @Override
-    public DataResult<String> statsInfo(Path path) throws ToolException {
+    public OpenCGAResult<String> statsInfo(Path path) throws ToolException {
         StopWatch watch = StopWatch.createStarted();
 
         File statsFile = new File(path + ".stats.txt");
@@ -268,112 +241,18 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         }
         watch.stop();
 
-        return new DataResult<>((int) watch.getTime(), Collections.emptyList(), 1,
+        return new OpenCGAResult<>((int) watch.getTime(), Collections.emptyList(), 1,
                 Arrays.asList(org.apache.commons.lang.StringUtils.join(lines, "\n")), 1);
     }
-
-
-    //-------------------------------------------------------------------------
-
-//    @Override
-//    public DataResult<AlignmentGlobalStats> stats(Path path, Path workspace, Query query, QueryOptions options) throws Exception {
-//        FileUtils.checkFile(path);
-//
-//        StopWatch watch = StopWatch.createStarted();
-//
-//        if (options == null) {
-//            options = new QueryOptions();
-//        }
-//
-//        if (options.size() == 0 && query.size() == 0) {
-//            return stats(path, workspace);
-//        }
-//
-//        Region region = parseRegion(query);
-//        AlignmentFilters alignmentFilters = parseQuery(query);
-//        AlignmentOptions alignmentOptions = parseQueryOptions(options);
-//
-//        BamManager alignmentManager = new BamManager(path);
-//        AlignmentGlobalStats alignmentGlobalStats = alignmentManager.stats(region, alignmentFilters, alignmentOptions);
-//
-//        watch.stop();
-//        return new DataResult<>((int) watch.getTime(), Collections.emptyList(), 1, Arrays.asList(alignmentGlobalStats), 1);
-//    }
 
     //-------------------------------------------------------------------------
     // PRIVATE METHODS
     //-------------------------------------------------------------------------
 
-//    @Override
-//    public DataResult<RegionCoverage> coverage(Path path, Path workspace, Query query, QueryOptions options) throws Exception {
-//        StopWatch watch = new StopWatch();
-//        watch.start();
-//
-//        FileUtils.checkFile(path);
-//
-//        if (query == null) {
-//            query = new Query();
-//        }
-//
-//        if (options == null) {
-//            options = new QueryOptions();
-//        }
-//
-//        AlignmentOptions alignmentOptions = parseQueryOptions(options);
-//        AlignmentFilters alignmentFilters = parseQuery(query);
-//        Region region = parseRegion(query);
-//
-//        String queryResultId;
-//        int windowSize;
-//        RegionCoverage coverage = null;
-//
-//        Path coverageDBPath = workspace.toAbsolutePath().resolve(COVERAGE_DATABASE_NAME);
-//        if (!coverageDBPath.toFile().exists()
-//                && (region == null || (region.getEnd() - region.getStart() > 50 * MINOR_CHUNK_SIZE))) {
-//            createDBCoverage(path, workspace);
-//        }
-//
-//        ChunkFrequencyManager chunkFrequencyManager = new ChunkFrequencyManager(coverageDBPath, chunkSize);
-//        ChunkFrequencyManager.ChunkFrequency chunkFrequency = null;
-//        if (region != null) {
-//            if (region.getEnd() - region.getStart() > 50 * MINOR_CHUNK_SIZE) {
-//                // if region is too big then we calculate the mean. We need to protect this code!
-//                // and query SQLite database
-//                windowSize = options.getInt(QueryParams.WINDOW_SIZE.key(), DEFAULT_WINDOW_SIZE);
-//                chunkFrequency = chunkFrequencyManager.query(region, path, windowSize);
-//            } else {
-//                // if region is small enough we calculate all coverage for all positions dynamically
-//                // calling the biodata alignment manager
-//                BamManager alignmentManager = new BamManager(path);
-//                coverage = alignmentManager.coverage(region, alignmentFilters, alignmentOptions);
-//            }
-//            queryResultId = region.toString();
-//        } else {
-//            // if no region is given we set up the windowSize to default value,
-//            // we should return a few thousands mean values
-//            // and query SQLite database
-//            windowSize = DEFAULT_WINDOW_SIZE;
-//            SAMFileHeader fileHeader = BamUtils.getFileHeader(path);
-//            SAMSequenceRecord seq = fileHeader.getSequenceDictionary().getSequences().get(0);
-//            int arraySize = Math.min(50 * MINOR_CHUNK_SIZE, seq.getSequenceLength());
-//
-//            region = new Region(seq.getSequenceName(), 1, arraySize * MINOR_CHUNK_SIZE);
-//            queryResultId = "Get coverage";
-//            chunkFrequency = chunkFrequencyManager.query(region, path, windowSize);
-//        }
-//
-//        if (coverage == null && chunkFrequency != null) {
-//            coverage = new RegionCoverage(region, chunkFrequency.getWindowSize(), chunkFrequency.getValues());
-//        }
-//
-//        watch.stop();
-//        return new DataResult(queryResultId, ((int) watch.getTime()), 1, 1, null, null, Arrays.asList(coverage));
-//    }
-
     private Region parseRegion(Query query) {
         Region region = null;
         if (query != null) {
-            String regionString = query.getString(QueryParams.REGION.key());
+            String regionString = query.getString(REGION_PARAM);
             if (StringUtils.isNotEmpty(regionString)) {
                 region = new Region(regionString);
             }
@@ -385,35 +264,35 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         AlignmentFilters<SAMRecord> alignmentFilters = SamRecordFilters.create();
 
         if (query != null) {
-            int minMapQ = query.getInt(QueryParams.MIN_MAPQ.key());
+            int minMapQ = query.getInt(MINIMUM_MAPPING_QUALITY_PARAM);
             if (minMapQ > 0) {
                 alignmentFilters.addMappingQualityFilter(minMapQ);
             }
 
-            int numMismatches = query.getInt(QueryParams.MAX_NM.key());
+            int numMismatches = query.getInt(MAXIMUM_NUMBER_MISMATCHES_PARAM);
             if (numMismatches > 0) {
                 alignmentFilters.addMaxNumberMismatchesFilter(numMismatches);
             }
 
-            int numHits = query.getInt(QueryParams.MAX_NH.key());
+            int numHits = query.getInt(MAXIMUM_NUMBER_HITS_PARAM);
             if (numHits > 0) {
                 alignmentFilters.addMaxNumberHitsFilter(numHits);
             }
 
-            if (query.getBoolean(QueryParams.PROPERLY_PAIRED.key())) {
+            if (query.getBoolean(PROPERLY_PAIRED_PARAM)) {
                 alignmentFilters.addProperlyPairedFilter();
             }
 
-            int maxInsertSize = query.getInt(QueryParams.MAX_INSERT_SIZE.key());
+            int maxInsertSize = query.getInt(MAXIMUM_INSERT_SIZE_PARAM);
             if (maxInsertSize > 0) {
                 alignmentFilters.addInsertSizeFilter(maxInsertSize);
             }
 
-            if (query.getBoolean(QueryParams.SKIP_UNMAPPED.key())) {
+            if (query.getBoolean(SKIP_UNMAPPED_PARAM)) {
                 alignmentFilters.addUnmappedFilter();
             }
 
-            if (query.getBoolean(QueryParams.SKIP_DUPLICATED.key())) {
+            if (query.getBoolean(SKIP_DUPLICATED_PARAM)) {
                 alignmentFilters.addDuplicatedFilter();
             }
         }
@@ -425,8 +304,8 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         AlignmentOptions alignmentOptions = new AlignmentOptions();
 
         if (options != null) {
-            alignmentOptions.setContained(options.getBoolean(QueryParams.CONTAINED.key(), false));
-            int windowSize = options.getInt(QueryParams.WINDOW_SIZE.key());
+            alignmentOptions.setContained(options.getBoolean(REGION_CONTAINED_PARAM, false));
+            int windowSize = options.getInt(COVERAGE_WINDOW_SIZE_PARAM);
             if (windowSize > 0) {
                 alignmentOptions.setWindowSize(windowSize);
             }
@@ -439,28 +318,4 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
         return alignmentOptions;
     }
-
-//    private void createDBCoverage(Path filePath, Path workspace) throws IOException {
-//        SAMFileHeader fileHeader = BamUtils.getFileHeader(filePath);
-//
-//        Path coverageDBPath = workspace.toAbsolutePath().resolve(COVERAGE_DATABASE_NAME);
-//        ChunkFrequencyManager chunkFrequencyManager = new ChunkFrequencyManager(coverageDBPath);
-//        List<String> chromosomeNames = new ArrayList<>();
-//        List<Integer> chromosomeLengths = new ArrayList<>();
-//        fileHeader.getSequenceDictionary().getSequences().forEach(
-//                seq -> {
-//                    chromosomeNames.add(seq.getSequenceName());
-//                    chromosomeLengths.add(seq.getSequenceLength());
-//                });
-//        chunkFrequencyManager.init(chromosomeNames, chromosomeLengths);
-//
-//        Path coveragePath = workspace.toAbsolutePath().resolve(filePath.getFileName() + COVERAGE_SUFFIX);
-//
-//        AlignmentOptions options = new AlignmentOptions();
-//        options.setContained(false);
-//
-//        BamUtils.createCoverageWigFile(filePath, coveragePath, 200);
-//        chunkFrequencyManager.loadWigFile(coveragePath, filePath);
-//    }
-
 }

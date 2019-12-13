@@ -336,7 +336,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         String userToken;
         try {
-            userToken = catalogManager.getUserManager().getSystemTokenForUser(job.getUserId(), token);
+            userToken = catalogManager.getUserManager().getNonExpiringToken(job.getUserId(), token);
         } catch (CatalogException e) {
             return abortJob(job, "Internal error. Could not obtain token for user '" + job.getUserId() + "'");
         }
@@ -437,7 +437,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             logger.info("JOBS/ directory does not exist, registering for the first time");
 
             // Create main JOBS directory for the study
-            Study study = catalogManager.getStudyManager().resolveId(studyStr, "admin");
+            Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
             long projectUid = catalogManager.getProjectManager().get(study.getFqn().split(":")[0], new QueryOptions(QueryOptions.INCLUDE,
                     ProjectDBAdaptor.QueryParams.UID.key()), token).first().getUid();
 

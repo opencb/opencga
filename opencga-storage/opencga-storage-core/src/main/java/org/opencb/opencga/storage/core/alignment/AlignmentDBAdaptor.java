@@ -20,78 +20,17 @@ import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.exceptions.AlignmentCoverageException;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 
 public interface AlignmentDBAdaptor {
-
-    enum QueryParams implements QueryParam {
-        //        FILE_ID("fileId", TEXT, ""),
-        REGION("region", TEXT, ""),
-        MIN_MAPQ("minMapQ", INTEGER, ""),
-        MAX_NM("maxNM", INTEGER, ""),
-        MAX_NH("maxNH", INTEGER, ""),
-        PROPERLY_PAIRED("properlyPaired", BOOLEAN, ""),
-        MAX_INSERT_SIZE("maxInsertSize", INTEGER, ""),
-        SKIP_UNMAPPED("skipUnmapped", BOOLEAN, ""),
-        SKIP_DUPLICATED("skipDuplicated", BOOLEAN, ""),
-        CONTAINED("contained", BOOLEAN, ""),
-        MD_FIELD("mdField", BOOLEAN, ""),
-        BIN_QUALITIES("binQualities", BOOLEAN, ""),
-        WINDOW_SIZE("windowSize", INTEGER, "");
-
-        private static Map<String, QueryParams> map = new HashMap<>();
-        static {
-            for (QueryParams param : QueryParams.values()) {
-                map.put(param.key(), param);
-            }
-        }
-
-        private final String key;
-        private Type type;
-        private String description;
-
-        QueryParams(String key, Type type, String description) {
-            this.key = key;
-            this.type = type;
-            this.description = description;
-        }
-
-        @Override
-        public String key() {
-            return key;
-        }
-
-        @Override
-        public Type type() {
-            return type;
-        }
-
-        @Override
-        public String description() {
-            return description;
-        }
-
-        public static Map<String, QueryParams> getMap() {
-            return map;
-        }
-
-        public static QueryParams getParam(String key) {
-            return map.get(key);
-        }
-    }
 
     //Query Options
     String QO_BAM_PATH = "bam_path";
@@ -105,7 +44,7 @@ public interface AlignmentDBAdaptor {
     String QO_INTERVAL_SIZE = "interval_size";
     String QO_COVERAGE_CHUNK_SIZE = "chunk_size";
 
-    DataResult<ReadAlignment> get(Path path, Query query, QueryOptions options);
+    OpenCGAResult<ReadAlignment> get(Path path, Query query, QueryOptions options);
 
     AlignmentIterator iterator(Path path);
 
@@ -113,23 +52,12 @@ public interface AlignmentDBAdaptor {
 
     <T> AlignmentIterator<T> iterator(Path path, Query query, QueryOptions options, Class<T> clazz);
 
-    DataResult<Long> count(Path path, Query query, QueryOptions options);
+    OpenCGAResult<Long> count(Path path, Query query, QueryOptions options);
 
-    DataResult<String> statsInfo(Path path) throws ToolException;
+    OpenCGAResult<String> statsInfo(Path path) throws ToolException;
 
-//    DataResult<AlignmentGlobalStats> stats(Path path, Path workspace, Query query, QueryOptions options) throws Exception;
-//    DataResult<AlignmentGlobalStats> stats(Path path, Path workspace) throws Exception;
-
-//    DataResult<RegionCoverage> coverage(Path path, Region region, int windowSize) throws Exception;
-//
-//    DataResult<RegionCoverage> coverage(Path path, Region region, int minCoverage, int maxCoverage) throws Exception;
-//
-//    DataResult<RegionCoverage> getLowCoverageRegions(Path path, Region region, int minCoverage) throws Exception;
-
-    DataResult<RegionCoverage> coverageQuery(Path path, Region region, int minCoverage, int maxCoverage, int windowSize)
+    OpenCGAResult<RegionCoverage> coverageQuery(Path path, Region region, int minCoverage, int maxCoverage, int windowSize)
             throws Exception;
 
-    DataResult<Long> getTotalCounts(Path path) throws AlignmentCoverageException, IOException;
-
-//    DataResult<RegionCoverage> coverage(Path path, Path workspace, Query query, QueryOptions options) throws Exception;
+    OpenCGAResult<Long> getTotalCounts(Path path) throws AlignmentCoverageException, IOException;
 }

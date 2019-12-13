@@ -113,7 +113,8 @@ public class Account {
 
     public enum Type {
         GUEST,
-        FULL
+        FULL,
+        ADMINISTRATOR
     }
 
     public static class AuthenticationOrigin {

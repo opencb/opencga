@@ -38,6 +38,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -76,11 +77,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.opencb.opencga.core.common.JacksonUtils.getExternalOpencgaObjectMapper;
 
 @ApplicationPath("/")
-@Path("/{apiVersion}")
 @Produces(MediaType.APPLICATION_JSON)
 public class OpenCGAWSServer {
 
-    @DefaultValue("v1")
+    @DefaultValue("v2")
     @PathParam("apiVersion")
     @ApiParam(name = "apiVersion", value = "OpenCGA major version", allowableValues = "v2", defaultValue = "v2")
     protected String apiVersion;
@@ -130,7 +130,7 @@ public class OpenCGAWSServer {
     protected static StorageEngineFactory storageEngineFactory;
     protected static VariantStorageManager variantManager;
 
-    private static final int DEFAULT_LIMIT = 2000;
+    private static final int DEFAULT_LIMIT = AbstractManager.DEFAULT_LIMIT;
     private static final int MAX_LIMIT = 5000;
     private static final int MAX_ID_SIZE = 100;
 
@@ -373,7 +373,7 @@ public class OpenCGAWSServer {
             }
         }
 
-        queryOptions.put(QueryOptions.LIMIT, (limit > 0) ? Math.min(limit, MAX_LIMIT) : DEFAULT_LIMIT);
+        queryOptions.put(QueryOptions.LIMIT, (limit > 0) ? Math.min(limit, MAX_LIMIT) : (count ? 0 : DEFAULT_LIMIT));
         query.remove("sid");
 
 //      Exceptions

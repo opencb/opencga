@@ -35,6 +35,8 @@ public class JobUpdateParams {
     private File log;
     private File errorLog;
 
+    private Boolean visited;
+
     private Map<String, Object> attributes;
 
     public JobUpdateParams() {
@@ -65,6 +67,7 @@ public class JobUpdateParams {
         sb.append(", result=").append(result);
         sb.append(", log=").append(log);
         sb.append(", errorLog=").append(errorLog);
+        sb.append(", visited=").append(visited);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -184,6 +187,15 @@ public class JobUpdateParams {
 
     public JobUpdateParams setErrorLog(File errorLog) {
         this.errorLog = errorLog;
+        return this;
+    }
+
+    public Boolean getVisited() {
+        return visited;
+    }
+
+    public JobUpdateParams setVisited(Boolean visited) {
+        this.visited = visited;
         return this;
     }
 

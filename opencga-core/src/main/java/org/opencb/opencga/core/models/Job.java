@@ -43,7 +43,6 @@ public class Job extends PrivateStudyUid {
     private String modificationDate;
 
     private Enums.Priority priority;
-
     private Enums.ExecutionStatus status;
 
     private File outDir;
@@ -55,6 +54,8 @@ public class Job extends PrivateStudyUid {
 
     private File log;
     private File errorLog;
+
+    private boolean visited;
 
     private int release;
     private Map<String, Object> attributes;
@@ -84,13 +85,14 @@ public class Job extends PrivateStudyUid {
     public Job() {
     }
 
-    public Job(String id, String uuid, String name, String description, String toolId, String userId, String commandLine, Map<String, Object> params,
-               String creationDate, String modificationDate, Enums.Priority priority, Enums.ExecutionStatus status, File outDir,
-               List<File> input, List<File> output, List<String> tags, ExecutionResult execution, File log, File errorLog, int release,
-               Map<String, Object> attributes) {
+    public Job(String id, String uuid, String name, String description, String toolId, String userId, String commandLine,
+               Map<String, Object> params, String creationDate, String modificationDate, Enums.Priority priority,
+               Enums.ExecutionStatus status, File outDir, List<File> input, List<File> output, List<String> tags, ExecutionResult execution,
+               boolean visited, File log, File errorLog, int release, Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
         this.name = name;
+        this.toolId = toolId;
         this.description = description;
         this.userId = userId;
         this.commandLine = commandLine;
@@ -104,6 +106,7 @@ public class Job extends PrivateStudyUid {
         this.output = output;
         this.tags = tags;
         this.execution = execution;
+        this.visited = visited;
         this.log = log;
         this.errorLog = errorLog;
         this.release = release;
@@ -130,6 +133,7 @@ public class Job extends PrivateStudyUid {
         sb.append(", output=").append(output);
         sb.append(", tags=").append(tags);
         sb.append(", execution=").append(execution);
+        sb.append(", visited=").append(visited);
         sb.append(", log=").append(log);
         sb.append(", errorLog=").append(errorLog);
         sb.append(", release=").append(release);
@@ -294,6 +298,15 @@ public class Job extends PrivateStudyUid {
 
     public Job setTags(List<String> tags) {
         this.tags = tags;
+        return this;
+    }
+
+    public boolean isVisited() {
+        return visited;
+    }
+
+    public Job setVisited(boolean visited) {
+        this.visited = visited;
         return this;
     }
 

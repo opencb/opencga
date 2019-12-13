@@ -185,18 +185,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery(startTime, documentList);
-
-        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
-            return queryResult;
-        }
-
-        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
-        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            OpenCGAResult<Long> count = count(clientSession, studyUid, query, user, StudyAclEntry.StudyPermissions.VIEW_PANELS);
-            queryResult.setNumMatches(count.getNumMatches());
-        }
-        return queryResult;
+        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -212,18 +201,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                 documentList.add(dbIterator.next());
             }
         }
-        OpenCGAResult<Panel> queryResult = endQuery(startTime, documentList);
-
-        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
-            return queryResult;
-        }
-
-        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
-        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            OpenCGAResult<Long> count = count(clientSession, query);
-            queryResult.setNumMatches(count.getNumMatches());
-        }
-        return queryResult;
+        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -234,24 +212,12 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     OpenCGAResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        OpenCGAResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery(startTime, documentList);
-
-        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
-            return queryResult;
-        }
-
-        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
-        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            OpenCGAResult<Long> count = count(clientSession, query);
-            queryResult.setNumMatches(count.getNumMatches());
-        }
-        return queryResult;
+        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -259,24 +225,12 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        OpenCGAResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(studyUid, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery(startTime, documentList);
-
-        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
-            return queryResult;
-        }
-
-        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
-        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            OpenCGAResult<Long> count = count(query);
-            queryResult.setNumMatches(count.getNumMatches());
-        }
-        return queryResult;
+        return endQuery(startTime, documentList);
     }
 
     @Override

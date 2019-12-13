@@ -35,8 +35,8 @@ import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.server.WebServiceException;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
@@ -204,19 +204,10 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Status") @QueryParam("status") String status,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
             @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
-            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-
-            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
-            DataResult<Cohort> queryResult;
-            if (count) {
-                queryResult = catalogManager.getCohortManager().count(studyStr, query, token);
-            } else {
-                queryResult = catalogManager.getCohortManager().search(studyStr, query, queryOptions, token);
-            }
-            return createOkResponse(queryResult);
+            return createOkResponse(catalogManager.getCohortManager().search(studyStr, query, queryOptions, token));
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }

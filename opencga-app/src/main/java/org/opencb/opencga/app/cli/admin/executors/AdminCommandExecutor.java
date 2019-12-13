@@ -77,11 +77,7 @@ public abstract class AdminCommandExecutor extends CommandExecutor {
             configuration.getCatalog().getDatabase().setPassword(password);
         }
 
-        if (StringUtils.isNotEmpty(adminPassword)) {
-            configuration.getAdmin().setPassword(adminPassword);
-        }
-
-        if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
+        if (StringUtils.isEmpty(adminPassword)) {
             throw new CatalogException("No admin password found. Please, insert your password.");
         }
     }

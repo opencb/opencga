@@ -24,6 +24,8 @@ import org.opencb.opencga.core.results.OpenCGAResult;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -262,11 +264,10 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
      *
      * @param result Final OpenCGA result.
      * @param ignoreException Boolean indicating whether to raise an exception in case of an ERROR event.
-     * @param <T> OpenCGAResult type.
      * @return result if ignoreException is true or there are no ERROR events.
      * @throws CatalogException if ignoreException is false and there are ERROR events.
      */
-    public <T> OpenCGAResult<T> endResult(OpenCGAResult<T> result, boolean ignoreException) throws CatalogException {
+    public OpenCGAResult<R> endResult(OpenCGAResult<R> result, boolean ignoreException) throws CatalogException {
         if (!ignoreException) {
             if (ListUtils.isNotEmpty(result.getEvents())) {
                 List<String> errors = new ArrayList<>();
@@ -281,6 +282,15 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
             }
         }
         return result;
+    }
+
+    void mergeCount(OpenCGAResult<R> queryResult, Future<OpenCGAResult<Long>> countFuture) throws InterruptedException, ExecutionException {
+        while (!countFuture.isDone()) {
+            Thread.sleep(100);
+        }
+        OpenCGAResult<Long> countResult = countFuture.get();
+        queryResult.setNumMatches(countResult.getNumMatches());
+        queryResult.setTime(Math.max(queryResult.getTime(), countResult.getTime()));
     }
 
 }

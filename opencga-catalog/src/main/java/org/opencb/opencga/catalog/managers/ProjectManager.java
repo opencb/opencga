@@ -212,9 +212,9 @@ public class ProjectManager extends AbstractManager {
                 .append("assembly", assembly)
                 .append("options", options)
                 .append("token", sessionId);
-        if (Account.Type.GUEST == user.first().getAccount().getType()) {
-            String errorMsg = "User " + userId + " has a guest account and is not authorized to create new projects. If you "
-                    + " think this might be an error, please contact with your administrator.";
+        if (Account.Type.FULL != user.first().getAccount().getType()) {
+            String errorMsg = "User " + userId + " is not authorized to create new projects. Only users with " + Account.Type.FULL
+                    + " accounts are allowed to do so.";
             auditManager.auditCreate(userId, Enums.Resource.PROJECT, id, "", "", "", auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(0, "", errorMsg)));
             throw new CatalogException(errorMsg);
@@ -530,7 +530,7 @@ public class ProjectManager extends AbstractManager {
 
     public void importReleases(String owner, String inputDirStr, String sessionId) throws CatalogException, IOException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        if (!"admin".equals(userId)) {
+        if (!authorizationManager.checkIsAdmin(userId)) {
             throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to import data");
         }
 
@@ -647,7 +647,7 @@ public class ProjectManager extends AbstractManager {
 
     public void exportByFileNames(String studyStr, File outputDir, File filePath, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
-        if (!"admin".equals(userId)) {
+        if (!authorizationManager.checkIsAdmin(userId)) {
             throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to export data");
         }
 
@@ -663,7 +663,7 @@ public class ProjectManager extends AbstractManager {
         }
 
         ObjectMapper objectMapper = new ObjectMapper();
-        QueryOptions skipCount = new QueryOptions(QueryOptions.SKIP_COUNT, true);
+        QueryOptions skipCount = new QueryOptions();
 
         // We obtain the owner of the study
         OpenCGAResult<Study> studyDataResult = catalogManager.getStudyManager().get(studyStr,
@@ -677,7 +677,7 @@ public class ProjectManager extends AbstractManager {
 
         String owner = studyDataResult.first().getFqn().split("@")[0];
 
-        String ownerToken = catalogManager.getUserManager().getSystemTokenForUser(owner, token);
+        String ownerToken = catalogManager.getUserManager().getNonExpiringToken(owner, token);
 
         try (BufferedReader buf = new BufferedReader(new FileReader(filePath))) {
 
@@ -839,7 +839,7 @@ public class ProjectManager extends AbstractManager {
 
     public void exportReleases(String projectStr, int release, String outputDirStr, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
-        if (!"admin".equals(userId)) {
+        if (!authorizationManager.checkIsAdmin(userId)) {
             throw new CatalogAuthorizationException("Only admin of OpenCGA is authorised to export data");
         }
 

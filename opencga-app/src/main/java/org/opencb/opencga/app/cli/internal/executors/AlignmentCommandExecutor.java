@@ -16,24 +16,14 @@
 
 package org.opencb.opencga.app.cli.internal.executors;
 
-import org.ga4gh.models.ReadAlignment;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.hpg.bigdata.analysis.tools.ExecutorMonitor;
-import org.opencb.hpg.bigdata.analysis.tools.Status;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.core.rest.RestResponse;
-import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 
-import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 
@@ -56,15 +46,11 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     public void execute() throws Exception {
         logger.debug("Executing variant command line");
 
-//        String subCommandString = alignmentCommandOptions.getParsedSubCommand();
         String subCommandString = getParsedSubCommand(alignmentCommandOptions.jCommander);
         configure();
         switch (subCommandString) {
             case "index":
                 index();
-                break;
-            case "query":
-                query();
                 break;
             case "stats-run":
                 statsRun();
@@ -94,67 +80,44 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
     private void index() throws Exception {
         AlignmentCommandOptions.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
 
-        ObjectMap params = new ObjectMap();
-        params.put("transform", true);
-        // TODO: Calculate coverage and stats
+        AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
 
-        String sessionId = cliOptions.commonOptions.token;
-
-        // Initialize monitor
-        ExecutorMonitor monitor = new ExecutorMonitor();
-        Thread hook = new Thread(() -> {
-            monitor.stop(new Status(Status.ERROR));
-            logger.info("Running ShutdownHook. Tool execution has being aborted.");
-        });
-
-        Path outDirPath = Paths.get(cliOptions.outdirId);
-
-        Runtime.getRuntime().addShutdownHook(hook);
-        monitor.start(outDirPath);
-
-        // Run index
-        AlignmentStorageManager alignmentStorageManager =
-                new AlignmentStorageManager(catalogManager, storageEngineFactory);
-        alignmentStorageManager.index(cliOptions.study, cliOptions.fileId, outDirPath, params, sessionId);
-
-        // Stop monitor
-        Runtime.getRuntime().removeShutdownHook(hook);
-        monitor.stop(new Status(Status.DONE));
+        alignmentManager.index(cliOptions.study, cliOptions.file, cliOptions.outdir, cliOptions.commonOptions.token);
     }
 
 
-    private void query() throws InterruptedException, CatalogException, IOException {
-        ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull("sid", alignmentCommandOptions.queryAlignmentCommandOptions.commonOptions.token);
-        objectMap.putIfNotNull("study", alignmentCommandOptions.queryAlignmentCommandOptions.study);
-        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), alignmentCommandOptions.queryAlignmentCommandOptions.region);
-        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(),
-                alignmentCommandOptions.queryAlignmentCommandOptions.minMappingQuality);
-        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(),
-                alignmentCommandOptions.queryAlignmentCommandOptions.contained);
-        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.MD_FIELD.key(),
-                alignmentCommandOptions.queryAlignmentCommandOptions.mdField);
-        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.BIN_QUALITIES.key(),
-                alignmentCommandOptions.queryAlignmentCommandOptions.binQualities);
-        objectMap.putIfNotNull(QueryOptions.LIMIT, alignmentCommandOptions.queryAlignmentCommandOptions.limit);
-        objectMap.putIfNotNull(QueryOptions.SKIP, alignmentCommandOptions.queryAlignmentCommandOptions.skip);
-        objectMap.putIfNotNull(QueryOptions.COUNT, alignmentCommandOptions.queryAlignmentCommandOptions.count);
-
-        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        RestResponse<ReadAlignment> alignments = openCGAClient.getAlignmentClient()
-                .query(alignmentCommandOptions.queryAlignmentCommandOptions.fileId, objectMap);
-
-        for (ReadAlignment readAlignment : alignments.allResults()) {
-            System.out.println(readAlignment);
-        }
-    }
+//    private void query() throws InterruptedException, CatalogException, IOException {
+//        ObjectMap objectMap = new ObjectMap();
+//        objectMap.putIfNotNull("sid", alignmentCommandOptions.queryAlignmentCommandOptions.commonOptions.token);
+//        objectMap.putIfNotNull("study", alignmentCommandOptions.queryAlignmentCommandOptions.study);
+//        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), alignmentCommandOptions.queryAlignmentCommandOptions.region);
+//        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(),
+//                alignmentCommandOptions.queryAlignmentCommandOptions.minMappingQuality);
+//        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(),
+//                alignmentCommandOptions.queryAlignmentCommandOptions.contained);
+//        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.MD_FIELD.key(),
+//                alignmentCommandOptions.queryAlignmentCommandOptions.mdField);
+//        objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.BIN_QUALITIES.key(),
+//                alignmentCommandOptions.queryAlignmentCommandOptions.binQualities);
+//        objectMap.putIfNotNull(QueryOptions.LIMIT, alignmentCommandOptions.queryAlignmentCommandOptions.limit);
+//        objectMap.putIfNotNull(QueryOptions.SKIP, alignmentCommandOptions.queryAlignmentCommandOptions.skip);
+//        objectMap.putIfNotNull(QueryOptions.COUNT, alignmentCommandOptions.queryAlignmentCommandOptions.count);
+//
+//        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
+//        RestResponse<ReadAlignment> alignments = openCGAClient.getAlignmentClient()
+//                .query(alignmentCommandOptions.queryAlignmentCommandOptions.fileId, objectMap);
+//
+//        for (ReadAlignment readAlignment : alignments.allResults()) {
+//            System.out.println(readAlignment);
+//        }
+//    }
 
     private void statsRun() throws ToolException {
         AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
 
         AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
 
-        alignmentManager.statsRun(cliOptions.study, cliOptions.inputFile, cliOptions.outdir, cliOptions.commonOptions.token);
+        alignmentManager.statsRun(cliOptions.study, cliOptions.file, cliOptions.outdir, cliOptions.commonOptions.token);
     }
 
     private void coverageRun() throws ToolException {
@@ -162,7 +125,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
         AlignmentStorageManager alignmentManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
 
-        alignmentManager.coverageRun(cliOptions.study, cliOptions.inputFile, cliOptions.windowSize, cliOptions.outdir, cliOptions.commonOptions.token);
+        alignmentManager.coverageRun(cliOptions.study, cliOptions.file, cliOptions.windowSize, cliOptions.outdir, cliOptions.commonOptions.token);
     }
 
     private void delete() {

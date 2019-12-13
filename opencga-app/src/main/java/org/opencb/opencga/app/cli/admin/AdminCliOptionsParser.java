@@ -75,7 +75,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         usersSubCommands.addCommand("import", usersCommandOptions.importCommandOptions);
         usersSubCommands.addCommand("sync", usersCommandOptions.syncCommandOptions);
         usersSubCommands.addCommand("delete", usersCommandOptions.deleteUserCommandOptions);
-        usersSubCommands.addCommand("quota", usersCommandOptions.QuotaUserCommandOptions);
+        usersSubCommands.addCommand("quota", usersCommandOptions.quotaUserCommandOptions);
         usersSubCommands.addCommand("stats", usersCommandOptions.statsUserCommandOptions);
 
         auditCommandOptions = new AuditCommandOptions();
@@ -147,7 +147,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
      */
     public class AdminCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
 
-        @Parameter(names = {"-p", "--password"}, description = "Admin password", hidden = true, password = true, arity = 0)
+        @Parameter(names = {"-p", "--password"}, description = "Administrator password", hidden = true, password = true, arity = 0)
         public String adminPassword;
 
     }
@@ -199,7 +199,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public SyncCommandOptions syncCommandOptions;
         public DeleteUserCommandOptions deleteUserCommandOptions;
         public StatsUserCommandOptions statsUserCommandOptions;
-        public QuotaUserCommandOptions QuotaUserCommandOptions;
+        public QuotaUserCommandOptions quotaUserCommandOptions;
 
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
@@ -209,7 +209,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
             this.syncCommandOptions = new SyncCommandOptions();
             this.deleteUserCommandOptions = new DeleteUserCommandOptions();
             this.statsUserCommandOptions = new StatsUserCommandOptions();
-            this.QuotaUserCommandOptions = new QuotaUserCommandOptions();
+            this.quotaUserCommandOptions = new QuotaUserCommandOptions();
         }
     }
 
@@ -324,7 +324,13 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"--secret-key"}, description = "Secret key needed to authenticate through OpenCGA (JWT).", required = false)
+        @Parameter(names = {"--email"}, description = "Administrator e-mail", arity = 1)
+        public String email;
+
+        @Parameter(names = {"--organization"}, description = "Administrator organization", arity = 1)
+        public String organization;
+
+        @Parameter(names = {"--secret-key"}, description = "Secret key needed to authenticate through OpenCGA (JWT).")
         public String secretKey;
 
         @Parameter(names = {"--force"}, description = "If this parameters is set, it will override the database installation.")

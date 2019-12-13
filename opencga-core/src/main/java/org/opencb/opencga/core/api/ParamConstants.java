@@ -7,7 +7,7 @@ public class ParamConstants {
     public static final String EXCLUDE_DESCRIPTION = "Fields excluded in the response, whole JSON path must be provided";
     public static final String LIMIT_DESCRIPTION = "Number of results to be returned";
     public static final String SKIP_DESCRIPTION = "Number of results to skip";
-    public static final String COUNT_DESCRIPTION = "Get a count of the number of results obtained. Deactivated by default.";
+    public static final String COUNT_DESCRIPTION = "Get the total number of results matching the query. Deactivated by default.";
 
     public static final String CREATION_DATE_DESCRIPTION = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
     public static final String MODIFICATION_DATE_DESCRIPTION = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
@@ -132,33 +132,62 @@ public class ParamConstants {
     // ---------------------------------------------
     // alignment
 
+    public static final String ALIGNMENT_INDEX_DESCRIPTION = "Index alignment file";
+    public static final String ALIGNMENT_QUERY_DESCRIPTION = "Search over indexed alignments";
     public static final String ALIGNMENT_COVERAGE_DESCRIPTION = "Compute coverage for a given alignemnt file";
     public static final String ALIGNMENT_COVERAGE_QUERY_DESCRIPTION = "Query the coverage of an alignment file for regions or genes";
-    public static final String ALIGNMENT_COVERAGE_LOG_2_RATIO_DESCRIPTION = "Compute Log2 coverage ratio from file #1 (somatic) and file #2 (germline)";
+    public static final String ALIGNMENT_COVERAGE_RATIO_DESCRIPTION = "Compute coverage ratio from file #1 vs file #2, (e.g. somatic vs germline)";
     public static final String ALIGNMENT_STATS_DESCRIPTION = "Compute stats for a given alignment file";
     public static final String ALIGNMENT_STATS_INFO_DESCRIPTION = "Show the stats for a given alignment file";
     public static final String ALIGNMENT_STATS_QUERY_DESCRIPTION = "Fetch alignment files according to their stats";
+
+    // ---------------------------------------------
+    // alignment query
+
+    public static final String MINIMUM_MAPPING_QUALITY_DESCRIPTION = "Minimum mapping quality";
+    public static final String MINIMUM_MAPPING_QUALITY_PARAM = "minMappingQuality";
+    public static final String MAXIMUM_NUMBER_MISMATCHES_DESCRIPTION = "Maximum number of mismatches";
+    public static final String MAXIMUM_NUMBER_MISMATCHES_PARAM = "maxNumMismatches";
+    public static final String MAXIMUM_NUMBER_HITS_DESCRIPTION = "Maximum number of hits";
+    public static final String MAXIMUM_NUMBER_HITS_PARAM = "maxNumHits";
+    public static final String PROPERLY_PAIRED_DESCRIPTION = "Return only properly paired alignments";
+    public static final String PROPERLY_PAIRED_PARAM = "properlyPaired";
+    public static final String MAXIMUM_INSERT_SIZE_DESCRIPTION = "Maximum insert size";
+    public static final String MAXIMUM_INSERT_SIZE_PARAM = "maxInsertSize";
+    public static final String SKIP_UNMAPPED_DESCRIPTION = "Skip unmapped alignments";
+    public static final String SKIP_UNMAPPED_PARAM = "skipUnmapped";
+    public static final String SKIP_DUPLICATED_DESCRIPTION = "Skip duplicated alignments";
+    public static final String SKIP_DUPLICATED_PARAM = "skipDuplicated";
+    public static final String REGION_CONTAINED_DESCRIPTION = "Return alignments contained within boundaries of region";
+    public static final String REGION_CONTAINED_PARAM = "regionContained";
+    public static final String FORCE_MD_FIELD_DESCRIPTION = "Force SAM MD optional field to be set with the alignments";
+    public static final String FORCE_MD_FIELD_PARAM = "forceMDField";
+    public static final String BIN_QUALITIES_DESCRIPTION = "Compress the nucleotide qualities by using 8 quality levels";
+    public static final String BIN_QUALITIES_PARAM = "binQualities";
+    public static final String SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION = "Split results into regions (or gene/exon regions)";
+    public static final String SPLIT_RESULTS_INTO_REGIONS_PARAM = "splitResults";
+
     // ---------------------------------------------
     // alignment coverage
 
-    public static final String GENE_OFFSET_DESCRIPTION = "Gene offset to extend the gene region at up and downstream";
-    public static final String GENE_OFFSET_PARAM = "geneOffset";
-    public static final String GENE_OFFSET_DEFAULT = "500";
-    public static final String ONLY_EXONS_DESCRIPTION = "Take only exons regions when taking into account genes";
+    public static final String CODING_OFFSET_DESCRIPTION = "Coding offset to extend the gene or exon region at up and downstream";
+    public static final String CODING_OFFSET_PARAM = "codingOffset";
+    public static final String CODING_OFFSET_DEFAULT = "200";
+    public static final String ONLY_EXONS_DESCRIPTION = "Only exons are taking into account when genes are specified";
     public static final String ONLY_EXONS_PARAM = "onlyExons";
-    public static final String EXON_OFFSET_DESCRIPTION = "Exon offset to extend the gene region at up and downstream";
-    public static final String EXON_OFFSET_PARAM = "exonOffset";
     public static final String EXON_OFFSET_DEFAULT = "50";
     public static final String COVERAGE_RANGE_DESCRIPTION = "Range of coverage values to be reported. Minimum and maximum values are separated by '-', e.g.: 20-40 (for coverage values greater or equal to 20 and less or equal to 40). A single value means to report coverage values less or equal to that value";
     public static final String COVERAGE_RANGE_PARAM = "range";
     public static final String COVERAGE_WINDOW_SIZE_DESCRIPTION = "Window size for the region coverage (if a coverage range is provided, window size must be 1)";
     public static final String COVERAGE_WINDOW_SIZE_PARAM = "windowSize";
     public static final String COVERAGE_WINDOW_SIZE_DEFAULT = "1";
-    public static final String FILE_ID_PARAM = "inputFile";
-    public static final String FILE_ID_1_DESCRIPTION = "Input file #1";
-    public static final String FILE_ID_1_PARAM = "inputFile1";
-    public static final String FILE_ID_2_DESCRIPTION = "Input file #2";
-    public static final String FILE_ID_2_PARAM = "inputFile2";
+    public static final String FILE_ID_PARAM = "file";
+    public static final String FILE_ID_1_DESCRIPTION = "Input file #1 (e.g. somatic file)";
+    public static final String FILE_ID_1_PARAM = "file1";
+    public static final String FILE_ID_2_DESCRIPTION = "Input file #2 (e.g. germline file)";
+    public static final String FILE_ID_2_PARAM = "file2";
+    public static final String SKIP_LOG2_DESCRIPTION = "Do not apply Log2 to normalise the coverage ratio";
+    public static final String SKIP_LOG2_PARAM = "skipLog2";
 
     // ---------------------------------------------
     // alignment stats query
@@ -208,4 +237,10 @@ public class ParamConstants {
     public static final String PAIRS_ON_DIFFERENT_CHROMOSOMES_DESCRIPTION = "Pairs on different chromosomes: [<|>|<=|>=]{number}, e.g. >=1000";
     public static final String PERCENTAGE_OF_PROPERLY_PAIRED_READS = "percentageOfProperlyPairedReads";
     public static final String PERCENTAGE_OF_PROPERLY_PAIRED_READS_DESCRIPTION = "Percentage of properly paired reads: [<|>|<=|>=]{number}, e.g. >=96.5";
+
+
+    // ---------------------------------------------
+
+    public static final String RPC_METHOD_DESCRIPTION = "RPC method used: {auto, GRPC, REST}. When auto, it will first try with GRPC and "
+            + "if that does not work, it will try with REST";
 }

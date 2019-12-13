@@ -109,7 +109,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 }
                 if (!success) {
                     File file = getOutDir().resolve(STDERR_FILENAME).toFile();
-                    String msg = "Something wrong executing Samtools";
+                    String msg = "Something wrong happened when executing Samtools";
                     if (file.exists()) {
                         msg = StringUtils.join(FileUtils.readLines(file, Charset.defaultCharset()), ". ");
                     }

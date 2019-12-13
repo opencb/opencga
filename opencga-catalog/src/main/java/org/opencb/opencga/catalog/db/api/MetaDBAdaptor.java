@@ -29,8 +29,6 @@ public interface MetaDBAdaptor {
     String SECRET_KEY = "secretKey";
     String ALGORITHM = "algorithm";
 
-    String getAdminPassword() throws CatalogDBException;
-
     String readSecretKey() throws CatalogDBException;
 
     String readAlgorithm() throws CatalogDBException;

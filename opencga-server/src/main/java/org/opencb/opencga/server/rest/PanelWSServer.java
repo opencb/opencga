@@ -172,7 +172,6 @@ public class PanelWSServer extends OpenCGAWSServer {
             @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Boolean indicating which panels are queried (installation or study specific panels)",
                     defaultValue = "false") @QueryParam("global") boolean global,
-            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
             @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of samples in the specified release)") @QueryParam("snapshot")
@@ -181,19 +180,11 @@ public class PanelWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove("global");
 
-            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
-
             if (global) {
                 studyStr = PanelManager.INSTALLATION_PANELS;
             }
 
-            DataResult<Panel> queryResult;
-            if (count) {
-                queryResult = panelManager.count(studyStr, query, token);
-            } else {
-                queryResult = panelManager.search(studyStr, query, queryOptions, token);
-            }
-            return createOkResponse(queryResult);
+            return createOkResponse(panelManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

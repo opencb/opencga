@@ -33,7 +33,6 @@ import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.rest.RestResponse;
@@ -41,7 +40,6 @@ import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
 import org.opencb.opencga.server.grpc.ServiceTypesModel;
 import org.opencb.opencga.server.rest.analysis.AlignmentAnalysisWSService;
-import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -92,8 +90,8 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             case "coverage-query":
                 queryResponse = coverageQuery();
                 break;
-            case "coverage-log2ratio":
-                queryResponse = coverageLog2Ratio();
+            case "coverage-ratio":
+                queryResponse = coverageRatio();
                 break;
             case BwaWrapperAnalysis.ID:
                 queryResponse = bwa();
@@ -112,22 +110,19 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
-    private RestResponse index() throws CatalogException, IOException {
+    private RestResponse index() throws IOException {
         logger.debug("Indexing alignment(s)");
+        AlignmentCommandOptions.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
 
-        String fileIds = alignmentCommandOptions.indexAlignmentCommandOptions.fileId;
-
-        ObjectMap o = new ObjectMap();
-        o.putIfNotNull("study", alignmentCommandOptions.indexAlignmentCommandOptions.study);
-        o.putIfNotNull("outDir", alignmentCommandOptions.indexAlignmentCommandOptions.outdirId);
-
-        return openCGAClient.getAlignmentClient().index(fileIds, o);
+        return openCGAClient.getAlignmentClient().index(cliOptions.study, cliOptions.file);
     }
 
-    private void query() throws CatalogException, IOException, InterruptedException {
+    private void query() throws IOException, InterruptedException {
         logger.debug("Querying alignment(s)");
 
-        String rpc = alignmentCommandOptions.queryAlignmentCommandOptions.rpc;
+        AlignmentCommandOptions.QueryAlignmentCommandOptions cliOptions = alignmentCommandOptions.queryAlignmentCommandOptions;
+
+        String rpc = cliOptions.rpc;
         if (rpc == null) {
             rpc = "auto";
         }
@@ -135,12 +130,12 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         RestResponse<ReadAlignment> queryResponse = null;
 
         if (rpc.toLowerCase().equals("rest")) {
-            queryResponse = queryRest(alignmentCommandOptions.queryAlignmentCommandOptions);
+            queryResponse = queryRest(cliOptions);
         } else if (rpc.toLowerCase().equals("grpc")) {
-            queryGRPC(alignmentCommandOptions.queryAlignmentCommandOptions);
+            queryGRPC(cliOptions);
         } else {
             try {
-                queryGRPC(alignmentCommandOptions.queryAlignmentCommandOptions);
+                queryGRPC(cliOptions);
             } catch(Exception e) {
                 System.out.println("GRPC not available. Trying on REST.");
                 queryResponse = queryRest(alignmentCommandOptions.queryAlignmentCommandOptions);
@@ -149,7 +144,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         // It will only enter this if when the query has been done via REST
         if (queryResponse != null) {
-            if (alignmentCommandOptions.queryAlignmentCommandOptions.commonOptions.outputFormat.toLowerCase().contains("text")) {
+            if (!cliOptions.count && cliOptions.commonOptions.outputFormat.toLowerCase().contains("text")) {
                 SAMRecordToAvroReadAlignmentBiConverter converter = new SAMRecordToAvroReadAlignmentBiConverter();
                 for (ReadAlignment readAlignment : queryResponse.allResults()) {
                     System.out.print(converter.from(readAlignment).getSAMString());
@@ -169,24 +164,41 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private RestResponse<ReadAlignment> queryRest(AlignmentCommandOptions.QueryAlignmentCommandOptions commandOptions)
-            throws CatalogException, IOException {
+    private RestResponse queryRest(AlignmentCommandOptions.QueryAlignmentCommandOptions cliOptions)
+            throws IOException {
 
         String study = resolveStudy(alignmentCommandOptions.queryAlignmentCommandOptions.study);
 
-        String fileIds = commandOptions.fileId;
+        ObjectMap params = new ObjectMap();
 
-        ObjectMap o = new ObjectMap();
-        o.putIfNotNull("study", study);
-        o.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), commandOptions.region);
-        o.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), commandOptions.minMappingQuality);
-        o.putIfNotNull("limit", commandOptions.limit);
+        params.putIfNotEmpty(REGION_PARAM, cliOptions.region);
+        params.putIfNotEmpty(GENE_PARAM, cliOptions.gene);
+        params.putIfNotNull(CODING_OFFSET_PARAM, cliOptions.codingOffset);
+        params.putIfNotNull(ONLY_EXONS_PARAM, cliOptions.onlyExons);
+        params.putIfNotNull(MINIMUM_MAPPING_QUALITY_PARAM, cliOptions.minMappingQuality);
+        params.putIfNotNull(MAXIMUM_NUMBER_MISMATCHES_PARAM, cliOptions.maxNumMismatches);
+        params.putIfNotNull(MAXIMUM_NUMBER_HITS_PARAM, cliOptions.maxNumHits);
+        params.putIfNotNull(PROPERLY_PAIRED_PARAM, cliOptions.properlyPaired);
+        params.putIfNotNull(MAXIMUM_INSERT_SIZE_PARAM, cliOptions.maxInsertSize);
+        params.putIfNotNull(SKIP_UNMAPPED_PARAM, cliOptions.skipUnmapped);
+        params.putIfNotNull(SKIP_DUPLICATED_PARAM, cliOptions.skipDuplicated);
+        params.putIfNotNull(REGION_CONTAINED_PARAM, cliOptions.contained);
+        params.putIfNotNull(FORCE_MD_FIELD_PARAM, cliOptions.forceMDField);
+        params.putIfNotNull(BIN_QUALITIES_PARAM, cliOptions.binQualities);
+        params.putIfNotNull(SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION, cliOptions.splitResults);
 
-        RestResponse<ReadAlignment> query = openCGAClient.getAlignmentClient().query(fileIds, o);
-        return query;
+        params.putIfNotNull(QueryOptions.LIMIT, cliOptions.limit);
+        params.putIfNotNull(QueryOptions.SKIP, cliOptions.skip);
+        params.putIfNotNull(QueryOptions.COUNT, cliOptions.count);
+
+        if (cliOptions.count) {
+            return openCGAClient.getAlignmentClient().count(study, cliOptions.file, params);
+        } else {
+            return openCGAClient.getAlignmentClient().query(study, cliOptions.file, params);
+        }
     }
 
-    private void queryGRPC(AlignmentCommandOptions.QueryAlignmentCommandOptions commandOptions) throws InterruptedException {
+    private void queryGRPC(AlignmentCommandOptions.QueryAlignmentCommandOptions cliOptions) throws InterruptedException {
 //        StopWatch watch = new StopWatch();
 //        watch.start();
         // We create the OpenCGA gRPC request object with the query, queryOptions, storageEngine and database
@@ -194,18 +206,25 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         String study = resolveStudy(alignmentCommandOptions.queryAlignmentCommandOptions.study);
 
         Map<String, String> query = new HashMap<>();
-        addParam(query, "fileId", commandOptions.fileId);
-        addParam(query, "sid", commandOptions.commonOptions.token);
-        addParam(query, "study", study);
-        addParam(query, AlignmentDBAdaptor.QueryParams.REGION.key(), commandOptions.region);
-        addParam(query, AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), commandOptions.minMappingQuality);
+        addParam(query, FILE_ID_PARAM, cliOptions.file);
+        addParam(query, "sid", cliOptions.commonOptions.token);
+        addParam(query, STUDY_PARAM, study);
+        addParam(query, REGION_PARAM, cliOptions.region);
+        addParam(query, GENE_PARAM, cliOptions.gene);
+        addParam(query, MINIMUM_MAPPING_QUALITY_PARAM, cliOptions.minMappingQuality);
+        addParam(query, MAXIMUM_NUMBER_MISMATCHES_PARAM, cliOptions.maxNumMismatches);
+        addParam(query, MAXIMUM_NUMBER_HITS_PARAM, cliOptions.maxNumHits);
+        addParam(query, PROPERLY_PAIRED_PARAM, cliOptions.properlyPaired);
+        addParam(query, MAXIMUM_INSERT_SIZE_PARAM, cliOptions.maxInsertSize);
+        addParam(query, SKIP_UNMAPPED_PARAM, cliOptions.skipUnmapped);
+        addParam(query, SKIP_DUPLICATED_PARAM, cliOptions.skipDuplicated);
 
         Map<String, String> queryOptions = new HashMap<>();
-        addParam(queryOptions, AlignmentDBAdaptor.QueryParams.CONTAINED.key(), commandOptions.contained);
-        addParam(queryOptions, AlignmentDBAdaptor.QueryParams.MD_FIELD.key(), commandOptions.mdField);
-        addParam(queryOptions, AlignmentDBAdaptor.QueryParams.BIN_QUALITIES.key(),commandOptions.binQualities);
-        addParam(queryOptions, QueryOptions.LIMIT, commandOptions.limit);
-        addParam(queryOptions, QueryOptions.SKIP, commandOptions.skip);
+        addParam(queryOptions, REGION_CONTAINED_PARAM, cliOptions.contained);
+        addParam(queryOptions, FORCE_MD_FIELD_PARAM, cliOptions.forceMDField);
+        addParam(queryOptions, BIN_QUALITIES_PARAM,cliOptions.binQualities);
+        addParam(queryOptions, QueryOptions.LIMIT, cliOptions.limit);
+        addParam(queryOptions, QueryOptions.SKIP, cliOptions.skip);
 
         GenericAlignmentServiceModel.Request request = GenericAlignmentServiceModel.Request.newBuilder()
                 .putAllQuery(query)
@@ -230,20 +249,20 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         // We use a blocking stub to execute the query to gRPC
         AlignmentServiceGrpc.AlignmentServiceBlockingStub serviceBlockingStub = AlignmentServiceGrpc.newBlockingStub(channel);
 
-        if (commandOptions.count) {
+        if (cliOptions.count) {
             ServiceTypesModel.LongResponse count = serviceBlockingStub.count(request);
             String pretty = "";
-            if (commandOptions.commonOptions.outputFormat.toLowerCase().equals("extended_text")) {
+            if (cliOptions.commonOptions.outputFormat.toLowerCase().equals("extended_text")) {
                 pretty = "\nThe number of alignments is ";
             }
             System.out.println(pretty + count.getValue() + "\n");
         } else {
-            if (commandOptions.commonOptions.outputFormat.toLowerCase().contains("text")) {
+            if (cliOptions.commonOptions.outputFormat.toLowerCase().contains("text")) {
                 // Output in SAM format
                 Iterator<ServiceTypesModel.StringResponse> alignmentIterator = serviceBlockingStub.getAsSam(request);
 //                watch.stop();
 //                System.out.println("Time: " + watch.getTime());
-                int limit = commandOptions.limit;
+                int limit = cliOptions.limit;
                 if (limit > 0) {
                     long cont = 0;
                     while (alignmentIterator.hasNext() && cont < limit) {
@@ -263,7 +282,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 Iterator<Reads.ReadAlignment> alignmentIterator = serviceBlockingStub.get(request);
 //                watch.stop();
 //                System.out.println("Time: " + watch.getTime());
-                int limit = commandOptions.limit;
+                int limit = cliOptions.limit;
                 if (limit > 0) {
                     long cont = 0;
                     while (alignmentIterator.hasNext() && cont < limit) {
@@ -290,13 +309,13 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> statsRun() throws IOException {
         AlignmentCommandOptions.StatsAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsAlignmentCommandOptions;
 
-        return openCGAClient.getAlignmentClient().statsRun(cliOptions.study, cliOptions.inputFile);
+        return openCGAClient.getAlignmentClient().statsRun(cliOptions.study, cliOptions.file);
     }
 
     private RestResponse<String> statsInfo() throws IOException {
         AlignmentCommandOptions.StatsInfoAlignmentCommandOptions cliOptions = alignmentCommandOptions.statsInfoAlignmentCommandOptions;
 
-        return openCGAClient.getAlignmentClient().statsInfo(cliOptions.study, cliOptions.inputFile);
+        return openCGAClient.getAlignmentClient().statsInfo(cliOptions.study, cliOptions.file);
     }
 
     private RestResponse<File> statsQuery() throws IOException {
@@ -337,21 +356,37 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     private RestResponse<Job> coverageRun() throws IOException {
         AlignmentCommandOptions.CoverageAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageAlignmentCommandOptions;
 
-        return openCGAClient.getAlignmentClient().coverageRun(cliOptions.study, cliOptions.inputFile, cliOptions.windowSize);
+        return openCGAClient.getAlignmentClient().coverageRun(cliOptions.study, cliOptions.file, cliOptions.windowSize);
     }
 
     private RestResponse<RegionCoverage> coverageQuery() throws IOException {
         AlignmentCommandOptions.CoverageQueryAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageQueryAlignmentCommandOptions;
 
-        return openCGAClient.getAlignmentClient().coverageQuery(cliOptions.study, cliOptions.inputFile, cliOptions.region, cliOptions.gene,
-                cliOptions.geneOffset, cliOptions.onlyExons, cliOptions.exonOffset, cliOptions.range, cliOptions.windowSize);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(REGION_PARAM, cliOptions.region);
+        params.putIfNotEmpty(GENE_PARAM, cliOptions.gene);
+        params.putIfNotNull(CODING_OFFSET_PARAM, cliOptions.codingOffset);
+        params.putIfNotNull(ONLY_EXONS_PARAM, cliOptions.onlyExons);
+        params.putIfNotEmpty(COVERAGE_RANGE_PARAM, cliOptions.range);
+        params.putIfNotNull(COVERAGE_WINDOW_SIZE_PARAM, cliOptions.windowSize);
+        params.putIfNotNull(SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION, cliOptions.splitResults);
+
+        return openCGAClient.getAlignmentClient().coverageQuery(cliOptions.study, cliOptions.file, params);
     }
 
-    private RestResponse<RegionCoverage> coverageLog2Ratio() throws IOException {
-        AlignmentCommandOptions.CoverageLog2RatioAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageLog2RatioAlignmentCommandOptions;
+    private RestResponse<RegionCoverage> coverageRatio() throws IOException {
+        AlignmentCommandOptions.CoverageRatioAlignmentCommandOptions cliOptions = alignmentCommandOptions.coverageRatioAlignmentCommandOptions;
 
-        return openCGAClient.getAlignmentClient().coverageLog2Ratio(cliOptions.study, cliOptions.inputFile1, cliOptions.inputFile2, cliOptions.region,
-                cliOptions.gene, cliOptions.geneOffset, cliOptions.onlyExons, cliOptions.exonOffset, cliOptions.windowSize);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(SKIP_LOG2_DESCRIPTION, cliOptions.skipLog2);
+        params.putIfNotEmpty(REGION_PARAM, cliOptions.region);
+        params.putIfNotEmpty(GENE_PARAM, cliOptions.gene);
+        params.putIfNotNull(CODING_OFFSET_PARAM, cliOptions.codingOffset);
+        params.putIfNotNull(ONLY_EXONS_PARAM, cliOptions.onlyExons);
+        params.putIfNotNull(COVERAGE_WINDOW_SIZE_PARAM, cliOptions.windowSize);
+        params.putIfNotNull(SPLIT_RESULTS_INTO_REGIONS_DESCRIPTION, cliOptions.splitResults);
+
+        return openCGAClient.getAlignmentClient().coverageRatio(cliOptions.study, cliOptions.file1, cliOptions.file2, params);
     }
 
     //-------------------------------------------------------------------------

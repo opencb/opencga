@@ -763,7 +763,7 @@ public class InterpretationWSService extends AnalysisWSService {
     }
 
 
-    @GET
+    @POST
     @Path("/interpretation/team/run")
     @ApiOperation(value = "TEAM interpretation analysis", position = 14, response = QueryResponse.class)
     @ApiImplicitParams({
@@ -795,7 +795,7 @@ public class InterpretationWSService extends AnalysisWSService {
         }
     }
 
-    @GET
+    @POST
     @Path("/interpretation/tiering/run")
     @ApiOperation(value = "GEL Tiering interpretation analysis", position = 14, response = QueryResponse.class)
     @ApiImplicitParams({
@@ -828,7 +828,7 @@ public class InterpretationWSService extends AnalysisWSService {
         }
     }
 
-    @GET
+    @POST
     @Path("/interpretation/custom/run")
     @ApiOperation(value = "Interpretation custom analysis", position = 15, response = QueryResponse.class)
     @ApiImplicitParams({
@@ -943,7 +943,7 @@ public class InterpretationWSService extends AnalysisWSService {
         }
     }
 
-    @GET
+    @POST
     @Path("/interpretation/cancerTiering/run")
     @ApiOperation(value = "Cancer Tiering interpretation analysis", position = 14, response = QueryResponse.class)
     @ApiImplicitParams({

@@ -975,12 +975,12 @@ public class FileManagerTest extends AbstractManagerTest {
         result = fileManager.search(studyFqn, query, null, sessionIdUser);
         assertEquals(1, result.getNumResults());
 
-        QueryOptions options = new QueryOptions(QueryOptions.LIMIT, 2);
+        QueryOptions options = new QueryOptions(QueryOptions.LIMIT, 2).append(QueryOptions.COUNT, true);
         result = fileManager.search(studyFqn, new Query(), options, sessionIdUser);
         assertEquals(2, result.getNumResults());
         assertEquals(8, result.getNumMatches());
 
-        options = new QueryOptions(QueryOptions.LIMIT, 2).append(QueryOptions.SKIP_COUNT, true);
+        options = new QueryOptions(QueryOptions.LIMIT, 2);
         result = fileManager.search(studyFqn, new Query(), options, sessionIdUser);
         assertEquals(2, result.getNumResults());
         assertEquals(2, result.getNumMatches());
