@@ -42,7 +42,6 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
-import org.opencb.opencga.catalog.models.update.JobUpdateParams;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
@@ -54,6 +53,7 @@ import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutorResultManager;
 import org.opencb.opencga.core.tools.result.Status;
+import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -227,7 +227,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 ExecutionResult result = readAnalysisResult(job);
                 if (result != null) {
                     // Update the result of the job
-                    JobUpdateParams updateParams = new JobUpdateParams().setResult(result);
+                    PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setResult(result);
                     String study = String.valueOf(job.getAttributes().get(Job.OPENCGA_STUDY));
                     try {
                         jobManager.update(study, job.getId(), updateParams, QueryOptions.empty(), token);
@@ -341,7 +341,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             return abortJob(job, "Internal error. Could not obtain token for user '" + job.getUserId() + "'");
         }
 
-        JobUpdateParams updateParams = new JobUpdateParams();
+        PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams();
 
         Map<String, Object> params = job.getParams();
         String outDirPathParam = (String) params.get(OUTDIR_PARAM);
@@ -560,7 +560,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private int setStatus(Job job, Enums.ExecutionStatus status) {
-        JobUpdateParams updateParams = new JobUpdateParams().setStatus(status);
+        PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setStatus(status);
 
         String study = String.valueOf(job.getAttributes().get(Job.OPENCGA_STUDY));
         if (StringUtils.isEmpty(study)) {
@@ -695,7 +695,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         if (analysisResultPath != null) {
             execution = readAnalysisResult(analysisResultPath);
             if (execution != null) {
-                JobUpdateParams updateParams = new JobUpdateParams().setResult(execution);
+                PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setResult(execution);
                 try {
                     jobManager.update(study, job.getId(), updateParams, QueryOptions.empty(), token);
                 } catch (CatalogException e) {
@@ -720,7 +720,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         }
 
         // Register the job information
-        JobUpdateParams updateParams = new JobUpdateParams();
+        PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams();
 
         // Process output and log files
         List<File> outputFiles = new ArrayList<>(registeredFiles.size());

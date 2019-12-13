@@ -10,7 +10,11 @@ public class ParamConstants {
     public static final String COUNT_DESCRIPTION = "Get the total number of results matching the query. Deactivated by default.";
 
     public static final String CREATION_DATE_DESCRIPTION = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
+    public static final String CREATION_DATE_PARAM = "creationDate";
     public static final String MODIFICATION_DATE_DESCRIPTION = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
+    public static final String MODIFICATION_DATE_PARAM = "modificationDate";
+    public static final String RELEASE_PARAM = "release";
+    public static final String RELEASE_DESCRIPTION = "Release when it was created";
 
     // ---------------------------------------------
 
@@ -25,9 +29,9 @@ public class ParamConstants {
     // ---------------------------------------------
 
     public static final String STUDY_PARAM = "study";
-    public static final String STUDY_DESCRIPTION = "Study [[user@]project:]study where study and project can be either the id or alias";
+    public static final String STUDY_DESCRIPTION = "Study [[user@]project:]study where study and project can be either the ID or UUID";
     public static final String STUDIES_PARAM = "studies";
-    public static final String STUDIES_DESCRIPTION = "Comma separated list of Studies [[user@]project:]study where study and project can be either the id or alias" + UP_TO_100;
+    public static final String STUDIES_DESCRIPTION = "Comma separated list of Studies [[user@]project:]study where study and project can be either the ID or UUID" + UP_TO_100;
 
     public static final String STUDY_NAME_DESCRIPTION = "Study name";
     public static final String STUDY_ID_DESCRIPTION = "Study id";
@@ -55,8 +59,8 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String SAMPLE_DESCRIPTION = "Sample id or name";
-    public static final String SAMPLES_DESCRIPTION = "Comma separated list sample IDs or names" + UP_TO_100;
+    public static final String SAMPLE_DESCRIPTION = "Sample ID or UUID";
+    public static final String SAMPLES_DESCRIPTION = "Comma separated list sample IDs or UUIDs" + UP_TO_100;
 
     public static final String SAMPLE_ID_DESCRIPTION = "Sample id";
     public static final String SAMPLE_NAME_DESCRIPTION = "Sample name";
@@ -90,13 +94,31 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String JOBS_DESCRIPTION = "Comma separated list of job ids or names" + UP_TO_100;
+    public static final String JOB_DESCRIPTION = "Job ID or UUID";
+    public static final String JOBS_DESCRIPTION = "Comma separated list of job IDs or UUIDs" + UP_TO_100;
+
+    public static final String JOB_ID_DESCRIPTION = "Job ID";
     public static final String JOB_NAME = "jobName";
-    public static final String JOB_NAME_DESCRIPTION = "Job Name";
-    public static final String JOB_DESCRIPTION = "jobDescription";
+    public static final String JOB_NAME_PARAM = "name";
+    public static final String JOB_NAME_DESCRIPTION = "Job name";
     public static final String JOB_DESCRIPTION_DESCRIPTION = "Job Description";
+    public static final String JOB_TOOL_PARAM = "tool";
+    public static final String JOB_TOOL_DESCRIPTION = "Tool executed by the job";
+    public static final String JOB_USER_PARAM = "user";
+    public static final String JOB_USER_DESCRIPTION = "User that created the job";
+    public static final String JOB_PRIORITY_PARAM = "priority";
+    public static final String JOB_PRIORITY_DESCRIPTION = "Priority of the job";
+    public static final String JOB_STATUS_PARAM = "status";
+    public static final String JOB_STATUS_DESCRIPTION = "Job status";
+    public static final String JOB_VISITED_PARAM = "visited";
+    public static final String JOB_VISITED_DESCRIPTION = "Visited status of job";
     public static final String JOB_TAGS = "jobTags";
-    public static final String JOB_TAGS_DESCRIPTION = "Job Tags";
+    public static final String JOB_TAGS_PARAM = "tags";
+    public static final String JOB_TAGS_DESCRIPTION = "Job tags";
+    public static final String JOB_INPUT_FILES_PARAM = "input";
+    public static final String JOB_INPUT_FILES_DESCRIPTION = "Comma separated list of file ids used as input.";
+    public static final String JOB_OUTPUT_FILES_PARAM = "output";
+    public static final String JOB_OUTPUT_FILES_DESCRIPTION = "Comma separated list of file ids used as output.";
 
     // ---------------------------------------------
 
