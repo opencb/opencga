@@ -203,31 +203,6 @@ public class PanelWSServer extends OpenCGAWSServer {
         }
     }
 
-    @DELETE
-    @Path("/delete")
-    @ApiOperation(value = "Delete existing panels")
-    public Response delete(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Panel id") @QueryParam("id") String id,
-            @ApiParam(value = "Panel name") @QueryParam("name") String name,
-            @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Panel variants") @QueryParam("variants") String variants,
-            @ApiParam(value = "Panel genes") @QueryParam("genes") String genes,
-            @ApiParam(value = "Panel regions") @QueryParam("regions") String regions,
-            @ApiParam(value = "Panel categories") @QueryParam("categories") String categories,
-            @ApiParam(value = "Panel tags") @QueryParam("tags") String tags,
-            @ApiParam(value = "Panel description") @QueryParam("description") String description,
-            @ApiParam(value = "Panel author") @QueryParam("author") String author,
-            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = "Release") @QueryParam("release") String release) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(panelManager.delete(studyStr, query, queryOptions, true, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     @GET
     @Path("/groupBy")
     @ApiOperation(value = "Group panels by several fields", position = 10, hidden = true,
