@@ -58,29 +58,10 @@ public class Job extends PrivateStudyUid {
     private boolean visited;
 
     private int release;
+    private String studyUuid;
     private Map<String, Object> attributes;
 
-    public static final String OPENCGA_STUDY = "OPENCGA_STUDY";
     public static final String OPENCGA_PARENTS = "OPENCGA_PARENTS";
-//    public static final String OPENCGA_TMP_DIR = "OPENCGA_TMP_DIR";
-//
-//    /* ResourceManagerAttributes known keys */
-//    public static final String JOB_SCHEDULER_NAME = "jobSchedulerName";
-//    /* Errors */
-//    public static final Map<String, String> ERROR_DESCRIPTIONS;
-//    public static final String ERRNO_NONE = null;
-//    public static final String ERRNO_NO_QUEUE = "ERRNO_NO_QUEUE";
-//    public static final String ERRNO_FINISH_ERROR = "ERRNO_FINISH_ERROR";
-//    public static final String ERRNO_ABORTED = "ERRNO_ABORTED";
-//
-//    static {
-//        HashMap<String, String> map = new HashMap<>();
-//        map.put(ERRNO_NONE, null);
-//        map.put(ERRNO_NO_QUEUE, "Unable to queue job");
-//        map.put(ERRNO_FINISH_ERROR, "Job finished with exit value != 0");
-//        map.put(ERRNO_ABORTED, "Job aborted");
-//        ERROR_DESCRIPTIONS = Collections.unmodifiableMap(map);
-//    }
 
     public Job() {
     }
@@ -88,7 +69,7 @@ public class Job extends PrivateStudyUid {
     public Job(String id, String uuid, String name, String description, ToolInfo tool, String userId, String commandLine,
                Map<String, Object> params, String creationDate, String modificationDate, Enums.Priority priority,
                Enums.ExecutionStatus status, File outDir, List<File> input, List<File> output, List<String> tags, ExecutionResult execution,
-               boolean visited, File stdout, File stderr, int release, Map<String, Object> attributes) {
+               boolean visited, File stdout, File stderr, int release, String studyUuid, Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
         this.name = name;
@@ -110,6 +91,7 @@ public class Job extends PrivateStudyUid {
         this.stdout = stdout;
         this.stderr = stderr;
         this.release = release;
+        this.studyUuid = studyUuid;
         this.attributes = attributes;
     }
 
@@ -137,6 +119,7 @@ public class Job extends PrivateStudyUid {
         sb.append(", stdout=").append(stdout);
         sb.append(", stderr=").append(stderr);
         sb.append(", release=").append(release);
+        sb.append(", studyUuid=").append(studyUuid);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -343,6 +326,15 @@ public class Job extends PrivateStudyUid {
 
     public Job setRelease(int release) {
         this.release = release;
+        return this;
+    }
+
+    public String getStudyUuid() {
+        return studyUuid;
+    }
+
+    public Job setStudyUuid(String studyUuid) {
+        this.studyUuid = studyUuid;
         return this;
     }
 

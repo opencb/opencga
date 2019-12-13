@@ -246,6 +246,7 @@ public class JobManager extends ResourceManager<Job> {
             job.setUserId(userId);
             job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
             job.setOutDir(job.getOutDir() != null && StringUtils.isNotEmpty(job.getOutDir().getPath()) ? job.getOutDir() : null);
+            job.setStudyUuid(study.getUuid());
 
             if (!Arrays.asList(Enums.ExecutionStatus.ABORTED, Enums.ExecutionStatus.DONE, Enums.ExecutionStatus.UNREGISTERED,
                     Enums.ExecutionStatus.ERROR).contains(job.getStatus().getName())) {
@@ -362,6 +363,8 @@ public class JobManager extends ResourceManager<Job> {
             }
         }
         job.setInput(inputFiles);
+
+        job.setAttributes(ParamUtils.defaultObject(job.getAttributes(), HashMap::new));
     }
 
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String token)
@@ -391,12 +394,9 @@ public class JobManager extends ResourceManager<Job> {
         try {
             authorizationManager.checkStudyPermission(study.getUid(), userId, StudyAclEntry.StudyPermissions.EXECUTION);
 
-            Map<String, Object> attributes = new HashMap<>();
-            attributes.put(Job.OPENCGA_STUDY, study.getFqn());
-
+            job.setStudyUuid(study.getUuid());
             job.setUserId(userId);
             job.setParams(params);
-            job.setAttributes(attributes);
             job.setPriority(priority);
 
             autoCompleteNewJob(study, job, token);

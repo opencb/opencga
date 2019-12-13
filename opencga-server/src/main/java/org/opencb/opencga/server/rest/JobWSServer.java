@@ -64,7 +64,8 @@ public class JobWSServer extends OpenCGAWSServer {
         public InputJob() {
         }
 
-        public InputJob(String id, String name, String description, String commandLine, Map<String, Object> params, Enums.ExecutionStatus status) {
+        public InputJob(String id, String name, String description, String commandLine, Map<String, Object> params,
+                        Enums.ExecutionStatus status) {
             this.id = id;
             this.name = name;
             this.description = description;
@@ -173,7 +174,7 @@ public class JobWSServer extends OpenCGAWSServer {
                     outDir != null ? outDir.toFile() : null,
                     getInput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
                     getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
-                    tags, result, false, log != null ? log.toFile() : null, errorLog != null ? errorLog.toFile() : null, 1, attributes);
+                    tags, result, false, log != null ? log.toFile() : null, errorLog != null ? errorLog.toFile() : null, 1, null, attributes);
         }
 
     }
