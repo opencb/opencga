@@ -26,6 +26,8 @@ import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationA
 import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.file.FileDeleteAction;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.ToolFactory;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
@@ -46,6 +48,7 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.ToolInfo;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
@@ -326,8 +329,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             return abortJob(job, "Missing mandatory '" + Job.OPENCGA_STUDY + "' field");
         }
 
-        if (StringUtils.isEmpty(job.getToolId()) || !TOOL_CLI_MAP.containsKey(job.getToolId())) {
-            return abortJob(job, "Tool id '" + job.getToolId() + "' not found.");
+        if (StringUtils.isEmpty(job.getTool().getId()) || !TOOL_CLI_MAP.containsKey(job.getTool().getId())) {
+            return abortJob(job, "Tool id '" + job.getTool().getId() + "' not found.");
         }
 
         if (!canBeQueued(job)) {
@@ -370,8 +373,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         Path stderr = outDirPath.resolve(getErrorLogFileName(job));
         Path stdout = outDirPath.resolve(getLogFileName(job));
 
+        // TODO: Update tool information
+//        ToolInfo tool;
+//        ToolFactory toolFactory = new ToolFactory();
+//        OpenCgaTool analysisTool = toolFactory.getTool(job.getTool().getId());
+
         // Create cli
-        String commandLine = buildCli(internalCli, job.getToolId(), params);
+        String commandLine = buildCli(internalCli, job.getTool().getId(), params);
         String authenticatedCommandLine = commandLine + " --token " + userToken;
         String shadedCommandLine = commandLine + " --token xxxxxxxxxxxxxxxxxxxxx";
 
@@ -518,7 +526,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private boolean canBeQueued(Job job) {
-        if ("variant-index".equals(job.getToolId())) {
+        if ("variant-index".equals(job.getTool().getId())) {
             int maxIndexJobs = catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().getMaxConcurrentJobs();
             return canBeQueued("variant-index", maxIndexJobs);
         }
@@ -728,9 +736,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         String errorLogFileName = getErrorLogFileName(job);
         for (File registeredFile : registeredFiles) {
             if (registeredFile.getName().equals(logFileName)) {
-                updateParams.setLog(registeredFile);
+                updateParams.setStdout(registeredFile);
             } else if (registeredFile.getName().equals(errorLogFileName)) {
-                updateParams.setErrorLog(registeredFile);
+                updateParams.setStderr(registeredFile);
             } else {
                 outputFiles.add(registeredFile);
             }

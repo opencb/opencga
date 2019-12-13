@@ -41,6 +41,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.ToolInfo;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
@@ -271,11 +272,11 @@ public class JobManager extends ResourceManager<Job> {
                     throw new CatalogException("Unexpected outDir type. Expected " + File.Type.DIRECTORY);
                 }
             }
-            if (job.getLog() != null && StringUtils.isNotEmpty(job.getLog().getPath())) {
-                job.setLog(getFile(study.getUid(), job.getLog().getPath(), userId));
+            if (job.getStdout() != null && StringUtils.isNotEmpty(job.getStdout().getPath())) {
+                job.setStdout(getFile(study.getUid(), job.getStdout().getPath(), userId));
             }
-            if (job.getErrorLog() != null && StringUtils.isNotEmpty(job.getErrorLog().getPath())) {
-                job.setErrorLog(getFile(study.getUid(), job.getErrorLog().getPath(), userId));
+            if (job.getStderr() != null && StringUtils.isNotEmpty(job.getStderr().getPath())) {
+                job.setStderr(getFile(study.getUid(), job.getStderr().getPath(), userId));
             }
 
             job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
@@ -297,7 +298,7 @@ public class JobManager extends ResourceManager<Job> {
 
         // Auto generate id
         if (StringUtils.isEmpty(job.getId())) {
-            job.setId(job.getToolId() + "." + TimeUtils.getTime() + "." + org.opencb.commons.utils.StringUtils.randomString(6));
+            job.setId(job.getTool().getId() + "." + TimeUtils.getTime() + "." + org.opencb.commons.utils.StringUtils.randomString(6));
         }
         job.setPriority(ParamUtils.defaultObject(job.getPriority(), Enums.Priority.MEDIUM));
         job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
@@ -384,7 +385,7 @@ public class JobManager extends ResourceManager<Job> {
         job.setId(jobId);
         job.setName(jobName);
         job.setDescription(jobDescription);
-        job.setToolId(toolId);
+        job.setTool(new ToolInfo().setId(toolId));
         job.setTags(jobTags);
 
         try {

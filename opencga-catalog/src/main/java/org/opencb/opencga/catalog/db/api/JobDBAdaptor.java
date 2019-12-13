@@ -103,7 +103,8 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
 
-        TOOL_ID("toolId", TEXT, ""),
+        TOOL("tool", TEXT, ""),
+        TOOL_ID("tool.id", TEXT, ""),
 
         PRIORITY("priority", TEXT, ""),
 
@@ -116,8 +117,8 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
 
         RESULT("result", OBJECT, ""),
 
-        LOG("log", OBJECT, ""),
-        ERROR_LOG("errorLog", OBJECT, ""),
+        STDOUT("stdout", OBJECT, ""),
+        STDERR("stderr", OBJECT, ""),
 
         RELEASE("release", INTEGER, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

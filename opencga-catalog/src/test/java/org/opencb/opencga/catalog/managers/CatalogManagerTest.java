@@ -786,7 +786,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         // The previous execution should have created an ABORTED job
         OpenCGAResult<Job> search = catalogManager.getJobManager().search(studyFqn, query, null, sessionIdUser);
         assertEquals(1, search.getNumResults());
-        assertEquals("variant-index", search.first().getToolId());
+        assertEquals("variant-index", search.first().getTool().getId());
     }
 
     @Test

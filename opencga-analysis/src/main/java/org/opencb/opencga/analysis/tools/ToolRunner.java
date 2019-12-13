@@ -46,7 +46,7 @@ public class ToolRunner {
         query.put(JobDBAdaptor.QueryParams.UID.key(), jobId);
         Job job = catalogManager.getJobManager().search(null, query, QueryOptions.empty(), token).first();
 
-        return execute(job.getToolId(), new ObjectMap(job.getParams()), Paths.get(job.getOutDir().getUri()), token);
+        return execute(job.getTool().getId(), new ObjectMap(job.getParams()), Paths.get(job.getOutDir().getUri()), token);
     }
 
     /**

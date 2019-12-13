@@ -32,7 +32,7 @@ public class Job extends PrivateStudyUid {
     private String name;
     private String description;
 
-    private String toolId;
+    private ToolInfo tool;
 
     private String userId;
     private String commandLine;
@@ -52,8 +52,8 @@ public class Job extends PrivateStudyUid {
 
     private ExecutionResult execution;
 
-    private File log;
-    private File errorLog;
+    private File stdout;
+    private File stderr;
 
     private boolean visited;
 
@@ -85,14 +85,14 @@ public class Job extends PrivateStudyUid {
     public Job() {
     }
 
-    public Job(String id, String uuid, String name, String description, String toolId, String userId, String commandLine,
+    public Job(String id, String uuid, String name, String description, ToolInfo tool, String userId, String commandLine,
                Map<String, Object> params, String creationDate, String modificationDate, Enums.Priority priority,
                Enums.ExecutionStatus status, File outDir, List<File> input, List<File> output, List<String> tags, ExecutionResult execution,
-               boolean visited, File log, File errorLog, int release, Map<String, Object> attributes) {
+               boolean visited, File stdout, File stderr, int release, Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
         this.name = name;
-        this.toolId = toolId;
+        this.tool = tool;
         this.description = description;
         this.userId = userId;
         this.commandLine = commandLine;
@@ -107,8 +107,8 @@ public class Job extends PrivateStudyUid {
         this.tags = tags;
         this.execution = execution;
         this.visited = visited;
-        this.log = log;
-        this.errorLog = errorLog;
+        this.stdout = stdout;
+        this.stderr = stderr;
         this.release = release;
         this.attributes = attributes;
     }
@@ -120,7 +120,7 @@ public class Job extends PrivateStudyUid {
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", toolId='").append(toolId).append('\'');
+        sb.append(", tool='").append(tool).append('\'');
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", commandLine='").append(commandLine).append('\'');
         sb.append(", params=").append(params);
@@ -134,8 +134,8 @@ public class Job extends PrivateStudyUid {
         sb.append(", tags=").append(tags);
         sb.append(", execution=").append(execution);
         sb.append(", visited=").append(visited);
-        sb.append(", log=").append(log);
-        sb.append(", errorLog=").append(errorLog);
+        sb.append(", stdout=").append(stdout);
+        sb.append(", stderr=").append(stderr);
         sb.append(", release=").append(release);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -193,12 +193,12 @@ public class Job extends PrivateStudyUid {
         return this;
     }
 
-    public String getToolId() {
-        return toolId;
+    public ToolInfo getTool() {
+        return tool;
     }
 
-    public Job setToolId(String toolId) {
-        this.toolId = toolId;
+    public Job setTool(ToolInfo tool) {
+        this.tool = tool;
         return this;
     }
 
@@ -319,21 +319,21 @@ public class Job extends PrivateStudyUid {
         return this;
     }
 
-    public File getLog() {
-        return log;
+    public File getStdout() {
+        return stdout;
     }
 
-    public Job setLog(File log) {
-        this.log = log;
+    public Job setStdout(File stdout) {
+        this.stdout = stdout;
         return this;
     }
 
-    public File getErrorLog() {
-        return errorLog;
+    public File getStderr() {
+        return stderr;
     }
 
-    public Job setErrorLog(File errorLog) {
-        this.errorLog = errorLog;
+    public Job setStderr(File stderr) {
+        this.stderr = stderr;
         return this;
     }
 

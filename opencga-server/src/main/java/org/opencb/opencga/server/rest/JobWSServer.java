@@ -30,6 +30,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.ToolInfo;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
@@ -76,7 +77,7 @@ public class JobWSServer extends OpenCGAWSServer {
         private String name;
         private String description;
 
-        private String toolId;
+        private ToolInfo tool;
 
         private Enums.Priority priority;
 
@@ -111,8 +112,12 @@ public class JobWSServer extends OpenCGAWSServer {
             return description;
         }
 
-        public String getToolId() {
-            return toolId;
+        public ToolInfo getTool() {
+            return tool;
+        }
+
+        public Enums.Priority getPriority() {
+            return priority;
         }
 
         public String getCommandLine() {
@@ -164,7 +169,7 @@ public class JobWSServer extends OpenCGAWSServer {
         }
 
         public Job toJob() {
-            return new Job(id, null, name, description, toolId, null, commandLine, params, creationDate, null, priority, status,
+            return new Job(id, null, name, description, tool, null, commandLine, params, creationDate, null, priority, status,
                     outDir != null ? outDir.toFile() : null,
                     getInput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
                     getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()),

@@ -42,8 +42,8 @@ public class JobConverter extends GenericDocumentComplexConverter<Job> {
 //        document.put(JobDBAdaptor.QueryParams.TMP_DIR.key(), convertFileToDocument(object.getTmpDir()));
         document.put(JobDBAdaptor.QueryParams.INPUT.key(), convertFilesToDocument(object.getInput()));
         document.put(JobDBAdaptor.QueryParams.OUTPUT.key(), convertFilesToDocument(object.getOutput()));
-        document.put(JobDBAdaptor.QueryParams.LOG.key(), convertFileToDocument(object.getLog()));
-        document.put(JobDBAdaptor.QueryParams.ERROR_LOG.key(), convertFileToDocument(object.getErrorLog()));
+        document.put(JobDBAdaptor.QueryParams.STDOUT.key(), convertFileToDocument(object.getStdout()));
+        document.put(JobDBAdaptor.QueryParams.STDERR.key(), convertFileToDocument(object.getStderr()));
         return document;
     }
 
