@@ -13,7 +13,9 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
@@ -23,10 +25,12 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.core.annotations.ToolExecutor;
+import org.opencb.opencga.core.api.variant.VariantExportParams;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -41,7 +45,10 @@ import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RunWith(Parameterized.class)
@@ -55,6 +62,7 @@ public class VariantAnalysisTest {
     public static final Phenotype PHENOTYPE = new Phenotype(PHENOTYPE_NAME, PHENOTYPE_NAME, "mySource")
             .setStatus(Phenotype.Status.OBSERVED);
     public static final String DB_NAME = "opencga_test_" + USER + "_" + PROJECT;
+    private ToolRunner toolRunner;
 
     @Parameterized.Parameters(name="{0}")
     public static Object[][] parameters() {
@@ -81,7 +89,7 @@ public class VariantAnalysisTest {
 
     private static String storageEngine;
     private static boolean indexed = false;
-    private static String sessionId;
+    private static String token;
     private static File file;
 
     @Before
@@ -113,36 +121,37 @@ public class VariantAnalysisTest {
             setUpCatalogManager();
 
 
-            file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", sessionId);
-            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), sessionId);
+            file = opencga.createFile(STUDY, "variant-test-file.vcf.gz", token);
+            variantStorageManager.index(STUDY, file.getId(), opencga.createTmpOutdir("_index"), new ObjectMap(VariantStorageOptions.ANNOTATE.key(), true), token);
 
             for (int i = 0; i < file.getSamples().size(); i++) {
                 if (i % 2 == 0) {
                     String id = file.getSamples().get(i).getId();
                     SampleUpdateParams updateParams = new SampleUpdateParams().setPhenotypes(Collections.singletonList(PHENOTYPE));
-                    catalogManager.getSampleManager().update(STUDY, id, updateParams, null, sessionId);
+                    catalogManager.getSampleManager().update(STUDY, id, updateParams, null, token);
                 }
             }
 
-            catalogManager.getCohortManager().create(STUDY, "c1", null, null, file.getSamples().subList(0, 2), null, null, sessionId);
-            catalogManager.getCohortManager().create(STUDY, "c2", null, null, file.getSamples().subList(2, 4), null, null, sessionId);
+            catalogManager.getCohortManager().create(STUDY, "c1", null, null, file.getSamples().subList(0, 2), null, null, token);
+            catalogManager.getCohortManager().create(STUDY, "c2", null, null, file.getSamples().subList(2, 4), null, null, token);
 
 
             if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
                 VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID, DB_NAME);
-                VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) engine.getDBAdaptor()), Paths.get(opencga.createTmpOutdir("_hbase")).toUri());
+                VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) engine.getDBAdaptor()), Paths.get(opencga.createTmpOutdir("_hbase_print_variants")).toUri());
             }
         }
+        toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
     }
 
     public void setUpCatalogManager() throws IOException, CatalogException {
         catalogManager.getUserManager().create(USER, "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, Account.Type.FULL, null);
-        sessionId = catalogManager.getUserManager().login("user", PASSWORD);
+        token = catalogManager.getUserManager().login("user", PASSWORD);
 
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
+                null, null, "GRCh38", new QueryOptions(), token).first().getId();
         catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null,
-                null, null, null, null, sessionId);
+                null, null, null, null, token);
 
         // Create 10 samples not indexed
         for (int i = 0; i < 10; i++) {
@@ -150,7 +159,7 @@ public class VariantAnalysisTest {
             if (i % 2 == 0) {
                 sample.setPhenotypes(Collections.singletonList(PHENOTYPE));
             }
-            catalogManager.getSampleManager().create(STUDY, sample, null, sessionId);
+            catalogManager.getSampleManager().create(STUDY, sample, null, token);
         }
 
     }
@@ -164,8 +173,8 @@ public class VariantAnalysisTest {
 
         VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
                 .setStudy(STUDY)
-                .setSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(1, 3)));
-        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
+                .setSamples(samples.subList(1, 3));
+        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
 
         ExecutionResult ar = variantStatsAnalysis.start();
         checkAnalysisResult(ar);
@@ -177,7 +186,7 @@ public class VariantAnalysisTest {
                 count.increment();
             }
         });
-        Assert.assertEquals(variantStorageManager.count(new Query(VariantQueryParam.STUDY.key(), STUDY), sessionId).first().intValue(),
+        Assert.assertEquals(variantStorageManager.count(new Query(VariantQueryParam.STUDY.key(), STUDY), token).first().intValue(),
                 count.intValue());
     }
 
@@ -189,8 +198,8 @@ public class VariantAnalysisTest {
 
         VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
                 .setStudy(STUDY)
-                .setCohorts(Arrays.asList("c1", "c2"));
-        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
+                .setCohort(Arrays.asList("c1", "c2"));
+        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
 
         ExecutionResult ar = variantStatsAnalysis.start();
         checkAnalysisResult(ar);
@@ -202,7 +211,7 @@ public class VariantAnalysisTest {
                 count.increment();
             }
         });
-        Assert.assertEquals(variantStorageManager.count(new Query(VariantQueryParam.STUDY.key(), STUDY), sessionId).first().intValue(),
+        Assert.assertEquals(variantStorageManager.count(new Query(VariantQueryParam.STUDY.key(), STUDY), token).first().intValue(),
                 count.intValue());
     }
 
@@ -212,13 +221,13 @@ public class VariantAnalysisTest {
         Path outDir = Paths.get(opencga.createTmpOutdir("_variant_stats_chr22"));
         System.out.println("output = " + outDir.toAbsolutePath());
         List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
-        Query variantsQuery = new Query(VariantQueryParam.REGION.key(), "22");
 
+        String region = "22";
         VariantStatsAnalysis variantStatsAnalysis = new VariantStatsAnalysis()
                 .setStudy(STUDY)
-                .setSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(1, 3)))
-                .setVariantsQuery(variantsQuery);
-        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
+                .setSamples(samples.subList(1, 3))
+                .setRegion(region);
+        variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
 
         ExecutionResult ar = variantStatsAnalysis.start();
         checkAnalysisResult(ar);
@@ -230,8 +239,9 @@ public class VariantAnalysisTest {
                 count.increment();
             }
         });
+        Query variantsQuery = new Query(VariantQueryParam.REGION.key(), region);
         System.out.println("variantsQuery = " + variantsQuery.toJson());
-        Assert.assertEquals(variantStorageManager.count(new Query(variantsQuery).append(VariantQueryParam.STUDY.key(), STUDY), sessionId).getNumMatches(),
+        Assert.assertEquals(variantStorageManager.count(new Query(variantsQuery).append(VariantQueryParam.STUDY.key(), STUDY), token).getNumMatches(),
                 count.intValue());
     }
 
@@ -249,7 +259,7 @@ public class VariantAnalysisTest {
         SampleVariantStatsAnalysis analysis = new SampleVariantStatsAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_sample_stats"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
         List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
         analysis.setSampleNames(samples)
                 .setStudy(STUDY)
@@ -257,7 +267,7 @@ public class VariantAnalysisTest {
         checkAnalysisResult(analysis.start());
 
         for (String sample : samples) {
-            AnnotationSet annotationSet = catalogManager.getSampleManager().get(STUDY, sample, null, sessionId).first().getAnnotationSets().get(0);
+            AnnotationSet annotationSet = catalogManager.getSampleManager().get(STUDY, sample, null, token).first().getAnnotationSets().get(0);
             SampleVariantStats sampleVariantStats = AvroToAnnotationConverter.convertAnnotationToAvro(annotationSet, SampleVariantStats.class);
             System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(annotationSet));
             System.out.println(JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(sampleVariantStats));
@@ -272,7 +282,7 @@ public class VariantAnalysisTest {
         CohortVariantStatsAnalysis analysis = new CohortVariantStatsAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_cohort_stats"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
         List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
         analysis.setStudy(STUDY)
                 .setSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(0, 3)));
@@ -285,7 +295,7 @@ public class VariantAnalysisTest {
         CohortVariantStatsAnalysis analysis = new CohortVariantStatsAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_cohort_stats_index"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
 
         analysis.setStudy(STUDY)
                 .setCohortName(StudyEntry.DEFAULT_COHORT)
@@ -294,12 +304,26 @@ public class VariantAnalysisTest {
     }
 
     @Test
+    public void testExport() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_export"));
+        System.out.println("outDir = " + outDir);
+        VariantExportParams variantExportParams = new VariantExportParams();
+        variantExportParams.appendQuery(new Query(VariantQueryParam.REGION.key(), "22"));
+        Assert.assertEquals("22", variantExportParams.getRegion());
+        variantExportParams.setCt("lof");
+        variantExportParams.setCompress(true);
+        variantExportParams.setOutputFileName("chr22");
+
+        toolRunner.execute(VariantExportTool.class, variantExportParams.toObjectMap(), outDir, token);
+    }
+
+    @Test
     public void testGwas() throws Exception {
         ObjectMap executorParams = new ObjectMap();
         GwasAnalysis analysis = new GwasAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_gwas"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
         List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
         analysis.setStudy(STUDY)
                 .setCaseCohortSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(0, 2)))
@@ -313,7 +337,7 @@ public class VariantAnalysisTest {
         GwasAnalysis analysis = new GwasAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_gwas_phenotype"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
 
         analysis.setStudy(STUDY)
                 .setPhenotype(PHENOTYPE_NAME);
@@ -329,10 +353,10 @@ public class VariantAnalysisTest {
         GwasAnalysis analysis = new GwasAnalysis();
         Path outDir = Paths.get(opencga.createTmpOutdir("_gwas_index"));
         System.out.println("output = " + outDir.toAbsolutePath());
-        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, sessionId);
+        analysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
 
-        catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CASE").setSamples(file.getSamples().subList(0, 2)), new QueryOptions(), sessionId);
-        catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CONTROL").setSamples(file.getSamples().subList(2, 4)), new QueryOptions(), sessionId);
+        catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CASE").setSamples(file.getSamples().subList(0, 2)), new QueryOptions(), token);
+        catalogManager.getCohortManager().create(STUDY, new Cohort().setId("CONTROL").setSamples(file.getSamples().subList(2, 4)), new QueryOptions(), token);
 
         analysis.setStudy(STUDY)
                 .setCaseCohort("CASE")
@@ -341,12 +365,12 @@ public class VariantAnalysisTest {
                 .setIndexScoreId("GwasScore");
         checkAnalysisResult(analysis.start());
 
-        List<VariantScoreMetadata> scores = variantStorageManager.listVariantScores(STUDY, sessionId);
+        List<VariantScoreMetadata> scores = variantStorageManager.listVariantScores(STUDY, token);
         System.out.println("scores.get(0) = " + JacksonUtils.getDefaultObjectMapper().writeValueAsString(scores));
         Assert.assertEquals(1, scores.size());
         Assert.assertEquals("GwasScore", scores.get(0).getName());
 
-        for (Variant variant : variantStorageManager.iterable(sessionId)) {
+        for (Variant variant : variantStorageManager.iterable(token)) {
             Assert.assertEquals("GwasScore", variant.getStudies().get(0).getScores().get(0).getId());
         }
     }

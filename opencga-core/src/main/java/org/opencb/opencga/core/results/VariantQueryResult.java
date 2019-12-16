@@ -32,12 +32,12 @@ import java.util.Map;
 @JsonIgnoreProperties({"samples", "numTotalSamples", "numSamples", "source", "approximateCount", "approximateCountSamplingSize"})
 public class VariantQueryResult<T> extends OpenCGAResult<T> {
 
-    private static String SAMPLES = "samples";
-    private static String NUM_TOTAL_SAMPLES = "numTotalSamples";
-    private static String NUM_SAMPLES = "numSamples";
-    private static String SOURCE = "source";
-    private static String APPROXIMATE_COUNT = "approximateCount";
-    private static String APPROXIMATE_COUNT_SAMPLING_SIZE = "approximateCountSamplingSize";
+    private static final String SAMPLES = "samples";
+    private static final String NUM_TOTAL_SAMPLES = "numTotalSamples";
+    private static final String NUM_SAMPLES = "numSamples";
+    private static final String SOURCE = "source";
+    private static final String APPROXIMATE_COUNT = "approximateCount";
+    private static final String APPROXIMATE_COUNT_SAMPLING_SIZE = "approximateCountSamplingSize";
 
     public VariantQueryResult() {
     }
@@ -135,7 +135,7 @@ public class VariantQueryResult<T> extends OpenCGAResult<T> {
         return getAttributes().containsKey(APPROXIMATE_COUNT_SAMPLING_SIZE) ? getAttributes().getInt(APPROXIMATE_COUNT_SAMPLING_SIZE) : null;
     }
 
-    public VariantQueryResult setApproximateCountSamplingSize(Integer approximateCountSamplingSize) {
+    public VariantQueryResult<T> setApproximateCountSamplingSize(Integer approximateCountSamplingSize) {
         getAttributes().put(APPROXIMATE_COUNT_SAMPLING_SIZE, approximateCountSamplingSize);
         return this;
     }

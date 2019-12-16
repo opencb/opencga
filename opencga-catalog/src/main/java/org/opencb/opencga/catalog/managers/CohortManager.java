@@ -113,7 +113,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         if (cohortDataResult.getNumResults() == 0) {
             cohortDataResult = cohortDBAdaptor.get(queryCopy, queryOptions);
             if (cohortDataResult.getNumResults() == 0) {
-                throw new CatalogException("Cohort " + entry + " not found");
+                throw new CatalogException("Cohort '" + entry + "' not found");
             } else {
                 throw new CatalogAuthorizationException("Permission denied. " + user + " is not allowed to see the cohort " + entry);
             }

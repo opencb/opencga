@@ -278,6 +278,24 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     /**
+     * Load an input file as VariantAnnotation.
+     *
+     * @param inputFile Annotation file to load
+     * @param params    Other params
+     * @throws VariantAnnotatorException    If the annotation goes wrong
+     * @throws StorageEngineException       If there is any problem related with the StorageEngine
+     * @return number of annotated variants
+     * @throws IOException                  If there is any IO problem
+     */
+    public long annotationLoad(URI inputFile, ObjectMap params) throws VariantAnnotatorException, StorageEngineException, IOException {
+        // Merge with configuration
+        ObjectMap options = getMergedOptions(params);
+        options.put(VariantAnnotationManager.LOAD_FILE, inputFile.toString());
+        VariantAnnotationManager annotationManager = newVariantAnnotationManager(options);
+        return annotationManager.annotate(new Query(), options);
+    }
+
+    /**
      * Annotate loaded files. Used only to annotate recently loaded files, after the {@link #index}.
      *
      * @param outdirUri     Index output directory
@@ -530,11 +548,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     /**
      *
      * @param study     Study
-     * @param options   Other options
      * @param overwrite Overwrite gaps for all files and variants
+     * @param options   Other options
      * @throws StorageEngineException if there is any error
      */
-    public void aggregate(String study, ObjectMap options, boolean overwrite) throws StorageEngineException {
+    public void aggregate(String study, boolean overwrite, ObjectMap options) throws StorageEngineException {
         throw new UnsupportedOperationException();
     }
 
@@ -827,7 +845,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                                           VariantScoreFormatDescriptor descriptor, ObjectMap options)
     throws StorageEngineException;
 
-    public abstract void removeVariantScore(String study, String scoreName, ObjectMap options) throws StorageEngineException;
+    public abstract void deleteVariantScore(String study, String scoreName, ObjectMap options) throws StorageEngineException;
 
     @Override
     public abstract void testConnection() throws StorageEngineException;

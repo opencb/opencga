@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -12,11 +13,9 @@ import java.io.FileOutputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
-@Tool(id = BwaWrapperAnalysis.ID, type = Tool.ToolType.ALIGNMENT,
+@Tool(id = BwaWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT,
         description = "")
 public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
 

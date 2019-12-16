@@ -28,6 +28,7 @@ import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
@@ -66,8 +67,8 @@ public final class VariantQueryUtils {
     public static final char STUDY_RESOURCE_SEPARATOR = ':';
     public static final char QUOTE_CHAR = '"';
 
-    public static final String NONE = "none";
-    public static final String ALL = "all";
+    public static final String NONE = ParamConstants.NONE;
+    public static final String ALL = ParamConstants.ALL;
     public static final String GT = "GT";
 
     // Some private query params

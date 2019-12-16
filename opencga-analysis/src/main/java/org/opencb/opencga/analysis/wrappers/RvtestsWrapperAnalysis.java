@@ -5,6 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -12,7 +13,7 @@ import java.io.FileOutputStream;
 import java.nio.charset.Charset;
 import java.util.*;
 
-@Tool(id = RvtestsWrapperAnalysis.ID, type = Tool.ToolType.VARIANT, description = RvtestsWrapperAnalysis.DESCRIPTION)
+@Tool(id = RvtestsWrapperAnalysis.ID, resource = Enums.Resource.VARIANT, description = RvtestsWrapperAnalysis.DESCRIPTION)
 public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     public final static String ID = "rvtests";

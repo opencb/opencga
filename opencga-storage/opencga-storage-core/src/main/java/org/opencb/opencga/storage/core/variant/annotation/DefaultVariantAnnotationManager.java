@@ -146,7 +146,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
 
         if (doLoad) {
             long start = System.currentTimeMillis();
-            logger.info("Starting annotation load");
+            logger.info("Starting annotation load {}", annotationFile);
             loadAnnotation(annotationFile, params);
             logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
 

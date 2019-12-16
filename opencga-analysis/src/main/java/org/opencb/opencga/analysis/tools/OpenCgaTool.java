@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ConfigurationUtils;
-import org.opencb.opencga.analysis.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -34,6 +34,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.DataStore;
 import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutorInfo;
@@ -65,7 +66,7 @@ public abstract class OpenCgaTool {
     protected String opencgaHome;
     protected String token;
 
-    protected ObjectMap params;
+    protected final ObjectMap params;
     protected ObjectMap executorParams;
     private List<ToolExecutor.Source> sourceTypes;
     private List<ToolExecutor.Framework> availableFrameworks;
@@ -81,6 +82,7 @@ public abstract class OpenCgaTool {
     public OpenCgaTool() {
         privateLogger = LoggerFactory.getLogger(OpenCgaTool.class);
         toolExecutorFactory = new ToolExecutorFactory();
+        params = new ObjectMap();
     }
 
     public final OpenCgaTool setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
@@ -101,7 +103,9 @@ public abstract class OpenCgaTool {
         this.variantStorageManager = variantStorageManager;
         this.storageConfiguration = variantStorageManager.getStorageConfiguration();
         this.token = token;
-        this.params = params == null ? new ObjectMap() : new ObjectMap(params);
+        if (params != null) {
+            this.params.putAll(params);
+        }
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
         //this.params.put("outDir", outDir.toAbsolutePath().toString());
@@ -114,7 +118,9 @@ public abstract class OpenCgaTool {
             throws ToolException {
         this.opencgaHome = opencgaHome;
         this.token = token;
-        this.params = params == null ? new ObjectMap() : new ObjectMap(params);
+        if (params != null) {
+            this.params.putAll(params);
+        }
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
         //this.params.put("outDir", outDir.toAbsolutePath().toString());
@@ -139,14 +145,14 @@ public abstract class OpenCgaTool {
         availableFrameworks = new ArrayList<>();
         sourceTypes = new ArrayList<>();
         if (storageConfiguration.getVariant().getDefaultEngine().equals("mongodb")) {
-            if (getToolType().equals(Tool.ToolType.VARIANT)) {
+            if (getToolType().equals(Enums.Resource.VARIANT)) {
                 sourceTypes.add(ToolExecutor.Source.MONGODB);
             }
         } else if (storageConfiguration.getVariant().getDefaultEngine().equals("hadoop")) {
             availableFrameworks.add(ToolExecutor.Framework.MAP_REDUCE);
             // TODO: Check from configuration if spark is available
 //            availableFrameworks.add(ToolExecutor.Framework.SPARK);
-            if (getToolType().equals(Tool.ToolType.VARIANT)) {
+            if (getToolType().equals(Enums.Resource.VARIANT)) {
                 sourceTypes.add(ToolExecutor.Source.HBASE);
             }
         }
@@ -281,8 +287,8 @@ public abstract class OpenCgaTool {
     /**
      * @return the tool id
      */
-    public final Tool.ToolType getToolType() {
-        return this.getClass().getAnnotation(Tool.class).type();
+    public final Enums.Resource getToolType() {
+        return this.getClass().getAnnotation(Tool.class).resource();
     }
 
     /**
@@ -360,8 +366,20 @@ public abstract class OpenCgaTool {
         erm.addAttribute(key, value);
     }
 
-    protected final void addMoveFile(Path file, String targetPath, URI targetUri) throws ToolException {
-        erm.addMoveFile(file, targetPath, targetUri);
+    protected final void moveFile(Path source, String catalogPathTarget) throws ToolException {
+        moveFile(source.toUri(), catalogPathTarget);
+    }
+
+    protected final void moveFile(URI source, String catalogPathTarget) throws ToolException {
+        try {
+            //TODO Move file
+            // catalogManager.getCatalogIOManagerFactory().get(source).moveFile(source, ...);
+            // catalogManager.getFileManager() ....
+        } catch (Exception e) {
+            throw new ToolException("Error moving file from " + source + " to " + catalogPathTarget, e);
+        }
+        // Add only if move is successful
+        erm.addExternalFile(source);
     }
 
     protected final OpenCgaToolExecutor getToolExecutor()

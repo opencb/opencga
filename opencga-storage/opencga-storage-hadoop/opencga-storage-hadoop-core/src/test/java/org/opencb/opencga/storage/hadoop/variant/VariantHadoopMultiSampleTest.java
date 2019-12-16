@@ -152,7 +152,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
         checkArchiveTableTimeStamp(dbAdaptor);
 
-        getVariantStorageEngine().aggregate(studyMetadata.getName(), new ObjectMap("local", true), false);
+        getVariantStorageEngine().aggregate(studyMetadata.getName(), false, new ObjectMap("local", true));
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 

@@ -33,7 +33,7 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -50,7 +50,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.rest.RestResponse;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.server.WebServiceException;
-import org.opencb.opencga.server.rest.analysis.RestBodyParams;
+import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -709,7 +709,7 @@ public class OpenCGAWSServer {
         }
     }
 
-    public Response submitJob(String toolId, String study, RestBodyParams bodyParams, String jobName, String jobDescription,
+    public Response submitJob(String toolId, String study, ToolParams bodyParams, String jobName, String jobDescription,
                               String jobTagsStr) {
         return run(() -> {
             List<String> jobTags;

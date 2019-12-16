@@ -18,11 +18,9 @@ package org.opencb.opencga.storage.app.cli.client.options;
 
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.CommaParameterSplitter;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.opencga.core.api.operations.variant.VariantScoreIndexParams;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
@@ -97,7 +95,7 @@ public class StorageVariantCommandOptions {
         public boolean load;
 
         @Parameter(names = {"--merge"}, description = "Currently two levels of merge are supported: \"basic\" mode merge genotypes of the same variants while \"advanced\" merge multiallelic and overlapping variants.")
-        public VariantStorageEngine.MergeMode merge = VariantStorageOptions.MERGE_MODE.defaultValue();
+        public String merge;
 
         @Parameter(names = {"--exclude-genotypes"}, description = "Index excluding the genotype information")
         public boolean excludeGenotype;
@@ -128,7 +126,7 @@ public class StorageVariantCommandOptions {
         public boolean indexSearch;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}", arity = 1)
-        public VariantAnnotatorFactory.AnnotationEngine annotator;
+        public String annotator;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations;
@@ -172,7 +170,7 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--file"}, description = "CSV of files to be removed from storage. Type 'all' to remove the whole study",
                 splitter = CommaParameterSplitter.class, required = true)
-        public List<String> files = null;
+        public List<String> file = null;
 
         @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation")
         public boolean resume;
@@ -512,14 +510,14 @@ public class StorageVariantCommandOptions {
     public static class GenericVariantAnnotateOptions {
         public static final String ANNOTATE_DESCRIPTION = "Create and load variant annotations into the database";
 
-        @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
+        @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-file-name)")
         public boolean create;
 
         @Parameter(names = {"--load"}, description = "Run only the load of the annotations into the DB from FILE")
         public String load;
 
         @Parameter(names = {"--custom-name"}, description = "Provide a name to the custom annotation")
-        public String customAnnotationKey = null;
+        public String customName = null;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
         public VariantAnnotatorFactory.AnnotationEngine annotator;
@@ -527,8 +525,8 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations;
 
-        @Parameter(names = {"--output-filename"}, description = "Output file name. Default: dbName", arity = 1)
-        public String fileName;
+        @Parameter(names = {"--output-file-name"}, description = "Output file name. Default: dbName", arity = 1)
+        public String outputFileName;
 
         @Parameter(names = {"--region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
         public String region;
@@ -656,29 +654,22 @@ public class StorageVariantCommandOptions {
         public static final String SCORE_INDEX_COMMAND = "score-index";
         public static final String SCORE_INDEX_COMMAND_DESCRIPTION = "Index a variant score in the database.";
 
-        @Parameter(names = {"--name"}, description = "Unique name of the score within the study", required = true)
+        @Parameter(names = {"--score-name"}, description = VariantScoreIndexParams.SCORE_NAME, required = true)
         public String scoreName;
 
-        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", arity = 0)
+        @Parameter(names = {"--resume"}, description = VariantScoreIndexParams.RESUME, arity = 0)
         public boolean resume;
 
-        @Parameter(names = {"--cohort1"}, description = "Cohort used to compute the score. "
-                + "Use the cohort '" + StudyEntry.DEFAULT_COHORT + "' if all samples from the study where used to compute the score", required = true)
+        @Parameter(names = {"--cohort1"}, description = VariantScoreIndexParams.COHORT1, required = true)
         public String cohort1;
 
-        @Parameter(names = {"--cohort2"}, description = "Second cohort used to compute the score, typically to compare against the first cohort. "
-                + "If only one cohort was used to compute the score, leave empty")
+        @Parameter(names = {"--cohort2"}, description = VariantScoreIndexParams.COHORT2)
         public String cohort2;
 
         @Parameter(names = {"-i", "--input-file"}, description = "Input file to load", required = true)
         public String input;
 
-        @Parameter(names = {"--input-columns"}, description = "Indicate which columns to load from the input file. "
-                + "Provide the column position (starting in 0) for the column with the score with 'SCORE=n'. "
-                + "Optionally, the PValue column with 'PVALUE=n'. "
-                + "The, to indicate the variant associated with the score, provide either the columns ['CHROM', 'POS', 'REF', 'ALT'], "
-                + "or the column 'VAR' containing a variant representation with format 'chr:start:ref:alt'. "
-                + "e.g. 'CHROM=0,POS=1,REF=3,ALT=4,SCORE=5,PVALUE=6' or 'VAR=0,SCORE=1,PVALUE=2'", required = true)
+        @Parameter(names = {"--input-columns"}, description = VariantScoreIndexParams.INPUT_COLUMNS, required = true)
         public String columns;
     }
 
@@ -809,7 +800,7 @@ public class StorageVariantCommandOptions {
 //        @Parameter(names = {"-f", "--file"}, description = "Calculate stats only for the selected file", arity = 1)
 //        public String file;
 
-        @Parameter(names = {"--output-filename"}, description = "Output file name. Default: database name", arity = 1)
+        @Parameter(names = {"--output-file-name"}, description = "Output file name. Default: database name", arity = 1)
         public String fileName;
 
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
@@ -855,7 +846,7 @@ public class StorageVariantCommandOptions {
 
     public static class GenericVariantExportOptions {
 
-        @Parameter(names = {"--output-filename"}, description = "Output filename.", arity = 1)
+        @Parameter(names = {"--output-file-name"}, description = "Output filename.", arity = 1)
         public String outFilename = ".";
 
 //        @Parameter(names = {"--region"}, description = "Variant region to export.")
