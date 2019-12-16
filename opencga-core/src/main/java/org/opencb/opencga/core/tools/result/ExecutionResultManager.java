@@ -241,12 +241,9 @@ public class ExecutionResultManager {
         throw new ToolException("Step '" + stepId + "' not found. Available steps: " + steps);
     }
 
-    public void addMoveFile(Path file, String targetPath, URI targetUri) throws ToolException {
+    public void addExternalFile(URI file) throws ToolException {
         updateResult(execution -> {
-            execution.getFilesMove()
-                    .add(new FileMove()
-                            .setSource(file.toString())
-                            .setTarget(new FileMove.CatalogFile(targetPath, targetUri)));
+            execution.getExternalFiles().add(file);
             return null;
         });
     }
