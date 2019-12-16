@@ -13,17 +13,20 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
+import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
+import org.opencb.opencga.core.annotations.ToolExecutor;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -34,15 +37,11 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
-import org.opencb.opencga.core.tools.result.ExecutionResult;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RunWith(Parameterized.class)
@@ -172,7 +171,8 @@ public class VariantAnalysisTest {
         checkAnalysisResult(ar);
 
         MutableInt count = new MutableInt();
-        FileUtils.lineIterator(outDir.resolve(ar.getOutputFiles().get(0).getPath()).toFile()).forEachRemaining(line->{
+        java.io.File file = getOutputFile(outDir);
+        FileUtils.lineIterator(file).forEachRemaining(line -> {
             if (!line.startsWith("#")) {
                 count.increment();
             }
@@ -196,7 +196,8 @@ public class VariantAnalysisTest {
         checkAnalysisResult(ar);
 
         MutableInt count = new MutableInt();
-        FileUtils.lineIterator(outDir.resolve(ar.getOutputFiles().get(0).getPath()).toFile()).forEachRemaining(line->{
+        java.io.File file = getOutputFile(outDir);
+        FileUtils.lineIterator(file).forEachRemaining(line->{
             if (!line.startsWith("#")) {
                 count.increment();
             }
@@ -223,13 +224,22 @@ public class VariantAnalysisTest {
         checkAnalysisResult(ar);
 
         MutableInt count = new MutableInt();
-        FileUtils.lineIterator(outDir.resolve(ar.getOutputFiles().get(0).getPath()).toFile()).forEachRemaining(line->{
+        java.io.File file = getOutputFile(outDir);
+        FileUtils.lineIterator(file).forEachRemaining(line -> {
             if (!line.startsWith("#")) {
                 count.increment();
             }
         });
-        Assert.assertEquals(variantStorageManager.count(new Query(variantsQuery).append(VariantQueryParam.STUDY.key(), STUDY), sessionId).first().intValue(),
+        System.out.println("variantsQuery = " + variantsQuery.toJson());
+        Assert.assertEquals(variantStorageManager.count(new Query(variantsQuery).append(VariantQueryParam.STUDY.key(), STUDY), sessionId).getNumMatches(),
                 count.intValue());
+    }
+
+    private java.io.File getOutputFile(Path outDir) {
+        return FileUtils.listFiles(outDir.toFile(), null, false)
+                .stream()
+                .filter(f -> !f.getName().endsWith(ExecutionResultManager.FILE_EXTENSION))
+                .findFirst().orElse(null);
     }
 
     @Test
@@ -345,7 +355,8 @@ public class VariantAnalysisTest {
         if (storageEngine.equals("hadoop")) {
             Assert.assertEquals("hbase-mapreduce", ar.getExecutor().getId());
         } else {
-            if (ar.getId().equals(VariantStatsAnalysis.ID)) {
+            String toolId = ar.getExecutor().getClazz().getAnnotation(ToolExecutor.class).tool();
+            if (toolId.equals(VariantStatsAnalysis.ID)) {
                 Assert.assertEquals("mongodb-local", ar.getExecutor().getId());
             } else {
                 Assert.assertEquals("opencga-local", ar.getExecutor().getId());

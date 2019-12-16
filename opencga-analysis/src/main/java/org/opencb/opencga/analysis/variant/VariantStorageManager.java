@@ -124,16 +124,15 @@ public class VariantStorageManager extends StorageManager {
      * @param outputFormat Output format.
      * @param study        Study to export
      * @param token    User's session id
-     * @return List of generated files
      * @throws CatalogException       if there is any error with Catalog
      * @throws IOException            If there is any IO error
      * @throws StorageEngineException If there is any error exporting variants
      */
-    public List<URI> exportData(String outputFile, VariantOutputFormat outputFormat, String study, String token)
+    public void exportData(String outputFile, VariantOutputFormat outputFormat, String study, String token)
             throws StorageEngineException, CatalogException, IOException, ToolException {
         Query query = new Query(VariantQueryParam.INCLUDE_STUDY.key(), study)
                 .append(VariantQueryParam.STUDY.key(), study);
-        return exportData(outputFile, outputFormat, null, query, new QueryOptions(), token);
+        exportData(outputFile, outputFormat, null, query, new QueryOptions(), token);
     }
 
     /**
@@ -143,13 +142,12 @@ public class VariantStorageManager extends StorageManager {
      * @param variantsFile  Optional variants file.
      * @param query         Query with the variants to export
      * @param queryOptions  Query options
-     * @param token     User's session id
-     * @return              List of generated files
+     * @param token         User's session id
      * @throws CatalogException if there is any error with Catalog
      * @throws IOException  If there is any IO error
      * @throws StorageEngineException  If there is any error exporting variants
      */
-    public List<URI> exportData(String outputFile, VariantOutputFormat outputFormat, String variantsFile,
+    public void exportData(String outputFile, VariantOutputFormat outputFormat, String variantsFile,
                                 Query query, QueryOptions queryOptions, String token)
             throws CatalogException, IOException, StorageEngineException, ToolException {
         if (query == null) {
@@ -183,11 +181,6 @@ public class VariantStorageManager extends StorageManager {
         operation.setUp(this, queryOptions, outDir, token);
 
         ExecutionResult result = operation.start();
-
-        return result.getOutputFiles()
-                .stream()
-                .map(fileResult -> outDir.resolve(fileResult.getPath()).toUri())
-                .collect(Collectors.toList());
     }
 
     // --------------------------//

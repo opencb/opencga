@@ -148,7 +148,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "Sample search method", position = 4, response = Sample[].class)
+    @ApiOperation(value = "Sample search method", response = Sample[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -184,15 +184,12 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
             @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("")
             @QueryParam("nattributes") String nattributes,
-            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
             @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of samples in the specified release)") @QueryParam("snapshot")
                     int snapshot) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-
-            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
@@ -220,13 +217,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key());
             }
 
-            DataResult<Sample> queryResult;
-            if (count) {
-                queryResult = sampleManager.count(studyStr, query, token);
-            } else {
-                queryResult = sampleManager.search(studyStr, query, queryOptions, token);
-            }
-            return createOkResponse(queryResult);
+            return createOkResponse(sampleManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -343,50 +334,6 @@ public class SampleWSServer extends OpenCGAWSServer {
             queryOptions.put(Constants.DELETE_EMPTY_COHORTS, query.getBoolean(Constants.DELETE_EMPTY_COHORTS, false));
 
             return createOkResponse(sampleManager.delete(studyStr, getIdList(samples), queryOptions, true, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-
-    @DELETE
-    @Path("/delete")
-    @ApiOperation(value = "Delete samples")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = Constants.FORCE, value = "Force the deletion of samples even if they are associated to files, "
-                    + "individuals or cohorts.", dataType = "boolean", defaultValue = "false", paramType = "query"),
-            @ApiImplicitParam(name = Constants.EMPTY_FILES_ACTION, value = "Action to be performed over files that were associated only to"
-                    + " the sample to be deleted. Possible actions are NONE, TRASH, DELETE.", dataType = "string",
-                    defaultValue = "NONE", paramType = "query"),
-            @ApiImplicitParam(name = Constants.DELETE_EMPTY_COHORTS, value = "Boolean indicating if the cohorts associated only to the "
-                    + "sample to be deleted should be also deleted.", dataType = "boolean", defaultValue = "false",
-                    paramType = "query")
-    })
-    public Response delete(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.SAMPLE_ID_DESCRIPTION) @QueryParam("id") String id,
-            @ApiParam(value = ParamConstants.SAMPLE_NAME_DESCRIPTION) @QueryParam("name") String name,
-            @ApiParam(value = "Sample source") @QueryParam("source") String source,
-            @ApiParam(value = "Sample type") @QueryParam("type") String type,
-            @ApiParam(value = "Somatic") @QueryParam("somatic") Boolean somatic,
-            @ApiParam(value = ParamConstants.INDIVIDUAL_DESCRIPTION) @QueryParam("individual") String individual,
-            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @QueryParam("attributes") String attributes,
-            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @QueryParam("nattributes") String nattributes,
-            @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
-            @QueryParam("release") String release) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            queryOptions.put(Constants.EMPTY_FILES_ACTION, query.getString(Constants.EMPTY_FILES_ACTION, "NONE"));
-            queryOptions.put(Constants.DELETE_EMPTY_COHORTS, query.getBoolean(Constants.DELETE_EMPTY_COHORTS, false));
-
-            query.remove(Constants.EMPTY_FILES_ACTION);
-            query.remove(Constants.DELETE_EMPTY_COHORTS);
-
-            return createOkResponse(sampleManager.delete(studyStr, query, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

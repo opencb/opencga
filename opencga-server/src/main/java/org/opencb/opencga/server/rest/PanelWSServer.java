@@ -172,7 +172,6 @@ public class PanelWSServer extends OpenCGAWSServer {
             @QueryParam("modificationDate") String modificationDate,
             @ApiParam(value = "Boolean indicating which panels are queried (installation or study specific panels)",
                     defaultValue = "false") @QueryParam("global") boolean global,
-            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value (Current release from the moment the samples were first created)")
             @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of samples in the specified release)") @QueryParam("snapshot")
@@ -181,19 +180,11 @@ public class PanelWSServer extends OpenCGAWSServer {
             query.remove(ParamConstants.STUDY_PARAM);
             query.remove("global");
 
-            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
-
             if (global) {
                 studyStr = PanelManager.INSTALLATION_PANELS;
             }
 
-            DataResult<Panel> queryResult;
-            if (count) {
-                queryResult = panelManager.count(studyStr, query, token);
-            } else {
-                queryResult = panelManager.search(studyStr, query, queryOptions, token);
-            }
-            return createOkResponse(queryResult);
+            return createOkResponse(panelManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -207,31 +198,6 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of panel ids") @PathParam("panels") String panels) {
         try {
             return createOkResponse(panelManager.delete(studyStr, getIdList(panels), queryOptions, true, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @DELETE
-    @Path("/delete")
-    @ApiOperation(value = "Delete existing panels")
-    public Response delete(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Panel id") @QueryParam("id") String id,
-            @ApiParam(value = "Panel name") @QueryParam("name") String name,
-            @ApiParam(value = "Panel phenotypes") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Panel variants") @QueryParam("variants") String variants,
-            @ApiParam(value = "Panel genes") @QueryParam("genes") String genes,
-            @ApiParam(value = "Panel regions") @QueryParam("regions") String regions,
-            @ApiParam(value = "Panel categories") @QueryParam("categories") String categories,
-            @ApiParam(value = "Panel tags") @QueryParam("tags") String tags,
-            @ApiParam(value = "Panel description") @QueryParam("description") String description,
-            @ApiParam(value = "Panel author") @QueryParam("author") String author,
-            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = "Release") @QueryParam("release") String release) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(panelManager.delete(studyStr, query, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

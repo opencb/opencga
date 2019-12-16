@@ -121,7 +121,6 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
             @QueryParam("variableSet") String variableSet,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value (Current release from the moment the families were first created)")
             @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
@@ -143,14 +142,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
                 query.put(Constants.ANNOTATION, StringUtils.join(annotationList, ";"));
             }
 
-            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
-            DataResult<Family> queryResult;
-            if (count) {
-                queryResult = familyManager.count(studyStr, query, token);
-            } else {
-                queryResult = familyManager.search(studyStr, query, queryOptions, token);
-            }
-            return createOkResponse(queryResult);
+            return createOkResponse(familyManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -292,27 +284,6 @@ public class FamilyWSServer extends OpenCGAWSServer {
         try {
             List<String> familyIds = getIdList(families);
             return createOkResponse(familyManager.delete(studyStr, familyIds, queryOptions, true, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @DELETE
-    @Path("/delete")
-    @ApiOperation(value = "Delete existing families")
-    public Response delete(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Family id") @QueryParam("id") String id,
-            @ApiParam(value = "Family name") @QueryParam("name") String name,
-            @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
-            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("members") String members,
-            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-            @QueryParam("release") String release) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(familyManager.delete(studyStr, query, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

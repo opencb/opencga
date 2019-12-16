@@ -94,8 +94,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                     dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION,
-                    dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query")
     })
     public Response getAllStudies(
             @Deprecated @ApiParam(value = "Project id or alias", hidden = true) @QueryParam("projectId") String projectId,
@@ -114,7 +113,6 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
             @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes,
             @ApiParam(value = "Boolean attributes") @QueryParam("battributes") boolean battributes,
-            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
             if (StringUtils.isNotEmpty(projectId) && StringUtils.isEmpty(projectStr)) {
@@ -122,8 +120,6 @@ public class StudyWSServer extends OpenCGAWSServer {
                 query.remove(StudyDBAdaptor.QueryParams.PROJECT_ID.key());
             }
             query.remove(ParamConstants.PROJECT_PARAM);
-
-            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
             DataResult<Study> queryResult = catalogManager.getStudyManager().get(projectStr, query, queryOptions, token);
             return createOkResponse(queryResult);

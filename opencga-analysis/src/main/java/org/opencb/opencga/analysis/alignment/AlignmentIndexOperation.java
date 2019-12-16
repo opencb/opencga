@@ -8,7 +8,6 @@ import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.results.OpenCGAResult;
-import org.opencb.opencga.core.tools.result.FileResult;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -68,8 +67,6 @@ public class AlignmentIndexOperation extends OpenCgaTool {
             if (!outputPath.toFile().exists()) {
                 throw new ToolException("Something wrong happened when computing index file for '" + inputFile + "'");
             } else {
-                addFile(outputPath, FileResult.FileType.BINARY);
-
                 // TODO: remove when daemon moves the output file
                 Files.createSymbolicLink(inputPath.getParent().resolve(outputPath.getFileName()), outputPath);
             }

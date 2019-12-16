@@ -51,6 +51,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -479,15 +483,32 @@ public class JobManager extends ResourceManager<Job> {
             fixQueryObject(study, query, userId);
             query.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            OpenCGAResult<Job> jobDataResult = jobDBAdaptor.get(study.getUid(), query, options, userId);
+            Future<OpenCGAResult<Long>> countFuture = null;
+            if (options.getBoolean(QueryOptions.COUNT)) {
+                ExecutorService executor = Executors.newSingleThreadExecutor();
+                Query finalQuery = query;
+                countFuture = executor.submit(() -> jobDBAdaptor.count(study.getUid(), finalQuery, userId,
+                        StudyAclEntry.StudyPermissions.VIEW_JOBS));
+            }
+            OpenCGAResult<Job> queryResult = OpenCGAResult.empty();
+            if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
+                queryResult = jobDBAdaptor.get(study.getUid(), query, options, userId);
+            }
+            if (countFuture != null) {
+                mergeCount(queryResult, countFuture);
+            }
             auditManager.auditSearch(userId, Enums.Resource.JOB, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return jobDataResult;
+            return queryResult;
         } catch (CatalogException e) {
             auditManager.auditSearch(userId, Enums.Resource.JOB, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
+        } catch (InterruptedException | ExecutionException e) {
+            auditManager.auditSearch(userId, Enums.Resource.JOB, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(-1, "", e.getMessage())));
+            throw new CatalogException("Unexpected error", e);
         }
     }
 
@@ -690,6 +711,127 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
+    public OpenCGAResult<Job> update(String studyStr, Query query, JobUpdateParams updateParams, QueryOptions options, String token)
+            throws CatalogException {
+        return update(studyStr, query, updateParams, false, options, token);
+    }
+
+    public OpenCGAResult<Job> update(String studyStr, Query query, JobUpdateParams updateParams, boolean ignoreException,
+                                        QueryOptions options, String token) throws CatalogException {
+        Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
+
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("query", query)
+                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("ignoreException", ignoreException)
+                .append("options", options)
+                .append("token", token);
+
+        DBIterator<Job> iterator;
+        try {
+            fixQueryObject(study, finalQuery, userId);
+            finalQuery.append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+            iterator = jobDBAdaptor.iterator(study.getUid(), finalQuery, INCLUDE_JOB_IDS, userId);
+        } catch (CatalogException e) {
+            auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, "", "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+
+        OpenCGAResult<Job> result = OpenCGAResult.empty();
+        while (iterator.hasNext()) {
+            Job job = iterator.next();
+            try {
+                OpenCGAResult<Job> updateResult = update(study, job, updateParams, options, userId);
+                result.append(updateResult);
+
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            } catch (CatalogException e) {
+                Event event = new Event(Event.Type.ERROR, job.getId(), e.getMessage());
+                result.getEvents().add(event);
+
+                logger.error("Could not update job {}: {}", job.getId(), e.getMessage(), e);
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
+        }
+
+        return endResult(result, ignoreException);
+    }
+
+    /**
+     * Update Job from catalog.
+     *
+     * @param studyStr   Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param jobIds  List of Job ids. Could be either the id or uuid.
+     * @param updateParams Data model filled only with the parameters to be updated.
+     * @param options      QueryOptions object.
+     * @param token  Session id of the user logged in.
+     * @return A OpenCGAResult with the objects updated.
+     * @throws CatalogException if there is any internal error, the user does not have proper permissions or a parameter passed does not
+     *                          exist or is not allowed to be updated.
+     */
+    public OpenCGAResult<Job> update(String studyStr, List<String> jobIds, JobUpdateParams updateParams, QueryOptions options,
+                                     String token) throws CatalogException {
+        return update(studyStr, jobIds, updateParams, false, options, token);
+    }
+
+    public OpenCGAResult<Job> update(String studyStr, List<String> jobIds, JobUpdateParams updateParams, boolean ignoreException,
+                                        QueryOptions options, String token) throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("study", studyStr)
+                .append("jobIds", jobIds)
+                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("ignoreException", ignoreException)
+                .append("options", options)
+                .append("token", token);
+
+        OpenCGAResult<Job> result = OpenCGAResult.empty();
+        for (String id : jobIds) {
+            String jobId = id;
+            String jobUuid = "";
+
+            try {
+                OpenCGAResult<Job> internalResult = internalGet(study.getUid(), id, INCLUDE_JOB_IDS, userId);
+                if (internalResult.getNumResults() == 0) {
+                    throw new CatalogException("Job '" + id + "' not found");
+                }
+                Job job = internalResult.first();
+
+                // We set the proper values for the audit
+                jobId = job.getId();
+                jobUuid = job.getUuid();
+
+                OpenCGAResult<Job> updateResult = update(study, job, updateParams, options, userId);
+                result.append(updateResult);
+
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            } catch (CatalogException e) {
+                Event event = new Event(Event.Type.ERROR, jobId, e.getMessage());
+                result.getEvents().add(event);
+
+                logger.error("Could not update job {}: {}", jobId, e.getMessage(), e);
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.JOB, jobId, jobUuid, study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            }
+        }
+        return endResult(result, ignoreException);
+    }
+
     public OpenCGAResult<Job> update(String studyStr, String jobId, JobUpdateParams updateParams, QueryOptions options, String token)
             throws CatalogException {
         String userId = userManager.getUserId(token);
@@ -735,7 +877,7 @@ public class JobManager extends ResourceManager<Job> {
         return result;
     }
 
-    private OpenCGAResult update(Study study, Job job, JobUpdateParams updateParams, QueryOptions options, String userId)
+    private OpenCGAResult<Job> update(Study study, Job job, JobUpdateParams updateParams, QueryOptions options, String userId)
             throws CatalogException {
         if (updateParams == null) {
             throw new CatalogException("Missing parameters to update");
@@ -747,45 +889,45 @@ public class JobManager extends ResourceManager<Job> {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         authorizationManager.checkJobPermission(study.getUid(), job.getUid(), userId, JobAclEntry.JobPermissions.UPDATE);
 
-        if (StringUtils.isNotEmpty(updateParams.getId())) {
-            ParamUtils.checkAlias(updateParams.getId(), JobDBAdaptor.QueryParams.ID.key());
-        }
-
-        if (updateParams.getOutDir() != null && updateParams.getOutDir().getUid() <= 0) {
-            updateParams.setOutDir(getFile(study.getUid(), updateParams.getOutDir().getPath(), userId));
-        }
-
-        if (ListUtils.isNotEmpty(updateParams.getInput())) {
-            List<File> inputFiles = new ArrayList<>(updateParams.getInput().size());
-            for (File file : updateParams.getInput()) {
-                if (file.getUid() <= 0) {
-                    inputFiles.add(getFile(study.getUid(), file.getPath(), userId));
-                } else {
-                    inputFiles.add(file);
-                }
-            }
-            updateParams.setInput(inputFiles);
-        }
-
-        if (ListUtils.isNotEmpty(updateParams.getOutput())) {
-            List<File> outputFiles = new ArrayList<>(updateParams.getOutput().size());
-            for (File file : updateParams.getOutput()) {
-                if (file.getUid() <= 0) {
-                    outputFiles.add(getFile(study.getUid(), file.getPath(), userId));
-                } else {
-                    outputFiles.add(file);
-                }
-            }
-            updateParams.setOutput(outputFiles);
-        }
-
-        if (updateParams.getLog() != null && updateParams.getLog().getUid() <= 0) {
-            updateParams.setLog(getFile(study.getUid(), updateParams.getLog().getPath(), userId));
-        }
-
-        if (updateParams.getErrorLog() != null && updateParams.getErrorLog().getUid() <= 0) {
-            updateParams.setErrorLog(getFile(study.getUid(), updateParams.getErrorLog().getPath(), userId));
-        }
+//        if (StringUtils.isNotEmpty(updateParams.getId())) {
+//            ParamUtils.checkAlias(updateParams.getId(), JobDBAdaptor.QueryParams.ID.key());
+//        }
+//
+//        if (updateParams.getOutDir() != null && updateParams.getOutDir().getUid() <= 0) {
+//            updateParams.setOutDir(getFile(study.getUid(), updateParams.getOutDir().getPath(), userId));
+//        }
+//
+//        if (ListUtils.isNotEmpty(updateParams.getInput())) {
+//            List<File> inputFiles = new ArrayList<>(updateParams.getInput().size());
+//            for (File file : updateParams.getInput()) {
+//                if (file.getUid() <= 0) {
+//                    inputFiles.add(getFile(study.getUid(), file.getPath(), userId));
+//                } else {
+//                    inputFiles.add(file);
+//                }
+//            }
+//            updateParams.setInput(inputFiles);
+//        }
+//
+//        if (ListUtils.isNotEmpty(updateParams.getOutput())) {
+//            List<File> outputFiles = new ArrayList<>(updateParams.getOutput().size());
+//            for (File file : updateParams.getOutput()) {
+//                if (file.getUid() <= 0) {
+//                    outputFiles.add(getFile(study.getUid(), file.getPath(), userId));
+//                } else {
+//                    outputFiles.add(file);
+//                }
+//            }
+//            updateParams.setOutput(outputFiles);
+//        }
+//
+//        if (updateParams.getLog() != null && updateParams.getLog().getUid() <= 0) {
+//            updateParams.setLog(getFile(study.getUid(), updateParams.getLog().getPath(), userId));
+//        }
+//
+//        if (updateParams.getErrorLog() != null && updateParams.getErrorLog().getUid() <= 0) {
+//            updateParams.setErrorLog(getFile(study.getUid(), updateParams.getErrorLog().getPath(), userId));
+//        }
 
         return jobDBAdaptor.update(job.getUid(), updateParams.getUpdateMap(), options);
     }

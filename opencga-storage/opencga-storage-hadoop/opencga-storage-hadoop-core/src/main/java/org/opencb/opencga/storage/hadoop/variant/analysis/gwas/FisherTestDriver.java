@@ -143,8 +143,8 @@ public class FisherTestDriver extends AbstractVariantsTableDriver {
         } else {
             outdir = new Path(outdirStr);
             if (isLocal(outdir)) {
-                localOutput = getLocalOutput(outdir, () -> "fisher_test." + TimeUtils.getTime() + ".tsv");
-                outdir = getTempOutdir("opencga_fisher_test_");
+                localOutput = getLocalOutput(outdir, () -> "fisher_test." + TimeUtils.getTime() + ".tsv.gz");
+                outdir = getTempOutdir("opencga_fisher_test", "." + localOutput.getName());
                 outdir.getFileSystem(getConf()).deleteOnExit(outdir);
             }
             if (localOutput != null) {

@@ -57,7 +57,7 @@ public abstract class VariantTableAggregationDriver extends AbstractVariantsTabl
 
             if (isLocal(outdir)) {
                 localOutput = getLocalOutput(outdir, this::generateOutputFileName);
-                outdir = getTempOutdir("opencga_sample_variant_stats_");
+                outdir = getTempOutdir("opencga_sample_variant_stats", localOutput.getName());
                 outdir.getFileSystem(getConf()).deleteOnExit(outdir);
             }
         }

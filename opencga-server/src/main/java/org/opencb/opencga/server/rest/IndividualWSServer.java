@@ -157,15 +157,12 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
             @QueryParam("variableSet") String variableSet,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION, required = false) @QueryParam("annotation") String annotation,
-            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value (Current release from the moment the individuals were first created)")
             @QueryParam("release") String release,
             @ApiParam(value = "Snapshot value (Latest version of individuals in the specified release)") @QueryParam("snapshot")
                     int snapshot) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-
-            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
             List<String> annotationList = new ArrayList<>();
             if (StringUtils.isNotEmpty(annotation)) {
@@ -184,13 +181,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            DataResult<Individual> queryResult;
-            if (count) {
-                queryResult = individualManager.count(studyStr, query, token);
-            } else {
-                queryResult = individualManager.search(studyStr, query, queryOptions, token);
-            }
-            return createOkResponse(queryResult);
+            return createOkResponse(individualManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -458,46 +449,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of individual ids") @PathParam("individuals") String individuals) {
         try {
             return createOkResponse(individualManager.delete(studyStr, getIdList(individuals), queryOptions, true, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @DELETE
-    @Path("/delete")
-    @ApiOperation(value = "Delete existing individuals")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = Constants.FORCE, value = "Force the deletion of individuals that already belong to families",
-                    dataType = "boolean", defaultValue = "false", paramType = "query")
-    })
-    public Response delete(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "id") @QueryParam("id") String id,
-            @ApiParam(value = "name") @QueryParam("name") String name,
-            @ApiParam(value = "father") @QueryParam("father") String father,
-            @ApiParam(value = "mother") @QueryParam("mother") String mother,
-            @ApiParam(value = "sex") @QueryParam("sex") String sex,
-            @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-            @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
-                    String populationName,
-            @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
-                    String populationSubpopulation,
-            @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
-                    String populationDescription,
-            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
-                    IndividualProperty.KaryotypicSex karyotypicSex,
-            @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
-                    IndividualProperty.LifeStatus lifeStatus,
-            @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
-                    IndividualProperty.AffectationStatus affectationStatus,
-            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION, required = false) @QueryParam("annotation") String annotation,
-            @ApiParam(value = "Release value (Current release from the moment the individuals were first created)")
-            @QueryParam("release") String release) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(individualManager.delete(studyStr, query, queryOptions, true, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

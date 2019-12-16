@@ -495,11 +495,9 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @DefaultValue("") @QueryParam("attributes") String attributes,
             @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @DefaultValue("")
             @QueryParam("nattributes") String nattributes,
-            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount,
             @ApiParam(value = "Release value") @QueryParam("release") String release) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
 
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
@@ -521,14 +519,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 query.remove("jobId");
             }
 
-            DataResult<File> result;
-            if (count) {
-                result = fileManager.count(studyStr, query, token);
-            } else {
-                result = fileManager.search(studyStr, query, queryOptions, token);
-            }
-
-            return createOkResponse(result);
+            return createOkResponse(fileManager.search(studyStr, query, queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

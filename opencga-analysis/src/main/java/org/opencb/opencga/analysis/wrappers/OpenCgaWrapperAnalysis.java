@@ -108,11 +108,6 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
         }
     }
 
-    protected List<String> getFilenames(Path dir) throws IOException {
-        Stream<Path> walk = Files.walk(dir);
-        return walk.map(x -> x.getFileName().toString()).collect(Collectors.toList());
-    }
-
     public String getStudy() {
         return study;
     }

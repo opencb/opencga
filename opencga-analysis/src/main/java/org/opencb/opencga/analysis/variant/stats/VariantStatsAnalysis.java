@@ -34,11 +34,10 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.tools.result.FileResult;
-import org.opencb.opencga.core.tools.variant.VariantStatsAnalysisExecutor;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.tools.variant.VariantStatsAnalysisExecutor;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -156,18 +155,17 @@ public class VariantStatsAnalysis extends OpenCgaTool {
 
         if (variantsQuery == null) {
             variantsQuery = new Query();
+        } else {
+            variantsQuery = new Query(variantsQuery);
         }
         variantsQuery.putIfAbsent(VariantQueryParam.STUDY.key(), studyFqn);
         String region = variantsQuery.getString(VariantQueryParam.REGION.key());
         if (StringUtils.isEmpty(region)) {
             region = params.getString(VariantQueryParam.REGION.key());
-            if (StringUtils.isEmpty(region)) {
+            if (StringUtils.isNotEmpty(region)) {
                 variantsQuery.put(VariantQueryParam.REGION.key(), region);
             }
         }
-
-        params.put("variantsQuery", variantsQuery);
-
 
         aggregation = getAggregation(catalogManager, studyFqn, params, token);
 
@@ -213,8 +211,6 @@ public class VariantStatsAnalysis extends OpenCgaTool {
             outdir = getOutDir();
         }
 
-        params.put("cohorts", cohorts);
-
         outputFile = buildOutputFileName(cohorts, region, outdir);
 
         executorParams.putAll(params);
@@ -258,9 +254,7 @@ public class VariantStatsAnalysis extends OpenCgaTool {
                     List<String> sampleNames = samples.stream().map(Sample::getId).collect(Collectors.toList());
 
                     cohortsMap.put(cohortName, sampleNames);
-                    params.put("dynamicCohort", true);
-                    params.put("samplesQuery", samplesQuery);
-                    params.put("samples", sampleNames);
+                    addAttribute("dynamicCohort", true);
                 } else {
                     for (String cohortName : cohorts) {
                         Cohort cohort = catalogManager.getCohortManager().get(studyFqn, cohortName, new QueryOptions(), token).first();
@@ -344,8 +338,6 @@ public class VariantStatsAnalysis extends OpenCgaTool {
                         .setVariantsQuery(variantsQuery)
                         .setIndex(index)
                         .execute();
-
-                addFile(outputFile, FileResult.FileType.TAB_SEPARATED);
             });
         }
     }

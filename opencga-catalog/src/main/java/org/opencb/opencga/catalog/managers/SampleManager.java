@@ -51,6 +51,10 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -278,7 +282,22 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             AnnotationUtils.fixQueryOptionAnnotation(options);
 
             query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Sample> queryResult = sampleDBAdaptor.get(study.getUid(), query, options, userId);
+
+            Future<OpenCGAResult<Long>> countFuture = null;
+            if (options.getBoolean(QueryOptions.COUNT)) {
+                ExecutorService executor = Executors.newSingleThreadExecutor();
+                Query finalQuery = query;
+                countFuture = executor.submit(() -> sampleDBAdaptor.count(study.getUid(), finalQuery, userId,
+                        StudyAclEntry.StudyPermissions.VIEW_SAMPLES));
+            }
+            OpenCGAResult<Sample> queryResult = OpenCGAResult.empty();
+            if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
+                queryResult = sampleDBAdaptor.get(study.getUid(), query, options, userId);
+            }
+
+            if (countFuture != null) {
+                mergeCount(queryResult, countFuture);
+            }
 
             auditManager.auditSearch(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -288,6 +307,10 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             auditManager.auditSearch(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
+        } catch (InterruptedException | ExecutionException e) {
+            auditManager.auditSearch(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(-1, "", e.getMessage())));
+            throw new CatalogException("Unexpected error", e);
         }
     }
 

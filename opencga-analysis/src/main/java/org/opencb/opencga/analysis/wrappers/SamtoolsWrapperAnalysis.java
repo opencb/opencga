@@ -9,7 +9,6 @@ import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.tools.result.FileResult;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -22,7 +21,7 @@ import java.util.*;
 import static org.opencb.opencga.core.api.ParamConstants.SAMTOOLS_COMMANDS;
 import static org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine.ALIGNMENT_STATS_VARIABLE_SET;
 
-@Tool(id = SamtoolsWrapperAnalysis.ID, type = Tool.ToolType.VARIANT, description = SamtoolsWrapperAnalysis.DESCRIPTION)
+@Tool(id = SamtoolsWrapperAnalysis.ID, type = Tool.ToolType.ALIGNMENT, description = SamtoolsWrapperAnalysis.DESCRIPTION)
 public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     public final static String ID = "samtools";
@@ -115,33 +114,12 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
             String commandLine = getCommandLine();
             logger.info("Samtools command line: " + commandLine);
             try {
-                Set<String> filenamesBeforeRunning = new HashSet<>(getFilenames(getOutDir()));
-                filenamesBeforeRunning.add(STDOUT_FILENAME);
-                filenamesBeforeRunning.add(STDERR_FILENAME);
-
                 // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
                 Command cmd = new Command(getCommandLine())
                         .setOutputOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDOUT_FILENAME).toFile())))
                         .setErrorOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDERR_FILENAME).toFile())));
 
                 cmd.run();
-
-                // Add the output files to the analysis result file
-                List<String> outNames = getFilenames(getOutDir());
-                for (String name : outNames) {
-                    if (!filenamesBeforeRunning.contains(name)) {
-                        if (FileUtils.sizeOf(new File(getOutDir() + "/" + name)) > 0) {
-                            FileResult.FileType fileType = FileResult.FileType.TAB_SEPARATED;
-                            if (name.endsWith("txt") || name.endsWith("log") || name.endsWith("sam") || name.endsWith("fai")
-                                    || name.endsWith("dict")) {
-                                fileType = FileResult.FileType.PLAIN_TEXT;
-                            } else if (name.endsWith("bam") || name.endsWith("cram") || name.endsWith("bai") || name.endsWith("crai")) {
-                                fileType = FileResult.FileType.BINARY;
-                            }
-                            addFile(getOutDir().resolve(name), fileType);
-                        }
-                    }
-                }
 
                 // Check samtools errors
                 boolean success = false;
@@ -163,12 +141,10 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                         }
                     }
                     case "stats": {
-                        File file = new File(getOutDir() + "/" + STDOUT_FILENAME);
+                        File file = getOutDir().resolve(STDOUT_FILENAME).toFile();
                         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
                         if (lines.size() > 0 && lines.get(0).startsWith("# This file was produced by samtools stats")) {
-
                             FileUtils.copyFile(file, outputFile);
-                            addFile(outputFile.toPath(), FileResult.FileType.PLAIN_TEXT);
                             if (params.containsKey(INDEX_STATS_PARAM) && params.getBoolean(INDEX_STATS_PARAM)) {
                                 indexStats();
                             }
@@ -177,18 +153,16 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                         break;
                     }
                     case "depth": {
-//                        File file = new File(getOutDir() + "/" + STDERR_FILENAME);
                         File file = new File(getOutDir() + "/" + STDOUT_FILENAME);
                         if (file.exists() && file.length() > 0) {
                             FileUtils.copyFile(file, outputFile);
-                            addFile(outputFile.toPath(), FileResult.FileType.PLAIN_TEXT);
                             success = true;
                         }
                         break;
                     }
                 }
                 if (!success) {
-                    File file = new File(getOutDir() + "/" + STDERR_FILENAME);
+                    File file = getOutDir().resolve(STDERR_FILENAME).toFile();
                     String msg = "Something wrong happened when executing Samtools";
                     if (file.exists()) {
                         msg = StringUtils.join(FileUtils.readLines(file, Charset.defaultCharset()), ". ");

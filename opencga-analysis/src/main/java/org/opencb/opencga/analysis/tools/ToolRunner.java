@@ -1,32 +1,84 @@
 package org.opencb.opencga.analysis.tools;
 
-import org.opencb.hpg.bigdata.analysis.exceptions.AnalysisToolException;
-import org.opencb.hpg.bigdata.analysis.tools.ToolManager;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.catalog.managers.JobManager;
-import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class ToolRunner {
 
     private Logger logger = LoggerFactory.getLogger(ToolRunner.class);
 
-    private CatalogManager catalogManager;
-    private ToolManager toolManager;
+    private final CatalogManager catalogManager;
+    private final StorageEngineFactory storageEngineFactory;
+    private final String opencgaHome;
+    private final ToolFactory toolFactory;
 
-    private JobManager jobManager;
-    private FileManager fileManager;
+    public ToolRunner(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
+        this.opencgaHome = opencgaHome;
+        this.catalogManager = catalogManager;
 
-    public ToolRunner(Configuration configuration) throws CatalogException, AnalysisToolException {
-        this.catalogManager = new CatalogManager(configuration);
-//        this.toolManager = new ToolManager(Paths.get(configuration.getToolDir()));
-        this.toolManager = null;
+        this.storageEngineFactory = storageEngineFactory;
+        this.toolFactory = new ToolFactory();
+    }
 
-        this.jobManager = catalogManager.getJobManager();
-        this.fileManager = catalogManager.getFileManager();
+    /**
+     * Execute a command tool.
+     * @param jobId jobId of the job containing the relevant information.
+     * @param token session id of the user that will execute the tool.
+     * @return Execution result
+     * @throws ToolException if the execution fails
+     */
+    public ExecutionResult execute(String jobId, String token) throws CatalogException, ToolException {
+        // We get the job information.
+        Query query = new Query();
+        query.put(JobDBAdaptor.QueryParams.UID.key(), jobId);
+        Job job = catalogManager.getJobManager().search(null, query, QueryOptions.empty(), token).first();
+
+        return execute(job.getToolId(), new ObjectMap(job.getParams()), Paths.get(job.getOutDir().getUri()), token);
+    }
+
+    /**
+     * Execute a tool
+     * @param toolId Tool identifier. It can be either the tool id itself, or the class name.
+     * @param params Params for the execution.
+     * @param outDir Output directory. Mandatory
+     * @param token session id of the user that will execute the tool.
+     * @return Execution result
+     * @throws ToolException if the execution fails
+     */
+    public ExecutionResult execute(String toolId, ObjectMap params, Path outDir, String token) throws ToolException {
+        return toolFactory
+                .getTool(toolId)
+                .setUp(opencgaHome, catalogManager, storageEngineFactory, params, outDir, token)
+                .start();
+    }
+
+    /**
+     * Execute a tool
+     * @param tool Tool class
+     * @param params Params for the execution.
+     * @param outDir Output directory. Mandatory
+     * @param token session id of the user that will execute the tool.
+     * @return Execution result
+     * @throws ToolException if the execution fails
+     */
+    public ExecutionResult execute(Class<? extends OpenCgaTool> tool, ObjectMap params, Path outDir, String token) throws ToolException {
+        return toolFactory
+                .getTool(tool)
+                .setUp(opencgaHome, catalogManager, storageEngineFactory, params, outDir, token)
+                .start();
     }
 
     /**
@@ -98,5 +150,4 @@ public class ToolRunner {
 //            logger.error("{}", e.getMessage(), e);
 //        }
     }
-
 }

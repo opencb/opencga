@@ -48,6 +48,10 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -860,17 +864,37 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("token", token);
 
         try {
-            OpenCGAResult<Panel> result;
+            Future<OpenCGAResult<Long>> countFuture = null;
+            OpenCGAResult<Panel> result = OpenCGAResult.empty();
             if (INSTALLATION_PANELS.equals(studyId)) {
                 query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), -1);
 
-                // Here view permissions won't be checked
-                result = panelDBAdaptor.get(query, options);
+                if (options.getBoolean(QueryOptions.COUNT)) {
+                    ExecutorService executor = Executors.newSingleThreadExecutor();
+                    Query finalQuery = query;
+                    countFuture = executor.submit(() -> panelDBAdaptor.count(finalQuery));
+                }
+                if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
+                    // Here view permissions won't be checked
+                    result = panelDBAdaptor.get(query, options);
+                }
             } else {
                 query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-                // Here permissions will be checked
-                result = panelDBAdaptor.get(study.getUid(), query, options, userId);
+                if (options.getBoolean(QueryOptions.COUNT)) {
+                    ExecutorService executor = Executors.newSingleThreadExecutor();
+                    Query finalQuery = query;
+                    countFuture = executor.submit(() -> panelDBAdaptor.count(study.getUid(), finalQuery, userId,
+                            StudyAclEntry.StudyPermissions.VIEW_PANELS));
+                }
+                if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
+                    // Here permissions will be checked
+                    result = panelDBAdaptor.get(study.getUid(), query, options, userId);
+                }
+            }
+
+            if (countFuture != null) {
+                mergeCount(result, countFuture);
             }
 
             auditManager.auditSearch(userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
@@ -880,6 +904,10 @@ public class PanelManager extends ResourceManager<Panel> {
             auditManager.auditSearch(userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
+        } catch (InterruptedException | ExecutionException e) {
+            auditManager.auditSearch(userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(-1, "", e.getMessage())));
+            throw new CatalogException("Unexpected error", e);
         }
     }
 

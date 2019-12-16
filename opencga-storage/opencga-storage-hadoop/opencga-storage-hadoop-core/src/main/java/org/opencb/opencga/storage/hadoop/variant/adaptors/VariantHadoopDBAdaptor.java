@@ -349,7 +349,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             resultSet.next();
             long count = resultSet.getLong(1);
             return new DataResult<>(((int) (System.currentTimeMillis() - startTime)), Collections.emptyList(),
-                    1, Collections.singletonList(count), 1);
+                    0, Collections.singletonList(count), count);
         } catch (SQLException e) {
             throw VariantQueryException.internalException(e);
         }

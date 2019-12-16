@@ -747,24 +747,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Sample> documentList = new ArrayList<>();
-        OpenCGAResult<Sample> queryResult;
         try (DBIterator<Sample> dbIterator = iterator(studyUid, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery(startTime, documentList);
-
-        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
-            return queryResult;
-        }
-
-        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
-        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            OpenCGAResult<Long> count = count(studyUid, query, user, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
-            queryResult.setNumMatches(count.getNumMatches());
-        }
-        return queryResult;
+        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -780,18 +768,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 documentList.add(dbIterator.next());
             }
         }
-        OpenCGAResult<Sample> queryResult = endQuery(startTime, documentList);
-
-        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
-            return queryResult;
-        }
-
-        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
-        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults() && !isQueryingIndividualFields(query)) {
-            OpenCGAResult<Long> count = count(clientSession, query);
-            queryResult.setNumMatches(count.getNumMatches());
-        }
-        return queryResult;
+        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -808,18 +785,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery(startTime, documentList);
-
-        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
-            return queryResult;
-        }
-
-        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
-        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            OpenCGAResult<Long> count = count(clientSession, query);
-            queryResult.setNumMatches(count.getNumMatches());
-        }
-        return queryResult;
+        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -838,18 +804,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
                 documentList.add(dbIterator.next());
             }
         }
-        queryResult = endQuery(startTime, documentList);
-
-        if (options != null && options.getBoolean(QueryOptions.SKIP_COUNT, false)) {
-            return queryResult;
-        }
-
-        // We only count the total number of results if the actual number of results equals the limit established for performance purposes.
-        if (options != null && options.getInt(QueryOptions.LIMIT, 0) == queryResult.getNumResults()) {
-            OpenCGAResult<Long> count = count(clientSession, query);
-            queryResult.setNumMatches(count.getNumMatches());
-        }
-        return queryResult;
+        return endQuery(startTime, documentList);
     }
 
     @Override

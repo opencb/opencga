@@ -113,12 +113,6 @@ public class VariantExportStorageOperation extends OpenCgaTool {
         } else {
             outputFile = null;
         }
-
-        params.putIfNotNull("query", query);
-        params.putIfNotNull("outputFormat", outputFormat);
-        params.putIfNotNull("variantsFile", variantsFile);
-        params.putIfNotNull("outputFile", outputFile);
-        params.putIfNotNull("standardOutput", VariantWriterFactory.isStandardOutput(outputFileStr));
     }
 
     @Override

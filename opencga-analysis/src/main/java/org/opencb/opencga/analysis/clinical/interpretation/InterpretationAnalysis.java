@@ -25,11 +25,10 @@ import org.opencb.biodata.models.commons.Software;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ConfigurationUtils;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
+import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.tools.result.FileResult;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
@@ -115,10 +114,9 @@ public abstract class InterpretationAnalysis extends OpenCgaTool {
         }
 
         // Save interpretation analysis in JSON file
-        Path path = Paths.get(getOutDir().toAbsolutePath() + "/" + INTERPRETATION_FILENAME);
+        Path path = getOutDir().resolve(INTERPRETATION_FILENAME);
         try {
             JacksonUtils.getDefaultObjectMapper().writer().writeValue(path.toFile(), interpretation);
-            addFile(path, FileResult.FileType.JSON);
         } catch (IOException e) {
             throw new ToolException(e);
         }

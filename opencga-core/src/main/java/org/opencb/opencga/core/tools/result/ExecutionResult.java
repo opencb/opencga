@@ -15,21 +15,17 @@ public class ExecutionResult {
     private Date start;
     private Date end;
     private Status status;
-    @Deprecated
-    private List<FileResult> outputFiles;
+    private List<FileMove> filesMove;
     private List<ToolStep> steps;
     private List<Event> events;
 
-    @Deprecated
-    private ObjectMap params;
-    @Deprecated
     private ObjectMap attributes;
 
     public ExecutionResult() {
         executor = new ExecutorInfo();
         status = new Status();
         events = new LinkedList<>();
-        outputFiles = new LinkedList<>();
+        filesMove = new LinkedList<>();
         steps = new LinkedList<>();
         attributes = new ObjectMap();
     }
@@ -41,10 +37,9 @@ public class ExecutionResult {
         sb.append(", start=").append(start);
         sb.append(", end=").append(end);
         sb.append(", status=").append(status);
-        sb.append(", outputFiles=").append(outputFiles);
+        sb.append(", filesMove=").append(filesMove);
         sb.append(", steps=").append(steps);
         sb.append(", events=").append(events);
-        sb.append(", params=").append(params);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -104,12 +99,12 @@ public class ExecutionResult {
         return this;
     }
 
-    public List<FileResult> getOutputFiles() {
-        return outputFiles;
+    public List<FileMove> getFilesMove() {
+        return filesMove;
     }
 
-    public ExecutionResult setOutputFiles(List<FileResult> outputFiles) {
-        this.outputFiles = outputFiles;
+    public ExecutionResult setFilesMove(List<FileMove> filesMove) {
+        this.filesMove = filesMove;
         return this;
     }
 
@@ -119,15 +114,6 @@ public class ExecutionResult {
 
     public ExecutionResult setSteps(List<ToolStep> steps) {
         this.steps = steps;
-        return this;
-    }
-
-    public ObjectMap getParams() {
-        return params;
-    }
-
-    public ExecutionResult setParams(ObjectMap params) {
-        this.params = params;
         return this;
     }
 

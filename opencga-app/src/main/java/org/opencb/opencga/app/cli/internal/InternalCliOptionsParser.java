@@ -149,8 +149,9 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         jCommander.addCommand("tools", toolsCommandOptions);
         JCommander toolsSubCommands = jCommander.getCommands().get("tools");
         toolsSubCommands.addCommand("list", toolsCommandOptions.listToolCommandOptions);
-        toolsSubCommands.addCommand("show", toolsCommandOptions.showToolCommandOptions);
-        toolsSubCommands.addCommand("execute", toolsCommandOptions.executeToolCommandOptions);
+//        toolsSubCommands.addCommand("show", toolsCommandOptions.showToolCommandOptions);
+        toolsSubCommands.addCommand("execute-tool", toolsCommandOptions.executeToolCommandOptions);
+        toolsSubCommands.addCommand("execute-job", toolsCommandOptions.executeJobCommandOptions);
 
         interpretationCommandOptions = new InterpretationCommandOptions(commonCommandOptions, variantQueryCommandOptions, jCommander);
         jCommander.addCommand("interpretation", interpretationCommandOptions);

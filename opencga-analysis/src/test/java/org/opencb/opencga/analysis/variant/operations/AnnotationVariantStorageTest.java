@@ -24,12 +24,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.core.tools.result.ExecutionResult;
-import org.opencb.opencga.core.tools.result.ExecutorResultManager;
-import org.opencb.opencga.core.tools.result.FileResult;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantDBAdaptor;
@@ -94,10 +92,10 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
     public void testAnnotateCreateAndLoad() throws Exception {
         DummyVariantDBAdaptor dbAdaptor = mockVariantDBAdaptor();
 
-        List<FileResult> files = annotate(new QueryOptions(VariantAnnotationManager.CREATE, true)
+        List<File> files = annotate(new QueryOptions(VariantAnnotationManager.CREATE, true)
                 .append(StorageOperation.KEEP_INTERMEDIATE_FILES, true)
-                .append(VariantQueryParam.STUDY.key(), studyFqn))
-                .getOutputFiles();
+                .append(VariantQueryParam.STUDY.key(), studyFqn));
+
         verify(dbAdaptor, atLeastOnce()).iterator(any(Query.class), any());
         verify(dbAdaptor, never()).updateAnnotations(any(), anyLong(), any());
         verify(dbAdaptor, never()).updateCustomAnnotations(any(), any(), any(), anyLong(), any());
@@ -125,7 +123,7 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
         config.append(StorageOperation.KEEP_INTERMEDIATE_FILES, true);
         variantManager.annotate(studyFqn, null, outdir, config, sessionId);
 
-        String[] files = Paths.get(UriUtils.createUri(outdir)).toFile().list((dir, name) -> !name.contains(ExecutorResultManager.FILE_EXTENSION));
+        String[] files = Paths.get(UriUtils.createUri(outdir)).toFile().list((dir, name) -> !name.contains(ExecutionResultManager.FILE_EXTENSION));
         assertEquals(1, files.length);
         config = new QueryOptions(VariantAnnotationManager.LOAD_FILE, Paths.get(outdir, files[0]).toAbsolutePath().toString());
 
@@ -134,22 +132,22 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
         checkAnnotation(v -> true);
     }
 
-    ExecutionResult annotate(QueryOptions config) throws ToolException, CatalogException, IOException {
+    List<File> annotate(QueryOptions config) throws ToolException, CatalogException, IOException {
         return annotate(config, null);
     }
 
-    ExecutionResult annotate(QueryOptions config, String region) throws ToolException, CatalogException, IOException {
+    List<File> annotate(QueryOptions config, String region) throws ToolException, CatalogException, IOException {
         String tmpDir = opencga.createTmpOutdir(studyId, "_ANNOT_", sessionId);
-        ExecutionResult result = variantManager.annotate(studyFqn, region, tmpDir, config, sessionId);
+        variantManager.annotate(studyFqn, region, tmpDir, config, sessionId);
 
         if (config.getBoolean(StorageOperation.KEEP_INTERMEDIATE_FILES)) {
             String study = config.getString("study");
             String catalogPathOutDir = "data/" + Paths.get(tmpDir).toFile().getName() + "/";
             catalogManager.getFileManager().createFolder(study, catalogPathOutDir, new File.FileStatus(), true, "", FileManager.INCLUDE_FILE_URI_PATH,
                     sessionId).first();
-            copyResults(Paths.get(tmpDir), study, catalogPathOutDir, sessionId);
+            return copyResults(Paths.get(tmpDir), study, catalogPathOutDir, sessionId);
         }
-        return result;
+        return Collections.emptyList();
     }
 
     @Test

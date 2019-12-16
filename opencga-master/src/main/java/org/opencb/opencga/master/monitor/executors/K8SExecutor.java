@@ -154,22 +154,33 @@ public class K8SExecutor implements BatchExecutor {
     /**
      * Build a valid K8S job name.
      *
+     * DNS-1123 label must consist of lower case alphanumeric characters or '-', and must start and
+     * end with an alphanumeric character (e.g. 'my-name',  or '123-abc', regex used for validation
+     * is '[a-z0-9]([-a-z0-9]*[a-z0-9])?'
+     *
+     * Max length = 63
+     *
      * DNS-1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must
      * start and end with an alphanumeric character (e.g. 'example.com', regex used for validation
-     * is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')dónde digas
+     * is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')
      * @param jobId job Is
+     * @link https://github.com/kubernetes/kubernetes/blob/c560907/staging/src/k8s.io/apimachinery/pkg/util/validation/validation.go#L135
      * @return valid name
      */
     protected static String buildJobName(String jobId) {
         jobId = jobId.replace("_", "-");
         int[] invalidChars = jobId
                 .chars()
-                .filter(c -> c != '-' && c != '.' && !StringUtils.isAlphanumeric(String.valueOf((char) c)))
+                .filter(c -> c != '-' && !StringUtils.isAlphanumeric(String.valueOf((char) c)))
                 .toArray();
         for (int invalidChar : invalidChars) {
-            jobId = jobId.replace(((char) invalidChar), '.');
+            jobId = jobId.replace(((char) invalidChar), '-');
         }
-        return ("opencga-job-" + jobId).toLowerCase();
+        String jobName = ("opencga-job-" + jobId).toLowerCase();
+        if (jobName.length() > 63) {
+            jobName = jobName.substring(0, 30) + "--" + jobName.substring(jobName.length() - 30);
+        }
+        return jobName;
     }
 
     @Override
