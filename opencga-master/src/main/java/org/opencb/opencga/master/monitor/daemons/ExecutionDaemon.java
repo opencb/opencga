@@ -122,8 +122,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(VariantFileDeleteOperationTool.ID, "variant delete");
             put(VariantSecondaryIndexOperationTool.ID, "variant secondary-index");
             put(VariantSecondaryIndexSamplesDeleteOperationTool.ID, "variant secondary-index-delete");
-            put("variant-score-delete", "variant score-delete");
-            put("variant-score-index", "variant score-index");
+            put(VariantScoreDeleteOperationTool.ID, "variant score-delete");
+            put(VariantScoreIndexOperationTool.ID, "variant score-index");
             put(VariantSampleIndexOperationTool.ID, "variant sample-index");
             put(VariantFamilyIndexOperationTool.ID, "variant family-index");
             put(VariantAggregateFamilyOperationTool.ID, "variant aggregate-family");
@@ -162,7 +162,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     @Override
     public void run() {
-
         while (!exit) {
             try {
                 Thread.sleep(interval);

@@ -24,9 +24,9 @@ import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.annotations.Tool;
-import org.opencb.opencga.core.annotations.Tool.ToolType;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.variant.GwasAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyResourceMetadata;
@@ -40,7 +40,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Tool(id = GwasAnalysis.ID, type = ToolType.VARIANT,
+@Tool(id = GwasAnalysis.ID, resource = Enums.Resource.VARIANT,
         description = GwasAnalysis.DESCRIPTION)
 public class GwasAnalysis extends OpenCgaTool {
 

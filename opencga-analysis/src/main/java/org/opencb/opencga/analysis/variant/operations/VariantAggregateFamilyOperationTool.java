@@ -2,11 +2,13 @@ package org.opencb.opencga.analysis.variant.operations;
 
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.api.operations.variant.VariantAggregateFamilyParams;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.List;
 
 @Tool(id = VariantAggregateFamilyOperationTool.ID, description = VariantAggregateFamilyOperationTool.DESCRIPTION,
-        type = Tool.ToolType.VARIANT)
+        type = Tool.Type.OPERATION,
+        resource = Enums.Resource.VARIANT)
 public class VariantAggregateFamilyOperationTool extends OperationTool {
     public static final String ID = "variant-aggregate-family";
     public static final String DESCRIPTION = "Find variants where not all the samples are present, and fill the empty values.";

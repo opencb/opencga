@@ -3,11 +3,13 @@ package org.opencb.opencga.analysis.variant.operations;
 import org.apache.commons.collections.CollectionUtils;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.api.operations.variant.VariantSampleIndexParams;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Tool(id = VariantSampleIndexOperationTool.ID, description = VariantSampleIndexOperationTool.DESCRIPTION, type = Tool.ToolType.VARIANT)
+@Tool(id = VariantSampleIndexOperationTool.ID, description = VariantSampleIndexOperationTool.DESCRIPTION,
+        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
 public class VariantSampleIndexOperationTool extends OperationTool {
 
     public static final String ID = "variant-sample-index";

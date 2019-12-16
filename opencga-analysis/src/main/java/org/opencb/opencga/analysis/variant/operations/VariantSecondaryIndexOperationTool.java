@@ -2,9 +2,12 @@ package org.opencb.opencga.analysis.variant.operations;
 
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.api.operations.variant.VariantSecondaryIndexParams;
+import org.opencb.opencga.core.models.common.Enums;
 
 @Tool(id = VariantSecondaryIndexOperationTool.ID, description = VariantSecondaryIndexOperationTool.DESCRIPTION,
-        type = Tool.ToolType.VARIANT)
+        type = Tool.Type.OPERATION,
+        scope = Tool.Scope.PROJECT,
+        resource = Enums.Resource.VARIANT)
 public class VariantSecondaryIndexOperationTool extends OperationTool {
 
     public static final String ID = "variant-secondary-index";

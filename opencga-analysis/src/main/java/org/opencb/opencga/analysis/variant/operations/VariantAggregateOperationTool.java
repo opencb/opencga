@@ -2,9 +2,11 @@ package org.opencb.opencga.analysis.variant.operations;
 
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.api.operations.variant.VariantAggregateParams;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
-@Tool(id = VariantAggregateOperationTool.ID, description = VariantAggregateOperationTool.DESCRIPTION, type = Tool.ToolType.VARIANT)
+@Tool(id = VariantAggregateOperationTool.ID, description = VariantAggregateOperationTool.DESCRIPTION,
+        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
 public class VariantAggregateOperationTool extends OperationTool {
 
     public static final String ID = "variant-aggregate";

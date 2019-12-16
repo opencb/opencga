@@ -2,8 +2,10 @@ package org.opencb.opencga.analysis.variant.operations;
 
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.api.operations.variant.VariantSecondaryIndexParams;
+import org.opencb.opencga.core.models.common.Enums;
 
-@Tool(id = VariantSecondaryIndexSamplesOperationTool.ID, type = Tool.ToolType.VARIANT)
+@Tool(id = VariantSecondaryIndexSamplesOperationTool.ID,
+        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
 public class VariantSecondaryIndexSamplesOperationTool extends OperationTool {
 
     public static final String ID = "variant-search-index-samples";

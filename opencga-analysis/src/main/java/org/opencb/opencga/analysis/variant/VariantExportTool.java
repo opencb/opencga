@@ -6,10 +6,12 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.api.variant.VariantExportParams;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 
-@Tool(id = VariantExportTool.ID, description = VariantExportTool.DESCRIPTION, type = Tool.ToolType.VARIANT)
+@Tool(id = VariantExportTool.ID, description = VariantExportTool.DESCRIPTION,
+        scope = Tool.Scope.PROJECT, resource = Enums.Resource.VARIANT)
 public class VariantExportTool extends OpenCgaTool {
     public static final String ID = "variant-export";
     public static final String DESCRIPTION = "Filter and export variants from the variant storage to a file";

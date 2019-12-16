@@ -60,7 +60,7 @@ public class ToolRunner {
      */
     public ExecutionResult execute(String toolId, ObjectMap params, Path outDir, String token) throws ToolException {
         return toolFactory
-                .getTool(toolId)
+                .createTool(toolId)
                 .setUp(opencgaHome, catalogManager, storageEngineFactory, params, outDir, token)
                 .start();
     }
@@ -76,7 +76,7 @@ public class ToolRunner {
      */
     public ExecutionResult execute(Class<? extends OpenCgaTool> tool, ObjectMap params, Path outDir, String token) throws ToolException {
         return toolFactory
-                .getTool(tool)
+                .createTool(tool)
                 .setUp(opencgaHome, catalogManager, storageEngineFactory, params, outDir, token)
                 .start();
     }

@@ -34,6 +34,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.DataStore;
 import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutorInfo;
@@ -144,14 +145,14 @@ public abstract class OpenCgaTool {
         availableFrameworks = new ArrayList<>();
         sourceTypes = new ArrayList<>();
         if (storageConfiguration.getVariant().getDefaultEngine().equals("mongodb")) {
-            if (getToolType().equals(Tool.ToolType.VARIANT)) {
+            if (getToolType().equals(Enums.Resource.VARIANT)) {
                 sourceTypes.add(ToolExecutor.Source.MONGODB);
             }
         } else if (storageConfiguration.getVariant().getDefaultEngine().equals("hadoop")) {
             availableFrameworks.add(ToolExecutor.Framework.MAP_REDUCE);
             // TODO: Check from configuration if spark is available
 //            availableFrameworks.add(ToolExecutor.Framework.SPARK);
-            if (getToolType().equals(Tool.ToolType.VARIANT)) {
+            if (getToolType().equals(Enums.Resource.VARIANT)) {
                 sourceTypes.add(ToolExecutor.Source.HBASE);
             }
         }
@@ -286,8 +287,8 @@ public abstract class OpenCgaTool {
     /**
      * @return the tool id
      */
-    public final Tool.ToolType getToolType() {
-        return this.getClass().getAnnotation(Tool.class).type();
+    public final Enums.Resource getToolType() {
+        return this.getClass().getAnnotation(Tool.class).resource();
     }
 
     /**

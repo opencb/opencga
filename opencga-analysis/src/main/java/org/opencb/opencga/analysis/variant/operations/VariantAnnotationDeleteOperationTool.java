@@ -2,8 +2,12 @@ package org.opencb.opencga.analysis.variant.operations;
 
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.api.operations.variant.VariantAnnotationDeleteParams;
+import org.opencb.opencga.core.models.common.Enums;
 
-@Tool(id = VariantAnnotationDeleteOperationTool.ID, description = VariantAnnotationDeleteOperationTool.ID, type = Tool.ToolType.VARIANT)
+@Tool(id = VariantAnnotationDeleteOperationTool.ID, description = VariantAnnotationDeleteOperationTool.ID,
+        type = Tool.Type.OPERATION,
+        scope = Tool.Scope.PROJECT,
+        resource = Enums.Resource.VARIANT)
 public class VariantAnnotationDeleteOperationTool extends OperationTool {
 
     public static final String ID = "variant-annotation-delete";

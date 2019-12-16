@@ -5,6 +5,7 @@ import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.api.operations.variant.VariantFileDeleteParams;
 import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
@@ -13,7 +14,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-@Tool(id = VariantFileDeleteOperationTool.ID, description = VariantFileDeleteOperationTool.DESCRIPTION, type = Tool.ToolType.VARIANT)
+@Tool(id = VariantFileDeleteOperationTool.ID, description = VariantFileDeleteOperationTool.DESCRIPTION,
+        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
 public class VariantFileDeleteOperationTool extends OperationTool {
 
     public static final String ID = "variant-file-delete";

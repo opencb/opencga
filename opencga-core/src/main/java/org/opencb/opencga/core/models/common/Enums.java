@@ -9,7 +9,10 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Enums {
+public final class Enums {
+
+    private Enums() {
+    }
 
     public enum Resource {
         USER,
@@ -25,7 +28,10 @@ public class Enums {
         CLINICAL_ANALYSIS,
         INTERPRETATION,
         VARIANT,
-        ALIGNMENT;
+        ALIGNMENT,
+        CLINICAL,
+        EXPRESSION,
+        FUNCTIONAL;
 
         public List<String> getFullPermissionList() {
             switch (this) {

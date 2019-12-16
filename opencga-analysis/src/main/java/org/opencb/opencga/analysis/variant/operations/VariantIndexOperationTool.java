@@ -3,12 +3,14 @@ package org.opencb.opencga.analysis.variant.operations;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.api.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 
 import static org.opencb.opencga.analysis.variant.manager.operations.VariantFileIndexerOperationManager.LOAD;
 import static org.opencb.opencga.analysis.variant.manager.operations.VariantFileIndexerOperationManager.TRANSFORM;
 
-@Tool(id = VariantIndexOperationTool.ID, description = VariantIndexOperationTool.DESCRIPTION, type = Tool.ToolType.VARIANT)
+@Tool(id = VariantIndexOperationTool.ID, description = VariantIndexOperationTool.DESCRIPTION,
+        type = Tool.Type.OPERATION, resource = Enums.Resource.VARIANT)
 public class VariantIndexOperationTool extends OperationTool {
     public static final String ID = "variant-index";
     public static final String DESCRIPTION = "Index variant files into the variant storage";

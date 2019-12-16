@@ -5,17 +5,16 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.Charset;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
-@Tool(id = DeeptoolsWrapperAnalysis.ID, type = Tool.ToolType.ALIGNMENT, description = DeeptoolsWrapperAnalysis.DESCRIPTION)
+@Tool(id = DeeptoolsWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = DeeptoolsWrapperAnalysis.DESCRIPTION)
 public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     public final static String ID = "deeptools";

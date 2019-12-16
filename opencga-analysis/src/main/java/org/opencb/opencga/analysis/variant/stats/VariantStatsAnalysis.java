@@ -38,6 +38,7 @@ import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.variant.VariantStatsAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -57,7 +58,7 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 /**
  * Created by jacobo on 06/03/15.
  */
-@Tool(id = VariantStatsAnalysis.ID, type = Tool.ToolType.VARIANT, description = VariantStatsAnalysis.DESCRIPTION)
+@Tool(id = VariantStatsAnalysis.ID, resource = Enums.Resource.VARIANT, description = VariantStatsAnalysis.DESCRIPTION)
 public class VariantStatsAnalysis extends OpenCgaTool {
 
     public final static String ID = "variant-stats";
