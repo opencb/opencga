@@ -31,15 +31,15 @@ import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
-import org.opencb.opencga.analysis.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.app.cli.internal.executors.VariantQueryCommandUtils;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.io.VcfOutputWriter;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.api.variant.*;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.rest.RestResponse;
 import org.opencb.opencga.core.results.OpenCGAResult;
@@ -47,7 +47,6 @@ import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericServiceModel;
 import org.opencb.opencga.server.grpc.VariantServiceGrpc;
-import org.opencb.opencga.server.rest.analysis.VariantAnalysisWSService;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
@@ -152,7 +151,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse stats() throws IOException {
-        ObjectMap params = new VariantAnalysisWSService.StatsRunParams(
+        ObjectMap params = new VariantStatsAnalysisParams(
                 variantCommandOptions.statsVariantCommandOptions.cohort,
                 variantCommandOptions.statsVariantCommandOptions.samples,
                 variantCommandOptions.statsVariantCommandOptions.index,
@@ -170,7 +169,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> sampleStats() throws IOException {
-        ObjectMap params = new VariantAnalysisWSService.SampleStatsRunParams(
+        ObjectMap params = new SampleVariantStatsAnalysisParams(
                 variantCommandOptions.sampleVariantStatsCommandOptions.sample,
                 variantCommandOptions.sampleVariantStatsCommandOptions.family,
                 variantCommandOptions.sampleVariantStatsCommandOptions.index,
@@ -187,7 +186,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> cohortStats() throws IOException {
-        ObjectMap params = new VariantAnalysisWSService.CohortStatsRunParams(
+        ObjectMap params = new CohortVariantStatsAnalysisParams(
                 variantCommandOptions.cohortVariantStatsCommandOptions.cohort,
                 variantCommandOptions.cohortVariantStatsCommandOptions.samples,
                 variantCommandOptions.cohortVariantStatsCommandOptions.index,
@@ -213,7 +212,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 //    }
 
     private RestResponse<Job> gwas() throws IOException {
-        ObjectMap params = new VariantAnalysisWSService.GwasRunParams(
+        ObjectMap params = new GwasAnalysisParams(
                 variantCommandOptions.gwasCommandOptions.phenotype,
                 variantCommandOptions.gwasCommandOptions.index,
                 variantCommandOptions.gwasCommandOptions.indexScoreId,
@@ -255,7 +254,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
     private RestResponse<Job> index() throws IOException {
         VariantCommandOptions.VariantIndexCommandOptions variantIndex = variantCommandOptions.indexVariantCommandOptions;
-        ObjectMap params = new VariantAnalysisWSService.VariantIndexParams(
+        ObjectMap params = new VariantIndexParams(
                 variantIndex.fileId,
                 variantIndex.genericVariantIndexOptions.resume,
                 variantIndex.outdir,
@@ -563,7 +562,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     // Wrappers
 
     private RestResponse<Job> plink() throws IOException {
-        ObjectMap params = new VariantAnalysisWSService.PlinkRunParams(
+        ObjectMap params = new PlinkRunParams(
                 variantCommandOptions.plinkCommandOptions.tpedFile,
                 variantCommandOptions.plinkCommandOptions.tfamFile,
                 variantCommandOptions.plinkCommandOptions.covarFile,
@@ -574,7 +573,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> rvtests() throws IOException {
-        ObjectMap params = new VariantAnalysisWSService.RvtestsRunParams(
+        ObjectMap params = new RvtestsRunParams(
                 variantCommandOptions.rvtestsCommandOptions.executable,
                 variantCommandOptions.rvtestsCommandOptions.vcfFile,
                 variantCommandOptions.rvtestsCommandOptions.phenoFile,

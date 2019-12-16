@@ -21,26 +21,25 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
-import org.opencb.opencga.analysis.variant.VariantStorageManager;
-import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
-import org.opencb.opencga.analysis.variant.operations.StorageOperation;
-import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.api.variant.VariantStatsAnalysisParams;
 import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.Cohort;
+import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.tools.variant.VariantStatsAnalysisExecutor;
-import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
@@ -53,27 +52,28 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 /**
  * Created by jacobo on 06/03/15.
  */
-@Tool(id = VariantStatsAnalysis.ID, type = Tool.ToolType.VARIANT,
-        description = "Compute variant stats for any cohort and any set of variants.")
+@Tool(id = VariantStatsAnalysis.ID, type = Tool.ToolType.VARIANT, description = VariantStatsAnalysis.DESCRIPTION)
 public class VariantStatsAnalysis extends OpenCgaTool {
 
     public final static String ID = "variant-stats";
+    public static final String DESCRIPTION = "Compute variant stats for any cohort and any set of variants."
+            + " Optionally, index the result in the variant storage database.";
 
     public static final String STATS_AGGREGATION_CATALOG = VariantStorageOptions.STATS_AGGREGATION.key().replace(".", "_");
-    private List<String> cohorts;
+
     private String studyFqn;
+
+    private VariantStatsAnalysisParams toolParams = new VariantStatsAnalysisParams();
+    private List<String> cohorts;
 
     private Query samplesQuery;
     private Query variantsQuery;
-    private boolean index;
     private Aggregation aggregation;
-    private DataStore dataStore;
     private Map<String, List<String>> cohortsMap;
     private Path outputFile;
     private Properties mappingFile;
@@ -86,54 +86,76 @@ public class VariantStatsAnalysis extends OpenCgaTool {
      * @return this
      */
     public VariantStatsAnalysis setStudy(String study) {
-        this.studyFqn = study;
+        params.put(ParamConstants.STUDY_PARAM, study);
         return this;
     }
 
-    public VariantStatsAnalysis setCohorts(List<String> cohorts) {
-        this.cohorts = cohorts;
+    public VariantStatsAnalysis setCohort(List<String> cohort) {
+        toolParams.setCohort(cohort);
         return this;
     }
 
     public VariantStatsAnalysis setIndex(boolean index) {
-        this.index = index;
+        toolParams.setIndex(index);
         return this;
     }
 
     /**
-     * Samples query selecting samples of the cohort.
-     * Optional if provided {@link #cohorts}.
+     * Samples of the cohort.
+     * Optional if provided {@link #setCohort(List)}.
      *
-     * @param samplesQuery sample query
+     * @param samples samples list
      * @return this
      */
+    public VariantStatsAnalysis setSamples(List<String> samples) {
+        toolParams.setSamples(samples);
+        return this;
+    }
+
+//    /**
+//     * Samples query selecting samples of the cohort.
+//     * Optional if provided {@link #cohorts}.
+//     *
+//     * @param samplesQuery sample query
+//     * @return this
+//     */
     public VariantStatsAnalysis setSamplesQuery(Query samplesQuery) {
         this.samplesQuery = samplesQuery;
         return this;
     }
 
-    /**
+    /**catalogManager.getStudyManager().resolveId(studyFqn, userId);
+        studyFqn = study.getFqn();
      * Name of the cohort.
-     * Optional if provided {@link #samplesQuery}.
-     * When used without {@link #samplesQuery}, the cohort must be defined in catalog.
+     * Optional if provided {@link #setSamples(List)}.
+     * When used without {@link #setSamples(List)}, the cohort must be defined in catalog.
      * It's samples will be used to calculate the variant stats.
-     * When used together with {@link #samplesQuery}, this name will be just an alias to be used in the output file.
+     * When used together with {@link #setSamples(List)}, this name will be just an alias to be used in the output file.
      *
      * @param cohortName cohort name
      * @return this
      */
     public VariantStatsAnalysis setCohortName(String cohortName) {
-        this.cohorts = Collections.singletonList(cohortName);
+        return setCohort(Collections.singletonList(cohortName));
+    }
+
+    /**
+     * Variants region query. If not provided, all variants from the study will be used.
+     * @param region region filter
+     * @return this
+     */
+    public VariantStatsAnalysis setRegion(String region) {
+        toolParams.setRegion(region);
         return this;
     }
 
     /**
-     * Variants query. If not provided, all variants from the study will be used.
-     * @param variantsQuery variants query.
+     * Variants gene query. If not provided, all variants from the study will be used.
+     * @param gene gene filter
      * @return this
      */
-    public VariantStatsAnalysis setVariantsQuery(Query variantsQuery) {
-        this.variantsQuery = variantsQuery;
+    public VariantStatsAnalysis setGene(String gene) {
+        toolParams.setGene(gene);
         return this;
     }
 
@@ -141,30 +163,42 @@ public class VariantStatsAnalysis extends OpenCgaTool {
     protected void check() throws Exception {
         super.check();
         String userId = catalogManager.getUserManager().getUserId(token);
-        Study study = catalogManager.getStudyManager().resolveId(studyFqn, userId);
+        Study study = catalogManager.getStudyManager().resolveId(params.getString(ParamConstants.STUDY_PARAM), userId);
         studyFqn = study.getFqn();
+
+        toolParams.updateParams(params);
+
+        params.put(VariantStorageOptions.STATS_OVERWRITE.key(), toolParams.isOverwriteStats());
+        params.put(VariantStorageOptions.STATS_UPDATE.key(), toolParams.isUpdateStats());
+        params.put(VariantStorageOptions.STATS_AGGREGATION.key(), toolParams.getAggregated());
+        params.put(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), toolParams.getAggregationMappingFile());
+        params.put(VariantStorageOptions.RESUME.key(), toolParams.isResume());
+
 
         setUpStorageEngineExecutor(studyFqn);
 
         if (samplesQuery == null) {
             samplesQuery = new Query();
         }
+        if (CollectionUtils.isNotEmpty(toolParams.getSamples())) {
+            samplesQuery.put(SampleDBAdaptor.QueryParams.ID.key(), toolParams.getSamples());
+        }
+
+        cohorts = toolParams.getCohort();
         if (cohorts == null) {
             cohorts = new ArrayList<>();
         }
 
         if (variantsQuery == null) {
             variantsQuery = new Query();
-        } else {
-            variantsQuery = new Query(variantsQuery);
         }
+
         variantsQuery.putIfAbsent(VariantQueryParam.STUDY.key(), studyFqn);
-        String region = variantsQuery.getString(VariantQueryParam.REGION.key());
-        if (StringUtils.isEmpty(region)) {
-            region = params.getString(VariantQueryParam.REGION.key());
-            if (StringUtils.isNotEmpty(region)) {
-                variantsQuery.put(VariantQueryParam.REGION.key(), region);
-            }
+        if (StringUtils.isNotEmpty(toolParams.getRegion())) {
+            variantsQuery.put(VariantQueryParam.REGION.key(), toolParams.getRegion());
+        }
+        if (StringUtils.isNotEmpty(toolParams.getGene())) {
+            variantsQuery.put(VariantQueryParam.REGION.key(), toolParams.getGene());
         }
 
         aggregation = getAggregation(catalogManager, studyFqn, params, token);
@@ -192,9 +226,7 @@ public class VariantStatsAnalysis extends OpenCgaTool {
         }
 
         Path outdir;
-        if (index) {
-            cohorts = checkCohorts(studyFqn, aggregation, cohorts, token);
-
+        if (toolParams.isIndex()) {
             // Do not save intermediate files
             outdir = getScratchDir();
         } else {
@@ -211,14 +243,12 @@ public class VariantStatsAnalysis extends OpenCgaTool {
             outdir = getOutDir();
         }
 
-        outputFile = buildOutputFileName(cohorts, region, outdir);
+        outputFile = buildOutputFileName(cohorts, toolParams.getRegion(), outdir);
 
         executorParams.putAll(params);
         executorParams.append(VariantStorageOptions.STATS_AGGREGATION.key(), aggregation)
                 .append(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key(), mappingFile)
                 .append(DefaultVariantStatisticsManager.OUTPUT, outputFile);
-
-        dataStore = VariantStorageManager.getDataStore(catalogManager, studyFqn, File.Bioformat.VARIANT, token);
     }
 
     @Override
@@ -230,20 +260,7 @@ public class VariantStatsAnalysis extends OpenCgaTool {
     protected void run() throws Exception {
         step("prepare-cohorts", () -> {
             cohortsMap = new LinkedHashMap<>(cohorts.size());
-
-            if (index) {
-                boolean updateStats = params.getBoolean(VariantStorageOptions.STATS_UPDATE.key(), false);
-                boolean resume = params.getBoolean(VariantStorageOptions.RESUME.key(), VariantStorageOptions.RESUME.defaultValue());
-
-                // Synchronize catalog with storage
-                VariantStorageEngine variantStorageEngine = getVariantStorageEngine(dataStore);
-                CatalogStorageMetadataSynchronizer synchronizer =
-                        new CatalogStorageMetadataSynchronizer(catalogManager, variantStorageEngine.getMetadataManager());
-                synchronizer.synchronizeCatalogStudyFromStorage(studyFqn, token);
-
-                cohortsMap = checkCanCalculateCohorts(studyFqn, cohorts, updateStats, resume, token);
-            } else {
-
+            if (!toolParams.isIndex()) {
                 // Don't need to synchronize storage metadata
                 if (dynamicCohort) {
                     String cohortName = cohorts.get(0);
@@ -300,52 +317,29 @@ public class VariantStatsAnalysis extends OpenCgaTool {
             }
         });
 
-        if (index) {
-            step(() -> {
-                try {
-                    // Modify cohort status to "CALCULATING"
-                    updateCohorts(studyFqn, cohortsMap.keySet(), getToken(), Cohort.CohortStatus.CALCULATING, "Start calculating stats");
-
-                    getToolExecutor(VariantStatsAnalysisExecutor.class)
-                            .setStudy(studyFqn)
-                            .setCohorts(cohortsMap)
-                            .setOutputFile(outputFile)
-                            .setVariantsQuery(variantsQuery)
-                            .setIndex(index)
-                            .execute();
-
-                    // Modify cohort status to "READY"
-                    updateCohorts(studyFqn, cohortsMap.keySet(), getToken(), Cohort.CohortStatus.READY, "");
-                } catch (Exception e) {
-                    // Error!
-                    logger.error("Error executing stats. Set cohorts status to " + Cohort.CohortStatus.INVALID, e);
-                    // Modify to "INVALID"
-                    try {
-                        updateCohorts(studyFqn, cohortsMap.keySet(), getToken(), Cohort.CohortStatus.INVALID,
-                                "Error calculating stats: " + e.getMessage());
-                    } catch (CatalogException ex) {
-                        addError(ex);
-                    }
-                    throw new ToolException("Error calculating statistics.", e);
-                }
-            });
-        } else {
-            step(() -> {
+        step(() -> {
+            if (toolParams.isIndex()) {
+                variantStorageManager.stats(
+                        studyFqn,
+                        cohorts,
+                        variantsQuery.getString(VariantQueryParam.REGION.key()),
+                        executorParams,
+                        token);
+            } else {
                 getToolExecutor(VariantStatsAnalysisExecutor.class)
                         .setStudy(studyFqn)
                         .setCohorts(cohortsMap)
                         .setOutputFile(outputFile)
                         .setVariantsQuery(variantsQuery)
-                        .setIndex(index)
                         .execute();
-            });
-        }
+            }
+        });
     }
 
     @Override
     protected void onShutdown() {
         try {
-            if (index) {
+            if (toolParams.isIndex()) {
                 updateCohorts(studyFqn, cohortsMap.keySet(), token, Cohort.CohortStatus.INVALID, "");
             }
         } catch (CatalogException e) {
@@ -353,16 +347,18 @@ public class VariantStatsAnalysis extends OpenCgaTool {
         }
     }
 
-
-    private VariantStorageEngine getVariantStorageEngine(DataStore dataStore) throws StorageEngineException {
-        return StorageEngineFactory.get(variantStorageManager.getStorageConfiguration())
-                .getVariantStorageEngine(dataStore.getStorageEngine(), dataStore.getDbName());
+    private Properties readAggregationMappingFile(String aggregationMapFile) throws IOException {
+        try (InputStream is = FileUtils.newInputStream(Paths.get(aggregationMapFile))) {
+            Properties tagmap = new Properties();
+            tagmap.load(is);
+            return tagmap;
+        }
     }
 
     protected Path buildOutputFileName(Collection<String> cohortIds, String region, Path outdir) {
         final String outputFileName;
-        if (isNotEmpty(params.getString(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME))) {
-            outputFileName = params.getString(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME);
+        if (isNotEmpty(toolParams.getOutputFileName())) {
+            outputFileName = toolParams.getOutputFileName();
         } else {
             StringBuilder outputFileNameBuilder;
             outputFileNameBuilder = new StringBuilder("variant_stats_");
@@ -376,149 +372,12 @@ public class VariantStatsAnalysis extends OpenCgaTool {
                     outputFileNameBuilder.append('_');
                 }
             }
-            if (!index) {
+            if (!toolParams.isIndex()) {
                 outputFileNameBuilder.append(".tsv");
             }
             outputFileName = outputFileNameBuilder.toString();
         }
         return outdir.resolve(outputFileName);
-    }
-
-    /**
-     * Must provide a list of cohorts or a aggregation_mapping_properties file.
-     * @param studyId   Study
-     * @param aggregation Aggregation type for this study. {@link #getAggregation}
-     * @param cohorts   List of cohorts
-     * @param sessionId User's sessionId
-     * @return          Checked list of cohorts
-     * @throws CatalogException if an error on Catalog
-     * @throws IOException if an IO error reading the aggregation map file (if any)
-     */
-    protected List<String> checkCohorts(String studyId, Aggregation aggregation, List<String> cohorts, String sessionId)
-            throws ToolException, CatalogException, IOException {
-        List<String> cohortIds;
-
-        // Check aggregation mapping properties
-        String tagMap = params.getString(VariantStorageOptions.STATS_AGGREGATION_MAPPING_FILE.key());
-        List<String> cohortsByAggregationMapFile = Collections.emptyList();
-        if (!isBlank(tagMap)) {
-            if (!AggregationUtils.isAggregated(aggregation)) {
-                throw nonAggregatedWithMappingFile();
-            }
-            cohortsByAggregationMapFile = createCohortsByAggregationMapFile(studyId, tagMap, sessionId);
-        } else if (AggregationUtils.isAggregated(aggregation)) {
-            if (aggregation.equals(Aggregation.BASIC)) {
-                cohortsByAggregationMapFile = createCohortsIfNeeded(studyId, Collections.singleton(StudyEntry.DEFAULT_COHORT), sessionId);
-            } else {
-                throw missingAggregationMappingFile(aggregation);
-            }
-        }
-
-        if (cohorts == null || cohorts.isEmpty()) {
-            // If no aggregation map file provided
-            if (cohortsByAggregationMapFile.isEmpty()) {
-                throw missingCohorts();
-            } else {
-                cohortIds = cohortsByAggregationMapFile;
-            }
-        } else {
-            cohortIds = new ArrayList<>(cohorts.size());
-            for (String cohort : cohorts) {
-                String cohortId = catalogManager.getCohortManager().get(studyId, cohort,
-                        new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.ID.key()), sessionId).first().getId();
-                cohortIds.add(cohortId);
-            }
-            if (!cohortsByAggregationMapFile.isEmpty()) {
-                if (cohortIds.size() != cohortsByAggregationMapFile.size() || !cohortIds.containsAll(cohortsByAggregationMapFile)) {
-                    throw differentCohortsThanMappingFile();
-                }
-            }
-        }
-        return cohortIds;
-    }
-
-    private List<String> createCohortsByAggregationMapFile(String studyId, String aggregationMapFile, String sessionId)
-            throws IOException, CatalogException {
-        Properties tagmap = readAggregationMappingFile(aggregationMapFile);
-        Set<String> cohortNames = VariantAggregatedStatsCalculator.getCohorts(tagmap);
-        return createCohortsIfNeeded(studyId, cohortNames, sessionId);
-    }
-
-    private Properties readAggregationMappingFile(String aggregationMapFile) throws IOException {
-        Properties tagmap = new Properties();
-        try (InputStream is = FileUtils.newInputStream(Paths.get(aggregationMapFile))) {
-            tagmap.load(is);
-        }
-        return tagmap;
-    }
-
-    private List<String> createCohortsIfNeeded(String studyId, Set<String> cohortNames, String sessionId) throws CatalogException {
-        List<String> cohorts = new ArrayList<>();
-        // Silent query, so it does not fail for missing cohorts
-        Set<String> catalogCohorts = catalogManager.getCohortManager().get(studyId, new ArrayList<>(cohortNames),
-                new QueryOptions(QueryOptions.INCLUDE, "name,id"), true, sessionId)
-                .getResults()
-                .stream()
-                .filter(Objects::nonNull)
-                .map(Cohort::getId)
-                .collect(Collectors.toSet());
-        for (String cohortName : cohortNames) {
-            if (!catalogCohorts.contains(cohortName)) {
-                DataResult<Cohort> cohort = catalogManager.getCohortManager().create(studyId, cohortName, Study.Type.COLLECTION, "",
-                        Collections.emptyList(), null, null, sessionId);
-                logger.info("Creating cohort {}", cohortName);
-                cohorts.add(cohort.first().getId());
-            } else {
-                logger.debug("cohort {} was already created", cohortName);
-                cohorts.add(cohortName);
-            }
-        }
-        return cohorts;
-    }
-
-    /**
-     * Check if a set of given cohorts are available to calculate statistics.
-     *
-     * @param studyFqn      Study fqn
-     * @param cohortIds     Set of cohorts
-     * @param updateStats   Update already existing stats
-     * @param resume        Resume statistics calculation
-     * @param sessionId     User's sessionId
-     * @return Map from cohortId to Cohort
-     * @throws CatalogException if an error on Catalog
-     */
-    protected Map<String, List<String>> checkCanCalculateCohorts(String studyFqn, List<String> cohortIds,
-                                                                 boolean updateStats, boolean resume, String sessionId)
-            throws CatalogException, ToolException {
-        Map<String, List<String>> cohortMap = new HashMap<>(cohortIds.size());
-        for (String cohortId : cohortIds) {
-            Cohort cohort = catalogManager.getCohortManager().get(studyFqn, cohortId, null, sessionId).first();
-            switch (cohort.getStatus().getName()) {
-                case Cohort.CohortStatus.NONE:
-                case Cohort.CohortStatus.INVALID:
-                    break;
-                case Cohort.CohortStatus.READY:
-                    if (updateStats) {
-                        catalogManager.getCohortManager().setStatus(studyFqn, cohortId, Cohort.CohortStatus.INVALID, "", sessionId);
-                        break;
-                    } else {
-                        // If not updating the stats or resuming, can't calculate statistics for a cohort READY
-                        if (!resume) {
-                            throw unableToCalculateCohortReady(cohort);
-                        }
-                    }
-                    break;
-                case Cohort.CohortStatus.CALCULATING:
-                    if (!resume) {
-                        throw unableToCalculateCohortCalculating(cohort);
-                    }
-                    break;
-                default:
-                    throw new IllegalStateException("Unknown status " + cohort.getStatus().getName());
-            }
-            cohortMap.put(cohort.getId(), cohort.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
-        }
-        return cohortMap;
     }
 
     protected void updateCohorts(String studyId, Collection<String> cohortIds, String sessionId, String status, String message)
@@ -556,7 +415,7 @@ public class VariantStatsAnalysis extends OpenCgaTool {
         if (AggregationUtils.isAggregated(argsAggregation)) {
             if (studyAggregation != null && !studyAggregation.equals(argsAggregation)) {
                 // FIXME: Throw an exception?
-                LoggerFactory.getLogger(StorageOperation.class)
+                LoggerFactory.getLogger(VariantStatsAnalysis.class)
                         .warn("Calculating statistics with aggregation " + argsAggregation + " instead of " + studyAggregation);
             }
             aggregation = argsAggregation;
@@ -578,36 +437,9 @@ public class VariantStatsAnalysis extends OpenCgaTool {
         return aggregation;
     }
 
-    public static ToolException differentCohortsThanMappingFile() {
-        return new ToolException("Given cohorts (if any) must match with cohorts in the aggregation mapping file.");
-    }
-
-    public static ToolException missingCohorts() {
-        return new ToolException("Unable to index stats if no cohort is specified.");
-    }
-
     public static IllegalArgumentException missingAggregationMappingFile(Aggregation aggregation) {
         return new IllegalArgumentException("Unable to calculate statistics for an aggregated study of type "
                 + "\"" + aggregation + "\" without an aggregation mapping file.");
-    }
-
-    public static IllegalArgumentException nonAggregatedWithMappingFile() {
-        return new IllegalArgumentException("Unable to use an aggregation mapping file for non aggregated study");
-    }
-
-
-    public static ToolException unableToCalculateCohortReady(Cohort cohort) {
-        return new ToolException("Unable to calculate stats for cohort "
-                + "{ uid: " + cohort.getUid() + " id: \"" + cohort.getId() + "\" }"
-                + " with status \"" + cohort.getStatus().getName() + "\". "
-                + "Resume or update stats for continue calculation");
-    }
-
-    public static ToolException unableToCalculateCohortCalculating(Cohort cohort) {
-        return new ToolException("Unable to calculate stats for cohort "
-                + "{ uid: " + cohort.getUid() + " id: \"" + cohort.getId() + "\" }"
-                + " with status \"" + cohort.getStatus().getName() + "\". "
-                + "Resume for continue calculation.");
     }
 
 }

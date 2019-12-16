@@ -106,6 +106,7 @@ public class Enums {
         SYNC_EXTERNAL_GROUP_OF_USERS,
 
         // Variants
+        VARIANT_STORAGE_OPERATION,
         SAMPLE_DATA,
         FACET
     }

@@ -77,8 +77,8 @@ public class HadoopVariantExporter extends VariantExporter {
             ObjectMap options = new ObjectMap(engine.getOptions())
                     .append(VariantExporterDriver.OUTPUT_PARAM, outputFileUri.toString())
                     .append(VariantExporterDriver.OUTPUT_FORMAT_PARAM, outputFormat.toString());
-            options.putAll(query);
             options.putAll(queryOptions);
+            options.putAll(query);
 
             String[] args = VariantExporterDriver.buildArgs(dbAdaptor.getVariantTable(), options);
 

@@ -4,6 +4,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.api.operations.variant.VariantAnnotationIndexParams;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.rest.RestResponse;
 
@@ -39,8 +40,9 @@ public class OperationClient extends AbstractParentClient {
                 .append("sample", sample), DELETE, Job.class);
     }
 
-    public RestResponse<Job> variantAnnotationIndex(String project, String study, ObjectMap params) throws IOException {
-        return execute(OPERATION_URL, "/variant/annotation/index", new ObjectMap("body", params)
+    public RestResponse<Job> variantAnnotationIndex(String project, String study, VariantAnnotationIndexParams body, ObjectMap params)
+            throws IOException {
+        return execute(OPERATION_URL, "/variant/annotation/index", new ObjectMap("body", body.toObjectMap()).appendAll(params)
                 .append(ParamConstants.PROJECT_PARAM, project)
                 .append(ParamConstants.STUDY_PARAM, study), POST, Job.class);
     }

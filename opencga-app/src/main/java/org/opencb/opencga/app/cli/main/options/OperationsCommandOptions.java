@@ -11,7 +11,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.util.List;
 
-import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.PROJECT_DESC;
+import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.PROJECT_DESC;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND_DESCRIPTION;
@@ -117,7 +117,7 @@ public class OperationsCommandOptions {
 
         @Parameter(names = {"--sample"}, description = "Samples to index."
                 + " If provided, all sample data will be added to the secondary index.", arity = 1)
-        public String sample;
+        public List<String> sample;
 
         @Parameter(names = {"--overwrite"}, description = "Overwrite search index for all files and variants. Repeat operation for already processed variants.")
         public boolean overwrite;
@@ -200,6 +200,12 @@ public class OperationsCommandOptions {
                 "Use \"" + VariantQueryUtils.ALL + "\" to annotate the index for all samples in the study.")
         public List<String> sample;
 
+        @Parameter(names = {"--build-index"}, description = "Build sample index.", arity = 0)
+        public boolean buildIndex;
+
+        @Parameter(names = {"--annotate"}, description = "Annotate sample index", arity = 0)
+        public boolean annotate;
+
 //        @Parameter(names = {"--overwrite"}, description = "Overwrite mendelian errors")
 //        public boolean overwrite = false;
     }
@@ -216,6 +222,9 @@ public class OperationsCommandOptions {
 
         @Parameter(names = {"--overwrite"}, description = "Overwrite existing values")
         public boolean overwrite = false;
+
+        @Parameter(names = {"--skip-incomplete-families"}, description = "Do not process incomplete families.")
+        public boolean skipIncompleteFamilies = false;
     }
 
 

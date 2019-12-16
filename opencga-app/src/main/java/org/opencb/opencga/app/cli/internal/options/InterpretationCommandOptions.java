@@ -25,7 +25,7 @@ import org.opencb.opencga.analysis.clinical.interpretation.CancerTieringInterpre
 import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationAnalysis;
-import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
+import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 
 import static org.opencb.opencga.analysis.clinical.interpretation.InterpretationAnalysis.*;

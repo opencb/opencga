@@ -29,8 +29,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.util.List;
 
-import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.FAMILY;
-import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.FAMILY_DISORDER;
+import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.FAMILY;
+import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.FAMILY_DISORDER;
 
 @Tool(id = CustomInterpretationAnalysis.ID, type = Tool.ToolType.CLINICAL)
 public class CustomInterpretationAnalysis extends InterpretationAnalysis {

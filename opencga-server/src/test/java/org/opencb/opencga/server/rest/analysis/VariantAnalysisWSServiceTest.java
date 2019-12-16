@@ -2,6 +2,7 @@ package org.opencb.opencga.server.rest.analysis;
 
 import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.core.api.variant.VariantQueryParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.lang.reflect.Field;
@@ -11,7 +12,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.fail;
-import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.VARIANT_CATALOG_QUERY_PARAMS;
+import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.VARIANT_CATALOG_QUERY_PARAMS;
 
 public class VariantAnalysisWSServiceTest {
 
@@ -20,7 +21,7 @@ public class VariantAnalysisWSServiceTest {
         Set<String> other = VARIANT_CATALOG_QUERY_PARAMS.stream().map(QueryParam::key).collect(Collectors.toSet());
         List<String> excluded = Arrays.asList("chromosome", "maf", "mgf", "sort", "groupBy");
 
-        for (Field field : VariantAnalysisWSService.VariantQueryParams.class.getFields()) {
+        for (Field field : VariantQueryParams.class.getFields()) {
             if (excluded.contains(field.getName())) {
                 continue;
             }
@@ -34,11 +35,11 @@ public class VariantAnalysisWSServiceTest {
         }
 
         for (VariantQueryParam value : VariantQueryParam.values()) {
-            VariantAnalysisWSService.VariantQueryParams.class.getField(value.key());
+            VariantQueryParams.class.getField(value.key());
         }
 
         for (QueryParam value : VARIANT_CATALOG_QUERY_PARAMS) {
-            VariantAnalysisWSService.VariantQueryParams.class.getField(value.key());
+            VariantQueryParams.class.getField(value.key());
         }
     }
 }

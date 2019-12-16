@@ -43,7 +43,7 @@ import org.opencb.opencga.server.rest.OpenCGAWSServer;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
-import org.opencb.opencga.analysis.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 
 import javax.servlet.http.HttpServletRequest;

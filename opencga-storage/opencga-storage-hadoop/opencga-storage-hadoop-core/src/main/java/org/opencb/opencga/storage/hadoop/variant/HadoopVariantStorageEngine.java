@@ -394,7 +394,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public void aggregate(String study, ObjectMap options, boolean overwrite) throws StorageEngineException {
+    public void aggregate(String study, boolean overwrite, ObjectMap options) throws StorageEngineException {
         logger.info("Aggregate: Study " + study);
 
         VariantStorageMetadataManager metadataManager = getMetadataManager();
@@ -767,7 +767,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
     }
 
     @Override
-    public void removeVariantScore(String study, String scoreName, ObjectMap options)
+    public void deleteVariantScore(String study, String scoreName, ObjectMap options)
             throws StorageEngineException {
         new HadoopVariantScoreRemover(getDBAdaptor(), getMRExecutor())
                 .remove(study, scoreName, options);

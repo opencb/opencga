@@ -26,6 +26,8 @@ import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationA
 import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.file.FileDeleteAction;
+import org.opencb.opencga.analysis.variant.VariantExportTool;
+import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
@@ -108,8 +110,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(SamtoolsWrapperAnalysis.ID, "alignment " + SamtoolsWrapperAnalysis.ID);
             put(DeeptoolsWrapperAnalysis.ID, "alignment " + DeeptoolsWrapperAnalysis.ID);
 
-            put(VariantFileIndexerStorageOperation.ID, "variant index");
-            put(VariantExportStorageOperation.ID, "variant export");
+            put(VariantIndexOperationTool.ID, "variant index");
+            put(VariantExportTool.ID, "variant export");
             put(VariantStatsAnalysis.ID, "variant stats-run");
             put("variant-stats-export", "variant stats-export");
             put(SampleVariantStatsAnalysis.ID, "variant sample-stats-run");
@@ -117,18 +119,18 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(GwasAnalysis.ID, "variant gwas-run");
             put(PlinkWrapperAnalysis.ID, "variant " + PlinkWrapperAnalysis.ID + "-run");
             put(RvtestsWrapperAnalysis.ID, "variant " + RvtestsWrapperAnalysis.ID + "-run");
-            put(VariantRemoveStorageOperation.ID, "variant delete");
-            put(VariantSecondaryIndexStorageOperation.ID, "variant secondary-index");
-            put(VariantSecondaryIndexSamplesDeleteStorageOperation.ID, "variant secondary-index-delete");
+            put(VariantFileDeleteOperationTool.ID, "variant delete");
+            put(VariantSecondaryIndexOperationTool.ID, "variant secondary-index");
+            put(VariantSecondaryIndexSamplesDeleteOperationTool.ID, "variant secondary-index-delete");
             put("variant-score-delete", "variant score-delete");
             put("variant-score-index", "variant score-index");
-            put(VariantSampleIndexStorageOperation.ID, "variant sample-index");
-            put(VariantFamilyIndexStorageOperation.ID, "variant family-index");
-            put(VariantAggregateFamilyStorageOperation.ID, "variant aggregate-family");
-            put(VariantAggregateStorageOperation.ID, "variant aggregate");
-            put(VariantAnnotationStorageOperation.ID, "variant annotation-index");
-            put(VariantAnnotationDeleteStorageOperation.ID, "variant annotation-delete");
-            put(VariantAnnotationSaveStorageOperation.ID, "variant annotation-save");
+            put(VariantSampleIndexOperationTool.ID, "variant sample-index");
+            put(VariantFamilyIndexOperationTool.ID, "variant family-index");
+            put(VariantAggregateFamilyOperationTool.ID, "variant aggregate-family");
+            put(VariantAggregateOperationTool.ID, "variant aggregate");
+            put(VariantAnnotationIndexOperationTool.ID, "variant annotation-index");
+            put(VariantAnnotationDeleteOperationTool.ID, "variant annotation-delete");
+            put(VariantAnnotationSaveOperationTool.ID, "variant annotation-save");
 
             put(TeamInterpretationAnalysis.ID, "interpretation " + TeamInterpretationAnalysis.ID);
             put(TieringInterpretationAnalysis.ID, "interpretation " + TieringInterpretationAnalysis.ID);

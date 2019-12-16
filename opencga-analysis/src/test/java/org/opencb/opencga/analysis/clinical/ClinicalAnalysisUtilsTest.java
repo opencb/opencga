@@ -6,7 +6,7 @@ import org.opencb.biodata.models.clinical.interpretation.ReportedEvent;
 import org.opencb.biodata.models.clinical.interpretation.ReportedVariant;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;

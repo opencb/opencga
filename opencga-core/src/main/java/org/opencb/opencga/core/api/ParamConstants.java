@@ -3,6 +3,9 @@ package org.opencb.opencga.core.api;
 public class ParamConstants {
     private static final String UP_TO_100 = " up to a maximum of 100";
 
+    public static final String NONE = "none";
+    public static final String ALL = "all";
+
     public static final String INCLUDE_DESCRIPTION = "Fields included in the response, whole JSON path must be provided";
     public static final String EXCLUDE_DESCRIPTION = "Fields excluded in the response, whole JSON path must be provided";
     public static final String LIMIT_DESCRIPTION = "Number of results to be returned";
@@ -116,7 +119,6 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String VARIANTS_EXPORT_DESCRIPTION = "Filter and export variants from the variant storage to a file";
     public static final String VARIANTS_QUERY_DESCRIPTION = "Filter and fetch variants from indexed VCF files in the variant storage";
 
     // ---------------------------------------------

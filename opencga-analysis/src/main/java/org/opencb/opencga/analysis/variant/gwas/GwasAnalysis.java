@@ -309,7 +309,7 @@ public class GwasAnalysis extends OpenCgaTool {
             step("index", () -> {
                 try {
                     VariantScoreFormatDescriptor formatDescriptor = new VariantScoreFormatDescriptor(1, 16, 15);
-                    variantStorageManager.loadVariantScore(study, outputFile.toUri(), indexScoreId, caseCohort, controlCohort, formatDescriptor,
+                    variantStorageManager.variantScoreLoad(study, outputFile.toUri(), indexScoreId, caseCohort, controlCohort, formatDescriptor,
                             executorParams, token);
                 } catch (CatalogException | StorageEngineException e) {
                     throw new ToolException(e);

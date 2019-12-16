@@ -22,7 +22,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
-import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.FAMILY_SEGREGATION;
+import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.FAMILY_SEGREGATION;
 
 @ToolExecutor(id = "opencga-local",
         tool = CustomInterpretationAnalysis.ID,

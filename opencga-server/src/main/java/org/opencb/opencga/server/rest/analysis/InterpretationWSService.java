@@ -17,7 +17,7 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.analysis.clinical.interpretation.*;
-import org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils;
+import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;

@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ConfigurationUtils;
-import org.opencb.opencga.analysis.variant.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -65,7 +65,7 @@ public abstract class OpenCgaTool {
     protected String opencgaHome;
     protected String token;
 
-    protected ObjectMap params;
+    protected final ObjectMap params;
     protected ObjectMap executorParams;
     private List<ToolExecutor.Source> sourceTypes;
     private List<ToolExecutor.Framework> availableFrameworks;
@@ -81,6 +81,7 @@ public abstract class OpenCgaTool {
     public OpenCgaTool() {
         privateLogger = LoggerFactory.getLogger(OpenCgaTool.class);
         toolExecutorFactory = new ToolExecutorFactory();
+        params = new ObjectMap();
     }
 
     public final OpenCgaTool setUp(String opencgaHome, CatalogManager catalogManager, StorageEngineFactory engineFactory,
@@ -101,7 +102,9 @@ public abstract class OpenCgaTool {
         this.variantStorageManager = variantStorageManager;
         this.storageConfiguration = variantStorageManager.getStorageConfiguration();
         this.token = token;
-        this.params = params == null ? new ObjectMap() : new ObjectMap(params);
+        if (params != null) {
+            this.params.putAll(params);
+        }
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
         //this.params.put("outDir", outDir.toAbsolutePath().toString());
@@ -114,7 +117,9 @@ public abstract class OpenCgaTool {
             throws ToolException {
         this.opencgaHome = opencgaHome;
         this.token = token;
-        this.params = params == null ? new ObjectMap() : new ObjectMap(params);
+        if (params != null) {
+            this.params.putAll(params);
+        }
         this.executorParams = new ObjectMap();
         this.outDir = outDir;
         //this.params.put("outDir", outDir.toAbsolutePath().toString());
