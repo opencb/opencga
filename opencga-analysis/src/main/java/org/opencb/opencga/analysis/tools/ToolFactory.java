@@ -18,6 +18,7 @@ public class ToolFactory {
     private static final Logger logger = LoggerFactory.getLogger(ToolFactory.class);
     private static Map<String, Class<? extends OpenCgaTool>> toolsCache;
     private static Map<String, Set<Class<? extends OpenCgaTool>>> duplicatedTools;
+    private static List<Class<? extends OpenCgaTool>> toolsList;
 
     private static synchronized Map<String, Class<? extends OpenCgaTool>> loadTools() {
         if (toolsCache == null) {
@@ -54,6 +55,14 @@ public class ToolFactory {
                 });
                 duplicatedTools.replaceAll((key, set) -> Collections.unmodifiableSet(set));
             }
+
+            List<Class<? extends OpenCgaTool>> toolsList = new ArrayList<>(cache.values());
+            toolsList.sort(Comparator
+                    .comparing((Class<? extends OpenCgaTool> c) -> c.getAnnotation(Tool.class).type().name())
+                    .thenComparing((Class<? extends OpenCgaTool> c) -> c.getAnnotation(Tool.class).resource().name())
+                    .thenComparing(c -> c.getAnnotation(Tool.class).id()));
+
+            ToolFactory.toolsList = Collections.unmodifiableList(toolsList);
             ToolFactory.duplicatedTools = Collections.unmodifiableMap(duplicatedTools);
             ToolFactory.toolsCache = cache;
         }
@@ -80,11 +89,15 @@ public class ToolFactory {
         return aClass;
     }
 
-    public final OpenCgaTool getTool(String toolId) throws ToolException {
-        return getTool(getToolClass(toolId));
+    public Tool getTool(String toolId) throws ToolException {
+        return getToolClass(toolId).getAnnotation(Tool.class);
     }
 
-    public final OpenCgaTool getTool(Class<? extends OpenCgaTool> aClass) throws ToolException {
+    public final OpenCgaTool createTool(String toolId) throws ToolException {
+        return createTool(getToolClass(toolId));
+    }
+
+    public final OpenCgaTool createTool(Class<? extends OpenCgaTool> aClass) throws ToolException {
         Tool annotation = aClass.getAnnotation(Tool.class);
         if (annotation == null) {
             throw new ToolException("Class " + aClass + " does not have the required java annotation @" + Tool.class.getSimpleName());
@@ -96,12 +109,9 @@ public class ToolFactory {
         }
     }
 
-
     public Collection<Class<? extends OpenCgaTool>> getTools() {
-        List<Class<? extends OpenCgaTool>> values = new ArrayList<>(loadTools().values());
-        values.sort(Comparator.comparing((Class<? extends OpenCgaTool> c) -> c.getAnnotation(Tool.class).type())
-                .thenComparing(c -> c.getAnnotation(Tool.class).id()));
-        return values;
+        loadTools();
+        return toolsList;
     }
 
     public Map<String, Set<Class<? extends OpenCgaTool>>> getDuplicatedTools() {

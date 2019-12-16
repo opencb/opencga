@@ -146,7 +146,7 @@ public class InternalMainTest {
                 "--session-id", sessionId,
                 "--study", studyId,
                 "-o", opencga.createTmpOutdir(studyId, "annot_all", sessionId),
-                "--output-filename", "myAnnot",
+                "--output-file-name", "myAnnot",
                 "--path", outdirId);
 
         File outputFile = catalogManager.getFileManager().search(studyId, new Query(FileDBAdaptor.QueryParams.NAME.key(),

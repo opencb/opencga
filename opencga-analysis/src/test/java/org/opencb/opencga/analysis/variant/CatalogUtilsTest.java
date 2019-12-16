@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.variant;
 
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.analysis.variant.CatalogUtils;
+import org.opencb.opencga.analysis.variant.manager.CatalogUtils;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 
 import static org.junit.Assert.assertEquals;

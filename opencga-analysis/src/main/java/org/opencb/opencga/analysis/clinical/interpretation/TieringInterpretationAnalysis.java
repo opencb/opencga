@@ -24,11 +24,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.util.List;
 
-@Tool(id = TieringInterpretationAnalysis.ID, type = Tool.ToolType.CLINICAL)
+@Tool(id = TieringInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
 public class TieringInterpretationAnalysis extends InterpretationAnalysis {
 
     public final static String ID = "tiering-interpretation";

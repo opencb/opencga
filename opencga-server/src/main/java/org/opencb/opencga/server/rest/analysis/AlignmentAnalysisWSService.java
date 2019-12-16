@@ -41,6 +41,7 @@ import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.rest.RestResponse;
 import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -443,7 +444,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     //-------------------------------------------------------------------------
 
     // BWA
-    public static class BwaRunParams extends RestBodyParams {
+    public static class BwaRunParams extends ToolParams {
         public BwaRunParams() {
         }
 
@@ -482,7 +483,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     }
 
     // Samtools
-    public static class SamtoolsRunParams extends RestBodyParams {
+    public static class SamtoolsRunParams extends ToolParams {
         public SamtoolsRunParams() {
         }
 
@@ -530,7 +531,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     }
 
     // Deeptools
-    public static class DeeptoolsRunParams extends RestBodyParams {
+    public static class DeeptoolsRunParams extends ToolParams {
         public DeeptoolsRunParams() {
         }
 

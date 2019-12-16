@@ -19,10 +19,11 @@ package org.opencb.opencga.analysis.clinical.interpretation;
 import org.opencb.bionetdb.core.BioNetDbManager;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.List;
 
-@Tool(id = XQueryInterpretationAnalysis.ID, type = Tool.ToolType.CLINICAL)
+@Tool(id = XQueryInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
 public class XQueryInterpretationAnalysis extends InterpretationAnalysis {
 
     public final static String ID = "bionet-interpretation";

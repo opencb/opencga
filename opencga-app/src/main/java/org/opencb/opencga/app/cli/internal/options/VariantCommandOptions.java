@@ -20,7 +20,10 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.operations.VariantFamilyIndexOperationTool;
+import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
@@ -36,7 +39,7 @@ import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
 import java.util.List;
 
-import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.*;
+import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.*;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND_DESCRIPTION;
@@ -146,7 +149,7 @@ public class VariantCommandOptions {
         this.rvtestsCommandOptions = new RvtestsCommandOptions();
     }
 
-    @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
+    @Parameters(commandNames = {"index"}, commandDescription = VariantIndexOperationTool.DESCRIPTION)
     public class VariantIndexCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
@@ -155,12 +158,12 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--file"}, description = "CSV of file ids to be indexed", required = true, arity = 1)
+        @Parameter(names = {"--file"}, description = "List of files to be indexed.", required = true, arity = 1)
         public String fileId = null;
 
-        @Parameter(names = {"--transformed-files"}, description = "CSV of paths corresponding to the location of the transformed files.",
-                arity = 1)
-        public String transformedPaths = null;
+//        @Parameter(names = {"--transformed-files"}, description = "CSV of paths corresponding to the location of the transformed files.",
+//                arity = 1)
+//        public String transformedPaths = null;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir = null;
@@ -187,7 +190,7 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--sample"}, description = "Samples to index."
                 + " If provided, all sample data will be added to the secondary index.", arity = 1)
-        public String sample;
+        public List<String> sample;
 
         @Parameter(names = {"--overwrite"}, description = "Overwrite search index for all files and variants. Repeat operation for already processed variants.")
         public boolean overwrite;
@@ -236,7 +239,7 @@ public class VariantCommandOptions {
         public String outdir;
     }
 
-    @Parameters(commandNames = {"export"}, commandDescription = ParamConstants.VARIANTS_EXPORT_DESCRIPTION)
+    @Parameters(commandNames = {"export"}, commandDescription = VariantExportTool.DESCRIPTION)
     public class VariantExportCommandOptions extends AbstractVariantQueryCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1)
@@ -310,7 +313,7 @@ public class VariantCommandOptions {
             this.cohort = cohortIds;
         }
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = false, arity = 1)
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir = null;
 
         @Parameter(names = {"--index"}, description = "Index stats in the variant storage database", arity = 0)
@@ -327,6 +330,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.StudyOption study = new GeneralCliOptions.StudyOption();
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
+        public String outdir = null;
     }
 
     @Parameters(commandNames = {GenericVariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND}, commandDescription = GenericVariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND_DESCRIPTION)
@@ -336,6 +342,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.StudyOption study = new GeneralCliOptions.StudyOption();
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
+        public String outdir = null;
     }
 
     @Parameters(commandNames = {SAMPLE_INDEX_COMMAND}, commandDescription = SAMPLE_INDEX_COMMAND_DESCRIPTION)
@@ -348,28 +357,35 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--sample"}, required = true, description = "Samples to include in the index. " +
                 "Use \"" + VariantQueryUtils.ALL + "\" to annotate the index for all samples in the study.")
-        public String sample;
+        public List<String> sample;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
-//        @Parameter(names = {"--overwrite"}, description = "Overwrite mendelian errors")
-//        public boolean overwrite = false;
+
+        @Parameter(names = {"--build-index"}, description = "Build sample index.", arity = 0)
+        public boolean buildIndex;
+
+        @Parameter(names = {"--annotate"}, description = "Annotate sample index", arity = 0)
+        public boolean annotate;
     }
 
     @Parameters(commandNames = {FAMILY_INDEX_COMMAND}, commandDescription = FAMILY_INDEX_COMMAND_DESCRIPTION)
     public class FamilyIndexCommandOptions extends GeneralCliOptions.StudyOption {
         public static final String FAMILY_INDEX_COMMAND = "family-index";
-        public static final String FAMILY_INDEX_COMMAND_DESCRIPTION = "Build the family index.";
+        public static final String FAMILY_INDEX_COMMAND_DESCRIPTION = VariantFamilyIndexOperationTool.DESCRIPTION;
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--family"}, required = true, description = "Families to index. " +
                 "Use \"" + VariantQueryUtils.ALL + "\" to index all families in the study.")
-        public String family;
+        public List<String> family;
 
         @Parameter(names = {"--overwrite"}, description = "Overwrite existing values")
         public boolean overwrite = false;
+
+        @Parameter(names = {"--skip-incomplete-families"}, description = "Do not process incomplete families.")
+        public boolean skipIncompleteFamilies = false;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir;
@@ -391,7 +407,7 @@ public class VariantCommandOptions {
 //        @Parameter(names = {"-s", "--study-id"}, description = "Studies to annotate. Must be in the same database.", arity = 1)
 //        public String study;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = true, arity = 1)
         public String outdir;
     }
 

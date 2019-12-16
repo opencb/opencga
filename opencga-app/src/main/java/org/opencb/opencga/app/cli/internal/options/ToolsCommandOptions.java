@@ -3,6 +3,7 @@ package org.opencb.opencga.app.cli.internal.options;
 import com.beust.jcommander.*;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -63,8 +64,11 @@ public class ToolsCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @Parameter(names = {"--resource"}, description = "Filter by tool resource", arity = 1)
+        public Enums.Resource resource;
+
         @Parameter(names = {"--type"}, description = "Filter by tool type", arity = 1)
-        public Tool.ToolType type;
+        public Tool.Type type;
 
     }
 

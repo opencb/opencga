@@ -129,7 +129,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
                 getResourceUri("gaps/file1.genome.vcf"),
                 getResourceUri("gaps/file2.genome.vcf")));
 
-        variantStorageEngine.aggregate(studyMetadata.getName(), new ObjectMap(), true);
+        variantStorageEngine.aggregate(studyMetadata.getName(), true, new ObjectMap());
         VariantHadoopDBAdaptor dbAdaptor = (VariantHadoopDBAdaptor) variantStorageEngine.getDBAdaptor();
         printVariants(studyMetadata, dbAdaptor, newOutputUri());
 
@@ -236,7 +236,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
         sampleIds.sort(Integer::compareTo);
 
         // Fill missing
-        variantStorageEngine.aggregate(studyMetadata.getName(), options, false);
+        variantStorageEngine.aggregate(studyMetadata.getName(), false, options);
         printVariants(dbAdaptor, newOutputUri());
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         assertTrue(studyMetadata.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
@@ -257,7 +257,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
         checkSampleIndexTable(dbAdaptor);
 
         // Fill missing
-        variantStorageEngine.aggregate(studyMetadata.getName(), options, false);
+        variantStorageEngine.aggregate(studyMetadata.getName(), false, options);
         printVariants(dbAdaptor, newOutputUri());
         studyMetadata = dbAdaptor.getMetadataManager().getStudyMetadata(studyMetadata.getId());
         assertTrue(studyMetadata.getAttributes().getBoolean(HadoopVariantStorageEngine.MISSING_GENOTYPES_UPDATED));
@@ -275,7 +275,7 @@ public class FillGapsTest extends VariantStorageBaseTest implements HadoopVarian
         checkSampleIndexTable(dbAdaptor);
 
         // Fill missing
-        variantStorageEngine.aggregate(studyMetadata.getName(), options, false);
+        variantStorageEngine.aggregate(studyMetadata.getName(), false, options);
         printVariants(dbAdaptor, newOutputUri());
         checkFillMissing(dbAdaptor, "NA12877", "NA12878", "NA12879", "NA12880");
         checkQueryGenotypes(dbAdaptor);

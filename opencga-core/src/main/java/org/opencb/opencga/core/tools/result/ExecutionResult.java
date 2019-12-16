@@ -3,6 +3,7 @@ package org.opencb.opencga.core.tools.result;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 
+import java.net.URI;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -15,7 +16,7 @@ public class ExecutionResult {
     private Date start;
     private Date end;
     private Status status;
-    private List<FileMove> filesMove;
+    private List<URI> externalFiles;
     private List<ToolStep> steps;
     private List<Event> events;
 
@@ -25,7 +26,7 @@ public class ExecutionResult {
         executor = new ExecutorInfo();
         status = new Status();
         events = new LinkedList<>();
-        filesMove = new LinkedList<>();
+        externalFiles = new LinkedList<>();
         steps = new LinkedList<>();
         attributes = new ObjectMap();
     }
@@ -37,7 +38,7 @@ public class ExecutionResult {
         sb.append(", start=").append(start);
         sb.append(", end=").append(end);
         sb.append(", status=").append(status);
-        sb.append(", filesMove=").append(filesMove);
+        sb.append(", externalFiles=").append(externalFiles);
         sb.append(", steps=").append(steps);
         sb.append(", events=").append(events);
         sb.append(", attributes=").append(attributes);
@@ -99,12 +100,12 @@ public class ExecutionResult {
         return this;
     }
 
-    public List<FileMove> getFilesMove() {
-        return filesMove;
+    public List<URI> getExternalFiles() {
+        return externalFiles;
     }
 
-    public ExecutionResult setFilesMove(List<FileMove> filesMove) {
-        this.filesMove = filesMove;
+    public ExecutionResult setExternalFiles(List<URI> externalFiles) {
+        this.externalFiles = externalFiles;
         return this;
     }
 

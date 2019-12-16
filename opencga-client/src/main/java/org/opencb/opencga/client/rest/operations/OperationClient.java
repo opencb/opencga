@@ -4,11 +4,15 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.api.operations.variant.*;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.rest.RestResponse;
+import org.opencb.opencga.core.tools.ToolParams;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class OperationClient extends AbstractParentClient {
 
@@ -18,86 +22,100 @@ public class OperationClient extends AbstractParentClient {
 
     private static final String OPERATION_URL = "operation";
 
-    public RestResponse<Job> variantFileDelete(String study, List<String> file, boolean resume, ObjectMap params) throws IOException {
+    public RestResponse<Job> variantFileDelete(String study, VariantFileDeleteParams deleteParams, Map<String, ?> params)
+            throws IOException {
         return execute(OPERATION_URL, "/variant/file/delete",
-                copy(params)
-                .append(ParamConstants.STUDY_PARAM, study)
-                .append("file", file)
-                .append("resume", resume), DELETE, Job.class);
+                buildRestDELETEParams(null, study, deleteParams, params), DELETE, Job.class);
     }
 
-    public RestResponse<Job> variantSecondaryIndex(String project, String study, ObjectMap params) throws IOException {
-        return execute(OPERATION_URL, "/variant/secondaryIndex", new ObjectMap("body", params)
-                .append(ParamConstants.PROJECT_PARAM, project)
-                .append(ParamConstants.STUDY_PARAM, study), POST, Job.class);
+    public RestResponse<Job> variantSecondaryIndex(String project, String study, VariantSecondaryIndexParams indexParams,
+                                                   Map<String, ?> params)
+            throws IOException {
+        return execute(OPERATION_URL, "/variant/secondaryIndex",
+                buildRestPOSTParams(project, study, indexParams, params), POST, Job.class);
     }
 
-    public RestResponse<Job> variantSecondaryIndexDelete(String study, List<String> sample, ObjectMap params) throws IOException {
+    public RestResponse<Job> variantSecondaryIndexDelete(String study, List<String> sample, Map<String, ?> params) throws IOException {
         return execute(OPERATION_URL, "/variant/secondaryIndex/delete",
                 copy(params)
                 .append(ParamConstants.STUDY_PARAM, study)
                 .append("sample", sample), DELETE, Job.class);
     }
 
-    public RestResponse<Job> variantAnnotationIndex(String project, String study, ObjectMap params) throws IOException {
-        return execute(OPERATION_URL, "/variant/annotation/index", new ObjectMap("body", params)
-                .append(ParamConstants.PROJECT_PARAM, project)
-                .append(ParamConstants.STUDY_PARAM, study), POST, Job.class);
-    }
-
-    public RestResponse<Job> variantAnnotationDelete(String project, String annotationId,  ObjectMap params) throws IOException {
-        return execute(OPERATION_URL, "/variant/annotation/delete",
-                copy(params)
-                .append("project", project)
-                .append("annotationId", annotationId), DELETE, Job.class);
-    }
-
-    public RestResponse<Job> variantAnnotationSave(String project, ObjectMap params) throws IOException {
-        return execute(OPERATION_URL, "/variant/annotation/save", new ObjectMap("body", params)
-                .append(ParamConstants.PROJECT_PARAM, project), POST, Job.class);
-    }
-
-    public RestResponse<Job> variantScoreIndex(String study, ObjectMap params) throws IOException {
-        return execute(OPERATION_URL, "/variant/score/index", new ObjectMap("body", params)
-                .append(ParamConstants.STUDY_PARAM, study), POST, Job.class);
-    }
-
-    public RestResponse<Job> variantScoreDelete(String study, String score, boolean resume, boolean force, ObjectMap params)
+    public RestResponse<Job> variantAnnotationIndex(String project, String study, VariantAnnotationIndexParams body, Map<String, ?> params)
             throws IOException {
-        return execute(OPERATION_URL, "/variant/score/delete", copy(params)
-                        .append(ParamConstants.STUDY_PARAM, study)
-                        .append("scoreName", score)
-                        .append("resume", resume)
-                        .append("force", force), DELETE, Job.class);
+        return execute(OPERATION_URL, "/variant/annotation/index", buildRestPOSTParams(project, study, body, params), POST, Job.class);
     }
 
-    public RestResponse<Job> variantSampleGenotypeIndex(String study, ObjectMap params) throws IOException {
-        return execute(OPERATION_URL, "/variant/sample/genotype/index",
-                new ObjectMap("body", params).append(ParamConstants.STUDY_PARAM, study), POST, Job.class);
+    public RestResponse<Job> variantAnnotationDelete(String project, VariantAnnotationDeleteParams deleteParams,  Map<String, ?> params)
+            throws IOException {
+        return execute(OPERATION_URL, "/variant/annotation/delete",
+                buildRestDELETEParams(project, null, deleteParams, params), DELETE, Job.class);
     }
 
-    public RestResponse<Job> variantFamilyGenotypeIndex(String study, ObjectMap params) throws IOException {
-        return execute(OPERATION_URL, "/variant/family/genotype/index",
-                new ObjectMap("body", params).append(ParamConstants.STUDY_PARAM, study), POST, Job.class);
+    public RestResponse<Job> variantAnnotationSave(String project, VariantAnnotationSaveParams body, Map<String, ?> params)
+            throws IOException {
+        return execute(OPERATION_URL, "/variant/annotation/save", buildRestPOSTParams(project, null, body, params), POST, Job.class);
     }
 
-    public RestResponse<Job> variantAggregateFamily(String study, ObjectMap params) throws IOException {
-        return execute(OPERATION_URL, "/variant/family/aggregate", new ObjectMap("body", params)
-                .append(ParamConstants.STUDY_PARAM, study), POST, Job.class);
+    public RestResponse<Job> variantScoreIndex(String study, VariantScoreIndexParams body, Map<String, ?> params) throws IOException {
+        return execute(OPERATION_URL, "/variant/score/index", buildRestPOSTParams(null, study, body, params), POST, Job.class);
     }
 
-    public RestResponse<Job> variantAggregate(String study, ObjectMap params) throws IOException {
-        return execute(OPERATION_URL, "/variant/aggregate", new ObjectMap("body", params)
-                .append(ParamConstants.STUDY_PARAM, study), POST, Job.class);
+    public RestResponse<Job> variantScoreDelete(String study, VariantScoreDeleteParams deleteParams, Map<String, ?> params)
+            throws IOException {
+        return execute(OPERATION_URL, "/variant/score/delete", buildRestDELETEParams(null, study, deleteParams, params), DELETE, Job.class);
     }
 
-    private ObjectMap copy(ObjectMap params) {
+    public RestResponse<Job> variantSampleGenotypeIndex(String study, VariantSampleIndexParams body, Map<String, ?> params)
+            throws IOException {
+        return execute(OPERATION_URL, "/variant/sample/genotype/index", buildRestPOSTParams(null, study, body, params), POST, Job.class);
+    }
+
+    public RestResponse<Job> variantFamilyGenotypeIndex(String study, VariantFamilyIndexParams body, Map<String, ?> params)
+            throws IOException {
+        return execute(OPERATION_URL, "/variant/family/genotype/index", buildRestPOSTParams(null, study, body, params), POST, Job.class);
+    }
+
+    public RestResponse<Job> variantAggregateFamily(String study, VariantAggregateFamilyParams body, Map<String, ?> params)
+            throws IOException {
+        return execute(OPERATION_URL, "/variant/family/aggregate", buildRestPOSTParams(null, study, body, params), POST, Job.class);
+    }
+
+    public RestResponse<Job> variantAggregate(String study, VariantAggregateParams body, Map<String, ?> params) throws IOException {
+        return execute(OPERATION_URL, "/variant/aggregate", buildRestPOSTParams(null, study, body, params), POST, Job.class);
+    }
+
+    private ObjectMap copy(Map<String, ?> params) {
         if (params == null) {
-            params = new ObjectMap();
+            return new ObjectMap();
         } else {
-            params = new ObjectMap(params);
+            return new ObjectMap(params);
         }
-        return params;
     }
 
+    private ObjectMap buildRestDELETEParams(String project, String study, ToolParams deleteParams, Map<String, ?> params) {
+        ObjectMap restParams = deleteParams.toObjectMap();
+        restParams.putAll(toDynamicParams(params));
+        restParams.putIfNotEmpty(ParamConstants.PROJECT_PARAM, project);
+        restParams.putIfNotEmpty(ParamConstants.STUDY_PARAM, study);
+        return restParams;
+    }
+
+    private ObjectMap buildRestPOSTParams(String project, String study, ToolParams body, Map<String, ?> params) {
+        ObjectMap restParams = new ObjectMap("body", body.toObjectMap());
+        restParams.putAll(toDynamicParams(params));
+        restParams.putIfNotEmpty(ParamConstants.PROJECT_PARAM, project);
+        restParams.putIfNotEmpty(ParamConstants.STUDY_PARAM, study);
+        return restParams;
+    }
+
+    private Map<String, String> toDynamicParams(Map<String, ?> params) {
+        ObjectMap objectMap = new ObjectMap(params);
+        Map<String, String> dynamicParams = new HashMap<>();
+        for (String key : params.keySet()) {
+            dynamicParams.put("dynamic_" + key, objectMap.getString(key));
+        }
+        return dynamicParams;
+    }
 }

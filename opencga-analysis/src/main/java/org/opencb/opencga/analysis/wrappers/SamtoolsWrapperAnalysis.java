@@ -9,6 +9,7 @@ import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -21,7 +22,7 @@ import java.util.*;
 import static org.opencb.opencga.core.api.ParamConstants.SAMTOOLS_COMMANDS;
 import static org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine.ALIGNMENT_STATS_VARIABLE_SET;
 
-@Tool(id = SamtoolsWrapperAnalysis.ID, type = Tool.ToolType.ALIGNMENT, description = SamtoolsWrapperAnalysis.DESCRIPTION)
+@Tool(id = SamtoolsWrapperAnalysis.ID, resource = Enums.Resource.ALIGNMENT, description = SamtoolsWrapperAnalysis.DESCRIPTION)
 public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     public final static String ID = "samtools";

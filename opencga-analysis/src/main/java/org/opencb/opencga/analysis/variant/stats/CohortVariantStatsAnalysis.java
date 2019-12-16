@@ -15,13 +15,14 @@ import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.variant.CohortVariantStatsAnalysisExecutor;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
-@Tool(id = CohortVariantStatsAnalysis.ID, type = Tool.ToolType.VARIANT)
+@Tool(id = CohortVariantStatsAnalysis.ID, resource = Enums.Resource.VARIANT)
 public class CohortVariantStatsAnalysis extends OpenCgaTool {
 
     public static final String ID = "cohort-variant-stats";

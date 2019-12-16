@@ -23,15 +23,13 @@ public class Catalog {
 
     private DatabaseCredentials database;
     private DatabaseCredentials searchEngine;
-    private Execution execution;
 
     public Catalog() {
     }
 
-    public Catalog(DatabaseCredentials database, DatabaseCredentials searchEngine, Execution execution) {
+    public Catalog(DatabaseCredentials database, DatabaseCredentials searchEngine) {
         this.database = database;
         this.searchEngine = searchEngine;
-        this.execution = execution;
     }
 
     @Override
@@ -39,7 +37,6 @@ public class Catalog {
         final StringBuilder sb = new StringBuilder("Catalog{");
         sb.append("database=").append(database);
         sb.append(", searchEngine=").append(searchEngine);
-        sb.append(", execution=").append(execution);
         sb.append('}');
         return sb.toString();
     }
@@ -62,12 +59,4 @@ public class Catalog {
         return this;
     }
 
-    public Execution getExecution() {
-        return execution;
-    }
-
-    public Catalog setExecution(Execution execution) {
-        this.execution = execution;
-        return this;
-    }
 }

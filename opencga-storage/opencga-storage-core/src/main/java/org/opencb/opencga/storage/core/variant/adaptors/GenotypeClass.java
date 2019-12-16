@@ -260,13 +260,17 @@ public enum GenotypeClass {
         return new ArrayList<>(filteredGts);
     }
 
+    public static List<String> getPhasedGenotypes(Genotype genotype) {
+        return getPhasedGenotypes(genotype, null);
+    }
+
     public static List<String> getPhasedGenotypes(Genotype genotype, List<String> loadedGts) {
         genotype = new Genotype(genotype);
         if (!genotype.isPhased()) {
             List<String> phasedGts = new ArrayList<>(2);
             genotype.setPhased(true);
             String phased = genotype.toString();
-            if (loadedGts.contains(phased)) {
+            if (loadedGts == null || loadedGts.contains(phased)) {
                 phasedGts.add(phased);
             }
             int[] allelesIdx = genotype.getAllelesIdx();
@@ -275,7 +279,7 @@ public enum GenotypeClass {
                 allelesIdx[0] = allelesIdx[1];
                 allelesIdx[1] = allelesIdx0;
                 phased = genotype.toString();
-                if (loadedGts.contains(phased)) {
+                if (loadedGts == null || loadedGts.contains(phased)) {
                     phasedGts.add(phased);
                 }
             }

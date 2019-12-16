@@ -42,7 +42,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static org.opencb.opencga.analysis.variant.VariantStorageManager.getDataStore;
+import static org.opencb.opencga.analysis.variant.manager.VariantStorageManager.getDataStore;
 
 
 public abstract class StorageManager {

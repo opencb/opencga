@@ -22,11 +22,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.util.List;
 
-@Tool(id = CancerTieringInterpretationAnalysis.ID, type = Tool.ToolType.CLINICAL)
+@Tool(id = CancerTieringInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
 public class CancerTieringInterpretationAnalysis extends InterpretationAnalysis {
 
     public final static String ID = "cancer-tiering-interpretation";

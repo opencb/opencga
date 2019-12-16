@@ -35,7 +35,7 @@ import java.util.*;
 
 import static org.opencb.biodata.formats.variant.clinvar.v24jaxb.ReviewStatusType.*;
 import static org.opencb.biodata.models.clinical.interpretation.VariantClassification.*;
-import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.PANEL;
+import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.PANEL;
 
 @ToolExecutor(id = "opencga-local",
         tool = CancerTieringInterpretationAnalysis.ID,

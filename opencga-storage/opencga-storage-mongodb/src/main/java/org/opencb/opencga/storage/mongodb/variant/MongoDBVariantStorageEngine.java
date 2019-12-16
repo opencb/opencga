@@ -233,7 +233,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     }
 
     @Override
-    public void removeVariantScore(String study, String scoreName, ObjectMap options) throws StorageEngineException {
+    public void deleteVariantScore(String study, String scoreName, ObjectMap options) throws StorageEngineException {
         throw new UnsupportedOperationException("Unable to remove VariantScore in " + getStorageEngineId());
     }
 

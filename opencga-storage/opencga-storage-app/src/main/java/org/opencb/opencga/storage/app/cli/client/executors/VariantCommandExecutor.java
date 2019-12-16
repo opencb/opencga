@@ -306,10 +306,10 @@ public class VariantCommandExecutor extends CommandExecutor {
         variantStorageEngine.getOptions().put(VariantStorageOptions.RESUME.key(), cliOptions.resume);
         variantStorageEngine.getOptions().putAll(cliOptions.commonOptions.params);
 
-        if (cliOptions.files.size() == 1 && cliOptions.files.get(0).equalsIgnoreCase(VariantQueryUtils.ALL)) {
+        if (cliOptions.file.size() == 1 && cliOptions.file.get(0).equalsIgnoreCase(VariantQueryUtils.ALL)) {
             variantStorageEngine.removeStudy(cliOptions.study);
         } else {
-            variantStorageEngine.removeFiles(cliOptions.study, cliOptions.files);
+            variantStorageEngine.removeFiles(cliOptions.study, cliOptions.file);
         }
     }
 
@@ -377,8 +377,8 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (annotateVariantsCommandOptions.annotator != null) {
             options.put(VariantStorageOptions.ANNOTATOR.key(), annotateVariantsCommandOptions.annotator);
         }
-        if (annotateVariantsCommandOptions.customAnnotationKey != null) {
-            options.put(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, annotateVariantsCommandOptions.customAnnotationKey);
+        if (annotateVariantsCommandOptions.customName != null) {
+            options.put(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, annotateVariantsCommandOptions.customName);
         }
         if (annotateVariantsCommandOptions.species != null) {
             options.put(VariantStorageOptions.SPECIES.key(), annotateVariantsCommandOptions.species);
@@ -387,9 +387,9 @@ public class VariantCommandExecutor extends CommandExecutor {
             options.put(VariantStorageOptions.ASSEMBLY.key(), annotateVariantsCommandOptions.assembly);
         }
 
-        String fileName = annotateVariantsCommandOptions.fileName == null
+        String fileName = annotateVariantsCommandOptions.outputFileName == null
                 ? annotateVariantsCommandOptions.dbName
-                : annotateVariantsCommandOptions.fileName;
+                : annotateVariantsCommandOptions.outputFileName;
         options.put(DefaultVariantAnnotationManager.FILE_NAME, fileName);
 
         URI outputUri = UriUtils.createUri(annotateVariantsCommandOptions.outdir == null ? "." : annotateVariantsCommandOptions.outdir);
@@ -614,7 +614,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         options.put(VariantStorageOptions.RESUME.key(), cliOptions.resume);
         options.putAll(cliOptions.commonOptions.params);
 
-        variantStorageEngine.aggregate(cliOptions.study, options, cliOptions.overwrite);
+        variantStorageEngine.aggregate(cliOptions.study, cliOptions.overwrite, options);
     }
 
     private void export() throws URISyntaxException, StorageEngineException, IOException {

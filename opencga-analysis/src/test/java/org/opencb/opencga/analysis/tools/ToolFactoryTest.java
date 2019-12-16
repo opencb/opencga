@@ -3,6 +3,7 @@ package org.opencb.opencga.analysis.tools;
 import org.junit.Test;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -14,21 +15,21 @@ public class ToolFactoryTest {
     public static final String ID = "test-tool-factory";
     public static final String ID_DUP = "test-tool-factory-duplicated";
 
-    @Tool(id = ID, type = Tool.ToolType.FUNCTIONAL)
+    @Tool(id = ID, resource = Enums.Resource.FUNCTIONAL)
     public static class MyTest extends OpenCgaTool {
         @Override
         protected void run() throws Exception {
         }
     }
 
-    @Tool(id = ID_DUP, type = Tool.ToolType.FUNCTIONAL)
+    @Tool(id = ID_DUP, resource = Enums.Resource.FUNCTIONAL)
     public static class MyTest1 extends OpenCgaTool {
         @Override
         protected void run() throws Exception {
         }
     }
 
-    @Tool(id = ID_DUP, type = Tool.ToolType.FUNCTIONAL)
+    @Tool(id = ID_DUP, resource = Enums.Resource.FUNCTIONAL)
     public static class MyTest2 extends OpenCgaTool {
         @Override
         protected void run() throws Exception {
@@ -39,15 +40,15 @@ public class ToolFactoryTest {
     public void testFactoryById() throws ToolException {
         ToolFactory toolFactory = new ToolFactory();
 
-        assertEquals(MyTest.class, toolFactory.getTool(ID).getClass());
-        assertEquals(MyTest.class, toolFactory.getTool(MyTest.class.getName()).getClass());
+        assertEquals(MyTest.class, toolFactory.createTool(ID).getClass());
+        assertEquals(MyTest.class, toolFactory.createTool(MyTest.class.getName()).getClass());
     }
 
     @Test
     public void testFactoryByClass() throws ToolException {
         ToolFactory toolFactory = new ToolFactory();
 
-        assertEquals(MyTest.class, toolFactory.getTool(MyTest.class).getClass());
+        assertEquals(MyTest.class, toolFactory.createTool(MyTest.class).getClass());
     }
 
     @Test

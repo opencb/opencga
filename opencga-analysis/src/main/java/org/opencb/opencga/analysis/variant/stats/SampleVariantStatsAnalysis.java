@@ -13,6 +13,7 @@ import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.variant.SampleVariantStatsAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -21,7 +22,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
-@Tool(id = SampleVariantStatsAnalysis.ID, type = Tool.ToolType.VARIANT, description = SampleVariantStatsAnalysis.DESCRIPTION)
+@Tool(id = SampleVariantStatsAnalysis.ID, resource = Enums.Resource.VARIANT, description = SampleVariantStatsAnalysis.DESCRIPTION)
 public class SampleVariantStatsAnalysis extends OpenCgaTool {
 
     public static final String ID = "sample-variant-stats";

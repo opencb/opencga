@@ -24,15 +24,16 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.util.List;
 
-import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.FAMILY;
-import static org.opencb.opencga.analysis.variant.VariantCatalogQueryUtils.FAMILY_DISORDER;
+import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.FAMILY;
+import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.FAMILY_DISORDER;
 
-@Tool(id = CustomInterpretationAnalysis.ID, type = Tool.ToolType.CLINICAL)
+@Tool(id = CustomInterpretationAnalysis.ID, resource = Enums.Resource.CLINICAL)
 public class CustomInterpretationAnalysis extends InterpretationAnalysis {
 
     public final static String ID = "custom-interpretation";

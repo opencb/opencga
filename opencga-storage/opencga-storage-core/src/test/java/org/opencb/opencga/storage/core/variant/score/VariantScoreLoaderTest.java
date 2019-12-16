@@ -106,7 +106,7 @@ public abstract class VariantScoreLoaderTest extends VariantStorageBaseTest {
         variantStorageEngine.loadVariantScore(scoreFile1, "s1", "score1", "ALL", null, new VariantScoreFormatDescriptor(0, 1, -1), new ObjectMap());
         variantStorageEngine.loadVariantScore(scoreFile2, "s1", "score2", "c1", "ALL", new VariantScoreFormatDescriptor(0, 1, 2, 3, 4, 5), new ObjectMap());
         variantStorageEngine.loadVariantScore(scoreFile2, "s1", "score3", "ALL", "ALL", new VariantScoreFormatDescriptor(0, 1, 2, 3, 4, 5), new ObjectMap());
-        variantStorageEngine.removeVariantScore("s1", "score3", new ObjectMap());
+        variantStorageEngine.deleteVariantScore("s1", "score3", new ObjectMap());
 
         int varsWithScore1 = 0;
         int varsWithScore2 = 0;

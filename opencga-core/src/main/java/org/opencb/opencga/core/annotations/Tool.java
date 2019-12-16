@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.annotations;
 
+import org.opencb.opencga.core.models.common.Enums;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -31,21 +33,34 @@ public @interface Tool {
     String id();
 
     /**
+     * @return Tool resource.
+     */
+    Enums.Resource resource();
+
+    /**
      * @return Tool type.
      */
-    ToolType type();
+    Type type() default Type.ANALYSIS;
+
+    /**
+     * @return Tool scope.
+     */
+    Scope scope() default Scope.STUDY;
 
     /**
      * @return Tool executor description.
      */
     String description() default "";
 
-    enum ToolType {
-        VARIANT,
-        CLINICAL,
-        EXPRESSION,
-        FUNCTIONAL,
-        ALIGNMENT;
+    enum Type {
+        OPERATION,
+        ANALYSIS;
+    }
+
+    enum Scope {
+        GLOBAL,
+        PROJECT,
+        STUDY
     }
 
 }

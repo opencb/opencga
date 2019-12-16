@@ -19,11 +19,12 @@ import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileIndex;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.util.*;
 
-@Tool(id = FileDeleteAction.ID, type = Tool.ToolType.VARIANT, description = "Delete files.")
+@Tool(id = FileDeleteAction.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = "Delete files.")
 public class FileDeleteAction extends OpenCgaTool {
 
     public final static String ID = "files-delete";
