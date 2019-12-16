@@ -234,18 +234,18 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
         params.put("b", "");
         params.put("S", "");
 
-        String bamFile = outDir3.resolve((new File(bwa.getSamFile()).getName()) + ".bam").toString();
+        File bamFile = outDir3.resolve(new File(bwa.getSamFile()).getName() + ".bam").toFile();
 
         SamtoolsWrapperAnalysis samtools = new SamtoolsWrapperAnalysis();
         samtools.setUp(opencga.getOpencgaHome().toString(), params, outDir3, clinicalTest.token);
         samtools.setCommand("view")
                 .setInputFile(bwa.getSamFile())
-                .setOutputFile(bamFile);
+                .setOutputFilename(bamFile.getName());
 
         ExecutionResult samtoolsViewResult = samtools.start();
         System.out.println(samtoolsViewResult);
 
-        assertTrue(Files.exists(new File(samtools.getOutputFile()).toPath()));
+        assertTrue(bamFile.exists());
 
         // samtools sort (.bam)
         System.out.println("-------   samtools sort   ------");
@@ -253,18 +253,18 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
 
         params = new ObjectMap();
 
-        String sortedBamFile = outDir4.resolve((new File(bwa.getSamFile()).getName()) + ".sorted.bam").toString();
+        File sortedBamFile = outDir4.resolve((new File(bwa.getSamFile()).getName()) + ".sorted.bam").toFile();
 
         samtools = new SamtoolsWrapperAnalysis();
         samtools.setUp(opencga.getOpencgaHome().toString(), params, outDir4, clinicalTest.token);
         samtools.setCommand("sort")
-                .setInputFile(bamFile)
-                .setOutputFile(sortedBamFile);
+                .setInputFile(bamFile.getAbsolutePath())
+                .setOutputFilename(sortedBamFile.getName());
 
         ExecutionResult samtoolsSortResult = samtools.start();
         System.out.println(samtoolsSortResult);
 
-        assertTrue(Files.exists(new File(samtools.getOutputFile()).toPath()));
+        assertTrue(sortedBamFile.exists());
 
         // samtools index (generate .bai)
         System.out.println("-------   samtools index   ------");
@@ -272,18 +272,18 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
 
         params = new ObjectMap();
 
-        String baiFile = outDir5.resolve((new File(sortedBamFile).getName()) + ".bai").toString();
+        File baiFile = outDir5.resolve(sortedBamFile.getName() + ".bai").toFile();
 
         samtools = new SamtoolsWrapperAnalysis();
         samtools.setUp(opencga.getOpencgaHome().toString(), params, outDir5, clinicalTest.token);
         samtools.setCommand("index")
-                .setInputFile(sortedBamFile)
-                .setOutputFile(baiFile);
+                .setInputFile(sortedBamFile.getAbsolutePath())
+                .setOutputFilename(baiFile.getName());
 
         ExecutionResult samtoolsIndexResult = samtools.start();
         System.out.println(samtoolsIndexResult);
 
-        assertTrue(Files.exists(new File(samtools.getOutputFile()).toPath()));
+        assertTrue(baiFile.exists());
 
         // deeptools bamCoverage
         System.out.println("-------   deeptools bamCoverage   ------");
@@ -292,13 +292,13 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
         params = new ObjectMap();
         params.put("of", "bigwig");
 
-        FileUtils.copyFile(new java.io.File(baiFile), new java.io.File(outDir4 + "/" + new java.io.File(baiFile).getName()));
-        String coverageFile = outDir6.resolve((new File(sortedBamFile).getName()) + ".bw").toString();
+        FileUtils.copyFile(baiFile, new java.io.File(outDir4 + "/" + baiFile.getName()));
+        String coverageFile = outDir6.resolve(sortedBamFile.getName() + ".bw").toString();
 
         DeeptoolsWrapperAnalysis deeptools = new DeeptoolsWrapperAnalysis();
         deeptools.setUp(opencga.getOpencgaHome().toString(), params, outDir6, clinicalTest.token);
         deeptools.setCommand("bamCoverage")
-                .setBamFile(sortedBamFile)
+                .setBamFile(sortedBamFile.getAbsolutePath())
                 .setCoverageFile(coverageFile);
 
         ExecutionResult deepToolsBamCoverageResult = deeptools.start();
@@ -312,18 +312,18 @@ public class WrapperAnalysisTest extends VariantStorageBaseTest implements Mongo
 
         params = new ObjectMap();
 
-        String statsFile = outDir7.resolve((new File(sortedBamFile).getName()) + ".stats").toString();
+        File statsFile = outDir7.resolve(sortedBamFile.getName() + ".stats.txt").toFile();
 
         samtools = new SamtoolsWrapperAnalysis();
         samtools.setUp(opencga.getOpencgaHome().toString(), params, outDir7, clinicalTest.token);
         samtools.setCommand("stats")
-                .setInputFile(sortedBamFile)
-                .setOutputFile(statsFile);
+                .setInputFile(sortedBamFile.getAbsolutePath())
+                .setOutputFilename(statsFile.getName());
 
         ExecutionResult samtoolsStatsResult = samtools.start();
         System.out.println(samtoolsStatsResult);
 
-        assertTrue(Files.exists(new File(samtools.getOutputFile()).toPath()));
+        assertTrue(statsFile.exists());
     }
 
     //    @Test

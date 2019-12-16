@@ -373,19 +373,40 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = STUDY_DESCRIPTION, arity = 1)
         public String study;
 
-        @Parameter(names = {"--command"}, description = "Samtools command. Valid values: view, sort, index, stats.")
+        @Parameter(names = {"--command"}, description = SAMTOOLS_COMMAND_DESCRIPTION)
         public String command;
 
-        @Parameter(names = {"--input-file"}, description = "Input file.")
+        @Parameter(names = {"--input-file"}, description = INPUT_FILE_DESCRIPTION)
         public String inputFile;
 
-        @Parameter(names = {"--output-file"}, description = "Output file.")
-        public String outputFile;
+        @Parameter(names = {"--output-filename"}, description = OUTPUT_FILENAME_DESCRIPTION)
+        public String outputFilename;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        @Parameter(names = {"--reference-file"}, description = REFERENCE_FILE_DESCRIPTION)
+        public String referenceFile;
+
+        @Parameter(names = {"--read-group-file"}, description = READ_GROUP_FILE_DESCRIPTION)
+        public String readGroupFile;
+
+        @Parameter(names = {"--bed-file"}, description = BED_FILE_DESCRIPTION)
+        public String bedFile;
+
+        @Parameter(names = {"--ref-seq-file"}, description = REF_SEQ_FILE_DESCRIPTION)
+        public String refSeqFile;
+
+        @Parameter(names = {"--reference-names-file"}, description = REFERENCE_NAMES_DESCRIPTION)
+        public String referenceNamesFile;
+
+        @Parameter(names = {"--target-region-file"}, description = TARGET_REGION_DESCRIPTION)
+        public String targetRegionFile;
+
+        @Parameter(names = {"--reads-not-selected-filename"}, description = READS_NOT_SELECTED_FILENAME_DESCRIPTION)
+        public String readsNotSelectedFilename;
+
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;
     }
 
@@ -400,7 +421,7 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1)
         public String study;
 
-        @Parameter(names = {"--executable"}, description = "Deeptools executable. Valid values: bamCoverage.")
+        @Parameter(names = {"--command"}, description = "Deeptools command. Valid values: bamCoverage.")
         public String executable;
 
         @Parameter(names = {"--bam-file"}, description = "BAM file.")

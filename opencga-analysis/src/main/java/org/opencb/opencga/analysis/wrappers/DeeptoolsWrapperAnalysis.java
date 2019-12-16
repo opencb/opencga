@@ -44,7 +44,7 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 }
                 break;
             default:
-                // TODO: support the remaining deeptools executable
+                // TODO: support the remaining deeptools commands
                 throw new AnalysisException("Deeptools command '" + command + "' is not available. Supported command is"
                         + " 'bamCoverage'");
         }
@@ -128,7 +128,7 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
             sb.append(":").append(params.getString(DOCKER_IMAGE_VERSION_PARAM));
         }
 
-        // Deeptools executable
+        // Deeptools command
         sb.append(" ").append(command);
 
         // Deeptools options

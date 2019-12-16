@@ -778,7 +778,7 @@ public class VariantCommandOptions {
         @Parameter(names = {"--study"}, description = "Study.")
         public String study;
 
-        @Parameter(names = {"--executable"}, description = "Rvtests executable. Valid values: rvtest or vcf2kinship.")
+        @Parameter(names = {"--command"}, description = "Rvtests command. Valid values: rvtest or vcf2kinship.")
         public String executable = "rvtest";
 
         @Parameter(names = {"--vcf-file"}, description = "VCF file.")
