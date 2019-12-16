@@ -509,17 +509,33 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         public SamtoolsRunParams() {
         }
 
-        public SamtoolsRunParams(String command, String inputFile, String outputFile, String outdir, Map<String, String> samtoolsParams) {
+        public SamtoolsRunParams(String command, String inputFile, String outputFilename, String referenceFile, String readGroupFile,
+                                 String bedFile, String refSeqFile, String referenceNamesFile, String targetRegionFile,
+                                 String readsNotSelectedFilename, String outdir, Map<String, String> samtoolsParams) {
             this.command = command;
             this.inputFile = inputFile;
-            this.outputFile = outputFile;
+            this.outputFilename = outputFilename;
+            this.referenceFile = referenceFile;
+            this.readGroupFile = readGroupFile;
+            this.bedFile = bedFile;
+            this.refSeqFile = refSeqFile;
+            this.referenceNamesFile = referenceNamesFile;
+            this.targetRegionFile = targetRegionFile;
+            this.readsNotSelectedFilename = readsNotSelectedFilename;
             this.outdir = outdir;
             this.samtoolsParams = samtoolsParams;
         }
 
-        public String command;      // Valid values: view, index, sort, stats
-        public String inputFile;    // Input file
-        public String outputFile;   // Output file
+        public String command;          // Valid values: view, index, sort, stats
+        public String inputFile;        // Input file
+        public String outputFilename;   // Output filename
+        public String referenceFile;
+        public String readGroupFile;
+        public String bedFile;
+        public String refSeqFile;
+        public String referenceNamesFile;
+        public String targetRegionFile;
+        public String readsNotSelectedFilename;
         public String outdir;
         public Map<String, String> samtoolsParams;
     }
@@ -541,16 +557,15 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         public DeeptoolsRunParams() {
         }
 
-        public DeeptoolsRunParams(String executable, String bamFile, String coverageFile, String outdir,
-                                  Map<String, String> deeptoolsParams) {
-            this.executable = executable;
+        public DeeptoolsRunParams(String command, String bamFile, String coverageFile, String outdir, Map<String, String> deeptoolsParams) {
+            this.command = command;
             this.bamFile = bamFile;
             this.coverageFile = coverageFile;
             this.outdir = outdir;
             this.deeptoolsParams = deeptoolsParams;
         }
 
-        public String executable;     // Valid values: bamCoverage
+        public String command;     // Valid values: bamCoverage
         public String bamFile;        // BAM file
         public String coverageFile;   // Coverage file
         public String outdir;

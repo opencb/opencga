@@ -39,8 +39,6 @@ public class PlinkWrapperAnalysis extends OpenCgaWrapperAnalysis {
             String commandLine = getCommandLine();
             logger.info("Plink command line:" + commandLine);
             try {
-                Set<String> filenamesBeforeRunning = new HashSet<>(getFilenames(getOutDir()));
-
                 // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
                 Command cmd = new Command(getCommandLine())
                         .setOutputOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDOUT_FILENAME).toFile())))

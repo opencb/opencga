@@ -136,7 +136,8 @@ public class AlignmentStorageManager extends StorageManager {
 
         samtools.setStudy(study);
         samtools.setCommand("stats")
-                .setInputFile(inputFile);
+                .setInputFile(inputFile)
+                .setOutputFilename(Paths.get(inputFile).getFileName() + ".stats.txt");
 
         samtools.start();
     }
@@ -194,7 +195,7 @@ public class AlignmentStorageManager extends StorageManager {
     //-------------------------------------------------------------------------
 
     public OpenCGAResult<RegionCoverage> coverageQuery(String studyIdStr, String fileIdStr, Region region, int minCoverage, int maxCoverage,
-                                                    int windowSize, String sessionId) throws Exception {
+                                                       int windowSize, String sessionId) throws Exception {
         File file = extractAlignmentOrCoverageFile(studyIdStr, fileIdStr, sessionId);
         return alignmentStorageEngine.getDBAdaptor().coverageQuery(Paths.get(file.getUri()), region, minCoverage, maxCoverage, windowSize);
     }

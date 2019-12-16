@@ -58,8 +58,6 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
             String commandLine = getCommandLine();
             logger.info("BWA command line:" + commandLine);
             try {
-                Set<String> filenamesBeforeRunning = new HashSet<>(getFilenames(getOutDir()));
-
                 // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
                 Command cmd = new Command(commandLine)
                         .setOutputOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDOUT_FILENAME).toFile())))

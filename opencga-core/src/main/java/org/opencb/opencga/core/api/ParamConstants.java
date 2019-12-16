@@ -1,5 +1,7 @@
 package org.opencb.opencga.core.api;
 
+import com.beust.jcommander.Parameter;
+
 public class ParamConstants {
     private static final String UP_TO_100 = " up to a maximum of 100";
 
@@ -260,6 +262,30 @@ public class ParamConstants {
     public static final String PERCENTAGE_OF_PROPERLY_PAIRED_READS = "percentageOfProperlyPairedReads";
     public static final String PERCENTAGE_OF_PROPERLY_PAIRED_READS_DESCRIPTION = "Percentage of properly paired reads: [<|>|<=|>=]{number}, e.g. >=96.5";
 
+    // ---------------------------------------------
+
+    public static final String SAMTOOLS_COMMANDS = "'sort', 'index' , 'view', 'stats', 'dict', 'faidx', 'depth'";
+    public static final String SAMTOOLS_COMMAND_DESCRIPTION = "Samtools command: " + SAMTOOLS_COMMANDS;
+    public static final String COMMAND_PARAMETER = "command";
+
+    public static final String INPUT_FILE_DESCRIPTION = "Input file (full path).";
+    public static final String INPUT_FILE_PARAM = "inputFile";
+    public static final String OUTPUT_FILENAME_DESCRIPTION = "Output file name.";
+    public static final String OUTPUT_FILENAME_PARAM = "outputFilename";
+    public static final String REFERENCE_FILE_DESCRIPTION = "Reference sequence FASTA file";
+    public static final String REFERENCE_FILE_PARAM = "referenceFile";
+    public static final String READ_GROUP_FILE_DESCRIPTION = "Only include reads with read group listed in this file";
+    public static final String READ_GROUP_FILE_PARAM = "readGroupFile";
+    public static final String BED_FILE_DESCRIPTION = "File containing a list of positions or regions";
+    public static final String BED_FILE_PARAM = "bedFile";
+    public static final String REF_SEQ_FILE_DESCRIPTION = "Reference sequence (required for GC-depth and mismatches-per-cycle calculation)";
+    public static final String REF_SEQ_FILE_PARAM = "refSeqFile";
+    public static final String REFERENCE_NAMES_DESCRIPTION = "File listing reference names and lengths";
+    public static final String REFERENCE_NAMES_PARAM = "referenceNamesFile";
+    public static final String TARGET_REGION_DESCRIPTION = "Do stats in these regions only. Tab-delimited file chr,from,to, 1-based, inclusive";
+    public static final String TARGET_REGION_PARAM = "targetRegionFile";
+    public static final String READS_NOT_SELECTED_FILENAME_DESCRIPTION = "Output reads not selected by filters will be written into this file";
+    public static final String READS_NOT_SELECTED_FILENAME_PARAM = "readsNotSelectedFilename";
 
     // ---------------------------------------------
 
