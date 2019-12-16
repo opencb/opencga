@@ -151,32 +151,32 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse stats() throws IOException {
-        ObjectMap params = new VariantStatsAnalysisParams(
-                variantCommandOptions.statsVariantCommandOptions.cohort,
-                variantCommandOptions.statsVariantCommandOptions.samples,
-                variantCommandOptions.statsVariantCommandOptions.index,
-                variantCommandOptions.statsVariantCommandOptions.outdir,
-                variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.fileName,
-                variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.region,
-                variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.gene,
-                variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.overwriteStats,
-                variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.updateStats,
-                variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.resume,
-                variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.aggregated,
-                variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.aggregationMappingFile
-        ).toObjectMap();
-        return openCGAClient.getVariantClient().statsRun(variantCommandOptions.statsVariantCommandOptions.study, params);
+        return openCGAClient.getVariantClient().statsRun(variantCommandOptions.statsVariantCommandOptions.study,
+                new VariantStatsAnalysisParams(
+                        variantCommandOptions.statsVariantCommandOptions.cohort,
+                        variantCommandOptions.statsVariantCommandOptions.samples,
+                        variantCommandOptions.statsVariantCommandOptions.index,
+                        variantCommandOptions.statsVariantCommandOptions.outdir,
+                        variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.fileName,
+                        variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.region,
+                        variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.gene,
+                        variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.overwriteStats,
+                        variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.updateStats,
+                        variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.resume,
+                        variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.aggregated,
+                        variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.aggregationMappingFile
+                ));
     }
 
     private RestResponse<Job> sampleStats() throws IOException {
-        ObjectMap params = new SampleVariantStatsAnalysisParams(
-                variantCommandOptions.sampleVariantStatsCommandOptions.sample,
-                variantCommandOptions.sampleVariantStatsCommandOptions.family,
-                variantCommandOptions.sampleVariantStatsCommandOptions.index,
-                variantCommandOptions.sampleVariantStatsCommandOptions.samplesAnnotation,
-                variantCommandOptions.sampleVariantStatsCommandOptions.outdir
-        ).toObjectMap();
-        return openCGAClient.getVariantClient().sampleStatsRun(variantCommandOptions.sampleVariantStatsCommandOptions.study, params);
+        return openCGAClient.getVariantClient().sampleStatsRun(variantCommandOptions.sampleVariantStatsCommandOptions.study,
+                new SampleVariantStatsAnalysisParams(
+                        variantCommandOptions.sampleVariantStatsCommandOptions.sample,
+                        variantCommandOptions.sampleVariantStatsCommandOptions.family,
+                        variantCommandOptions.sampleVariantStatsCommandOptions.index,
+                        variantCommandOptions.sampleVariantStatsCommandOptions.samplesAnnotation,
+                        variantCommandOptions.sampleVariantStatsCommandOptions.outdir
+                ));
     }
 
     private RestResponse<SampleVariantStats> sampleStatsQuery() throws IOException {
@@ -186,14 +186,14 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse<Job> cohortStats() throws IOException {
-        ObjectMap params = new CohortVariantStatsAnalysisParams(
-                variantCommandOptions.cohortVariantStatsCommandOptions.cohort,
-                variantCommandOptions.cohortVariantStatsCommandOptions.samples,
-                variantCommandOptions.cohortVariantStatsCommandOptions.index,
-                variantCommandOptions.cohortVariantStatsCommandOptions.samplesAnnotation,
-                variantCommandOptions.cohortVariantStatsCommandOptions.outdir
-        ).toObjectMap();
-        return openCGAClient.getVariantClient().cohortStatsRun(variantCommandOptions.cohortVariantStatsCommandOptions.study, params);
+        return openCGAClient.getVariantClient().cohortStatsRun(variantCommandOptions.cohortVariantStatsCommandOptions.study,
+                new CohortVariantStatsAnalysisParams(
+                        variantCommandOptions.cohortVariantStatsCommandOptions.cohort,
+                        variantCommandOptions.cohortVariantStatsCommandOptions.samples,
+                        variantCommandOptions.cohortVariantStatsCommandOptions.index,
+                        variantCommandOptions.cohortVariantStatsCommandOptions.samplesAnnotation,
+                        variantCommandOptions.cohortVariantStatsCommandOptions.outdir
+                ));
     }
 
     private RestResponse<VariantSetStats> cohortStatsQuery() throws IOException {
@@ -212,21 +212,21 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 //    }
 
     private RestResponse<Job> gwas() throws IOException {
-        ObjectMap params = new GwasAnalysisParams(
-                variantCommandOptions.gwasCommandOptions.phenotype,
-                variantCommandOptions.gwasCommandOptions.index,
-                variantCommandOptions.gwasCommandOptions.indexScoreId,
-                variantCommandOptions.gwasCommandOptions.method,
-                variantCommandOptions.gwasCommandOptions.fisherMode,
-                variantCommandOptions.gwasCommandOptions.caseCohort,
-                variantCommandOptions.gwasCommandOptions.caseCohortSamplesAnnotation,
-                variantCommandOptions.gwasCommandOptions.caseCohortSamples,
-                variantCommandOptions.gwasCommandOptions.controlCohort,
-                variantCommandOptions.gwasCommandOptions.controlCohortSamplesAnnotation,
-                variantCommandOptions.gwasCommandOptions.controlCohortSamples,
-                variantCommandOptions.gwasCommandOptions.outdir
-        ).toObjectMap();
-        return openCGAClient.getVariantClient().gwasRun(variantCommandOptions.gwasCommandOptions.study, params);
+        return openCGAClient.getVariantClient().gwasRun(variantCommandOptions.gwasCommandOptions.study,
+                new GwasAnalysisParams(
+                        variantCommandOptions.gwasCommandOptions.phenotype,
+                        variantCommandOptions.gwasCommandOptions.index,
+                        variantCommandOptions.gwasCommandOptions.indexScoreId,
+                        variantCommandOptions.gwasCommandOptions.method,
+                        variantCommandOptions.gwasCommandOptions.fisherMode,
+                        variantCommandOptions.gwasCommandOptions.caseCohort,
+                        variantCommandOptions.gwasCommandOptions.caseCohortSamplesAnnotation,
+                        variantCommandOptions.gwasCommandOptions.caseCohortSamples,
+                        variantCommandOptions.gwasCommandOptions.controlCohort,
+                        variantCommandOptions.gwasCommandOptions.controlCohortSamplesAnnotation,
+                        variantCommandOptions.gwasCommandOptions.controlCohortSamples,
+                        variantCommandOptions.gwasCommandOptions.outdir
+                ));
     }
 
     private List<String> asList(String s) {
@@ -235,7 +235,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 : Arrays.asList(s.split(","));
     }
 
-    private RestResponse<Job> export() throws CatalogException, IOException, InterruptedException {
+    private RestResponse<Job> export() throws IOException {
         VariantCommandOptions.VariantExportCommandOptions c = variantCommandOptions.exportVariantCommandOptions;
 
         c.study = resolveStudy(c.study);
@@ -254,27 +254,27 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
     private RestResponse<Job> index() throws IOException {
         VariantCommandOptions.VariantIndexCommandOptions variantIndex = variantCommandOptions.indexVariantCommandOptions;
-        ObjectMap params = new VariantIndexParams(
-                variantIndex.fileId,
-                variantIndex.genericVariantIndexOptions.resume,
-                variantIndex.outdir,
-                variantIndex.genericVariantIndexOptions.transform,
-                variantIndex.genericVariantIndexOptions.gvcf,
-                variantIndex.genericVariantIndexOptions.load,
-                variantIndex.genericVariantIndexOptions.loadSplitData,
-                variantIndex.genericVariantIndexOptions.skipPostLoadCheck,
-                variantIndex.genericVariantIndexOptions.excludeGenotype,
-                variantIndex.genericVariantIndexOptions.includeExtraFields,
-                variantIndex.genericVariantIndexOptions.merge,
-                variantIndex.genericVariantIndexOptions.calculateStats,
-                variantIndex.genericVariantIndexOptions.aggregated,
-                variantIndex.genericVariantIndexOptions.aggregationMappingFile,
-                variantIndex.genericVariantIndexOptions.annotate,
-                variantIndex.genericVariantIndexOptions.annotator,
-                variantIndex.genericVariantIndexOptions.overwriteAnnotations,
-                variantIndex.genericVariantIndexOptions.indexSearch
-        ).toObjectMap();
-        return openCGAClient.getVariantClient().index(variantIndex.study, params);
+        return openCGAClient.getVariantClient().index(variantIndex.study,
+                new VariantIndexParams(
+                        variantIndex.fileId,
+                        variantIndex.genericVariantIndexOptions.resume,
+                        variantIndex.outdir,
+                        variantIndex.genericVariantIndexOptions.transform,
+                        variantIndex.genericVariantIndexOptions.gvcf,
+                        variantIndex.genericVariantIndexOptions.load,
+                        variantIndex.genericVariantIndexOptions.loadSplitData,
+                        variantIndex.genericVariantIndexOptions.skipPostLoadCheck,
+                        variantIndex.genericVariantIndexOptions.excludeGenotype,
+                        variantIndex.genericVariantIndexOptions.includeExtraFields,
+                        variantIndex.genericVariantIndexOptions.merge,
+                        variantIndex.genericVariantIndexOptions.calculateStats,
+                        variantIndex.genericVariantIndexOptions.aggregated,
+                        variantIndex.genericVariantIndexOptions.aggregationMappingFile,
+                        variantIndex.genericVariantIndexOptions.annotate,
+                        variantIndex.genericVariantIndexOptions.annotator,
+                        variantIndex.genericVariantIndexOptions.overwriteAnnotations,
+                        variantIndex.genericVariantIndexOptions.indexSearch
+                ));
     }
 
     private RestResponse query() throws CatalogException, IOException, InterruptedException {
@@ -562,27 +562,27 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     // Wrappers
 
     private RestResponse<Job> plink() throws IOException {
-        ObjectMap params = new PlinkRunParams(
-                variantCommandOptions.plinkCommandOptions.tpedFile,
-                variantCommandOptions.plinkCommandOptions.tfamFile,
-                variantCommandOptions.plinkCommandOptions.covarFile,
-                variantCommandOptions.plinkCommandOptions.outdir,
-                variantCommandOptions.plinkCommandOptions.basicOptions.params
-        ).toObjectMap();
-        return openCGAClient.getVariantClient().plinkRun(variantCommandOptions.plinkCommandOptions.study, params);
+        return openCGAClient.getVariantClient().plinkRun(variantCommandOptions.plinkCommandOptions.study,
+                new PlinkRunParams(
+                        variantCommandOptions.plinkCommandOptions.tpedFile,
+                        variantCommandOptions.plinkCommandOptions.tfamFile,
+                        variantCommandOptions.plinkCommandOptions.covarFile,
+                        variantCommandOptions.plinkCommandOptions.outdir,
+                        variantCommandOptions.plinkCommandOptions.basicOptions.params
+                ));
     }
 
     private RestResponse<Job> rvtests() throws IOException {
-        ObjectMap params = new RvtestsRunParams(
-                variantCommandOptions.rvtestsCommandOptions.executable,
-                variantCommandOptions.rvtestsCommandOptions.vcfFile,
-                variantCommandOptions.rvtestsCommandOptions.phenoFile,
-                variantCommandOptions.rvtestsCommandOptions.pedigreeFile,
-                variantCommandOptions.rvtestsCommandOptions.kinshipFile,
-                variantCommandOptions.rvtestsCommandOptions.covarFile,
-                variantCommandOptions.rvtestsCommandOptions.outdir,
-                variantCommandOptions.rvtestsCommandOptions.basicOptions.params
-        ).toObjectMap();
-        return openCGAClient.getVariantClient().rvtestsRun(variantCommandOptions.rvtestsCommandOptions.study, params);
+        return openCGAClient.getVariantClient().rvtestsRun(variantCommandOptions.rvtestsCommandOptions.study,
+                new RvtestsRunParams(
+                        variantCommandOptions.rvtestsCommandOptions.executable,
+                        variantCommandOptions.rvtestsCommandOptions.vcfFile,
+                        variantCommandOptions.rvtestsCommandOptions.phenoFile,
+                        variantCommandOptions.rvtestsCommandOptions.pedigreeFile,
+                        variantCommandOptions.rvtestsCommandOptions.kinshipFile,
+                        variantCommandOptions.rvtestsCommandOptions.covarFile,
+                        variantCommandOptions.rvtestsCommandOptions.outdir,
+                        variantCommandOptions.rvtestsCommandOptions.basicOptions.params
+                ));
     }
 }
