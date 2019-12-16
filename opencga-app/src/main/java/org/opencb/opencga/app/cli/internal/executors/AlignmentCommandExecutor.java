@@ -174,7 +174,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
 
         samtools.setCommand(cliOptions.command)
                 .setInputFile(cliOptions.inputFile)
-                .setOutputFile(cliOptions.outputFile);
+                .setOutputFilename(cliOptions.outputFilename);
 
         samtools.start();
     }

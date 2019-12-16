@@ -334,27 +334,6 @@ public class CohortWSServer extends OpenCGAWSServer {
     }
 
     @DELETE
-    @Path("/delete")
-    @ApiOperation(value = "Delete cohorts")
-    public Response deleteQuery(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-                @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.COHORT_ID_DESCRIPTION) @QueryParam("id") String id,
-            @ApiParam(value = ParamConstants.COHORT_NAME_DESCRIPTION) @QueryParam("name") String name,
-            @ApiParam(value = ParamConstants.COHORT_TYPE_DESCRIPTION) @QueryParam("type") Study.Type type,
-            @ApiParam(value = ParamConstants.COHORT_STATUS_DESCRIPTION) @QueryParam("status") String status,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-            @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
-            @ApiParam(value = "Release value") @QueryParam("release") String release) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(cohortManager.delete(studyStr, query, queryOptions, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @DELETE
     @Path("{cohorts}/delete")
     @ApiOperation(value = "Delete cohorts")
     public Response deleteList(

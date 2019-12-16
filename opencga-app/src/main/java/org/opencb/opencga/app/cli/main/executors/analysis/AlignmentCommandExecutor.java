@@ -415,10 +415,18 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new AlignmentAnalysisWSService.SamtoolsRunParams(
                 alignmentCommandOptions.samtoolsCommandOptions.command,
                 alignmentCommandOptions.samtoolsCommandOptions.inputFile,
-                alignmentCommandOptions.samtoolsCommandOptions.outputFile,
+                alignmentCommandOptions.samtoolsCommandOptions.outputFilename,
+                alignmentCommandOptions.samtoolsCommandOptions.referenceFile,
+                alignmentCommandOptions.samtoolsCommandOptions.readGroupFile,
+                alignmentCommandOptions.samtoolsCommandOptions.bedFile,
+                alignmentCommandOptions.samtoolsCommandOptions.refSeqFile,
+                alignmentCommandOptions.samtoolsCommandOptions.referenceNamesFile,
+                alignmentCommandOptions.samtoolsCommandOptions.targetRegionFile,
+                alignmentCommandOptions.samtoolsCommandOptions.readsNotSelectedFilename,
                 alignmentCommandOptions.samtoolsCommandOptions.outdir,
                 alignmentCommandOptions.samtoolsCommandOptions.commonOptions.params
         ).toObjectMap();
+
         return openCGAClient.getAlignmentClient().samtoolsRun(alignmentCommandOptions.samtoolsCommandOptions.study, params);
     }
 

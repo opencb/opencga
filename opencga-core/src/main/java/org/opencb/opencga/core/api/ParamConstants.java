@@ -1,5 +1,7 @@
 package org.opencb.opencga.core.api;
 
+import com.beust.jcommander.Parameter;
+
 public class ParamConstants {
     private static final String UP_TO_100 = " up to a maximum of 100";
 
@@ -13,7 +15,11 @@ public class ParamConstants {
     public static final String COUNT_DESCRIPTION = "Get the total number of results matching the query. Deactivated by default.";
 
     public static final String CREATION_DATE_DESCRIPTION = "Creation date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
+    public static final String CREATION_DATE_PARAM = "creationDate";
     public static final String MODIFICATION_DATE_DESCRIPTION = "Modification date. Format: yyyyMMddHHmmss. Examples: >2018, 2017-2018, <201805";
+    public static final String MODIFICATION_DATE_PARAM = "modificationDate";
+    public static final String RELEASE_PARAM = "release";
+    public static final String RELEASE_DESCRIPTION = "Release when it was created";
 
     // ---------------------------------------------
 
@@ -28,9 +34,9 @@ public class ParamConstants {
     // ---------------------------------------------
 
     public static final String STUDY_PARAM = "study";
-    public static final String STUDY_DESCRIPTION = "Study [[user@]project:]study where study and project can be either the id or alias";
+    public static final String STUDY_DESCRIPTION = "Study [[user@]project:]study where study and project can be either the ID or UUID";
     public static final String STUDIES_PARAM = "studies";
-    public static final String STUDIES_DESCRIPTION = "Comma separated list of Studies [[user@]project:]study where study and project can be either the id or alias" + UP_TO_100;
+    public static final String STUDIES_DESCRIPTION = "Comma separated list of Studies [[user@]project:]study where study and project can be either the ID or UUID" + UP_TO_100;
 
     public static final String STUDY_NAME_DESCRIPTION = "Study name";
     public static final String STUDY_ID_DESCRIPTION = "Study id";
@@ -58,8 +64,8 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String SAMPLE_DESCRIPTION = "Sample id or name";
-    public static final String SAMPLES_DESCRIPTION = "Comma separated list sample IDs or names" + UP_TO_100;
+    public static final String SAMPLE_DESCRIPTION = "Sample ID or UUID";
+    public static final String SAMPLES_DESCRIPTION = "Comma separated list sample IDs or UUIDs" + UP_TO_100;
 
     public static final String SAMPLE_ID_DESCRIPTION = "Sample id";
     public static final String SAMPLE_NAME_DESCRIPTION = "Sample name";
@@ -93,13 +99,31 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String JOBS_DESCRIPTION = "Comma separated list of job ids or names" + UP_TO_100;
+    public static final String JOB_DESCRIPTION = "Job ID or UUID";
+    public static final String JOBS_DESCRIPTION = "Comma separated list of job IDs or UUIDs" + UP_TO_100;
+
+    public static final String JOB_ID_DESCRIPTION = "Job ID";
     public static final String JOB_NAME = "jobName";
-    public static final String JOB_NAME_DESCRIPTION = "Job Name";
-    public static final String JOB_DESCRIPTION = "jobDescription";
+    public static final String JOB_NAME_PARAM = "name";
+    public static final String JOB_NAME_DESCRIPTION = "Job name";
     public static final String JOB_DESCRIPTION_DESCRIPTION = "Job Description";
+    public static final String JOB_TOOL_PARAM = "tool";
+    public static final String JOB_TOOL_DESCRIPTION = "Tool executed by the job";
+    public static final String JOB_USER_PARAM = "user";
+    public static final String JOB_USER_DESCRIPTION = "User that created the job";
+    public static final String JOB_PRIORITY_PARAM = "priority";
+    public static final String JOB_PRIORITY_DESCRIPTION = "Priority of the job";
+    public static final String JOB_STATUS_PARAM = "status";
+    public static final String JOB_STATUS_DESCRIPTION = "Job status";
+    public static final String JOB_VISITED_PARAM = "visited";
+    public static final String JOB_VISITED_DESCRIPTION = "Visited status of job";
     public static final String JOB_TAGS = "jobTags";
-    public static final String JOB_TAGS_DESCRIPTION = "Job Tags";
+    public static final String JOB_TAGS_PARAM = "tags";
+    public static final String JOB_TAGS_DESCRIPTION = "Job tags";
+    public static final String JOB_INPUT_FILES_PARAM = "input";
+    public static final String JOB_INPUT_FILES_DESCRIPTION = "Comma separated list of file ids used as input.";
+    public static final String JOB_OUTPUT_FILES_PARAM = "output";
+    public static final String JOB_OUTPUT_FILES_DESCRIPTION = "Comma separated list of file ids used as output.";
 
     // ---------------------------------------------
 
@@ -240,6 +264,30 @@ public class ParamConstants {
     public static final String PERCENTAGE_OF_PROPERLY_PAIRED_READS = "percentageOfProperlyPairedReads";
     public static final String PERCENTAGE_OF_PROPERLY_PAIRED_READS_DESCRIPTION = "Percentage of properly paired reads: [<|>|<=|>=]{number}, e.g. >=96.5";
 
+    // ---------------------------------------------
+
+    public static final String SAMTOOLS_COMMANDS = "'sort', 'index' , 'view', 'stats', 'dict', 'faidx', 'depth'";
+    public static final String SAMTOOLS_COMMAND_DESCRIPTION = "Samtools command: " + SAMTOOLS_COMMANDS;
+    public static final String COMMAND_PARAMETER = "command";
+
+    public static final String INPUT_FILE_DESCRIPTION = "Input file (full path).";
+    public static final String INPUT_FILE_PARAM = "inputFile";
+    public static final String OUTPUT_FILENAME_DESCRIPTION = "Output file name.";
+    public static final String OUTPUT_FILENAME_PARAM = "outputFilename";
+    public static final String REFERENCE_FILE_DESCRIPTION = "Reference sequence FASTA file";
+    public static final String REFERENCE_FILE_PARAM = "referenceFile";
+    public static final String READ_GROUP_FILE_DESCRIPTION = "Only include reads with read group listed in this file";
+    public static final String READ_GROUP_FILE_PARAM = "readGroupFile";
+    public static final String BED_FILE_DESCRIPTION = "File containing a list of positions or regions";
+    public static final String BED_FILE_PARAM = "bedFile";
+    public static final String REF_SEQ_FILE_DESCRIPTION = "Reference sequence (required for GC-depth and mismatches-per-cycle calculation)";
+    public static final String REF_SEQ_FILE_PARAM = "refSeqFile";
+    public static final String REFERENCE_NAMES_DESCRIPTION = "File listing reference names and lengths";
+    public static final String REFERENCE_NAMES_PARAM = "referenceNamesFile";
+    public static final String TARGET_REGION_DESCRIPTION = "Do stats in these regions only. Tab-delimited file chr,from,to, 1-based, inclusive";
+    public static final String TARGET_REGION_PARAM = "targetRegionFile";
+    public static final String READS_NOT_SELECTED_FILENAME_DESCRIPTION = "Output reads not selected by filters will be written into this file";
+    public static final String READS_NOT_SELECTED_FILENAME_PARAM = "readsNotSelectedFilename";
 
     // ---------------------------------------------
 

@@ -45,7 +45,7 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 }
                 break;
             default:
-                // TODO: support the remaining deeptools executable
+                // TODO: support the remaining deeptools commands
                 throw new ToolException("Deeptools command '" + command + "' is not available. Supported command is"
                         + " 'bamCoverage'");
         }
@@ -58,8 +58,6 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
             String commandLine = getCommandLine();
             logger.info("Deeptools command line: " + commandLine);
             try {
-                Set<String> filenamesBeforeRunning = new HashSet<>(getFilenames(getOutDir()));
-
                 // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
                 Command cmd = new Command(getCommandLine())
                         .setOutputOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDOUT_FILENAME).toFile())))
@@ -113,7 +111,7 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
             sb.append(":").append(params.getString(DOCKER_IMAGE_VERSION_PARAM));
         }
 
-        // Deeptools executable
+        // Deeptools command
         sb.append(" ").append(command);
 
         // Deeptools options

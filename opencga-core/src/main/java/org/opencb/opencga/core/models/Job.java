@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.core.models;
 
-import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.tools.result.ExecutionResult;
 
 import java.util.List;
 import java.util.Map;

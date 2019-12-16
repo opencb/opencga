@@ -289,27 +289,6 @@ public class FamilyWSServer extends OpenCGAWSServer {
         }
     }
 
-    @DELETE
-    @Path("/delete")
-    @ApiOperation(value = "Delete existing families")
-    public Response delete(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Family id") @QueryParam("id") String id,
-            @ApiParam(value = "Family name") @QueryParam("name") String name,
-            @ApiParam(value = "Parental consanguinity") @QueryParam("parentalConsanguinity") Boolean parentalConsanguinity,
-            @ApiParam(value = "Comma separated list of individual ids or names") @QueryParam("members") String members,
-            @ApiParam(value = "Comma separated list of phenotype ids or names") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-            @QueryParam("release") String release) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            return createOkResponse(familyManager.delete(studyStr, query, queryOptions, true, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     @GET
     @Path("/groupBy")
     @ApiOperation(value = "Group families by several fields", position = 10, hidden = true,
