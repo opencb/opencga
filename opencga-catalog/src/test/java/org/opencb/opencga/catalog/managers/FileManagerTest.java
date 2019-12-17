@@ -23,7 +23,6 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -1552,6 +1551,19 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // Register without passing the path
         result = fileManager.moveAndRegister(studyFqn, copy, studyPath.resolve("myFolder"), null, sessionIdUser);
+        assertEquals("myFolder/variant-test-file.vcf.gz", result.first().getPath());
+        assertEquals(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz").toString(), Paths.get(result.first().getUri()).toString());
+        assertTrue(Files.exists(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz")));
+
+        // We remove the file to start again
+        query = new Query(FileDBAdaptor.QueryParams.UID.key(), result.first().getUid());
+        setToPendingDelete(studyFqn, query);
+        fileManager.delete(studyFqn, query, new ObjectMap(Constants.SKIP_TRASH, true), sessionIdUser);
+        assertEquals(0, fileManager.search(studyFqn, query, QueryOptions.empty(), sessionIdUser).getNumResults());
+        Files.copy(sourcePath, copy);
+
+        // Register without passing the destiny path
+        result = fileManager.moveAndRegister(studyFqn, copy, null, "myFolder", sessionIdUser);
         assertEquals("myFolder/variant-test-file.vcf.gz", result.first().getPath());
         assertEquals(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz").toString(), Paths.get(result.first().getUri()).toString());
         assertTrue(Files.exists(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz")));

@@ -996,8 +996,8 @@ public class FileManager extends AnnotationSetManager<File> {
      * @return An OpenCGAResult with the file registry after moving it to the final destination.
      * @throws CatalogException CatalogException.
      */
-    public OpenCGAResult<File> moveAndRegister(String studyStr, Path fileSource, Path folderDestiny, String path, String token)
-            throws CatalogException {
+    public OpenCGAResult<File> moveAndRegister(String studyStr, Path fileSource, @Nullable Path folderDestiny, @Nullable String path,
+                                               String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
@@ -1008,8 +1008,20 @@ public class FileManager extends AnnotationSetManager<File> {
         }
         String fileName = fileSource.toFile().getName();
 
+        if (folderDestiny == null && path == null) {
+            throw new CatalogException("'folderDestiny' and 'path' cannot be both null.");
+        }
+
         boolean external = false;
-        if (folderDestiny.toString().startsWith(study.getUri().getPath())) {
+        if (folderDestiny == null) {
+            if (path.startsWith("/")) {
+                path = path.substring(1);
+            }
+            folderDestiny = Paths.get(study.getUri()).resolve(path);
+
+            File parentFolder = getParents(study.getUid(), path, false, INCLUDE_FILE_URI_PATH).first();
+            authorizationManager.checkFilePermission(study.getUid(), parentFolder.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+        } else if (folderDestiny.toString().startsWith(study.getUri().getPath())) {
             if (StringUtils.isNotEmpty(path)) {
                 String myPath = path;
                 if (!myPath.endsWith("/")) {
