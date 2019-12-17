@@ -117,19 +117,41 @@ analysis:
      # azure.dockerImageName : "openCGADockerImageName"
      # azure.dockerArgs : "dockerRunOptions"
      ## Kubernetes executor configuration example
-     # k8s.masterNode: "https://192.168.99.100:8443/"
+     # k8s.masterUrl: "https://192.168.99.100:8443/"
      # k8s.imageName: "opencb/opencga-next:1.4.X"
+     # k8s.requests:
+     #   cpu: 1
+     #   memory: "2048Mi"
+     # k8s.limits:
+     #   cpu: 1
+     #   memory: "2048Mi"
      # k8s.cpu: "1"
      # k8s.memory: "2048Mi"
      # k8s.namespace: "default"
      # k8s.nodeSelector: # List of labels for the node selection
      #   node: worker
-     # k8S.volumesMount:
+     # k8s.volumeMounts:
+     #   - name: "opencga-shared"
+     #     mountPath: "/opt/opencga/sessions"
      #   - name: "conf"
      #     mountPath: "/opt/opencga/conf"
      #     readOnly: true
-     #   - name: "opencga-shared"
-     #     mountPath: "/opt/opencga/sessions"
+     #   - name: "confhadoop"
+     #     mountPath: "/opt/opencga/conf/hadoop"
+     #     readOnly: true
+     # k8s.volumes:
+     #   - name: "opencganfs"
+     #     persistentVolumeClaim:
+     #       claimName: "opencganfs"
+     #       readOnly: false
+     #   - name: "conf"
+     #     configMap:
+     #       defaultMode: 365
+     #       name: "conf"
+     #   - name: "confhadoop"
+     #     configMap:
+     #       defaultMode: 365
+     #       name: "confhadoop"
 
   # List of analysis frameworks
   frameworks:

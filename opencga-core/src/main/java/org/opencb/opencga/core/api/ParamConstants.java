@@ -196,12 +196,11 @@ public class ParamConstants {
     // ---------------------------------------------
     // alignment coverage
 
-    public static final String CODING_OFFSET_DESCRIPTION = "Coding offset to extend the gene or exon region at up and downstream";
-    public static final String CODING_OFFSET_PARAM = "codingOffset";
-    public static final String CODING_OFFSET_DEFAULT = "200";
+    public static final String OFFSET_DESCRIPTION = "Offset to extend the region, gene or exon at up and downstream";
+    public static final String OFFSET_PARAM = "offset";
+    public static final String OFFSET_DEFAULT = "200";
     public static final String ONLY_EXONS_DESCRIPTION = "Only exons are taking into account when genes are specified";
     public static final String ONLY_EXONS_PARAM = "onlyExons";
-    public static final String EXON_OFFSET_DEFAULT = "50";
     public static final String COVERAGE_RANGE_DESCRIPTION = "Range of coverage values to be reported. Minimum and maximum values are separated by '-', e.g.: 20-40 (for coverage values greater or equal to 20 and less or equal to 40). A single value means to report coverage values less or equal to that value";
     public static final String COVERAGE_RANGE_PARAM = "range";
     public static final String COVERAGE_WINDOW_SIZE_DESCRIPTION = "Window size for the region coverage (if a coverage range is provided, window size must be 1)";

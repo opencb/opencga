@@ -2,27 +2,19 @@ package org.opencb.opencga.core.tools;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.io.UncheckedIOException;
-import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public abstract class ToolParams {
-    private final Map<String, Field> internalFieldsMap;
-
-    public ToolParams() {
-        internalFieldsMap = Arrays.stream(this.getClass().getFields())
-                .filter(f -> !f.getName().equals("internalFieldsMap"))
-                .collect(Collectors.toMap(Field::getName, Function.identity()));
-    }
+    private Map<String, Class<?>> internalPropertiesMap = null;
 
     public String toJson() {
         ObjectMapper objectMapper = getObjectMapper();
@@ -79,21 +71,33 @@ public abstract class ToolParams {
     }
 
     private void addParams(Map<String, Object> map, ObjectMap params) {
+        if (internalPropertiesMap == null) {
+            loadPropertiesMap();
+        }
         for (String key : params.keySet()) {
-            Field field = internalFieldsMap.get(key);
+            Class<?> fieldClass = internalPropertiesMap.get(key);
             String value = params.getString(key);
             if (StringUtils.isNotEmpty(value)) {
                 // native boolean fields are "flags"
-                if (field != null && field.getType() == boolean.class) {
+                if (fieldClass == boolean.class) {
                     if (value.equals("true")) {
                         map.put(key, "");
                     }
-                } else if (field != null &&  Map.class.isAssignableFrom(field.getType())) {
+                } else if (fieldClass != null &&  Map.class.isAssignableFrom(fieldClass)) {
                     map.put(key, params.getMap(key));
                 } else {
                     map.put(key, value);
                 }
             }
+        }
+    }
+
+    private void loadPropertiesMap() {
+        ObjectMapper objectMapper = getObjectMapper();
+        BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(objectMapper.constructType(this.getClass()));
+        internalPropertiesMap = new HashMap<>(beanDescription.findProperties().size());
+        for (BeanPropertyDefinition property : beanDescription.findProperties()) {
+            internalPropertiesMap.put(property.getName(), property.getRawPrimaryType());
         }
     }
 }

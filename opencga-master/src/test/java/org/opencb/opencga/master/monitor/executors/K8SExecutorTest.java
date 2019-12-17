@@ -11,10 +11,12 @@ public class K8SExecutorTest {
     public void testBuildJobName() {
         assertEquals("opencga-job-really-complicated-j-b-2---id",
                 K8SExecutor.buildJobName("really_Complicated J@b 2£$ ID"));
-        assertEquals("opencga-job-really-complicated--r-a-simple-task-" + TimeUtils.getTime(),
-                K8SExecutor.buildJobName("really_Complicated and extra super duper large job name for a simple task " + TimeUtils.getTime()));
-        assertEquals(62,
-                K8SExecutor.buildJobName("really_Complicated and extra super duper large job name for a simple task " + TimeUtils.getTime()).length());
+        String time = TimeUtils.getTime();
+
+        String jobName = K8SExecutor.buildJobName("really_Complicated and extra super duper large job name for a simple task " + time);
+        String expected = "opencga-job-really-complicated--r-a-simple-task-" + time;
+        assertEquals(expected, jobName);
+        assertEquals(expected.length(), jobName.length());
     }
 
 }
