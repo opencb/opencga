@@ -16,13 +16,20 @@
 
 package org.opencb.opencga.analysis.alignment;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
+import org.opencb.biodata.models.core.Exon;
+import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.core.Transcript;
+import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.cellbase.client.rest.GeneClient;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.StorageManager;
 import org.opencb.opencga.analysis.models.FileInfo;
@@ -30,12 +37,14 @@ import org.opencb.opencga.analysis.models.StudyInfo;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -221,6 +230,83 @@ public class AlignmentStorageManager extends StorageManager {
 //        Path filePath = getFilePath(fileId, sessionId);
 
         return alignmentStorageEngine.getDBAdaptor().count(studyInfo.getFileInfo().getPhysicalFilePath(), query, options);
+    }
+
+    //-------------------------------------------------------------------------
+    // MISCELANEOUS
+    //-------------------------------------------------------------------------
+
+    public List<Region> mergeRegions(List<Region> regions, List<String> genes, boolean onlyExons, int offset, String study, String token)
+            throws CatalogException, IOException, StorageEngineException {
+        // Process initial regions
+        Map<String, Region> regionMap = new HashMap<>();
+        if (CollectionUtils.isNotEmpty(regions)) {
+            for (Region region : regions) {
+                Region newRegion = new Region(region.getChromosome(), region.getStart() -  offset, region.getEnd() + offset);
+                updateRegionMap(newRegion, regionMap);
+            }
+        }
+
+        // Get species and assembly from catalog
+        OpenCGAResult<Project> projectQueryResult = catalogManager.getProjectManager().get(
+                new Query(ProjectDBAdaptor.QueryParams.STUDY.key(), study),
+                new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()), token);
+        if (projectQueryResult.getNumResults() != 1) {
+            throw new CatalogException("Error getting species and assembly from catalog");
+        }
+
+        // Query CellBase to get gene coordinates and then apply the offset (up and downstream) to create a gene region
+        String species = projectQueryResult.first().getOrganism().getScientificName();
+        String assembly = projectQueryResult.first().getOrganism().getAssembly();
+        CellBaseClient cellBaseClient = new CellBaseClient(storageEngineFactory.getVariantStorageEngine().getConfiguration().getCellbase()
+                .toClientConfiguration());
+        GeneClient geneClient = new GeneClient(species, assembly, cellBaseClient.getClientConfiguration());
+        QueryResponse<Gene> response = geneClient.get(genes, QueryOptions.empty());
+        if (CollectionUtils.isNotEmpty(response.allResults())) {
+            for (Gene gene : response.allResults()) {
+                // Create region from gene coordinates
+                Region region = null;
+                if (onlyExons) {
+                    if (CollectionUtils.isNotEmpty(gene.getTranscripts())) {
+                        for (Transcript transcript : gene.getTranscripts()) {
+                            if (CollectionUtils.isNotEmpty(transcript.getExons())) {
+                                for (Exon exon : transcript.getExons()) {
+                                    region = new Region(exon.getChromosome(), exon.getGenomicCodingStart() - offset,
+                                            exon.getGenomicCodingEnd() + offset);
+                                    updateRegionMap(region, regionMap);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    region = new Region(gene.getChromosome(), gene.getStart() - offset, gene.getEnd() + offset);
+                    updateRegionMap(region, regionMap);
+                }
+            }
+        }
+        return new ArrayList<>(regionMap.values());
+    }
+
+    private void updateRegionMap(Region region, Map<String, Region> map) {
+        if (!map.containsKey(region.toString())) {
+            List<String> toRemove = new ArrayList<>();
+            for (Region reg : map.values()) {
+                // Check if the new region overlaps regions in the map
+                if (region.overlaps(reg.getChromosome(), reg.getStart(), reg.getEnd())) {
+                    // First, mark to remove the current region
+                    toRemove.add(reg.toString());
+                    // Second, extend the new region
+                    region = new Region(reg.getChromosome(), Math.min(reg.getStart(), region.getStart()),
+                            Math.max(reg.getEnd(), region.getEnd()));
+                }
+            }
+            // Remove all marked regions
+            for (String key : toRemove) {
+                map.remove(key);
+            }
+            // Insert the new (or extended) region
+            map.put(region.toString(), region);
+        }
     }
 
     //-------------------------------------------------------------------------

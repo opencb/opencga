@@ -99,8 +99,8 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"-g", "--gene"}, description = GENE_DESCRIPTION)
         public String gene;
 
-        @Parameter(names = {"--coding-offset"}, description = CODING_OFFSET_DESCRIPTION)
-        public int codingOffset = Integer.parseInt(CODING_OFFSET_DEFAULT);
+        @Parameter(names = {"--offset"}, description = OFFSET_DESCRIPTION)
+        public int offset = Integer.parseInt(OFFSET_DEFAULT);
 
         @Parameter(names = {"--only-exons"}, description = ONLY_EXONS_DESCRIPTION)
         public boolean onlyExons;
@@ -278,8 +278,8 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"-g", "--gene"}, description = GENE_DESCRIPTION)
         public String gene;
 
-        @Parameter(names = {"--coding-offset"}, description = CODING_OFFSET_DESCRIPTION)
-        public int codingOffset = Integer.parseInt(CODING_OFFSET_DEFAULT);
+        @Parameter(names = {"--offset"}, description = OFFSET_DESCRIPTION)
+        public int offset = Integer.parseInt(OFFSET_DEFAULT);
 
         @Parameter(names = {"--only-exons"}, description = ONLY_EXONS_DESCRIPTION)
         public boolean onlyExons;
@@ -315,8 +315,8 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"-g", "--gene"}, description = GENE_DESCRIPTION)
         public String gene;
 
-        @Parameter(names = {"--gene-offset"}, description = CODING_OFFSET_DESCRIPTION)
-        public int codingOffset = Integer.parseInt(CODING_OFFSET_DEFAULT);
+        @Parameter(names = {"--offset"}, description = OFFSET_DESCRIPTION)
+        public int offset = Integer.parseInt(OFFSET_DEFAULT);
 
         @Parameter(names = {"--only-exons"}, description = ONLY_EXONS_DESCRIPTION)
         public boolean onlyExons;
