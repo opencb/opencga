@@ -17,15 +17,87 @@ public class ToolParamsTest {
     private MyToolWithDynamicParams pd = new MyToolWithDynamicParams();;
 
     public static class MyToolParams extends ToolParams {
-        public String myKey = "asdf";
-        public String myKey2;
-        public boolean myBoolean;
-        public boolean myBooleanTrue = true;
-        public Boolean myBooleanNullable;
-        public Boolean myBooleanNullableTrue = true;
-        public int myInteger;
-        public Integer myIntegerNullable;
-        private String myPrivateString = "private!";
+        private String myKey = "asdf";
+        private String myKey2;
+        private boolean myBoolean;
+        private boolean myBooleanTrue = true;
+        private Boolean myBooleanNullable;
+        private Boolean myBooleanNullableTrue = true;
+        private int myInteger;
+        private Integer myIntegerNullable;
+        private String myPrivateString = "private!"; // Does not have any getter or setter
+
+        public String getMyKey() {
+            return myKey;
+        }
+
+        public MyToolParams setMyKey(String myKey) {
+            this.myKey = myKey;
+            return this;
+        }
+
+        public String getMyKey2() {
+            return myKey2;
+        }
+
+        public MyToolParams setMyKey2(String myKey2) {
+            this.myKey2 = myKey2;
+            return this;
+        }
+
+        public boolean isMyBoolean() {
+            return myBoolean;
+        }
+
+        public MyToolParams setMyBoolean(boolean myBoolean) {
+            this.myBoolean = myBoolean;
+            return this;
+        }
+
+        public boolean isMyBooleanTrue() {
+            return myBooleanTrue;
+        }
+
+        public MyToolParams setMyBooleanTrue(boolean myBooleanTrue) {
+            this.myBooleanTrue = myBooleanTrue;
+            return this;
+        }
+
+        public Boolean getMyBooleanNullable() {
+            return myBooleanNullable;
+        }
+
+        public MyToolParams setMyBooleanNullable(Boolean myBooleanNullable) {
+            this.myBooleanNullable = myBooleanNullable;
+            return this;
+        }
+
+        public Boolean getMyBooleanNullableTrue() {
+            return myBooleanNullableTrue;
+        }
+
+        public MyToolParams setMyBooleanNullableTrue(Boolean myBooleanNullableTrue) {
+            this.myBooleanNullableTrue = myBooleanNullableTrue;
+            return this;
+        }
+
+        public int getMyInteger() {
+            return myInteger;
+        }
+
+        public MyToolParams setMyInteger(int myInteger) {
+            this.myInteger = myInteger;
+            return this;
+        }
+
+        public Integer getMyIntegerNullable() {
+            return myIntegerNullable;
+        }
+
+        public MyToolParams setMyIntegerNullable(Integer myIntegerNullable) {
+            this.myIntegerNullable = myIntegerNullable;
+            return this;
+        }
 
         @Override
         public boolean equals(Object o) {
@@ -152,15 +224,15 @@ public class ToolParamsTest {
         pd.updateParams(new ObjectMap("dynamicParams", Collections.singletonMap("key", "value")));
 
 //        System.out.println("pd = " + pd);
-        assertEquals(pd.myKey, "KEY");
-        assertEquals(pd.myBoolean, true);
-        assertEquals(pd.myInteger, 1154);
+        assertEquals(pd.getMyKey(), "KEY");
+        assertEquals(pd.isMyBoolean(), true);
+        assertEquals(pd.getMyInteger(), 1154);
         assertEquals(pd.dynamicParams, Collections.singletonMap("key", "value"));
 
         MyToolWithDynamicParams expected = new MyToolWithDynamicParams();
-        expected.myKey = "KEY";
-        expected.myBoolean = true;
-        expected.myInteger = 1154;
+        expected.setMyKey("KEY");
+        expected.setMyBoolean(true);
+        expected.setMyInteger(1154);
         expected.dynamicParams = Collections.singletonMap("key", "value");
 
         assertEquals(expected, pd);
