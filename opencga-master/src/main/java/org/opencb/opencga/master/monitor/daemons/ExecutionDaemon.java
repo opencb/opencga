@@ -243,7 +243,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             case Enums.ExecutionStatus.DONE:
             case Enums.ExecutionStatus.READY:
                 // Register job results
-                return processFinishedJob(job);
+                return processFinishedJob(job, jobStatus);
             case Enums.ExecutionStatus.QUEUED:
                 // Running job went back to Queued?
                 logger.info("Running job '{}' went back to '{}' status", job.getId(), jobStatus.getName());
@@ -290,7 +290,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             case Enums.ExecutionStatus.DONE:
             case Enums.ExecutionStatus.READY:
                 // Job has finished the execution, so we need to register the job results
-                return processFinishedJob(job);
+                return processFinishedJob(job, status);
             case Enums.ExecutionStatus.UNKNOWN:
                 logger.info("Job '{}' in status {}", job.getId(), Enums.ExecutionStatus.UNKNOWN);
                 return 0;
@@ -682,8 +682,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return null;
     }
 
-    private int processFinishedJob(Job job) {
-        logger.info("{} - Processing finished job...", job.getId());
+    private int processFinishedJob(Job job, Enums.ExecutionStatus status) {
+        logger.info("{} - Processing finished job with status {}", job.getId(), status.getName());
 
         Path outDirUri = Paths.get(job.getOutDir().getUri());
         Path analysisResultPath = getAnalysisResultPath(job);
@@ -741,12 +741,24 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         // Check status of analysis result or if there are files that could not be moved to outdir to decide the final result
         if (execution == null) {
-            updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job could not finish successfully. "
-                    + "Missing analysis result"));
+            updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR,
+                    "Job could not finish successfully. Missing execution result"));
         } else if (execution.getStatus().getName().equals(Status.Type.ERROR)) {
             updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job could not finish successfully"));
         } else {
-            updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE));
+            switch (status.getName()) {
+                case Enums.ExecutionStatus.DONE:
+                case Enums.ExecutionStatus.READY:
+                    updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE));
+                    break;
+                case Enums.ExecutionStatus.ABORTED:
+                    updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job aborted!"));
+                    break;
+                case Enums.ExecutionStatus.ERROR:
+                default:
+                    updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job could not finish successfully"));
+                    break;
+            }
         }
 
         logger.info("{} - Updating job information", job.getId());

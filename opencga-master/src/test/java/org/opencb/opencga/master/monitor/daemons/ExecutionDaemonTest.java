@@ -224,7 +224,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     }
 
     @Test
-    public void testRunJobFailMissingAnalysisResult() throws Exception {
+    public void testRunJobFailMissingExecutionResult() throws Exception {
         HashMap<String, Object> params = new HashMap<>();
         params.put(ExecutionDaemon.OUTDIR_PARAM, "outputDir/");
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, sessionIdUser).first();
@@ -243,7 +243,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         daemon.checkJobs();
 
         assertEquals(Enums.ExecutionStatus.ERROR, getJob(jobId).getStatus().getName());
-        assertEquals("Job could not finish successfully. Missing analysis result", getJob(jobId).getStatus().getMessage());
+        assertEquals("Job could not finish successfully. Missing execution result", getJob(jobId).getStatus().getMessage());
     }
 
     private Job getJob(String jobId) throws CatalogException {

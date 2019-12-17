@@ -55,22 +55,6 @@ catalog:
       mode: "cloud"
       timeout: 30000
       insertBatchSize: 2000
-  ## Execution engine to run internal catalog tasks.
-  execution:
-    # Accepted values are "local", "SGE", "azure-batch"
-    # see org.opencb.opencga.master.monitor.executors.ExecutorFactory
-    id: "LOCAL"
-    defaultQueue: ""            # Default queue to be used to submit jobs
-    options:
-      timeout: 60 # Maximum time in minutes a task can be running
-      local.maxConcurrentJobs: 1    # Max number of concurrent jobs to be executed locally in the master
-      # Azure Batch Service configuration example
-      # azure.batchAccount : "batchAccount"
-      # azure.batchKey : "batchKey"
-      # azure.batchUri : "https://batchservice.uksouth.batch.azure.com"
-      # azure.batchPoolId : "poolId"
-      # azure.dockerImageName : "openCGADockerImageName"
-      # azure.dockerArgs : "dockerRunOptions"
 
 authentication:
   expiration: 1000
