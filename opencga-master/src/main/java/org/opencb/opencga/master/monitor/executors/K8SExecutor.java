@@ -4,10 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.api.model.batch.Job;
 import io.fabric8.kubernetes.api.model.batch.JobBuilder;
-import io.fabric8.kubernetes.client.*;
+import io.fabric8.kubernetes.api.model.batch.JobSpecBuilder;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
-import org.apache.commons.collections.CollectionUtils;
+import io.fabric8.kubernetes.client.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.config.Execution;
@@ -15,8 +15,6 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,15 +22,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class K8SExecutor implements BatchExecutor {
 
-    public static final String K8S_MASTER_NODE = "k8s.masterNode";
+    public static final String K8S_MASTER_NODE = "k8s.masterUrl";
     public static final String K8S_IMAGE_NAME = "k8s.imageName";
-    public static final String K8S_CPU = "k8s.cpu";
-    public static final String K8S_MEMORY = "k8s.memory";
+    public static final String K8S_REQUESTS = "k8s.requests";
+    public static final String K8S_LIMITS = "k8s.limits";
     public static final String K8S_NAMESPACE = "k8s.namespace";
-    public static final String K8S_VOLUMES_MOUNT = "k8s.volumesMount";
+    public static final String K8S_VOLUME_MOUNTS = "k8s.volumeMounts";
+    public static final String K8S_VOLUMES = "k8s.volumes";
     public static final String K8S_NODE_SELECTOR = "k8s.nodeSelector";
-
-    public static final String K8S_KIND = "Job";
 
     private final String k8sClusterMaster;
     private final String namespace;
@@ -40,6 +37,7 @@ public class K8SExecutor implements BatchExecutor {
     private final List<VolumeMount> volumeMounts;
     private final List<Volume> volumes;
     private final Map<String, String> nodeSelector;
+    private final ResourceRequirements resources;
     private final Config k8sConfig;
     private final KubernetesClient kubernetesClient;
     private static Logger logger = LoggerFactory.getLogger(K8SExecutor.class);
@@ -47,33 +45,30 @@ public class K8SExecutor implements BatchExecutor {
     private final Map<String, String> jobStatusCache = new ConcurrentHashMap<>();
     private final Watch podsWatcher;
     private final Watch jobsWatcher;
-    private final HashMap<String, Quantity> requests;
 
     public K8SExecutor(Execution execution) {
         this.k8sClusterMaster = execution.getOptions().getString(K8S_MASTER_NODE);
         this.namespace = execution.getOptions().getString(K8S_NAMESPACE);
         this.imageName = execution.getOptions().getString(K8S_IMAGE_NAME);
-        List<Object> list = execution.getOptions().getList(K8S_VOLUMES_MOUNT);
-        if (CollectionUtils.isEmpty(list)) {
-            list = execution.getOptions().getList("k8S.volumesMount");
-        }
-        this.volumeMounts = buildVolumeMounts(list);
-        this.volumes = buildVolumes(list);
+        this.volumeMounts = buildVolumeMounts(execution.getOptions().getList(K8S_VOLUME_MOUNTS));
+        this.volumes = buildVolumes(execution.getOptions().getList(K8S_VOLUMES));
         this.k8sConfig = new ConfigBuilder().withMasterUrl(k8sClusterMaster).build();
         this.kubernetesClient = new DefaultKubernetesClient(k8sConfig).inNamespace(namespace);
 
-        String cpu = execution.getOptions().getString(K8S_CPU);
-        String memory = execution.getOptions().getString(K8S_MEMORY);
-        requests = new HashMap<>();
-        requests.put("cpu", new Quantity(cpu));
-        requests.put("memory", new Quantity(memory));
+        nodeSelector = getMap(execution, K8S_NODE_SELECTOR);
 
-        if (execution.getOptions().containsKey(K8S_NODE_SELECTOR)) {
-            this.nodeSelector = new HashMap<>();
-            ((Map<String, Object>) execution.getOptions().get(K8S_NODE_SELECTOR)).forEach((k, v) -> nodeSelector.put(k, v.toString()));
-        } else {
-            this.nodeSelector = Collections.emptyMap();
+        HashMap<String, Quantity> requests = new HashMap<>();
+        for (Map.Entry<String, String> entry : getMap(execution, K8S_REQUESTS).entrySet()) {
+            requests.put(entry.getKey(), new Quantity(entry.getValue()));
         }
+        HashMap<String, Quantity> limits = new HashMap<>();
+        for (Map.Entry<String, String> entry : getMap(execution, K8S_LIMITS).entrySet()) {
+            limits.put(entry.getKey(), new Quantity(entry.getValue()));
+        }
+        resources = new ResourceRequirementsBuilder()
+                .withLimits(limits)
+                .withRequests(requests)
+                .build();
 
         jobsWatcher = getKubernetesClient().batch().jobs().watch(new Watcher<Job>() {
             @Override
@@ -90,6 +85,10 @@ public class K8SExecutor implements BatchExecutor {
 
             @Override
             public void onClose(KubernetesClientException e) {
+                if (e != null) {
+                    logger.error("Catch exception at jobs watcher", e);
+                    throw e;
+                }
             }
         });
 
@@ -111,6 +110,10 @@ public class K8SExecutor implements BatchExecutor {
 
             @Override
             public void onClose(KubernetesClientException e) {
+                if (e != null) {
+                    logger.error("Catch exception at pods watcher", e);
+                    throw e;
+                }
             }
         });
     }
@@ -120,32 +123,31 @@ public class K8SExecutor implements BatchExecutor {
         String jobName = buildJobName(jobId);
         final io.fabric8.kubernetes.api.model.batch.Job k8sJob = new JobBuilder()
                 .withApiVersion("batch/v1")
-                .withKind(K8S_KIND)
-                .withNewMetadata()
-                    .withName(jobName)
-                    .withLabels(Collections.singletonMap("opencga", "job"))
-    //                        .withAnnotations(Collections.singletonMap("variantFileSize", Long.toString(job.getSize())))
-                .endMetadata()
-                .withNewSpec()
-                    .withTtlSecondsAfterFinished(30)
-                    .withBackoffLimit(0) // specify the number of retries before considering a Job as failed
-                    .withNewTemplate()
-                        .withNewSpec()
-                            .addNewContainer()
-                                .withName(jobName)
-                                .withImage(this.imageName)
-                                .withImagePullPolicy("Always")
-                                .withResources(new ResourceRequirementsBuilder().withRequests(requests).build())
-                                .withArgs("/bin/sh", "-c", getCommandLine(commandLine, stdout, stderr))
-                                .withVolumeMounts(this.volumeMounts)
-                            .endContainer()
-                            .withNodeSelector(nodeSelector)
-                            .withRestartPolicy("Never")
-                            .withVolumes(volumes)
-                        .endSpec()
-                    .endTemplate()
-                .endSpec()
-                .build();
+                .withKind("Job")
+                .withMetadata(new ObjectMetaBuilder()
+                        .withName(jobName)
+                        .withLabels(Collections.singletonMap("opencga", "job"))
+                        .build())
+                .withSpec(new JobSpecBuilder()
+                        .withTtlSecondsAfterFinished(30)
+                        .withBackoffLimit(0) // specify the number of retries before considering a Job as failed
+                        .withTemplate(new PodTemplateSpecBuilder()
+                                .withSpec(new PodSpecBuilder()
+                                        .withContainers(new ContainerBuilder()
+                                                .withName(jobName)
+                                                .withImage(imageName)
+                                                .withImagePullPolicy("Always")
+                                                .withResources(resources)
+                                                .withArgs("/bin/sh", "-c", getCommandLine(commandLine, stdout, stderr))
+                                                .withVolumeMounts(volumeMounts)
+                                                .build())
+                                        .withNodeSelector(nodeSelector)
+                                        .withRestartPolicy("Never")
+                                        .withVolumes(volumes)
+                                        .build())
+                                .build())
+                        .build()
+                ).build();
 
         jobStatusCache.put(jobName, Enums.ExecutionStatus.QUEUED);
         getKubernetesClient().batch().jobs().inNamespace(namespace).create(k8sJob);
@@ -293,46 +295,36 @@ public class K8SExecutor implements BatchExecutor {
         return status;
     }
 
-    private List<VolumeMount> buildVolumeMounts(List<Object> k8SVolumesMounts) {
+    private Map<String, String> getMap(Execution execution, String key) {
+        if (execution.getOptions().containsKey(key)) {
+            Map<String, String> map = new HashMap<>();
+            ((Map<String, Object>) execution.getOptions().get(key)).forEach((k, v) -> map.put(k, v.toString()));
+            return map;
+        } else {
+            return Collections.emptyMap();
+        }
+    }
+
+    private List<VolumeMount> buildVolumeMounts(List<Object> list) {
         List<VolumeMount> volumeMounts = new ArrayList<>();
-        for (Object o : k8SVolumesMounts) {
-            K8SVolumesMount k8SVolumesMount;
-            try {
-                ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
-                k8SVolumesMount = mapper.readValue(mapper.writeValueAsString(o), K8SVolumesMount.class);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-            volumeMounts.add(new VolumeMountBuilder()
-                    .withName(k8SVolumesMount.name)
-                    .withMountPath(k8SVolumesMount.mountPath)
-                    .withReadOnly(k8SVolumesMount.readOnly)
-                    .build());
+        if (list == null) {
+            return volumeMounts;
+        }
+        for (Object o : list) {
+            ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
+            volumeMounts.add(mapper.convertValue(o, VolumeMount.class));
         }
         return volumeMounts;
     }
 
-    private List<Volume> buildVolumes(List<Object> k8SVolumesMounts) {
+    private List<Volume> buildVolumes(List<Object> list) {
         List<Volume> volumes = new ArrayList<>();
-        for (Object o : k8SVolumesMounts) {
-            K8SVolumesMount k8SVolumesMount;
-            try {
-                ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
-                k8SVolumesMount = mapper.readValue(mapper.writeValueAsString(o), K8SVolumesMount.class);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-
-            VolumeBuilder vb = new VolumeBuilder()
-                    .withName(k8SVolumesMount.name);
-            if (k8SVolumesMount.name.startsWith("conf")) {
-                vb.withConfigMap(new ConfigMapVolumeSourceBuilder()
-                        .withDefaultMode(0555) // r-x r-x r-x
-                        .withName(k8SVolumesMount.name).build());
-            } else {
-                vb.withNewPersistentVolumeClaim(k8SVolumesMount.name, false);
-            }
-            volumes.add(vb.build());
+        if (list == null) {
+            return volumes;
+        }
+        for (Object o : list) {
+            ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
+            volumes.add(mapper.convertValue(o, Volume.class));
         }
         return volumes;
     }
@@ -341,36 +333,4 @@ public class K8SExecutor implements BatchExecutor {
         return kubernetesClient == null ? new DefaultKubernetesClient(k8sConfig).inNamespace(namespace) : this.kubernetesClient;
     }
 
-    private static class K8SVolumesMount {
-        private String name;
-        private String mountPath;
-        private boolean readOnly;
-
-        public String getName() {
-            return name;
-        }
-
-        public K8SVolumesMount setName(String name) {
-            this.name = name;
-            return this;
-        }
-
-        public String getMountPath() {
-            return mountPath;
-        }
-
-        public K8SVolumesMount setMountPath(String mountPath) {
-            this.mountPath = mountPath;
-            return this;
-        }
-
-        public boolean isReadOnly() {
-            return readOnly;
-        }
-
-        public K8SVolumesMount setReadOnly(boolean readOnly) {
-            this.readOnly = readOnly;
-            return this;
-        }
-    }
 }
