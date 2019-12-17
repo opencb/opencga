@@ -636,6 +636,8 @@ public class FileWSServer extends OpenCGAWSServer {
 
             @ApiParam(value = "Action to be performed if the array of samples is being updated.", defaultValue = "ADD") @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @ApiParam(value = "Action to be performed if the array of relatedFiles is being updated.", defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.UpdateAction relatedFilesAction,
+            @ApiParam(value = "Action to be performed if the array of tags is being updated.", defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.UpdateAction tagsAction,
             @ApiParam(name = "params", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
@@ -649,6 +651,8 @@ public class FileWSServer extends OpenCGAWSServer {
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), samplesAction.name());
             actionMap.put(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
+            actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFilesAction);
+            actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), tagsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             DataResult<File> queryResult = fileManager.update(studyStr, query, updateParams, true, queryOptions, token);
@@ -667,6 +671,8 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed if the array of samples is being updated.", defaultValue = "ADD") @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @ApiParam(value = "Action to be performed if the array of relatedFiles is being updated.", defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.UpdateAction relatedFilesAction,
+            @ApiParam(value = "Action to be performed if the array of tags is being updated.", defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.UpdateAction tagsAction,
             @ApiParam(name = "params", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
         try {
             if (samplesAction == null) {
@@ -679,6 +685,8 @@ public class FileWSServer extends OpenCGAWSServer {
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), samplesAction.name());
             actionMap.put(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
+            actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFilesAction);
+            actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), tagsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             List<String> fileIds = getIdList(fileIdStr);

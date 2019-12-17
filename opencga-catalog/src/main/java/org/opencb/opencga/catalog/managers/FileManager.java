@@ -2041,12 +2041,31 @@ public class FileManager extends AnnotationSetManager<File> {
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        if (parameters.containsKey(SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
+        if (parameters.containsKey(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key())) {
             Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
             if (!actionMap.containsKey(AnnotationSetManager.ANNOTATION_SETS)
                     && !actionMap.containsKey(AnnotationSetManager.ANNOTATIONS)) {
                 logger.warn("Assuming the user wants to add the list of annotation sets provided");
                 actionMap.put(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD);
+                options.put(Constants.ACTIONS, actionMap);
+            }
+        }
+
+        if (parameters.containsKey(FileDBAdaptor.QueryParams.RELATED_FILES.key())) {
+            List<File.RelatedFile> relatedFileList = new ArrayList<>();
+            for (FileUpdateParams.RelatedFile relatedFile : updateParams.getRelatedFiles()) {
+                if (StringUtils.isEmpty(relatedFile.getFile()) || relatedFile.getRelation() == null) {
+                    throw new CatalogException("Missing file or relation in relatedFiles list");
+                }
+                File relatedFileFile = internalGet(study.getUid(), relatedFile.getFile(), null, INCLUDE_FILE_URI_PATH, userId).first();
+                relatedFileList.add(new File.RelatedFile(relatedFileFile, relatedFile.getRelation()));
+            }
+            parameters.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFileList);
+
+            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+            if (!actionMap.containsKey(FileDBAdaptor.QueryParams.RELATED_FILES.key())) {
+                logger.warn("Assuming the user wants to add the list of related files provided");
+                actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), ParamUtils.UpdateAction.ADD.name());
                 options.put(Constants.ACTIONS, actionMap);
             }
         }

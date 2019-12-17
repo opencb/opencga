@@ -27,11 +27,54 @@ public class FileUpdateParams {
     private List<String> tags;
     private File.FileStatus status;
 
+    private List<RelatedFile> relatedFiles;
+
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
     public FileUpdateParams() {
+    }
+
+
+    public static class RelatedFile {
+        private String file;
+        private File.RelatedFile.Relation relation;
+
+        public RelatedFile() {
+        }
+
+        public RelatedFile(String file, File.RelatedFile.Relation relation) {
+            this.file = file;
+            this.relation = relation;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("RelatedFile{");
+            sb.append("file='").append(file).append('\'');
+            sb.append(", relation=").append(relation);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getFile() {
+            return file;
+        }
+
+        public RelatedFile setFile(String file) {
+            this.file = file;
+            return this;
+        }
+
+        public File.RelatedFile.Relation getRelation() {
+            return relation;
+        }
+
+        public RelatedFile setRelation(File.RelatedFile.Relation relation) {
+            this.relation = relation;
+            return this;
+        }
     }
 
     @JsonIgnore
@@ -66,6 +109,7 @@ public class FileUpdateParams {
         sb.append(", status=").append(status);
         sb.append(", software=").append(software);
         sb.append(", tags=").append(tags);
+        sb.append(", relatedFiles=").append(relatedFiles);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
@@ -151,6 +195,15 @@ public class FileUpdateParams {
 
     public FileUpdateParams setSoftware(Software software) {
         this.software = software;
+        return this;
+    }
+
+    public List<RelatedFile> getRelatedFiles() {
+        return relatedFiles;
+    }
+
+    public FileUpdateParams setRelatedFiles(List<RelatedFile> relatedFiles) {
+        this.relatedFiles = relatedFiles;
         return this;
     }
 
