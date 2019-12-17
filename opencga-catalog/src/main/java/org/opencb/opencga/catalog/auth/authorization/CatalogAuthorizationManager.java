@@ -257,7 +257,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public Boolean checkIsOwnerOrAdmin(long studyId, String userId) throws CatalogException {
+    public void checkIsOwnerOrAdmin(long studyId, String userId) throws CatalogException {
+        if (!isOwnerOrAdmin(studyId, userId)) {
+            throw new CatalogAuthorizationException("Only owners or administrative users are allowed to perform this action");
+        }
+    }
+
+    @Override
+    public Boolean isOwnerOrAdmin(long studyId, String userId) throws CatalogException {
         String ownerId = studyDBAdaptor.getOwnerId(studyId);
 
         if (!ownerId.equals(userId) && !isAdministrativeUser(studyId, userId)) {

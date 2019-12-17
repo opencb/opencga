@@ -108,7 +108,9 @@ public interface AuthorizationManager {
 
     Boolean checkIsAdmin(String user);
 
-    Boolean checkIsOwnerOrAdmin(long studyId, String userId) throws CatalogException;
+    void checkIsOwnerOrAdmin(long studyId, String userId) throws CatalogException;
+
+    Boolean isOwnerOrAdmin(long studyId, String userId) throws CatalogException;
 
     void checkFilePermission(long studyId, long fileId, String userId, FileAclEntry.FilePermissions permission) throws CatalogException;
 

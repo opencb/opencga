@@ -985,6 +985,89 @@ public class FileManager extends AnnotationSetManager<File> {
         }
     }
 
+    /**
+     * Moves a file not yet registered in OpenCGA from origin to finalDestiny in the file system and then registers it in the study.
+     *
+     * @param studyStr      Study to which the file will belong.
+     * @param fileSource    Current location of the file (file system).
+     * @param folderDestiny Directory where the file needs to be moved (file system).
+     * @param path          Directory in catalog where the file will be registered (catalog).
+     * @param token         Token of the user.
+     * @return An OpenCGAResult with the file registry after moving it to the final destination.
+     * @throws CatalogException CatalogException.
+     */
+    public OpenCGAResult<File> moveAndRegister(String studyStr, Path fileSource, Path folderDestiny, String path, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        try {
+            FileUtils.checkFile(fileSource);
+        } catch (IOException e) {
+            throw new CatalogException("File '" + fileSource + "' not found", e);
+        }
+        String fileName = fileSource.toFile().getName();
+
+        boolean external = false;
+        if (folderDestiny.toString().startsWith(study.getUri().getPath())) {
+            if (StringUtils.isNotEmpty(path)) {
+                String myPath = path;
+                if (!myPath.endsWith("/")) {
+                    myPath += "/";
+                }
+                myPath += fileName;
+
+                String relativePath = Paths.get(study.getUri().getPath()).relativize(folderDestiny.resolve(fileName)).toString();
+                if (!relativePath.equals(myPath)) {
+                    throw new CatalogException("Destination uri within the workspace and path do not match");
+                }
+            } else {
+                //Set the path to whichever path would corresponding based on the workspace uri
+                path = Paths.get(study.getUri().getPath()).relativize(folderDestiny).toString();
+            }
+
+            File parentFolder = getParents(study.getUid(), path, false, INCLUDE_FILE_URI_PATH).first();
+            authorizationManager.checkFilePermission(study.getUid(), parentFolder.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+        } else {
+            // It will be moved to an external folder. Only admins can move to that directory
+            if (!authorizationManager.isOwnerOrAdmin(study.getUid(), userId)) {
+                throw new CatalogAuthorizationException("Only owners or administrative users are allowed to move to folders different than "
+                        + "the main OpenCGA workspace");
+            }
+            external = true;
+        }
+
+        String filePath = path;
+        if (!filePath.endsWith("/")) {
+            filePath += "/";
+        }
+        filePath += fileName;
+        // Check the path is not in use
+        Query query = new Query()
+                .append(FileDBAdaptor.QueryParams.PATH.key(), filePath)
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        if (fileDBAdaptor.count(query).getNumMatches() > 0) {
+            throw new CatalogException("Path '" + filePath + "' already in use in OpenCGA");
+        }
+
+        // Check uri-path
+        try {
+            if (Files.notExists(folderDestiny)) {
+                Files.createDirectories(folderDestiny);
+            }
+
+            Files.move(fileSource, folderDestiny.resolve(fileName));
+        } catch (IOException e) {
+            throw new CatalogException("Unexpected error. Could not move file from '" + fileSource + "' to '" + folderDestiny + "'", e);
+        }
+
+        if (external) {
+            return link(study.getFqn(), folderDestiny.resolve(fileName).toUri(), path, new ObjectMap("parents", true), token);
+        } else {
+            return createFile(study.getFqn(), filePath, "", true, null, token);
+        }
+    }
+
     @Deprecated
     public OpenCGAResult<File> get(Long fileId, QueryOptions options, String sessionId) throws CatalogException {
         return get(null, String.valueOf(fileId), options, sessionId);
@@ -2896,7 +2979,7 @@ public class FileManager extends AnnotationSetManager<File> {
         File file = fileOpenCGAResult.first();
 
         // If the user is the owner or the admin, we won't check if he has permissions for every single file
-        boolean checkPermissions = !authorizationManager.checkIsOwnerOrAdmin(study.getUid(), userId);
+        boolean checkPermissions = !authorizationManager.isOwnerOrAdmin(study.getUid(), userId);
 
         Set<Long> indexFiles = new HashSet<>();
 
