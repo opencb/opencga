@@ -32,6 +32,7 @@ import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
+import org.opencb.opencga.analysis.variant.operations.VariantFileDeleteOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -150,6 +151,25 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = VariantIndexParams.DESCRIPTION) VariantIndexParams params) {
         return submitJob(VariantIndexOperationTool.ID, study, params, jobName, jobDescription, jobTags);
+    }
+
+    @DELETE
+    @Path("/file/delete")
+    @ApiOperation(value = VariantFileDeleteOperationTool.DESCRIPTION, response = Job.class)
+    public Response variantFileDelete(
+            @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = "Files to remove") @QueryParam("file") String file,
+            @ApiParam(value = "Resume a previously failed indexation") @QueryParam("resume") boolean resume) {
+        Map<String, Object> paramsMap = new HashMap<>();
+        paramsMap.put(ParamConstants.STUDY_PARAM, study);
+        paramsMap.put("file", file);
+        if (resume) {
+            paramsMap.put("resume", "");
+        }
+        return submitJob(VariantFileDeleteOperationTool.ID, study, paramsMap, null, jobName, jobDescription, jobTags);
     }
 
     @GET
