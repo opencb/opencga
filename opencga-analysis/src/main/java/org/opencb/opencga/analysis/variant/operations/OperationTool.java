@@ -46,11 +46,6 @@ public abstract class OperationTool extends OpenCgaTool {
         return catalogManager.getStudyManager().resolveId(params.getString(ParamConstants.STUDY_PARAM), userId).getFqn();
     }
 
-    protected final String getStudyFqn(String study) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
-        return catalogManager.getStudyManager().resolveId(study, userId).getFqn();
-    }
-
     public static boolean isVcfFormat(File file) {
         File.Format format = file.getFormat();
         if (isVcfFormat(format)) {

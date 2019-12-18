@@ -28,9 +28,9 @@ import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretation
 import org.opencb.opencga.analysis.file.FetchAndRegisterTask;
 import org.opencb.opencga.analysis.file.FileDeleteTask;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
-import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
+import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
@@ -121,7 +121,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(GwasAnalysis.ID, "variant gwas-run");
             put(PlinkWrapperAnalysis.ID, "variant " + PlinkWrapperAnalysis.ID + "-run");
             put(RvtestsWrapperAnalysis.ID, "variant " + RvtestsWrapperAnalysis.ID + "-run");
-            put(VariantFileDeleteOperationTool.ID, "variant delete");
+            put(VariantFileDeleteOperationTool.ID, "variant file-delete");
             put(VariantSecondaryIndexOperationTool.ID, "variant secondary-index");
             put(VariantSecondaryIndexSamplesDeleteOperationTool.ID, "variant secondary-index-delete");
             put(VariantScoreDeleteOperationTool.ID, "variant score-delete");
@@ -133,6 +133,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(VariantAnnotationIndexOperationTool.ID, "variant annotation-index");
             put(VariantAnnotationDeleteOperationTool.ID, "variant annotation-delete");
             put(VariantAnnotationSaveOperationTool.ID, "variant annotation-save");
+            put(SampleVariantFilterAnalysis.ID, "variant sample-run");
 
             put(TeamInterpretationAnalysis.ID, "interpretation " + TeamInterpretationAnalysis.ID);
             put(TieringInterpretationAnalysis.ID, "interpretation " + TieringInterpretationAnalysis.ID);
@@ -234,7 +235,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     try {
                         jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
                     } catch (CatalogException e) {
-                        logger.error("{} - Could not update result information: {}", job.getId(), e.getMessage(), e);
+                        logger.error("[{}] - Could not update result information: {}", job.getId(), e.getMessage(), e);
                         return 0;
                     }
                 }
@@ -244,7 +245,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             case Enums.ExecutionStatus.DONE:
             case Enums.ExecutionStatus.READY:
                 // Register job results
-                return processFinishedJob(job);
+                return processFinishedJob(job, jobStatus);
             case Enums.ExecutionStatus.QUEUED:
                 // Running job went back to Queued?
                 logger.info("Running job '{}' went back to '{}' status", job.getId(), jobStatus.getName());
@@ -284,14 +285,19 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 // Job is still queued
                 return 0;
             case Enums.ExecutionStatus.RUNNING:
-                logger.info("Updating job {} from {} to {}", job.getId(), Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.RUNNING);
+                logger.info("[{}] - Updating status from {} to {}", job.getId(),
+                        Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.RUNNING);
+                logger.info("[{}] - stdout file '{}'", job.getId(),
+                        job.getOutDir().getUri().resolve(getErrorLogFileName(job)).getPath());
+                logger.info("[{}] - stderr file: '{}'", job.getId(),
+                        job.getOutDir().getUri().resolve(getLogFileName(job)).getPath());
                 return setStatus(job, new Enums.ExecutionStatus(Enums.ExecutionStatus.RUNNING));
             case Enums.ExecutionStatus.ABORTED:
             case Enums.ExecutionStatus.ERROR:
             case Enums.ExecutionStatus.DONE:
             case Enums.ExecutionStatus.READY:
                 // Job has finished the execution, so we need to register the job results
-                return processFinishedJob(job);
+                return processFinishedJob(job, status);
             case Enums.ExecutionStatus.UNKNOWN:
                 logger.info("Job '{}' in status {}", job.getId(), Enums.ExecutionStatus.UNKNOWN);
                 return 0;
@@ -641,13 +647,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return null;
     }
 
-    private int processFinishedJob(Job job) {
-        logger.info("{} - Processing finished job...", job.getId());
+    private int processFinishedJob(Job job, Enums.ExecutionStatus status) {
+        logger.info("[{}] - Processing finished job with status {}", job.getId(), status.getName());
 
         Path outDirUri = Paths.get(job.getOutDir().getUri());
         Path analysisResultPath = getAnalysisResultPath(job);
 
-        logger.info("{} - Registering job results from '{}'", job.getId(), outDirUri);
+        logger.info("[{}] - Registering job results from '{}'", job.getId(), outDirUri);
 
         ExecutionResult execution;
         if (analysisResultPath != null) {
@@ -657,7 +663,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 try {
                     jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
                 } catch (CatalogException e) {
-                    logger.error("{} - Catastrophic error. Could not update job information with final result {}: {}", job.getId(),
+                    logger.error("[{}] - Catastrophic error. Could not update job information with final result {}: {}", job.getId(),
                             updateParams.toString(), e.getMessage(), e);
                     return 0;
                 }
@@ -687,8 +693,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         String errorLogFileName = getErrorLogFileName(job);
         for (File registeredFile : registeredFiles) {
             if (registeredFile.getName().equals(logFileName)) {
+                logger.info("[{}] - stdout file '{}'", job.getId(), registeredFile.getUri().getPath());
                 updateParams.setStdout(registeredFile);
             } else if (registeredFile.getName().equals(errorLogFileName)) {
+                logger.info("[{}] - stderr file: '{}'", job.getId(), registeredFile.getUri().getPath());
                 updateParams.setStderr(registeredFile);
             } else {
                 outputFiles.add(registeredFile);
@@ -714,20 +722,32 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         // Check status of analysis result or if there are files that could not be moved to outdir to decide the final result
         if (execution == null) {
-            updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job could not finish successfully. "
-                    + "Missing analysis result"));
+            updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR,
+                    "Job could not finish successfully. Missing execution result"));
         } else if (execution.getStatus().getName().equals(Status.Type.ERROR)) {
             updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job could not finish successfully"));
         } else {
-            updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE));
+            switch (status.getName()) {
+                case Enums.ExecutionStatus.DONE:
+                case Enums.ExecutionStatus.READY:
+                    updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE));
+                    break;
+                case Enums.ExecutionStatus.ABORTED:
+                    updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job aborted!"));
+                    break;
+                case Enums.ExecutionStatus.ERROR:
+                default:
+                    updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job could not finish successfully"));
+                    break;
+            }
         }
 
-        logger.info("{} - Updating job information", job.getId());
+        logger.info("[{}] - Updating job information", job.getId());
         // We update the job information
         try {
             jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
         } catch (CatalogException e) {
-            logger.error("{} - Catastrophic error. Could not update job information with final result {}: {}", job.getId(),
+            logger.error("[{}] - Catastrophic error. Could not update job information with final result {}: {}", job.getId(),
                     updateParams.toString(), e.getMessage(), e);
             return 0;
         }

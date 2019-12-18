@@ -24,25 +24,25 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.operations.VariantFileDeleteOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
+import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
-import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.api.operations.variant.VariantFileDeleteParams;
 import org.opencb.opencga.core.api.variant.*;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.AnnotationSet;
@@ -51,11 +51,11 @@ import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.rest.RestResponse;
 import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
-import org.opencb.opencga.storage.core.variant.analysis.VariantSampleFilter;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import javax.servlet.http.HttpServletRequest;
@@ -63,10 +63,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
-import static org.opencb.commons.datastore.core.QueryOptions.INCLUDE;
-import static org.opencb.opencga.analysis.variant.manager.CatalogUtils.parseSampleAnnotationQuery;
 import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -162,14 +159,9 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "Files to remove") @QueryParam("file") String file,
-            @ApiParam(value = "Resume a previously failed indexation") @QueryParam("resume") boolean resume) {
-        Map<String, Object> paramsMap = new HashMap<>();
-        paramsMap.put(ParamConstants.STUDY_PARAM, study);
-        paramsMap.put("file", file);
-        if (resume) {
-            paramsMap.put("resume", "");
-        }
-        return submitJob(VariantFileDeleteOperationTool.ID, study, paramsMap, null, jobName, jobDescription, jobTags);
+            @ApiParam(value = "Resume a previously failed indexation") @QueryParam("resume") boolean resume) throws WebServiceException {
+        VariantFileDeleteParams params = new VariantFileDeleteParams(getIdList(file), resume);
+        return submitJob(VariantFileDeleteOperationTool.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     @GET
@@ -507,7 +499,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Deprecated
     @GET
     @Path("/samples")
-    @ApiOperation(value = DEPRECATED + "Use /sample/query", hidden = true, response = Sample.class)
+    @ApiOperation(value = DEPRECATED + "Use /sample/run", hidden = true, response = Sample.class)
     public Response samples(
             @ApiParam(value = "Study where all the samples belong to") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "List of samples to check. By default, all samples") @QueryParam("sample") String samples,
@@ -515,82 +507,19 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = "Genotypes that the sample must have to be selected") @QueryParam("genotype") @DefaultValue("0/1,1/1") String genotypesStr,
             @ApiParam(value = "Samples must be present in ALL variants or in ANY variant.") @QueryParam("all") @DefaultValue("false") boolean all
     ) {
-        return sampleQuery(studyStr, samples, sampleAnnotation, genotypesStr, all);
+        return createDeprecatedMovedResponse("/sample/run");
     }
 
-    @GET
-    @Path("/sample/query")
-    @ApiOperation(value = "Get samples given a set of variants", response = Sample.class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "gene", value = GENE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "type", value = TYPE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "ct", value = ANNOT_CONSEQUENCE_TYPE_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "populationFrequencyAlt", value = ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
-    })
-    public Response sampleQuery(
-            @ApiParam(value = "Study where all the samples belong to") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "List of samples to check. By default, all samples") @QueryParam("sample") String samples,
-            @ApiParam(value = VariantCatalogQueryUtils.SAMPLE_ANNOTATION_DESC) @QueryParam("sampleAnnotation") String sampleAnnotation,
-            @ApiParam(value = "Genotypes that the sample must have to be selected") @QueryParam("genotype") @DefaultValue("0/1,1/1") String genotypesStr,
-            @ApiParam(value = "Samples must be present in ALL variants or in ANY variant.") @QueryParam("all") @DefaultValue("false") boolean all
-    ) {
-        try {
-            VariantSampleFilter variantSampleFilter = new VariantSampleFilter(variantManager.iterable(token));
-            List<String> genotypes = Arrays.asList(genotypesStr.split(","));
-
-            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            Query query = getVariantQuery(queryOptions);
-
-            if (StringUtils.isNotEmpty(samples) && StringUtils.isNotEmpty(sampleAnnotation)) {
-                throw new IllegalArgumentException("Use only one parameter between '" + SAMPLE.key() + "' "
-                        + "and '" + VariantCatalogQueryUtils.SAMPLE_ANNOTATION.key() + "'.");
-            }
-
-            if (StringUtils.isNotEmpty(samples)) {
-                query.append(INCLUDE_SAMPLE.key(), Arrays.asList(samples.split(",")));
-                query.remove(SAMPLE.key());
-            }
-
-            if (StringUtils.isNotEmpty(sampleAnnotation)) {
-                Query sampleQuery = parseSampleAnnotationQuery(sampleAnnotation, SampleDBAdaptor.QueryParams::getParam);
-                QueryOptions options = new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.UID);
-                List<String> samplesList = catalogManager.getSampleManager()
-                        .search(studyStr, sampleQuery, options, token)
-                        .getResults()
-                        .stream()
-                        .map(Sample::getId)
-                        .collect(Collectors.toList());
-
-                query.append(INCLUDE_SAMPLE.key(), samplesList);
-                query.remove(VariantCatalogQueryUtils.SAMPLE_ANNOTATION.key());
-            }
-
-            if (StringUtils.isNotEmpty(studyStr)) {
-                query.append(STUDY.key(), studyStr);
-            }
-
-            // Remove "genotype" from query, as it could be mixed with que VariantQueryParam "genotype"
-            if (StringUtils.isNotEmpty(genotypesStr)) {
-                query.remove(GENOTYPE.key());
-            }
-
-            Collection<String> sampleNames;
-            if (all) {
-                sampleNames = variantSampleFilter.getSamplesInAllVariants(query, genotypes);
-            } else {
-                Map<String, Set<Variant>> samplesInAnyVariants = variantSampleFilter.getSamplesInAnyVariants(query, genotypes);
-                sampleNames = samplesInAnyVariants.keySet();
-            }
-            Query sampleQuery = new Query(SampleDBAdaptor.QueryParams.ID.key(), String.join(",", sampleNames));
-            DataResult<Sample> allSamples = catalogManager.getSampleManager().search(studyStr, sampleQuery, queryOptions, token);
-            return createOkResponse(allSamples);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+    @POST
+    @Path("/sample/run")
+    @ApiOperation(value = SampleVariantFilterAnalysis.DESCRIPTION, response = Job.class)
+    public Response sampleRun(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = SampleVariantFilterParams.DESCRIPTION) SampleVariantFilterParams params) {
+        return submitJob(SampleVariantFilterAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     @Deprecated

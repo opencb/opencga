@@ -22,12 +22,6 @@ public class OperationClient extends AbstractParentClient {
 
     private static final String OPERATION_URL = "operation";
 
-    public RestResponse<Job> variantFileDelete(String study, VariantFileDeleteParams deleteParams, Map<String, ?> params)
-            throws IOException {
-        return execute(OPERATION_URL, "/variant/file/delete",
-                buildRestDELETEParams(null, study, deleteParams, params), DELETE, Job.class);
-    }
-
     public RestResponse<Job> variantSecondaryIndex(String project, String study, VariantSecondaryIndexParams indexParams,
                                                    Map<String, ?> params)
             throws IOException {

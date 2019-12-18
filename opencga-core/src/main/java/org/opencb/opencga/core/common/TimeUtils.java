@@ -76,6 +76,14 @@ public class TimeUtils {
         return durationToString(timeUnit.toMillis(duration));
     }
 
+    /**
+     * Prints a duration in millis as:
+     *
+     *  1234.5s [ 00:20:34 ]
+     *
+     * @param durationInMillis Duration in millis
+     * @return
+     */
     public static String durationToString(long durationInMillis) {
         long durationInSeconds = Math.round(durationInMillis / 1000.0);
         long h = durationInSeconds / 3600;

@@ -248,7 +248,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             // FIXME
             return createPendingResponse();
         } else {
-            return submitJob(toolId, study, paramsMap, null, jobName, jobDescription, jobTags);
+            return submitJob(toolId, study, paramsMap, jobName, jobDescription, jobTags);
         }
     }
 }

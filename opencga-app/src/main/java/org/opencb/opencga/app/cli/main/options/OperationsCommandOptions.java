@@ -15,17 +15,15 @@ import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUti
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateFamilyCommandOptions.AGGREGATE_FAMILY_COMMAND_DESCRIPTION;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.*;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAggregateCommandOptions.AGGREGATE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions.ANNOTATION_DELETE_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions.ANNOTATION_SAVE_COMMAND_DESCRIPTION;
-import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.*;
 
 @Parameters(commandNames = {OperationsCommandOptions.OPERATIONS_COMMAND}, commandDescription = "Operations commands")
 public class OperationsCommandOptions {
 
     public static final String OPERATIONS_COMMAND = "operations";
-
-    public static final String VARIANT_FILE_DELETE = "variant-file-delete";
 
     public static final String VARIANT_SECONDARY_INDEX = "variant-secondary-index";
     public static final String VARIANT_SECONDARY_INDEX_DELETE = "variant-secondary-index-delete";
@@ -42,8 +40,6 @@ public class OperationsCommandOptions {
 
     public static final String VARIANT_FAMILY_AGGREGATE = "variant-family-aggregate";
     public static final String VARIANT_AGGREGATE = "variant-aggregate";
-
-    public final VariantFileDeleteCommandOptions variantIndexDelete;
 
     public final VariantSecondaryIndexCommandOptions variantSecondaryIndex;
     public final VariantSecondaryIndexDeleteCommandOptions variantSecondaryIndexDelete;
@@ -77,7 +73,6 @@ public class OperationsCommandOptions {
         this.commonNumericOptions = numericOptions;
         this.jCommander = jCommander;
 
-        variantIndexDelete = new VariantFileDeleteCommandOptions();
         variantSecondaryIndex = new VariantSecondaryIndexCommandOptions();
         variantSecondaryIndexDelete = new VariantSecondaryIndexDeleteCommandOptions();
         variantAnnotation = new VariantAnnotationIndexCommandOptions();
@@ -89,17 +84,6 @@ public class OperationsCommandOptions {
         variantFamilyIndex = new VariantFamilyGenotypeIndexCommandOptions();
         variantAggregateFamily = new VariantFamilyAggregateCommandOptions();
         variantAggregate = new VariantAggregateCommandOptions();
-
-    }
-
-    @Parameters(commandNames = {VARIANT_FILE_DELETE}, commandDescription = StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND_DESCRIPTION)
-    public class VariantFileDeleteCommandOptions extends GeneralCliOptions.StudyOption {
-
-        @ParametersDelegate
-        public GenericVariantDeleteOptions genericVariantDeleteOptions = new GenericVariantDeleteOptions();
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
     }
 

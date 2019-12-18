@@ -320,7 +320,7 @@ public class MultiVariantDBIterator extends VariantDBIterator {
             lastBatch = variants;
             totalBatchSizeCount += variants.size();
             lastBatchSize = variants.size();
-            logger.info("Get next query: " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0);
+            logger.info("Get next query: " + stopWatch.getTime(TimeUnit.MILLISECONDS) / 1000.0 + "s");
             return newQuery;
         }
 

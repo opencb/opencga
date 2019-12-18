@@ -75,8 +75,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultSampleLimit;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.buildSamplesIndexCollectionName;
 
@@ -217,6 +216,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
         VariantExporter exporter = newVariantExporter(metadataFactory);
         query = preProcessQuery(query, queryOptions);
+        if (outputFormat == VariantOutputFormat.VCF || outputFormat == VariantOutputFormat.VCF_GZ) {
+            if (!isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)) {
+                query.put(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
+            }
+        }
         exporter.export(outputFile, outputFormat, variantsFile, query, queryOptions);
     }
 
