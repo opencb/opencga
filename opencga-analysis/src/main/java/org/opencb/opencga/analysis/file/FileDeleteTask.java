@@ -24,8 +24,8 @@ import org.opencb.opencga.core.results.OpenCGAResult;
 
 import java.util.*;
 
-@Tool(id = FileDeleteAction.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = "Delete files.")
-public class FileDeleteAction extends OpenCgaTool {
+@Tool(id = FileDeleteTask.ID, resource = Enums.Resource.FILE, type = Tool.Type.OPERATION, description = "Delete files.")
+public class FileDeleteTask extends OpenCgaTool {
 
     public final static String ID = "files-delete";
 
@@ -37,22 +37,22 @@ public class FileDeleteAction extends OpenCgaTool {
 
     private String randomMark;
 
-    public FileDeleteAction setStudy(String study) {
+    public FileDeleteTask setStudy(String study) {
         this.studyFqn = study;
         return this;
     }
 
-    public FileDeleteAction setFiles(List<String> files) {
+    public FileDeleteTask setFiles(List<String> files) {
         this.files = files;
         return this;
     }
 
-    public FileDeleteAction setSkipTrash(boolean skipTrash) {
+    public FileDeleteTask setSkipTrash(boolean skipTrash) {
         this.skipTrash = skipTrash;
         return this;
     }
 
-    public FileDeleteAction setUnlink(boolean unlink) {
+    public FileDeleteTask setUnlink(boolean unlink) {
         this.unlink = unlink;
         return this;
     }

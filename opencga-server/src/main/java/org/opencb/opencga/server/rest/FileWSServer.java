@@ -25,7 +25,8 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.utils.ListUtils;
-import org.opencb.opencga.analysis.file.FileDeleteAction;
+import org.opencb.opencga.analysis.file.FetchAndRegisterTask;
+import org.opencb.opencga.analysis.file.FileDeleteTask;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -107,6 +108,28 @@ public class FileWSServer extends OpenCGAWSServer {
                 file = fileManager.createFile(studyStr, params.path, params.description, params.parents, params.content, token);
             }
             return createOkResponse(file);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/fetch")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Download an external file to catalog and register it", response = Job[].class)
+    public Response downloadAndRegister(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Folder path where the file will be downloaded") @QueryParam(ParamConstants.FILE_PATH_PARAM) String path,
+            @ApiParam(value = "External url where the file to be registered can be downloaded from") @QueryParam("url") String url) {
+        try {
+            Map<String, Object> params = new HashMap<>();
+            params.put(ParamConstants.STUDY_PARAM, studyStr);
+            params.put(ParamConstants.FILE_PATH_PARAM, path);
+            params.put("url", url);
+
+            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, FetchAndRegisterTask.ID, Enums.Priority.MEDIUM,
+                    params, token);
+            return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1020,7 +1043,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     .append("files", files)
                     .append("study", studyStr)
                     .append(Constants.SKIP_TRASH, skipTrash);
-            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, FileDeleteAction.ID, Enums.Priority.MEDIUM, params,
+            OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, FileDeleteTask.ID, Enums.Priority.MEDIUM, params,
                     token);
             return createOkResponse(result);
         } catch (Exception e) {

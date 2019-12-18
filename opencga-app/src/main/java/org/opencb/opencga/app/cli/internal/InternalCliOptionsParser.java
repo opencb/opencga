@@ -164,6 +164,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         JCommander fileSubCommands = jCommander.getCommands().get("files");
         fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
         fileSubCommands.addCommand("unlink", fileCommandOptions.unlinkCommandOptions);
+        fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
     }
 
     @Override
