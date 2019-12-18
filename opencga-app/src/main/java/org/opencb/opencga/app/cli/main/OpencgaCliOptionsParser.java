@@ -281,6 +281,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         alignmentSubCommands.addCommand(BwaWrapperAnalysis.ID, alignmentCommandOptions.bwaCommandOptions);
         alignmentSubCommands.addCommand(SamtoolsWrapperAnalysis.ID, alignmentCommandOptions.samtoolsCommandOptions);
         alignmentSubCommands.addCommand(DeeptoolsWrapperAnalysis.ID, alignmentCommandOptions.deeptoolsCommandOptions);
+        alignmentSubCommands.addCommand(FastqcWrapperAnalysis.ID, alignmentCommandOptions.fastqcCommandOptions);
 
         variantCommandOptions = new VariantCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("variant", variantCommandOptions);

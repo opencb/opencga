@@ -23,6 +23,7 @@ import com.beust.jcommander.ParametersDelegate;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
@@ -144,6 +145,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         alignmentSubCommands.addCommand(BwaWrapperAnalysis.ID, alignmentCommandOptions.bwaCommandOptions);
         alignmentSubCommands.addCommand(SamtoolsWrapperAnalysis.ID, alignmentCommandOptions.samtoolsCommandOptions);
         alignmentSubCommands.addCommand(DeeptoolsWrapperAnalysis.ID, alignmentCommandOptions.deeptoolsCommandOptions);
+        alignmentSubCommands.addCommand(FastqcWrapperAnalysis.ID, alignmentCommandOptions.fastqcCommandOptions);
 
         toolsCommandOptions = new ToolsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("tools", toolsCommandOptions);
