@@ -35,6 +35,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.DataStore;
+import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
@@ -382,13 +383,14 @@ public abstract class OpenCgaTool {
     }
 
     protected final void moveFile(String study, Path source, Path destiny, String catalogDirectoryPath, String token) throws ToolException {
+        File file;
         try {
-            catalogManager.getFileManager().moveAndRegister(study, source, destiny, catalogDirectoryPath, token);
+            file = catalogManager.getFileManager().moveAndRegister(study, source, destiny, catalogDirectoryPath, token).first();
         } catch (Exception e) {
             throw new ToolException("Error moving file from " + source + " to " + destiny, e);
         }
         // Add only if move is successful
-        erm.addExternalFile(source.toUri());
+        erm.addExternalFile(file.getUri());
     }
 
     protected final OpenCgaToolExecutor getToolExecutor()

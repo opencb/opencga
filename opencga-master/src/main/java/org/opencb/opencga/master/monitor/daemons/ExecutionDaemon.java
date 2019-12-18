@@ -25,7 +25,8 @@ import org.opencb.opencga.analysis.clinical.interpretation.CancerTieringInterpre
 import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationAnalysis;
-import org.opencb.opencga.analysis.file.FileDeleteAction;
+import org.opencb.opencga.analysis.file.FetchAndRegisterTask;
+import org.opencb.opencga.analysis.file.FileDeleteTask;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
@@ -35,6 +36,7 @@ import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.*;
 import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -101,7 +103,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     static {
         TOOL_CLI_MAP = new HashMap<String, String>(){{
             put("files-unlink", "files unlink");
-            put(FileDeleteAction.ID, "files delete");
+            put(FileDeleteTask.ID, "files delete");
+            put(FetchAndRegisterTask.ID, "files fetch");
 
             put("alignment-index", "alignment index");
             put("alignment-coverage-run", "alignment coverage-run");
@@ -722,7 +725,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams();
 
         // Process output and log files
-        List<File> outputFiles = new ArrayList<>(registeredFiles.size());
+        List<File> outputFiles = new ArrayList<>(registeredFiles.size() + execution.getExternalFiles().size());
         String logFileName = getLogFileName(job);
         String errorLogFileName = getErrorLogFileName(job);
         for (File registeredFile : registeredFiles) {
@@ -734,6 +737,19 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 updateParams.setStderr(registeredFile);
             } else {
                 outputFiles.add(registeredFile);
+            }
+        }
+        for (URI externalFile : execution.getExternalFiles()) {
+            Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), externalFile);
+            try {
+                OpenCGAResult<File> search = fileManager.search(job.getStudyUuid(), query, FileManager.INCLUDE_FILE_URI_PATH, token);
+                if (search.getNumResults() == 0) {
+                    throw new CatalogException("File not found");
+                }
+                outputFiles.add(search.first());
+            } catch (CatalogException e) {
+                logger.error("Could not obtain external file {}: {}", externalFile, e.getMessage(), e);
+                return 0;
             }
         }
         updateParams.setOutput(outputFiles);

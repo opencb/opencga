@@ -17,6 +17,7 @@ public class RestResponse<T> {
     private List<OpenCGAResult<T>> responses;
 
     public RestResponse() {
+        this("", -1, new ArrayList<>(), new ObjectMap(), new ArrayList<>());
     }
 
     public RestResponse(ObjectMap params, List<OpenCGAResult<T>> responses) {

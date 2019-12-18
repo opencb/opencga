@@ -730,7 +730,7 @@ public class FileManager extends AnnotationSetManager<File> {
             if (parents) {
                 newParent = true;
                 File parentFile = new File(File.Type.DIRECTORY, File.Format.NONE, File.Bioformat.NONE, parentPath, "",
-                        new File.FileStatus(File.FileStatus.READY), 0, file.getSamples(), -1, null, Collections.emptyMap(),
+                        new File.FileStatus(File.FileStatus.READY), 0, Collections.emptyList(), -1, null, Collections.emptyMap(),
                         Collections.emptyMap());
                 validateNewFile(study, parentFile, sessionId, false);
                 parentFileId = register(study, parentFile, parents, options, sessionId).first().getUid();
@@ -775,7 +775,9 @@ public class FileManager extends AnnotationSetManager<File> {
             ioManager.createDirectory(Paths.get(file.getUri()).getParent().toUri(), true);
             InputStream inputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
             ioManager.createFile(file.getUri(), inputStream);
+        }
 
+        if (file.getType() == File.Type.FILE && Files.exists(Paths.get(file.getUri()))) {
             new FileMetadataReader(catalogManager).addMetadataInformation(study, file, sessionId);
             validateNewSamples(study, file, sessionId);
         }
@@ -788,7 +790,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 CatalogIOManager ioManager = catalogIOManagerFactory.getDefault();
                 ioManager.deleteFile(file.getUri());
             }
-            throw CatalogException.appendMessage(e, "Error registering file: ");
+            throw new CatalogException("Error registering file: " + e.getMessage(), e);
         }
 
         return result;
@@ -1001,82 +1003,101 @@ public class FileManager extends AnnotationSetManager<File> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyStr", studyStr)
+                .append("fileSource", fileSource)
+                .append("folderDestiny", folderDestiny)
+                .append("path", path)
+                .append("token", token);
+
         try {
-            FileUtils.checkFile(fileSource);
-        } catch (IOException e) {
-            throw new CatalogException("File '" + fileSource + "' not found", e);
-        }
-        String fileName = fileSource.toFile().getName();
-
-        if (folderDestiny == null && path == null) {
-            throw new CatalogException("'folderDestiny' and 'path' cannot be both null.");
-        }
-
-        boolean external = false;
-        if (folderDestiny == null) {
-            if (path.startsWith("/")) {
-                path = path.substring(1);
+            try {
+                FileUtils.checkFile(fileSource);
+            } catch (IOException e) {
+                throw new CatalogException("File '" + fileSource + "' not found", e);
             }
-            folderDestiny = Paths.get(study.getUri()).resolve(path);
+            String fileName = fileSource.toFile().getName();
 
-            File parentFolder = getParents(study.getUid(), path, false, INCLUDE_FILE_URI_PATH).first();
-            authorizationManager.checkFilePermission(study.getUid(), parentFolder.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
-        } else if (folderDestiny.toString().startsWith(study.getUri().getPath())) {
-            if (StringUtils.isNotEmpty(path)) {
-                String myPath = path;
-                if (!myPath.endsWith("/")) {
-                    myPath += "/";
-                }
-                myPath += fileName;
+            if (folderDestiny == null && path == null) {
+                throw new CatalogException("'folderDestiny' and 'path' cannot be both null.");
+            }
 
-                String relativePath = Paths.get(study.getUri().getPath()).relativize(folderDestiny.resolve(fileName)).toString();
-                if (!relativePath.equals(myPath)) {
-                    throw new CatalogException("Destination uri within the workspace and path do not match");
+            boolean external = false;
+            if (folderDestiny == null) {
+                if (path.startsWith("/")) {
+                    path = path.substring(1);
                 }
+                folderDestiny = Paths.get(study.getUri()).resolve(path);
+
+                File parentFolder = getParents(study.getUid(), path, false, INCLUDE_FILE_URI_PATH).first();
+                authorizationManager.checkFilePermission(study.getUid(), parentFolder.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
+            } else if (folderDestiny.toString().startsWith(study.getUri().getPath())) {
+                if (StringUtils.isNotEmpty(path)) {
+                    String myPath = path;
+                    if (!myPath.endsWith("/")) {
+                        myPath += "/";
+                    }
+                    myPath += fileName;
+
+                    String relativePath = Paths.get(study.getUri().getPath()).relativize(folderDestiny.resolve(fileName)).toString();
+                    if (!relativePath.equals(myPath)) {
+                        throw new CatalogException("Destination uri within the workspace and path do not match");
+                    }
+                } else {
+                    //Set the path to whichever path would corresponding based on the workspace uri
+                    path = Paths.get(study.getUri().getPath()).relativize(folderDestiny).toString();
+                }
+
+                File parentFolder = getParents(study.getUid(), path, false, INCLUDE_FILE_URI_PATH).first();
+                authorizationManager.checkFilePermission(study.getUid(), parentFolder.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
             } else {
-                //Set the path to whichever path would corresponding based on the workspace uri
-                path = Paths.get(study.getUri().getPath()).relativize(folderDestiny).toString();
+                // It will be moved to an external folder. Only admins can move to that directory
+                if (!authorizationManager.isOwnerOrAdmin(study.getUid(), userId)) {
+                    throw new CatalogAuthorizationException("Only owners or administrative users are allowed to move to folders different "
+                            + "than the main OpenCGA workspace");
+                }
+                external = true;
             }
 
-            File parentFolder = getParents(study.getUid(), path, false, INCLUDE_FILE_URI_PATH).first();
-            authorizationManager.checkFilePermission(study.getUid(), parentFolder.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
-        } else {
-            // It will be moved to an external folder. Only admins can move to that directory
-            if (!authorizationManager.isOwnerOrAdmin(study.getUid(), userId)) {
-                throw new CatalogAuthorizationException("Only owners or administrative users are allowed to move to folders different than "
-                        + "the main OpenCGA workspace");
+            String filePath = path;
+            if (!filePath.endsWith("/")) {
+                filePath += "/";
             }
-            external = true;
-        }
-
-        String filePath = path;
-        if (!filePath.endsWith("/")) {
-            filePath += "/";
-        }
-        filePath += fileName;
-        // Check the path is not in use
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.PATH.key(), filePath)
-                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-        if (fileDBAdaptor.count(query).getNumMatches() > 0) {
-            throw new CatalogException("Path '" + filePath + "' already in use in OpenCGA");
-        }
-
-        // Check uri-path
-        try {
-            if (Files.notExists(folderDestiny)) {
-                Files.createDirectories(folderDestiny);
+            filePath += fileName;
+            // Check the path is not in use
+            Query query = new Query()
+                    .append(FileDBAdaptor.QueryParams.PATH.key(), filePath)
+                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+            if (fileDBAdaptor.count(query).getNumMatches() > 0) {
+                throw new CatalogException("Path '" + filePath + "' already in use in OpenCGA");
             }
 
-            Files.move(fileSource, folderDestiny.resolve(fileName));
-        } catch (IOException e) {
-            throw new CatalogException("Unexpected error. Could not move file from '" + fileSource + "' to '" + folderDestiny + "'", e);
-        }
+            // Check uri-path
+            try {
+                if (Files.notExists(folderDestiny)) {
+                    Files.createDirectories(folderDestiny);
+                }
 
-        if (external) {
-            return link(study.getFqn(), folderDestiny.resolve(fileName).toUri(), path, new ObjectMap("parents", true), token);
-        } else {
-            return createFile(study.getFqn(), filePath, "", true, null, token);
+                Files.move(fileSource, folderDestiny.resolve(fileName));
+            } catch (IOException e) {
+                throw new CatalogException("Unexpected error. Could not move file from '" + fileSource + "' to '" + folderDestiny + "'", e);
+            }
+
+            OpenCGAResult<File> result;
+            if (external) {
+                result = link(study.getFqn(), folderDestiny.resolve(fileName).toUri(), path, new ObjectMap("parents", true), token);
+            } else {
+                result = createFile(study.getFqn(), filePath, "", true, null, token);
+            }
+
+            auditManager.audit(userId, Enums.Action.MOVE_AND_REGISTER, Enums.Resource.FILE, result.first().getId(),
+                    result.first().getUuid(), study.getId(), study.getUuid(), auditParams,
+                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+            return result;
+        } catch (CatalogException e) {
+            auditManager.audit(userId, Enums.Action.MOVE_AND_REGISTER, Enums.Resource.FILE, "", "", study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
         }
     }
 
@@ -2768,6 +2789,20 @@ public class FileManager extends AnnotationSetManager<File> {
             }
             throw e;
         }
+    }
+
+    public OpenCGAResult<File> getParents(String studyStr, String path, boolean rootFirst, QueryOptions options, String token)
+            throws CatalogException {
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyStr, userId);
+
+        List<String> paths = calculateAllPossiblePaths(path);
+
+        Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), paths);
+        query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        OpenCGAResult<File> result = fileDBAdaptor.get(study.getUid(), query, options, userId);
+        result.getResults().sort(rootFirst ? ROOT_FIRST_COMPARATOR : ROOT_LAST_COMPARATOR);
+        return result;
     }
 
 

@@ -102,6 +102,8 @@ public final class Enums {
         UNLINK,
         GREP,
         TREE,
+        DOWNLOAD_AND_REGISTER,
+        MOVE_AND_REGISTER,
 
         VISIT,
 

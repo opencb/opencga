@@ -144,9 +144,9 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         fileSubCommands.addCommand("upload", fileCommandOptions.uploadCommandOptions);
         fileSubCommands.addCommand("link", fileCommandOptions.linkCommandOptions);
         fileSubCommands.addCommand("unlink", fileCommandOptions.unlinkCommandOptions);
-        fileSubCommands.addCommand("relink", fileCommandOptions.relinkCommandOptions);
+//        fileSubCommands.addCommand("relink", fileCommandOptions.relinkCommandOptions);
         fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
-        fileSubCommands.addCommand("refresh", fileCommandOptions.refreshCommandOptions);
+//        fileSubCommands.addCommand("refresh", fileCommandOptions.refreshCommandOptions);
         fileSubCommands.addCommand("stats", fileCommandOptions.statsCommandOptions);
 //        fileSubCommands.addCommand("variants", fileCommandOptions.variantsCommandOptions);
         fileSubCommands.addCommand("acl", fileCommandOptions.aclsCommandOptions);
