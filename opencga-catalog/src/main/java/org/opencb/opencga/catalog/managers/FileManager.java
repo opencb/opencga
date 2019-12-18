@@ -1027,11 +1027,14 @@ public class FileManager extends AnnotationSetManager<File> {
                 if (path.startsWith("/")) {
                     path = path.substring(1);
                 }
-                folderDestiny = Paths.get(study.getUri()).resolve(path);
-
                 File parentFolder = getParents(study.getUid(), path, false, INCLUDE_FILE_URI_PATH).first();
-                authorizationManager.checkFilePermission(study.getUid(), parentFolder.getUid(), userId, FileAclEntry.FilePermissions.WRITE);
-            } else if (folderDestiny.toString().startsWith(study.getUri().getPath())) {
+
+                // We get the relative path
+                String relativePath = Paths.get(parentFolder.getPath()).relativize(Paths.get(path)).toString();
+                folderDestiny = Paths.get(parentFolder.getUri()).resolve(relativePath);
+            }
+
+            if (folderDestiny.toString().startsWith(study.getUri().getPath())) {
                 if (StringUtils.isNotEmpty(path)) {
                     String myPath = path;
                     if (!myPath.endsWith("/")) {
