@@ -201,7 +201,8 @@ public class MetaWSServer extends OpenCGAWSServer {
                 api.add(getHelp(classes.get(category)));
             }
         }
-        return createRawOkResponse(api);
+
+        return createOkResponse(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(api), 1));
     }
 
     private LinkedHashMap<String, Object> getHelp(Class clazz) {
