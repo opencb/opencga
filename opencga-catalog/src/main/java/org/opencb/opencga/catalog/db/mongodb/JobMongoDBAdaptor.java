@@ -40,6 +40,7 @@ import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Status;
+import org.opencb.opencga.core.models.ToolInfo;
 import org.opencb.opencga.core.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
@@ -391,6 +392,15 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             jobParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
+        if (parameters.containsKey(QueryParams.TOOL.key())) {
+            if (parameters.get(QueryParams.TOOL.key()) instanceof ToolInfo) {
+                jobParameters.put(QueryParams.TOOL.key(), getMongoDBDocument(parameters.get(QueryParams.TOOL.key()),
+                        ToolInfo.class.getName()));
+            } else {
+                jobParameters.put(QueryParams.TOOL.key(), parameters.get(QueryParams.TOOL.key()));
+            }
+        }
+
         if (parameters.containsKey(QueryParams.STATUS.key())) {
             if (parameters.get(QueryParams.STATUS.key()) instanceof Enums.ExecutionStatus) {
                 jobParameters.put(QueryParams.STATUS.key(), getMongoDBDocument(parameters.get(QueryParams.STATUS.key()), "Job.JobStatus"));
@@ -410,11 +420,11 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         if (parameters.containsKey(QueryParams.OUT_DIR.key())) {
             jobParameters.put(QueryParams.OUT_DIR.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.OUT_DIR.key())));
         }
-        if (parameters.containsKey(QueryParams.LOG.key())) {
-            jobParameters.put(QueryParams.LOG.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.LOG.key())));
+        if (parameters.containsKey(QueryParams.STDOUT.key())) {
+            jobParameters.put(QueryParams.STDOUT.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.STDOUT.key())));
         }
-        if (parameters.containsKey(QueryParams.ERROR_LOG.key())) {
-            jobParameters.put(QueryParams.ERROR_LOG.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.ERROR_LOG.key())));
+        if (parameters.containsKey(QueryParams.STDERR.key())) {
+            jobParameters.put(QueryParams.STDERR.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.STDERR.key())));
         }
 
         if (parameters.containsKey(QueryParams.PRIORITY.key())) {
@@ -782,9 +792,14 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case TOOL:
+                    case TOOL_ID:
+                        addAutoOrQuery(QueryParams.TOOL_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
                     case INPUT:
                     case INPUT_UID:
                         addAutoOrQuery(QueryParams.INPUT_UID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        break;
                     case OUTPUT:
                     case OUTPUT_UID:
                         addAutoOrQuery(QueryParams.OUTPUT_UID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
@@ -803,10 +818,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         break;
                     case ID:
                     case NAME:
-                    case TOOL_ID:
                     case UUID:
                     case USER_ID:
-                    case TOOL_NAME:
                     case TYPE:
                     case DESCRIPTION:
                     case PRIORITY:

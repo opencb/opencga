@@ -38,25 +38,6 @@ public class OperationsWSService extends OpenCGAWSServer {
         super(version, uriInfo, httpServletRequest, httpHeaders);
     }
 
-    @DELETE
-    @Path("/variant/file/delete")
-    @ApiOperation(value = VariantFileDeleteOperationTool.DESCRIPTION, response = Job.class)
-    public Response variantFileDelete(
-            @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
-            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
-            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
-            @ApiParam(value = "Files to remove") @QueryParam("file") String file,
-            @ApiParam(value = "Resume a previously failed indexation") @QueryParam("resume") boolean resume) {
-        HashMap<String, Object> paramsMap = new HashMap<>();
-        paramsMap.put(ParamConstants.STUDY_PARAM, study);
-        paramsMap.put("file", file);
-        if (resume) {
-            paramsMap.put("resume", "");
-        }
-        return submitOperation(VariantFileDeleteOperationTool.ID, paramsMap, jobName, jobDescription, jobTags);
-    }
-
     @POST
     @Path("/variant/secondaryIndex")
     @ApiOperation(value = VariantSecondaryIndexOperationTool.DESCRIPTION)
@@ -267,7 +248,7 @@ public class OperationsWSService extends OpenCGAWSServer {
             // FIXME
             return createPendingResponse();
         } else {
-            return submitJob(toolId, study, paramsMap, null, jobName, jobDescription, jobTags);
+            return submitJob(toolId, study, paramsMap, jobName, jobDescription, jobTags);
         }
     }
 }

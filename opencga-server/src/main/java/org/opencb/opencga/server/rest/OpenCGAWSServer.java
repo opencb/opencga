@@ -727,7 +727,7 @@ public class OpenCGAWSServer {
         });
     }
 
-    public Response submitJob(String toolId, String study, Map<String, Object> paramsMap, String jobId, String jobName,
+    public Response submitJob(String toolId, String study, Map<String, Object> paramsMap, String jobName,
                               String jobDescription, String jobTagsStr) {
         return run(() -> {
             List<String> jobTags;
@@ -737,7 +737,7 @@ public class OpenCGAWSServer {
                 jobTags = Collections.emptyList();
             }
             return catalogManager.getJobManager()
-                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, jobId, jobName, jobDescription, jobTags, token);
+                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, null, jobName, jobDescription, jobTags, token);
         });
 
     }

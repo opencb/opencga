@@ -58,8 +58,8 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
                 getFiles(fileUids, job, JobDBAdaptor.QueryParams.INPUT);
                 getFiles(fileUids, job, JobDBAdaptor.QueryParams.OUTPUT);
                 getFile(fileUids, job, JobDBAdaptor.QueryParams.OUT_DIR);
-                getFile(fileUids, job, JobDBAdaptor.QueryParams.LOG);
-                getFile(fileUids, job, JobDBAdaptor.QueryParams.ERROR_LOG);
+                getFile(fileUids, job, JobDBAdaptor.QueryParams.STDOUT);
+                getFile(fileUids, job, JobDBAdaptor.QueryParams.STDERR);
             }
         }
 
@@ -86,8 +86,8 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
                 setFiles(fileMap, job, JobDBAdaptor.QueryParams.INPUT);
                 setFiles(fileMap, job, JobDBAdaptor.QueryParams.OUTPUT);
                 setFile(fileMap, job, JobDBAdaptor.QueryParams.OUT_DIR);
-                setFile(fileMap, job, JobDBAdaptor.QueryParams.LOG);
-                setFile(fileMap, job, JobDBAdaptor.QueryParams.ERROR_LOG);
+                setFile(fileMap, job, JobDBAdaptor.QueryParams.STDOUT);
+                setFile(fileMap, job, JobDBAdaptor.QueryParams.STDERR);
             });
         }
     }

@@ -47,7 +47,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -382,20 +381,14 @@ public abstract class OpenCgaTool {
         erm.addAttribute(key, value);
     }
 
-    protected final void moveFile(Path source, String catalogPathTarget) throws ToolException {
-        moveFile(source.toUri(), catalogPathTarget);
-    }
-
-    protected final void moveFile(URI source, String catalogPathTarget) throws ToolException {
+    protected final void moveFile(String study, Path source, Path destiny, String catalogDirectoryPath, String token) throws ToolException {
         try {
-            //TODO Move file
-            // catalogManager.getCatalogIOManagerFactory().get(source).moveFile(source, ...);
-            // catalogManager.getFileManager() ....
+            catalogManager.getFileManager().moveAndRegister(study, source, destiny, catalogDirectoryPath, token);
         } catch (Exception e) {
-            throw new ToolException("Error moving file from " + source + " to " + catalogPathTarget, e);
+            throw new ToolException("Error moving file from " + source + " to " + destiny, e);
         }
         // Add only if move is successful
-        erm.addExternalFile(source);
+        erm.addExternalFile(source.toUri());
     }
 
     protected final OpenCgaToolExecutor getToolExecutor()

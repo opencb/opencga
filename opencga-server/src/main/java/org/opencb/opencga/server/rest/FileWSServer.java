@@ -63,6 +63,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Path("/{apiVersion}/files")
@@ -636,6 +637,8 @@ public class FileWSServer extends OpenCGAWSServer {
 
             @ApiParam(value = "Action to be performed if the array of samples is being updated.", defaultValue = "ADD") @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @ApiParam(value = "Action to be performed if the array of relatedFiles is being updated.", defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.UpdateAction relatedFilesAction,
+            @ApiParam(value = "Action to be performed if the array of tags is being updated.", defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.UpdateAction tagsAction,
             @ApiParam(name = "params", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
@@ -649,6 +652,8 @@ public class FileWSServer extends OpenCGAWSServer {
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), samplesAction.name());
             actionMap.put(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
+            actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFilesAction);
+            actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), tagsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             DataResult<File> queryResult = fileManager.update(studyStr, query, updateParams, true, queryOptions, token);
@@ -667,6 +672,8 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed if the array of samples is being updated.", defaultValue = "ADD") @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @ApiParam(value = "Action to be performed if the array of relatedFiles is being updated.", defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.UpdateAction relatedFilesAction,
+            @ApiParam(value = "Action to be performed if the array of tags is being updated.", defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.UpdateAction tagsAction,
             @ApiParam(name = "params", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
         try {
             if (samplesAction == null) {
@@ -679,6 +686,8 @@ public class FileWSServer extends OpenCGAWSServer {
             Map<String, Object> actionMap = new HashMap<>();
             actionMap.put(FileDBAdaptor.QueryParams.SAMPLES.key(), samplesAction.name());
             actionMap.put(FileDBAdaptor.QueryParams.ANNOTATION_SETS.key(), annotationSetsAction);
+            actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFilesAction);
+            actionMap.put(FileDBAdaptor.QueryParams.TAGS.key(), tagsAction);
             queryOptions.put(Constants.ACTIONS, actionMap);
 
             List<String> fileIds = getIdList(fileIdStr);
@@ -843,10 +852,87 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/scan")
+    @ApiOperation(value = "Scan the study folder to find untracked or missing files")
+    public Response scanFiles(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
+        try {
+            ParamUtils.checkIsSingleID(studyStr);
+            Study study = catalogManager.getStudyManager().get(studyStr, null, token).first();
+            FileScanner fileScanner = new FileScanner(catalogManager);
+
+            /** First, run CheckStudyFiles to find new missing files **/
+            List<File> checkStudyFiles = fileScanner.checkStudyFiles(study, false, token);
+            List<File> found = checkStudyFiles
+                    .stream()
+                    .filter(f -> f.getStatus().getName().equals(File.FileStatus.READY))
+                    .collect(Collectors.toList());
+
+            /** Get untracked files **/
+            Map<String, URI> untrackedFiles = fileScanner.untrackedFiles(study, token);
+
+            /** Get missing files **/
+            List<File> missingFiles = catalogManager.getFileManager().search(studyStr, query.append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.MISSING), queryOptions, token).getResults();
+
+            ObjectMap fileStatus = new ObjectMap("untracked", untrackedFiles).append("found", found).append("missing", missingFiles);
+
+            return createOkResponse(new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList(fileStatus), 1));
+//            /** Print pretty **/
+//            int maxFound = found.stream().map(f -> f.getPath().length()).max(Comparator.<Integer>naturalOrder()).orElse(0);
+//            int maxUntracked = untrackedFiles.keySet().stream().map(String::length).max(Comparator.<Integer>naturalOrder()).orElse(0);
+//            int maxMissing = missingFiles.stream().map(f -> f.getPath().length()).max(Comparator.<Integer>naturalOrder()).orElse(0);
+//
+//            String format = "\t%-" + Math.max(Math.max(maxMissing, maxUntracked), maxFound) + "s  -> %s\n";
+//
+//            if (!untrackedFiles.isEmpty()) {
+//                System.out.println("UNTRACKED files");
+//                untrackedFiles.forEach((s, u) -> System.out.printf(format, s, u));
+//                System.out.println("\n");
+//            }
+//
+//            if (!missingFiles.isEmpty()) {
+//                System.out.println("MISSING files");
+//                for (File file : missingFiles) {
+//                    System.out.printf(format, file.getPath(), catalogManager.getFileUri(file));
+//                }
+//                System.out.println("\n");
+//            }
+//
+//            if (!found.isEmpty()) {
+//                System.out.println("FOUND files");
+//                for (File file : found) {
+//                    System.out.printf(format, file.getPath(), catalogManager.getFileUri(file));
+//                }
+//            }
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/resync")
+    @ApiOperation(value = "Scan the study folder to find untracked or missing files.", notes = "This method is intended to keep the "
+            + "consistency between the database and the file system. It will check all the files and folders belonging to the study and "
+            + "will keep track of those new files and/or folders found in the file system as well as update the status of those "
+            + "files/folders that are no longer available in the file system setting their status to MISSING.")
+    public Response resyncFiles(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
+        try {
+            ParamUtils.checkIsSingleID(studyStr);
+            Study study = catalogManager.getStudyManager().get(studyStr, null, token).first();
+            FileScanner fileScanner = new FileScanner(catalogManager);
+
+            /* Resync files */
+            List<File> resyncFiles = fileScanner.reSync(study, false, token);
+
+            return createOkResponse(new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList(resyncFiles), 1));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @GET
     @Path("/{file}/refresh")
-    @ApiOperation(value = "Refresh metadata from the selected file or folder. Return updated files.", position = 22,
-            response = QueryResponse.class)
+    @ApiOperation(value = "Refresh metadata from the selected file or folder. Return updated files.", response = QueryResponse.class)
     public Response refresh(@ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam(value = "file") String fileIdStr,
                             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
                             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {

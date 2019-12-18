@@ -230,9 +230,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 if (result != null) {
                     // Update the result of the job
                     PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setResult(result);
-                    String study = String.valueOf(job.getAttributes().get(Job.OPENCGA_STUDY));
                     try {
-                        jobManager.update(study, job.getId(), updateParams, QueryOptions.empty(), token);
+                        jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
                     } catch (CatalogException e) {
                         logger.error("[{}] - Could not update result information: {}", job.getId(), e.getMessage(), e);
                         return 0;
@@ -328,13 +327,12 @@ public class ExecutionDaemon extends MonitorParentDaemon {
      * @return 1 if the job has changed the status, 0 otherwise.
      */
     protected int checkPendingJob(Job job) {
-        String study = String.valueOf(job.getAttributes().get(Job.OPENCGA_STUDY));
-        if (StringUtils.isEmpty(study)) {
-            return abortJob(job, "Missing mandatory '" + Job.OPENCGA_STUDY + "' field");
+        if (StringUtils.isEmpty(job.getStudyUuid())) {
+            return abortJob(job, "Missing mandatory 'studyUuid' field");
         }
 
-        if (StringUtils.isEmpty(job.getToolId()) || !TOOL_CLI_MAP.containsKey(job.getToolId())) {
-            return abortJob(job, "Tool id '" + job.getToolId() + "' not found.");
+        if (StringUtils.isEmpty(job.getTool().getId()) || !TOOL_CLI_MAP.containsKey(job.getTool().getId())) {
+            return abortJob(job, "Tool id '" + job.getTool().getId() + "' not found.");
         }
 
         if (!canBeQueued(job)) {
@@ -355,7 +353,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         if (!StringUtils.isEmpty(outDirPathParam)) {
             try {
                 // Any path the user has requested
-                updateParams.setOutDir(getValidInternalOutDir(study, job, outDirPathParam, userToken));
+                updateParams.setOutDir(getValidInternalOutDir(job.getStudyUuid(), job, outDirPathParam, userToken));
             } catch (CatalogException e) {
                 logger.error("Cannot create output directory. {}", e.getMessage(), e);
                 return abortJob(job, "Cannot create output directory. " + e.getMessage());
@@ -363,7 +361,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         } else {
             try {
                 // JOBS/user/job_id/
-                updateParams.setOutDir(getValidDefaultOutDir(study, job, userToken));
+                updateParams.setOutDir(getValidDefaultOutDir(job.getStudyUuid(), job, userToken));
             } catch (CatalogException e) {
                 logger.error("Cannot create output directory. {}", e.getMessage(), e);
                 return abortJob(job, "Cannot create output directory. " + e.getMessage());
@@ -377,8 +375,13 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         Path stderr = outDirPath.resolve(getErrorLogFileName(job));
         Path stdout = outDirPath.resolve(getLogFileName(job));
 
+        // TODO: Update tool information
+//        ToolInfo tool;
+//        ToolFactory toolFactory = new ToolFactory();
+//        OpenCgaTool analysisTool = toolFactory.getTool(job.getTool().getId());
+
         // Create cli
-        String commandLine = buildCli(internalCli, job.getToolId(), params);
+        String commandLine = buildCli(internalCli, job.getTool().getId(), params);
         String authenticatedCommandLine = commandLine + " --token " + userToken;
         String shadedCommandLine = commandLine + " --token xxxxxxxxxxxxxxxxxxxxx";
 
@@ -387,7 +390,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         logger.info("Updating job {} from {} to {}", job.getId(), Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED);
         updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED));
         try {
-            jobManager.update(study, job.getId(), updateParams, QueryOptions.empty(), token);
+            jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             logger.error("Could not update job {}. {}", job.getId(), e.getMessage(), e);
             return 0;
@@ -525,7 +528,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private boolean canBeQueued(Job job) {
-        if ("variant-index".equals(job.getToolId())) {
+        if ("variant-index".equals(job.getTool().getId())) {
             int maxIndexJobs = catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().getMaxConcurrentJobs();
             return canBeQueued("variant-index", maxIndexJobs);
         }
@@ -569,18 +572,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private int setStatus(Job job, Enums.ExecutionStatus status) {
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setStatus(status);
 
-        String study = String.valueOf(job.getAttributes().get(Job.OPENCGA_STUDY));
-        if (StringUtils.isEmpty(study)) {
-            try {
-                study = jobManager.getStudy(job, token).getFqn();
-            } catch (CatalogException e) {
-                logger.error("Unexpected error. Unknown study of job '{}'. {}", job.getId(), e.getMessage(), e);
-                return 0;
-            }
-        }
-
         try {
-            jobManager.update(study, job.getId(), updateParams, QueryOptions.empty(), token);
+            jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             logger.error("Unexpected error. Cannot update job '{}' to status '{}'. {}", job.getId(), updateParams.getStatus().getName(),
                     e.getMessage(), e);
@@ -694,8 +687,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         Path outDirUri = Paths.get(job.getOutDir().getUri());
         Path analysisResultPath = getAnalysisResultPath(job);
 
-        String study = String.valueOf(job.getAttributes().get(Job.OPENCGA_STUDY));
-
         logger.info("[{}] - Registering job results from '{}'", job.getId(), outDirUri);
 
         ExecutionResult execution;
@@ -704,7 +695,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             if (execution != null) {
                 PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setResult(execution);
                 try {
-                    jobManager.update(study, job.getId(), updateParams, QueryOptions.empty(), token);
+                    jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
                 } catch (CatalogException e) {
                     logger.error("[{}] - Catastrophic error. Could not update job information with final result {}: {}", job.getId(),
                             updateParams.toString(), e.getMessage(), e);
@@ -720,7 +711,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             Predicate<URI> uriPredicate = uri -> !uri.getPath().endsWith(ExecutionResultManager.FILE_EXTENSION)
                     && !uri.getPath().endsWith(ExecutionResultManager.SWAP_FILE_EXTENSION)
                     && !uri.getPath().contains("/scratch_");
-            registeredFiles = fileManager.syncUntrackedFiles(study, job.getOutDir().getPath(), uriPredicate, token).getResults();
+            registeredFiles = fileManager.syncUntrackedFiles(job.getStudyUuid(), job.getOutDir().getPath(), uriPredicate, token)
+                    .getResults();
         } catch (CatalogException e) {
             logger.error("Could not registered files in Catalog: {}", e.getMessage(), e);
             return 0;
@@ -736,10 +728,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         for (File registeredFile : registeredFiles) {
             if (registeredFile.getName().equals(logFileName)) {
                 logger.info("[{}] - stdout file '{}'", job.getId(), registeredFile.getUri().getPath());
-                updateParams.setLog(registeredFile);
+                updateParams.setStdout(registeredFile);
             } else if (registeredFile.getName().equals(errorLogFileName)) {
                 logger.info("[{}] - stderr file: '{}'", job.getId(), registeredFile.getUri().getPath());
-                updateParams.setErrorLog(registeredFile);
+                updateParams.setStderr(registeredFile);
             } else {
                 outputFiles.add(registeredFile);
             }
@@ -772,7 +764,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         logger.info("[{}] - Updating job information", job.getId());
         // We update the job information
         try {
-            jobManager.update(study, job.getId(), updateParams, QueryOptions.empty(), token);
+            jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
         } catch (CatalogException e) {
             logger.error("[{}] - Catastrophic error. Could not update job information with final result {}: {}", job.getId(),
                     updateParams.toString(), e.getMessage(), e);

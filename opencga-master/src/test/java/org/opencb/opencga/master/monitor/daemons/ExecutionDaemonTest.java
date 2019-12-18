@@ -195,8 +195,8 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         assertEquals(0, job.getOutput().stream().filter(f -> f.getName().endsWith(ExecutionResultManager.FILE_EXTENSION))
                 .collect(Collectors.toList()).size());
 
-        assertEquals(job.getId() + ".log", job.getLog().getName());
-        assertEquals(job.getId() + ".err", job.getErrorLog().getName());
+        assertEquals(job.getId() + ".log", job.getStdout().getName());
+        assertEquals(job.getId() + ".err", job.getStderr().getName());
     }
 
     @Test

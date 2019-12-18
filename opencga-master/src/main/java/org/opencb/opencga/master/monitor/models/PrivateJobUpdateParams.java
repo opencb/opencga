@@ -2,6 +2,7 @@ package org.opencb.opencga.master.monitor.models;
 
 import org.opencb.opencga.catalog.models.update.JobUpdateParams;
 import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.ToolInfo;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 
@@ -14,6 +15,7 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
 
     private Map<String, String> params;
     private Enums.ExecutionStatus status;
+    private ToolInfo tool;
 
     private File outDir;
     private File tmpDir;
@@ -22,8 +24,8 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
 
     private ExecutionResult result;
 
-    private File log;
-    private File errorLog;
+    private File stdout;
+    private File stderr;
 
     public PrivateJobUpdateParams() {
     }
@@ -33,14 +35,15 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
         final StringBuilder sb = new StringBuilder("PrivateJobUpdateParams{");
         sb.append("commandLine='").append(commandLine).append('\'');
         sb.append(", params=").append(params);
+        sb.append(", tool=").append(tool);
         sb.append(", status=").append(status);
         sb.append(", outDir=").append(outDir);
         sb.append(", tmpDir=").append(tmpDir);
         sb.append(", input=").append(input);
         sb.append(", output=").append(output);
         sb.append(", result=").append(result);
-        sb.append(", log=").append(log);
-        sb.append(", errorLog=").append(errorLog);
+        sb.append(", stdout=").append(stdout);
+        sb.append(", stderr=").append(stderr);
         sb.append(", name='").append(getName()).append('\'');
         sb.append(", description='").append(getDescription()).append('\'');
         sb.append(", tags=").append(getTags());
@@ -56,6 +59,15 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
 
     public PrivateJobUpdateParams setCommandLine(String commandLine) {
         this.commandLine = commandLine;
+        return this;
+    }
+
+    public ToolInfo getTool() {
+        return tool;
+    }
+
+    public PrivateJobUpdateParams setTool(ToolInfo tool) {
+        this.tool = tool;
         return this;
     }
 
@@ -122,21 +134,21 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
         return this;
     }
 
-    public File getLog() {
-        return log;
+    public File getStdout() {
+        return stdout;
     }
 
-    public PrivateJobUpdateParams setLog(File log) {
-        this.log = log;
+    public PrivateJobUpdateParams setStdout(File stdout) {
+        this.stdout = stdout;
         return this;
     }
 
-    public File getErrorLog() {
-        return errorLog;
+    public File getStderr() {
+        return stderr;
     }
 
-    public PrivateJobUpdateParams setErrorLog(File errorLog) {
-        this.errorLog = errorLog;
+    public PrivateJobUpdateParams setStderr(File stderr) {
+        this.stderr = stderr;
         return this;
     }
 
