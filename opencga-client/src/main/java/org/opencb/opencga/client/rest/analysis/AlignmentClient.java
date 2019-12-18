@@ -151,4 +151,8 @@ public class AlignmentClient extends AbstractParentClient {
     public RestResponse<Job> deeptoolsRun(String study, ObjectMap params) throws IOException {
         return execute(ALIGNMENT_URL, "/deeptools/run", new ObjectMap("body", params).append("study", study), POST, Job.class);
     }
+
+    public RestResponse<Job> fastqcRun(String study, ObjectMap params) throws IOException {
+        return execute(ALIGNMENT_URL, "/fastqc/run", new ObjectMap("body", params).append("study", study), POST, Job.class);
+    }
 }

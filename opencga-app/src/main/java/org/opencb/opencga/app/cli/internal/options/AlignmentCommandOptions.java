@@ -22,6 +22,7 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 
@@ -46,6 +47,7 @@ public class AlignmentCommandOptions {
     public BwaCommandOptions bwaCommandOptions;
     public SamtoolsCommandOptions samtoolsCommandOptions;
     public DeeptoolsCommandOptions deeptoolsCommandOptions;
+    public FastqcCommandOptions fastqcCommandOptions;
 
     public GeneralCliOptions.CommonCommandOptions analysisCommonOptions;
     public JCommander jCommander;
@@ -66,6 +68,7 @@ public class AlignmentCommandOptions {
         this.bwaCommandOptions = new BwaCommandOptions();
         this.samtoolsCommandOptions = new SamtoolsCommandOptions();
         this.deeptoolsCommandOptions = new DeeptoolsCommandOptions();
+        this.fastqcCommandOptions = new FastqcCommandOptions();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = ALIGNMENT_INDEX_DESCRIPTION)
@@ -431,6 +434,24 @@ public class AlignmentCommandOptions {
         public String coverageFile;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+    }
+
+    // FastQC
+
+    @Parameters(commandNames = FastqcWrapperAnalysis.ID, commandDescription = FastqcWrapperAnalysis.DESCRIPTION)
+    public class FastqcCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
+
+        @Parameter(names = {"-s", "--study"}, description = STUDY_DESCRIPTION, arity = 1)
+        public String study;
+
+        @Parameter(names = {"--file"}, description = INPUT_FILE_DESCRIPTION)
+        public String file;
+
+        @Parameter(names = {"-o", "--outdir"}, description = OUTPUT_DIRECTORY_DESCRIPTION)
         public String outdir;
     }
 }

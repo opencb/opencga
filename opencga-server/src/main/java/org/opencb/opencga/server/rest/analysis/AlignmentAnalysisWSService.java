@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -560,6 +561,34 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             AlignmentAnalysisWSService.DeeptoolsRunParams params) {
         return submitJob(DeeptoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
+    }
+
+    // FastQC
+    public static class FastqcRunParams extends ToolParams {
+        public FastqcRunParams() {
+        }
+
+        public FastqcRunParams(String file, String outdir, Map<String, String> fastqcParams) {
+            this.file = file;
+            this.outdir = outdir;
+            this.fastqcParams = fastqcParams;
+        }
+
+        public String file;        // Input file
+        public String outdir;
+        public Map<String, String> fastqcParams;
+    }
+
+    @POST
+    @Path("/fastqc/run")
+    @ApiOperation(value = FastqcWrapperAnalysis.DESCRIPTION, response = Job.class)
+    public Response fastqcRun(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            AlignmentAnalysisWSService.FastqcRunParams params) {
+        return submitJob(FastqcWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     //-------------------------------------------------------------------------

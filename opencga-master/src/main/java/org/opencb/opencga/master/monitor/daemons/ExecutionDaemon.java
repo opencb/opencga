@@ -111,6 +111,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(BwaWrapperAnalysis.ID, "alignment " + BwaWrapperAnalysis.ID);
             put(SamtoolsWrapperAnalysis.ID, "alignment " + SamtoolsWrapperAnalysis.ID);
             put(DeeptoolsWrapperAnalysis.ID, "alignment " + DeeptoolsWrapperAnalysis.ID);
+            put(FastqcWrapperAnalysis.ID, "alignment " + FastqcWrapperAnalysis.ID);
 
             put(VariantIndexOperationTool.ID, "variant index");
             put(VariantExportTool.ID, "variant export");
