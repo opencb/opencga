@@ -179,7 +179,7 @@ public class StorageVariantCommandOptions {
     @Parameters(commandNames = {VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND}, commandDescription = VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND_DESCRIPTION)
     public class VariantDeleteCommandOptions extends GenericVariantDeleteOptions {
 
-        public static final String VARIANT_DELETE_COMMAND = "delete";
+        public static final String VARIANT_DELETE_COMMAND = "file-delete";
         public static final String VARIANT_DELETE_COMMAND_DESCRIPTION = "Remove variants from storage";
 
         @ParametersDelegate

@@ -27,9 +27,6 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         String subCommandString = getParsedSubCommand(operationsCommandOptions.jCommander);
         RestResponse queryResponse = null;
         switch (subCommandString) {
-            case VARIANT_FILE_DELETE:
-                queryResponse = variantIndexDelete();
-                break;
             case VARIANT_SECONDARY_INDEX:
                 queryResponse = variantSecondaryIndex();
                 break;
@@ -73,17 +70,6 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
 
         createOutput(queryResponse);
 
-    }
-
-    private RestResponse variantIndexDelete() throws IOException {
-        OperationsCommandOptions.VariantFileDeleteCommandOptions cliOptions = operationsCommandOptions.variantIndexDelete;
-
-        return openCGAClient.getOperationClient().variantFileDelete(
-                cliOptions.study,
-                new VariantFileDeleteParams(
-                        cliOptions.genericVariantDeleteOptions.file,
-                        cliOptions.genericVariantDeleteOptions.resume),
-                cliOptions.commonOptions.params);
     }
 
     private RestResponse<Job> variantSecondaryIndex() throws IOException {

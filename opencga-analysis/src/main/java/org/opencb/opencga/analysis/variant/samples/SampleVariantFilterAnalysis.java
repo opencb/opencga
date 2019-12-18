@@ -99,6 +99,7 @@ public class SampleVariantFilterAnalysis extends OpenCgaTool {
             int maxVariants = toolParams.getMaxVariants();
             variants = new HashSet<>();
             Query query = new Query(this.query);
+            query.remove(VariantQueryParam.SAMPLE.key());
 //                    .append(VariantQueryParam.SAMPLE.key(), toolParams.getSample());
             try (VariantDBIterator iterator = variantStorageManager.iterator(query, new QueryOptions(VariantField.SUMMARY, true), token)) {
                 while (iterator.hasNext()) {

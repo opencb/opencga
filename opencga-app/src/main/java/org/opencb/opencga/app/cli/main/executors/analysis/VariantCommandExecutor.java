@@ -39,6 +39,7 @@ import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.io.VcfOutputWriter;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.api.operations.variant.VariantFileDeleteParams;
 import org.opencb.opencga.core.api.variant.*;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.rest.RestResponse;
@@ -66,6 +67,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantStatsCommandOptions.STATS_RUN_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND;
 
 
 /**
@@ -92,6 +94,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
             case "index":
                 queryResponse = index();
+                break;
+            case VARIANT_DELETE_COMMAND:
+                queryResponse = fileDelete();
                 break;
             case "query":
                 queryResponse = query();
@@ -286,6 +291,16 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantIndex.genericVariantIndexOptions.overwriteAnnotations,
                         variantIndex.genericVariantIndexOptions.indexSearch
                 ));
+    }
+
+    private RestResponse<Job> fileDelete() throws IOException {
+        VariantCommandOptions.VariantDeleteCommandOptions cliOptions = variantCommandOptions.variantDeleteCommandOptions;
+
+        return openCGAClient.getVariantClient().fileDelete(
+                cliOptions.study,
+                new VariantFileDeleteParams(
+                        cliOptions.genericVariantDeleteOptions.file,
+                        cliOptions.genericVariantDeleteOptions.resume));
     }
 
     private RestResponse query() throws CatalogException, IOException, InterruptedException {

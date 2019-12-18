@@ -29,6 +29,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.api.operations.variant.VariantFileDeleteParams;
 import org.opencb.opencga.core.api.variant.*;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.rest.RestResponse;
@@ -57,6 +58,11 @@ public class VariantClient extends AbstractParentClient {
 
     public RestResponse<Job> index(String study, VariantIndexParams body) throws IOException {
         return execute(VARIANT_URL, "index", buildRestPOSTParams(null, study, body), POST, Job.class);
+    }
+
+    public RestResponse<Job> fileDelete(String study, VariantFileDeleteParams deleteParams)
+            throws IOException {
+        return execute(VARIANT_URL, "file/delete", buildRestDELETEParams(null, study, deleteParams), DELETE, Job.class);
     }
 
     public RestResponse<VariantMetadata> metadata(ObjectMap params, QueryOptions options) throws IOException {
@@ -184,6 +190,13 @@ public class VariantClient extends AbstractParentClient {
 
     public RestResponse<Job> rvtestsRun(String study, RvtestsRunParams body) throws IOException {
         return execute(VARIANT_URL, "/rvtests/run", buildRestPOSTParams(null, study, body), POST, Job.class);
+    }
+
+    private ObjectMap buildRestDELETEParams(String project, String study, ToolParams deleteParams) {
+        ObjectMap restParams = deleteParams.toObjectMap();
+        restParams.putIfNotEmpty(ParamConstants.PROJECT_PARAM, project);
+        restParams.putIfNotEmpty(ParamConstants.STUDY_PARAM, study);
+        return restParams;
     }
 
     private ObjectMap buildRestPOSTParams(String project, String study, ToolParams body) {
