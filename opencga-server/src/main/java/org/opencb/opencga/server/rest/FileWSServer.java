@@ -35,7 +35,6 @@ import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.IOUtils;
@@ -64,7 +63,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 @Path("/{apiVersion}/files")
@@ -875,83 +873,83 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
-    @POST
-    @Path("/scan")
-    @ApiOperation(value = "Scan the study folder to find untracked or missing files")
-    public Response scanFiles(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
-        try {
-            ParamUtils.checkIsSingleID(studyStr);
-            Study study = catalogManager.getStudyManager().get(studyStr, null, token).first();
-            FileScanner fileScanner = new FileScanner(catalogManager);
-
-            /** First, run CheckStudyFiles to find new missing files **/
-            List<File> checkStudyFiles = fileScanner.checkStudyFiles(study, false, token);
-            List<File> found = checkStudyFiles
-                    .stream()
-                    .filter(f -> f.getStatus().getName().equals(File.FileStatus.READY))
-                    .collect(Collectors.toList());
-
-            /** Get untracked files **/
-            Map<String, URI> untrackedFiles = fileScanner.untrackedFiles(study, token);
-
-            /** Get missing files **/
-            List<File> missingFiles = catalogManager.getFileManager().search(studyStr, query.append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.MISSING), queryOptions, token).getResults();
-
-            ObjectMap fileStatus = new ObjectMap("untracked", untrackedFiles).append("found", found).append("missing", missingFiles);
-
-            return createOkResponse(new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList(fileStatus), 1));
-//            /** Print pretty **/
-//            int maxFound = found.stream().map(f -> f.getPath().length()).max(Comparator.<Integer>naturalOrder()).orElse(0);
-//            int maxUntracked = untrackedFiles.keySet().stream().map(String::length).max(Comparator.<Integer>naturalOrder()).orElse(0);
-//            int maxMissing = missingFiles.stream().map(f -> f.getPath().length()).max(Comparator.<Integer>naturalOrder()).orElse(0);
+//    @POST
+//    @Path("/scan")
+//    @ApiOperation(value = "Scan the study folder to find untracked or missing files")
+//    public Response scanFiles(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
+//        try {
+//            ParamUtils.checkIsSingleID(studyStr);
+//            Study study = catalogManager.getStudyManager().get(studyStr, null, token).first();
+//            FileScanner fileScanner = new FileScanner(catalogManager);
 //
-//            String format = "\t%-" + Math.max(Math.max(maxMissing, maxUntracked), maxFound) + "s  -> %s\n";
+//            /** First, run CheckStudyFiles to find new missing files **/
+//            List<File> checkStudyFiles = fileScanner.checkStudyFiles(study, false, token);
+//            List<File> found = checkStudyFiles
+//                    .stream()
+//                    .filter(f -> f.getStatus().getName().equals(File.FileStatus.READY))
+//                    .collect(Collectors.toList());
 //
-//            if (!untrackedFiles.isEmpty()) {
-//                System.out.println("UNTRACKED files");
-//                untrackedFiles.forEach((s, u) -> System.out.printf(format, s, u));
-//                System.out.println("\n");
-//            }
+//            /** Get untracked files **/
+//            Map<String, URI> untrackedFiles = fileScanner.untrackedFiles(study, token);
 //
-//            if (!missingFiles.isEmpty()) {
-//                System.out.println("MISSING files");
-//                for (File file : missingFiles) {
-//                    System.out.printf(format, file.getPath(), catalogManager.getFileUri(file));
-//                }
-//                System.out.println("\n");
-//            }
+//            /** Get missing files **/
+//            List<File> missingFiles = catalogManager.getFileManager().search(studyStr, query.append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.MISSING), queryOptions, token).getResults();
 //
-//            if (!found.isEmpty()) {
-//                System.out.println("FOUND files");
-//                for (File file : found) {
-//                    System.out.printf(format, file.getPath(), catalogManager.getFileUri(file));
-//                }
-//            }
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @POST
-    @Path("/resync")
-    @ApiOperation(value = "Scan the study folder to find untracked or missing files.", notes = "This method is intended to keep the "
-            + "consistency between the database and the file system. It will check all the files and folders belonging to the study and "
-            + "will keep track of those new files and/or folders found in the file system as well as update the status of those "
-            + "files/folders that are no longer available in the file system setting their status to MISSING.")
-    public Response resyncFiles(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
-        try {
-            ParamUtils.checkIsSingleID(studyStr);
-            Study study = catalogManager.getStudyManager().get(studyStr, null, token).first();
-            FileScanner fileScanner = new FileScanner(catalogManager);
-
-            /* Resync files */
-            List<File> resyncFiles = fileScanner.reSync(study, false, token);
-
-            return createOkResponse(new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList(resyncFiles), 1));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//            ObjectMap fileStatus = new ObjectMap("untracked", untrackedFiles).append("found", found).append("missing", missingFiles);
+//
+//            return createOkResponse(new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList(fileStatus), 1));
+////            /** Print pretty **/
+////            int maxFound = found.stream().map(f -> f.getPath().length()).max(Comparator.<Integer>naturalOrder()).orElse(0);
+////            int maxUntracked = untrackedFiles.keySet().stream().map(String::length).max(Comparator.<Integer>naturalOrder()).orElse(0);
+////            int maxMissing = missingFiles.stream().map(f -> f.getPath().length()).max(Comparator.<Integer>naturalOrder()).orElse(0);
+////
+////            String format = "\t%-" + Math.max(Math.max(maxMissing, maxUntracked), maxFound) + "s  -> %s\n";
+////
+////            if (!untrackedFiles.isEmpty()) {
+////                System.out.println("UNTRACKED files");
+////                untrackedFiles.forEach((s, u) -> System.out.printf(format, s, u));
+////                System.out.println("\n");
+////            }
+////
+////            if (!missingFiles.isEmpty()) {
+////                System.out.println("MISSING files");
+////                for (File file : missingFiles) {
+////                    System.out.printf(format, file.getPath(), catalogManager.getFileUri(file));
+////                }
+////                System.out.println("\n");
+////            }
+////
+////            if (!found.isEmpty()) {
+////                System.out.println("FOUND files");
+////                for (File file : found) {
+////                    System.out.printf(format, file.getPath(), catalogManager.getFileUri(file));
+////                }
+////            }
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
+//
+//    @POST
+//    @Path("/resync")
+//    @ApiOperation(value = "Scan the study folder to find untracked or missing files.", notes = "This method is intended to keep the "
+//            + "consistency between the database and the file system. It will check all the files and folders belonging to the study and "
+//            + "will keep track of those new files and/or folders found in the file system as well as update the status of those "
+//            + "files/folders that are no longer available in the file system setting their status to MISSING.")
+//    public Response resyncFiles(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr) {
+//        try {
+//            ParamUtils.checkIsSingleID(studyStr);
+//            Study study = catalogManager.getStudyManager().get(studyStr, null, token).first();
+//            FileScanner fileScanner = new FileScanner(catalogManager);
+//
+//            /* Resync files */
+//            List<File> resyncFiles = fileScanner.reSync(study, false, token);
+//
+//            return createOkResponse(new DataResult<>(0, Collections.emptyList(), 1, Collections.singletonList(resyncFiles), 1));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @GET
     @Path("/{file}/refresh")
@@ -1195,25 +1193,25 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{folder}/scan")
-    @ApiOperation(value = "Scans a folder", position = 6)
-    public Response scan(@ApiParam(value = "Folder id, name or path. Paths must be separated by : instead of /") @PathParam("folder") String folderIdStr,
-                         @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-                         @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                         @ApiParam(value = "calculateChecksum") @QueryParam("calculateChecksum") @DefaultValue("false")
-                                 boolean calculateChecksum) {
-        try {
-            ParamUtils.checkIsSingleID(folderIdStr);
-            File file = fileManager.get(studyStr, folderIdStr, null, token).first();
-
-            List<File> scan = new FileScanner(catalogManager)
-                    .scan(file, null, FileScanner.FileScannerPolicy.REPLACE, calculateChecksum, false, token);
-            return createOkResponse(new DataResult<>(0, Collections.emptyList(), scan.size(), scan, scan.size()));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/{folder}/scan")
+//    @ApiOperation(value = "Scans a folder", position = 6)
+//    public Response scan(@ApiParam(value = "Folder id, name or path. Paths must be separated by : instead of /") @PathParam("folder") String folderIdStr,
+//                         @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
+//                         @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+//                         @ApiParam(value = "calculateChecksum") @QueryParam("calculateChecksum") @DefaultValue("false")
+//                                 boolean calculateChecksum) {
+//        try {
+//            ParamUtils.checkIsSingleID(folderIdStr);
+//            File file = fileManager.get(studyStr, folderIdStr, null, token).first();
+//
+//            List<File> scan = new FileScanner(catalogManager)
+//                    .scan(file, null, FileScanner.FileScannerPolicy.REPLACE, calculateChecksum, false, token);
+//            return createOkResponse(new DataResult<>(0, Collections.emptyList(), scan.size(), scan, scan.size()));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @GET
     @Path("/stats")
