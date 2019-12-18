@@ -62,6 +62,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSamplesFilterCommandOptions.SAMPLE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantStatsCommandOptions.STATS_RUN_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
@@ -110,6 +111,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case SAMPLE_VARIANT_STATS_RUN_COMMAND:
                 queryResponse = sampleStats();
+                break;
+            case SAMPLE_RUN_COMMAND:
+                queryResponse = sampleRun();
                 break;
             case SAMPLE_VARIANT_STATS_QUERY_COMMAND:
                 queryResponse = sampleStatsQuery();
@@ -166,6 +170,13 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.aggregated,
                         variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.aggregationMappingFile
                 ));
+    }
+
+    private RestResponse<Job> sampleRun() throws IOException {
+        return openCGAClient.getVariantClient().sampleRun(
+                variantCommandOptions.samplesFilterCommandOptions.toolParams.getStudy(),
+                variantCommandOptions.samplesFilterCommandOptions.toolParams
+        );
     }
 
     private RestResponse<Job> sampleStats() throws IOException {

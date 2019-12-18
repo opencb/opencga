@@ -139,6 +139,10 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "/stats/run", buildRestPOSTParams(null, study, body), POST, Job.class);
     }
 
+    public RestResponse<Job> sampleRun(String study, SampleVariantFilterParams body) throws IOException {
+        return execute(VARIANT_URL, "/sample/run", buildRestPOSTParams(null, study, body), POST, Job.class);
+    }
+
     public RestResponse<Job> sampleStatsRun(String study, SampleVariantStatsAnalysisParams body) throws IOException {
         return execute(VARIANT_URL, "/sample/stats/run", buildRestPOSTParams(null, study, body), POST, Job.class);
     }

@@ -746,4 +746,12 @@ public class OpenCGAWSServer {
         return createErrorResponse(new NotImplementedException("Pending " + uriInfo.getPath()));
     }
 
+    public Response createDeprecatedRemovedResponse() {
+        return createErrorResponse(new NotImplementedException("Deprecated " + uriInfo.getPath()));
+    }
+
+    public Response createDeprecatedMovedResponse(String newEndpoint) {
+        return createErrorResponse(new NotImplementedException("Deprecated " + uriInfo.getPath() + " . Use instead " + newEndpoint));
+    }
+
 }

@@ -19,6 +19,7 @@ package org.opencb.opencga.analysis.tools;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -30,6 +31,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.annotations.ToolExecutor;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.DataStore;
@@ -37,8 +39,8 @@ import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
-import org.opencb.opencga.core.tools.result.ExecutorInfo;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
+import org.opencb.opencga.core.tools.result.ExecutorInfo;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
@@ -184,6 +186,9 @@ public abstract class OpenCgaTool {
             if (!erm.isClosed()) {
                 privateLogger.error("Unexpected system shutdown!");
                 try {
+                    if (scratchDir != null) {
+                        deleteScratchDirectory();
+                    }
                     if (exception == null) {
                         exception = new RuntimeException("Unexpected system shutdown");
                     }
@@ -194,6 +199,7 @@ public abstract class OpenCgaTool {
             }
         });
         Runtime.getRuntime().addShutdownHook(hook);
+        Exception exception = null;
         try {
             if (scratchDir == null) {
                 Path baseScratchDir = this.outDir;
@@ -231,19 +237,23 @@ public abstract class OpenCgaTool {
             } catch (Exception e) {
                 throw new ToolException(e);
             }
-            try {
-                FileUtils.deleteDirectory(scratchDir.toFile());
-            } catch (IOException e) {
-                String warningMessage = "Error deleting scratch folder " + scratchDir + " : " + e.getMessage();
-                privateLogger.warn(warningMessage, e);
-                erm.addWarning(warningMessage);
-            }
-            return erm.close();
         } catch (RuntimeException | ToolException e) {
-            erm.close(e);
+            exception = e;
             throw e;
         } finally {
+            deleteScratchDirectory();
             Runtime.getRuntime().removeShutdownHook(hook);
+            return erm.close(exception);
+        }
+    }
+
+    private void deleteScratchDirectory() throws ToolException {
+        try {
+            FileUtils.deleteDirectory(scratchDir.toFile());
+        } catch (IOException e) {
+            String warningMessage = "Error deleting scratch folder " + scratchDir + " : " + e.getMessage();
+            privateLogger.warn(warningMessage, e);
+            erm.addWarning(warningMessage);
         }
     }
 
@@ -337,12 +347,18 @@ public abstract class OpenCgaTool {
     protected final void step(String stepId, StepRunnable step) throws ToolException {
         if (checkStep(stepId)) {
             try {
+                StopWatch stopWatch = StopWatch.createStarted();
+                privateLogger.info("");
+                privateLogger.info("------- Executing step '" + stepId + "' -------");
                 step.run();
+                privateLogger.info("------- Step '" + stepId + "' executed in " + TimeUtils.durationToString(stopWatch) + " -------");
             } catch (ToolException e) {
                 throw e;
             } catch (Exception e) {
                 throw new ToolException("Exception from step " + stepId, e);
             }
+        } else {
+            privateLogger.info("------- Skip step " + stepId + " -------");
         }
     }
 

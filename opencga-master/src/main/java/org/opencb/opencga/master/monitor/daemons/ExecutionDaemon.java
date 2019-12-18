@@ -27,9 +27,9 @@ import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAna
 import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.file.FileDeleteAction;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
-import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
+import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
@@ -131,6 +131,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(VariantAnnotationIndexOperationTool.ID, "variant annotation-index");
             put(VariantAnnotationDeleteOperationTool.ID, "variant annotation-delete");
             put(VariantAnnotationSaveOperationTool.ID, "variant annotation-save");
+            put(SampleVariantFilterAnalysis.ID, "variant sample-run");
 
             put(TeamInterpretationAnalysis.ID, "interpretation " + TeamInterpretationAnalysis.ID);
             put(TieringInterpretationAnalysis.ID, "interpretation " + TieringInterpretationAnalysis.ID);
@@ -233,7 +234,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                     try {
                         jobManager.update(study, job.getId(), updateParams, QueryOptions.empty(), token);
                     } catch (CatalogException e) {
-                        logger.error("{} - Could not update result information: {}", job.getId(), e.getMessage(), e);
+                        logger.error("[{}] - Could not update result information: {}", job.getId(), e.getMessage(), e);
                         return 0;
                     }
                 }
@@ -283,7 +284,12 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 // Job is still queued
                 return 0;
             case Enums.ExecutionStatus.RUNNING:
-                logger.info("Updating job {} from {} to {}", job.getId(), Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.RUNNING);
+                logger.info("[{}] - Updating status from {} to {}", job.getId(),
+                        Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.RUNNING);
+                logger.info("[{}] - stdout file '{}'", job.getId(),
+                        job.getOutDir().getUri().resolve(getErrorLogFileName(job)).getPath());
+                logger.info("[{}] - stderr file: '{}'", job.getId(),
+                        job.getOutDir().getUri().resolve(getLogFileName(job)).getPath());
                 return setStatus(job, new Enums.ExecutionStatus(Enums.ExecutionStatus.RUNNING));
             case Enums.ExecutionStatus.ABORTED:
             case Enums.ExecutionStatus.ERROR:
@@ -683,14 +689,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private int processFinishedJob(Job job, Enums.ExecutionStatus status) {
-        logger.info("{} - Processing finished job with status {}", job.getId(), status.getName());
+        logger.info("[{}] - Processing finished job with status {}", job.getId(), status.getName());
 
         Path outDirUri = Paths.get(job.getOutDir().getUri());
         Path analysisResultPath = getAnalysisResultPath(job);
 
         String study = String.valueOf(job.getAttributes().get(Job.OPENCGA_STUDY));
 
-        logger.info("{} - Registering job results from '{}'", job.getId(), outDirUri);
+        logger.info("[{}] - Registering job results from '{}'", job.getId(), outDirUri);
 
         ExecutionResult execution;
         if (analysisResultPath != null) {
@@ -700,7 +706,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 try {
                     jobManager.update(study, job.getId(), updateParams, QueryOptions.empty(), token);
                 } catch (CatalogException e) {
-                    logger.error("{} - Catastrophic error. Could not update job information with final result {}: {}", job.getId(),
+                    logger.error("[{}] - Catastrophic error. Could not update job information with final result {}: {}", job.getId(),
                             updateParams.toString(), e.getMessage(), e);
                     return 0;
                 }
@@ -729,8 +735,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         String errorLogFileName = getErrorLogFileName(job);
         for (File registeredFile : registeredFiles) {
             if (registeredFile.getName().equals(logFileName)) {
+                logger.info("[{}] - stdout file '{}'", job.getId(), registeredFile.getUri().getPath());
                 updateParams.setLog(registeredFile);
             } else if (registeredFile.getName().equals(errorLogFileName)) {
+                logger.info("[{}] - stderr file: '{}'", job.getId(), registeredFile.getUri().getPath());
                 updateParams.setErrorLog(registeredFile);
             } else {
                 outputFiles.add(registeredFile);
@@ -761,12 +769,12 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             }
         }
 
-        logger.info("{} - Updating job information", job.getId());
+        logger.info("[{}] - Updating job information", job.getId());
         // We update the job information
         try {
             jobManager.update(study, job.getId(), updateParams, QueryOptions.empty(), token);
         } catch (CatalogException e) {
-            logger.error("{} - Catastrophic error. Could not update job information with final result {}: {}", job.getId(),
+            logger.error("[{}] - Catastrophic error. Could not update job information with final result {}: {}", job.getId(),
                     updateParams.toString(), e.getMessage(), e);
             return 0;
         }

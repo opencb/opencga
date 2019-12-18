@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -40,6 +39,7 @@ import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.operations.*;
+import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
@@ -62,13 +62,14 @@ import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.analysis.VariantSampleFilter;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
@@ -78,6 +79,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantAnnotateCommandOptions.ANNOTATION_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSamplesFilterCommandOptions.SAMPLE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
@@ -180,8 +182,8 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
             case AGGREGATE_COMMAND:
                 aggregate();
                 break;
-            case "samples":
-                samples();
+            case SAMPLE_RUN_COMMAND:
+                sampleRun();
                 break;
             case "histogram":
                 histogram();
@@ -590,59 +592,13 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         toolRunner.execute(VariantAggregateOperationTool.class, params, Paths.get(cliOptions.outdir), sessionId);
     }
 
-    private void samples() throws Exception {
-
+    private void sampleRun() throws Exception {
         VariantCommandOptions.VariantSamplesFilterCommandOptions cliOptions = variantCommandOptions.samplesFilterCommandOptions;
+        cliOptions.toolParams.toObjectMap(cliOptions.commonOptions.params);
 
-//        Map<Long, String> studyIds = getStudyIds(sessionId);
-        Query query = VariantQueryCommandUtils.parseBasicVariantQuery(cliOptions.variantQueryOptions, new Query());
-
-        VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
-
-        VariantSampleFilter variantSampleFilter = new VariantSampleFilter(variantManager.iterable(sessionId));
-
-        if (StringUtils.isNotEmpty(cliOptions.samples)) {
-            query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), Arrays.asList(cliOptions.samples.split(",")));
-        }
-        if (StringUtils.isNotEmpty(cliOptions.study)) {
-            query.append(VariantQueryParam.STUDY.key(), cliOptions.study);
-        }
-
-        List<String> genotypes = Arrays.asList(cliOptions.genotypes.split(","));
-        if (cliOptions.all) {
-            Collection<String> samplesInAllVariants = variantSampleFilter.getSamplesInAllVariants(query, genotypes);
-            System.out.println("##Samples in ALL variants with genotypes " + genotypes);
-            for (String sample : samplesInAllVariants) {
-                System.out.println(sample);
-            }
-        } else {
-            Map<String, Set<Variant>> samplesInAnyVariants = variantSampleFilter.getSamplesInAnyVariants(query, genotypes);
-            System.out.println("##Samples in ANY variants with genotypes " + genotypes);
-            Set<Variant> variants = new TreeSet<>((v1, o2) -> v1.getStart().compareTo(o2.getStart()));
-            samplesInAnyVariants.forEach((sample, v) -> variants.addAll(v));
-
-            System.out.print(StringUtils.rightPad("#SAMPLE", 10));
-//            System.out.print("|");
-            for (Variant variant : variants) {
-                System.out.print(StringUtils.center(variant.toString(), 15));
-//                System.out.print("|");
-            }
-            System.out.println();
-            samplesInAnyVariants.forEach((sample, v) -> {
-                System.out.print(StringUtils.rightPad(sample, 10));
-//                System.out.print("|");
-                for (Variant variant : variants) {
-                    if (v.contains(variant)) {
-                        System.out.print(StringUtils.center("X", 15));
-                    } else {
-                        System.out.print(StringUtils.center("-", 15));
-                    }
-//                    System.out.print("|");
-                }
-                System.out.println();
-            });
-
-        }
+        toolRunner.execute(SampleVariantFilterAnalysis.class,
+                cliOptions.toolParams.toObjectMap(cliOptions.commonOptions.params),
+                Paths.get(cliOptions.outdir), sessionId);
     }
 
     private void histogram() throws Exception {

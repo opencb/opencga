@@ -33,6 +33,8 @@ import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.api.variant.BasicVariantQueryParams;
+import org.opencb.opencga.core.api.variant.SampleVariantFilterParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
@@ -562,37 +564,175 @@ public class VariantCommandOptions {
     }
 
     @Parameters(commandNames = {"samples"}, commandDescription = "Get samples given a set of variants")
-    public class VariantSamplesFilterCommandOptions {
-
-        @ParametersDelegate
-        public BasicVariantQueryOptions variantQueryOptions = new BasicVariantQueryOptions();
+    public class VariantSamplesFilterCommandOptions extends SampleVariantFilterParams {
+        public static final String SAMPLE_RUN_COMMAND = "sample-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @ParametersDelegate
-        public DataModelOptions dataModelOptions = commonDataModelOptions;
+        public SampleVariantFilterParamsAnnotated toolParams = new SampleVariantFilterParamsAnnotated();
 
-        @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
-        public String study;
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+
+    }
+
+    public class SampleVariantFilterParamsAnnotated extends SampleVariantFilterParams {
 
         //TODO
 //        @Parameter(names = {"--sample-filter"}, description = SAMPLE_FILTER_DESC)
 //        public String sampleFilter;
 
-        @Parameter(names = {"--sample"}, description = "List of samples to check. By default, all samples")
-        public String samples;
-
-        @Parameter(names = {"--all"}, description = "Samples must be present in ALL variants or in ANY variant.")
-        public boolean all;
-
         @Parameter(names = {"--genotypes"}, description = "Genotypes that the sample must have to be selected")
-        public String genotypes = "0/1,1/1";
+        @Override
+        public SampleVariantFilterParams setGenotypes(List<String> genotypes) {
+            return super.setGenotypes(genotypes);
+        }
 
+        @Parameter(names = {"--sample"}, description = "List of samples to check. By default, all samples")
+        @Override
+        public SampleVariantFilterParams setSample(List<String> sample) {
+            return super.setSample(sample);
+        }
 
+        @Parameter(names = {"--samples-in-all-variants"}, description = "Samples must be present in ALL variants instead of ANY variant.")
+        @Override
+        public SampleVariantFilterParams setSamplesInAllVariants(boolean samplesInAllVariants) {
+            return super.setSamplesInAllVariants(samplesInAllVariants);
+        }
 
-//        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
-//        public String output;
+        @Parameter(names = {"--max-variants"}, description = "Limit the maximum number of variants to look up")
+        @Override
+        public SampleVariantFilterParams setMaxVariants(int maxVariants) {
+            return super.setMaxVariants(maxVariants);
+        }
+
+        @Parameter(names = {"--id"}, description = VariantQueryParam.ID_DESCR)
+        @Override
+        public BasicVariantQueryParams setId(String id) {
+            return super.setId(id);
+        }
+
+        @Parameter(names = {"--region"}, description = VariantQueryParam.REGION_DESCR)
+        @Override
+        public BasicVariantQueryParams setRegion(String region) {
+            return super.setRegion(region);
+        }
+
+        @Parameter(names = {"--gene"}, description = VariantQueryParam.GENE_DESCR)
+        @Override
+        public BasicVariantQueryParams setGene(String gene) {
+            return super.setGene(gene);
+        }
+
+        @Parameter(names = {"--type"}, description = VariantQueryParam.TYPE_DESCR)
+        @Override
+        public BasicVariantQueryParams setType(String type) {
+            return super.setType(type);
+        }
+
+        @Parameter(names = {"--project"}, description = PROJECT_DESC)
+        @Override
+        public BasicVariantQueryParams setProject(String project) {
+            return super.setProject(project);
+        }
+
+        @Parameter(names = {"--study"}, description = VariantQueryParam.STUDY_DESCR)
+        @Override
+        public BasicVariantQueryParams setStudy(String study) {
+            return super.setStudy(study);
+        }
+
+        @Parameter(names = {"--panel"}, description = PANEL_DESC)
+        @Override
+        public BasicVariantQueryParams setPanel(String panel) {
+            return super.setPanel(panel);
+        }
+
+        @Parameter(names = {"--cohort-stats-ref"}, description = VariantQueryParam.STATS_REF_DESCR)
+        @Override
+        public BasicVariantQueryParams setCohortStatsRef(String cohortStatsRef) {
+            return super.setCohortStatsRef(cohortStatsRef);
+        }
+
+        @Parameter(names = {"--cohort-stats-alt"}, description = VariantQueryParam.STATS_ALT_DESCR)
+        @Override
+        public BasicVariantQueryParams setCohortStatsAlt(String cohortStatsAlt) {
+            return super.setCohortStatsAlt(cohortStatsAlt);
+        }
+
+        @Parameter(names = {"--cohort-stats-maf"}, description = VariantQueryParam.STATS_MAF_DESCR)
+        @Override
+        public BasicVariantQueryParams setCohortStatsMaf(String cohortStatsMaf) {
+            return super.setCohortStatsMaf(cohortStatsMaf);
+        }
+
+        @Parameter(names = {"--ct", "--consequence-type"}, description = VariantQueryParam.ANNOT_CONSEQUENCE_TYPE_DESCR)
+        @Override
+        public BasicVariantQueryParams setCt(String ct) {
+            return super.setCt(ct);
+        }
+
+        @Parameter(names = {"--xref"}, description = VariantQueryParam.ANNOT_XREF_DESCR)
+        @Override
+        public BasicVariantQueryParams setXref(String xref) {
+            return super.setXref(xref);
+        }
+
+        @Parameter(names = {"--biotype"}, description = VariantQueryParam.ANNOT_BIOTYPE_DESCR)
+        @Override
+        public BasicVariantQueryParams setBiotype(String biotype) {
+            return super.setBiotype(biotype);
+        }
+
+        @Parameter(names = {"--protein-substitution"}, description = VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION_DESCR)
+        @Override
+        public BasicVariantQueryParams setProteinSubstitution(String proteinSubstitution) {
+            return super.setProteinSubstitution(proteinSubstitution);
+        }
+
+        @Parameter(names = {"--conservation"}, description = VariantQueryParam.ANNOT_CONSERVATION_DESCR)
+        @Override
+        public BasicVariantQueryParams setConservation(String conservation) {
+            return super.setConservation(conservation);
+        }
+
+        @Parameter(names = {"--population-frequency-maf"}, description = VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR)
+        @Override
+        public BasicVariantQueryParams setPopulationFrequencyMaf(String populationFrequencyMaf) {
+            return super.setPopulationFrequencyMaf(populationFrequencyMaf);
+        }
+
+        @Parameter(names = {"--population-frequency-alt"}, description = VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR)
+        @Override
+        public BasicVariantQueryParams setPopulationFrequencyAlt(String populationFrequencyAlt) {
+            return super.setPopulationFrequencyAlt(populationFrequencyAlt);
+        }
+
+        @Parameter(names = {"--population-frequency-ref"}, description = VariantQueryParam.ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR)
+        @Override
+        public BasicVariantQueryParams setPopulationFrequencyRef(String populationFrequencyRef) {
+            return super.setPopulationFrequencyRef(populationFrequencyRef);
+        }
+
+        @Parameter(names = {"--transcript-flag"}, description = VariantQueryParam.ANNOT_TRANSCRIPT_FLAG_DESCR)
+        @Override
+        public BasicVariantQueryParams setTranscriptFlag(String transcriptFlag) {
+            return super.setTranscriptFlag(transcriptFlag);
+        }
+
+        @Parameter(names = {"--functional-score"}, description = VariantQueryParam.ANNOT_FUNCTIONAL_SCORE_DESCR)
+        @Override
+        public BasicVariantQueryParams setFunctionalScore(String functionalScore) {
+            return super.setFunctionalScore(functionalScore);
+        }
+
+        @Parameter(names = {"--clinical-significance"}, description = VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
+        @Override
+        public BasicVariantQueryParams setClinicalSignificance(String clinicalSignificance) {
+            return super.setClinicalSignificance(clinicalSignificance);
+        }
     }
 
     @Parameters(commandNames = {"histogram"}, commandDescription = "")

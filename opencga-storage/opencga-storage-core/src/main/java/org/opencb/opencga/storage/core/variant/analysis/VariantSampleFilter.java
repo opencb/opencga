@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Deprecated
 public class VariantSampleFilter {
 
     private final VariantIterable iterable;
