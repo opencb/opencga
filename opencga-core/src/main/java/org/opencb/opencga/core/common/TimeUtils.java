@@ -21,6 +21,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.crypto.Data;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -30,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 public class TimeUtils {
 
+    private static final String yyyyMMdd = "yyyyMMdd";
     private static final String yyyyMMddHHmmss = "yyyyMMddHHmmss";
     private static final String yyyyMMddHHmmssSSS = "yyyyMMddHHmmssSSS";
 
@@ -55,6 +57,15 @@ public class TimeUtils {
     public static String getTimeMillis(Date date) {
         SimpleDateFormat sdfMillis = new SimpleDateFormat(yyyyMMddHHmmssSSS);
         return sdfMillis.format(date);
+    }
+
+    public static String getDay() {
+        return getDay(new Date());
+    }
+
+    public static String getDay(Date date) {
+        SimpleDateFormat sdf = new SimpleDateFormat(yyyyMMdd);
+        return sdf.format(date);
     }
 
     public static String durationToString(StopWatch stopWatch) {

@@ -38,7 +38,6 @@ import org.opencb.opencga.analysis.wrappers.*;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -46,10 +45,10 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
+import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
@@ -358,7 +357,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         } else {
             try {
                 // JOBS/user/job_id/
-                updateParams.setOutDir(getValidDefaultOutDir(job.getStudyUuid(), job, userToken));
+                updateParams.setOutDir(getValidDefaultOutDir(job));
             } catch (CatalogException e) {
                 logger.error("Cannot create output directory. {}", e.getMessage(), e);
                 return abortJob(job, "Cannot create output directory. " + e.getMessage());
@@ -436,71 +435,35 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         return outDir;
     }
 
-    private File getValidDefaultOutDir(String studyStr, Job job, String userToken) throws CatalogException {
-        OpenCGAResult<File> fileOpenCGAResult;
+    private File getValidDefaultOutDir(Job job) throws CatalogException {
+        File folder = fileManager.createFolder(job.getStudyUuid(), "JOBS/" + job.getUserId() + "/" + job.getId(), new File.FileStatus(),
+                true, "Job " + job.getTool().getId(), QueryOptions.empty(), token).first();
+
+        // By default, OpenCGA will not create the physical folders until there is a file, so we need to create it manually
         try {
-            fileOpenCGAResult = fileManager.get(studyStr, "JOBS/", FileManager.INCLUDE_FILE_URI_PATH, token);
-        } catch (CatalogException e) {
-            logger.info("JOBS/ directory does not exist, registering for the first time");
-
-            // Create main JOBS directory for the study
-            Study study = catalogManager.getStudyManager().get(studyStr, QueryOptions.empty(), token).first();
-            long projectUid = catalogManager.getProjectManager().get(study.getFqn().split(":")[0], new QueryOptions(QueryOptions.INCLUDE,
-                    ProjectDBAdaptor.QueryParams.UID.key()), token).first().getUid();
-
-            URI uri = Paths.get(catalogManager.getConfiguration().getJobDir())
-                    .resolve(study.getFqn().split("@")[0]) // user
-                    .resolve(Long.toString(projectUid))
-                    .resolve(Long.toString(study.getUid()))
-                    .resolve("JOBS")
-                    .toUri();
-
-            // Create the directory in the file system
-            catalogIOManager.createDirectory(uri, true);
-            // And link it to OpenCGA
-            fileOpenCGAResult = fileManager.link(studyStr, uri, "/", new ObjectMap("parents", true), token);
-        }
-
-        // Check we can write in the folder
-        catalogIOManager.checkWritableUri(fileOpenCGAResult.first().getUri());
-
-        // Check if the default jobOutDirPath of the user already exists
-        OpenCGAResult<File> result;
-        try {
-            result = fileManager.get(studyStr, "JOBS/" + job.getUserId() + "/", FileManager.INCLUDE_FILE_URI_PATH, userToken);
-        } catch (CatalogException e) {
-            // We first need to create the main directory that will contain all the jobs of the user
-            result = fileManager.createFolder(studyStr, "JOBS/" + job.getUserId() + "/", new File.FileStatus(), false,
-                    "Directory containing the jobs of " + job.getUserId(), FileManager.INCLUDE_FILE_URI_PATH, token);
-
-            // Add permissions to do anything under that path to the user launching the job
-            String allFilePermissions = EnumSet.allOf(FileAclEntry.FilePermissions.class)
-                    .stream()
-                    .map(FileAclEntry.FilePermissions::toString)
-                    .collect(Collectors.joining(","));
-            fileManager.updateAcl(studyStr, Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
-                    new File.FileAclParams(allFilePermissions, AclParams.Action.SET, null), token);
-            // Remove permissions to any other user that is not the one launching the job
-            fileManager.updateAcl(studyStr, Collections.singletonList("JOBS/" + job.getUserId() + "/"), FileAclEntry.USER_OTHERS_ID,
-                    new File.FileAclParams("", AclParams.Action.SET, null), token);
-        }
-
-        // Now we create a new directory where the job will be actually executed
-        File userFolder = result.first();
-
-        File outDirFile = fileManager.createFolder(studyStr, userFolder.getPath() + job.getId(), new File.FileStatus(), false,
-                "Directory containing the results of the execution of job " + job.getId(), FileManager.INCLUDE_FILE_URI_PATH, token)
-                .first();
-
-        // Create the physical directories in disk
-        try {
-            catalogIOManager.createDirectory(outDirFile.getUri(), true);
+            catalogIOManager.createDirectory(folder.getUri(), true);
         } catch (CatalogIOException e) {
-            throw new CatalogException("Cannot create job directories '" + outDirFile.getUri() + "' for path '" + outDirFile.getPath()
-                    + "'");
+            // Submit job to delete job folder
+            ObjectMap params = new ObjectMap()
+                    .append("files", folder.getUuid())
+                    .append("study", job.getStudyUuid())
+                    .append(Constants.SKIP_TRASH, true);
+            jobManager.submit(job.getStudyUuid(), FileDeleteTask.ID, Enums.Priority.LOW, params, token);
+            throw new CatalogException("Cannot create job directory '" + folder.getUri() + "' for path '" + folder.getPath() + "'");
         }
 
-        return outDirFile;
+        // Add permissions to do anything under that path to the user launching the job
+        String allFilePermissions = EnumSet.allOf(FileAclEntry.FilePermissions.class)
+                .stream()
+                .map(FileAclEntry.FilePermissions::toString)
+                .collect(Collectors.joining(","));
+        fileManager.updateAcl(job.getStudyUuid(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
+                new File.FileAclParams(allFilePermissions, AclParams.Action.SET, null), token);
+        // Revoke permissions to any other user that is not the one launching the job
+        fileManager.updateAcl(job.getStudyUuid(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), FileAclEntry.USER_OTHERS_ID,
+                new File.FileAclParams("", AclParams.Action.SET, null), token);
+
+        return folder;
     }
 
     public static String buildCli(String internalCli, String toolId, Map<String, Object> params) {
@@ -719,7 +682,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams();
 
         // Process output and log files
-        List<File> outputFiles = new ArrayList<>(registeredFiles.size() + execution.getExternalFiles().size());
+        List<File> outputFiles = new LinkedList<>();
         String logFileName = getLogFileName(job);
         String errorLogFileName = getErrorLogFileName(job);
         for (File registeredFile : registeredFiles) {
@@ -731,17 +694,19 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 outputFiles.add(registeredFile);
             }
         }
-        for (URI externalFile : execution.getExternalFiles()) {
-            Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), externalFile);
-            try {
-                OpenCGAResult<File> search = fileManager.search(job.getStudyUuid(), query, FileManager.INCLUDE_FILE_URI_PATH, token);
-                if (search.getNumResults() == 0) {
-                    throw new CatalogException("File not found");
+        if (execution != null) {
+            for (URI externalFile : execution.getExternalFiles()) {
+                Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), externalFile);
+                try {
+                    OpenCGAResult<File> search = fileManager.search(job.getStudyUuid(), query, FileManager.INCLUDE_FILE_URI_PATH, token);
+                    if (search.getNumResults() == 0) {
+                        throw new CatalogException("File not found");
+                    }
+                    outputFiles.add(search.first());
+                } catch (CatalogException e) {
+                    logger.error("Could not obtain external file {}: {}", externalFile, e.getMessage(), e);
+                    return 0;
                 }
-                outputFiles.add(search.first());
-            } catch (CatalogException e) {
-                logger.error("Could not obtain external file {}: {}", externalFile, e.getMessage(), e);
-                return 0;
             }
         }
         updateParams.setOutput(outputFiles);
