@@ -14,8 +14,11 @@ import org.opencb.opencga.storage.core.io.managers.IOConnector;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.managers.LocalIOConnector;
 import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.io.HDFSIOConnector;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -52,8 +55,21 @@ public class HadoopVariantExporter extends VariantExporter {
             throws IOException, StorageEngineException {
         VariantHadoopDBAdaptor dbAdaptor = ((VariantHadoopDBAdaptor) engine.getDBAdaptor());
         IOConnector ioConnector = ioConnectorProvider.get(outputFileUri);
+
+        boolean smallQuery = false;
+        VariantQueryParser.VariantQueryXref xrefs = VariantQueryParser.parseXrefs(query);
+        if (xrefs.getVariants().size() < 2000) {
+            if (!VariantQueryUtils.isValidParam(query, VariantQueryParam.REGION)
+                    && xrefs.getGenes().isEmpty()
+                    && xrefs.getIds().isEmpty()
+                    && xrefs.getOtherXrefs().isEmpty()) {
+                smallQuery = true;
+            }
+        }
+
         if ((outputFileUri == null)
                 || (variantsFile != null)
+                || smallQuery
                 || queryOptions.getBoolean("skipMapReduce", false)
                 || (!(ioConnector instanceof HDFSIOConnector) && !(ioConnector instanceof LocalIOConnector))) {
             super.export(outputFileUri, outputFormat, variantsFile, query, queryOptions);

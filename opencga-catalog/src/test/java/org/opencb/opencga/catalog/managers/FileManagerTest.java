@@ -1579,7 +1579,8 @@ public class FileManagerTest extends AbstractManagerTest {
         // Register in workspace folder
         OpenCGAResult<File> result = fileManager.moveAndRegister(studyFqn, copy, studyPath.resolve("myFolder"), "myFolder", sessionIdUser);
         assertEquals("myFolder/variant-test-file.vcf.gz", result.first().getPath());
-        assertEquals(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz").toString(), Paths.get(result.first().getUri()).toString());
+        assertEquals(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz").toString(),
+                Paths.get(result.first().getUri()).toString());
         assertTrue(Files.exists(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz")));
 
         // We remove the file to start again

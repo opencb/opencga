@@ -5,15 +5,16 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.core.api.ParamConstants;
 
 @Parameters(commandNames = {"file"}, commandDescription = "Implement several file tasks")
 public class FileCommandOptions {
 
-    public final static String STUDY_PARAM_NAME = "study";
     public final static String OUTDIR_PARAM_NAME = "outdir";
 
     public DeleteCommandOptions deleteCommandOptions;
     public UnlinkCommandOptions unlinkCommandOptions;
+    public FetchCommandOptions fetchCommandOptions;
 
     public GeneralCliOptions.CommonCommandOptions fileCommonOptions;
     public JCommander jCommander;
@@ -24,6 +25,7 @@ public class FileCommandOptions {
 
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.unlinkCommandOptions = new UnlinkCommandOptions();
+        this.fetchCommandOptions = new FetchCommandOptions();
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete file task")
@@ -32,7 +34,8 @@ public class FileCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = fileCommonOptions;
 
-        @Parameter(names = {"-s", "--" + STUDY_PARAM_NAME}, description = "Study [[user@]project:]study.", required = true, arity = 1)
+        @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = true,
+                arity = 1)
         public String studyId;
 
         @Parameter(names = {"--files"}, description = "Comma separated list of files", required = true, arity = 1)
@@ -52,11 +55,34 @@ public class FileCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = fileCommonOptions;
 
-        @Parameter(names = {"-s", "--" + STUDY_PARAM_NAME}, description = "Study [[user@]project:]study.", required = true, arity = 1)
+        @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = true,
+                arity = 1)
         public String studyId;
 
         @Parameter(names = {"--files"}, description = "Comma separated list of files", required = true, arity = 1)
         public String files;
+
+        @Parameter(names = {"-o", "--" + OUTDIR_PARAM_NAME}, description = "Directory where output files will be saved", required = true,
+                arity = 1)
+        public String outDir;
+    }
+
+    @Parameters(commandNames = {"unlink"}, commandDescription = "Unlink file task")
+    public class FetchCommandOptions {
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = fileCommonOptions;
+
+        @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = true,
+                arity = 1)
+        public String studyId;
+
+        @Parameter(names = {"--" + ParamConstants.FILE_PATH_PARAM},
+                description = "Folder path where the downloaded file will be registered", required = true, arity = 1)
+        public String path;
+
+        @Parameter(names = {"--url"}, description = "External url where the file to be registered can be downloaded from", required = true,
+                arity = 1)
+        public String url;
 
         @Parameter(names = {"-o", "--" + OUTDIR_PARAM_NAME}, description = "Directory where output files will be saved", required = true,
                 arity = 1)

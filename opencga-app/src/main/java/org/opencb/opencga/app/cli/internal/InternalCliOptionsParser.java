@@ -42,6 +42,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantAnnotateCommandOptions.ANNOTATION_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSamplesFilterCommandOptions.SAMPLE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
@@ -123,7 +124,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand("stats-export", variantCommandOptions.exportVariantStatsCommandOptions);
         variantSubCommands.addCommand("import", variantCommandOptions.importVariantCommandOptions);
 //        variantSubCommands.addCommand("ibs", variantCommandOptions.ibsVariantCommandOptions);
-        variantSubCommands.addCommand("samples", variantCommandOptions.samplesFilterCommandOptions);
+        variantSubCommands.addCommand(SAMPLE_RUN_COMMAND, variantCommandOptions.samplesFilterCommandOptions);
         variantSubCommands.addCommand("histogram", variantCommandOptions.histogramCommandOptions);
         variantSubCommands.addCommand(GWAS_RUN_COMMAND, variantCommandOptions.gwasCommandOptions);
         variantSubCommands.addCommand(SAMPLE_VARIANT_STATS_RUN_COMMAND, variantCommandOptions.sampleVariantStatsCommandOptions);
@@ -166,6 +167,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         JCommander fileSubCommands = jCommander.getCommands().get("files");
         fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
         fileSubCommands.addCommand("unlink", fileCommandOptions.unlinkCommandOptions);
+        fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
     }
 
     @Override

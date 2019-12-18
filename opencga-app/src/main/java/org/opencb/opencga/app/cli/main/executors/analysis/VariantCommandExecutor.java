@@ -39,6 +39,7 @@ import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.io.VcfOutputWriter;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.api.operations.variant.VariantFileDeleteParams;
 import org.opencb.opencga.core.api.variant.*;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.rest.RestResponse;
@@ -62,9 +63,11 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSamplesFilterCommandOptions.SAMPLE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantStatsCommandOptions.STATS_RUN_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationQueryCommandOptions.ANNOTATION_QUERY_COMMAND;
+import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.VariantDeleteCommandOptions.VARIANT_DELETE_COMMAND;
 
 
 /**
@@ -92,6 +95,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             case "index":
                 queryResponse = index();
                 break;
+            case VARIANT_DELETE_COMMAND:
+                queryResponse = fileDelete();
+                break;
             case "query":
                 queryResponse = query();
                 break;
@@ -110,6 +116,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case SAMPLE_VARIANT_STATS_RUN_COMMAND:
                 queryResponse = sampleStats();
+                break;
+            case SAMPLE_RUN_COMMAND:
+                queryResponse = sampleRun();
                 break;
             case SAMPLE_VARIANT_STATS_QUERY_COMMAND:
                 queryResponse = sampleStatsQuery();
@@ -166,6 +175,13 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.aggregated,
                         variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.aggregationMappingFile
                 ));
+    }
+
+    private RestResponse<Job> sampleRun() throws IOException {
+        return openCGAClient.getVariantClient().sampleRun(
+                variantCommandOptions.samplesFilterCommandOptions.toolParams.getStudy(),
+                variantCommandOptions.samplesFilterCommandOptions.toolParams
+        );
     }
 
     private RestResponse<Job> sampleStats() throws IOException {
@@ -275,6 +291,16 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantIndex.genericVariantIndexOptions.overwriteAnnotations,
                         variantIndex.genericVariantIndexOptions.indexSearch
                 ));
+    }
+
+    private RestResponse<Job> fileDelete() throws IOException {
+        VariantCommandOptions.VariantDeleteCommandOptions cliOptions = variantCommandOptions.variantDeleteCommandOptions;
+
+        return openCGAClient.getVariantClient().fileDelete(
+                cliOptions.study,
+                new VariantFileDeleteParams(
+                        cliOptions.genericVariantDeleteOptions.file,
+                        cliOptions.genericVariantDeleteOptions.resume));
     }
 
     private RestResponse query() throws CatalogException, IOException, InterruptedException {

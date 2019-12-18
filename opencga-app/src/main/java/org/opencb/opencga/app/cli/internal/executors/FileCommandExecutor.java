@@ -1,7 +1,8 @@
 package org.opencb.opencga.app.cli.internal.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.file.FileDeleteAction;
+import org.opencb.opencga.analysis.file.FetchAndRegisterTask;
+import org.opencb.opencga.analysis.file.FileDeleteTask;
 import org.opencb.opencga.app.cli.internal.options.FileCommandOptions;
 import org.opencb.opencga.core.exception.ToolException;
 
@@ -31,6 +32,9 @@ public class FileCommandExecutor extends InternalCommandExecutor {
             case "unlink":
                 unlink();
                 break;
+            case "fetch":
+                fetch();
+                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -45,7 +49,7 @@ public class FileCommandExecutor extends InternalCommandExecutor {
         Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         // Prepare analysis parameters and config
-        FileDeleteAction delete = new FileDeleteAction()
+        FileDeleteTask delete = new FileDeleteTask()
                 .setStudy(options.studyId)
                 .setFiles(Arrays.asList(org.apache.commons.lang3.StringUtils.split(options.files, ",")))
                 .setSkipTrash(options.skipTrash);
@@ -61,12 +65,28 @@ public class FileCommandExecutor extends InternalCommandExecutor {
         Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
 
         // Prepare analysis parameters and config
-        FileDeleteAction delete = new FileDeleteAction()
+        FileDeleteTask delete = new FileDeleteTask()
                 .setStudy(options.studyId)
                 .setFiles(Arrays.asList(org.apache.commons.lang3.StringUtils.split(options.files, ",")))
                 .setUnlink(true);
 
         delete.setUp(opencgaHome.toString(), new ObjectMap(), outDir, options.commonOptions.token);
         delete.start();
+    }
+
+    private void fetch() throws ToolException {
+        FileCommandOptions.FetchCommandOptions options = fileCommandOptions.fetchCommandOptions;
+
+        Path outDir = Paths.get(options.outDir);
+        Path opencgaHome = Paths.get(configuration.getWorkspace()).getParent();
+
+        // Prepare analysis parameters and config
+        FetchAndRegisterTask download = new FetchAndRegisterTask()
+                .setStudy(options.studyId)
+                .setPath(options.path)
+                .setUrl(options.url);
+
+        download.setUp(opencgaHome.toString(), new ObjectMap(), outDir, options.commonOptions.token);
+        download.start();
     }
 }

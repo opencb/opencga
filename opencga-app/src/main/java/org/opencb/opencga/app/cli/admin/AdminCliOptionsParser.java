@@ -108,6 +108,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         JCommander migrationSubCommands = this.jCommander.getCommands().get("migration");
         migrationSubCommands.addCommand("v1.3.0", this.migrationCommandOptions.getMigrateV130CommandOptions());
         migrationSubCommands.addCommand("v1.4.0", this.migrationCommandOptions.getMigrateV140CommandOptions());
+        migrationSubCommands.addCommand("v2.0.0", this.migrationCommandOptions.getMigrateV200CommandOptions());
 
     }
 

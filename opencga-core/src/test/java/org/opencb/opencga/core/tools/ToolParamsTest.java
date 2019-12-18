@@ -4,10 +4,7 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -25,6 +22,8 @@ public class ToolParamsTest {
         private Boolean myBooleanNullableTrue = true;
         private int myInteger;
         private Integer myIntegerNullable;
+        private List<String> myList;
+        private List<Integer> myIntList;
         private String myPrivateString = "private!"; // Does not have any getter or setter
 
         public String getMyKey() {
@@ -96,6 +95,24 @@ public class ToolParamsTest {
 
         public MyToolParams setMyIntegerNullable(Integer myIntegerNullable) {
             this.myIntegerNullable = myIntegerNullable;
+            return this;
+        }
+
+        public List<String> getMyList() {
+            return myList;
+        }
+
+        public MyToolParams setMyList(List<String> myList) {
+            this.myList = myList;
+            return this;
+        }
+
+        public List<Integer> getMyIntList() {
+            return myIntList;
+        }
+
+        public MyToolParams setMyIntList(List<Integer> myIntList) {
+            this.myIntList = myIntList;
             return this;
         }
 
@@ -239,4 +256,12 @@ public class ToolParamsTest {
 
     }
 
+    @Test
+    public void testList() {
+        p.updateParams(new ObjectMap("myList", "1,2,3"));
+        p.updateParams(new ObjectMap("myIntList", "1,2,3"));
+
+        assertEquals(Arrays.asList("1", "2", "3"), p.getMyList());
+        assertEquals(Arrays.asList(1, 2, 3), p.getMyIntList());
+    }
 }
