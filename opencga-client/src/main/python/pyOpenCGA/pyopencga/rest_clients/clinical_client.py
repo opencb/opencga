@@ -1,7 +1,8 @@
 from pyopencga.rest_clients._parent_rest_clients import _ParentRestClient, _ParentBasicCRUDClient, _ParentAclRestClient
 from pyopencga.commons import deprecated
 
-class Interpretations(_ParentRestClient, _ParentAclRestClient):
+
+class Interpretations(_ParentAclRestClient):
     """
     This class contains the Interpretations client with methods for the
     Analysis - Clinical webservices
