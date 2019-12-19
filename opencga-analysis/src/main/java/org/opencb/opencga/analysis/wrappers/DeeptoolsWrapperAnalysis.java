@@ -59,8 +59,10 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
             try {
                 // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
                 Command cmd = new Command(getCommandLine())
-                        .setOutputOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDOUT_FILENAME).toFile())))
-                        .setErrorOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDERR_FILENAME).toFile())));
+                        .setOutputOutputStream(
+                                new DataOutputStream(new FileOutputStream(getScratchDir().resolve(STDOUT_FILENAME).toFile())))
+                        .setErrorOutputStream(
+                                new DataOutputStream(new FileOutputStream(getScratchDir().resolve(STDERR_FILENAME).toFile())));
 
                 cmd.run();
 
@@ -75,7 +77,7 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                     }
                 }
                 if (!success) {
-                    File file = new File(getOutDir() + "/" + STDERR_FILENAME);
+                    File file = new File(getScratchDir() + "/" + STDERR_FILENAME);
                     String msg = "Something wrong executing Samtools";
                     if (file.exists()) {
                         msg = StringUtils.join(FileUtils.readLines(file, Charset.defaultCharset()), ". ");
