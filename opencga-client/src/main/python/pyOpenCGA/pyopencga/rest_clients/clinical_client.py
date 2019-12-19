@@ -121,13 +121,13 @@ class Interpretations(_ParentRestClient, _ParentAclRestClient):
     def update_interpretation_comments(self, clinical_analysis, interpretation, data, **options):
         """
         Update comments of an Interpretation
-        URL: /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretations/{interpretation}/comment/update
+        URL: /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretations/{interpretation}/comments/update
 
         :param clinical_analysis: clinical analysis id
         :param interpretation: interpretation id
         """
 
-        return self._post('interpretations', query_id=clinical_analysis, subcategory='comment/update',
+        return self._post('interpretations', query_id=clinical_analysis, subcategory='comments/update',
                           subquery_id=interpretation, data=data, **options)
 
     def update_interpretation_primary_findings(self, clinical_analysis, interpretation, data, **options):
@@ -142,6 +142,7 @@ class Interpretations(_ParentRestClient, _ParentAclRestClient):
         return self._post('interpretations', query_id=clinical_analysis, subcategory='primaryFindings/update',
                           subquery_id=interpretation, data=data, **options)
 
+    @deprecated
     def update_comments(self, clinical_analysis, interpretation, data, action, **options):
         """
         Update comments of an Interpretation
@@ -149,18 +150,8 @@ class Interpretations(_ParentRestClient, _ParentAclRestClient):
 
         :param action: Action to be performed [ADD, SET, REMOVE]
         """
-
-        return self._post('interpretations', query_id=clinical_analysis, subquery_id=interpretation,
-                          subcategory='comments/update', data=data, action=action, **options)
-
-    def update_reported_variants(self, clinical_analysis, interpretation, data, **options):
-        """
-        Update reported variants of an interpretation
-        URL: /{apiVersion}/analysis/clinical/{clinicalAnalysis}/interpretations/{interpretation}/reportedVariants/update
-        """
-
-        return self._post('interpretations', query_id=clinical_analysis, subquery_id=interpretation,
-                           subcategory='reportedVariants/update', data=data, **options)
+        options['action'] = action
+        return self.update_interpretation_comments(clinical_analysis, interpretation, data, **options)
 
 
 class Clinical(_ParentBasicCRUDClient, _ParentAclRestClient):
