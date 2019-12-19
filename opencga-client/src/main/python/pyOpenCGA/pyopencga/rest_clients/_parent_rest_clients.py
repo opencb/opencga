@@ -4,7 +4,7 @@ from pyopencga.retry import retry
 class _ParentRestClient(object):
     """Queries the REST service given the different query params"""
 
-    def __init__(self, configuration, category, session_id=None, login_handler=None, auto_refresh=True):
+    def __init__(self, configuration, category, token=None, login_handler=None, auto_refresh=True):
         """
         :param login_handler: a parameterless method that can log in this connector
         and return a session id
@@ -12,17 +12,17 @@ class _ParentRestClient(object):
         self.auto_refresh = auto_refresh
         self._cfg = configuration
         self._category = category
-        self.session_id = session_id
+        self.token = token
         self.login_handler = login_handler
         self.on_retry = None
 
     def _client_login_handler(self):
         if self.login_handler:
-            self.session_id = self.login_handler()
+            self.token = self.login_handler()
 
     def _refresh_token_client(self):
         if self.login_handler:
-            self.session_id = self.login_handler(refresh=True)
+            self.token = self.login_handler(refresh=True)
 
     @staticmethod
     def _get_query_id_str(query_ids):
@@ -43,7 +43,7 @@ class _ParentRestClient(object):
         def exec_retry():
             return execute(host=self._cfg.host,
                            version=self._cfg.version,
-                           sid=self.session_id,
+                           sid=self.token,
                            category=self._category,
                            subcategory=subcategory,
                            method=method,
@@ -54,7 +54,7 @@ class _ParentRestClient(object):
                            options=options)
 
         def notify_retry(exc_type, exc_val, exc_tb):
-            if self.on_retry:
+            if self.on_retry is not None:
                 self.on_retry(self, exc_type, exc_val, exc_tb, dict(
                     method=method, resource=resource, query_id=query_id,
                     category=self._category, subcategory=subcategory,
@@ -91,7 +91,7 @@ class _ParentBasicCRUDClient(_ParentRestClient):
     def create(self, data, **options):
         return self._post('create', data=data, **options)
 
-    def update(self, query_id, data, **options):
+    def update(self, data, query_id=None, **options):
         return self._post('update', query_id=query_id, data=data, **options)
 
     def delete(self, **options):

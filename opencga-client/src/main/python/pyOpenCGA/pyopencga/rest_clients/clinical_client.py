@@ -7,9 +7,9 @@ class Interpretations(_ParentRestClient):
     Analysis - Clinical webservices
     """
 
-    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
         _category = 'analysis/clinical'
-        super(Interpretations, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
+        super(Interpretations, self).__init__(configuration, _category, token, login_handler, *args, **kwargs)
 
 
     def tool_tiering(self, **options):
@@ -108,12 +108,12 @@ class Clinical(_ParentBasicCRUDClient, _ParentAclRestClient):
     This class contains methods for the Analysis - Clinical webservices
     """
 
-    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
         _category  = 'analysis/clinical'
-        super(Clinical, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
+        super(Clinical, self).__init__(configuration, _category, token, login_handler, *args, **kwargs)
 
         self.configuration = configuration
-        self.session_id = session_id
+        self.token = token
         self.login_handler = login_handler
         self._create_clients()
 
@@ -126,9 +126,9 @@ class Clinical(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         ## [TODO] convert to @properties
         ## [@dgp] SHould I add auto_refresh = self.auto_refresh ??
-        self.interpretations = Interpretations(self.configuration, self.session_id, self.login_handler)
-        ## self.reports = Reports(configuration, session_id, login_handler, *args, **kwargs)
-        ## self.cva = CVAs(configuration, session_id, login_handler, *args, **kwargs)
+        self.interpretations = Interpretations(self.configuration, self.token, self.login_handler)
+        ## self.reports = Reports(configuration, token, login_handler, *args, **kwargs)
+        ## self.cva = CVAs(configuration, token, login_handler, *args, **kwargs)
 
         self.clients = [self.interpretations]
 

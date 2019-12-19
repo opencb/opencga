@@ -1,67 +1,46 @@
 from pyopencga.rest_clients._parent_rest_clients import _ParentRestClient
 
+
 class Variant(_ParentRestClient):
     """
     This class contains method for AnalysisVariant ws
     """
 
-    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
         _category = "analysis/variant"
-        super(Variant, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
+        super(Variant, self).__init__(configuration, _category, token, login_handler, *args, **kwargs)
 
-
-    def index(self, file, **options):
+    def index(self, **options):
         """
-        Index variant files
+        Index variant files into the variant storage
         URL: /{apiVersion}/analysis/variant/index
 
-        :param file: comma separated list of file ids (files or directories)
-        :param study: Study [[user@]project:]study where study and project can
-            be either the id or alias
-        :param outDir: Output directory id
-        :param transform: Boolean (False/True) indicating that only the transform
-            step will be run
-        :param load: Boolean (False/True) indicating that only the load step will
-            be run
-        :param merge: Currently two levels of merge are supported: "basic" mode
-            merge genotypes of the same variants while "advanced" merge multiallelic
-            and overlapping variants. Available values ['ADVANCED' as default, 'BASIC']
-        :param includeExtraFields: Index including other FORMAT fields. Use "all",
-            "none", or CSV with the fields to load.
-        :param aggregated: Default 'none'. Type of aggregated VCF file: none, basic,
-            EVS or ExAC
-        :param calculateStats: Calculate indexed variants statistics after the
-            load step (Boolean False/True).
-        :param annotate: Annotate indexed variants after the load step (Boolean False/True)
-        :param overwrite: Overwrite annotations already present in variants
-            (Boolean False/True)
-        :param indexSearch: Add files to the secondary search index (Boolean False/True)
-        :param resume: Resume a previously failed indexation (Boolean False/True)
-        :param loadSplitData: Indicate that the variants from a sample (or group of
-            samples) split into different files (by chromosome, by type, ...)
-            (Boolean False/True)
-        :param skipPostLoadCheck: Do not execute post load checks over the database
+        :param study: Study [[user@]project:]s…e either the ID or UUID
+        :param jobName: Job name
+        :param Job ID or UUID: Job Description
+        :param jobTags: Job tags
         """
 
-        options['file'] = file
+        return self._post('index', **options)
 
-        return self._get('index', **options)
+    def delete_file(self, **options):
+        """
+        Remove variant files from the variant storage
+        URL: /{apiVersion}/analysis/variant/file/delete
 
-    # def validate(self, file, data, **options):
-    #     """
-    #     Validate a VCF file ??
-    #     URL: /{apiVersion}/analysis/variant/validate
-    #
-    #     :param file: VCF file id, name or path
-    #     """
-    #
-    #     options['file'] = file
-    #
-    #     return self._post('validate', data=data, **options)
+        :param study: Study [[user@]project:]s…e either the ID or UUID
+        :param jobName: Job name
+        :param Job ID or UUID: Job Description
+        :param jobTags: Job tags
+        :param file: Files to remove
+        :param resume: Resume a previously failed indexation
+        """
+
+        return self._delete('file/delete', **options)
 
     def aggregation_stats(self, **options):
         """
-        Fetch variant stats
+        Calculate and fetch aggregation stats
         URL: /{apiVersion}/analysis/variant/aggregationStats
 
         :param fields: List of facet fields separated by semicolons,
@@ -272,28 +251,151 @@ class Variant(_ParentRestClient):
 
         return self._get('query', **options)
 
-    def calculate_family_genotypes(self, family, mode_of_inheritance, **options):
+    def export(self, data, **options):
+        """
+        Filter and export variants from the variant storage to a file
+        URL: /{apiVersion}/analysis/variant/export
+
+        :param include: Fields included in the response, whole JSON path must be provided
+        :param exclude: Fields included in the response, whole JSON path must be provided
+        :param limit: Number of results to be returned
+        :param skip: Number of results to skip
+        :param study: Study [[user@]project:]s…e either the ID or UUID
+        :param jobName: Job name
+        :param Job ID or UUID: Job Description
+        :param jobTags: Job tags
+        :param body: Variant export params
+
+        """
+
+        return self._post('export', data=data, **options)
+
+    def delete_sample_variant_stats(self, **options):
+        """
+        Delete sample variant stats from a sample.
+        URL: /{apiVersion}/analysis/variant/sample/stats/delete
+
+        :param study: Study [[user@]project:]s…e either the ID or UUID
+        :param sample: Sample
+        """
+
+        return self._delete('sample/stats/delete', **options)
+
+    def cohort_stats_run(self, data, **options):
+        """
+        Compute cohort variant stats for the selected list of samples.
+        URL: /{apiVersion}/analysis/variant/cohort/stats/run
+
+        :param study: Study [[user@]project:]s…e either the ID or UUID
+        :param jobName: Job name
+        :param Job ID or UUID: Job Description
+        :param jobTags: Job tags
+
+        """
+
+        return self._post('cohort/stats/run', data=data, **options)
+
+    def cohort_stats_info(self, **options):
+        """
+        Read cohort variant stats from list of cohorts.
+        URL: /{apiVersion}/analysis/variant/cohort/stats/info
+
+        :param study: Study [[user@]project:]s…e either the ID or UUID
+        :param cohort: Comma separated list of cohort names or ids up to a maximum of 100
+        """
+
+        return self._get('cohort/stats/info', **options)
+
+    def cohort_stats_delete(self, **options):
+        """
+        Delete cohort variant stats from a cohort.
+        URL: /{apiVersion}/analysis/variant/cohort/stats/delete
+
+        :param study: Study [[user@]project:]s…e either the ID or UUID
+        :param cohort: Comma separated list of cohort names or ids up to a maximum of 100
+        """
+
+        return self._delete('cohort/stats/delete', **options)
+
+    def gwas_run(self, data, **options):
+        """
+        Run a Genome Wide Association Study between two cohorts.
+        URL: /{apiVersion}/analysis/variant/gwas/run
+
+        :param study: Study [[user@]project:]s…e either the ID or UUID
+        :param jobName: Job name
+        :param Job ID or UUID: Job Description
+        :param jobTags: Job tags
+        """
+
+        return self._post('gwas/run', data=data, **options)
+
+    def plink_run(self, data, **options):
+        """
+        Plink is a whole genome association analysis toolset, designed to
+        perform a range of basic, large-scale analyses.
+        URL: /{apiVersion}/analysis/variant/plink/run
+
+        :param study: Study [[user@]project:]s…e either the ID or UUID
+        :param jobName: Job name
+        :param Job ID or UUID: Job Description
+        :param jobTags: Job tags
+        """
+
+        return self._post('plink/run', data=data, **options)
+
+    def rvtests_run(self, data, **options):
+        """
+        Rvtests is a flexible software package for genetic association studies.
+        URL: /{apiVersion}/analysis/variant/rvtests/run
+
+        :param study: Study [[user@]project:]s…e either the ID or UUID
+        :param jobName: Job name
+        :param Job ID or UUID: Job Description
+        :param jobTags: Job tags
+        """
+
+        return self._post('rvtests/run', data=data, **options)
+
+    def variant_stats_run(self, data, **options):
+        """
+        Compute variant stats for any cohort and any set of variants.
+        Optionally, index the result in the variant storage database.
+        URL: /{apiVersion}/analysis/variant/stats/run
+
+        :param study: Study [[user@]project:]s…e either the ID or UUID
+        :param jobName: Job name
+        :param Job ID or UUID: Job Description
+        :param jobTags: Job tags
+        """
+
+        return self._post('stats/run', data=data, **options)
+
+    def variant_stats_export(self, data, **options):
+        """
+        Export calculated variant stats and frequencies
+        URL: /{apiVersion}/analysis/variant/stats/export
+
+        :param study: Study [[user@]project:]s…e either the ID or UUID
+        :param jobName: Job name
+        :param Job ID or UUID: Job Description
+        :param jobTags: Job tags
+        """
+
+        return self._post('stats/export', data=data, **options)
+
+    def calculate_family_genotypes(self, mode_of_inheritance, **options):
         """
         Calculate the possible genotypes for the members of a family
         URL: /{apiVersion}/analysis/variant/familyGenotypes
 
-        :param family: family id
         :param mode_of_inheritance: mode of inheritance
         :param disease: disease id
         """
 
-        options['family'] = family
         options['modeOfInheritance'] = mode_of_inheritance
 
         return self._get('familyGenotypes', **options)
-
-    # def calculate_variant_stats(self, **options): ## [PENDING]
-    #     """
-    #     Calculate variant stats [PENDING]
-    #     URL: /{apiVersion}/analysis/variant/cohortStats
-    #     """
-    #
-    #     return self._get('cohortStats', **options)
 
     def query_variant_annotations(self, **options):
         """
@@ -326,3 +428,65 @@ class Variant(_ParentRestClient):
         """
 
         return self._get('annotation', subcategory='metadata', **options)
+
+    def variant_sample_run(self, data, **options):
+        """
+        Get samples given a set of variants
+        URL: /{apiVersion}/analysis/variant/sample/run
+
+        :param study: Study [[user@]project:]s…e either the ID or UUID
+        :param jobName: Job name
+        :param Job ID or UUID: Job Description
+        :param jobTags: Job tags
+        """
+
+        return self._post('sample/run', data=data, **options)
+
+    def variant_sample_data(self, **options):
+        """
+        Get sample data of a given variant
+        URL: /{apiVersion}/analysis/variant/sample/data
+
+        :param study: Study [[user@]project:]s…e either the ID or UUID
+        :param variant: Variant
+        :param merge: Do not group by genotype. Return all genotypes merged.
+        :param genotype: Genotypes that the sample must have to be selected
+        """
+
+        return self._get('sample/data', **options)
+
+    def sample_variant_stats_run(self, data, **options):
+        """
+        Compute sample variant stats for the selected list of samples.
+        URL: /{apiVersion}/analysis/variant/sample/stats/run
+
+        :param study: Study [[user@]project:]s…e either the ID or UUID
+        :param jobName: Job name
+        :param Job ID or UUID: Job Description
+        :param jobTags: Job tags
+        """
+
+        return self._post('sample/stats/run', data=data, **options)
+
+    def sample_variant_stats_info(self, **options):
+        """
+        Read sample variant stats from list of samples.
+        URL: /{apiVersion}/analysis/variant/sample/stats/info
+
+        :param study: Study [[user@]project:]s…e either the ID or UUID
+        :param sample: Comma separated list sample IDs or UUIDs up to a maximum of 100
+        """
+
+        return self._get('sample/stats/info', **options)
+
+    def annotation_query(self, **options):
+        """
+        Query variant annotations from any saved versions
+        URL: /{apiVersion}/analysis/variant/annotation/query
+
+        :param id: List of IDs, these can be rs IDs (dbSNP) or variants in the format chrom:start:ref:alt, e.g. rs116600158,19:7177679:C:T
+        :param region: List of regions, these can be just a single chromosome
+        :param annotation_id: Annotation identifier
+        """
+
+        return self._get('annotation/query', **options)

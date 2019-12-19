@@ -1,14 +1,14 @@
 from pyopencga.rest_clients._parent_rest_clients import _ParentBasicCRUDClient, _ParentAclRestClient,  _ParentAnnotationSetRestClient
 
+
 class Individuals(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient):
     """
     This class contains methods for the Individuals webservices
     """
 
-    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
         _category = 'individuals'
-        super(Individuals, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
-
+        super(Individuals, self).__init__(configuration, _category, token, login_handler, *args, **kwargs)
 
     def aggregation_stats(self, **options):
         """

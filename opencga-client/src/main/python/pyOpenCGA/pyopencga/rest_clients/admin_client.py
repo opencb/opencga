@@ -5,9 +5,9 @@ class Admin(_ParentRestClient):
     This class contains methods for the Admin webservices
     """
 
-    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
         _category = 'admin'
-        super(Admin, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
+        super(Admin, self).__init__(configuration, _category, token, login_handler, *args, **kwargs)
 
 
     def sync_users(self, data, **options):

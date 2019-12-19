@@ -8,10 +8,9 @@ class Users(_ParentBasicCRUDClient):
     This class contains method for the Users webservices
     """
 
-    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
         _category = 'users'
-        super(Users, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
-
+        super(Users, self).__init__(configuration, _category, token, login_handler, *args, **kwargs)
 
     def login(self, user, pwd=None, **options):
         """
@@ -44,7 +43,7 @@ class Users(_ParentBasicCRUDClient):
         This method logout the user by deleting the session id, no server call is needed
         """
         
-        self.session_id = None
+        self.token = None
 
     def projects(self, user, **options):
         """
@@ -96,10 +95,10 @@ class Users(_ParentBasicCRUDClient):
         :param action: Action to be performed: ADD or REMOVE a group
         :param data: dict with the following Model:
 
-	{
-	    "id": "string",
-	    "configuration": {}
-	}
+        {
+            "id": "string",
+            "configuration": {}
+        }
         """
         
         return self._post('configs', query_id=user, subcategory='update', data=data, action=action, **options)
@@ -124,7 +123,7 @@ class Users(_ParentBasicCRUDClient):
         :param acton: action to be performed: ADD or REMOVE
         :param data: dict with the following Model:
         
-	{
+        {
             "name": "string",
             "description": "string",
             "bioformat": "string",
@@ -172,7 +171,7 @@ class Users(_ParentBasicCRUDClient):
         :param filter: filter id or name
         :param data: dict with the following Model:
         
-	{
+        {
             "bioformat": "string",
             "description": "string",
             "query": {},

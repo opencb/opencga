@@ -5,9 +5,9 @@ class Tool(_ParentRestClient):
     This class contains methods for the Analysis - Tool webservices
     """
 
-    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
         _category = 'analysis/tool'
-        super(Tool, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
+        super(Tool, self).__init__(configuration, _category, token, login_handler, *args, **kwargs)
 
 
     def execute(self, data, **options):

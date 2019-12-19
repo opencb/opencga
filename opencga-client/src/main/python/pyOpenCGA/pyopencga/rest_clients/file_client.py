@@ -5,10 +5,9 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRe
     This class contains methods for the Files webservices
     """
 
-    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
         _category = 'files'
-        super(Files, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
-
+        super(Files, self).__init__(configuration, _category, token, login_handler, *args, **kwargs)
 
     def aggregation_stats(self, **options):
         """
@@ -205,3 +204,37 @@ class Files(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRe
         """
 
         return self._get('download', query_id=file, **options)
+
+    def unlink(self, files, **options):
+        """
+        Unlink linked files and folders"
+        URL: /{apiVersion}/files/{files}/unlink
+
+        :param files: Comma separated list of file ids, names or paths.
+        :param study: Study [[user@]project:]study where study and project can be either the id or alias
+        """
+
+        return self._delete('unlink', query_id=files, **options)
+
+    def link(self, data, **options):
+        """
+        Link an external file into catalog.
+        URL: /{apiVersion}/files/link
+
+        :param study: Study [[user@]project:]study where study and project can be either the id or alias
+        :param parents: Create the parent directories if they do not exist
+        """
+
+        return self._post('link', data=data, **options)
+
+    def fetch(self, data, **options):
+        """
+        Download an external file to catalog and register it
+        URL: /{apiVersion}/files/fetch
+
+        :param study: Study [[user@]project:]study where study and project can be either the id or alias
+        :param path: Folder path where the file will be downloaded
+        :param url: External url where the file to be registered can be downloaded from
+        """
+
+        return self._post('fetch', data=data, **options)

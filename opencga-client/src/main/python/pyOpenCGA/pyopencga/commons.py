@@ -1,6 +1,8 @@
+import sys
 import itertools
 import threading
 from time import sleep
+import warnings
 
 import requests
 
@@ -14,73 +16,156 @@ except ImportError:
 _CALL_BATCH_SIZE = 2000
 _NUM_THREADS_DEFAULT = 4
 
+
+def deprecated(func):
+    """Prints a warning for functions marked as deprecated"""
+    def new_func(*args, **kwargs):
+        warnings.simplefilter('always', DeprecationWarning)  # turn off filter
+        warnings.warn('Call to deprecated function "{}".'.format(func.__name__),
+                      category=DeprecationWarning, stacklevel=2)
+        warnings.simplefilter('default', DeprecationWarning)  # reset filter
+        return func(*args, **kwargs)
+    return new_func
+
+
 class RESTResponse:
     def __init__(self, response):
         self.apiVersion = response.get('apiVersion')
         self.time = response.get('time')
-        self.warnings = response.get('warnings')
-        self.error = response.get('error')
+        self.events = response.get('events')
         self.params = response.get('params')
         self.responses = response.get('responses')
 
         # TODO: Remove deprecated response in future release. Added for backwards compatibility
         self.response = response.get('responses')
 
+        # TODO: Remove deprecated result. Added for backwards compatibility
         for query_result in self.responses:
-            # TODO: Remove deprecated result. Added for backwards compatibility
-            query_result['result'] = query_result['results']
+            if 'results' in query_result:
+                query_result['result'] = query_result['results']
 
-
-    # TODO: Remove deprecated method in future release
+    @deprecated
     def first(self):
         return self.responses[0]
 
-    def result(self, result_pos=None, response_pos=0):
-        """
-        Return the result 'result_pos' of the response 'response_pos'.
-        If no 'response_pos' is passed, it will return the corresponding result from the first response.
-        """
-        if result_pos is None:
-            raise Exception('Missing mandatory field result_pos')
-        return self.responses[response_pos]['results'][result_pos]
-
-    def results(self, response_pos=0):
+    def get_results(self, response_pos=0):
         """
         Return the list of results of the response_pos response.
         """
         return self.responses[response_pos]
 
-    def responses(self):
+    def get_result(self, result_pos, response_pos=0):
+        """
+        Return the result 'result_pos' of the response 'response_pos'.
+        """
+        return self.responses[response_pos]['results'][result_pos]
+
+    def get_responses(self):
         """
         Return the list of responses
         """
         return self.responses
 
-    def response(self, response_pos=None):
+    def get_response(self, response_pos):
         """
         Return the response_pos response.
         """
-        if response_pos is None:
-            raise Exception('Missing mandatory field response_pos')
         return self.responses[response_pos]
 
-    def num_matches(self):
+    def get_all_results(self):
         """
-        Return the total number of matches taking of all the DataResponses
+        Return all results from all responses as an iterator
         """
-        num_matches = 0
-        for query_result in self.responses:
-            num_matches += query_result['numMatches']
-        return num_matches
+        for response in self.responses:
+            for result in response['results']:
+                yield result
 
-    def num_results(self):
+    def get_response_events(self, name=None):
         """
-        Return the total number of results taking of all the DataResponses
+        Return response events by name
         """
-        num_results = 0
-        for query_result in self.responses:
-            num_results += query_result['numResults']
-        return num_results
+        event_names = ['INFO', 'WARNING', 'ERROR']
+        if name is None or self.events is None:
+            return self.events or []
+        elif name in event_names:
+            return [event for event in self.events if event['name'] == name]
+        else:
+            msg = 'Argument "type" must be one of the following values: "{}"'
+            raise ValueError(msg.format(', '.join(event_names)))
+
+    def get_result_events(self, name=None, response_pos=0):
+        """Return result events by name and position"""
+        event_names = ['INFO', 'WARNING', 'ERROR']
+        response = self.responses[response_pos]
+        if name is None:
+            return response['events'] \
+                if 'events' in response and response['events'] else []
+        elif name in event_names:
+            return [event for event in response['events'] if event['name'] == name] \
+                if 'events' in response and response['events'] else []
+        else:
+            msg = 'Argument "type" must be one of the following values: "{}"'
+            raise ValueError(msg.format(', '.join(event_names)))
+
+    def get_num_matches(self, response_pos=None):
+        """
+        Return number of matches
+        """
+        if response_pos is not None:
+            return self.responses[response_pos]['numMatches']
+        else:
+            num_matches = 0
+            for query_result in self.responses:
+                num_matches += query_result['numMatches']
+            return num_matches
+
+    def get_num_results(self, response_pos=None):
+        """
+        Return number of results
+        """
+        if response_pos is not None:
+            return self.responses[response_pos]['numResults']
+        else:
+            num_results = 0
+            for query_result in self.responses:
+                num_results += query_result['numResults']
+            return num_results
+
+    def get_num_inserted(self, response_pos=None):
+        """
+        Return number of inserted
+        """
+        if response_pos is not None:
+            return self.responses[response_pos]['numInserted']
+        else:
+            num_inserted = 0
+            for query_result in self.responses:
+                num_inserted += query_result['numInserted']
+            return num_inserted
+
+    def get_num_updated(self, response_pos=None):
+        """
+        Return number of updated
+        """
+        if response_pos is not None:
+            return self.responses[response_pos]['numUpdated']
+        else:
+            num_updated = 0
+            for query_result in self.responses:
+                num_updated += query_result['numUpdated']
+            return num_updated
+
+    def get_num_deleted(self, response_pos=None):
+        """
+        Return number of deleted
+        """
+        if response_pos is not None:
+            return self.responses[response_pos]['numDeleted']
+        else:
+            num_deleted = 0
+            for query_result in self.responses:
+                num_deleted += query_result['numDeleted']
+            return num_deleted
 
 
 def _create_rest_url(host, version, sid, category, resource, subcategory=None, query_id=None,
@@ -114,7 +199,12 @@ def _create_rest_url(host, version, sid, category, resource, subcategory=None, q
     if options is not None:
         opts = []
         for k, v in options.items():
-            opts.append(k + '=' + str(v))
+            if k == 'debug':
+                continue
+            if isinstance(v, list):
+                opts.append(k + '=' + ','.join(map(str, v)))
+            else:
+                opts.append(k + '=' + str(v))
         if opts:
             url += '?' + '&'.join(opts)
 
@@ -182,7 +272,10 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
                                        second_query_id=second_query_id,
                                        resource=resource,
                                        **opts)
-        # print(url)  # DEBUG
+
+        # DEBUG param
+        if opts is not None and 'debug' in opts and opts['debug']:
+            sys.stderr.write(url + '\n')
 
         # Getting REST response
         if method == 'get':

@@ -5,9 +5,9 @@ class Meta(_ParentRestClient):
     This class contains methods for the Meta webservice
     """
 
-    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
         _category = "meta"
-        super(Meta, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
+        super(Meta, self).__init__(configuration, _category, token, login_handler, *args, **kwargs)
 
 
     def about(self, **options):
@@ -33,3 +33,11 @@ class Meta(_ParentRestClient):
         """
 
         return self._get('status', **options)
+
+    def api(self, **options):
+        """
+        API endpoints.
+        URL: /{apiVersion}/meta/api
+        """
+
+        return self._get('api', **options)

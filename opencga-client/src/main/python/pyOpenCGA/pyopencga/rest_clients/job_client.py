@@ -5,10 +5,9 @@ class Jobs(_ParentBasicCRUDClient, _ParentAclRestClient):
     This class cotains methods for the Jobs webservice
     """
 
-    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
         _category = 'jobs'
-        super(Jobs, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
-
+        super(Jobs, self).__init__(configuration, _category, token, login_handler, *args, **kwargs)
 
     def search(self, **options):
         """
@@ -38,14 +37,3 @@ class Jobs(_ParentBasicCRUDClient, _ParentAclRestClient):
             options['skipCount'] = True
 
         return self._get('search', **options)
-
-    def visit(self, job, **options):
-        """
-        Increment job visits
-        URL: /{apiVersion}/jobs/{jobId}/visit
-
-        :param job: jobId
-        :param study: Study [[user@]project:]study where study and project can be either the id or alias
-        """
-
-        return self._get('visit', query_id=job, **options)

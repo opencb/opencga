@@ -5,10 +5,9 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
     This class contains method for the Studies webservices
     """
 
-    def __init__(self, configuration, session_id=None, login_handler=None, *args, **kwargs):
+    def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
         _category = 'studies'
-        super(Studies, self).__init__(configuration, _category, session_id, login_handler, *args, **kwargs)
-
+        super(Studies, self).__init__(configuration, _category, token, login_handler, *args, **kwargs)
 
     def aggregation_stats(self, study, **options):
         """
@@ -131,7 +130,6 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         """
 
         return self._post('groups', query_id=study, subcategory='update', data=data, action=action, **options)
-
 
     def update_users_from_group(self, study, group, data, action, **options):
         """
