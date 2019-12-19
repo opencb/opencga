@@ -23,10 +23,11 @@ public class AnnotationIndexPutBuilderTest {
                     i % 2 == 0,
                     (short) i,
                     (byte) i,
+                    new byte[Integer.bitCount((short) i)],
                     new byte[]{
                             (byte) ((i & 0b1100) >> 2),
                             (byte) (i & 0b0011)},
-                    new byte[Integer.bitCount((short) i)]));
+                    i % 2 == 0, (byte) i));
         }
 
         Put put = new Put(new byte[]{0});
@@ -95,10 +96,12 @@ public class AnnotationIndexPutBuilderTest {
                     false,
                     (short) 0,
                     (byte) 0,
+                    new byte[0],
                     new byte[]{
                             (byte) pfValue++,
                             (byte) pfValue++,
-                            (byte) pfValue++}, new byte[0]));
+                            (byte) pfValue++},
+                    false, (byte) 0));
         }
 
         Put put = new Put(new byte[]{0});

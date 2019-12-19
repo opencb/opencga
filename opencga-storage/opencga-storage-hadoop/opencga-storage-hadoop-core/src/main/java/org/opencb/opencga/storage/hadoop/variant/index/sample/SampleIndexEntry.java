@@ -159,6 +159,10 @@ public class SampleIndexEntry {
         private int populationFrequencyIndexOffset;
         private int populationFrequencyIndexLength;
 
+        private byte[] clinicalIndex;
+        private int clinicalIndexOffset;
+        private int clinicalIndexLength;
+
         private byte[] parentsIndex;
         private int parentsIndexOffset;
         private int parentsIndexLength;
@@ -361,6 +365,21 @@ public class SampleIndexEntry {
             this.populationFrequencyIndex = populationFrequencyIndex;
             this.populationFrequencyIndexOffset = offset;
             this.populationFrequencyIndexLength = length;
+            return this;
+        }
+
+        public byte[] getClinicalIndex() {
+            return clinicalIndex;
+        }
+
+        public byte getClinicalIndex(int idx) {
+            return clinicalIndex[clinicalIndexOffset + idx];
+        }
+
+        public SampleIndexGtEntry setClinicalIndex(byte[] clinicalIndex, int offset, int length) {
+            this.clinicalIndex = clinicalIndex;
+            this.clinicalIndexOffset = offset;
+            this.clinicalIndexLength = length;
             return this;
         }
 

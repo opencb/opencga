@@ -8,10 +8,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.ConsequenceType;
-import org.opencb.biodata.models.variant.avro.PopulationFrequency;
-import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixKeyFactory;
 import org.opencb.opencga.storage.hadoop.variant.index.IndexUtils;
@@ -73,11 +70,21 @@ public class AnnotationIndexConverter {
     public static final byte BT_OTHER_NON_PSEUDOGENE =           (byte) (1 << 6); // -> Other, non_pseudogene
     public static final byte BT_PROTEIN_CODING_MASK =            (byte) (1 << 7);
 
+    public static final byte CLINICAL_SOMATIC_MASK =             (byte) (1 << 0);
+    public static final byte CLINICAL_LIKELY_BENIGN_MASK =       (byte) (1 << 1);
+    public static final byte CLINICAL_VUS_MASK =                 (byte) (1 << 2);
+    public static final byte CLINICAL_LIKELY_PATHOGENIC_MASK =   (byte) (1 << 3);
+    public static final byte CLINICAL_PATHOGENIC_MASK =          (byte) (1 << 4);
+    public static final byte CLINICAL_TARGET_DRUG_MASK =         (byte) (1 << 5); // TODO
+    public static final byte CLINICAL_PGX =                      (byte) (1 << 6); // TODO
+    public static final byte CLINICAL_8_UNUSED_MASK =            (byte) (1 << 7);
+
     public static final byte[] COLUMN_FMAILY = Bytes.toBytes("0");
     public static final byte[] VALUE_COLUMN = Bytes.toBytes("v");
     public static final byte[] CT_VALUE_COLUMN = Bytes.toBytes("ct");
     public static final byte[] BT_VALUE_COLUMN = Bytes.toBytes("bt");
     public static final byte[] CT_BT_VALUE_COLUMN = Bytes.toBytes("cb");
+    public static final byte[] CLINICAL_VALUE_COLUMN = Bytes.toBytes("cl");
     public static final byte[] POP_FREQ_VALUE_COLUMN = Bytes.toBytes("pf");
     public static final int VALUE_LENGTH = 1;
     public static final String TRANSCRIPT_FLAG_BASIC = "basic";
@@ -132,6 +139,7 @@ public class AnnotationIndexConverter {
         byte bt = 0;
         byte[] pf = null;
         byte[] ctBtIndex = null;
+        byte clinical = 0;
 
         for (Cell cell : result.rawCells()) {
             if (CellUtil.matchingQualifier(cell, VALUE_COLUMN)) {
@@ -140,6 +148,8 @@ public class AnnotationIndexConverter {
                 ct = Bytes.toShort(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
             } else if (CellUtil.matchingQualifier(cell, BT_VALUE_COLUMN)) {
                 bt = cell.getValueArray()[cell.getValueOffset()];
+            } else if (CellUtil.matchingQualifier(cell, CLINICAL_VALUE_COLUMN)) {
+                clinical = cell.getValueArray()[cell.getValueOffset()];
             } else if (CellUtil.matchingQualifier(cell, CT_BT_VALUE_COLUMN)) {
                 ctBtIndex = CellUtil.cloneValue(cell);
             } else if (CellUtil.matchingQualifier(cell, POP_FREQ_VALUE_COLUMN)) {
@@ -148,7 +158,9 @@ public class AnnotationIndexConverter {
         }
 
         return Pair.of(variant,
-                new AnnotationIndexEntry(summary, IndexUtils.testIndex(summary, INTERGENIC_MASK, INTERGENIC_MASK), ct, bt, pf, ctBtIndex));
+                new AnnotationIndexEntry(summary,
+                        IndexUtils.testIndex(summary, INTERGENIC_MASK, INTERGENIC_MASK), ct, bt, ctBtIndex, pf,
+                        IndexUtils.testIndex(summary, CLINICAL_MASK, CLINICAL_MASK), clinical));
     }
 
     public AnnotationIndexEntry convert(VariantAnnotation variantAnnotation) {
@@ -162,6 +174,9 @@ public class AnnotationIndexConverter {
         boolean[][] ctBtcombinations = new boolean[16][8];
 
         boolean intergenic = false;
+
+        byte clinicalIndex = 0;
+        boolean clinical = false;
 
         if (variantAnnotation.getConsequenceTypes() != null) {
             for (ConsequenceType ct : variantAnnotation.getConsequenceTypes()) {
@@ -231,8 +246,36 @@ public class AnnotationIndexConverter {
 
         if (CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {
             b |= CLINICAL_MASK;
+            clinical = true;
+            for (EvidenceEntry evidenceEntry : variantAnnotation.getTraitAssociation()) {
+                if (evidenceEntry.getSomaticInformation() != null) {
+                        clinicalIndex |= CLINICAL_SOMATIC_MASK;
+                }
+                if (evidenceEntry.getVariantClassification() != null
+                        && evidenceEntry.getVariantClassification().getClinicalSignificance() != null) {
+                    switch (evidenceEntry.getVariantClassification().getClinicalSignificance()) {
+                        case likely_benign:
+                            clinicalIndex |= CLINICAL_LIKELY_BENIGN_MASK;
+                            break;
+                        case VUS:
+                            clinicalIndex |= CLINICAL_VUS_MASK;
+                            break;
+                        case likely_pathogenic:
+                            clinicalIndex |= CLINICAL_LIKELY_PATHOGENIC_MASK;
+                            break;
+                        case pathogenic:
+                            clinicalIndex |= CLINICAL_PATHOGENIC_MASK;
+                            break;
+                        case uncertain_significance:
+                        case benign:
+                        default:
+                            // Nothing
+                            break;
+                    }
+                }
+            }
         }
-        return new AnnotationIndexEntry(b, intergenic, ctIndex, btIndex, popFreqIndex, ctBtCombination);
+        return new AnnotationIndexEntry(b, intergenic, ctIndex, btIndex, ctBtCombination, popFreqIndex, clinical, clinicalIndex);
     }
 
     private int maskPosition(byte b) {
