@@ -20,6 +20,7 @@ package org.opencb.opencga.app.cli.admin.executors;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
+import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.server.RestServer;
 import org.opencb.opencga.server.grpc.AdminServiceGrpc;
@@ -34,7 +35,7 @@ import java.nio.file.Paths;
 /**
  * Created by imedina on 02/03/15.
  */
-public class ServerCommandExecutor extends AdminCommandExecutor {
+public class ServerCommandExecutor extends CommandExecutor {
 
     private AdminCliOptionsParser.ServerCommandOptions serverCommandOptions;
 
