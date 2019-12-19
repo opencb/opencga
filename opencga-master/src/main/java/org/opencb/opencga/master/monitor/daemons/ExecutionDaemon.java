@@ -47,6 +47,7 @@ import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.acls.AclParams;
@@ -443,8 +444,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private File getValidDefaultOutDir(Job job) throws CatalogException {
-        File folder = fileManager.createFolder(job.getStudyUuid(), "JOBS/" + job.getUserId() + "/" + job.getId(), new File.FileStatus(),
-                true, "Job " + job.getTool().getId(), QueryOptions.empty(), token).first();
+        File folder = fileManager.createFolder(job.getStudyUuid(), "JOBS/" + job.getUserId() + "/" + TimeUtils.getDay() + "/" + job.getId(),
+                new File.FileStatus(), true, "Job " + job.getTool().getId(), QueryOptions.empty(), token).first();
 
         // By default, OpenCGA will not create the physical folders until there is a file, so we need to create it manually
         try {

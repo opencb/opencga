@@ -260,7 +260,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public RestServerCommandOptions restServerCommandOptions;
         public GrpcServerCommandOptions grpcServerCommandOptions;
 
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions  commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         public ServerCommandOptions() {
             this.restServerCommandOptions = new RestServerCommandOptions();
@@ -682,13 +682,16 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     public class RestServerCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         @Parameter(names = {"--start"}, description = "File with the new tool to be installed", arity = 0)
         public boolean start;
 
         @Parameter(names = {"--stop"}, description = "File with the new tool to be installed", arity = 0)
         public boolean stop;
+
+        @Parameter(names = {"--port"}, description = "REST port to be used", arity = 1)
+        public int port;
 
         @Parameter(names = {"--bg", "--background"}, description = "Run the server in background as a daemon", arity = 0)
         public boolean background;
@@ -698,7 +701,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     public class GrpcServerCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         @Parameter(names = {"--start"}, description = "File with the new tool to be installed", arity = 0)
         public boolean start;

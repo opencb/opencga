@@ -211,23 +211,31 @@ public class OpenCGAWSServer {
         // We must load the configuration files and init catalogManager, storageManagerFactory and Logger only the first time.
         // We first read 'config-dir' parameter passed
         ServletContext context = httpServletRequest.getServletContext();
-        String configDirString = context.getInitParameter("config-dir");
-        if (StringUtils.isEmpty(configDirString)) {
-            // If not environment variable then we check web.xml parameter
-            if (StringUtils.isNotEmpty(context.getInitParameter("OPENCGA_HOME"))) {
-                configDirString = context.getInitParameter("OPENCGA_HOME") + "/conf";
-            } else if (StringUtils.isNotEmpty(System.getenv("OPENCGA_HOME"))) {
-                // If not exists then we try the environment variable OPENCGA_HOME
-                configDirString = System.getenv("OPENCGA_HOME") + "/conf";
-            } else {
-                logger.error("No valid configuration directory provided!");
+//        String configDirString = context.getInitParameter("config-dir");
+//        if (StringUtils.isEmpty(configDirString)) {
+        // If not environment variable then we check web.xml parameter
+        String opencgaHomeStr = System.getenv("OPENCGA_HOME");
+        if (StringUtils.isEmpty(opencgaHomeStr)) {
+            opencgaHomeStr = context.getInitParameter("OPENCGA_HOME");
+            if (StringUtils.isEmpty(opencgaHomeStr)) {
+                logger.error("No valid OpenCGA home directory provided!");
             }
         }
+        opencgaHome = Paths.get(opencgaHomeStr);
+
+//        if (StringUtils.isNotEmpty(context.getInitParameter("OPENCGA_HOME"))) {
+//            configDirString = context.getInitParameter("OPENCGA_HOME") + "/conf";
+//        } else if (StringUtils.isNotEmpty(opencgaHomeStr)) {
+//            // If not exists then we try the environment variable OPENCGA_HOME
+//            configDirString = opencgaHomeStr + "/conf";
+//        } else {
+//            logger.error("No valid configuration directory provided!");
+//        }
+//        }
+
 
         // Check and execute the init methods
-        java.nio.file.Path configDirPath = Paths.get(configDirString);
-        opencgaHome = configDirPath.getParent();
-
+        java.nio.file.Path configDirPath = opencgaHome.resolve("conf");
         if (Files.exists(configDirPath) && Files.isDirectory(configDirPath)) {
             logger.info("|  * Configuration folder: '{}'", configDirPath.toString());
             initOpenCGAObjects(configDirPath);
@@ -240,7 +248,7 @@ public class OpenCGAWSServer {
             logger.info("|  * Server logfile: " + opencgaHome.resolve("logs").resolve("server.log"));
             initLogger(opencgaHome.resolve("logs"));
         } else {
-            errorMessage = "No valid configuration directory provided: '" + configDirString + "'";
+            errorMessage = "No valid configuration directory provided: '" + configDirPath.toString() + "'";
             logger.error(errorMessage);
         }
 

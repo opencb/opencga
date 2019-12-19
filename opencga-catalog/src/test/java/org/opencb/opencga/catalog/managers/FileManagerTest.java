@@ -1641,8 +1641,6 @@ public class FileManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().updateGroup(studyFqn, "admins", new GroupParams("user2", GroupParams.Action.ADD), sessionIdUser);
 
         // and try the same action again
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().getDefault();
-        ioManager.deleteDirectory(UriUtils.createUri("/tmp/other"));
         result = fileManager.moveAndRegister(studyFqn, copy, Paths.get("/tmp/other/"), "a/b/c/", sessionIdUser2);
         assertEquals("a/b/c/variant-test-file.vcf.gz", result.first().getPath());
         assertEquals("/tmp/other/variant-test-file.vcf.gz", Paths.get(result.first().getUri()).toString());

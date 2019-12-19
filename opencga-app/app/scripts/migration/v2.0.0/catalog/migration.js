@@ -22,41 +22,44 @@ db.getCollection("file").update({"tags": null}, {"$set": {"tags": []}}, {"multi"
 db.getCollection("dataset").drop()
 
 // Add new opencga administrator user to user collection #1425
-var metadata = db.getCollection("metadata").findOne({});
-db.getCollection("user").insert({
-    "id" : "opencga",
-    "name" : "opencga",
-    "email" : metadata["admin"]["email"],
-    "password" : metadata["admin"]["password"],
-    "organization" : "",
-    "account" : {
-        "type" : "ADMINISTRATOR",
-        "creationDate" : metadata["creationDate"],
-        "expirationDate" : "",
-        "authOrigin" : null,
-        "authentication" : {
-            "id" : "internal",
-            "application" : false
-        }
-    },
-    "status" : {
-        "name" : "READY",
-        "date" : metadata["creationDate"],
-        "message" : ""
-    },
-    "lastModified" : metadata["creationDate"],
-    "size" : -1,
-    "quota" : -1,
-    "projects" : [ ],
-    "tools" : [ ],
-    "configs" : {
-        "filters" : [ ]
-    },
-    "attributes" : {
-    }
-});
-// Remove from metadata collection the admin credentials
-db.getCollection("metadata").update({}, {"$unset": {"admin.email": "", "admin.password": ""}})
+var user = db.getCollection("user").findOne({"id": "opencga"});
+
+if (user === null) {
+    var metadata = db.getCollection("metadata").findOne({});
+    db.getCollection("user").insert({
+        "id": "opencga",
+        "name": "opencga",
+        "email": metadata["admin"]["email"],
+        "password": metadata["admin"]["password"],
+        "organization": "",
+        "account": {
+            "type": "ADMINISTRATOR",
+            "creationDate": metadata["creationDate"],
+            "expirationDate": "",
+            "authOrigin": null,
+            "authentication": {
+                "id": "internal",
+                "application": false
+            }
+        },
+        "status": {
+            "name": "READY",
+            "date": metadata["creationDate"],
+            "message": ""
+        },
+        "lastModified": metadata["creationDate"],
+        "size": -1,
+        "quota": -1,
+        "projects": [],
+        "tools": [],
+        "configs": {
+            "filters": []
+        },
+        "attributes": {}
+    });
+    // Remove from metadata collection the admin credentials
+    db.getCollection("metadata").update({}, {"$unset": {"admin.email": "", "admin.password": ""}})
+}
 
 
 // TODO: Add indexes for new "deleted" collections
