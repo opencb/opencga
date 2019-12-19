@@ -55,18 +55,6 @@ public class AdminMain {
                         break;
                 }
             }
-            // Exception with subcommand server
-            try {
-                // Server is the only subcommand that does not require an admin password
-                cliOptionsParser.parse(args);
-                if ("server".equals(cliOptionsParser.getCommand())) {
-                    passwordRequired = false;
-                }
-            } catch (ParameterException e) {
-                System.err.println(e.getMessage());
-                cliOptionsParser.printUsage();
-                System.exit(1);
-            }
 
             if (passwordRequired) {
                 args = org.apache.commons.lang3.ArrayUtils.addAll(args, "--password");
