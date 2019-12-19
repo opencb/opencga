@@ -34,8 +34,10 @@ import java.nio.file.Paths;
  */
 public abstract class AbstractStorageServer {
 
-    protected int port;
+    @Deprecated
     protected Path configDir;
+    protected Path opencgaHome;
+    protected int port;
 
     protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
@@ -46,13 +48,15 @@ public abstract class AbstractStorageServer {
     @Deprecated
     protected String defaultStorageEngine;
 
-    protected static Logger logger = LoggerFactory.getLogger("org.opencb.opencga.server.AbstractStorageServer");
+    protected Logger logger;
 
 
+    @Deprecated
     public AbstractStorageServer() {
         initDefaultConfigurationFiles();
     }
 
+    @Deprecated
     public AbstractStorageServer(int port, String defaultStorageEngine) {
         initDefaultConfigurationFiles();
 
@@ -64,24 +68,44 @@ public abstract class AbstractStorageServer {
         }
     }
 
-    public AbstractStorageServer(Path configDir) {
-        this.configDir = configDir;
-        initConfigurationFiles(configDir);
+    public AbstractStorageServer(Path opencgaHome) {
+        this(opencgaHome, 0);
+    }
 
-        this.port = 0;
+    public AbstractStorageServer(Path opencgaHome, int port) {
+        this.opencgaHome = opencgaHome;
+        this.port = port;
 
-        if (storageConfiguration != null) {
-            this.defaultStorageEngine = storageConfiguration.getVariant().getDefaultEngine();
+        init();
+    }
+
+    private void init() {
+        logger = LoggerFactory.getLogger(this.getClass());
+
+        initConfigurationFiles(opencgaHome);
+
+        if (this.port == 0) {
+            this.port = configuration.getServer().getRest().getPort();
         }
     }
 
-    public AbstractStorageServer(Configuration configuration, StorageConfiguration storageConfiguration) {
-        logger.info("Loading configuration files");
-        this.configuration = configuration;
-        this.storageConfiguration = storageConfiguration;
-        this.port = configuration.getServer().getRest().getPort();
+    private void initConfigurationFiles(Path opencgaHome) {
+        try {
+            if (opencgaHome != null && Files.exists(opencgaHome) && Files.isDirectory(opencgaHome)
+                    && Files.exists(opencgaHome.resolve("conf"))) {
+                logger.info("Loading configuration files from '{}'", opencgaHome.toString());
+//                generalConfiguration = GeneralConfiguration.load(GeneralConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
+                configuration = Configuration
+                        .load(new FileInputStream(new File(opencgaHome.resolve("conf").toFile().getAbsolutePath() + "/configuration.yml")));
+                storageConfiguration = StorageConfiguration
+                        .load(new FileInputStream(new File(opencgaHome.resolve("conf").toFile().getAbsolutePath() + "/storage-configuration.yml")));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
+    @Deprecated
     private void initDefaultConfigurationFiles() {
         try {
             if (System.getenv("OPENCGA_HOME") != null) {
@@ -93,21 +117,6 @@ public abstract class AbstractStorageServer {
                         .load(Configuration.class.getClassLoader().getResourceAsStream("configuration.yml"));
                 storageConfiguration = StorageConfiguration
                         .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void initConfigurationFiles(Path configDir) {
-        try {
-            if (configDir != null && Files.exists(configDir) && Files.isDirectory(configDir)) {
-                logger.info("Loading configuration files from '{}'", configDir.toString());
-//                generalConfiguration = GeneralConfiguration.load(GeneralConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
-                configuration = Configuration
-                        .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/configuration.yml")));
-                storageConfiguration = StorageConfiguration
-                        .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/storage-configuration.yml")));
             }
         } catch (IOException e) {
             e.printStackTrace();

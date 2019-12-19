@@ -17,19 +17,15 @@
 package org.opencb.opencga.server;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.glassfish.jersey.media.multipart.MultiPartFeature;
-import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.servlet.ServletContainer;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.server.rest.AdminRestWebService;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.DispatcherType;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.EnumSet;
+import java.util.Optional;
 
 /**
  * Created by imedina on 02/01/16.
@@ -37,65 +33,36 @@ import java.util.EnumSet;
 public class RestServer extends AbstractStorageServer {
 
     private static Server server;
-
+//    private Path opencgaHome;
     private boolean exit;
 
-    public RestServer() {
+    public RestServer(Path opencgaHome) {
+        this(opencgaHome, 0);
     }
 
-    public RestServer(int port, String defaultStorageEngine) {
-        super(port, defaultStorageEngine);
-
-        init();
-    }
-
-    public RestServer(Path configDir) {
-        super(configDir);
-
-        init();
-    }
-
-    public RestServer(Configuration configuration, StorageConfiguration storageConfiguration) {
-        super(configuration, storageConfiguration);
-
-        init();
-    }
-
-    @Deprecated
-    public RestServer(StorageConfiguration storageConfiguration) {
-        super(storageConfiguration.getServer().getRest().getPort(), storageConfiguration.getVariant().getDefaultEngine());
-        this.storageConfiguration = storageConfiguration;
-
-        logger = LoggerFactory.getLogger(this.getClass());
-    }
-
-    private void init() {
-        logger = LoggerFactory.getLogger(this.getClass());
-
-        if (configuration != null) {
-            this.port = configuration.getServer().getRest().getPort();
-        }
+    public RestServer(Path opencgaHome, int port) {
+        super(opencgaHome, port);
     }
 
     @Override
     public void start() throws Exception {
-        ResourceConfig resourceConfig = new ResourceConfig();
-        resourceConfig.packages(true, "org.opencb.opencga.server.rest");
-
-        // Registering MultiPart class for POST forms
-        resourceConfig.register(MultiPartFeature.class);
-
-        ServletContainer sc = new ServletContainer(resourceConfig);
-        ServletHolder sh = new ServletHolder("opencga", sc);
-
         server = new Server(port);
 
-        ServletContextHandler context = new ServletContextHandler(server, null, ServletContextHandler.SESSIONS);
-        context.addServlet(sh, "/opencga/webservices/rest/*");
-        context.setInitParameter("config-dir", configDir.toFile().toString());
+        WebAppContext webapp = new WebAppContext();
+        Optional<Path> warPath = Files.list(opencgaHome)
+                .filter(path -> path.toString().endsWith("war"))
+                .findFirst();
 
-        // To add CORS Java filtert class to Jetty
-        context.addFilter(CORSFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ERROR));
+        // Check is a war file has been found in opencgaHome
+        if (!warPath.isPresent()) {
+            throw new Exception("No war file found at: " + opencgaHome.toString());
+        }
+
+        String opencgaVersion = warPath.get().toFile().getName().replace(".war", "");
+        webapp.setContextPath("/" + opencgaVersion);
+        webapp.setWar(warPath.get().toString());
+        webapp.setInitParameter("OPENCGA_HOME", opencgaHome.toFile().toString());
+        server.setHandler(webapp);
 
         server.start();
         logger.info("REST server started, listening on {}", port);

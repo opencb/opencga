@@ -690,6 +690,9 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @Parameter(names = {"--stop"}, description = "File with the new tool to be installed", arity = 0)
         public boolean stop;
 
+        @Parameter(names = {"--port"}, description = "REST port to be used", arity = 1)
+        public int port;
+
         @Parameter(names = {"--bg", "--background"}, description = "Run the server in background as a daemon", arity = 0)
         public boolean background;
     }

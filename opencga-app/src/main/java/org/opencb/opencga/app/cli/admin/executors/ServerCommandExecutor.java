@@ -63,8 +63,12 @@ public class ServerCommandExecutor extends AdminCommandExecutor {
     }
 
     private void rest() throws Exception {
+        int port = (serverCommandOptions.restServerCommandOptions.port == 0)
+                ? configuration.getServer().getRest().getPort()
+                : serverCommandOptions.restServerCommandOptions.port;
+
         if (serverCommandOptions.restServerCommandOptions.start) {
-            RestServer server = new RestServer(Paths.get(this.conf));
+            RestServer server = new RestServer(Paths.get(this.appHome), port);
             server.start();
             if (!serverCommandOptions.restServerCommandOptions.background) {
                 server.blockUntilShutdown();
