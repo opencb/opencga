@@ -117,8 +117,10 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
             try {
                 // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
                 Command cmd = new Command(getCommandLine())
-                        .setOutputOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDOUT_FILENAME).toFile())))
-                        .setErrorOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDERR_FILENAME).toFile())));
+                        .setOutputOutputStream(
+                                new DataOutputStream(new FileOutputStream(getScratchDir().resolve(STDOUT_FILENAME).toFile())))
+                        .setErrorOutputStream(
+                                new DataOutputStream(new FileOutputStream(getScratchDir().resolve(STDERR_FILENAME).toFile())));
 
                 cmd.run();
 
@@ -142,7 +144,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                         }
                     }
                     case "stats": {
-                        File file = getOutDir().resolve(STDOUT_FILENAME).toFile();
+                        File file = getScratchDir().resolve(STDOUT_FILENAME).toFile();
                         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
                         if (lines.size() > 0 && lines.get(0).startsWith("# This file was produced by samtools stats")) {
                             FileUtils.copyFile(file, outputFile);
@@ -154,7 +156,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                         break;
                     }
                     case "depth": {
-                        File file = new File(getOutDir() + "/" + STDOUT_FILENAME);
+                        File file = new File(getScratchDir() + "/" + STDOUT_FILENAME);
                         if (file.exists() && file.length() > 0) {
                             FileUtils.copyFile(file, outputFile);
                             success = true;
@@ -163,7 +165,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                     }
                 }
                 if (!success) {
-                    File file = getOutDir().resolve(STDERR_FILENAME).toFile();
+                    File file = getScratchDir().resolve(STDERR_FILENAME).toFile();
                     String msg = "Something wrong happened when executing Samtools";
                     if (file.exists()) {
                         msg = StringUtils.join(FileUtils.readLines(file, Charset.defaultCharset()), ". ");
