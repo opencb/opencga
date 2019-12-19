@@ -27,7 +27,7 @@ class Alignment(_ParentRestClient):
     def stats(self, file, **options):
         return self.stats_info(file, **options)
 
-    def stats_run(self, file, **options):
+    def run_stats(self, file, **options):
         """
         Compute stats for a given alignment file
         URL: /{apiVersion}/analysis/alignment/stats/run
@@ -51,7 +51,7 @@ class Alignment(_ParentRestClient):
 
         return self._get('stats/info', **options)
 
-    def stats_query(self, **options):
+    def query_stats(self, **options):
         """
         Fetch alignment files according to their stats
         URL: /{apiVersion}/analysis/alignment/stats/query
@@ -59,25 +59,25 @@ class Alignment(_ParentRestClient):
 
         return self._get('stats/query', **options)
 
-    def bwa_run(self, **options):
+    def run_bwa(self, data, **options):
         """
         BWA is a software package for mapping low-divergent sequences against a
         large reference genome.
         URL: /{apiVersion}/analysis/alignment/bwa/run
         """
 
-        return self._post('bwa/run', **options)
+        return self._post('bwa/run', data=data, **options)
 
-    def samtools_run(self, **options):
+    def run_samtools(self, data, **options):
         """
         Samtools is a program for interacting with high-throughput sequencing
         data in SAM, BAM and CRAM formats.
         URL: /{apiVersion}/analysis/alignment/samtools/run
         """
 
-        return self._post('samtools/run', **options)
+        return self._post('samtools/run', data=data, **options)
 
-    def deeptools_run(self, **options):
+    def run_deeptools(self, data, **options):
         """
         Deeptools is a suite of python tools particularly developed for the
         efficient analysis of high-throughput sequencing data, such as ChIP-seq,
@@ -85,7 +85,15 @@ class Alignment(_ParentRestClient):
         URL: /{apiVersion}/analysis/alignment/deeptools/run
         """
 
-        return self._post('deeptools/run', **options)
+        return self._post('deeptools/run', data=data, **options)
+
+    def run_fastqc(self, data, **options):
+        """
+        A quality control tool for high throughput sequence data
+        URL: /{apiVersion}/analysis/alignment/fastqc/run
+        """
+
+        return self._post('fastqc/run', data=data, **options)
 
     def query(self, file, **options):
         """
@@ -100,7 +108,7 @@ class Alignment(_ParentRestClient):
 
         return self._get('query', **options)
 
-    def coverage_run(self, file, **options):
+    def run_coverage(self, file, **options):
         """
         Compute coverage for a list of alignment files
         URL: /{apiVersion}/analysis/alignment/coverage/run
@@ -112,7 +120,7 @@ class Alignment(_ParentRestClient):
 
         return self._post('coverage/run', **options)
 
-    def coverage_query(self, file, **options):
+    def query_coverage(self, file, **options):
         """
         Query the coverage of an alignment file for regions or genes
         URL: /{apiVersion}/analysis/alignment/coverage/query

@@ -1,5 +1,6 @@
 from pyopencga.rest_clients._parent_rest_clients import _ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient
 
+
 class Files(_ParentBasicCRUDClient, _ParentAclRestClient, _ParentAnnotationSetRestClient):
     """
     This class contains methods for the Files webservices

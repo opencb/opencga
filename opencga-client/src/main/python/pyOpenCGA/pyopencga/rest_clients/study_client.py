@@ -1,4 +1,6 @@
 from pyopencga.rest_clients._parent_rest_clients import _ParentBasicCRUDClient, _ParentAclRestClient
+from pyopencga.commons import deprecated
+
 
 class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
     """
@@ -96,6 +98,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._get('resyncFiles', query_id=study, **options)
 
+    @deprecated
     def create_groups(self, study, data, **options):
         """
         Create group [DEPRECATED]
@@ -113,7 +116,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._post('groups', query_id=study, subcategory='create', data=data, **options)
 
-    def update_groups(self, study, data, action, *options):
+    def update_groups(self, study, data, action, **options):
         """
         Add or remove a group
         URL: /{apiVersion}/studies/{study}/groups/update
@@ -264,7 +267,7 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
 
         return self._post('variableSets', query_id=study, data=data, subcategory="update", action=action, **options)
 
-    def update_variable_from_variableset(self, study, variable_set, action, **options):
+    def update_variable_from_variableset(self, study, variable_set, action, data, **options):
         """
         Add or remove variables to a VariableSet
         URL: /{apiVersion}/studies/{study}/variableSets/{variableSet}/variables/update
@@ -294,6 +297,6 @@ class Studies(_ParentBasicCRUDClient, _ParentAclRestClient):
         }
         """
 
-        return self._post('variableSets', query_id=study, subcategory='variables/update', second_query_id=variable_set, data=data,
-                          action=action, **options)
+        return self._post('variableSets', query_id=study, subcategory='variables/update', second_query_id=variable_set,
+                          data=data, action=action, **options)
 

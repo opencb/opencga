@@ -1,5 +1,6 @@
 from pyopencga.rest_clients._parent_rest_clients import _ParentRestClient
 
+
 class Admin(_ParentRestClient):
     """
     This class contains methods for the Admin webservices
@@ -8,7 +9,6 @@ class Admin(_ParentRestClient):
     def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
         _category = 'admin'
         super(Admin, self).__init__(configuration, _category, token, login_handler, *args, **kwargs)
-
 
     def sync_users(self, data, **options):
         """
@@ -105,7 +105,7 @@ class Admin(_ParentRestClient):
         }
         """
         
-        return self-_post('catalog', subcategory='install', data=data, **options)
+        return self._post('catalog', subcategory='install', data=data, **options)
 
     def sync_catalog(self, data, **options):
         """

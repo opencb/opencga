@@ -145,17 +145,15 @@ class OpenCGAClient(object):
             time.sleep(retry_seconds)
 
     def help(self, category_name=None, verbose=True):
-        import requests
-        # print([category['name'] for category in self.meta.api().get_response(0)])
-
-        help_text = []
-        for category in r:
+        help_text, help_res = [], []
+        for category in self.meta.api().get_result(0):
             if category_name is not None and category['name'] != category_name:
                 continue
+            help_res.append(category)
             help_text.append('"{}" endpoints:'.format(category['name']))
             for endpoint in category['endpoints']:
                 help_text.append('{}{} ({}): {}'.format(' '*4, endpoint['path'], endpoint['method'], endpoint['description']))
 
         if verbose:
-            sys.stdout.write('\n'.join(help_text))
-        return r
+            sys.stdout.write('\n'.join(help_text) + '\n')
+        return help_res

@@ -1,5 +1,6 @@
 from pyopencga.rest_clients._parent_rest_clients import _ParentRestClient, _ParentBasicCRUDClient, _ParentAclRestClient,  _ParentAnnotationSetRestClient
 
+
 class GA4GH(_ParentRestClient):
     """
     This class contains method for GA4GH ws
@@ -8,7 +9,6 @@ class GA4GH(_ParentRestClient):
     def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
         _category = "ga4gh"
         super(GA4GH, self).__init__(configuration, _category, token, login_handler, *args, **kwargs)
-
 
     def responses(self, chrom, pos, allele, beacon, **options):
         """
@@ -40,6 +40,17 @@ class GA4GH(_ParentRestClient):
         options['beacon'] = beacon
 
         return self._get('responses', **options)
+
+    def fetch_reads(self, study, file, **options):
+        """
+        Fetch alignment files using HTSget protocol
+        URL: /{apiVersion}/ga4gh/reads/{study}/{file}
+
+        :param file: File id, name or path
+        :param study: Study [[user@]project:]study where study and project can be either the ID or UUID
+        """
+
+        return self._get('reads', query_id=study, second_query_id=file, **options)
 
     def search_reads(self, data, **options):
         """

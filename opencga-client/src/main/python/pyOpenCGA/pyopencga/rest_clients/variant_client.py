@@ -10,7 +10,7 @@ class Variant(_ParentRestClient):
         _category = "analysis/variant"
         super(Variant, self).__init__(configuration, _category, token, login_handler, *args, **kwargs)
 
-    def index(self, **options):
+    def index(self, data, **options):
         """
         Index variant files into the variant storage
         URL: /{apiVersion}/analysis/variant/index
@@ -21,7 +21,7 @@ class Variant(_ParentRestClient):
         :param jobTags: Job tags
         """
 
-        return self._post('index', **options)
+        return self._post('index', data=data, **options)
 
     def delete_file(self, **options):
         """
@@ -281,7 +281,7 @@ class Variant(_ParentRestClient):
 
         return self._delete('sample/stats/delete', **options)
 
-    def cohort_stats_run(self, data, **options):
+    def run_cohort_stats_run(self, data, **options):
         """
         Compute cohort variant stats for the selected list of samples.
         URL: /{apiVersion}/analysis/variant/cohort/stats/run
@@ -306,7 +306,7 @@ class Variant(_ParentRestClient):
 
         return self._get('cohort/stats/info', **options)
 
-    def cohort_stats_delete(self, **options):
+    def delete_cohort_stats(self, **options):
         """
         Delete cohort variant stats from a cohort.
         URL: /{apiVersion}/analysis/variant/cohort/stats/delete
@@ -317,7 +317,7 @@ class Variant(_ParentRestClient):
 
         return self._delete('cohort/stats/delete', **options)
 
-    def gwas_run(self, data, **options):
+    def run_gwas(self, data, **options):
         """
         Run a Genome Wide Association Study between two cohorts.
         URL: /{apiVersion}/analysis/variant/gwas/run
@@ -330,7 +330,7 @@ class Variant(_ParentRestClient):
 
         return self._post('gwas/run', data=data, **options)
 
-    def plink_run(self, data, **options):
+    def run_plink(self, data, **options):
         """
         Plink is a whole genome association analysis toolset, designed to
         perform a range of basic, large-scale analyses.
@@ -344,7 +344,7 @@ class Variant(_ParentRestClient):
 
         return self._post('plink/run', data=data, **options)
 
-    def rvtests_run(self, data, **options):
+    def run_rvtests(self, data, **options):
         """
         Rvtests is a flexible software package for genetic association studies.
         URL: /{apiVersion}/analysis/variant/rvtests/run
@@ -357,7 +357,7 @@ class Variant(_ParentRestClient):
 
         return self._post('rvtests/run', data=data, **options)
 
-    def variant_stats_run(self, data, **options):
+    def run_variant_stats(self, data, **options):
         """
         Compute variant stats for any cohort and any set of variants.
         Optionally, index the result in the variant storage database.
@@ -371,7 +371,7 @@ class Variant(_ParentRestClient):
 
         return self._post('stats/run', data=data, **options)
 
-    def variant_stats_export(self, data, **options):
+    def export_variant_stats(self, data, **options):
         """
         Export calculated variant stats and frequencies
         URL: /{apiVersion}/analysis/variant/stats/export
@@ -429,7 +429,7 @@ class Variant(_ParentRestClient):
 
         return self._get('annotation', subcategory='metadata', **options)
 
-    def variant_sample_run(self, data, **options):
+    def run_variant_sample(self, data, **options):
         """
         Get samples given a set of variants
         URL: /{apiVersion}/analysis/variant/sample/run
@@ -455,7 +455,7 @@ class Variant(_ParentRestClient):
 
         return self._get('sample/data', **options)
 
-    def sample_variant_stats_run(self, data, **options):
+    def run_sample_variant_stats(self, data, **options):
         """
         Compute sample variant stats for the selected list of samples.
         URL: /{apiVersion}/analysis/variant/sample/stats/run
@@ -479,7 +479,7 @@ class Variant(_ParentRestClient):
 
         return self._get('sample/stats/info', **options)
 
-    def annotation_query(self, **options):
+    def query_annotation_query(self, **options):
         """
         Query variant annotations from any saved versions
         URL: /{apiVersion}/analysis/variant/annotation/query

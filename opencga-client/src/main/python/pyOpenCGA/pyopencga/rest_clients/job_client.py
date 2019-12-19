@@ -1,5 +1,6 @@
 from pyopencga.rest_clients._parent_rest_clients import _ParentBasicCRUDClient, _ParentAclRestClient
 
+
 class Jobs(_ParentBasicCRUDClient, _ParentAclRestClient):
     """
     This class cotains methods for the Jobs webservice

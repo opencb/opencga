@@ -56,7 +56,7 @@ class Users(_ParentBasicCRUDClient):
         :param limit: max number of results to be returned.
         :param skip: number of results to be skipped.
         """
-        
+
         return self._get('projects', query_id=user, **options)
 
     def update_password(self, user, pwd, newpwd, **options):
@@ -161,7 +161,6 @@ class Users(_ParentBasicCRUDClient):
 
         return self._post('configs', query_id=user, subcategory='filters/update', data=data, action=action, **options)
 
-    ## [INFO] The implementation of update_filter needs a reimplementation of URL building methods
     def update_filter(self, user, filter_name, data, **options):
         """
         Updates a custom filter
@@ -205,8 +204,5 @@ class Users(_ParentBasicCRUDClient):
         'NONE',
         'UNKNOWN'
         """
-        
-        ## [INFO] Temporal solution to action with embedded secondary_query_id
-        subcategory = 'filters/{name}/update'.format(name=filter_name)
 
-        return self._post('configs', query_id=user, subcategory=subcategory, data=data, **options)
+        return self._post('configs/filters', query_id=user, subcategory='update', second_query_id=filter_name, data=data, **options)

@@ -94,8 +94,8 @@ class _ParentBasicCRUDClient(_ParentRestClient):
     def update(self, data, query_id=None, **options):
         return self._post('update', query_id=query_id, data=data, **options)
 
-    def delete(self, **options):
-        return self._delete('delete', **options)
+    def delete(self, query_id=None, **options):
+        return self._delete('delete', query_id=query_id, **options)
 
 
 class _ParentAclRestClient(_ParentRestClient):
