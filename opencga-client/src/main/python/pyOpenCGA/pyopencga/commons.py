@@ -72,7 +72,7 @@ class RESTResponse:
         """
         return self.responses[response_pos]
 
-    def get_all_results(self):
+    def get_results_iterator(self):
         """
         Return all results from all responses as an iterator
         """
@@ -80,28 +80,28 @@ class RESTResponse:
             for result in response['results']:
                 yield result
 
-    def get_response_events(self, name=None):
+    def get_response_events(self, event_type=None):
         """
         Return response events by name
         """
         event_names = ['INFO', 'WARNING', 'ERROR']
-        if name is None or self.events is None:
+        if event_type is None or self.events is None:
             return self.events or []
-        elif name in event_names:
-            return [event for event in self.events if event['name'] == name]
+        elif event_type in event_names:
+            return [event for event in self.events if event['name'] == event_type]
         else:
             msg = 'Argument "type" must be one of the following values: "{}"'
             raise ValueError(msg.format(', '.join(event_names)))
 
-    def get_result_events(self, name=None, response_pos=0):
+    def get_result_events(self, event_type=None, response_pos=0):
         """Return result events by name and position"""
         event_names = ['INFO', 'WARNING', 'ERROR']
         response = self.responses[response_pos]
-        if name is None:
+        if event_type is None:
             return response['events'] \
                 if 'events' in response and response['events'] else []
-        elif name in event_names:
-            return [event for event in response['events'] if event['name'] == name] \
+        elif event_type in event_names:
+            return [event for event in response['events'] if event['name'] == event_type] \
                 if 'events' in response and response['events'] else []
         else:
             msg = 'Argument "type" must be one of the following values: "{}"'
