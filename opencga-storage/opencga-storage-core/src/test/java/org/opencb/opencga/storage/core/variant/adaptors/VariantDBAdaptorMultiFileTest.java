@@ -17,19 +17,22 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
-import static org.opencb.biodata.models.variant.StudyEntry.*;
 import static org.opencb.biodata.models.variant.StudyEntry.FILTER;
 import static org.opencb.biodata.models.variant.StudyEntry.QUAL;
+import static org.opencb.biodata.models.variant.StudyEntry.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
@@ -160,6 +163,32 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
 
         assertEquals(dbAdaptor.count(null).first().intValue(), queryResult.getNumResults());
         assertThat(queryResult, everyResult(firstStudy(nullValue())));
+    }
+
+    @Test
+    public void testIncludeSampleIdFileIdx() throws Exception {
+        for (Variant variant : query(new Query(INCLUDE_FORMAT.key(),
+                "GT," + VariantQueryParser.SAMPLE_ID
+                + "," + VariantQueryParser.FILE_IDX
+                + "," + VariantQueryParser.FILE_ID), new QueryOptions(QueryOptions.LIMIT, 1)).getResults()) {
+
+            for (StudyEntry study : variant.getStudies()) {
+                assertEquals(Arrays.asList("GT", VariantQueryParser.SAMPLE_ID, VariantQueryParser.FILE_IDX, VariantQueryParser.FILE_ID), study.getFormat());
+                List<String> sampleIds = study.getSamplesData().stream().map(l -> l.get(1)).collect(Collectors.toList());
+                List<String> fileIdxs = study.getSamplesData().stream().map(l -> l.get(2)).collect(Collectors.toList());
+                List<String> fileIds = study.getSamplesData().stream().map(l -> l.get(3)).collect(Collectors.toList());
+                System.out.println("study = " + study);
+                assertEquals(variant.toString(), study.getOrderedSamplesName(), sampleIds);
+                for (int i = 0; i < fileIds.size(); i++) {
+                    if (!fileIds.get(i).equals(".")) {
+                        String expected = "1K.end.platinum-genomes-vcf-" + sampleIds.get(i) + "_S1.genome.vcf.gz";
+                        assertEquals(expected, fileIds.get(i));
+                        assertEquals(study.getFiles().stream().map(FileEntry::getFileId).collect(Collectors.toList()).indexOf(expected),
+                                Integer.parseInt(fileIdxs.get(i)));
+                    }
+                }
+            }
+        }
     }
 
     @Test
