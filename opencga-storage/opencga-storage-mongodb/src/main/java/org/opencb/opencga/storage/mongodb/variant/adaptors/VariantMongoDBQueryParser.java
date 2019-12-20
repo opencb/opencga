@@ -1129,19 +1129,29 @@ public class VariantMongoDBQueryParser {
             if (formats != null) { // If null, undefined. Return all
                 // Special conversion
                 returnedFields.remove(VariantField.STUDIES_SAMPLES_DATA);
-
-                for (String format : formats) {
-                    if (format.equals(GT)) {
-                        projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                                + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, 1);
-                    } else {
-                        projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
-                                + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
-                                + DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD + '.' + format.toLowerCase(), 1);
-                    }
+                if (formats.contains(VariantQueryUtils.ALL)) {
+                    projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
+                            + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, 1);
+                    projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
+                            + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
+                            + DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD, 1);
                     projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
                             + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
                             + DocumentToStudyVariantEntryConverter.FILEID_FIELD, 1);
+                } else {
+                    for (String format : formats) {
+                        if (format.equals(GT)) {
+                            projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
+                                    + DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, 1);
+                        } else {
+                            projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
+                                    + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
+                                    + DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD + '.' + format.toLowerCase(), 1);
+                        }
+                        projection.put(DocumentToVariantConverter.STUDIES_FIELD + '.'
+                                + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.'
+                                + DocumentToStudyVariantEntryConverter.FILEID_FIELD, 1);
+                    }
                 }
             }
         }

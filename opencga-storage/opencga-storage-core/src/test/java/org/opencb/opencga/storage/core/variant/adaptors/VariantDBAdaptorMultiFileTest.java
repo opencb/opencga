@@ -168,16 +168,26 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     @Test
     public void testIncludeSampleIdFileIdx() throws Exception {
         for (Variant variant : query(new Query(INCLUDE_FORMAT.key(),
-                "GT," + VariantQueryParser.SAMPLE_ID
-                + "," + VariantQueryParser.FILE_IDX
-                + "," + VariantQueryParser.FILE_ID), new QueryOptions(QueryOptions.LIMIT, 1)).getResults()) {
+                "all," + VariantQueryParser.SAMPLE_ID
+                        + "," + VariantQueryParser.FILE_IDX
+                        + "," + VariantQueryParser.FILE_ID), new QueryOptions(QueryOptions.LIMIT, 1)).getResults()) {
 
             for (StudyEntry study : variant.getStudies()) {
-                assertEquals(Arrays.asList("GT", VariantQueryParser.SAMPLE_ID, VariantQueryParser.FILE_IDX, VariantQueryParser.FILE_ID), study.getFormat());
-                List<String> sampleIds = study.getSamplesData().stream().map(l -> l.get(1)).collect(Collectors.toList());
-                List<String> fileIdxs = study.getSamplesData().stream().map(l -> l.get(2)).collect(Collectors.toList());
-                List<String> fileIds = study.getSamplesData().stream().map(l -> l.get(3)).collect(Collectors.toList());
-                System.out.println("study = " + study);
+                assertEquals(Arrays.asList("GT", "GQX", "AD", "DP", "GQ", "MQ", "PL", "VF",
+                        VariantQueryParser.SAMPLE_ID, VariantQueryParser.FILE_IDX, VariantQueryParser.FILE_ID), study.getFormat());
+                List<String> sampleIds = study.getSamplesData()
+                        .stream()
+                        .map(l -> l.get(study.getFormatPositions().get(VariantQueryParser.SAMPLE_ID)))
+                        .collect(Collectors.toList());
+                List<String> fileIdxs = study.getSamplesData()
+                        .stream()
+                        .map(l -> l.get(study.getFormatPositions().get(VariantQueryParser.FILE_IDX)))
+                        .collect(Collectors.toList());
+                List<String> fileIds = study.getSamplesData()
+                        .stream()
+                        .map(l -> l.get(study.getFormatPositions().get(VariantQueryParser.FILE_ID)))
+                        .collect(Collectors.toList());
+
                 assertEquals(variant.toString(), study.getOrderedSamplesName(), sampleIds);
                 for (int i = 0; i < fileIds.size(); i++) {
                     if (!fileIds.get(i).equals(".")) {
@@ -186,6 +196,31 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                         assertEquals(study.getFiles().stream().map(FileEntry::getFileId).collect(Collectors.toList()).indexOf(expected),
                                 Integer.parseInt(fileIdxs.get(i)));
                     }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testIncludeSampleIdFileIdxExcludeFiles() throws Exception {
+        for (Variant variant : query(new Query(INCLUDE_FORMAT.key(),
+                "all," + VariantQueryParser.SAMPLE_ID
+                + "," + VariantQueryParser.FILE_IDX
+                + "," + VariantQueryParser.FILE_ID)
+                .append(INCLUDE_FILE.key(), NONE), new QueryOptions(QueryOptions.LIMIT, 1)).getResults()) {
+
+            for (StudyEntry study : variant.getStudies()) {
+                assertEquals(Arrays.asList("GT", "GQX", "AD", "DP", "GQ", "MQ", "PL", "VF",
+                        VariantQueryParser.SAMPLE_ID, VariantQueryParser.FILE_IDX, VariantQueryParser.FILE_ID), study.getFormat());
+                List<String> sampleIds = study.getSamplesData()
+                        .stream()
+                        .map(l -> l.get(study.getFormatPositions().get(VariantQueryParser.SAMPLE_ID)))
+                        .collect(Collectors.toList());
+
+                assertEquals(variant.toString(), study.getOrderedSamplesName(), sampleIds);
+                for (List<String> samplesDatum : study.getSamplesData()) {
+                    assertEquals(".", samplesDatum.get(study.getFormatPositions().get(VariantQueryParser.FILE_ID)));
+                    assertEquals(".", samplesDatum.get(study.getFormatPositions().get(VariantQueryParser.FILE_IDX)));
                 }
             }
         }

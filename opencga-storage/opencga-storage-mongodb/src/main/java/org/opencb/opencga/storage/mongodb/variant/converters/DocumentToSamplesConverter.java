@@ -186,19 +186,23 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 
         final Set<Integer> filesWithSamplesData;
         final Map<Integer, Document> files;
+        final List<Integer> includeFileIds;
         final Set<Integer> loadedSamples;
         final List<String> extraFields;
         final List<String> format;
         if (object.containsKey(DocumentToStudyVariantEntryConverter.FILES_FIELD)) {
             List<Document> fileObjects = getList(object, DocumentToStudyVariantEntryConverter.FILES_FIELD);
-            files = fileObjects.stream()
-                    .collect(Collectors.toMap(
-                            f -> f.get(DocumentToStudyVariantEntryConverter.FILEID_FIELD, Number.class).intValue(),
-                            f -> f));
-
+            includeFileIds = new ArrayList<>(fileObjects.size());
+            files = new HashMap<>(fileObjects.size());
             loadedSamples = new HashSet<>();
             filesWithSamplesData = new HashSet<>();
-            for (Integer fileId : includeFiles.get(studyId)) {
+            for (Document fileObject : fileObjects) {
+                int fileId = fileObject.get(DocumentToStudyVariantEntryConverter.FILEID_FIELD, Number.class).intValue();
+                if (includeFiles.get(studyId).contains(fileId)) {
+                    includeFileIds.add(fileId);
+                }
+                files.put(fileId, fileObject);
+
                 List<Integer> samplesInFile = getSamplesInFile(studyId, fileId);
                 // File indexed and contains any sample (not disjoint)
                 if (!Collections.disjoint(samplesInFile, sampleIds.values())) {
@@ -208,14 +212,13 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                     loadedSamples.addAll(samplesInFile);
                 }
             }
-
-            extraFields = getExtraFormatFields(filesWithSamplesData, files);
         } else {
             files = Collections.emptyMap();
-            extraFields = Collections.emptyList();
+            includeFileIds = Collections.emptyList();
             filesWithSamplesData = Collections.emptySet();
             loadedSamples = Collections.emptySet();
         }
+        extraFields = getExtraFormatFields(studyId, filesWithSamplesData, files);
         format = getFormat(excludeGenotypes, extraFields);
         List<List<String>> samplesData = new ArrayList<>(sampleIds.size());
 
@@ -298,7 +301,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                             continue;
                         }
                         extraField = extraField.toLowerCase();
-                        byte[] byteArray = samplesDataDocument == null || !samplesDataDocument.containsKey(extraField)
+                        byte[] byteArray = !samplesDataDocument.containsKey(extraField)
                                 ? null
                                 : samplesDataDocument.get(extraField, Binary.class).getData();
 
@@ -322,10 +325,19 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                         Supplier<String> supplier;
                         if (otherFields == null) {
                             if (VariantQueryParser.FILE_ID.toLowerCase().equals(extraField)) {
-                                supplier = () -> metadataManager.getFileName(studyId, fid);
+                                if (includeFileIds.contains(fid)) {
+                                    String fileName = metadataManager.getFileName(studyId, fid);
+                                    supplier = () -> fileName;
+                                } else {
+                                    supplier = () -> UNKNOWN_FIELD;
+                                }
                             } else if (VariantQueryParser.FILE_IDX.toLowerCase().equals(extraField)) {
-                                int fileIdx = includeFiles.get(studyId).indexOf(fid);
-                                supplier = () -> String.valueOf(fileIdx);
+                                int fileIdx = includeFileIds.indexOf(fid);
+                                if (fileIdx < 0) {
+                                    supplier = () -> UNKNOWN_FIELD;
+                                } else {
+                                    supplier = () -> String.valueOf(fileIdx);
+                                }
                             } else {
                                 supplier = () -> UNKNOWN_FIELD;
                             }
@@ -395,10 +407,22 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
         return samplesData;
     }
 
-    public List<String> getExtraFormatFields(Set<Integer> filesWithSamplesData, Map<Integer, Document> files) {
+    public List<String> getExtraFormatFields(int studyId, Set<Integer> filesWithSamplesData, Map<Integer, Document> files) {
         final List<String> extraFields;
         if (expectedExtraFields != null) {
-            extraFields = expectedExtraFields;
+            if (expectedExtraFields.contains(VariantQueryUtils.ALL)) {
+                extraFields = new ArrayList<>();
+                for (String expectedExtraField : expectedExtraFields) {
+                    if (expectedExtraField.equals(VariantQueryUtils.ALL)) {
+                        extraFields.addAll(getStudyMetadata(studyId).getAttributes()
+                                .getAsStringList(VariantStorageOptions.EXTRA_FORMAT_FIELDS.key()));
+                    } else {
+                        extraFields.add(expectedExtraField);
+                    }
+                }
+            } else {
+                extraFields = expectedExtraFields;
+            }
         } else if (!files.isEmpty()) {
             Set<String> extraFieldsSet = new HashSet<>();
             for (Integer fid : filesWithSamplesData) {

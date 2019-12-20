@@ -36,6 +36,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
@@ -83,6 +84,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     private final Map<Integer, LinkedHashSet<Integer>> indexedFiles = new ConcurrentHashMap<>();
     private final Map<Integer, Set<Integer>> filesFromReturnedSamples = new ConcurrentHashMap<>();
     private final Map<Integer, List<String>> fixedFormatsMap = new ConcurrentHashMap<>();
+    private Map<Integer, List<String>> expectedFormatPerStudy = new ConcurrentHashMap<>();
 
     private boolean studyNameAsStudyId = false;
     private boolean simpleGenotypes = false;
@@ -268,7 +270,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         List<String> fixedFormat = getFixedFormat(studyMetadata);
         StudyEntry studyEntry = newStudyEntry(studyMetadata, fixedFormat);
 
-        int[] formatsMap = getFormatsMap(fixedFormat);
+        int[] formatsMap = getFormatsMap(studyMetadata.getId(), fixedFormat);
 
         for (Pair<Integer, List<String>> pair : sampleDataMap) {
             Integer sampleId = pair.getKey();
@@ -297,11 +299,7 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
             studyEntry = new StudyEntry(String.valueOf(studyMetadata.getId()));
         }
 
-        if (expectedFormat == null) {
-            studyEntry.setFormat(new ArrayList<>(fixedFormat));
-        } else {
-            studyEntry.setFormat(new ArrayList<>(expectedFormat));
-        }
+        studyEntry.setFormat(new ArrayList<>(getFormat(studyMetadata.getId(), fixedFormat)));
 
         LinkedHashMap<String, Integer> returnedSamplesPosition;
         if (mutableSamplesPosition) {
@@ -312,6 +310,30 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         studyEntry.setSamplesData(new ArrayList<>(returnedSamplesPosition.size()));
         studyEntry.setSortedSamplesPosition(returnedSamplesPosition);
         return studyEntry;
+    }
+
+    private List<String> getFormat(int studyId, List<String> fixedFormat) {
+        if (expectedFormat == null) {
+            return fixedFormat;
+        } else {
+            return expectedFormatPerStudy.computeIfAbsent(studyId, id -> {
+                if (expectedFormat.size() == 1 && expectedFormat.get(0).equals(VariantQueryUtils.NONE)) {
+                    return Collections.emptyList();
+                } else if (expectedFormat.contains(VariantQueryUtils.ALL)) {
+                    List<String> format = new ArrayList<>(expectedFormat.size() + fixedFormat.size());
+                    for (String f : expectedFormat) {
+                        if (f.equals(VariantQueryUtils.ALL)) {
+                            format.addAll(fixedFormat);
+                        } else {
+                            format.add(f);
+                        }
+                    }
+                    return format;
+                } else {
+                    return expectedFormat;
+                }
+            });
+        }
     }
 
     protected void addMainSampleDataColumn(StudyMetadata studyMetadata, StudyEntry studyEntry,
@@ -327,12 +349,13 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
         studyEntry.addSampleData(sampleName, sampleData);
     }
 
-    private int[] getFormatsMap(List<String> fixedFormat) {
+    private int[] getFormatsMap(int studyId, List<String> fixedFormat) {
         int[] formatsMap;
-        if (expectedFormat != null && !expectedFormat.equals(fixedFormat)) {
-            formatsMap = new int[expectedFormat.size()];
-            for (int i = 0; i < expectedFormat.size(); i++) {
-                formatsMap[i] = fixedFormat.indexOf(expectedFormat.get(i));
+        List<String> format = getFormat(studyId, fixedFormat);
+        if (format != null && !format.equals(fixedFormat)) {
+            formatsMap = new int[format.size()];
+            for (int i = 0; i < format.size(); i++) {
+                formatsMap[i] = fixedFormat.indexOf(format.get(i));
             }
         } else {
             formatsMap = null;

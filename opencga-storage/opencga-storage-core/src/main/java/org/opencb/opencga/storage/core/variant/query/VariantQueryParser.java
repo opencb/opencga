@@ -446,12 +446,12 @@ public class VariantQueryParser {
 
         List<String> formats = getIncludeFormats(query);
         if (formats == null) {
-            query.put(INCLUDE_FORMAT.key(), ALL);
+            formats = Collections.singletonList(ALL);
         } else if (formats.isEmpty()) {
-            query.put(INCLUDE_FORMAT.key(), NONE);
-        } else {
-            query.put(INCLUDE_FORMAT.key(), formats);
+            formats = Collections.singletonList(NONE);
         }
+
+        query.put(INCLUDE_FORMAT.key(), formats);
         query.remove(INCLUDE_GENOTYPE.key(), formats);
     }
 
