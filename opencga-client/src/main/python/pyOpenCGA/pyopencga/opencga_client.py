@@ -144,16 +144,24 @@ class OpenCGAClient(object):
                 break
             time.sleep(retry_seconds)
 
-    def help(self, category_name=None, verbose=True):
-        help_text, help_res = [], []
-        for category in self.meta.api().get_result(0):
-            if category_name is not None and category['name'] != category_name:
-                continue
-            help_res.append(category)
-            help_text.append('"{}" endpoints:'.format(category['name']))
-            for endpoint in category['endpoints']:
-                help_text.append('{}{} ({}): {}'.format(' '*4, endpoint['path'], endpoint['method'], endpoint['description']))
+    def help(self, category_name=None, parameters=False, verbose=True):
+        help_text = []
+        help_json = self.meta.api().get_result(0)
+        if category_name is None:
+            help_text.append('Available categories:')
+            help_text += ['{}- {}'.format(' '*4, category['name']) for category in help_json]
+        else:
+            for category in help_json:
+                if category_name == category['name']:
+                    help_text.append('{} endpoints:'.format(category['name']))
+                    for endpoint in category['endpoints']:
+                        help_text.append('{}- {} ({}): {}'.format(
+                            ' '*4, endpoint['path'], endpoint['method'], endpoint['description'])
+                        )
+                        if parameters:
+                            help_text += ['{}- {} ({}): {}'.format(
+                                ' '*8, param['name'], param['type'], param['description']
+                            ) for param in endpoint['parameters']]
 
         if verbose:
             sys.stdout.write('\n'.join(help_text) + '\n')
-        return help_res

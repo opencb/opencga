@@ -1,14 +1,14 @@
 from pyopencga.rest_clients._parent_rest_clients import _ParentRestClient
 
 
-class Operation(_ParentRestClient):
+class Operations(_ParentRestClient):
     """
     This class contains methods for the Operations webservice
     """
 
     def __init__(self, configuration, token=None, login_handler=None, *args, **kwargs):
         _category = "operation/variant"
-        super(Operation, self).__init__(configuration, _category, token, login_handler, *args, **kwargs)
+        super(Operations, self).__init__(configuration, _category, token, login_handler, *args, **kwargs)
 
     def index_sample_genotype(self, data, **options):
         """
