@@ -40,7 +40,13 @@ import javax.ws.rs.client.*;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -110,13 +116,12 @@ public abstract class AbstractParentClient {
     }
 
     protected <T> RestResponse<T> execute(String category, String id, String action, Map<String, Object> params, String method,
-                                           Class<T> clazz) throws IOException {
+                                          Class<T> clazz) throws IOException {
         return execute(category, id, null, null, action, params, method, clazz);
     }
 
     protected <T> RestResponse<T> execute(String category1, String id1, String category2, String id2, String action,
-                                           Map<String, Object> paramsMap, String method, Class<T> clazz) throws IOException {
-
+                                          Map<String, Object> paramsMap, String method, Class<T> clazz) throws IOException {
         ObjectMap params;
         if (paramsMap == null) {
             params = new ObjectMap();
@@ -165,10 +170,15 @@ public abstract class AbstractParentClient {
             params.put(QueryOptions.LIMIT, limit);
             params.put(QueryOptions.TIMEOUT, timeout);
 
-            if (!action.equals("upload")) {
-                queryResponse = callRest(path, params, clazz, method);
-            } else {
+            if ("upload".equals(action)) {
                 queryResponse = callUploadRest(path, params, clazz);
+            } else if ("download".equals(action)) {
+                String destinyPath = params.getString("OPENCGA_DESTINY");
+                params.remove("OPENCGA_DESTINY");
+                download(path, params, destinyPath);
+                queryResponse = new RestResponse<>();
+            } else {
+                queryResponse = callRest(path, params, clazz, method);
             }
             int numResults = queryResponse.getResponses().isEmpty() ? 0 : queryResponse.getResponses().get(0).getNumResults();
 
@@ -258,6 +268,42 @@ public abstract class AbstractParentClient {
                 throw new IllegalArgumentException("Unsupported REST method " + method);
         }
         return parseResult(jsonString, clazz);
+    }
+
+    /**
+     * Call to download WS.
+     *
+     * @param path   Path of the WS.
+     * @param params Params to be passed to the WS.
+     * @param outputFilePath Path where the file will be written (downloaded).
+     */
+    private void download(WebTarget path, Map<String, Object> params, String outputFilePath) {
+        if (Files.notExists(Paths.get(outputFilePath).getParent())) {
+            throw new RuntimeException("Output directory " + outputFilePath + " not found");
+        }
+
+        if (params != null) {
+            for (String s : params.keySet()) {
+                path = path.queryParam(s, params.get(s));
+            }
+        }
+
+        Response response = path.request()
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId)
+                .get();
+
+        if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+            ReadableByteChannel readableByteChannel = Channels.newChannel(response.readEntity(InputStream.class));
+            try {
+                FileOutputStream fileOutputStream = new FileOutputStream(outputFilePath);
+                fileOutputStream.getChannel().transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
+            } catch (IOException e) {
+                throw new RuntimeException("Could not write file to " + outputFilePath, e);
+            }
+        } else {
+            throw new RuntimeException("HTTP call failed. Response code is " + response.getStatus() + ". Error reported is "
+                    + response.getStatusInfo());
+        }
     }
 
     /**

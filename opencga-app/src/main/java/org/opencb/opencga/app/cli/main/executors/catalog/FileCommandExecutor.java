@@ -143,7 +143,9 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 break;
         }
 
-        createOutput(queryResponse);
+        if (!queryResponse.getResponses().isEmpty()) {
+            createOutput(queryResponse);
+        }
     }
 
     private RestResponse createFolder() throws CatalogException, IOException {
@@ -175,7 +177,8 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), resolveStudy(filesCommandOptions.downloadCommandOptions.study));
-        return openCGAClient.getFileClient().download(filesCommandOptions.downloadCommandOptions.file, params);
+        return openCGAClient.getFileClient().download(filesCommandOptions.downloadCommandOptions.file,
+                filesCommandOptions.downloadCommandOptions.fileDestiny, params);
     }
 
     private RestResponse grep() throws CatalogException, IOException {
