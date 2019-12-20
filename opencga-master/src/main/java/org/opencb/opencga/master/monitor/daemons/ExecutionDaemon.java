@@ -290,9 +290,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 logger.info("[{}] - Updating status from {} to {}", job.getId(),
                         Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.RUNNING);
                 logger.info("[{}] - stdout file '{}'", job.getId(),
-                        job.getOutDir().getUri().resolve(getErrorLogFileName(job)).getPath());
-                logger.info("[{}] - stderr file: '{}'", job.getId(),
                         job.getOutDir().getUri().resolve(getLogFileName(job)).getPath());
+                logger.info("[{}] - stderr file: '{}'", job.getId(),
+                        job.getOutDir().getUri().resolve(getErrorLogFileName(job)).getPath());
                 return setStatus(job, new Enums.ExecutionStatus(Enums.ExecutionStatus.RUNNING));
             case Enums.ExecutionStatus.ABORTED:
             case Enums.ExecutionStatus.ERROR:

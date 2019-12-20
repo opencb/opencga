@@ -118,6 +118,12 @@ public class MendelianErrorSampleIndexEntryIterator implements SampleIndexEntryI
     }
 
     @Override
+    public int nextClinicalIndex() {
+        SampleIndexEntryIterator gtIterator = getGtIterator();
+        return gtIterator == null ? -1 : gtIterator.nextClinicalIndex();
+    }
+
+    @Override
     public int getApproxSize() {
         return size;
     }

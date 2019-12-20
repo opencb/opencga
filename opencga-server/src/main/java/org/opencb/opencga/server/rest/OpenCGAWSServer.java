@@ -535,15 +535,17 @@ public class OpenCGAWSServer {
         queryResponse.setParams(params);
 
         // Guarantee that the RestResponse object contains a list of results
-        List list;
+        List<OpenCGAResult<?>> list;
         if (obj instanceof List) {
             list = (List) obj;
         } else {
-            list = new ArrayList();
-            if (!(obj instanceof DataResult)) {
-                list.add(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(obj), 1));
+            list = new ArrayList<>();
+            if (obj instanceof OpenCGAResult) {
+                list.add(((OpenCGAResult) obj));
+            } else if (obj instanceof DataResult) {
+                list.add(new OpenCGAResult<>(((DataResult) obj)));
             } else {
-                list.add(obj);
+                list.add(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(obj), 1));
             }
         }
         queryResponse.setResponses(list);

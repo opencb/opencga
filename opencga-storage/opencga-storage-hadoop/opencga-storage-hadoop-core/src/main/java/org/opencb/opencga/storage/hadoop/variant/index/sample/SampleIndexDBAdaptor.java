@@ -429,6 +429,9 @@ public class SampleIndexDBAdaptor implements VariantIterable {
                 if (!query.getAnnotationIndexQuery().getPopulationFrequencyQueries().isEmpty()) {
                     scan.addColumn(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt));
                 }
+                if (query.getAnnotationIndexQuery().getClinicalMask() != EMPTY_MASK) {
+                    scan.addColumn(family, SampleIndexSchema.toAnnotationClinicalIndexColumn(gt));
+                }
                 if (query.getFileIndexMask() != EMPTY_MASK) {
                     scan.addColumn(family, SampleIndexSchema.toFileIndexColumn(gt));
                 }
@@ -458,6 +461,9 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         }
         if (query.getAnnotationIndexQuery().getConsequenceTypeMask() != EMPTY_MASK) {
             logger.info("CTIndex         = " + IndexUtils.shortToString(query.getAnnotationIndexQuery().getConsequenceTypeMask()));
+        }
+        if (query.getAnnotationIndexQuery().getClinicalMask() != EMPTY_MASK) {
+            logger.info("ClinicalIndex   = " + IndexUtils.byteToString(query.getAnnotationIndexQuery().getClinicalMask()));
         }
         for (PopulationFrequencyQuery pf : query.getAnnotationIndexQuery().getPopulationFrequencyQueries()) {
             logger.info("PopFreq         = " + pf);
