@@ -30,6 +30,7 @@ public class K8SExecutor implements BatchExecutor {
     public static final String K8S_VOLUME_MOUNTS = "k8s.volumeMounts";
     public static final String K8S_VOLUMES = "k8s.volumes";
     public static final String K8S_NODE_SELECTOR = "k8s.nodeSelector";
+    public static final String K8S_TOLERATIONS = "k8s.tolerations";
 
     private final String k8sClusterMaster;
     private final String namespace;
@@ -37,6 +38,7 @@ public class K8SExecutor implements BatchExecutor {
     private final List<VolumeMount> volumeMounts;
     private final List<Volume> volumes;
     private final Map<String, String> nodeSelector;
+    private final List<Toleration> tolerations;
     private final ResourceRequirements resources;
     private final Config k8sConfig;
     private final KubernetesClient kubernetesClient;
@@ -52,6 +54,7 @@ public class K8SExecutor implements BatchExecutor {
         this.imageName = execution.getOptions().getString(K8S_IMAGE_NAME);
         this.volumeMounts = buildVolumeMounts(execution.getOptions().getList(K8S_VOLUME_MOUNTS));
         this.volumes = buildVolumes(execution.getOptions().getList(K8S_VOLUMES));
+        this.tolerations = buildTolelrations(execution.getOptions().getList(K8S_TOLERATIONS));
         this.k8sConfig = new ConfigBuilder().withMasterUrl(k8sClusterMaster).build();
         this.kubernetesClient = new DefaultKubernetesClient(k8sConfig).inNamespace(namespace);
 
@@ -142,6 +145,7 @@ public class K8SExecutor implements BatchExecutor {
                                                 .withVolumeMounts(volumeMounts)
                                                 .build())
                                         .withNodeSelector(nodeSelector)
+                                        .withTolerations(tolerations)
                                         .withRestartPolicy("Never")
                                         .withVolumes(volumes)
                                         .build())
@@ -327,6 +331,18 @@ public class K8SExecutor implements BatchExecutor {
             volumes.add(mapper.convertValue(o, Volume.class));
         }
         return volumes;
+    }
+
+    private List<Toleration> buildTolelrations(List<Object> list) {
+        List<Toleration> tolerations = new ArrayList<>();
+        if (list == null) {
+            return tolerations;
+        }
+        for (Object o : list) {
+            ObjectMapper mapper = JacksonUtils.getDefaultObjectMapper();
+            tolerations.add(mapper.convertValue(o, Toleration.class));
+        }
+        return tolerations;
     }
 
     private KubernetesClient getKubernetesClient() {
