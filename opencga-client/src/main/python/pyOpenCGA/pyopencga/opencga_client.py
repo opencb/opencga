@@ -17,7 +17,7 @@ from pyopencga.rest_clients.panel_client import Panels
 from pyopencga.rest_clients.project_client import Projects
 from pyopencga.rest_clients.sample_client import Samples
 from pyopencga.rest_clients.study_client import Studies
-from pyopencga.rest_clients.tool_client import Tool
+from pyopencga.rest_clients.operation_client import Operations
 from pyopencga.rest_clients.user_client import Users
 from pyopencga.rest_clients.variant_client import Variant
 
@@ -82,13 +82,13 @@ class OpenCGAClient(object):
         self.meta = Meta(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.admin = Admin(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.panels = Panels(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
-        self.tool = Tool(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
+        self.operations = Operations(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
 
         self.clients = [self.users, self.projects, self.studies, self.files,
                         self.samples, self.cohorts, self.families, self.jobs,
                         self.individuals, self.clinical,
                         self.alignment, self.variant, self.ga4gh, self.meta,
-                        self.admin, self.panels, self.tool]
+                        self.admin, self.panels, self.operations]
 
         for client in self.clients:
             # only retry the ones with objects (instantiated clients)
@@ -144,7 +144,7 @@ class OpenCGAClient(object):
                 break
             time.sleep(retry_seconds)
 
-    def help(self, category_name=None, parameters=False, verbose=True):
+    def help(self, category_name=None, parameters=False):
         help_text = []
         help_json = self.meta.api().get_result(0)
         if category_name is None:
@@ -162,6 +162,4 @@ class OpenCGAClient(object):
                             help_text += ['{}- {} ({}): {}'.format(
                                 ' '*8, param['name'], param['type'], param['description']
                             ) for param in endpoint['parameters']]
-
-        if verbose:
-            sys.stdout.write('\n'.join(help_text) + '\n')
+        sys.stdout.write('\n'.join(help_text) + '\n')
