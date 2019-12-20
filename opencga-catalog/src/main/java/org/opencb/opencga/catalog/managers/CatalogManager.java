@@ -91,9 +91,9 @@ public class CatalogManager implements AutoCloseable {
 //        catalogClient = new CatalogDBClient(this);
         //TODO: Check if catalog is empty
         //TODO: Setup catalog if it's empty.
-        this.initializeAdmin();
-        authorizationManager = new CatalogAuthorizationManager(this.catalogDBAdaptorFactory, this.configuration);
-        auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, this.configuration);
+        this.initializeAdmin(configuration);
+        authorizationManager = new CatalogAuthorizationManager(this.catalogDBAdaptorFactory, configuration);
+        auditManager = new AuditManager(authorizationManager, this, this.catalogDBAdaptorFactory, configuration);
 
         userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
@@ -104,7 +104,7 @@ public class CatalogManager implements AutoCloseable {
         fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory, catalogIOManagerFactory,
                 configuration);
         jobManager = new JobManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, this.configuration);
+                catalogIOManagerFactory, configuration);
         sampleManager = new SampleManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, configuration);
         individualManager = new IndividualManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
@@ -121,19 +121,21 @@ public class CatalogManager implements AutoCloseable {
                 catalogIOManagerFactory, configuration);
     }
 
-    private void initializeAdmin() throws CatalogDBException {
-        if (this.configuration.getAdmin() == null) {
-            this.configuration.setAdmin(new Admin());
+    private void initializeAdmin(Configuration configuration) throws CatalogDBException {
+        if (configuration.getAdmin() == null) {
+            configuration.setAdmin(new Admin());
         }
 
-        if (StringUtils.isEmpty(this.configuration.getAdmin().getSecretKey())) {
-            this.configuration.getAdmin().setSecretKey(this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readSecretKey());
-        }
+        if (existsCatalogDB()) {
+            String secretKey = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readSecretKey();
+            String algorithm = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readAlgorithm();
 
-        this.configuration.getAdmin().setAlgorithm("HS256");
-//        if (StringUtils.isEmpty(this.configuration.getAdmin().getAlgorithm())) {
-//            this.configuration.getAdmin().setAlgorithm(this.catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().readAlgorithm());
-//        }
+            configuration.getAdmin().setAlgorithm(algorithm);
+            configuration.getAdmin().setSecretKey(secretKey);
+        } else {
+            configuration.getAdmin().setAlgorithm("HS256");
+            configuration.getAdmin().setSecretKey(org.opencb.commons.utils.StringUtils.randomString(15));
+        }
     }
 
     public void updateJWTParameters(ObjectMap params, String token) throws CatalogException {

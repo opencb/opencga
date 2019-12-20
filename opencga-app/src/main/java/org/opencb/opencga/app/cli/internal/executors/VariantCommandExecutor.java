@@ -115,7 +115,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         String subCommandString = getParsedSubCommand(variantCommandOptions.jCommander);
         configure();
 
-        sessionId = getSessionId(variantCommandOptions.commonCommandOptions);
+        token = getSessionId(variantCommandOptions.commonCommandOptions);
         toolRunner = new ToolRunner(appHome, catalogManager, storageEngineFactory);
 
         switch (subCommandString) {
@@ -217,8 +217,8 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         params.putIfNotEmpty(IbsAnalysis.SAMPLES, cliOptions.samples);
         params.putIfNotEmpty(IbsAnalysis.OUTDIR, cliOptions.outdir);
 
-        String userId1 = catalogManager.getUserManager().getUserId(sessionId);
-        new PluginExecutor(catalogManager, sessionId).execute(IbsAnalysis.class, "default", catalogManager.getStudyManager().resolveId
+        String userId1 = catalogManager.getUserManager().getUserId(token);
+        new PluginExecutor(catalogManager, token).execute(IbsAnalysis.class, "default", catalogManager.getStudyManager().resolveId
                 (cliOptions.study, userId1).getUid(), params);
     }
 
@@ -276,7 +276,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
             }
         }
 
-        Map<Long, String> studyIds = getStudyIds(sessionId);
+        Map<Long, String> studyIds = getStudyIds(token);
         Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds.values(), clientConfiguration);
         QueryOptions queryOptions = VariantQueryCommandUtils.parseQueryOptions(cliOptions);
         queryOptions.put("summary", cliOptions.genericVariantQueryOptions.summary);
@@ -284,16 +284,16 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         if (cliOptions.numericOptions.count) {
-            DataResult<Long> result = variantManager.count(query, sessionId);
+            DataResult<Long> result = variantManager.count(query, token);
             System.out.println("Num. results\t" + result.getResults().get(0));
         } else if (StringUtils.isNotEmpty(cliOptions.genericVariantQueryOptions.groupBy)) {
             ObjectMapper objectMapper = new ObjectMapper();
-            DataResult groupBy = variantManager.groupBy(cliOptions.genericVariantQueryOptions.groupBy, query, queryOptions, sessionId);
+            DataResult groupBy = variantManager.groupBy(cliOptions.genericVariantQueryOptions.groupBy, query, queryOptions, token);
             System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(groupBy));
         } else if (StringUtils.isNotEmpty(cliOptions.genericVariantQueryOptions.rank)) {
             ObjectMapper objectMapper = new ObjectMapper();
 
-            DataResult rank = variantManager.rank(query, cliOptions.genericVariantQueryOptions.rank, 10, true, sessionId);
+            DataResult rank = variantManager.rank(query, cliOptions.genericVariantQueryOptions.rank, 10, true, token);
             System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));
         } else {
             queryOptions.putIfNotEmpty("annotations", cliOptions.genericVariantQueryOptions.annotations);
@@ -305,7 +305,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                     cliOptions.compress,
                     cliOptions.variantsFile)
                     .toObjectMap(queryOptions);
-            toolRunner.execute(VariantExportTool.class, params, Paths.get(outdir), sessionId);
+            toolRunner.execute(VariantExportTool.class, params, Paths.get(outdir), token);
         }
     }
 
@@ -314,7 +314,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
-        variantManager.importData(UriUtils.createUri(importVariantOptions.input), importVariantOptions.study, sessionId);
+        variantManager.importData(UriUtils.createUri(importVariantOptions.input), importVariantOptions.study, token);
     }
 
     private void fileDelete() throws ToolException {
@@ -323,7 +323,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         VariantFileDeleteParams params = new VariantFileDeleteParams(cliOptions.genericVariantDeleteOptions.file, cliOptions.genericVariantDeleteOptions.resume);
         toolRunner.execute(VariantFileDeleteOperationTool.class,
                 params.toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study),
-                Paths.get(cliOptions.outdir), sessionId);
+                Paths.get(cliOptions.outdir), token);
     }
 
     private void index() throws ToolException {
@@ -353,7 +353,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                 .append(VariantStorageOptions.STDIN.key(), cliOptions.stdin)
                 .append(VariantStorageOptions.STDOUT.key(), cliOptions.stdout);
 
-        toolRunner.execute(VariantIndexOperationTool.class, params, Paths.get(cliOptions.outdir), sessionId);
+        toolRunner.execute(VariantIndexOperationTool.class, params, Paths.get(cliOptions.outdir), token);
     }
 
     private void secondaryIndex() throws ToolException {
@@ -368,9 +368,9 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                 .append(ParamConstants.PROJECT_PARAM, cliOptions.project);
 
         if (CollectionUtils.isEmpty(cliOptions.sample)) {
-            toolRunner.execute(VariantSecondaryIndexOperationTool.class, params, Paths.get(cliOptions.outdir), sessionId);
+            toolRunner.execute(VariantSecondaryIndexOperationTool.class, params, Paths.get(cliOptions.outdir), token);
         } else {
-            toolRunner.execute(VariantSecondaryIndexSamplesOperationTool.class, params, Paths.get(cliOptions.outdir), sessionId);
+            toolRunner.execute(VariantSecondaryIndexSamplesOperationTool.class, params, Paths.get(cliOptions.outdir), token);
         }
     }
 
@@ -383,7 +383,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
 
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
-        variantManager.removeSearchIndexSamples(cliOptions.study, Arrays.asList(cliOptions.sample.split(",")), params, sessionId);
+        variantManager.removeSearchIndexSamples(cliOptions.study, Arrays.asList(cliOptions.sample.split(",")), params, token);
     }
 
     private void stats() throws ToolException {
@@ -405,7 +405,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(VariantStatsAnalysis.class, params, Paths.get(cliOptions.outdir), sessionId);
+        toolRunner.execute(VariantStatsAnalysis.class, params, Paths.get(cliOptions.outdir), token);
     }
 
     private void scoreLoad() throws ToolException {
@@ -422,7 +422,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
 
-        toolRunner.execute(VariantScoreIndexOperationTool.class, params, Paths.get(cliOptions.outdir), sessionId);
+        toolRunner.execute(VariantScoreIndexOperationTool.class, params, Paths.get(cliOptions.outdir), token);
     }
 
     private void scoreRemove() throws ToolException {
@@ -435,7 +435,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(VariantScoreDeleteOperationTool.class, params, Paths.get(cliOptions.outdir), sessionId);
+        toolRunner.execute(VariantScoreDeleteOperationTool.class, params, Paths.get(cliOptions.outdir), token);
     }
 
     private void sampleIndex()
@@ -451,7 +451,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         toolRunner.execute(VariantSampleIndexOperationTool.class,
                 params.toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study),
                 Paths.get(cliOptions.outdir),
-                sessionId);
+                token);
     }
 
     private void familyIndex()
@@ -466,7 +466,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         toolRunner.execute(VariantFamilyIndexOperationTool.class,
                 params.toObjectMap(cliOptions.commonOptions.params).append(ParamConstants.STUDY_PARAM, cliOptions.study),
                 Paths.get(cliOptions.outdir),
-                sessionId);
+                token);
     }
 
     private void annotate() throws ToolException {
@@ -490,7 +490,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                         .append(ParamConstants.PROJECT_PARAM, cliOptions.project)
                         .append(ParamConstants.STUDY_PARAM, cliOptions.study),
                 Paths.get(cliOptions.outdir),
-                sessionId);
+                token);
     }
 
     private void annotationSave() throws ToolException {
@@ -500,7 +500,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.PROJECT_PARAM, cliOptions.project);
 
-        toolRunner.execute(VariantAnnotationSaveOperationTool.class, params, Paths.get(cliOptions.outdir), sessionId);
+        toolRunner.execute(VariantAnnotationSaveOperationTool.class, params, Paths.get(cliOptions.outdir), token);
     }
 
     private void annotationDelete() throws ToolException {
@@ -510,7 +510,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.PROJECT_PARAM, cliOptions.project);
 
-        toolRunner.execute(VariantAnnotationDeleteOperationTool.class, params, Paths.get(cliOptions.outdir), sessionId);
+        toolRunner.execute(VariantAnnotationDeleteOperationTool.class, params, Paths.get(cliOptions.outdir), token);
     }
 
     private void annotationQuery() throws CatalogException, IOException, StorageEngineException {
@@ -529,7 +529,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         query.put(VariantQueryParam.REGION.key(), cliOptions.region);
         query.put(VariantQueryParam.ID.key(), cliOptions.id);
 
-        DataResult<VariantAnnotation> queryResult = variantManager.getAnnotation(cliOptions.annotationId, query, options, sessionId);
+        DataResult<VariantAnnotation> queryResult = variantManager.getAnnotation(cliOptions.annotationId, query, options, token);
 
         // WRITE
         ObjectMapper objectMapper = new ObjectMapper();
@@ -551,7 +551,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         VariantStorageManager variantManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
         DataResult<ProjectMetadata.VariantAnnotationMetadata> result =
-                variantManager.getAnnotationMetadata(cliOptions.annotationId, cliOptions.project, sessionId);
+                variantManager.getAnnotationMetadata(cliOptions.annotationId, cliOptions.project, token);
 
         // WRITE
         ObjectMapper objectMapper = new ObjectMapper();
@@ -577,7 +577,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(VariantAggregateFamilyOperationTool.class, params, Paths.get(cliOptions.outdir), sessionId);
+        toolRunner.execute(VariantAggregateFamilyOperationTool.class, params, Paths.get(cliOptions.outdir), token);
     }
 
     private void aggregate() throws ToolException {
@@ -589,7 +589,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                 .toObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        toolRunner.execute(VariantAggregateOperationTool.class, params, Paths.get(cliOptions.outdir), sessionId);
+        toolRunner.execute(VariantAggregateOperationTool.class, params, Paths.get(cliOptions.outdir), token);
     }
 
     private void sampleRun() throws Exception {
@@ -598,7 +598,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
 
         toolRunner.execute(SampleVariantFilterAnalysis.class,
                 cliOptions.toolParams.toObjectMap(cliOptions.commonOptions.params),
-                Paths.get(cliOptions.outdir), sessionId);
+                Paths.get(cliOptions.outdir), token);
     }
 
     private void histogram() throws Exception {
@@ -610,8 +610,8 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         Query query = VariantQueryCommandUtils.parseBasicVariantQuery(cliOptions.variantQueryOptions, new Query());
         params.putAll(query);
 
-        String userId1 = catalogManager.getUserManager().getUserId(sessionId);
-        new PluginExecutor(catalogManager, sessionId)
+        String userId1 = catalogManager.getUserManager().getUserId(token);
+        new PluginExecutor(catalogManager, token)
                 .execute(VariantHistogramAnalysis.class, "default", catalogManager.getStudyManager().resolveId(cliOptions.study, userId1).getUid(), params);
     }
 
@@ -633,7 +633,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
                     .append(SampleDBAdaptor.QueryParams.ANNOTATION.key(), cliOptions.controlCohortSamplesAnnotation);
         }
         GwasAnalysis gwasAnalysis = new GwasAnalysis();
-        gwasAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+        gwasAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
         gwasAnalysis.setStudy(cliOptions.study)
                 .setPhenotype(cliOptions.phenotype)
                 .setIndex(cliOptions.index)
@@ -662,7 +662,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         }
 
         SampleVariantStatsAnalysis sampleVariantStatsAnalysis = new SampleVariantStatsAnalysis();
-        sampleVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+        sampleVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
         sampleVariantStatsAnalysis.setStudy(cliOptions.study)
                 .setIndexResults(cliOptions.index)
                 .setFamily(cliOptions.family)
@@ -687,7 +687,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         List<String> sampleNames = cliOptions.samples;
 
         CohortVariantStatsAnalysis cohortVariantStatsAnalysis = new CohortVariantStatsAnalysis();
-        cohortVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+        cohortVariantStatsAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
         cohortVariantStatsAnalysis.setStudy(cliOptions.study)
                 .setCohortName(cliOptions.cohort)
                 .setIndexResults(cliOptions.index)
@@ -714,7 +714,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         }
 
         PlinkWrapperAnalysis plink = new PlinkWrapperAnalysis();
-        plink.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+        plink.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
 
         plink.start();
     }
@@ -742,7 +742,7 @@ public class VariantCommandExecutor extends InternalCommandExecutor {
         }
 
         RvtestsWrapperAnalysis rvtests = new RvtestsWrapperAnalysis();
-        rvtests.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), sessionId);
+        rvtests.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
 
         rvtests.start();
     }

@@ -84,7 +84,7 @@ public class WorkEnvironmentTest extends ExternalResource {
         Files.copy(inputStream, opencgaHome.resolve("examples")
                 .resolve("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), StandardCopyOption.REPLACE_EXISTING);
 
-        CatalogDemo.createDemoDatabase(configuration, "admin", true);
+        CatalogDemo.createDemoDatabase(catalogManager, "admin", true);
 
         restServer = new RestServer(opencgaHome.resolve("conf"));
         restServer.start();

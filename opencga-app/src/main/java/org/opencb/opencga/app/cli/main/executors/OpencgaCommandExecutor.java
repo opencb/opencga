@@ -89,7 +89,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             if (StringUtils.isNotEmpty(options.token)) {
                 // Ignore session file. Overwrite with command line information (just sessionId)
                 cliSession = new CliSession(clientConfiguration.getRest().getHost(), null, options.token);
-                sessionId = options.token;
+                token = options.token;
                 userId = null;
 
                 openCGAClient = new OpenCGAClient(options.token, clientConfiguration);
