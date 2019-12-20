@@ -15,6 +15,7 @@ public class AnnotationIndexPutBuilder {
     private final ByteArrayOutputStream ct;
     private final BitOutputStream ctBt;
     private final BitOutputStream popFreq;
+    private final ByteArrayOutputStream clinical;
     private int numVariants;
 
     public AnnotationIndexPutBuilder() {
@@ -27,6 +28,7 @@ public class AnnotationIndexPutBuilder {
         this.ct = new ByteArrayOutputStream(size / 2);
         this.ctBt = new BitOutputStream(size / 4);
         this.popFreq = new BitOutputStream(size / 2);
+        this.clinical = new ByteArrayOutputStream(size / 5);
         numVariants = 0;
     }
 
@@ -45,6 +47,9 @@ public class AnnotationIndexPutBuilder {
         byte[] ctBtMatrix = ctBtCombination.getCtBtMatrix();
         for (int i = 0; i < ctBtCombination.getNumCt(); i++) {
             ctBt.write(ctBtMatrix[i], ctBtCombination.getNumBt());
+        }
+        if (indexEntry.isClinical()) {
+            clinical.write(indexEntry.getClinicalIndex());
         }
         return this;
     }
@@ -67,6 +72,10 @@ public class AnnotationIndexPutBuilder {
         put.addColumn(family, SampleIndexSchema.toAnnotationCtBtIndexColumn(gt), ctBt.toByteArray());
 
         put.addColumn(family, SampleIndexSchema.toAnnotationPopFreqIndexColumn(gt), popFreq.toByteArray());
+
+        if (clinical.size() > 0) {
+            put.addColumn(family, SampleIndexSchema.toAnnotationClinicalIndexColumn(gt), clinical.toByteArray());
+        }
         reset();
         return put;
     }
@@ -77,6 +86,7 @@ public class AnnotationIndexPutBuilder {
         ct.reset();
         ctBt.reset();
         popFreq.reset();
+        clinical.reset();
         numVariants = 0;
     }
 }

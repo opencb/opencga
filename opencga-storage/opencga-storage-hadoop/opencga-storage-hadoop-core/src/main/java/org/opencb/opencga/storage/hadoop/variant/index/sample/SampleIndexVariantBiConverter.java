@@ -183,6 +183,7 @@ public class SampleIndexVariantBiConverter {
         private BitInputStream popFreq;
         private BitInputStream ctBtIndex;
         private int nonIntergenicCount;
+        private int clinicalCount;
 
         // Reuse the annotation index entry. Avoid create a new instance for each variant.
         private final AnnotationIndexEntry annotationIndexEntry;
@@ -190,6 +191,7 @@ public class SampleIndexVariantBiConverter {
 
         SampleIndexGtEntryIterator() {
             nonIntergenicCount = 0;
+            clinicalCount = 0;
             annotationIndexEntry = new AnnotationIndexEntry();
             annotationIndexEntry.setCtBtCombination(new AnnotationIndexEntry.CtBtCombination(new byte[0], 0, 0));
             annotationIndexEntryIdx = -1;
@@ -283,6 +285,15 @@ public class SampleIndexVariantBiConverter {
             }
             annotationIndexEntry.setPopFreqIndex(popFreqIndex);
 
+            if (gtEntry.getClinicalIndex() != null) {
+                boolean clinical = SampleIndexEntryFilter.isClinical(annotationIndexEntry.getSummaryIndex());
+                annotationIndexEntry.setClinical(clinical);
+                if (clinical) {
+                    int nextClinical = nextClinicalIndex();
+                    annotationIndexEntry.setClinicalIndex(gtEntry.getClinicalIndex(nextClinical));
+                }
+            }
+
             annotationIndexEntryIdx = idx;
             return annotationIndexEntry;
         }
@@ -298,14 +309,32 @@ public class SampleIndexVariantBiConverter {
             }
         }
 
-        protected void increaseNonIntergenicCounter() {
+        @Override
+        public int nextClinicalIndex() {
+            if (gtEntry.getAnnotationIndex() == null) {
+                return -1;
+            } else if (SampleIndexEntryFilter.isClinical(gtEntry.getAnnotationIndex(nextIndex()))) {
+                return clinicalCount;
+            } else {
+                throw new IllegalStateException("Next variant is not clinical!");
+            }
+        }
+
+        protected void increaseCounters() {
             // If the variant to be returned is non-intergenic, increase the number of non-intergenic variants.
             if (gtEntry.getAnnotationIndex() != null) {
                 if (SampleIndexEntryFilter.isNonIntergenic(gtEntry.getAnnotationIndex(nextIndex()))) {
                     nonIntergenicCount++;
                 }
             }
+            // If the variant to be returned is clinical, increase the number of clinical variants.
+            if (gtEntry.getAnnotationIndex() != null) {
+                if (SampleIndexEntryFilter.isClinical(gtEntry.getAnnotationIndex(nextIndex()))) {
+                    clinicalCount++;
+                }
+            }
         }
+
     }
 
     private static final class EmptySampleIndexEntryIterator implements SampleIndexEntryIterator {
@@ -331,6 +360,11 @@ public class SampleIndexVariantBiConverter {
 
         @Override
         public int nextNonIntergenicIndex() {
+            throw new NoSuchElementException("Empty iterator");
+        }
+
+        @Override
+        public int nextClinicalIndex() {
             throw new NoSuchElementException("Empty iterator");
         }
 
@@ -403,14 +437,14 @@ public class SampleIndexVariantBiConverter {
         @Override
         public void skip() {
             nextAnnotationIndexEntry(); // ensure read annotation
-            increaseNonIntergenicCounter();
+            increaseCounters();
             variants.next();
         }
 
         @Override
         public Variant next() {
             nextAnnotationIndexEntry(); // ensure read annotation
-            increaseNonIntergenicCounter();
+            increaseCounters();
             return new Variant(variants.next());
         }
 
@@ -459,7 +493,7 @@ public class SampleIndexVariantBiConverter {
         @Override
         public void skip() {
             nextAnnotationIndexEntry(); // ensure read annotation
-            increaseNonIntergenicCounter();
+            increaseCounters();
             i++;
         }
 
@@ -518,7 +552,7 @@ public class SampleIndexVariantBiConverter {
         @Override
         public Variant next() {
             nextAnnotationIndexEntry(); // ensure read annotation
-            increaseNonIntergenicCounter();
+            increaseCounters();
             Variant variant;
             if (encodedRefAlt) {
                 variant = toVariantEncodedAlleles(chromosome, batchStart, bytes, currentOffset);
@@ -532,7 +566,7 @@ public class SampleIndexVariantBiConverter {
         @Override
         public void skip() {
             nextAnnotationIndexEntry(); // ensure read annotation
-            increaseNonIntergenicCounter();
+            increaseCounters();
             movePointer();
         }
 

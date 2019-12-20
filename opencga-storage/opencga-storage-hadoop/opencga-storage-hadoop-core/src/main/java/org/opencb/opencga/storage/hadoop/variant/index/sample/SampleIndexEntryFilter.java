@@ -176,7 +176,10 @@ public class SampleIndexEntryFilter {
             expectedResultsFromAnnotation.decrement();
 
             // Test other annotation index and popFreq (if any)
-            if (annotationIndexEntry == null || filterOtherAnnotFields(annotationIndexEntry) && filterPopFreq(annotationIndexEntry)) {
+            if (annotationIndexEntry == null
+                    || filterClinicalFields(annotationIndexEntry)
+                    && filterBtCtFields(annotationIndexEntry)
+                    && filterPopFreq(annotationIndexEntry)) {
 
                 // Test file index (if any)
                 if (filterFile(variants)) {
@@ -206,12 +209,12 @@ public class SampleIndexEntryFilter {
         return query.getSampleFileIndexQuery().getValidFileIndex()[variants.nextFileIndex() & query.getFileIndexMask()];
     }
 
-    public static boolean isNonIntergenic(byte[] annotationIndex, int idx) {
-        return isNonIntergenic(annotationIndex[idx]);
-    }
-
     public static boolean isNonIntergenic(byte summaryIndex) {
         return IndexUtils.testIndex(summaryIndex, AnnotationIndexConverter.INTERGENIC_MASK, (byte) 0);
+    }
+
+    public static boolean isClinical(byte summaryIndex) {
+        return IndexUtils.testIndex(summaryIndex, AnnotationIndexConverter.CLINICAL_MASK, AnnotationIndexConverter.CLINICAL_MASK);
     }
 
     private boolean filterPopFreq(AnnotationIndexEntry annotationIndexEntry) {
@@ -247,7 +250,22 @@ public class SampleIndexEntryFilter {
         }
     }
 
-    private boolean filterOtherAnnotFields(AnnotationIndexEntry annotationIndexEntry) {
+    private boolean filterClinicalFields(AnnotationIndexEntry annotationIndexEntry) {
+        if (query.getAnnotationIndexQuery().getClinicalMask() == EMPTY_MASK) {
+            // No filter required
+            return true;
+        }
+        if (annotationIndexEntry == null || !annotationIndexEntry.hasSummaryIndex()) {
+            // unable to filter by this field
+            return true;
+        }
+        if (!annotationIndexEntry.isClinical()) {
+            return false;
+        }
+        return testIndexAny(annotationIndexEntry.getClinicalIndex(), query.getAnnotationIndexQuery().getClinicalMask());
+    }
+
+    private boolean filterBtCtFields(AnnotationIndexEntry annotationIndexEntry) {
         if (annotationIndexEntry == null || !annotationIndexEntry.hasSummaryIndex()) {
             return true;
         }

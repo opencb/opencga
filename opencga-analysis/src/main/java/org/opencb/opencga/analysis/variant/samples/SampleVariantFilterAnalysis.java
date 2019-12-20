@@ -171,14 +171,17 @@ public class SampleVariantFilterAnalysis extends OpenCgaTool {
 
     public Set<String> getSamplesInAnyVariants() throws Exception {
         Set<String> samples = new HashSet<>();
+        Set<String> variants = new HashSet<>();
 
         iterate(variant -> {
         }, (variant, sample, gt) -> {
             if (isValidGenotype(genotypesSet, genotypeClasses, gt)) {
                 samples.add(sample);
+                variants.add(variant.toString());
             }
             return true;
         });
+        this.variants = variants;
 
         return samples;
     }

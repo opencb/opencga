@@ -89,6 +89,9 @@ public class HBaseToSampleIndexConverter implements Converter<Result, SampleInde
                 } else if (columnStartsWith(cell, ANNOTATION_POP_FREQ_PREFIX_BYTES)) {
                     entry.getGtEntry(getGt(cell, ANNOTATION_POP_FREQ_PREFIX_BYTES))
                             .setPopulationFrequencyIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
+                } else if (columnStartsWith(cell, ANNOTATION_CLINICAL_PREFIX_BYTES)) {
+                    entry.getGtEntry(getGt(cell, ANNOTATION_CLINICAL_PREFIX_BYTES))
+                            .setClinicalIndex(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength());
                 }
             } else {
                 if (columnStartsWith(cell, MENDELIAN_ERROR_COLUMN_BYTES)) {
