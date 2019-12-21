@@ -278,7 +278,9 @@ public abstract class AbstractParentClient {
      * @param outputFilePath Path where the file will be written (downloaded).
      */
     private void download(WebTarget path, Map<String, Object> params, String outputFilePath) {
-        if (Files.notExists(Paths.get(outputFilePath).getParent())) {
+        if (Files.isDirectory(Paths.get(outputFilePath))) {
+            outputFilePath += ("/" + new File(path.getUri().getPath().replace(":", "/")).getParentFile().getName());
+        } else if (Files.notExists(Paths.get(outputFilePath).getParent())) {
             throw new RuntimeException("Output directory " + outputFilePath + " not found");
         }
 
