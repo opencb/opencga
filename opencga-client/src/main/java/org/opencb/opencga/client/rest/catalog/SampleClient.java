@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.rest.RestResponse;
 
@@ -46,7 +47,7 @@ public class SampleClient extends AnnotationClient<Sample> {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("body", bodyParams);
-        params.putIfNotNull(STUDY, studyId);
+        params.putIfNotNull(ParamConstants.STUDY_PARAM, studyId);
 
         return execute(SAMPLES_URL, "create", params, POST, Sample.class);
     }

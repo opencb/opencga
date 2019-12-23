@@ -29,6 +29,8 @@ public interface SampleIndexEntryIterator extends Iterator<Variant> {
      */
     int nextNonIntergenicIndex();
 
+    int nextClinicalIndex();
+
     /**
      * @return the genotype of the next element.
      */

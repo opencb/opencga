@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -73,11 +74,8 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
                 null, null, "GRCh38", new QueryOptions(), sessionId).getResults().get(0);
         Study study = catalogManager.getStudyManager().create(project.getFqn(), "def", null, "default", Study.Type.FAMILY, null, "", null, null, null, null, null, null, null, null, sessionId).getResults().get(0);
         studyId = study.getFqn();
-        pedFile = catalogManager.getFileManager().create(studyId, File.Type.FILE, File.Format.PED, File.Bioformat
-                .OTHER_PED, "data/" + pedFileName, "", null, 0, null, (long) -1, null, null, true, null, null, sessionId)
-                .getResults().get(0);
-        new FileUtils(catalogManager).upload(pedFileURL.toURI(), pedFile, null, sessionId, false, false, false, true, 10000000);
-        pedFile = catalogManager.getFileManager().get(studyId, pedFile.getPath(), null, sessionId).getResults().get(0);
+        pedFile = catalogManager.getFileManager().upload(studyId, new FileInputStream(new java.io.File(pedFileURL.toURI())),
+                new File().setPath("data/" + pedFileName), false, true, false, sessionId).first();
     }
 
     @AfterClass
@@ -120,25 +118,27 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         DataResult<Sample> sampleDataResult = loader.loadSampleAnnotations(pedFile, null, sessionId);
         String variableSetId = sampleDataResult.getResults().get(0).getAnnotationSets().get(0).getVariableSetId();
 
-        Query query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";family=GB84");
-        QueryOptions options = new QueryOptions("limit", 2);
+        Query query = new Query(Constants.ANNOTATION, variableSetId + ":family=GB84");
+        QueryOptions options = new QueryOptions()
+                .append(QueryOptions.LIMIT, 0)
+                .append("count", true);
 
         DataResult<Sample> allSamples = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
-        Assert.assertNotEquals(0, allSamples.getNumResults());
+        Assert.assertNotEquals(0, allSamples.getNumMatches());
 
-        query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";sex=2;Population=ITU");
+        query = new Query(Constants.ANNOTATION, variableSetId + ":sex=2;" + variableSetId + ":Population=ITU");
         DataResult<Sample> femaleIta = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
-        Assert.assertNotEquals(0, femaleIta.getNumResults());
+        Assert.assertNotEquals(0, femaleIta.getNumMatches());
 
-        query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";sex=1;Population=ITU");
+        query = new Query(Constants.ANNOTATION, variableSetId + ":sex=1;" + variableSetId + ":Population=ITU");
         DataResult<Sample> maleIta = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
-        Assert.assertNotEquals(0, maleIta.getNumResults());
+        Assert.assertNotEquals(0, maleIta.getNumMatches());
 
-        query = new Query(Constants.ANNOTATION, Constants.VARIABLE_SET + "=" + variableSetId + ";Population=ITU");
+        query = new Query(Constants.ANNOTATION, variableSetId + ":Population=ITU");
         DataResult<Sample> ita = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
-        Assert.assertNotEquals(0, ita.getNumResults());
+        Assert.assertNotEquals(0, ita.getNumMatches());
 
-        Assert.assertEquals("Fail sample query", ita.getNumTotalResults(), maleIta.getNumTotalResults() + femaleIta.getNumTotalResults());
+        Assert.assertEquals("Fail sample query", ita.getNumMatches(), maleIta.getNumMatches() + femaleIta.getNumMatches());
     }
 
 

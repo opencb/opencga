@@ -152,6 +152,9 @@ analysis:
      #     configMap:
      #       defaultMode: 365
      #       name: "confhadoop"
+     # k8s.tolerations:
+     #   - key: virtual-kubelet.io/provider
+     #     operator: Exists
 
   # List of analysis frameworks
   frameworks:

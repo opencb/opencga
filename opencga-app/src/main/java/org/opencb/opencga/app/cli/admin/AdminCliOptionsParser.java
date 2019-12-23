@@ -37,6 +37,7 @@ import java.util.List;
 public class AdminCliOptionsParser extends CliOptionsParser {
 
     private final AdminCommonCommandOptions commonCommandOptions;
+    private final IgnorePasswordCommonCommandOptions noPasswordCommonCommandOptions;
 
     private final CatalogCommandOptions catalogCommandOptions;
     private final UsersCommandOptions usersCommandOptions;
@@ -52,6 +53,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         jCommander.setProgramName("opencga-admin.sh");
 
         commonCommandOptions = new AdminCommonCommandOptions();
+        noPasswordCommonCommandOptions = new IgnorePasswordCommonCommandOptions();
 
         catalogCommandOptions = new CatalogCommandOptions();
         jCommander.addCommand("catalog", catalogCommandOptions);
@@ -150,6 +152,16 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
         @Parameter(names = {"-p", "--password"}, description = "Administrator password", hidden = true, password = true, arity = 0)
         public String adminPassword;
+
+    }
+
+    /**
+     * This class contains all those common parameters available for all 'subcommands' that do not need the password parameter.
+     */
+    public class IgnorePasswordCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
+
+        @Parameter(names = {"-p", "--password"}, description = "Administrator password", hidden = true, arity = 0)
+        public boolean adminPassword;
 
     }
 
@@ -260,7 +272,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public RestServerCommandOptions restServerCommandOptions;
         public GrpcServerCommandOptions grpcServerCommandOptions;
 
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions  commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
 
         public ServerCommandOptions() {
             this.restServerCommandOptions = new RestServerCommandOptions();
@@ -682,7 +694,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     public class RestServerCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
 
         @Parameter(names = {"--start"}, description = "File with the new tool to be installed", arity = 0)
         public boolean start;
@@ -701,7 +713,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     public class GrpcServerCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
 
         @Parameter(names = {"--start"}, description = "File with the new tool to be installed", arity = 0)
         public boolean start;

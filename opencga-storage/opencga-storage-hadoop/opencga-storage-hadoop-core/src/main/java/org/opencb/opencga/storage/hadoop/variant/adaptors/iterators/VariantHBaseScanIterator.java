@@ -25,7 +25,6 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,13 +59,13 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
 //            .namingPattern("variant-hbase-scan-convert-%s")
 //            .build());
 
-    public VariantHBaseScanIterator(Iterator<ResultScanner> resultScanners, GenomeHelper genomeHelper, VariantStorageMetadataManager scm,
+    public VariantHBaseScanIterator(Iterator<ResultScanner> resultScanners, VariantStorageMetadataManager scm,
                                     Query query, QueryOptions options, String unknownGenotype, List<String> formats,
                                     VariantQueryFields selectElements)
             throws IOException {
         this.resultScanners = resultScanners;
         resultIterator = Collections.emptyIterator();
-        converter = HBaseToVariantConverter.fromResult(genomeHelper, scm)
+        converter = HBaseToVariantConverter.fromResult(scm)
                 .setMutableSamplesPosition(false)
                 .setStudyNameAsStudyId(options.getBoolean(HBaseToVariantConverter.STUDY_NAME_AS_STUDY_ID, true))
                 .setSimpleGenotypes(options.getBoolean(HBaseToVariantConverter.SIMPLE_GENOTYPES, true))

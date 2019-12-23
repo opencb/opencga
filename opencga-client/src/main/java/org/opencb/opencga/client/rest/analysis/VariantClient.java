@@ -149,6 +149,21 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "/sample/run", buildRestPOSTParams(null, study, body), POST, Job.class);
     }
 
+    public RestResponse<Variant> sampleQuery(String variant, String study, List<String> genotype, int limit, int skip, QueryOptions options)
+            throws IOException {
+        if (options == null) {
+            options = new QueryOptions();
+        } else {
+            options = new QueryOptions(options);
+        }
+        options.append(ParamConstants.STUDY_PARAM, study)
+                .append("variant", variant)
+                .append("genotype", genotype == null ? null : String.join(",", genotype))
+                .append(QueryOptions.LIMIT, limit)
+                .append(QueryOptions.SKIP, skip);
+        return execute(VARIANT_URL, "/sample/query", options, GET, Variant.class);
+    }
+
     public RestResponse<Job> sampleStatsRun(String study, SampleVariantStatsAnalysisParams body) throws IOException {
         return execute(VARIANT_URL, "/sample/stats/run", buildRestPOSTParams(null, study, body), POST, Job.class);
     }

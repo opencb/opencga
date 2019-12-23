@@ -82,8 +82,7 @@ public class HadoopDefaultVariantStatisticsManager extends DefaultVariantStatist
                 .forEachRemaining(c -> cohortIds.put(c.getName(), c.getId()));
 
         return new VariantStatsDBWriter(dbAdaptor, studyMetadata, options) {
-            private VariantStatsToHBaseConverter converter =
-                    new VariantStatsToHBaseConverter(hadoopDbAdaptor.getGenomeHelper(), studyMetadata, cohortIds);
+            private VariantStatsToHBaseConverter converter = new VariantStatsToHBaseConverter(studyMetadata, cohortIds);
             private HBaseDataWriter<Put> writer =
                     new HBaseDataWriter<>(hadoopDbAdaptor.getHBaseManager(), hadoopDbAdaptor.getVariantTable());
 

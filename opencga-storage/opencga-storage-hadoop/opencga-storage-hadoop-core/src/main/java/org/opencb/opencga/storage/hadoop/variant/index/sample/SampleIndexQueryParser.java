@@ -5,6 +5,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
+import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.Query;
@@ -674,6 +675,7 @@ public class SampleIndexQueryParser {
         byte annotationIndex = 0;
         byte biotypeMask = 0;
         short consequenceTypeMask = 0;
+        byte clinicalMask = 0;
 
         Boolean intergenic = null;
 
@@ -828,6 +830,35 @@ public class SampleIndexQueryParser {
 
         if (isValidParam(query, ANNOT_CLINICAL_SIGNIFICANCE)) {
             annotationIndex |= CLINICAL_MASK;
+            boolean clinicalCovered = true;
+            for (String clinical : query.getAsStringList(ANNOT_CLINICAL_SIGNIFICANCE.key())) {
+                switch (ClinicalSignificance.valueOf(clinical)) {
+                    case likely_benign:
+                        clinicalMask |= CLINICAL_LIKELY_BENIGN_MASK;
+                        break;
+                    case VUS:
+                        clinicalMask |= CLINICAL_VUS_MASK;
+                        break;
+                    case likely_pathogenic:
+                        clinicalMask |= CLINICAL_LIKELY_PATHOGENIC_MASK;
+                        break;
+                    case pathogenic:
+                        clinicalMask |= CLINICAL_PATHOGENIC_MASK;
+                        break;
+                    case uncertain_significance:
+                    case benign:
+                    default:
+                        clinicalCovered = false;
+                        break;
+                }
+            }
+            if (completeIndex && clinicalCovered) {
+                query.remove(ANNOT_CLINICAL_SIGNIFICANCE.key());
+            }
+            if (!clinicalCovered) {
+                // Not all values are covered by the index. Unable to filter using this index, as it may return less values than required.
+                clinicalMask = 0;
+            }
         }
 
         List<PopulationFrequencyQuery> popFreqQuery = new ArrayList<>();
@@ -941,7 +972,7 @@ public class SampleIndexQueryParser {
 
 
         return new SampleAnnotationIndexQuery(new byte[]{annotationIndexMask, annotationIndex}, consequenceTypeMask, biotypeMask,
-                popFreqOp, popFreqQuery, popFreqPartial);
+                clinicalMask, popFreqOp, popFreqQuery, popFreqPartial);
     }
 
     private boolean simpleCombination(BiotypeConsquenceTypeFlagCombination combination) {

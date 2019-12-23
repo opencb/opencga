@@ -2,18 +2,17 @@ package org.opencb.opencga.storage.core.variant;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.sample.SampleData;
-import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -210,23 +209,24 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
         checkSampleData(engine.getSampleData(variant, STUDY_NAME, new QueryOptions("genotype", "0/1,NA")).first());
     }
 
-    protected void checkSampleData(VariantSampleData sampleData) {
-        System.out.println("sampleData = " + sampleData);
-        switch (sampleData.getId()) {
+    protected void checkSampleData(Variant variant) {
+        System.out.println("variant = " + variant.toJson());
+        StudyEntry studyEntry = variant.getStudies().get(0);
+        switch (variant.toString()) {
             case VARIANT_A:
-                assertEquals(STUDY_NAME, sampleData.getStudyId());
+                assertEquals(STUDY_NAME, studyEntry.getStudyId());
                 assertEquals(Collections.singletonList("SAMPLE_1"),
-                        sampleData.getSamples().get(GenotypeClass.NA_GT_VALUE).stream().map(SampleData::getId).collect(Collectors.toList()));
+                        studyEntry.getSamplesData().stream().map(l -> l.get(l.size() - 2)).collect(Collectors.toList()));
                 assertEquals(Collections.singleton("variant-test-somatic.vcf"),
-                        sampleData.getFiles().keySet());
+                        studyEntry.getFiles().stream().map(FileEntry::getFileId).collect(Collectors.toSet()));
                 break;
 
             case VARIANT_B:
-                assertEquals(STUDY_NAME, sampleData.getStudyId());
+                assertEquals(STUDY_NAME, studyEntry.getStudyId());
                 assertEquals(Arrays.asList("SAMPLE_1", "SAMPLE_2"),
-                        sampleData.getSamples().get(GenotypeClass.NA_GT_VALUE).stream().map(SampleData::getId).collect(Collectors.toList()));
+                        studyEntry.getSamplesData().stream().map(l -> l.get(l.size() - 2)).collect(Collectors.toList()));
                 assertEquals(new HashSet<>(Arrays.asList("variant-test-somatic.vcf", "variant-test-somatic_2.vcf")),
-                        sampleData.getFiles().keySet());
+                        studyEntry.getFiles().stream().map(FileEntry::getFileId).collect(Collectors.toSet()));
                 break;
 
             default:

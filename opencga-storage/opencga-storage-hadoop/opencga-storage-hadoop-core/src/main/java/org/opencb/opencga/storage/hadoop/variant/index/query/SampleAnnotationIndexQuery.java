@@ -11,6 +11,7 @@ public class SampleAnnotationIndexQuery {
     private final byte[] annotationIndexMask; // byte[] = {mask , index}
     private final short consequenceTypeMask;
     private final byte biotypeMask;
+    private final byte clinicalMask;
     private final List<PopulationFrequencyQuery> populationFrequencyQueries;
     private final VariantQueryUtils.QueryOperation populationFrequencyQueryOperator;
     private final boolean populationFrequencyQueryPartial;
@@ -69,18 +70,20 @@ public class SampleAnnotationIndexQuery {
         this.annotationIndexMask = new byte[]{0, 0};
         this.consequenceTypeMask = 0;
         this.biotypeMask = 0;
+        this.clinicalMask = 0;
         this.populationFrequencyQueries = Collections.emptyList();
         this.populationFrequencyQueryOperator = VariantQueryUtils.QueryOperation.AND;
         this.populationFrequencyQueryPartial = true;
     }
 
     public SampleAnnotationIndexQuery(byte[] annotationIndexMask, short consequenceTypeMask, byte biotypeMask,
-                                      VariantQueryUtils.QueryOperation populationFrequencyQueryOperator,
+                                      byte clinicalMask, VariantQueryUtils.QueryOperation populationFrequencyQueryOperator,
                                       List<PopulationFrequencyQuery> populationFrequencyQueries,
                                       boolean populationFrequencyQueryPartial) {
         this.annotationIndexMask = annotationIndexMask;
         this.consequenceTypeMask = consequenceTypeMask;
         this.biotypeMask = biotypeMask;
+        this.clinicalMask = clinicalMask;
         this.populationFrequencyQueries = Collections.unmodifiableList(populationFrequencyQueries);
         this.populationFrequencyQueryOperator = populationFrequencyQueryOperator;
         this.populationFrequencyQueryPartial = populationFrequencyQueryPartial;
@@ -112,6 +115,10 @@ public class SampleAnnotationIndexQuery {
 
     public boolean isPopulationFrequencyQueryPartial() {
         return populationFrequencyQueryPartial;
+    }
+
+    public byte getClinicalMask() {
+        return clinicalMask;
     }
 
     public boolean isEmpty() {

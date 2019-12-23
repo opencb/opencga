@@ -164,6 +164,7 @@ public class OpenCGAWSServer {
         this.apiVersion = version;
         this.uriInfo = uriInfo;
         this.httpServletRequest = httpServletRequest;
+        httpServletRequest.setAttribute(OpenCGAWSServer.class.getName(), this);
 
         this.params = new ObjectMap();
         for (String key : uriInfo.getQueryParameters().keySet()) {
@@ -462,7 +463,7 @@ public class OpenCGAWSServer {
         return new AclParams(permissions, action);
     }
 
-    protected Response createErrorResponse(Exception e) {
+    protected Response createErrorResponse(Throwable e) {
         // First we print the exception in Server logs
         logger.error("Catch error: " + e.getMessage(), e);
 
@@ -471,11 +472,7 @@ public class OpenCGAWSServer {
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
         queryResponse.setApiVersion(apiVersion);
         queryResponse.setParams(params);
-        if (StringUtils.isEmpty(e.getMessage())) {
-            addErrorEvent(queryResponse, e.toString());
-        } else {
-            addErrorEvent(queryResponse, e.getMessage());
-        }
+        addErrorEvent(queryResponse, e);
 
         OpenCGAResult<ObjectMap> result = OpenCGAResult.empty();
         queryResponse.setResponses(Arrays.asList(result));
@@ -521,8 +518,15 @@ public class OpenCGAWSServer {
         if (response.getEvents() == null) {
             response.setEvents(new ArrayList<>());
         }
-
         response.getEvents().add(new Event(Event.Type.ERROR, message));
+    }
+
+    private <T> void addErrorEvent(RestResponse<T> response, Throwable e) {
+        if (response.getEvents() == null) {
+            response.setEvents(new ArrayList<>());
+        }
+        response.getEvents().add(
+                new Event(Event.Type.ERROR, 0, e.getClass().getName(), e.getClass().getSimpleName(), e.getMessage()));
     }
 
     // TODO: Change signature
@@ -535,15 +539,17 @@ public class OpenCGAWSServer {
         queryResponse.setParams(params);
 
         // Guarantee that the RestResponse object contains a list of results
-        List list;
+        List<OpenCGAResult<?>> list;
         if (obj instanceof List) {
             list = (List) obj;
         } else {
-            list = new ArrayList();
-            if (!(obj instanceof DataResult)) {
-                list.add(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(obj), 1));
+            list = new ArrayList<>();
+            if (obj instanceof OpenCGAResult) {
+                list.add(((OpenCGAResult) obj));
+            } else if (obj instanceof DataResult) {
+                list.add(new OpenCGAResult<>(((DataResult) obj)));
             } else {
-                list.add(obj);
+                list.add(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(obj), 1));
             }
         }
         queryResponse.setResponses(list);

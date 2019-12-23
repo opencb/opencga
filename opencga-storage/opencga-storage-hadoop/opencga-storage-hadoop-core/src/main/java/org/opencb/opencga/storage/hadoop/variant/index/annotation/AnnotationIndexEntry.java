@@ -12,27 +12,33 @@ public class AnnotationIndexEntry {
     private boolean hasBtIndex;
     private byte btIndex;
     private CtBtCombination ctBtCombination;
+    private boolean clinical;
     private byte[] popFreqIndex;
+    private byte clinicalIndex;
 
 
     public AnnotationIndexEntry() {
     }
 
     public AnnotationIndexEntry(
-            byte summaryIndex, boolean intergenic, short ctIndex, byte btIndex, byte[] popFreqIndex, byte[] ctBtCombination) {
-        this(summaryIndex, intergenic, ctIndex, btIndex, popFreqIndex,
-                new CtBtCombination(ctBtCombination,
-                        Integer.bitCount(Short.toUnsignedInt(ctIndex)),
-                        Integer.bitCount(Byte.toUnsignedInt(btIndex))));
+            byte summaryIndex, boolean intergenic, short ctIndex, byte btIndex, byte[] ctBtCombination, byte[] popFreqIndex,
+            boolean clinical, byte clinicalIndex) {
+        this(summaryIndex, intergenic, ctIndex, btIndex, new CtBtCombination(ctBtCombination,
+                Integer.bitCount(Short.toUnsignedInt(ctIndex)),
+                Integer.bitCount(Byte.toUnsignedInt(btIndex))), popFreqIndex,
+                clinical, clinicalIndex);
     }
 
     public AnnotationIndexEntry(
-            byte summaryIndex, boolean intergenic, short ctIndex, byte btIndex, byte[] popFreqIndex, CtBtCombination ctBtCombination) {
+            byte summaryIndex, boolean intergenic, short ctIndex, byte btIndex, CtBtCombination ctBtCombination, byte[] popFreqIndex,
+            boolean clinical, byte clinicalIndex) {
         this.summaryIndex = summaryIndex;
         this.intergenic = intergenic;
         this.ctIndex = ctIndex;
         this.btIndex = btIndex;
         this.ctBtCombination = ctBtCombination == null ? CtBtCombination.empty() : ctBtCombination;
+        this.clinical = clinical;
+        this.clinicalIndex = clinicalIndex;
         this.popFreqIndex = popFreqIndex;
     }
 
@@ -189,6 +195,24 @@ public class AnnotationIndexEntry {
 
     public AnnotationIndexEntry setPopFreqIndex(byte[] popFreqIndex) {
         this.popFreqIndex = popFreqIndex;
+        return this;
+    }
+
+    public boolean isClinical() {
+        return clinical;
+    }
+
+    public AnnotationIndexEntry setClinical(boolean clinical) {
+        this.clinical = clinical;
+        return this;
+    }
+
+    public byte getClinicalIndex() {
+        return clinicalIndex;
+    }
+
+    public AnnotationIndexEntry setClinicalIndex(byte clinicalIndex) {
+        this.clinicalIndex = clinicalIndex;
         return this;
     }
 

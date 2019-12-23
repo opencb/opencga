@@ -135,12 +135,12 @@ public class SampleIndexEntryFilterTest {
     }
 
     private SampleIndexEntry getSampleIndexEntry1() {
-        byte[] pf = new AnnotationIndexPutBuilder()                                         // s1 s2 s3 s4 s5
-                .add(new AnnotationIndexEntry((byte) 0, false, (short) 0, (byte) 0, new byte[]{ 0, 0, 0, 0, 3 }, new byte[0]))  // 1:10:A:T
-                .add(new AnnotationIndexEntry((byte) 0, false, (short) 0, (byte) 0, new byte[]{ 0, 1, 2, 3, 3 }, new byte[0]))  // 1:20:A:T
-                .add(new AnnotationIndexEntry((byte) 0, false, (short) 0, (byte) 0, new byte[]{ 0, 2, 3, 1, 3 }, new byte[0]))  // 1:30:A:T
-                .add(new AnnotationIndexEntry((byte) 0, false, (short) 0, (byte) 0, new byte[]{ 0, 3, 3, 3, 3 }, new byte[0]))  // 1:40:A:T
-                .add(new AnnotationIndexEntry((byte) 0, false, (short) 0, (byte) 0, new byte[]{ 0, 1, 0, 3, 3 }, new byte[0]))  // 1:50:A:T
+        byte[] pf = new AnnotationIndexPutBuilder()                                                      // s1 s2 s3 s4 s5
+                .add(new AnnotationIndexEntry((byte) 0, false, (short) 0, (byte) 0, new byte[0], new byte[]{ 0, 0, 0, 0, 3 }, false, (byte) 0))  // 1:10:A:T
+                .add(new AnnotationIndexEntry((byte) 0, false, (short) 0, (byte) 0, new byte[0], new byte[]{ 0, 1, 2, 3, 3 }, false, (byte) 0))  // 1:20:A:T
+                .add(new AnnotationIndexEntry((byte) 0, false, (short) 0, (byte) 0, new byte[0], new byte[]{ 0, 2, 3, 1, 3 }, false, (byte) 0))  // 1:30:A:T
+                .add(new AnnotationIndexEntry((byte) 0, false, (short) 0, (byte) 0, new byte[0], new byte[]{ 0, 3, 3, 3, 3 }, false, (byte) 0))  // 1:40:A:T
+                .add(new AnnotationIndexEntry((byte) 0, false, (short) 0, (byte) 0, new byte[0], new byte[]{ 0, 1, 0, 3, 3 }, false, (byte) 0))  // 1:50:A:T
                 .buildAndReset(new Put(new byte[1]), "0/1", new byte[1])
                 .getFamilyCellMap().get(new byte[1])
                 .stream()
@@ -223,7 +223,7 @@ public class SampleIndexEntryFilterTest {
                                                              boolean partial,
                                                              PopulationFrequencyQuery... frequencyQuery) {
         SampleAnnotationIndexQuery annotationIndexQuery = new SampleAnnotationIndexQuery(new byte[2], (short) 0, (byte) 0,
-                op,
+                (byte) 0, op,
                 Arrays.asList(frequencyQuery),
                 partial);
         return getSingleSampleIndexQuery(annotationIndexQuery);

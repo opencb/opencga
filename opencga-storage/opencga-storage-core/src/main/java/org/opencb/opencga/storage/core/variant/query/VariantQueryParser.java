@@ -35,6 +35,10 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils
  */
 public class VariantQueryParser {
 
+    public static final String SAMPLE_ID = "SAMPLE_ID";
+    public static final String FILE_IDX = "FILE_IDX";
+    public static final String FILE_ID = "FILE_ID";
+
     protected final CellBaseUtils cellBaseUtils;
     protected final VariantStorageMetadataManager metadataManager;
 
@@ -442,12 +446,12 @@ public class VariantQueryParser {
 
         List<String> formats = getIncludeFormats(query);
         if (formats == null) {
-            query.put(INCLUDE_FORMAT.key(), ALL);
+            formats = Collections.singletonList(ALL);
         } else if (formats.isEmpty()) {
-            query.put(INCLUDE_FORMAT.key(), NONE);
-        } else {
-            query.put(INCLUDE_FORMAT.key(), formats);
+            formats = Collections.singletonList(NONE);
         }
+
+        query.put(INCLUDE_FORMAT.key(), formats);
         query.remove(INCLUDE_GENOTYPE.key(), formats);
     }
 

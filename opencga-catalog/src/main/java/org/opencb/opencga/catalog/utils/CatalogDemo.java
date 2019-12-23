@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.utils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.GroupParams;
@@ -42,15 +41,14 @@ public final class CatalogDemo {
     /**
      * Populates the database with dummy data.
      *
-     * @param configuration Catalog configuration file.
+     * @param catalogManager Catalog manager instance.
      * @param adminPassword Administrator password.
      * @param force Used in the case where a database already exists with the same name. When force = true, it will override it.
      * @throws CatalogException when there is already a database with the same name and force is false.
      * @throws URISyntaxException when there is a problem parsing the URI read from the configuration file.
      */
-    public static void createDemoDatabase(Configuration configuration, String adminPassword, boolean force)
+    public static void createDemoDatabase(CatalogManager catalogManager, String adminPassword, boolean force)
             throws CatalogException, URISyntaxException {
-        CatalogManager catalogManager = new CatalogManager(configuration);
         if (catalogManager.existsCatalogDB()) {
             if (force) {
                 String token = catalogManager.getUserManager().loginAsAdmin(adminPassword);
@@ -59,7 +57,8 @@ public final class CatalogDemo {
                 throw new CatalogException("A database called " + catalogManager.getCatalogDatabase() + " already exists");
             }
         }
-        catalogManager.installCatalogDB(configuration.getAdmin().getSecretKey(), adminPassword, "opencga@admin.com", "");
+        catalogManager.installCatalogDB(catalogManager.getConfiguration().getAdmin().getSecretKey(), adminPassword,
+                "opencga@admin.com", "");
         try {
             populateDatabase(catalogManager);
         } catch (IOException e) {

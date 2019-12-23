@@ -91,16 +91,14 @@ public class VariantAnnotationRebuilderDriver extends AbstractVariantsTableDrive
 
     public static class VariantAnnotationRebuilderMapper extends TableMapper<ImmutableBytesWritable, Put> {
 
-        private GenomeHelper helper;
         private VariantAnnotationToHBaseConverter converter;
         private HBaseToVariantAnnotationConverter toAnnotationConverter;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             super.setup(context);
-            helper = new GenomeHelper(context.getConfiguration());
-            converter = new VariantAnnotationToHBaseConverter(helper, null, -1);
-            toAnnotationConverter = new HBaseToVariantAnnotationConverter(helper, 0);
+            converter = new VariantAnnotationToHBaseConverter(null, -1);
+            toAnnotationConverter = new HBaseToVariantAnnotationConverter(0);
         }
 
         @Override

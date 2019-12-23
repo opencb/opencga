@@ -51,7 +51,7 @@ public class SampleIndexAnnotationLoaderMapper extends VariantTableSampleIndexOr
 
     @Override
     protected void map(ImmutableBytesWritable key, Result result, Context context) throws IOException, InterruptedException {
-        HBaseToVariantAnnotationConverter annotationConverter = new HBaseToVariantAnnotationConverter(helper, 0);
+        HBaseToVariantAnnotationConverter annotationConverter = new HBaseToVariantAnnotationConverter();
 
         AnnotationIndexEntry indexEntry = converter.convert(annotationConverter.convert(result));
         // TODO Get stats given index values

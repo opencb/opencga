@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.admin;
 
 import com.beust.jcommander.ParameterException;
+import com.sun.research.ws.wadl.Param;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.executors.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -33,6 +34,8 @@ public class AdminMain {
     public static final String VERSION = GitRepositoryState.get().getBuildVersion();
 
     public static void main(String[] args) {
+
+        AdminCliOptionsParser cliOptionsParser = new AdminCliOptionsParser();
 
         // Add password parameter
         if (args.length > 1) {
@@ -52,12 +55,12 @@ public class AdminMain {
                         break;
                 }
             }
+
             if (passwordRequired) {
                 args = org.apache.commons.lang3.ArrayUtils.addAll(args, "--password");
             }
         }
 
-        AdminCliOptionsParser cliOptionsParser = new AdminCliOptionsParser();
         try {
             cliOptionsParser.parse(args);
         } catch (ParameterException e) {
