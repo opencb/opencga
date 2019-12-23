@@ -48,6 +48,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSampleQueryCommandOptions.SAMPLE_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
@@ -93,6 +94,7 @@ public class VariantCommandOptions {
     public final VariantExportStatsCommandOptions exportVariantStatsCommandOptions;
     public final VariantImportCommandOptions importVariantCommandOptions;
     public final VariantIbsCommandOptions ibsVariantCommandOptions;
+    public final VariantSampleQueryCommandOptions sampleQueryCommandOptions;
     public final VariantSamplesFilterCommandOptions samplesFilterCommandOptions;
     public final VariantHistogramCommandOptions histogramCommandOptions;
 
@@ -140,6 +142,7 @@ public class VariantCommandOptions {
         this.exportVariantStatsCommandOptions = new VariantExportStatsCommandOptions();
         this.importVariantCommandOptions = new VariantImportCommandOptions();
         this.ibsVariantCommandOptions = new VariantIbsCommandOptions();
+        this.sampleQueryCommandOptions = new VariantSampleQueryCommandOptions();
         this.samplesFilterCommandOptions = new VariantSamplesFilterCommandOptions();
         this.histogramCommandOptions = new VariantHistogramCommandOptions();
         this.gwasCommandOptions = new GwasCommandOptions();
@@ -563,7 +566,7 @@ public class VariantCommandOptions {
         public String outdir = "-";
     }
 
-    @Parameters(commandNames = {"samples"}, commandDescription = "Get samples given a set of variants")
+    @Parameters(commandNames = {VariantSamplesFilterCommandOptions.SAMPLE_RUN_COMMAND}, commandDescription = "Get samples given a set of variants")
     public class VariantSamplesFilterCommandOptions extends SampleVariantFilterParams {
         public static final String SAMPLE_RUN_COMMAND = "sample-run";
 
@@ -575,6 +578,26 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
+    }
+
+    @Parameters(commandNames = {SAMPLE_QUERY_COMMAND}, commandDescription = "Get sample data of a given variant")
+    public class VariantSampleQueryCommandOptions extends SampleVariantFilterParams {
+        public static final String SAMPLE_QUERY_COMMAND = "sample-query";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public NumericOptions numericOptions = commonNumericOptions;
+
+        @Parameter(names = {"--variant"}, description = "Variant to query", required = true)
+        public String variant;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
+        public String study;
+
+        @Parameter(names = {"--genotype"}, description = "Genotypes that the sample must have to be selected")
+        public List<String> genotype;
 
     }
 

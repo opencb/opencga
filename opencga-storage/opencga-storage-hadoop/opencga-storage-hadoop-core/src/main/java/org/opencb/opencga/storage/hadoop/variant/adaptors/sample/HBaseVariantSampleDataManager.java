@@ -156,6 +156,9 @@ public class HBaseVariantSampleDataManager extends VariantSampleDataManager {
                 // Get
                 Result result = table.get(get);
 
+                if (result == null || result.isEmpty()) {
+                    throw VariantQueryException.variantNotFound(variantStr);
+                }
                 // Walk row
                 VariantRow.walker(result)
                         .onFile(fileColumn -> {

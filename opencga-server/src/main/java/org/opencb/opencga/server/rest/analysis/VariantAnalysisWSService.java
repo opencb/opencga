@@ -541,7 +541,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     public Response sampleQuery(
             @ApiParam(value = "Variant") @QueryParam("variant") String variant,
             @ApiParam(value = "Study where all the samples belong to") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Genotypes that the sample must have to be selected") @QueryParam("genotype") @DefaultValue("0/1,1/1") String genotypesStr
+            @ApiParam(value = "Genotypes that the sample must have to be selected") @QueryParam("genotype") String genotypesStr
     ) {
         return run(() -> {
             queryOptions.putAll(query);

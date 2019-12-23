@@ -73,8 +73,6 @@ public abstract class AbstractParentClient {
     protected static final String POST = "POST";
     protected static final String DELETE = "DELETE";
 
-    protected static final String STUDY = "study";
-
     protected Logger logger;
 
     protected AbstractParentClient(String userId, String sessionId, ClientConfiguration configuration) {

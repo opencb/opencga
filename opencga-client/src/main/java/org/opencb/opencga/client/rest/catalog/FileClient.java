@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileTree;
 import org.opencb.opencga.core.rest.RestResponse;
@@ -93,12 +94,12 @@ public class FileClient extends AnnotationClient<File> {
     }
 
     public RestResponse<File> upload(String studyId, String filePath, ObjectMap params) throws IOException {
-        params = addParamsToObjectMap(params, STUDY, studyId, "file", filePath);
+        params = addParamsToObjectMap(params, ParamConstants.STUDY_PARAM, studyId, "file", filePath);
         return execute(FILES_URL, "upload", params, POST, File.class);
     }
 
     public RestResponse<File> groupBy(String studyId, String fields, ObjectMap params) throws IOException {
-        params = addParamsToObjectMap(params, STUDY, studyId, "fields", fields);
+        params = addParamsToObjectMap(params, ParamConstants.STUDY_PARAM, studyId, "fields", fields);
         return execute(FILES_URL, "groupBy", params, GET, File.class);
     }
 

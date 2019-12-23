@@ -96,13 +96,13 @@ import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCo
 /**
  * Created by imedina on 02/03/15.
  */
-public class VariantCommandExecutor extends InternalCommandExecutor {
+public class VariantInternalCommandExecutor extends InternalCommandExecutor {
 
     //    private AnalysisCliOptionsParser.VariantCommandOptions variantCommandOptions;
     private VariantCommandOptions variantCommandOptions;
     private ToolRunner toolRunner;
 
-    public VariantCommandExecutor(VariantCommandOptions variantCommandOptions) {
+    public VariantInternalCommandExecutor(VariantCommandOptions variantCommandOptions) {
         super(variantCommandOptions.commonCommandOptions);
         this.variantCommandOptions = variantCommandOptions;
     }
