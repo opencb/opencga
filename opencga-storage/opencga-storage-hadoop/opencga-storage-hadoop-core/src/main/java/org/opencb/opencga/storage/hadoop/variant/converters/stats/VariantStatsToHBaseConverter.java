@@ -42,16 +42,12 @@ import static org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.Variant
  */
 public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter implements Converter<VariantStatsWrapper, Put> {
 
-    private final GenomeHelper genomeHelper;
-    private final StudyMetadata studyMetadata;
     private final int studyId;
     private final Logger logger = LoggerFactory.getLogger(VariantStatsToHBaseConverter.class);
     private final Map<String, Integer> cohortIds;
 
-    public VariantStatsToHBaseConverter(GenomeHelper genomeHelper, StudyMetadata studyMetadata, Map<String, Integer> cohortIds) {
+    public VariantStatsToHBaseConverter(StudyMetadata studyMetadata, Map<String, Integer> cohortIds) {
         super(GenomeHelper.COLUMN_FAMILY_BYTES);
-        this.genomeHelper = genomeHelper;
-        this.studyMetadata = studyMetadata;
         this.studyId = studyMetadata.getId();
         this.cohortIds = cohortIds;
     }

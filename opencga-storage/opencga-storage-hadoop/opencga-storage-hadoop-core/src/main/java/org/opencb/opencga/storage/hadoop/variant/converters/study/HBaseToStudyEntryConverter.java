@@ -38,6 +38,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
@@ -96,9 +97,9 @@ public class HBaseToStudyEntryConverter extends AbstractPhoenixConverter {
     protected final Logger logger = LoggerFactory.getLogger(HBaseToStudyEntryConverter.class);
     private VariantQueryFields selectVariantElements;
 
-    public HBaseToStudyEntryConverter(byte[] columnFamily, VariantStorageMetadataManager metadataManager,
+    public HBaseToStudyEntryConverter(VariantStorageMetadataManager metadataManager,
                                       HBaseToVariantStatsConverter statsConverter) {
-        super(columnFamily);
+        super(GenomeHelper.COLUMN_FAMILY_BYTES);
         this.metadataManager = metadataManager;
         this.statsConverter = statsConverter;
     }

@@ -62,7 +62,7 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
         if (options == null) {
             options = QueryOptions.empty();
         }
-        converter = HBaseToVariantConverter.fromResultSet(this.genomeHelper, this.scm)
+        converter = HBaseToVariantConverter.fromResultSet(this.scm)
                 .setSelectVariantElements(select)
                 .setMutableSamplesPosition(false)
                 .setStudyNameAsStudyId(options.getBoolean(HBaseToVariantConverter.STUDY_NAME_AS_STUDY_ID, true))

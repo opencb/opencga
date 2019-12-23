@@ -320,7 +320,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         }).iterator();
         long ts = getMetadataManager().getProjectMetadata().getAttributes()
                 .getLong(SEARCH_INDEX_LAST_TIMESTAMP.key());
-        HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(genomeHelper, ts)
+        HBaseToVariantAnnotationConverter converter = new HBaseToVariantAnnotationConverter(ts)
                 .setAnnotationIds(getMetadataManager().getProjectMetadata().getAnnotation())
                 .setIncludeFields(selectElements.getFields());
         converter.setAnnotationColumn(annotationColumn, name);
@@ -446,7 +446,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 }).iterator();
 
                 VariantHBaseScanIterator iterator = new VariantHBaseScanIterator(
-                        resScans, genomeHelper, studyConfigurationManager.get(), query, options, unknownGenotype, formats, selectElements);
+                        resScans, studyConfigurationManager.get(), query, options, unknownGenotype, formats, selectElements);
 
                 // Client side skip!
                 int skip = options.getInt(QueryOptions.SKIP, -1);

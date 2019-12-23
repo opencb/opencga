@@ -33,10 +33,9 @@ import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.analysis.StorageManager;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
-import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
+import org.opencb.opencga.analysis.variant.manager.operations.*;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.analysis.variant.metadata.CatalogVariantMetadataFactory;
-import org.opencb.opencga.analysis.variant.manager.operations.*;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -62,7 +61,6 @@ import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
@@ -522,7 +520,7 @@ public class VariantStorageManager extends StorageManager {
         return get(intersectQuery, queryOptions, token);
     }
 
-    public DataResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions inputOptions, String token)
+    public DataResult<Variant> getSampleData(String variant, String study, QueryOptions inputOptions, String token)
             throws CatalogException, IOException, StorageEngineException {
         Query query = new Query(VariantQueryParam.STUDY.key(), study);
         QueryOptions options = inputOptions == null ? new QueryOptions() : new QueryOptions(inputOptions);

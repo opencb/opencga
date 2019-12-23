@@ -4,15 +4,16 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
+import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,27 +39,27 @@ public class VariantSampleDataManager {
 
     }
 
-    public final DataResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) {
+    public final DataResult<Variant> getSampleData(String variant, String study, QueryOptions options) {
         options = options == null ? new QueryOptions() : options;
         int sampleLimit = options.getInt(SAMPLE_BATCH_SIZE, SAMPLE_BATCH_SIZE_DEFAULT);
         return getSampleData(variant, study, options, sampleLimit);
     }
 
-    public final DataResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options, int sampleLimit) {
+    public final DataResult<Variant> getSampleData(String variant, String study, QueryOptions options, int sampleLimit) {
         options = options == null ? new QueryOptions() : options;
 
-        Set<String> genotypes = new HashSet<>(options.getAsStringList(VariantQueryParam.GENOTYPE.key()));
-        if (genotypes.isEmpty()) {
-            genotypes.add("0/1");
-            genotypes.add("1/1");
-        }
 
         StudyMetadata studyMetadata = metadataManager.getStudyMetadata(study);
         boolean studyWithGts = !studyMetadata.getAttributes().getBoolean(VariantStorageOptions.EXCLUDE_GENOTYPES.key(),
                 VariantStorageOptions.EXCLUDE_GENOTYPES.defaultValue());
 
-        if (!studyWithGts) {
-            genotypes = Collections.singleton(GenotypeClass.NA_GT_VALUE);
+        Set<String> genotypes = new HashSet<>(options.getAsStringList(VariantQueryParam.GENOTYPE.key()));
+        if (genotypes.isEmpty()) {
+            if (studyWithGts) {
+                genotypes.add(GenotypeClass.MAIN_ALT.toString());
+            } else {
+                genotypes.add(GenotypeClass.NA_GT_VALUE);
+            }
         }
         List<String> loadedGenotypes = studyMetadata.getAttributes().getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key());
         if (loadedGenotypes.size() == 1) {
@@ -67,92 +68,93 @@ public class VariantSampleDataManager {
             }
         } else if (loadedGenotypes.contains(GenotypeClass.NA_GT_VALUE)) {
             genotypes.add(GenotypeClass.NA_GT_VALUE);
+        } else {
+            genotypes = new HashSet<>(GenotypeClass.filter(genotypes, loadedGenotypes));
         }
 
         List<String> includeSamples = options.getAsStringList(VariantQueryParam.INCLUDE_SAMPLE.key());
-        boolean merge = options.getBoolean(MERGE, false);
 
-        return getSampleData(variant, study, options, includeSamples, studyWithGts, genotypes, merge, sampleLimit);
+        return getSampleData(variant, study, options, includeSamples, studyWithGts, genotypes, sampleLimit);
     }
 
-    protected DataResult<VariantSampleData> getSampleData(
-            String variant, String study, QueryOptions options, List<String> includeSamples, boolean studyWithGts, Set<String> genotypes,
-            boolean merge, int sampleLimit) {
+    protected DataResult<Variant> getSampleData(
+            String variantStr, String study, QueryOptions options, List<String> includeSamples, boolean studyWithGts, Set<String> genotypes,
+            int sampleLimit) {
         options = options == null ? new QueryOptions() : options;
         int studyId = metadataManager.getStudyId(study);
         int skip = Math.max(0, options.getInt(QueryOptions.SKIP, 0));
         int limit = Math.max(0, options.getInt(QueryOptions.LIMIT, 10));
         int dbTime = 0;
-
-        Map<String, Integer> gtCountMap = new HashMap<>();
-        Map<String, List<SampleData>> gtMap = new HashMap<>();
-        Map<String, FileEntry> files = new HashMap<>();
-        Map<String, VariantStats> stats = new HashMap<>();
-
-        for (String gt : merge ? Collections.singleton(VariantQueryUtils.ALL) : genotypes) {
-            gtCountMap.put(gt, 0);
-            gtMap.put(gt, new ArrayList<>(limit));
-        }
+        int gtCount = 0;
+        List<List<String>> sampleDataList = new ArrayList<>(limit);
+        Map<String, Integer> filesIdx = new HashMap<>();
+        List<FileEntry> files = new ArrayList<>(limit);
+        Map<String, VariantStats> stats = Collections.emptyMap();
+        int fileIdxFormatIdx = -1;
+        List<String> format = null;
+        VariantAnnotation annotation = null;
 
         int sampleSkip = 0;
         int readSamples = 0;
         int queries = 0;
         while (true) {
-            Query query = new Query(VariantQueryParam.ID.key(), variant)
+            queries++;
+            Query query = new Query(VariantQueryParam.ID.key(), variantStr)
                     .append(VariantQueryParam.STUDY.key(), study)
                     .append(VariantQueryParam.SAMPLE_LIMIT.key(), sampleLimit)
-                    .append(VariantQueryParam.SAMPLE_SKIP.key(), sampleSkip);
+                    .append(VariantQueryParam.SAMPLE_SKIP.key(), sampleSkip)
+                    .append(VariantQueryParam.INCLUDE_FORMAT.key(), VariantQueryUtils.ALL + ","
+                            + VariantQueryParser.SAMPLE_ID + ","
+                            + VariantQueryParser.FILE_IDX);
             if (includeSamples != null && !includeSamples.isEmpty()) {
                 query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSamples); // if empty, will return all
             }
             sampleSkip += sampleLimit;
             QueryOptions variantQueryOptions;
-            if (stats.isEmpty()) {
-                variantQueryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.ANNOTATION);
+            if (queries == 1) {
+                variantQueryOptions = new QueryOptions();
             } else {
                 variantQueryOptions = new QueryOptions(QueryOptions.EXCLUDE,
                         Arrays.asList(VariantField.ANNOTATION, VariantField.STUDIES_STATS));
             }
 
-            VariantQueryResult<Variant> result = dbAdaptor.get(query, variantQueryOptions);
+            DataResult<Variant> result = dbAdaptor.get(query, variantQueryOptions);
             if (result.getNumResults() == 0) {
-                throw VariantQueryException.variantNotFound(variant);
+                throw VariantQueryException.variantNotFound(variantStr);
             }
             dbTime += result.getTime();
-            queries++;
-            Variant v = result.first();
+            Variant partialVariant = result.first();
 
-            StudyEntry studyEntry = v.getStudies().get(0);
+            StudyEntry partialStudy = partialVariant.getStudies().get(0);
 
-            if (studyEntry.getStats() != null) {
-                stats.putAll(studyEntry.getStats());
+            if (queries == 1) {
+                annotation = partialVariant.getAnnotation();
+                stats = partialStudy.getStats();
+                format = partialStudy.getFormat();
+                fileIdxFormatIdx = format.indexOf(VariantQueryParser.FILE_IDX);
             }
-
-            List<String> samples = studyEntry.getOrderedSamplesName();
+            boolean hasGt = format.get(0).equals("GT");
+            List<String> samples = partialStudy.getOrderedSamplesName();
             readSamples += samples.size();
-            for (String sample : samples) {
-                Map<String, String> sampleDataAsMap = studyEntry.getSampleDataAsMap(sample);
+            for (int i = 0; i < samples.size(); i++) {
+                String sample = samples.get(i);
+                List<String> sampleData = partialStudy.getSamplesData().get(i);
 
-                String gt = normalizeGt(sampleDataAsMap.getOrDefault("GT", GenotypeClass.NA_GT_VALUE));
+                String gt = hasGt ? sampleData.get(0) : GenotypeClass.NA_GT_VALUE;
                 if (gt.equals(".")) {
                     gt = GenotypeClass.NA_GT_VALUE;
                 }
 
                 if (genotypes.contains(gt)) {
                     // Skip other genotypes
-
-                    if (merge) {
-                        // Merge after filtering by genotype
-                        gt = VariantQueryUtils.ALL;
-                    }
-                    List<SampleData> gtList = gtMap.get(gt);
-                    if (gtCountMap.merge(gt, 1, Integer::sum) > skip) {
-                        if (gtList.size() < limit) {
+                    gtCount++;
+                    if (gtCount > skip) {
+                        if (sampleDataList.size() < limit) {
                             Integer sampleId = metadataManager.getSampleId(studyId, sample);
                             FileEntry fileEntry = null;
                             for (Integer fileId : metadataManager.getFileIdsFromSampleIds(studyId, Collections.singleton(sampleId))) {
                                 String fileName = metadataManager.getFileName(studyId, fileId);
-                                fileEntry = studyEntry.getFile(fileName);
+                                fileEntry = partialStudy.getFile(fileName);
                                 break;
                             }
                             if (fileEntry == null) {
@@ -165,9 +167,14 @@ public class VariantSampleDataManager {
                                 }
                                 throw new VariantQueryException("No file found for sample '" + sample + "', expected any of " + fileNames);
                             }
-                            SampleData sampleData = new SampleData(sample, sampleDataAsMap, fileEntry.getFileId());
-                            files.put(fileEntry.getFileId(), fileEntry);
-                            gtList.add(sampleData);
+                            Integer fileIdx = filesIdx.get(fileEntry.getFileId());
+                            if (fileIdx == null) {
+                                fileIdx = files.size();
+                                filesIdx.put(fileEntry.getFileId(), fileIdx);
+                                files.add(fileEntry);
+                            }
+                            sampleData.set(fileIdxFormatIdx, String.valueOf(fileIdx));
+                            sampleDataList.add(sampleData);
                         }
                     }
                 }
@@ -178,16 +185,22 @@ public class VariantSampleDataManager {
                 break;
             }
 
-
-            if (gtMap.values().stream().allMatch(c -> c.size() >= limit)) {
+            if (gtCount >= skip + limit) {
 //                logger.debug("Exit limit");
                 break;
             }
         }
 
+        Variant variant = new Variant(variantStr);
+        variant.setAnnotation(annotation);
+        StudyEntry studyEntry = new StudyEntry(study);
+        variant.addStudyEntry(studyEntry);
+        studyEntry.setSamplesData(sampleDataList);
+        studyEntry.setFiles(files);
+        studyEntry.setStats(stats);
+        studyEntry.setFormat(format);
 //        String msg = "Queries : " + queries + " , readSamples : " + readSamples;
-        return new DataResult<>(dbTime, Collections.emptyList(), 1,
-                Collections.singletonList(new VariantSampleData(variant, study, gtMap, files, stats)), 1);
+        return new DataResult<>(dbTime, Collections.emptyList(), 1, Collections.singletonList(variant), 1);
     }
 
     protected final String normalizeGt(String gt) {
