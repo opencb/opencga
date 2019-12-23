@@ -143,7 +143,9 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 break;
         }
 
-        createOutput(queryResponse);
+        if (!queryResponse.getResponses().isEmpty()) {
+            createOutput(queryResponse);
+        }
     }
 
     private RestResponse createFolder() throws CatalogException, IOException {
@@ -175,7 +177,8 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), resolveStudy(filesCommandOptions.downloadCommandOptions.study));
-        return openCGAClient.getFileClient().download(filesCommandOptions.downloadCommandOptions.file, params);
+        return openCGAClient.getFileClient().download(filesCommandOptions.downloadCommandOptions.file,
+                filesCommandOptions.downloadCommandOptions.fileDestiny, params);
     }
 
     private RestResponse grep() throws CatalogException, IOException {
@@ -355,28 +358,26 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 .append(FileDBAdaptor.QueryParams.DESCRIPTION.key(), filesCommandOptions.linkCommandOptions.description)
                 .append("parents", filesCommandOptions.linkCommandOptions.parents);
 
-        CatalogManager catalogManager = null;
-        try {
-            catalogManager = new CatalogManager(configuration);
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+            if (!catalogManager.existsCatalogDB()) {
+                logger.error("The database could not be found. Are you running this from the server?");
+                return null;
+            }
+
+            List<OpenCGAResult<File>> linkQueryResultList = new ArrayList<>(filesCommandOptions.linkCommandOptions.inputs.size());
+
+            for (String input : filesCommandOptions.linkCommandOptions.inputs) {
+                URI uri = UriUtils.createUri(input);
+                logger.debug("uri: {}", uri.toString());
+
+                linkQueryResultList.add(catalogManager.getFileManager().link(filesCommandOptions.linkCommandOptions.study, uri,
+                        filesCommandOptions.linkCommandOptions.path, objectMap, token));
+            }
+
+            return new RestResponse<>(new ObjectMap(), linkQueryResultList);
         } catch (CatalogException e) {
-            logger.error("Catalog manager could not be initialized. Is the configuration OK?");
+            throw new CatalogException("Catalog manager could not be initialized. Is the configuration OK?", e);
         }
-        if (!catalogManager.existsCatalogDB()) {
-            logger.error("The database could not be found. Are you running this from the server?");
-            return null;
-        }
-
-        List<OpenCGAResult<File>> linkQueryResultList = new ArrayList<>(filesCommandOptions.linkCommandOptions.inputs.size());
-
-        for (String input : filesCommandOptions.linkCommandOptions.inputs) {
-            URI uri = UriUtils.createUri(input);
-            logger.debug("uri: {}", uri.toString());
-
-            linkQueryResultList.add(catalogManager.getFileManager().link(filesCommandOptions.linkCommandOptions.study, uri,
-                    filesCommandOptions.linkCommandOptions.path, objectMap, sessionId));
-        }
-
-        return new RestResponse<>(new ObjectMap(), linkQueryResultList);
     }
 
     private RestResponse relink() throws CatalogException, IOException {

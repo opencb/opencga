@@ -336,6 +336,12 @@ public class Sample extends Annotable {
         return this;
     }
 
+    @Override
+    public Sample setAnnotationSets(List<AnnotationSet> annotationSets) {
+        super.setAnnotationSets(annotationSets);
+        return this;
+    }
+
     // Acl params to communicate the WS and the sample manager
     public static class SampleAclParams extends AclParams {
 

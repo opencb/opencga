@@ -64,7 +64,9 @@ public class FileClient extends AnnotationClient<File> {
         return execute(FILES_URL, fileId.replace("/", ":"), "content", params, GET, File.class);
     }
 
-    public RestResponse<File> download(String fileId, ObjectMap params) throws IOException {
+    public RestResponse<File> download(String fileId, String fileTarget, ObjectMap params) throws IOException {
+        params = params != null ? params : new ObjectMap();
+        params.put("OPENCGA_DESTINY", fileTarget);
         return execute(FILES_URL, fileId.replace("/", ":"), "download", params, GET, File.class);
     }
 

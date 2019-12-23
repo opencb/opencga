@@ -40,13 +40,15 @@ public class PlinkWrapperAnalysis extends OpenCgaWrapperAnalysis {
             try {
                 // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
                 Command cmd = new Command(getCommandLine())
-                        .setOutputOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDOUT_FILENAME).toFile())))
-                        .setErrorOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDERR_FILENAME).toFile())));
+                        .setOutputOutputStream(
+                                new DataOutputStream(new FileOutputStream(getScratchDir().resolve(STDOUT_FILENAME).toFile())))
+                        .setErrorOutputStream(
+                                new DataOutputStream(new FileOutputStream(getScratchDir().resolve(STDERR_FILENAME).toFile())));
 
                 cmd.run();
 
                 // Check Plink errors by reading the stderr file
-                File stderrFile = new File(getOutDir() + "/" + STDERR_FILENAME);
+                File stderrFile = new File(getScratchDir() + "/" + STDERR_FILENAME);
                 if (FileUtils.sizeOf(stderrFile) > 0) {
                     throw new ToolException(StringUtils.join(FileUtils.readLines(stderrFile, Charset.defaultCharset()), ". "));
                 }

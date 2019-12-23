@@ -111,10 +111,14 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         configuration.getAdmin().setSecretKey("demo");
         configuration.getAdmin().setAlgorithm("HS256");
 
-        CatalogDemo.createDemoDatabase(configuration, adminPassword, catalogCommandOptions.demoCatalogCommandOptions.force);
-        CatalogManager catalogManager = new CatalogManager(configuration);
-        sessionId = catalogManager.getUserManager().login("user1", "user1_pass");
-        AnalysisDemo.insertPedigreeFile(catalogManager, Paths.get(this.appHome).resolve("scripts/examples/20130606_g1k.ped"), sessionId);
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
+            logger.info("Creating demo database");
+            CatalogDemo.createDemoDatabase(catalogManager, adminPassword, catalogCommandOptions.demoCatalogCommandOptions.force);
+            token = catalogManager.getUserManager().login("user1", "user1_pass");
+            Path pedigreePath = Paths.get(this.appHome).resolve("scripts/examples/20130606_g1k.ped");
+            logger.info("Inserting pedigree file from " + pedigreePath);
+            AnalysisDemo.insertPedigreeFile(catalogManager, pedigreePath, token);
+        }
     }
 
     private void export() throws CatalogException {

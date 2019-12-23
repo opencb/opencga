@@ -383,7 +383,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             GenericServiceModel.Request request = GenericServiceModel.Request.newBuilder()
                     .putAllQuery(queryMap)
                     .putAllOptions(queryOptionsMap)
-                    .setSessionId(sessionId == null ? "" : sessionId)
+                    .setSessionId(token == null ? "" : token)
                     .build();
 
             RestResponse queryResponse = null;
