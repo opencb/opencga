@@ -255,6 +255,7 @@
                                 <exec executable="mkdir">
                                     <arg value="-p"/>
                                     <arg value="${build.dir}/bin/utils"/>
+                                    <arg value="${build.dir}/clients"/>
                                     <arg value="${build.dir}/conf"/>
                                     <arg value="${build.dir}/test"/>
                                 </exec>
@@ -289,6 +290,22 @@
 
                                 <exec executable="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh">
                                     <arg value="${build.dir}/scripts/completion"/>
+                                </exec>
+
+                                <echo>Copying Python and R to ${build.dir}/clients</echo>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-client/src/main/python/pyOpenCGA"/>
+                                    <arg value="${build.dir}/clients"/>
+                                </exec>
+                                <exec executable="mv">
+                                    <arg value="${build.dir}/clients/pyOpenCGA"/>
+                                    <arg value="${build.dir}/clients/python"/>
+                                </exec>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-client/src/main/R"/>
+                                    <arg value="${build.dir}/clients"/>
                                 </exec>
 
                                 <echo>Copying configuration files</echo>
