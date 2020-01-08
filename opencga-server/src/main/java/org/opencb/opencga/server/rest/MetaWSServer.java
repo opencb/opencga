@@ -186,7 +186,7 @@ public class MetaWSServer extends OpenCGAWSServer {
         classes.put("panels", PanelWSServer.class);
         classes.put("alignment", AlignmentAnalysisWSService.class);
         classes.put("variant", VariantAnalysisWSService.class);
-        classes.put("operations", OperationsWSService.class);
+        classes.put("variantOperations", OperationsWSService.class);
         classes.put("meta", MetaWSServer.class);
         classes.put("ga4gh", Ga4ghWSServer.class);
         classes.put("admin", AdminWSServer.class);
@@ -273,6 +273,11 @@ public class MetaWSServer extends OpenCGAWSServer {
                                 type = split[split.length - 1];
                                 if (!parameter.get("param").equals("body")) {
                                     type = type.toLowerCase();
+
+                                    // Complex type different from body are enums
+                                    if (type.contains("$")) {
+                                        type = "enum";
+                                    }
                                 }
                             }
                             parameter.put("type", type);

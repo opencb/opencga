@@ -656,10 +656,10 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @QueryParam("nattributes") String nattributes,
             @ApiParam(value = "Release value") @QueryParam("release") String release,
 
-            @ApiParam(value = "Action to be performed if the array of samples is being updated.", defaultValue = "ADD") @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
-            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
-            @ApiParam(value = "Action to be performed if the array of relatedFiles is being updated.", defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.UpdateAction relatedFilesAction,
-            @ApiParam(value = "Action to be performed if the array of tags is being updated.", defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.UpdateAction tagsAction,
+            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
+            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @ApiParam(value = "Action to be performed if the array of relatedFiles is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.UpdateAction relatedFilesAction,
+            @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.UpdateAction tagsAction,
             @ApiParam(name = "params", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
@@ -691,10 +691,10 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of file ids, names or paths. Paths must be separated by : instead of /")
                 @PathParam(value = "files") String fileIdStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Action to be performed if the array of samples is being updated.", defaultValue = "ADD") @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
-            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
-            @ApiParam(value = "Action to be performed if the array of relatedFiles is being updated.", defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.UpdateAction relatedFilesAction,
-            @ApiParam(value = "Action to be performed if the array of tags is being updated.", defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.UpdateAction tagsAction,
+            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
+            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @ApiParam(value = "Action to be performed if the array of relatedFiles is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("relatedFilesAction") ParamUtils.UpdateAction relatedFilesAction,
+            @ApiParam(value = "Action to be performed if the array of tags is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("tagsAction") ParamUtils.UpdateAction tagsAction,
             @ApiParam(name = "params", value = "Parameters to modify", required = true) FileUpdateParams updateParams) {
         try {
             if (samplesAction == null) {
@@ -733,7 +733,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @PathParam("file") String fileStr,
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_ID) @PathParam("annotationSet") String annotationSetId,
-            @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, defaultValue = "ADD") @QueryParam("action") ParamUtils.CompleteUpdateAction action,
+            @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("action") ParamUtils.CompleteUpdateAction action,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_PARAMS_DESCRIPTION) Map<String, Object> updateParams) {
         try {
             if (action == null) {

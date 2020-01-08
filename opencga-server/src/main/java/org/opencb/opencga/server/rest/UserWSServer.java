@@ -208,7 +208,7 @@ public class UserWSServer extends OpenCGAWSServer {
                     + "The aim of this is to provide a place to store this things for every user.")
     public Response updateConfiguration(
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
-            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD")
+            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
                 @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(name = "params", value = "JSON containing anything useful for the application such as user or default preferences. " +
                     "When removing, only the id will be necessary.", required = true) CustomConfig params) {
@@ -252,8 +252,8 @@ public class UserWSServer extends OpenCGAWSServer {
                     + "storing as many different filters as the user might want in order not to type the same filters.")
     public Response updateFilters(
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
-            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD")
-            @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
+                @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(name = "params", value = "Filter parameters. When removing, only the 'name' of the filter will be necessary",
                     required = true) User.Filter params) {
         try {

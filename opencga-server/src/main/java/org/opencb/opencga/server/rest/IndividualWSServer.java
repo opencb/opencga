@@ -329,15 +329,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     IndividualProperty.AffectationStatus affectationStatus,
             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @QueryParam("creationDate") String creationDate,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION, required = false) @QueryParam("annotation") String annotation,
-            @ApiParam(value = "Release value (Current release from the moment the individuals were first created)")
-            @QueryParam("release") String release,
-
-            @ApiParam(value = "Action to be performed if the array of samples is being updated.", defaultValue = "ADD")
-            @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
-            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD")
-            @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+            @ApiParam(value = "Release value (Current release from the moment the individuals were first created)") @QueryParam("release") String release,
+            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+                @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
+            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+                @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
             @ApiParam(value = "Create a new version of individual", defaultValue = "false")
-            @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
                     defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
             @ApiParam(value = "params") IndividualUpdateParams updateParams) {
@@ -373,13 +371,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
     public Response updateByPost(
             @ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individuals") String individualStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Action to be performed if the array of samples is being updated.", defaultValue = "ADD")
-            @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
-            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", defaultValue = "ADD")
-            @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
+                @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+                @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
+            @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
+                @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
             @ApiParam(value = "Create a new version of individual", defaultValue = "false")
-            @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
             @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
                     defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
             @ApiParam(value = "params") IndividualUpdateParams updateParams) {
@@ -417,11 +415,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.INDIVIDUAL_DESCRIPTION, required = true) @PathParam("individual") String individualStr,
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_ID) @PathParam("annotationSet") String annotationSetId,
-            @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, defaultValue = "ADD") @QueryParam("action") ParamUtils.CompleteUpdateAction action,
-            @ApiParam(value = "Create a new version of individual", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION)
-                    boolean incVersion,
-            @ApiParam(value = "Update all the sample references from the individual to point to their latest versions",
-                    defaultValue = "false") @QueryParam("updateSampleVersion") boolean refresh,
+            @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_ACTION_DESCRIPTION, allowableValues = "ADD,SET,REMOVE,RESET,REPLACE", defaultValue = "ADD")
+                @QueryParam("action") ParamUtils.CompleteUpdateAction action,
+            @ApiParam(value = "Create a new version of individual", defaultValue = "false") @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
+            @ApiParam(value = "Update all the sample references from the individual to point to their latest versions", defaultValue = "false")
+                @QueryParam("updateSampleVersion") boolean refresh,
             @ApiParam(value = ParamConstants.ANNOTATION_SET_UPDATE_PARAMS_DESCRIPTION) Map<String, Object> updateParams) {
         try {
             if (action == null) {
