@@ -311,8 +311,8 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Add or remove a group")
     public Response updateGroupPOST(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD")
-            @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
+                @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
         try {
             if (action == null) {
@@ -341,7 +341,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updateUsersFromGroupPOST(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Group name") @PathParam("group") String groupId,
-            @ApiParam(value = "Action to be performed: ADD, SET or REMOVE users to/from a group", defaultValue = "ADD")
+            @ApiParam(value = "Action to be performed: ADD, SET or REMOVE users to/from a group", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("action") GroupParams.Action action,
             @ApiParam(value = "JSON containing the parameters", required = true) Users users) {
         try {
@@ -366,8 +366,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{study}/groups/create")
     @ApiOperation(value = "Create a group [DEPRECATED]", position = 14)
     public Response createGroupPOST(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true)
-            @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "JSON containing the parameters", required = true) GroupCreateParams params) {
         params = ObjectUtils.defaultIfNull(params, new GroupCreateParams());
 
@@ -397,8 +396,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{study}/groups/{group}/update")
     @ApiOperation(value = "Updates the members of the group [DEPRECATED]", hidden = true)
     public Response addMembersToGroupPOST(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true)
-            @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Group name", required = true) @PathParam("group") String groupId,
             @ApiParam(value = "JSON containing the action to be performed", required = true) GroupParams params) {
         try {
@@ -416,8 +414,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{study}/groups/members/update")
     @ApiOperation(value = "Add/Remove users with access to study [DEPRECATED]", hidden = true)
     public Response registerUsersToStudy(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true)
-            @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "JSON containing the action to be performed", required = true) MemberParams params) {
         try {
             ObjectUtils.defaultIfNull(params, new MemberParams());
@@ -467,8 +464,8 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Fetch permission rules")
     public Response getPermissionRules(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Entity where the permission rules should be applied to", required = true) @QueryParam("entity") Study.Entity
-                    entity) {
+            @ApiParam(value = "Entity where the permission rules should be applied to", required = true)
+                @QueryParam("entity") Study.Entity entity) {
         try {
             ParamUtils.checkIsSingleID(studyStr);
             return createOkResponse(catalogManager.getStudyManager().getPermissionRules(studyStr, entity, token));
@@ -487,7 +484,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Action to be performed: ADD to add a new permission rule; REMOVE to remove all permissions assigned by an "
                     + "existing permission rule (even if it overlaps any manual permission); REVERT to remove all permissions assigned by"
                     + " an existing permission rule (keep manual overlaps); NONE to remove an existing permission rule without removing "
-                    + "any permissions that could have been assigned already by the permission rule.", defaultValue = "ADD")
+                    + "any permissions that could have been assigned already by the permission rule.", allowableValues = "ADD,REMOVE,REVERT,NONE", defaultValue = "ADD")
             @QueryParam("action") PermissionRuleAction action,
             @ApiParam(value = "JSON containing the permission rule to be created or removed.", required = true) PermissionRule params) {
         try {
@@ -541,10 +538,10 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     // Temporal method used by deprecated methods. This will be removed at some point.
     private Study.StudyAclParams getAclParams(
-            @ApiParam(value = "Comma separated list of permissions to add", required = false) @QueryParam("add") String addPermissions,
-            @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("remove") String removePermissions,
-            @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("set") String setPermissions,
-            @ApiParam(value = "Template of permissions (only to create)", required = false) @QueryParam("template") String template)
+            @ApiParam(value = "Comma separated list of permissions to add") @QueryParam("add") String addPermissions,
+            @ApiParam(value = "Comma separated list of permissions to remove") @QueryParam("remove") String removePermissions,
+            @ApiParam(value = "Comma separated list of permissions to set") @QueryParam("set") String setPermissions,
+            @ApiParam(value = "Template of permissions (only to create)") @QueryParam("template") String template)
             throws CatalogException {
         int count = 0;
         count += StringUtils.isNotEmpty(setPermissions) ? 1 : 0;
@@ -721,8 +718,8 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Add or remove a variableSet")
     public Response createOrRemoveVariableSets(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Action to be performed: ADD or REMOVE a variableSet", defaultValue = "ADD")
-            @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @ApiParam(value = "Action to be performed: ADD or REMOVE a variableSet", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
+                @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(value = "JSON containing the VariableSet to be created or removed.", required = true) VariableSetParameters params) {
         try {
             if (action == null) {
@@ -766,10 +763,9 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updateVariablesFromVariableSet(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "VariableSet id of the VariableSet to be updated") @PathParam("variableSet") String variableSetId,
-            @ApiParam(value = "Action to be performed: ADD or REMOVE a variable", defaultValue = "ADD")
-            @QueryParam("action") ParamUtils.BasicUpdateAction action,
-            @ApiParam(value = "JSON containing the variable to be added or removed. For removing, only the variable id will be needed.",
-                    required = true) Variable variable) {
+            @ApiParam(value = "Action to be performed: ADD or REMOVE a variable", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
+                @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @ApiParam(value = "JSON containing the variable to be added or removed. For removing, only the variable id will be needed.", required = true) Variable variable) {
         try {
             if (action == null) {
                 action = ParamUtils.BasicUpdateAction.ADD;
