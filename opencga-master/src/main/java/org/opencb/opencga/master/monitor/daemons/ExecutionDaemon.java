@@ -67,7 +67,9 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -233,7 +235,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 ExecutionResult result = readAnalysisResult(job);
                 if (result != null) {
                     // Update the result of the job
-                    PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setResult(result);
+                    PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(result);
                     try {
                         jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
                     } catch (CatalogException e) {
@@ -661,7 +663,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         if (analysisResultPath != null) {
             execution = readAnalysisResult(analysisResultPath);
             if (execution != null) {
-                PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setResult(execution);
+                PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(execution);
                 try {
                     jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
                 } catch (CatalogException e) {
