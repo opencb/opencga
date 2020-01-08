@@ -18,14 +18,12 @@ package org.opencb.opencga.core.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.opencb.commons.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -80,11 +78,6 @@ public class Configuration {
     public void serialize(OutputStream configurationOututStream) throws IOException {
         ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
         yamlMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOututStream, this);
-    }
-
-    public static Configuration load(Path configurationPath) throws IOException {
-        InputStream inputStream = FileUtils.newInputStream(configurationPath);
-        return load(inputStream, DEFAULT_CONFIGURATION_FORMAT);
     }
 
     public static Configuration load(InputStream configurationInputStream) throws IOException {
