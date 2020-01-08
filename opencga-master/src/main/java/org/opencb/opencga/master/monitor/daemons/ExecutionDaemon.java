@@ -80,6 +80,7 @@ import java.util.stream.Stream;
 public class ExecutionDaemon extends MonitorParentDaemon {
 
     public static final String OUTDIR_PARAM = "outdir";
+    public static final int EXECUTION_RESULT_FILE_EXPIRATION_MINUTES = 10;
     private String internalCli;
     private JobManager jobManager;
     private FileManager fileManager;
@@ -561,7 +562,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         if (resultJson != null && Files.exists(resultJson)) {
             ExecutionResult execution = readAnalysisResult(resultJson);
             if (execution != null) {
-                return new Enums.ExecutionStatus(execution.getStatus().getName().name());
+                long lastStatusUpdate = execution.getStatus().getDate().getTime();
+                long fileAgeInMillis = Instant.now().toEpochMilli() - lastStatusUpdate;
+                if (TimeUnit.MILLISECONDS.toMinutes(fileAgeInMillis) > EXECUTION_RESULT_FILE_EXPIRATION_MINUTES) {
+                    logger.warn("Ignoring file '" + resultJson + "'. The file is more than "
+                            + EXECUTION_RESULT_FILE_EXPIRATION_MINUTES + " minutes old");
+                } else {
+                    return new Enums.ExecutionStatus(execution.getStatus().getName().name());
+                }
             } else {
                 if (Files.exists(resultJson)) {
                     logger.warn("File '" + resultJson + "' seems corrupted.");
