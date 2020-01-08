@@ -334,7 +334,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     }
 
     @DELETE
-    @Path("{cohorts}/delete")
+    @Path("/{cohorts}/delete")
     @ApiOperation(value = "Delete cohorts")
     public Response deleteList(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)

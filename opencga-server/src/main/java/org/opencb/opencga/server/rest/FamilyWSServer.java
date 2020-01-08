@@ -275,7 +275,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
     }
 
     @DELETE
-    @Path("{families}/delete")
+    @Path("/{families}/delete")
     @ApiOperation(value = "Delete existing families")
     public Response delete(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)

@@ -314,7 +314,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @DELETE
-    @Path("{samples}/delete")
+    @Path("/{samples}/delete")
     @ApiOperation(value = "Delete samples")
     @ApiImplicitParams({
             @ApiImplicitParam(name = Constants.FORCE, value = "Force the deletion of samples even if they are associated to files, "
