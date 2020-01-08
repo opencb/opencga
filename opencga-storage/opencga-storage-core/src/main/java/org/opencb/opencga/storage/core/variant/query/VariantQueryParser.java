@@ -4,6 +4,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.biodata.models.variant.avro.VariantType;
@@ -21,6 +22,7 @@ import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.EXCLUDE_GENOTYPES;
@@ -302,28 +304,8 @@ public class VariantQueryParser {
             Map<Object, List<String>> map = new LinkedHashMap<>();
             genotypeOperator = VariantQueryUtils.parseGenotypeFilter(query.getString(GENOTYPE.key()), map);
 
-            StringBuilder sb = new StringBuilder();
-            for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
-//                List<String> genotypes = GenotypeClass.filter(entry.getValue(), loadedGenotypes, defaultGenotypes);
-                List<String> genotypes = GenotypeClass.filter(entry.getValue(), loadedGenotypes);
-
-                if (genotypes.isEmpty()) {
-                    // TODO: Do fast fail, NO RESULTS!
-                    genotypes = Collections.singletonList(GenotypeClass.NONE_GT_VALUE);
-                }
-
-                if (sb.length() > 0) {
-                    sb.append(genotypeOperator.separator());
-                }
-                sb.append(entry.getKey()).append(IS);
-                for (int i = 0; i < genotypes.size(); i++) {
-                    if (i > 0) {
-                        sb.append(OR);
-                    }
-                    sb.append(genotypes.get(i));
-                }
-            }
-            query.put(GENOTYPE.key(), sb.toString());
+            String filter = preProcessGenotypesFilter(map, genotypeOperator, loadedGenotypes);
+            query.put(GENOTYPE.key(), filter);
         }
 
         if (formatOperator != null && genotypeOperator != null && formatOperator != genotypeOperator) {
@@ -453,6 +435,58 @@ public class VariantQueryParser {
 
         query.put(INCLUDE_FORMAT.key(), formats);
         query.remove(INCLUDE_GENOTYPE.key(), formats);
+    }
+
+    protected String preProcessGenotypesFilter(Map<Object, List<String>> map, QueryOperation op, List<String> loadedGenotypes) {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
+//                List<String> genotypes = GenotypeClass.filter(entry.getValue(), loadedGenotypes, defaultGenotypes);
+            List<String> genotypes = new ArrayList<>(entry.getValue());
+            for (String genotypeStr : entry.getValue()) {
+                boolean negated = isNegated(genotypeStr);
+                if (negated) {
+                    removeNegation(genotypeStr);
+                }
+                Genotype genotype = new Genotype(genotypeStr);
+                int[] allelesIdx = genotype.getAllelesIdx();
+                boolean multiallelic = false;
+                for (int i = 0; i < allelesIdx.length; i++) {
+                    if (allelesIdx[i] > 1) {
+                        allelesIdx[i] = 2;
+                        multiallelic = true;
+                    }
+                }
+                if (multiallelic) {
+                    String regex = genotype.toString()
+                            .replace(".", "\\.")
+                            .replace("2", "([2-9]|[0-9][0-9])");// Replace allele "2" with "any number >= 2")
+                    Pattern pattern = Pattern.compile(regex);
+                    for (String loadedGenotype : loadedGenotypes) {
+                        if (pattern.matcher(loadedGenotype).matches()) {
+                            genotypes.add((negated ? NOT : "") + loadedGenotype);
+                        }
+                    }
+                }
+            }
+            genotypes = GenotypeClass.filter(genotypes, loadedGenotypes);
+
+            if (genotypes.isEmpty()) {
+                // TODO: Do fast fail, NO RESULTS!
+                genotypes = Collections.singletonList(GenotypeClass.NONE_GT_VALUE);
+            }
+
+            if (sb.length() > 0) {
+                sb.append(op.separator());
+            }
+            sb.append(entry.getKey()).append(IS);
+            for (int i = 0; i < genotypes.size(); i++) {
+                if (i > 0) {
+                    sb.append(OR);
+                }
+                sb.append(genotypes.get(i));
+            }
+        }
+        return sb.toString();
     }
 
     /**
