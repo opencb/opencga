@@ -634,7 +634,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/update")
-    @ApiOperation(value = "Update some file attributes", response = File.class)
+    @ApiOperation(value = "Update some file attributes", response = File.class, hidden = true)
     public Response updateQuery(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,

@@ -305,7 +305,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @POST
     @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some individual attributes")
+    @ApiOperation(value = "Update some individual attributes", hidden = true)
     public Response updateByQuery(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "id") @QueryParam("id") String id,

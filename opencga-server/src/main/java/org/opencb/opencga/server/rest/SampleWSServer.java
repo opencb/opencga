@@ -226,7 +226,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @POST
     @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some sample attributes")
+    @ApiOperation(value = "Update some sample attributes", hidden = true)
     public Response updateByPost(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,

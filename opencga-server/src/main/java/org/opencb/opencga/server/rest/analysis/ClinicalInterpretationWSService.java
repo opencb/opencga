@@ -101,7 +101,7 @@ public class ClinicalInterpretationWSService extends AnalysisWSService {
     @POST
     @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update clinical analysis attributes", position = 1, response = ClinicalAnalysis.class)
+    @ApiOperation(value = "Update clinical analysis attributes", position = 1, response = ClinicalAnalysis.class, hidden = true)
     public Response update(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Clinical analysis type") @QueryParam("type") String type,
