@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.clinical.interpretation.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAnalysis;
@@ -463,16 +464,21 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             throw new CatalogException("Cannot create job directory '" + folder.getUri() + "' for path '" + folder.getPath() + "'");
         }
 
-        // Add permissions to do anything under that path to the user launching the job
-        String allFilePermissions = EnumSet.allOf(FileAclEntry.FilePermissions.class)
-                .stream()
-                .map(FileAclEntry.FilePermissions::toString)
-                .collect(Collectors.joining(","));
-        fileManager.updateAcl(job.getStudyUuid(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
-                new File.FileAclParams(allFilePermissions, AclParams.Action.SET, null), token);
-        // Revoke permissions to any other user that is not the one launching the job
-        fileManager.updateAcl(job.getStudyUuid(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), FileAclEntry.USER_OTHERS_ID,
-                new File.FileAclParams("", AclParams.Action.SET, null), token);
+        // Check if the user already has permissions set in his folder
+        OpenCGAResult<Map<String, List<String>>> result = fileManager.getAcls(job.getStudyUuid(),
+                Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(), true, token);
+        if (result.getNumResults() == 0 || result.first().isEmpty() || ListUtils.isEmpty(result.first().get(job.getUserId()))) {
+            // Add permissions to do anything under that path to the user launching the job
+            String allFilePermissions = EnumSet.allOf(FileAclEntry.FilePermissions.class)
+                    .stream()
+                    .map(FileAclEntry.FilePermissions::toString)
+                    .collect(Collectors.joining(","));
+            fileManager.updateAcl(job.getStudyUuid(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
+                    new File.FileAclParams(allFilePermissions, AclParams.Action.SET, null), token);
+            // Revoke permissions to any other user that is not the one launching the job
+            fileManager.updateAcl(job.getStudyUuid(), Collections.singletonList("JOBS/" + job.getUserId() + "/"),
+                    FileAclEntry.USER_OTHERS_ID, new File.FileAclParams("", AclParams.Action.SET, null), token);
+        }
 
         return folder;
     }
