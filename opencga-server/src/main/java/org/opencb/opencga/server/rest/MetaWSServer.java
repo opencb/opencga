@@ -24,6 +24,7 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
 import org.opencb.opencga.server.rest.analysis.AlignmentAnalysisWSService;
+import org.opencb.opencga.server.rest.analysis.ClinicalInterpretationWSService;
 import org.opencb.opencga.server.rest.analysis.VariantAnalysisWSService;
 import org.opencb.opencga.server.rest.ga4gh.Ga4ghWSServer;
 import org.opencb.opencga.server.rest.operations.OperationsWSService;
@@ -186,6 +187,7 @@ public class MetaWSServer extends OpenCGAWSServer {
         classes.put("panels", PanelWSServer.class);
         classes.put("alignment", AlignmentAnalysisWSService.class);
         classes.put("variant", VariantAnalysisWSService.class);
+        classes.put("clinical", ClinicalInterpretationWSService.class);
         classes.put("variantOperations", OperationsWSService.class);
         classes.put("meta", MetaWSServer.class);
         classes.put("ga4gh", Ga4ghWSServer.class);

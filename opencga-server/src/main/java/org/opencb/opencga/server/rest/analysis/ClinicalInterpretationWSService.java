@@ -54,14 +54,14 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 @Path("/{apiVersion}/analysis/clinical")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Analysis - Clinical Interpretation", position = 4, description = "Methods for working with Clinical Interpretations")
-public class InterpretationWSService extends AnalysisWSService {
+public class ClinicalInterpretationWSService extends AnalysisWSService {
 
     private final ClinicalAnalysisManager clinicalManager;
     private final InterpretationManager catalogInterpretationManager;
     private final ClinicalInterpretationManager clinicalInterpretationManager;
 
-    public InterpretationWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                                   @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public ClinicalInterpretationWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                                           @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
 
         clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory,
@@ -71,8 +71,8 @@ public class InterpretationWSService extends AnalysisWSService {
         clinicalManager = catalogManager.getClinicalAnalysisManager();
     }
 
-    public InterpretationWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                                   @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public ClinicalInterpretationWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                                           @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest, httpHeaders);
 
         clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory,
