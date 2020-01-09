@@ -449,7 +449,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             case "AUTO":
                 grpc = isGrpcAvailable() == null;
                 if (grpc) {
-                    logger.debug("Using GRPC mode");
+                    logger.debug("Using gRPC mode");
                 } else {
                     logger.debug("Using REST mode");
                 }

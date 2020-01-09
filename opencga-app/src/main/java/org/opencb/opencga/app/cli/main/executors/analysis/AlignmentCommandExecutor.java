@@ -141,7 +141,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             try {
                 queryGRPC(cliOptions);
             } catch(Exception e) {
-                System.out.println("GRPC not available. Trying on REST.");
+                System.out.println("gRPC not available. Trying on REST.");
                 queryResponse = queryRest(alignmentCommandOptions.queryAlignmentCommandOptions);
             }
         }
