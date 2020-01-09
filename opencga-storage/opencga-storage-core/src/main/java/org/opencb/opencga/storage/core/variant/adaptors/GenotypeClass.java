@@ -158,7 +158,8 @@ public enum GenotypeClass {
                 || str.equals("1/1")
                 || str.equals("1|1")
                 || str.equals("0|1")
-                || str.equals("1|0")) {
+                || str.equals("1|0")
+                || str.equals("1")) {
             return true;
         }
         Genotype genotype = parseGenotype(str);

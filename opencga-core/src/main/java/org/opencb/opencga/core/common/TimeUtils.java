@@ -94,6 +94,24 @@ public class TimeUtils {
                 + StringUtils.leftPad(String.valueOf(s), 2, '0') + " ]";
     }
 
+    /**
+     * Prints a duration in millis as:
+     *
+     *  00:20:34
+     *
+     * @param durationInMillis Duration in millis
+     * @return
+     */
+    public static String durationToStringSimple(long durationInMillis) {
+        long durationInSeconds = Math.round(durationInMillis / 1000.0);
+        long h = durationInSeconds / 3600;
+        long m = (durationInSeconds % 3600) / 60;
+        long s = durationInSeconds % 60;
+        return StringUtils.leftPad(String.valueOf(h), 2, '0') + ':'
+                + StringUtils.leftPad(String.valueOf(m), 2, '0') + ':'
+                + StringUtils.leftPad(String.valueOf(s), 2, '0');
+    }
+
     public static Date add24HtoDate(Date date) {
         Calendar cal = new GregorianCalendar();
         cal.setTime(date);

@@ -228,12 +228,12 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
     public OpenCGAResult<String> statsInfo(Path path) throws ToolException {
         StopWatch watch = StopWatch.createStarted();
 
-        File statsFile = new File(path + ".stats.txt");
+        File statsFile = path.toFile();
         if (!statsFile.exists()) {
             throw new ToolException("Stats file does not exist: " + statsFile.getAbsolutePath());
         }
 
-        List<String> lines = null;
+        List<String> lines;
         try {
             lines = org.apache.commons.io.FileUtils.readLines(statsFile, Charset.defaultCharset());
         } catch (IOException e) {

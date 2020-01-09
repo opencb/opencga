@@ -73,8 +73,8 @@ public class AlignmentIndexOperation extends OpenCgaTool {
                 throw new ToolException("Something wrong happened when computing index file for '" + inputFile + "'");
             } else {
                 String catalogPath = Paths.get(new java.io.File(inputCatalogFile.getPath()).getParent()).toString();
-                moveFile(study, outputPath, Paths.get(inputPath.toFile().getParent()).resolve(outputPath.getFileName()),
-                        catalogPath, token);
+                moveFile(study, outputPath, Paths.get(inputPath.toFile().getParent()),
+                        catalogPath + "/" + outputPath.getFileName(), token);
 
                 FileUpdateParams updateParams = new FileUpdateParams()
                         .setRelatedFiles(Collections.singletonList(new FileUpdateParams.RelatedFile(catalogPath + "/"

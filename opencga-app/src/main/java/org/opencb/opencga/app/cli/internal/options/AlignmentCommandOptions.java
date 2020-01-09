@@ -361,8 +361,8 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"--fastq2-file"}, description = "FastQ #2 file.")
         public String fastq2File;
 
-        @Parameter(names = {"--sam-file"}, description = "SAM file.")
-        public String samFile;
+        @Parameter(names = {"--sam-filename"}, description = "SAM file name.")
+        public String samFilename;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
@@ -429,9 +429,6 @@ public class AlignmentCommandOptions {
 
         @Parameter(names = {"--bam-file"}, description = "BAM file.")
         public String bamFile;
-
-        @Parameter(names = {"--coverage-file"}, description = "Coverage file.")
-        public String coverageFile;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;

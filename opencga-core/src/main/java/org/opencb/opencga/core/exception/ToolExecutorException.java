@@ -56,4 +56,7 @@ public class ToolExecutorException extends ToolException {
         return new ToolExecutorException("Could not create class an instance of class " + clazz, cause);
     }
 
+    public static ToolException exceptionAtToolExecutor(String executorId, String toolId, Exception e) {
+        return new ToolException("Catch exception at tool executor " + executorId + " from tool " + toolId, e);
+    }
 }

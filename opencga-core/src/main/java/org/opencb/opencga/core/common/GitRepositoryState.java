@@ -120,10 +120,6 @@ public class GitRepositoryState {
     }
 
     /* Generate setters and getters here */
-    public static GitRepositoryState getGitRepositoryState() {
-        return gitRepositoryState;
-    }
-
     public String getTags() {
         return tags;
     }

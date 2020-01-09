@@ -160,6 +160,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         jobSubCommands.addCommand("create", jobCommandOptions.createCommandOptions);
         jobSubCommands.addCommand("info", jobCommandOptions.infoCommandOptions);
         jobSubCommands.addCommand("search", jobCommandOptions.searchCommandOptions);
+        jobSubCommands.addCommand("top", jobCommandOptions.topCommandOptions);
         jobSubCommands.addCommand("visit", jobCommandOptions.visitCommandOptions);
         jobSubCommands.addCommand("delete", jobCommandOptions.deleteCommandOptions);
         jobSubCommands.addCommand("group-by", jobCommandOptions.groupByCommandOptions);
@@ -276,7 +277,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexAlignmentCommandOptions);
         alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentCommandOptions);
         alignmentSubCommands.addCommand("stats-run", alignmentCommandOptions.statsAlignmentCommandOptions);
-        alignmentSubCommands.addCommand("stats-info", alignmentCommandOptions.statsAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("stats-info", alignmentCommandOptions.statsInfoAlignmentCommandOptions);
         alignmentSubCommands.addCommand("stats-query", alignmentCommandOptions.statsQueryAlignmentCommandOptions);
         alignmentSubCommands.addCommand("coverage-run", alignmentCommandOptions.coverageAlignmentCommandOptions);
         alignmentSubCommands.addCommand("coverage-query", alignmentCommandOptions.coverageQueryAlignmentCommandOptions);

@@ -8,7 +8,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantAnalysisExecutor;
+import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantStorageToolExecutor;
 import org.opencb.opencga.core.annotations.ToolExecutor;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
@@ -17,7 +17,7 @@ import java.util.List;
 @ToolExecutor(id = "hbase-mapreduce", tool = "gwas",
         framework = ToolExecutor.Framework.MAP_REDUCE,
         source = ToolExecutor.Source.HBASE)
-public class GwasHBaseMapReduceAnalysisExecutor extends GwasAnalysisExecutor implements HadoopVariantAnalysisExecutor {
+public class GwasHBaseMapReduceAnalysisExecutor extends GwasAnalysisExecutor implements HadoopVariantStorageToolExecutor {
 
     @Override
     public void run() throws ToolException {

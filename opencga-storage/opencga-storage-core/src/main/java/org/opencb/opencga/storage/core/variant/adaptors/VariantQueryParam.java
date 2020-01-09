@@ -84,6 +84,8 @@ public final class VariantQueryParam implements QueryParam {
             = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)*"
             + " e.g. HG0097:0/0;HG0098:0/1,1/1. "
             + "Unphased genotypes (e.g. 0/1, 1/1) will also include phased genotypes (e.g. 0|1, 1|0, 1|1), but not vice versa. "
+            + "When filtering by multi-allelic genotypes, any secondary allele will match, regardless of its position"
+            + " e.g. 1/2 will match with genotypes 1/2, 1/3, 1/4, .... "
             + "Genotype aliases accepted: HOM_REF, HOM_ALT, HET, HET_REF, HET_ALT and MISS "
             + " e.g. HG0097:HOM_REF;HG0098:HET_REF,HOM_ALT. "
             + "This will automatically set 'includeSample' parameter when not provided";

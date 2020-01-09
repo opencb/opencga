@@ -6,10 +6,9 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.annotations.Tool;
-import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.api.variant.SampleVariantFilterParams;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.Sample;
@@ -29,7 +28,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Tool(id = SampleVariantFilterAnalysis.ID, description = SampleVariantFilterAnalysis.DESCRIPTION, resource = Enums.Resource.VARIANT)
-public class SampleVariantFilterAnalysis extends OpenCgaTool {
+public class SampleVariantFilterAnalysis extends OpenCgaToolScopeStudy {
 
     public static final String ID = "sample-variant-filter";
     public static final String DESCRIPTION = "Get samples given a set of variants";
@@ -80,11 +79,6 @@ public class SampleVariantFilterAnalysis extends OpenCgaTool {
 
         samplesOutputFile = getOutDir().resolve("samples.tsv").toFile();
         variantsOutputFile = getOutDir().resolve("variants.vcf.gz").toFile();
-    }
-
-    protected final String getStudyFqn() throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
-        return catalogManager.getStudyManager().resolveId(params.getString(ParamConstants.STUDY_PARAM), userId).getFqn();
     }
 
     @Override

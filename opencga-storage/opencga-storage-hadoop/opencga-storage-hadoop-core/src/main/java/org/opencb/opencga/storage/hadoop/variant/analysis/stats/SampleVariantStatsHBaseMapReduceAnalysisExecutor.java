@@ -9,7 +9,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantAnalysisExecutor;
+import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantStorageToolExecutor;
 import org.opencb.opencga.storage.hadoop.variant.stats.SampleVariantStatsDriver;
 
 import java.util.List;
@@ -18,7 +18,7 @@ import java.util.List;
         framework = ToolExecutor.Framework.MAP_REDUCE,
         source = ToolExecutor.Source.HBASE)
 public class SampleVariantStatsHBaseMapReduceAnalysisExecutor
-        extends SampleVariantStatsAnalysisExecutor implements HadoopVariantAnalysisExecutor {
+        extends SampleVariantStatsAnalysisExecutor implements HadoopVariantStorageToolExecutor {
 
     @Override
     public void run() throws ToolException {
