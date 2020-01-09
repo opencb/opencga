@@ -57,9 +57,9 @@ public class FileClient extends AnnotationClient<File> {
         return execute(FILES_URL, fileId.replace("/", ":"), "relink", params, GET, File.class);
     }
 
-    public RestResponse<File> unlink(String fileId, ObjectMap params) throws IOException {
-        params = addParamsToObjectMap(params, "fileId", fileId);
-        return execute(FILES_URL, "unlink", params, GET, File.class);
+    public RestResponse<Job> unlink(String study, String fileId, ObjectMap params) throws IOException {
+        params.putIfNotNull("study", study);
+        return execute(FILES_URL, fileId.replace("/", ":"), "unlink", params, DELETE, Job.class);
     }
 
     public RestResponse<File> content(String fileId, ObjectMap params) throws IOException {

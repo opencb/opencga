@@ -391,27 +391,12 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 filesCommandOptions.relinkCommandOptions.uri, queryOptions);
     }
 
-    private RestResponse<File> unlink() throws CatalogException, IOException {
+    private RestResponse<Job> unlink() throws IOException {
         logger.debug("Unlink an external file from catalog");
 
-        // LOCAL EXECUTION
-//        CatalogManager catalogManager = null;
-//        try {
-//            catalogManager = new CatalogManager(catalogConfiguration);
-//        } catch (CatalogException e) {
-//            logger.error("Catalog manager could not be initialized. Is the configuration OK?");
-//        }
-//        if (!catalogManager.existsCatalogDB()) {
-//            logger.error("The database could not be found. Are you running this from the server?");
-//            return;
-//        }
-//        DataResult<File> unlinkQueryResult = catalogManager.unlink(filesCommandOptions.unlinkCommandOptions.id, new QueryOptions(),
-//                sessionId);
-//
-//        RestResponse<File> unlink = new RestResponse<>(new QueryOptions(), Arrays.asList(unlinkQueryResult));
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.unlinkCommandOptions.study);
-        return openCGAClient.getFileClient().unlink(filesCommandOptions.unlinkCommandOptions.file, params);
+        return openCGAClient.getFileClient().unlink(filesCommandOptions.unlinkCommandOptions.study,
+                filesCommandOptions.unlinkCommandOptions.file, params);
     }
 
     private RestResponse refresh() throws CatalogException, IOException {
