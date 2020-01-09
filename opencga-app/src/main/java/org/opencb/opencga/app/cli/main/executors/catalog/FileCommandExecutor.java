@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileTree;
+import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.rest.RestResponse;
 import org.opencb.opencga.core.results.OpenCGAResult;
 
@@ -340,15 +341,15 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 filesCommandOptions.uploadCommandOptions.inputFile, params);
     }
 
-    private RestResponse<File> delete() throws CatalogException, IOException {
+    private RestResponse<Job> delete() throws IOException {
         logger.debug("Deleting file");
 
         ObjectMap objectMap = new ObjectMap()
                 .append("deleteExternal", filesCommandOptions.deleteCommandOptions.deleteExternal)
                 .append("skipTrash", filesCommandOptions.deleteCommandOptions.skipTrash);
-        objectMap.putIfNotNull(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.deleteCommandOptions.study);
 
-        return openCGAClient.getFileClient().delete(filesCommandOptions.deleteCommandOptions.file, objectMap);
+        return openCGAClient.getFileClient().delete(filesCommandOptions.deleteCommandOptions.study,
+                filesCommandOptions.deleteCommandOptions.file, objectMap);
     }
 
     private RestResponse<File> link() throws CatalogException, IOException, URISyntaxException {
