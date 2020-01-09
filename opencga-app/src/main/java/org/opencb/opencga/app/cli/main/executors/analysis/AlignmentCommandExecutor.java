@@ -406,7 +406,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 alignmentCommandOptions.bwaCommandOptions.indexBaseFile,
                 alignmentCommandOptions.bwaCommandOptions.fastq1File,
                 alignmentCommandOptions.bwaCommandOptions.fastq2File,
-                alignmentCommandOptions.bwaCommandOptions.samFile,
+                alignmentCommandOptions.bwaCommandOptions.samFilename,
                 alignmentCommandOptions.bwaCommandOptions.outdir,
                 alignmentCommandOptions.bwaCommandOptions.commonOptions.params
         ).toObjectMap();
@@ -440,7 +440,6 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new AlignmentAnalysisWSService.DeeptoolsRunParams(
                 alignmentCommandOptions.deeptoolsCommandOptions.executable,
                 alignmentCommandOptions.deeptoolsCommandOptions.bamFile,
-                alignmentCommandOptions.deeptoolsCommandOptions.coverageFile,
                 alignmentCommandOptions.deeptoolsCommandOptions.outdir,
                 alignmentCommandOptions.deeptoolsCommandOptions.commonOptions.params
         ).toObjectMap();
