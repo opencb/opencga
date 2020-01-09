@@ -67,7 +67,9 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -78,6 +80,7 @@ import java.util.stream.Stream;
 public class ExecutionDaemon extends MonitorParentDaemon {
 
     public static final String OUTDIR_PARAM = "outdir";
+    public static final int EXECUTION_RESULT_FILE_EXPIRATION_MINUTES = 10;
     private String internalCli;
     private JobManager jobManager;
     private FileManager fileManager;
@@ -233,7 +236,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 ExecutionResult result = readAnalysisResult(job);
                 if (result != null) {
                     // Update the result of the job
-                    PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setResult(result);
+                    PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(result);
                     try {
                         jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
                     } catch (CatalogException e) {
@@ -559,7 +562,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         if (resultJson != null && Files.exists(resultJson)) {
             ExecutionResult execution = readAnalysisResult(resultJson);
             if (execution != null) {
-                return new Enums.ExecutionStatus(execution.getStatus().getName().name());
+                long lastStatusUpdate = execution.getStatus().getDate().getTime();
+                long fileAgeInMillis = Instant.now().toEpochMilli() - lastStatusUpdate;
+                if (TimeUnit.MILLISECONDS.toMinutes(fileAgeInMillis) > EXECUTION_RESULT_FILE_EXPIRATION_MINUTES) {
+                    logger.warn("Ignoring file '" + resultJson + "'. The file is more than "
+                            + EXECUTION_RESULT_FILE_EXPIRATION_MINUTES + " minutes old");
+                } else {
+                    return new Enums.ExecutionStatus(execution.getStatus().getName().name());
+                }
             } else {
                 if (Files.exists(resultJson)) {
                     logger.warn("File '" + resultJson + "' seems corrupted.");
@@ -661,7 +671,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         if (analysisResultPath != null) {
             execution = readAnalysisResult(analysisResultPath);
             if (execution != null) {
-                PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setResult(execution);
+                PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(execution);
                 try {
                     jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
                 } catch (CatalogException e) {

@@ -57,6 +57,7 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
@@ -372,6 +373,12 @@ public class VariantStorageManager extends StorageManager {
         });
     }
 
+    public List<List<String>> getTriosFromFamily(String study, Family family, boolean skipIncompleteFamilies, String token)
+            throws CatalogException, StorageEngineException {
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(study, token);
+        return catalogUtils.getTriosFromFamily(study, family, variantStorageEngine.getMetadataManager(), skipIncompleteFamilies, token);
+    }
+
     public void aggregateFamily(String studyStr, List<String> samples, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
 
@@ -484,7 +491,7 @@ public class VariantStorageManager extends StorageManager {
         });
     }
 
-    public VariantIterable iterable(String token) throws CatalogException, StorageEngineException {
+    public VariantIterable iterable(String token) {
         return (query, options) -> {
             try {
                 return iterator(query, options, token);
@@ -621,6 +628,14 @@ public class VariantStorageManager extends StorageManager {
                 .stream()
                 .map(Sample::getId)
                 .collect(Collectors.toSet());
+    }
+
+    public CellBaseUtils getCellBaseUtils(String study, String token) throws StorageEngineException, CatalogException {
+        try (VariantStorageEngine storageEngine = getVariantStorageEngine(study, token)) {
+            return storageEngine.getCellBaseUtils();
+        } catch (IOException e) {
+            throw new StorageEngineException("Error closing the VariantStorageEngine", e);
+        }
     }
 
     // Permission related methods

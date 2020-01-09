@@ -18,7 +18,7 @@ public abstract class OpenCgaToolExecutor {
     protected OpenCgaToolExecutor() {
     }
 
-    public final String getAnalysisId() {
+    public final String getToolId() {
         return this.getClass().getAnnotation(ToolExecutor.class).tool();
     }
 
@@ -41,10 +41,16 @@ public abstract class OpenCgaToolExecutor {
     }
 
     public final void execute() throws ToolException {
-        run();
+        try {
+            run();
+        } catch (ToolException e) {
+            throw e;
+        } catch (Exception e) {
+            throw ToolExecutorException.exceptionAtToolExecutor(getId(), getToolId(), e);
+        }
     }
 
-    protected abstract void run() throws ToolException;
+    protected abstract void run() throws Exception;
 
     public final ObjectMap getExecutorParams() {
         return executorParams;
@@ -54,7 +60,7 @@ public abstract class OpenCgaToolExecutor {
         return outDir;
     }
 
-    protected final String getToken() throws ToolExecutorException {
+    protected final String getToken() {
         return getExecutorParams().getString("token");
     }
 

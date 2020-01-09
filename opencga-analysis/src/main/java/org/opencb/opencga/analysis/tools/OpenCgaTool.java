@@ -26,11 +26,13 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.annotations.ToolExecutor;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.ToolException;
@@ -147,14 +149,14 @@ public abstract class OpenCgaTool {
         availableFrameworks = new ArrayList<>();
         sourceTypes = new ArrayList<>();
         if (storageConfiguration.getVariant().getDefaultEngine().equals("mongodb")) {
-            if (getToolType().equals(Enums.Resource.VARIANT)) {
+            if (getToolResource().equals(Enums.Resource.VARIANT)) {
                 sourceTypes.add(ToolExecutor.Source.MONGODB);
             }
         } else if (storageConfiguration.getVariant().getDefaultEngine().equals("hadoop")) {
             availableFrameworks.add(ToolExecutor.Framework.MAP_REDUCE);
             // TODO: Check from configuration if spark is available
 //            availableFrameworks.add(ToolExecutor.Framework.SPARK);
-            if (getToolType().equals(Enums.Resource.VARIANT)) {
+            if (getToolResource().equals(Enums.Resource.VARIANT)) {
                 sourceTypes.add(ToolExecutor.Source.HBASE);
             }
         }
@@ -200,6 +202,7 @@ public abstract class OpenCgaTool {
         });
         Runtime.getRuntime().addShutdownHook(hook);
         Exception exception = null;
+        ExecutionResult result;
         try {
             if (scratchDir == null) {
                 Path baseScratchDir = this.outDir;
@@ -243,8 +246,9 @@ public abstract class OpenCgaTool {
         } finally {
             deleteScratchDirectory();
             Runtime.getRuntime().removeShutdownHook(hook);
-            return erm.close(exception);
+            result = erm.close(exception);
         }
+        return result;
     }
 
     private void deleteScratchDirectory() throws ToolException {
@@ -286,19 +290,19 @@ public abstract class OpenCgaTool {
     }
 
     /**
+     * @return the tool id
+     */
+    protected final Enums.Resource getToolResource() {
+        return this.getClass().getAnnotation(Tool.class).resource();
+    }
+
+    /**
      * @return the tool steps
      */
     protected List<String> getSteps() {
         List<String> steps = new ArrayList<>();
         steps.add(getId());
         return steps;
-    }
-
-    /**
-     * @return the tool id
-     */
-    public final Enums.Resource getToolType() {
-        return this.getClass().getAnnotation(Tool.class).resource();
     }
 
     /**
@@ -315,8 +319,20 @@ public abstract class OpenCgaTool {
         return scratchDir;
     }
 
-    protected final String getToken() {
+    public final String getToken() {
         return token;
+    }
+
+    public CatalogManager getCatalogManager() {
+        return catalogManager;
+    }
+
+    public VariantStorageManager getVariantStorageManager() {
+        return variantStorageManager;
+    }
+
+    public ObjectMap getParams() {
+        return params;
     }
 
     public final OpenCgaTool addSource(ToolExecutor.Source source) {

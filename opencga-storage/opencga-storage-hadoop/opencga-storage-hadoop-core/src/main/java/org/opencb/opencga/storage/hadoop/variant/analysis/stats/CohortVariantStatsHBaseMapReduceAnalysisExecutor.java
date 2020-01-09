@@ -13,14 +13,14 @@ import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantAnalysisExecutor;
+import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantStorageToolExecutor;
 import org.opencb.opencga.storage.hadoop.variant.stats.CohortVariantStatsDriver;
 
 @ToolExecutor(id = "hbase-mapreduce", tool = "cohort-variant-stats",
         framework = ToolExecutor.Framework.MAP_REDUCE,
         source = ToolExecutor.Source.HBASE)
 public class CohortVariantStatsHBaseMapReduceAnalysisExecutor
-        extends CohortVariantStatsAnalysisExecutor implements HadoopVariantAnalysisExecutor {
+        extends CohortVariantStatsAnalysisExecutor implements HadoopVariantStorageToolExecutor {
 
     @Override
     public void run() throws ToolException {

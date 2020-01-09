@@ -9,7 +9,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageAnalysisExecutor;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
 import org.opencb.opencga.core.tools.variant.SampleVariantStatsAnalysisExecutor;
 import org.opencb.opencga.core.annotations.ToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -24,7 +24,7 @@ import java.util.List;
 @ToolExecutor(id="opencga-local", tool = SampleVariantStatsAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
-public class SampleVariantStatsLocalAnalysisExecutor extends SampleVariantStatsAnalysisExecutor implements VariantStorageAnalysisExecutor {
+public class SampleVariantStatsLocalAnalysisExecutor extends SampleVariantStatsAnalysisExecutor implements VariantStorageToolExecutor {
 
     @Override
     public void run() throws ToolException {
