@@ -32,8 +32,8 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.api.operations.variant.VariantFileDeleteParams;
 import org.opencb.opencga.core.api.variant.*;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.rest.RestResponse;
-import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.io.IOException;

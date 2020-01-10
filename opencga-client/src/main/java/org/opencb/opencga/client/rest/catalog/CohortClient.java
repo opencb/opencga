@@ -24,7 +24,7 @@ import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.rest.RestResponse;
+import org.opencb.opencga.core.response.RestResponse;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
