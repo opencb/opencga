@@ -18,11 +18,8 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.models.update.JobUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -33,13 +30,13 @@ import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.ToolInfo;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.results.OpenCGAResult;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +44,7 @@ import java.util.stream.Collectors;
 
 @Path("/{apiVersion}/jobs")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Jobs", position = 5, description = "Methods for working with 'jobs' endpoint")
+@Api(value = "Jobs", description = "Methods for working with 'jobs' endpoint")
 public class JobWSServer extends OpenCGAWSServer {
 
     private JobManager jobManager;
@@ -62,16 +59,6 @@ public class JobWSServer extends OpenCGAWSServer {
     public static class InputJob {
 
         public InputJob() {
-        }
-
-        public InputJob(String id, String name, String description, String commandLine, Map<String, Object> params,
-                        Enums.ExecutionStatus status) {
-            this.id = id;
-            this.name = name;
-            this.description = description;
-            this.commandLine = commandLine;
-            this.params = params;
-            this.status = status;
         }
 
         private String id;
@@ -195,8 +182,6 @@ public class JobWSServer extends OpenCGAWSServer {
 
     }
 
-    // TODO: Change the name for register. We are not "creating" a job, meaning that it will be put into execution, we are just registering
-    // TODO: it, so it would be necessary changing the path name "create" per "register"
     @POST
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -204,16 +189,11 @@ public class JobWSServer extends OpenCGAWSServer {
             notes = "Registers a job that has been previously run outside catalog into catalog. <br>"
                     + "Required values: [name, toolName, commandLine, outDirId]", response = Job.class)
     public Response createJobPOST(
-            @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "job", required = true) InputJob inputJob) {
         try {
-            if (StringUtils.isNotEmpty(studyIdStr)) {
-                studyStr = studyIdStr;
-            }
-
-            DataResult<Job> result = catalogManager.getJobManager().create(studyStr, inputJob.toJob(), queryOptions, token);
+            OpenCGAResult<Job> result = catalogManager.getJobManager().create(studyStr, inputJob.toJob(), queryOptions, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -222,7 +202,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{jobs}/info")
-    @ApiOperation(value = "Get job information", position = 2, response = Job[].class)
+    @ApiOperation(value = "Get job information", response = Job.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
                     example = "name,attributes", dataType = "string", paramType = "query"),
@@ -244,7 +224,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "Job search method", response = Job[].class)
+    @ApiOperation(value = "Job search method", response = Job.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -278,7 +258,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @POST
     @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some job attributes", hidden = true)
+    @ApiOperation(value = "Update some job attributes", hidden = true, response = Job.class)
     public Response updateByPost(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME_PARAM) String name,
@@ -306,7 +286,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{jobs}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some job attributes")
+    @ApiOperation(value = "Update some job attributes", response = Job.class)
     public Response updateByPost(
             @ApiParam(value = ParamConstants.JOBS_DESCRIPTION, required = true) @PathParam("jobs") String jobStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
@@ -320,7 +300,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @DELETE
     @Path("/{jobs}/delete")
-    @ApiOperation(value = "Delete existing jobs")
+    @ApiOperation(value = "Delete existing jobs", response = Job.class)
     public Response delete(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of job ids") @PathParam("jobs") String jobs) {
@@ -332,43 +312,8 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/groupBy")
-    @ApiOperation(value = "Group jobs by several fields", position = 10, hidden = true,
-            notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = QueryOptions.COUNT, value = "Count the number of elements matching the group", dataType = "boolean",
-                    paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Maximum number of documents (groups) to be returned", dataType = "integer",
-                    paramType = "query", defaultValue = "50")
-    })
-    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
-                            @QueryParam("fields") String fields,
-                            @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyId,
-                            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                            @ApiParam(value = "name") @QueryParam("name") String name,
-                            @ApiParam(value = "path") @QueryParam("path") String path,
-                            @ApiParam(value = "status") @QueryParam("status") File.FileStatus status,
-                            @ApiParam(value = "ownerId") @QueryParam("ownerId") String ownerId,
-                            @ApiParam(value = "creationDate") @DefaultValue("")
-                            @QueryParam("creationDate") String creationDate) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            query.remove("fields");
-
-            if (StringUtils.isEmpty(fields)) {
-                throw new CatalogException("Empty fields parameter.");
-            }
-            DataResult result = catalogManager.getJobManager().groupBy(studyStr, query, Arrays.asList(fields.split(",")), queryOptions,
-                    token);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
     @Path("/{jobs}/acl")
-    @ApiOperation(value = "Return the acl of the job. If member is provided, it will only return the acl for the member.", position = 18)
+    @ApiOperation(value = "Return the acl of the job. If member is provided, it will only return the acl for the member.", response = Map.class)
     public Response getAcls(@ApiParam(value = ParamConstants.JOBS_DESCRIPTION, required = true) @PathParam("jobs") String jobIdsStr,
                             @ApiParam(value = "User or group id") @QueryParam("member") String member,
                             @ApiParam(value = ParamConstants.SILENT_DESCRIPTION, defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
@@ -380,31 +325,13 @@ public class JobWSServer extends OpenCGAWSServer {
         }
     }
 
-    @POST
-    @Path("/{job}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member [DEPRECATED]", position = 21, hidden = true,
-            notes = "DEPRECATED: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
-                    + "to also support changing permissions using queries.")
-    public Response updateAclPOST(
-            @ApiParam(value = "jobId", required = true) @PathParam("job") String jobIdStr,
-            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
-            @ApiParam(value = "JSON containing one of the keys 'add', 'set' or 'remove'", required = true) StudyWSServer.MemberAclUpdateOld params) {
-        try {
-            AclParams aclParams = getAclParams(params.add, params.remove, params.set);
-            List<String> idList = getIdList(jobIdStr);
-            return createOkResponse(jobManager.updateAcl(null, idList, memberId, aclParams, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     public static class JobAcl extends AclParams {
         public String job;
     }
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
     public Response updateAcl(
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) JobAcl params) {
