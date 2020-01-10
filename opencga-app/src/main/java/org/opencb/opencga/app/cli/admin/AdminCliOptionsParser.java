@@ -709,16 +709,16 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public boolean background;
     }
 
-    @Parameters(commandNames = {"grpc"}, commandDescription = "Start and stop OpenCGA GRPC server")
+    @Parameters(commandNames = {"grpc"}, commandDescription = "Start and stop OpenCGA gRPC server")
     public class GrpcServerCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
 
-        @Parameter(names = {"--start"}, description = "Start OpenCGA GRPC server", arity = 0)
+        @Parameter(names = {"--start"}, description = "Start OpenCGA gRPC server", arity = 0)
         public boolean start;
 
-        @Parameter(names = {"--stop"}, description = "Stop OpenCGA GRPC server", arity = 0)
+        @Parameter(names = {"--stop"}, description = "Stop OpenCGA gRPC server", arity = 0)
         public boolean stop;
 
         @Parameter(names = {"--bg", "--background"}, description = "Run the server in background as a daemon", arity = 0)

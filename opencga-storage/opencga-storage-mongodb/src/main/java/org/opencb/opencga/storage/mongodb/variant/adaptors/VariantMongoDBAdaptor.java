@@ -39,7 +39,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.datastore.mongodb.MongoPersistentCursor;
-import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;

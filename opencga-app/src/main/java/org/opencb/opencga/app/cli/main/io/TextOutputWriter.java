@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.AbstractAclEntry;
-import org.opencb.opencga.core.rest.RestResponse;
+import org.opencb.opencga.core.response.RestResponse;
 
 import java.util.Iterator;
 import java.util.List;

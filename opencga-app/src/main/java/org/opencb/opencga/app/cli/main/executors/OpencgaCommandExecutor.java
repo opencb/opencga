@@ -28,7 +28,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.rest.RestResponse;
+import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;

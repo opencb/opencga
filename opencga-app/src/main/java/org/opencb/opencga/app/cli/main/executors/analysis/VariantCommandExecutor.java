@@ -42,9 +42,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.operations.variant.VariantFileDeleteParams;
 import org.opencb.opencga.core.api.variant.*;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.rest.RestResponse;
-import org.opencb.opencga.core.results.OpenCGAResult;
-import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericServiceModel;
 import org.opencb.opencga.server.grpc.VariantServiceGrpc;
@@ -449,7 +449,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             case "AUTO":
                 grpc = isGrpcAvailable() == null;
                 if (grpc) {
-                    logger.debug("Using GRPC mode");
+                    logger.debug("Using gRPC mode");
                 } else {
                     logger.debug("Using REST mode");
                 }

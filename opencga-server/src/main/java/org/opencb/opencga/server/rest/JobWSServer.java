@@ -30,7 +30,7 @@ import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.ToolInfo;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 
 import javax.servlet.http.HttpServletRequest;

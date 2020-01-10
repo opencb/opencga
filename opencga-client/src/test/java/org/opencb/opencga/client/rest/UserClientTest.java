@@ -27,7 +27,7 @@ import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.catalog.UserClient;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.core.rest.RestResponse;
+import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
 import java.util.stream.Collectors;

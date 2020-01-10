@@ -25,7 +25,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileTree;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.rest.RestResponse;
+import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
 

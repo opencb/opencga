@@ -33,8 +33,8 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileTree;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.rest.RestResponse;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
 import java.net.URI;

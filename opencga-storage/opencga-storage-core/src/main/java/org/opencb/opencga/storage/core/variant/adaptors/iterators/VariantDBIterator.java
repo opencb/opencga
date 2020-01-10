@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.core.variant.adaptors.iterators;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

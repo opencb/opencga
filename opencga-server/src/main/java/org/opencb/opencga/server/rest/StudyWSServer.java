@@ -35,7 +35,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

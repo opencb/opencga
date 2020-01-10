@@ -22,7 +22,7 @@ package org.opencb.opencga.catalog.db.api;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 public interface MetaDBAdaptor {
 

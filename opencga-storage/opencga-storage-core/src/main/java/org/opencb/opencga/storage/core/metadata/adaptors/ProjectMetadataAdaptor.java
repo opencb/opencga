@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.core.metadata.adaptors;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.models.Locked;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 
 import java.io.IOException;
@@ -15,7 +16,7 @@ import java.util.concurrent.TimeoutException;
  */
 public interface ProjectMetadataAdaptor extends AutoCloseable {
 
-    long lockProject(long lockDuration, long timeout)
+    Locked lockProject(long lockDuration, long timeout)
             throws InterruptedException, TimeoutException, StorageEngineException;
 
     void unLockProject(long lockId) throws StorageEngineException;

@@ -33,7 +33,7 @@ import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

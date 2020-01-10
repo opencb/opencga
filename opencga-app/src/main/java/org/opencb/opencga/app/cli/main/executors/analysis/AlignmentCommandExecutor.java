@@ -36,7 +36,7 @@ import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.rest.RestResponse;
+import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
 import org.opencb.opencga.server.grpc.ServiceTypesModel;
@@ -141,7 +141,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             try {
                 queryGRPC(cliOptions);
             } catch(Exception e) {
-                System.out.println("GRPC not available. Trying on REST.");
+                System.out.println("gRPC not available. Trying on REST.");
                 queryResponse = queryRest(alignmentCommandOptions.queryAlignmentCommandOptions);
             }
         }

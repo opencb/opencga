@@ -148,24 +148,16 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         });
     }
 
-    public long lockStudy(int studyId) throws StorageEngineException {
+    public Locked lockStudy(int studyId) throws StorageEngineException {
         return lockStudy(studyId, 10000, 60000);
     }
 
-    public long lockStudy(int studyId, long lockDuration, long timeout) throws StorageEngineException {
-        return studyDBAdaptor.lockStudy(studyId, lockDuration, timeout, null);
+    public Locked lockStudy(int studyId, long lockDuration, long timeout) throws StorageEngineException {
+        return studyDBAdaptor.lock(studyId, lockDuration, timeout, null);
     }
 
-    public long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
-        return studyDBAdaptor.lockStudy(studyId, lockDuration, timeout, lockName);
-    }
-
-    public void unLockStudy(int studyId, long lockId) {
-        studyDBAdaptor.unLockStudy(studyId, lockId, null);
-    }
-
-    public void unLockStudy(int studyId, long lockId, String lockName) {
-        studyDBAdaptor.unLockStudy(studyId, lockId, lockName);
+    public Locked lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
+        return studyDBAdaptor.lock(studyId, lockDuration, timeout, lockName);
     }
 
     public StudyMetadata createStudy(String studyName) throws StorageEngineException {
@@ -186,7 +178,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public <E extends Exception> StudyMetadata updateStudyMetadata(Object study, UpdateFunction<StudyMetadata, E> updater)
             throws StorageEngineException, E {
         int studyId = getStudyId(study);
-        long lock = lockStudy(studyId);
+
+        Locked lock = lockStudy(studyId);
         try {
             StudyMetadata sm = getStudyMetadata(studyId);
 
@@ -195,7 +188,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             unsecureUpdateStudyMetadata(sm);
             return sm;
         } finally {
-            unLockStudy(studyId, lock);
+            lock.unlock();
         }
     }
 
@@ -451,7 +444,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public <E extends Exception> ProjectMetadata updateProjectMetadata(UpdateFunction<ProjectMetadata, E> function)
             throws StorageEngineException, E {
         Objects.requireNonNull(function);
-        long lock;
+        Locked lock;
         try {
             lock = projectDBAdaptor.lockProject(DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
         } catch (InterruptedException e) {
@@ -473,7 +466,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             projectDBAdaptor.updateProjectMetadata(projectMetadata, updateCounters);
             return projectMetadata;
         } finally {
-            projectDBAdaptor.unLockProject(lock);
+            lock.unlock();
         }
     }
 

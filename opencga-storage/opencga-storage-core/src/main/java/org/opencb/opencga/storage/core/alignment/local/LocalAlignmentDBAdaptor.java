@@ -35,7 +35,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterator;
