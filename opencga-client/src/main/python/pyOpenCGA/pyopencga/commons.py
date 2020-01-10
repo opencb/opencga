@@ -5,7 +5,7 @@ import warnings
 
 import requests
 
-from pyopencga.exceptions import OpenCgaInvalidToken, OpenCgaAuthorisationError
+from pyopencga.exceptions import OpencgaInvalidToken, OpencgaAuthorisationError
 
 try:
     from Queue import Queue
@@ -163,9 +163,9 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
         time_out_counter = 0
 
         if r.status_code == 401:
-            raise OpenCgaInvalidToken(r.content)
+            raise OpencgaInvalidToken(r.content)
         elif r.status_code == 403:
-            raise OpenCgaAuthorisationError(r.content)
+            raise OpencgaAuthorisationError(r.content)
 
         elif r.status_code != 200:
             raise Exception(r.content)
