@@ -227,17 +227,19 @@ public class VariantStorageManager extends StorageManager {
         String projectId = getProjectId(projectStr, studies, token);
         secureOperation(VariantAnnotationIndexOperationTool.ID, projectId, params, token, engine -> {
             new VariantAnnotationOperationManager(this, engine)
-                    .annotationLoad(projectStr, studies, params, loadFile, token);
+                    .annotationLoad(projectStr, getStudiesFqn(studies, token), params, loadFile, token);
             return null;
         });
     }
 
-    public void annotate(String projectStr, List<String> studies, String region, boolean overwriteAnnotations, String outDir, String outputFileName, ObjectMap params, String token)
+    public void annotate(String projectStr, List<String> studies, String region, boolean overwriteAnnotations, String outDir,
+                         String outputFileName, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         String projectId = getProjectId(projectStr, studies, token);
         secureOperationByProject(VariantAnnotationIndexOperationTool.ID, projectId, params, token, engine -> {
+            List<String> studiesFqn = getStudiesFqn(studies, token);
             new VariantAnnotationOperationManager(this, engine)
-                    .annotate(projectStr, studies, region, outputFileName, Paths.get(outDir), params, token, overwriteAnnotations);
+                    .annotate(projectStr, studiesFqn, region, outputFileName, Paths.get(outDir), params, token, overwriteAnnotations);
             return null;
         });
     }
@@ -992,6 +994,17 @@ public class VariantStorageManager extends StorageManager {
             responses.add(beaconResponse);
         }
         return responses;
+    }
+
+    private List<String> getStudiesFqn(List<String> studies, String token) throws CatalogException {
+        List<String> studiesFqn = null;
+        if (studies != null) {
+            studiesFqn = new ArrayList<>(studies.size());
+            for (String study : studies) {
+                studiesFqn.add(getStudyFqn(study, token));
+            }
+        }
+        return studiesFqn;
     }
 
     private String getStudyFqn(String study, String token) throws CatalogException {
