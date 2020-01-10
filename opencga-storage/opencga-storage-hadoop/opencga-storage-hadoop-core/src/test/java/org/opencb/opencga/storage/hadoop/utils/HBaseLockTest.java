@@ -30,8 +30,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created on 18/05/16
@@ -139,6 +138,87 @@ public class HBaseLockTest extends VariantStorageBaseTest implements HadoopVaria
         lock = hbaseLock.lock(getColumn(lockId), 1000, 1000);
         System.out.println("Unlock = " + lock);
         hbaseLock.unlock(getColumn(lockId), lock);
-
     }
+
+    @Test
+    public void testLockExpireUnlock() throws Exception {
+        long lock = hbaseLock.lock(getColumn(1), 100, 100);
+        System.out.println("lock = " + lock);
+        Thread.sleep(200);
+
+        thrown.expect(HBaseLock.IllegalLockStatusException.class);
+        hbaseLock.unlock(getColumn(1), lock);
+    }
+
+    @Test
+    public void testLockAndRefresh() throws Exception {
+        long lock = hbaseLock.lock(getColumn(1), 100, 100);
+        System.out.println("lock = " + lock);
+
+        for (int i = 0; i < 10; i++) {
+            Thread.sleep(50); // small delay
+            hbaseLock.refresh(getColumn(1), lock, 100);
+        }
+
+        hbaseLock.unlock(getColumn(1), lock);
+    }
+
+    @Test
+    public void testLockRefreshExpireUnlock() throws Exception {
+        long lock = hbaseLock.lock(getColumn(1), 100, 100);
+        System.out.println("lock = " + lock);
+        hbaseLock.refresh(getColumn(1), lock, 100);
+
+        Thread.sleep(200); // expire
+
+        thrown.expect(HBaseLock.IllegalLockStatusException.class);
+        hbaseLock.unlock(getColumn(1), lock);
+    }
+
+    @Test
+    public void testLockRefreshExpiredRefresh() throws Exception {
+        long lock = hbaseLock.lock(getColumn(1), 100, 100);
+        System.out.println("lock = " + lock);
+        hbaseLock.refresh(getColumn(1), lock, 100);
+
+        Thread.sleep(200); // expire
+
+        thrown.expect(HBaseLock.IllegalLockStatusException.class);
+        hbaseLock.refresh(getColumn(1), lock, 100);
+    }
+
+    @Test
+    public void testGetCurrent() {
+        long e = System.currentTimeMillis() + 1000;
+        String s;
+
+        // Expired current token
+        s = HBaseLock.getCurrentLockToken(new String[]{"CURRENT-abc:123"});
+        assertNull(s);
+
+        // Valid current token
+        s = HBaseLock.getCurrentLockToken(new String[]{"CURRENT-abc:" + e});
+        assertEquals("abc", s);
+
+        // Current expired, first refresh valid
+        s = HBaseLock.getCurrentLockToken(new String[]{"CURRENT-abc:123", "REFRESH-abc:" + e});
+        assertEquals("abc", s);
+
+        // Current expired, first refresh expired, second refresh valid
+        s = HBaseLock.getCurrentLockToken(new String[]{"CURRENT-abc:123", "REFRESH-abc:200", "REFRESH-abc:" + e});
+        assertEquals("abc", s);
+
+        // Expired refresh
+        s = HBaseLock.getCurrentLockToken(new String[]{"CURRENT-abc:123", "REFRESH-abc:200"});
+        assertNull(s);
+
+        // Wrong refresh
+        s = HBaseLock.getCurrentLockToken(new String[]{"CURRENT-abc:123", "REFRESH-efg:" + e});
+        assertNull(s);
+
+        // There is an token in between
+        s = HBaseLock.getCurrentLockToken(new String[]{"CURRENT-abc:123", "zzz:" + e, "REFRESH-abc:" + e});
+        assertNull(s);
+    }
+
 }
