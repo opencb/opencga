@@ -108,11 +108,10 @@ public class AbstractMongoDBAdaptor<T> {
     }
 
     public Locked lock(int studyId, int resourceId, long lockDuration, long timeout) throws StorageEngineException {
-        long lock = lock(buildPrivateId(studyId, resourceId), lockDuration, timeout);
-        return () -> unLock(buildPrivateId(studyId, resourceId), lock);
+        return lock(buildPrivateId(studyId, resourceId), lockDuration, timeout);
     }
 
-    public long lock(Object id, long lockDuration, long timeout) throws StorageEngineException {
+    public Locked lock(Object id, long lockDuration, long timeout) throws StorageEngineException {
         try {
             return mongoLock.lock(id, lockDuration, timeout);
         } catch (InterruptedException e) {

@@ -73,24 +73,7 @@ public class MongoDBStudyMetadataDBAdaptor extends AbstractMongoDBAdaptor<StudyM
         if (StringUtils.isNotEmpty(lockName)) {
             throw new UnsupportedOperationException("Unsupported lockStudy given a lockName");
         }
-        long lock = lock(studyId, lockDuration, timeout);
-        return () -> unLock(studyId, lock);
-    }
-
-    @Override
-    public long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
-        if (StringUtils.isNotEmpty(lockName)) {
-            throw new UnsupportedOperationException("Unsupported lockStudy given a lockName");
-        }
         return lock(studyId, lockDuration, timeout);
-    }
-
-    @Override
-    public void unLockStudy(int studyId, long lockId, String lockName) {
-        if (StringUtils.isNotEmpty(lockName)) {
-            throw new UnsupportedOperationException("Unsupported unlockStudy given a lockName");
-        }
-        unLock(studyId, lockId);
     }
 
     private DataResult<StudyConfiguration> getStudyConfiguration(Integer studyId, String studyName, Long timeStamp,

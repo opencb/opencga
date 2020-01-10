@@ -23,6 +23,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
+import org.opencb.opencga.storage.core.metadata.models.Locked;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 
@@ -61,9 +62,9 @@ public class HBaseLockTest extends VariantStorageBaseTest implements HadoopVaria
         int lockId = 1;
         for (int i = 0; i < 10; i++) {
             System.out.println("i = " + i);
-            long lock = hbaseLock.lock(getColumn(lockId), 10, 10);
+            Locked lock = hbaseLock.lock(getColumn(lockId), 10, 10);
             System.out.println("lock = " + lock);
-            hbaseLock.unlock(getColumn(lockId), lock);
+            lock.unlock();
         }
     }
 
@@ -82,7 +83,7 @@ public class HBaseLockTest extends VariantStorageBaseTest implements HadoopVaria
                 try {
                     for (int i = 0; i < 5; i++) {
                         System.out.println("i = " + i);
-                        long lock = hbaseLock.lock(getColumn(lockId), 1000, 20000);
+                        Locked lock = hbaseLock.lock(getColumn(lockId), 1000, 20000);
                         System.out.println("[" + Thread.currentThread().getName() + "] Enter LOCK");
                         assertEquals(threadWithLock.toString(), 0, threadWithLock.size());
                         threadWithLock.add(Thread.currentThread().getName());
@@ -94,7 +95,7 @@ public class HBaseLockTest extends VariantStorageBaseTest implements HadoopVaria
                         threadWithLock.remove(Thread.currentThread().getName());
                         System.out.println("lock = " + lock);
                         System.out.println("[" + Thread.currentThread().getName() + "] Exit LOCK");
-                        hbaseLock.unlock(getColumn(lockId), lock);
+                        lock.unlock();
                     }
                 } catch (Exception e) {
                     throw new RuntimeException(e);
@@ -118,7 +119,7 @@ public class HBaseLockTest extends VariantStorageBaseTest implements HadoopVaria
     @Test
     public void testLockAndLock() throws Exception {
         int lockId = 3;
-        long lock = hbaseLock.lock(getColumn(lockId), 1000, 2000);
+        Locked lock = hbaseLock.lock(getColumn(lockId), 1000, 2000);
         System.out.println("lock = " + lock);
 
         thrown.expect(TimeoutException.class);
@@ -129,7 +130,8 @@ public class HBaseLockTest extends VariantStorageBaseTest implements HadoopVaria
     @Test
     public void testLockAfterExpiring() throws Exception {
         int lockId = 4;
-        long lock = hbaseLock.lock(getColumn(lockId), 1000, 1000);
+        Locked lock = hbaseLock.lock(getColumn(lockId), 1000, 1000);
+        lock.keepAliveStop();
         System.out.println("lock = " + lock);
 
         Thread.sleep(2000);
@@ -137,54 +139,58 @@ public class HBaseLockTest extends VariantStorageBaseTest implements HadoopVaria
 
         lock = hbaseLock.lock(getColumn(lockId), 1000, 1000);
         System.out.println("Unlock = " + lock);
-        hbaseLock.unlock(getColumn(lockId), lock);
+        lock.unlock();
     }
 
     @Test
     public void testLockExpireUnlock() throws Exception {
-        long lock = hbaseLock.lock(getColumn(1), 100, 100);
+        Locked lock = hbaseLock.lock(getColumn(1), 100, 100);
+        lock.keepAliveStop();
         System.out.println("lock = " + lock);
         Thread.sleep(200);
 
         thrown.expect(HBaseLock.IllegalLockStatusException.class);
-        hbaseLock.unlock(getColumn(1), lock);
+        lock.unlock();
     }
 
     @Test
     public void testLockAndRefresh() throws Exception {
-        long lock = hbaseLock.lock(getColumn(1), 100, 100);
+        Locked lock = hbaseLock.lock(getColumn(1), 100, 100);
+        lock.keepAliveStop();
         System.out.println("lock = " + lock);
 
         for (int i = 0; i < 10; i++) {
             Thread.sleep(50); // small delay
-            hbaseLock.refresh(getColumn(1), lock, 100);
+            lock.refresh();
         }
 
-        hbaseLock.unlock(getColumn(1), lock);
+        lock.unlock();
     }
 
     @Test
     public void testLockRefreshExpireUnlock() throws Exception {
-        long lock = hbaseLock.lock(getColumn(1), 100, 100);
+        Locked lock = hbaseLock.lock(getColumn(1), 100, 100);
+        lock.keepAliveStop();
         System.out.println("lock = " + lock);
-        hbaseLock.refresh(getColumn(1), lock, 100);
+        lock.refresh();
 
         Thread.sleep(200); // expire
 
         thrown.expect(HBaseLock.IllegalLockStatusException.class);
-        hbaseLock.unlock(getColumn(1), lock);
+        lock.unlock();
     }
 
     @Test
     public void testLockRefreshExpiredRefresh() throws Exception {
-        long lock = hbaseLock.lock(getColumn(1), 100, 100);
+        Locked lock = hbaseLock.lock(getColumn(1), 100, 100);
+        lock.keepAliveStop();
         System.out.println("lock = " + lock);
-        hbaseLock.refresh(getColumn(1), lock, 100);
+        lock.keepAliveStop();
 
         Thread.sleep(200); // expire
 
         thrown.expect(HBaseLock.IllegalLockStatusException.class);
-        hbaseLock.refresh(getColumn(1), lock, 100);
+        lock.refresh();
     }
 
     @Test

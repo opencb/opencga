@@ -221,11 +221,10 @@ public abstract class AbstractHBaseDBAdaptor {
     }
 
     protected Locked lock(byte[] rowKey, byte[] lockName, long lockDuration, long timeout) throws StorageEngineException {
-        long token = lockToken(rowKey, lockName, lockDuration, timeout);
-        return () -> unLock(rowKey, lockName, token);
+        return lockToken(rowKey, lockName, lockDuration, timeout);
     }
 
-    protected long lockToken(byte[] rowKey, byte[] lockName, long lockDuration, long timeout) throws StorageEngineException {
+    protected Locked lockToken(byte[] rowKey, byte[] lockName, long lockDuration, long timeout) throws StorageEngineException {
         try {
             ensureTableExists();
             return this.lock.lock(rowKey, lockName, lockDuration, timeout);

@@ -22,7 +22,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.models.Locked;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,17 +36,6 @@ import java.util.Map;
 public interface StudyMetadataDBAdaptor extends AutoCloseable {
 
     Locked lock(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException;
-
-    @Deprecated
-    default long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
-        LoggerFactory.getLogger(StudyMetadataDBAdaptor.class).warn("Ignoring lock");
-        return 0;
-    }
-
-    @Deprecated
-    default void unLockStudy(int studyId, long lockId, String lockName) {
-        LoggerFactory.getLogger(StudyMetadataDBAdaptor.class).warn("Ignoring unLock");
-    }
 
     @Deprecated
     DataResult<StudyConfiguration> getStudyConfiguration(String studyName, Long time, QueryOptions options);

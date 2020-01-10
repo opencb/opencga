@@ -111,31 +111,21 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
         }
         try {
             LOCK_STUDIES.get(studyId).tryLock(timeout, TimeUnit.MILLISECONDS);
-            return LOCK_STUDIES.get(studyId)::unlock;
+            return new Locked(studyId) {
+                @Override
+                public void unlock0() {
+                    LOCK_STUDIES.get(studyId).unlock();
+                }
+
+                @Override
+                public void refresh() {
+
+                }
+            };
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new StorageEngineException("", e);
         }
-    }
-
-    @Override
-    public synchronized long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
-        if (!LOCK_STUDIES.containsKey(studyId)) {
-            LOCK_STUDIES.put(studyId, new ReentrantLock());
-        }
-        try {
-            LOCK_STUDIES.get(studyId).tryLock(timeout, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new StorageEngineException("", e);
-        }
-
-        return studyId;
-    }
-
-    @Override
-    public void unLockStudy(int studyId, long lockId, String lockName) {
-        LOCK_STUDIES.get(studyId).unlock();
     }
 
     @Override
@@ -175,7 +165,17 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
 
     @Override
     public Locked lock(int studyId, int id, long lockDuration, long timeout) {
-        return () -> {};
+        return new Locked(0) {
+            @Override
+            public void unlock0() {
+
+            }
+
+            @Override
+            public void refresh() {
+
+            }
+        };
     }
 
     @Override
