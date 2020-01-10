@@ -62,10 +62,11 @@ public class HBaseLockTest extends VariantStorageBaseTest implements HadoopVaria
         int lockId = 1;
         for (int i = 0; i < 10; i++) {
             System.out.println("i = " + i);
-            Locked lock = hbaseLock.lock(getColumn(lockId), 10, 10);
+            Locked lock = hbaseLock.lock(getColumn(lockId), 1000, 1000);
             System.out.println("lock = " + lock);
             lock.unlock();
         }
+        assertEquals(1, ((ThreadPoolExecutor) HBaseLock.THREAD_POOL).getPoolSize());
     }
 
     @Test

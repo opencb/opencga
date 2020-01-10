@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -19,6 +20,7 @@ public abstract class Locked implements Closeable {
 
     private long token;
     private final AtomicBoolean keepAlive;
+    private Future<?> keepAliveFuture;
 
     public Locked(long token) {
         this.token = token;
@@ -28,7 +30,7 @@ public abstract class Locked implements Closeable {
     public Locked(ExecutorService executorService, int keepAliveIntervalMillis, long token) {
         this.token = token;
         this.keepAlive = new AtomicBoolean(true);
-        executorService.submit(() -> {
+        keepAliveFuture = executorService.submit(() -> {
             try {
                 while (keepAlive.get()) {
                     Thread.sleep(keepAliveIntervalMillis);
@@ -37,7 +39,9 @@ public abstract class Locked implements Closeable {
                     }
                 }
             } catch (Exception e) {
-                logger.error("Catch exception at Locked.keepAlive", e);
+                if (!(e instanceof InterruptedException)) {
+                    logger.error("Catch exception at Locked.keepAlive", e);
+                }
             }
         });
     }
@@ -66,6 +70,9 @@ public abstract class Locked implements Closeable {
 
     public void keepAliveStop() {
         keepAlive.set(false);
+        if (keepAliveFuture != null) {
+            keepAliveFuture.cancel(true);
+        }
     }
 
     protected abstract void unlock0();

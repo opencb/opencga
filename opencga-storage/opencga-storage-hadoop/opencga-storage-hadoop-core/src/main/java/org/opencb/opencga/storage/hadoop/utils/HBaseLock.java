@@ -67,7 +67,7 @@ public class HBaseLock {
     private static final String LOCK_PREFIX_SEPARATOR = "-";
     private static final String CURRENT = "CURRENT" + LOCK_PREFIX_SEPARATOR;
     private static final String REFRESH = "REFRESH" + LOCK_PREFIX_SEPARATOR;
-    private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
+    protected static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
 
     protected final HBaseManager hbaseManager;
     protected final String tableName;
