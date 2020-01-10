@@ -337,7 +337,8 @@ public class VariantMongoDBQueryParser {
                             }
                         }
                     }
-                    list.add(new QueryBuilder().and(key).regex(Pattern.compile("^" + clinicalSignificance, Pattern.CASE_INSENSITIVE)).get());
+                    list.add(new QueryBuilder().and(key).regex(Pattern.compile("^"
+                            + clinicalSignificance, Pattern.CASE_INSENSITIVE)).get());
                 }
                 if (QueryOperation.OR.equals(pair.getKey())) {
                     builder.or(list.toArray(new DBObject[0]));
