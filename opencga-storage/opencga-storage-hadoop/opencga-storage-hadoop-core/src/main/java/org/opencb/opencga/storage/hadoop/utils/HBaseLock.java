@@ -175,7 +175,7 @@ public class HBaseLock {
             }
 
             @Override
-            public void refresh() {
+            public synchronized void refresh() {
                 try {
                     HBaseLock.this.refresh(row, column, tokenHash, finalLockDuration);
                 } catch (IOException e) {

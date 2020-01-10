@@ -7,6 +7,7 @@ import java.io.Closeable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Reference to a locked element.
@@ -18,17 +19,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class Locked implements Closeable {
     protected static Logger logger = LoggerFactory.getLogger(Locked.class);
 
-    private long token;
+    private final AtomicLong token = new AtomicLong();
     private final AtomicBoolean keepAlive;
     private Future<?> keepAliveFuture;
 
     public Locked(long token) {
-        this.token = token;
+        this.token.set(token);
         this.keepAlive = new AtomicBoolean(false);
     }
 
     public Locked(ExecutorService executorService, int keepAliveIntervalMillis, long token) {
-        this.token = token;
+        this.token.set(token);
         this.keepAlive = new AtomicBoolean(true);
         keepAliveFuture = executorService.submit(() -> {
             try {
@@ -47,11 +48,11 @@ public abstract class Locked implements Closeable {
     }
 
     public long getToken() {
-        return token;
+        return token.get();
     }
 
     protected Locked setToken(long token) {
-        this.token = token;
+        this.token.set(token);
         return this;
     }
 

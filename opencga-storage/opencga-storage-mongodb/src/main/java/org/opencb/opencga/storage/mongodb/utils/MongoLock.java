@@ -121,11 +121,11 @@ public class MongoLock {
         return new Locked(THREAD_POOL, ((int) (lockDuration / 4)), lockToken) {
             @Override
             public void unlock0() {
-                MongoLock.this.unlock(id, lockToken);
+                MongoLock.this.unlock(id, getToken());
             }
 
             @Override
-            public void refresh() {
+            public synchronized void refresh() {
                 setToken(MongoLock.this.refresh(id, getToken(), lockDuration));
             }
         };
