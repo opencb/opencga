@@ -1,5 +1,7 @@
-from pyopencga.commons import execute, RESTResponse
+from pyopencga.commons import execute
+from pyopencga.rest_response import RestResponse
 from pyopencga.retry import retry
+
 
 class _ParentRestClient(object):
     """Queries the REST service given the different query params"""
@@ -69,72 +71,23 @@ class _ParentRestClient(object):
 
         if self.auto_refresh:
             self._refresh_token_client()
-        return RESTResponse(response)
+        return RestResponse(response)
 
     def _get(self, resource, query_id=None, subcategory=None, second_query_id=None, **options):
         """Queries the REST service and returns the result"""
-        return self._rest_retry('get', resource, query_id, subcategory, second_query_id, **options)
+        return self._rest_retry(method='get', resource=resource, query_id=query_id, subcategory=subcategory,
+                                second_query_id=second_query_id, **options)
 
-    def _post(self, resource, data, query_id=None, subcategory=None, second_query_id=None, **options):
+    def _post(self, resource, data=None, query_id=None, subcategory=None, second_query_id=None, **options):
         """Queries the REST service and returns the result"""
-        return self._rest_retry('post', resource, query_id, subcategory, second_query_id, data=data, **options)
+        if data is not None:
+            return self._rest_retry(method='post', resource=resource, query_id=query_id, subcategory=subcategory,
+                                    second_query_id=second_query_id, data=data, **options)
+        else:
+            return self._rest_retry(method='post', resource=resource, query_id=query_id, subcategory=subcategory,
+                                    second_query_id=second_query_id, **options)
 
-    def _delete(self, resource, data, query_id=None, subcategory=None, second_query_id=None, **options):
+    def _delete(self, resource, query_id=None, subcategory=None, second_query_id=None, **options):
         """Queries the REST service and returns the result"""
-        return self._rest_retry('delete', resource, query_id, subcategory, second_query_id, **options)
-
-
-class _ParentBasicCRUDClient(_ParentRestClient):
-    def info(self, query_id, **options):
-        return self._get('info', query_id=query_id, **options)
-
-    def create(self, data, **options):
-        return self._post('create', data=data, **options)
-
-    def update(self, data, query_id=None, **options):
-        return self._post('update', query_id=query_id, data=data, **options)
-
-    def delete(self, query_id=None, **options):
-        return self._delete('delete', query_id=query_id, **options)
-
-
-class _ParentAclRestClient(_ParentRestClient):
-    def acl(self, query_id, **options):
-        """
-        acl info
-
-        :param query_id:
-        :param options:
-        """
-
-        return self._get('acl', query_id=query_id, **options)
-
-    def update_acl(self, memberId, data, **options):
-        """
-        update acl
-
-        :param query_id:
-        :param options:
-        """
-
-        return self._post('acl', subcategory='update', second_query_id=memberId, data=data, **options)
-
-
-class _ParentAnnotationSetRestClient(_ParentRestClient):
-
-    def update_annotations(self, query_id, annotationset_id, data, **options):
-        """
-        update annotations from an AnnotationSet
-
-        :param query_id: Entry identifier.
-        :param annotationset_id: AnnotationSet id.
-        :param data: Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only
-        the key 'remove' containing the comma separated variables to be removed as a value when the action is REMOVE
-        or a json with only the key 'reset' containing the comma separated variables that will be set to the default
-        value when the action is RESET
-        :param options: QueryParam options
-        """
-
-        return self._post('annotationSets', query_id=query_id, second_query_id=annotationset_id,
-                            subcategory='annotations/update', data=data, **options)
-
+        return self._rest_retry(method='delete', resource=resource, query_id=query_id, subcategory=subcategory,
+                                second_query_id=second_query_id, **options)

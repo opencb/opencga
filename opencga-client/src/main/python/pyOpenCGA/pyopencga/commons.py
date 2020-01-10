@@ -1,5 +1,4 @@
 import sys
-import itertools
 import threading
 from time import sleep
 import warnings
@@ -28,148 +27,8 @@ def deprecated(func):
     return new_func
 
 
-class RESTResponse:
-    def __init__(self, response):
-        self.apiVersion = response.get('apiVersion')
-        self.time = response.get('time')
-        self.events = response.get('events')
-        self.params = response.get('params')
-        self.responses = response.get('responses')
-
-        # TODO: Remove deprecated response in future release. Added for backwards compatibility
-        self.response = response.get('responses')
-
-        # TODO: Remove deprecated result. Added for backwards compatibility
-        for query_result in self.responses:
-            if 'results' in query_result:
-                query_result['result'] = query_result['results']
-
-    @deprecated
-    def first(self):
-        return self.responses[0]
-
-    def get_results(self, response_pos=0):
-        """
-        Return the list of results of the response_pos response.
-        """
-        return self.responses[response_pos]
-
-    def get_result(self, result_pos, response_pos=0):
-        """
-        Return the result 'result_pos' of the response 'response_pos'.
-        """
-        return self.responses[response_pos]['results'][result_pos]
-
-    def get_responses(self):
-        """
-        Return the list of responses
-        """
-        return self.responses
-
-    def get_response(self, response_pos):
-        """
-        Return the response_pos response.
-        """
-        return self.responses[response_pos]
-
-    def get_results_iterator(self):
-        """
-        Return all results from all responses as an iterator
-        """
-        for response in self.responses:
-            for result in response['results']:
-                yield result
-
-    def get_response_events(self, event_type=None):
-        """
-        Return response events by name
-        """
-        event_names = ['INFO', 'WARNING', 'ERROR']
-        if event_type is None or self.events is None:
-            return self.events or []
-        elif event_type in event_names:
-            return [event for event in self.events if event['name'] == event_type]
-        else:
-            msg = 'Argument "type" must be one of the following values: "{}"'
-            raise ValueError(msg.format(', '.join(event_names)))
-
-    def get_result_events(self, event_type=None, response_pos=0):
-        """Return result events by name and position"""
-        event_names = ['INFO', 'WARNING', 'ERROR']
-        response = self.responses[response_pos]
-        if event_type is None:
-            return response['events'] \
-                if 'events' in response and response['events'] else []
-        elif event_type in event_names:
-            return [event for event in response['events'] if event['name'] == event_type] \
-                if 'events' in response and response['events'] else []
-        else:
-            msg = 'Argument "type" must be one of the following values: "{}"'
-            raise ValueError(msg.format(', '.join(event_names)))
-
-    def get_num_matches(self, response_pos=None):
-        """
-        Return number of matches
-        """
-        if response_pos is not None:
-            return self.responses[response_pos]['numMatches']
-        else:
-            num_matches = 0
-            for query_result in self.responses:
-                num_matches += query_result['numMatches']
-            return num_matches
-
-    def get_num_results(self, response_pos=None):
-        """
-        Return number of results
-        """
-        if response_pos is not None:
-            return self.responses[response_pos]['numResults']
-        else:
-            num_results = 0
-            for query_result in self.responses:
-                num_results += query_result['numResults']
-            return num_results
-
-    def get_num_inserted(self, response_pos=None):
-        """
-        Return number of inserted
-        """
-        if response_pos is not None:
-            return self.responses[response_pos]['numInserted']
-        else:
-            num_inserted = 0
-            for query_result in self.responses:
-                num_inserted += query_result['numInserted']
-            return num_inserted
-
-    def get_num_updated(self, response_pos=None):
-        """
-        Return number of updated
-        """
-        if response_pos is not None:
-            return self.responses[response_pos]['numUpdated']
-        else:
-            num_updated = 0
-            for query_result in self.responses:
-                num_updated += query_result['numUpdated']
-            return num_updated
-
-    def get_num_deleted(self, response_pos=None):
-        """
-        Return number of deleted
-        """
-        if response_pos is not None:
-            return self.responses[response_pos]['numDeleted']
-        else:
-            num_deleted = 0
-            for query_result in self.responses:
-                num_deleted += query_result['numDeleted']
-            return num_deleted
-
-
 def _create_rest_url(host, version, sid, category, resource, subcategory=None, query_id=None,
-                     second_query_id=None, **options):
+                     second_query_id=None, options=None):
     """Creates the URL for querying the REST service"""
 
     # Creating the basic URL
@@ -212,7 +71,7 @@ def _create_rest_url(host, version, sid, category, resource, subcategory=None, q
 
 
 def _fetch(host, version, sid, category, resource, method, subcategory=None, query_id=None,
-           second_query_id=None, data=None, **options):
+           second_query_id=None, data=None, options=None):
     """Queries the REST service retrieving results until exhaustion or limit"""
     # HERE BE DRAGONS
     final_response = None
@@ -224,7 +83,7 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
     if options is None:
         opts = {'skip': call_skip, 'limit': call_limit}
     else:
-        opts = options.copy()['options']  # Do not modify original data!
+        opts = options.copy()  # Do not modify original data!
         if 'skip' not in opts:
             opts['skip'] = call_skip
         # If 'limit' is specified, a maximum of 'limit' results will be returned
@@ -271,7 +130,7 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
                                        query_id=current_query_id,
                                        second_query_id=second_query_id,
                                        resource=resource,
-                                       **opts)
+                                       options=opts)
 
         # DEBUG param
         if opts is not None and 'debug' in opts and opts['debug']:
@@ -313,6 +172,14 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
 
         try:
             response = r.json()
+
+            # TODO Remove deprecated response and result in future release. Added for backwards compatibility
+            if 'response' in response:
+                response['responses'] = response['response']
+            for query_result in response['responses']:
+                if 'result' in query_result:
+                    query_result['results'] = query_result['result']
+
         except ValueError:
             msg = 'Bad JSON format retrieved from server'
             raise ValueError(msg)
@@ -358,24 +225,48 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
     return final_response
 
 
-def _worker(queue, results, host, version, sid, species, category, resource, method, subcategory=None,
-            second_query_id=None, data=None, **options):
+def _worker(queue, results, host, version, sid, category, resource, method, subcategory=None,
+            second_query_id=None, data=None, options=None):
+
     """Manages the queue system for the threads"""
     while True:
         # Fetching new element from the queue
         index, query_id = queue.get()
-        response = _fetch(host=host, version=version, sid=sid, species=species, category=category,
-                          subcategory=subcategory,
-                          resource=resource, method=method, data=data,
-                          query_id=query_id, second_query_id=second_query_id, **options)
+        response = _fetch(host=host, version=version, sid=sid, category=category, subcategory=subcategory,
+                          resource=resource, method=method, data=data, query_id=query_id,
+                          second_query_id=second_query_id, options=options)
         # Store data in results at correct index
         results[index] = response
         # Signaling to the queue that task has been processed
         queue.task_done()
 
 
+def merge_query_responses(query_response_list):
+    final_response = query_response_list[0]
+    for i, query_response in enumerate(query_response_list):
+        if i != 0:
+            final_response['events'] += query_response['events']
+            final_response['time'] += query_response['time']
+            # final_response['responses'] += response['responses']
+
+            for key in query_response['params']:
+                if final_response['params'][key] != query_response['params'][key]:
+                    final_response['params'][key] += ',' + query_response['params'][key]
+
+            for j, query_result in enumerate(query_response['responses']):
+                if len(final_response['responses'])-1 < j:
+                    final_response['responses'] += []
+                for key in query_result:
+                    if key not in final_response['responses'][j]:
+                        final_response['responses'][j][key] = query_result[key]
+                    else:
+                        if isinstance(query_result[key], (int, list)):
+                            final_response['responses'][j][key] += query_result[key]
+    return final_response
+
+
 def execute(host, version, sid, category, resource, method, subcategory=None, query_id=None,
-            second_query_id=None, data=None, **options):
+            second_query_id=None, data=None, options=None):
     """Queries the REST service using multiple threads if needed"""
 
     # If query_id is an array, convert to comma-separated string
@@ -388,8 +279,8 @@ def execute(host, version, sid, category, resource, method, subcategory=None, qu
     # Multithread if the number of queries is greater than _CALL_BATCH_SIZE
     if query_id is None or len(query_id.split(',')) <= _CALL_BATCH_SIZE:
         response = _fetch(host=host, version=version, sid=sid, category=category, subcategory=subcategory,
-                          resource=resource, method=method, data=data,
-                          query_id=query_id, second_query_id=second_query_id, **options)
+                          resource=resource, method=method, data=data, query_id=query_id,
+                          second_query_id=second_query_id, options=options)
         return response
     else:
         if options is not None and 'num_threads' in options:
@@ -435,6 +326,8 @@ def execute(host, version, sid, category, resource, method, subcategory=None, qu
         q.join()
 
     # Joining all the responses into a one final response
-    final_response = list(itertools.chain.from_iterable(res))
+    final_query_response = merge_query_responses(res)
 
-    return final_response
+    return final_query_response
+
+
