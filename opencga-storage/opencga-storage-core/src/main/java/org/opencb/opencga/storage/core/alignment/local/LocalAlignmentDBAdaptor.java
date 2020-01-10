@@ -35,7 +35,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterator;
@@ -228,12 +228,12 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
     public OpenCGAResult<String> statsInfo(Path path) throws ToolException {
         StopWatch watch = StopWatch.createStarted();
 
-        File statsFile = new File(path + ".stats.txt");
+        File statsFile = path.toFile();
         if (!statsFile.exists()) {
             throw new ToolException("Stats file does not exist: " + statsFile.getAbsolutePath());
         }
 
-        List<String> lines = null;
+        List<String> lines;
         try {
             lines = org.apache.commons.io.FileUtils.readLines(statsFile, Charset.defaultCharset());
         } catch (IOException e) {

@@ -32,7 +32,7 @@ import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;

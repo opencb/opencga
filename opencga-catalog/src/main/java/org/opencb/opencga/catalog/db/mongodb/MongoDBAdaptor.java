@@ -30,7 +30,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBRuntimeException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 
 import java.util.*;

@@ -51,7 +51,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.summaries.StudySummary;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;

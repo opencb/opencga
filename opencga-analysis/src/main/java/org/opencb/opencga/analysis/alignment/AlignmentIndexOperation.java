@@ -9,9 +9,8 @@ import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -73,8 +72,8 @@ public class AlignmentIndexOperation extends OpenCgaTool {
                 throw new ToolException("Something wrong happened when computing index file for '" + inputFile + "'");
             } else {
                 String catalogPath = Paths.get(new java.io.File(inputCatalogFile.getPath()).getParent()).toString();
-                moveFile(study, outputPath, Paths.get(inputPath.toFile().getParent()).resolve(outputPath.getFileName()),
-                        catalogPath, token);
+                moveFile(study, outputPath, Paths.get(inputPath.toFile().getParent()),
+                        catalogPath + "/" + outputPath.getFileName(), token);
 
                 FileUpdateParams updateParams = new FileUpdateParams()
                         .setRelatedFiles(Collections.singletonList(new FileUpdateParams.RelatedFile(catalogPath + "/"

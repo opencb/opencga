@@ -48,7 +48,7 @@ import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Path;
@@ -634,7 +634,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/update")
-    @ApiOperation(value = "Update some file attributes", response = File.class)
+    @ApiOperation(value = "Update some file attributes", response = File.class, hidden = true)
     public Response updateQuery(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,

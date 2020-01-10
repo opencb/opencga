@@ -65,7 +65,7 @@ public class PanelWSServer extends OpenCGAWSServer {
     @POST
     @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update panel attributes")
+    @ApiOperation(value = "Update panel attributes", hidden = true)
     public Response updateByQuery(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Panel id") @QueryParam("id") String id,

@@ -11,7 +11,7 @@ import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.FileOutputStream;
 import java.io.IOException;

@@ -278,7 +278,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @POST
     @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some job attributes")
+    @ApiOperation(value = "Update some job attributes", hidden = true)
     public Response updateByPost(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME_PARAM) String name,

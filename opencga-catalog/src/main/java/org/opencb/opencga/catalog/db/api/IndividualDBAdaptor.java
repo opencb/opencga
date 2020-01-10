@@ -24,7 +24,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Individual;
 import org.opencb.opencga.core.models.VariableSet;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.List;
 import java.util.Map;

@@ -48,7 +48,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;

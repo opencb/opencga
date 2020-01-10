@@ -41,7 +41,7 @@ import org.opencb.opencga.core.models.Status;
 import org.opencb.opencga.core.models.acls.permissions.PanelAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;

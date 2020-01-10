@@ -170,7 +170,7 @@ public class FamilyWSServer extends OpenCGAWSServer {
     @POST
     @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some family attributes")
+    @ApiOperation(value = "Update some family attributes", hidden = true)
     public Response updateByQuery(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,

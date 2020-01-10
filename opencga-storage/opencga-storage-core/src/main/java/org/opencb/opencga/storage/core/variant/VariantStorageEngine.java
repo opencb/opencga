@@ -28,7 +28,7 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;

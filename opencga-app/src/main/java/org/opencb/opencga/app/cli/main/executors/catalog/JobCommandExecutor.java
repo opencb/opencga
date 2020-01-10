@@ -29,7 +29,7 @@ import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.rest.RestResponse;
+import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;

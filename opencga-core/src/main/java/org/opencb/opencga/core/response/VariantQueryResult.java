@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.results;
+package org.opencb.opencga.core.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.opencb.commons.datastore.core.DataResult;

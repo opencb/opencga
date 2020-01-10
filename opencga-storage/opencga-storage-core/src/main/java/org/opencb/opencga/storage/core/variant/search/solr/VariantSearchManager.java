@@ -42,7 +42,7 @@ import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;

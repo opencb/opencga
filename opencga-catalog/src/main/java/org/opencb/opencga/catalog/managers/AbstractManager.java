@@ -30,7 +30,7 @@ import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.Group;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

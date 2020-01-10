@@ -46,7 +46,7 @@ import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
@@ -156,7 +156,7 @@ public class AlignmentStorageManager extends StorageManager {
     public OpenCGAResult<String> statsInfo(String study, String inputFile, String token) throws ToolException, StorageEngineException,
             CatalogException {
         OpenCGAResult<File> fileResult;
-        fileResult = catalogManager.getFileManager().get(study, inputFile, QueryOptions.empty(), token);
+        fileResult = catalogManager.getFileManager().get(study, inputFile + ".stats.txt", QueryOptions.empty(), token);
 
         if (fileResult.getNumMatches() == 1) {
             return alignmentStorageEngine.getDBAdaptor().statsInfo(Paths.get(fileResult.getResults().get(0).getUri().getPath()));
@@ -195,8 +195,7 @@ public class AlignmentStorageManager extends StorageManager {
 
         deeptools.setStudy(study);
         deeptools.setCommand("bamCoverage")
-                .setBamFile(inputFile)
-                .setCoverageFile(outdir + "/" + new java.io.File(inputFile).getName() + ".bw");
+                .setBamFile(inputFile);
 
         deeptools.start();
     }

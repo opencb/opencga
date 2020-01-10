@@ -25,7 +25,7 @@ import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.ClinicalAnalysis;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.util.List;

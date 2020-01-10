@@ -71,7 +71,7 @@ public class ServerCommandOptions {
     }
 
     /**
-     * GRPC command
+     * gRPC command
      */
     @Parameters(commandNames = {"grpc"}, commandDescription = "gRPC server")
     public class GrpcServerCommandOptions extends GenericServerOptions {

@@ -26,7 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

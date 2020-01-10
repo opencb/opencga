@@ -40,7 +40,7 @@ import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.VariableSet;
 import org.opencb.opencga.core.models.summaries.FeatureCount;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;

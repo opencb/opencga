@@ -158,7 +158,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 .setIndexBaseFile(cliOptions.indexBaseFile)
                 .setFastq1File(cliOptions.fastq1File)
                 .setFastq2File(cliOptions.fastq2File)
-                .setSamFile(cliOptions.samFile);
+                .setSamFilename(cliOptions.samFilename);
 
         bwa.start();
     }
@@ -197,8 +197,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         deeptools.setStudy(cliOptions.study);
 
         deeptools.setCommand(cliOptions.executable)
-                .setBamFile(cliOptions.bamFile)
-                .setCoverageFile(cliOptions.coverageFile);
+                .setBamFile(cliOptions.bamFile);
 
         deeptools.start();
     }

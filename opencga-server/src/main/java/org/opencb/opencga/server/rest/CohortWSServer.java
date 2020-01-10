@@ -252,7 +252,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @POST
     @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some cohort attributes")
+    @ApiOperation(value = "Update some cohort attributes", hidden = true)
     public Response updateQuery(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
                 @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,

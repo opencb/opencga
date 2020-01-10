@@ -29,7 +29,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
 import org.opencb.opencga.core.config.Email;
 import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import java.security.Key;

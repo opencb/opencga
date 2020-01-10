@@ -277,7 +277,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexAlignmentCommandOptions);
         alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentCommandOptions);
         alignmentSubCommands.addCommand("stats-run", alignmentCommandOptions.statsAlignmentCommandOptions);
-        alignmentSubCommands.addCommand("stats-info", alignmentCommandOptions.statsAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("stats-info", alignmentCommandOptions.statsInfoAlignmentCommandOptions);
         alignmentSubCommands.addCommand("stats-query", alignmentCommandOptions.statsQueryAlignmentCommandOptions);
         alignmentSubCommands.addCommand("coverage-run", alignmentCommandOptions.coverageAlignmentCommandOptions);
         alignmentSubCommands.addCommand("coverage-query", alignmentCommandOptions.coverageQueryAlignmentCommandOptions);

@@ -31,8 +31,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.core.rest.RestResponse;
-import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -18,9 +18,8 @@ package org.opencb.opencga.app.cli.main.executors.catalog.commons;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.rest.catalog.CatalogClient;
-import org.opencb.opencga.core.rest.RestResponse;
+import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
 

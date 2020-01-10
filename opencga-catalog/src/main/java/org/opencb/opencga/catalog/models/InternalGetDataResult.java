@@ -1,7 +1,7 @@
 package org.opencb.opencga.catalog.models;
 
 import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.ArrayList;
 import java.util.Collections;
