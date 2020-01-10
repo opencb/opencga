@@ -44,7 +44,7 @@ import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
@@ -399,7 +399,22 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (parameters.containsKey(QueryParams.RELATED_FILES.key())) {
             List<File.RelatedFile> relatedFiles = parameters.getAsList(QueryParams.RELATED_FILES.key(), File.RelatedFile.class);
             List<Document> relatedFileDocument = fileConverter.convertRelatedFiles(relatedFiles);
-            document.getSet().put(QueryParams.RELATED_FILES.key(), relatedFileDocument);
+
+            Map<String, Object> actionMap = queryOptions.getMap(Constants.ACTIONS, new HashMap<>());
+            String operation = (String) actionMap.getOrDefault(QueryParams.RELATED_FILES.key(), "ADD");
+
+            switch (operation) {
+                case "SET":
+                    document.getSet().put(QueryParams.RELATED_FILES.key(), relatedFileDocument);
+                    break;
+                case "REMOVE":
+                    document.getPullAll().put(QueryParams.RELATED_FILES.key(), relatedFileDocument);
+                    break;
+                case "ADD":
+                default:
+                    document.getAddToSet().put(QueryParams.RELATED_FILES.key(), relatedFileDocument);
+                    break;
+            }
         }
         if (parameters.containsKey(QueryParams.INDEX_TRANSFORMED_FILE.key())) {
             document.getSet().put(QueryParams.INDEX_TRANSFORMED_FILE.key(),

@@ -125,8 +125,6 @@ analysis:
      # k8s.limits:
      #   cpu: 1
      #   memory: "2048Mi"
-     # k8s.cpu: "1"
-     # k8s.memory: "2048Mi"
      # k8s.namespace: "default"
      # k8s.nodeSelector: # List of labels for the node selection
      #   node: worker
@@ -152,6 +150,9 @@ analysis:
      #     configMap:
      #       defaultMode: 365
      #       name: "confhadoop"
+     # k8s.tolerations:
+     #   - key: virtual-kubelet.io/provider
+     #     operator: Exists
 
   # List of analysis frameworks
   frameworks:

@@ -10,6 +10,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.io.UncheckedIOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,8 +52,16 @@ public abstract class ToolParams {
     public void updateParams(Map<String, Object> params) {
         ObjectMapper objectMapper = getObjectMapper();
         try {
-            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            objectMapper.updateValue(this, params);
+
+            // Split string lists
+            ObjectMap copy = new ObjectMap(params);
+            for (Map.Entry<String, Class<?>> entry : loadPropertiesMap().entrySet()) {
+                if (Collection.class.isAssignableFrom(entry.getValue())) {
+                    copy.put(entry.getKey(), copy.getAsStringList(entry.getKey()));
+                }
+            }
+            objectMapper.updateValue(this, copy);
+
             params.putAll(this.toObjectMap());
         } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
@@ -67,13 +77,12 @@ public abstract class ToolParams {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         return objectMapper;
     }
 
     private void addParams(Map<String, Object> map, ObjectMap params) {
-        if (internalPropertiesMap == null) {
-            loadPropertiesMap();
-        }
+        loadPropertiesMap();
         for (String key : params.keySet()) {
             Class<?> fieldClass = internalPropertiesMap.get(key);
             String value = params.getString(key);
@@ -92,12 +101,19 @@ public abstract class ToolParams {
         }
     }
 
-    private void loadPropertiesMap() {
-        ObjectMapper objectMapper = getObjectMapper();
-        BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(objectMapper.constructType(this.getClass()));
-        internalPropertiesMap = new HashMap<>(beanDescription.findProperties().size());
-        for (BeanPropertyDefinition property : beanDescription.findProperties()) {
-            internalPropertiesMap.put(property.getName(), property.getRawPrimaryType());
+    public Map<String, Class<?>> fields() {
+        return Collections.unmodifiableMap(loadPropertiesMap());
+    }
+
+    private Map<String, Class<?>> loadPropertiesMap() {
+        if (internalPropertiesMap == null) {
+            ObjectMapper objectMapper = getObjectMapper();
+            BeanDescription beanDescription = objectMapper.getSerializationConfig().introspect(objectMapper.constructType(this.getClass()));
+            internalPropertiesMap = new HashMap<>(beanDescription.findProperties().size());
+            for (BeanPropertyDefinition property : beanDescription.findProperties()) {
+                internalPropertiesMap.put(property.getName(), property.getRawPrimaryType());
+            }
         }
+        return internalPropertiesMap;
     }
 }

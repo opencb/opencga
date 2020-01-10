@@ -24,7 +24,7 @@ import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Variable;
 import org.opencb.opencga.core.models.VariableSet;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.annotation.Nullable;
 import java.util.List;

@@ -2,6 +2,7 @@ package org.opencb.opencga.analysis.variant.operations;
 
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
@@ -9,7 +10,7 @@ import org.opencb.opencga.core.models.File;
 
 import java.nio.file.Path;
 
-public abstract class OperationTool extends OpenCgaTool {
+public abstract class OperationTool extends OpenCgaToolScopeStudy {
 
     public static final String KEEP_INTERMEDIATE_FILES = "keepIntermediateFiles";
 
@@ -39,16 +40,6 @@ public abstract class OperationTool extends OpenCgaTool {
     protected final String getProjectFqn() throws CatalogException {
         return catalogManager.getProjectManager().get(params.getString(ParamConstants.PROJECT_PARAM),
                 new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.FQN.key()), token).first().getFqn();
-    }
-
-    protected final String getStudyFqn() throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
-        return catalogManager.getStudyManager().resolveId(params.getString(ParamConstants.STUDY_PARAM), userId).getFqn();
-    }
-
-    protected final String getStudyFqn(String study) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
-        return catalogManager.getStudyManager().resolveId(study, userId).getFqn();
     }
 
     public static boolean isVcfFormat(File file) {

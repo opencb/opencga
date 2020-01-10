@@ -313,7 +313,7 @@ public class FillGapsTaskTest {
 
     private Variant putToVariant(Put put) {
         Result result = Result.create(put.getFamilyCellMap().values().stream().flatMap(Collection::stream).collect(Collectors.toList()));
-        return HBaseToVariantConverter.fromResult(new GenomeHelper(new Configuration()), metadataManager)
+        return HBaseToVariantConverter.fromResult(metadataManager)
                 .setFormats(Arrays.asList("GT", "DP"))
                 .convert(result);
     }

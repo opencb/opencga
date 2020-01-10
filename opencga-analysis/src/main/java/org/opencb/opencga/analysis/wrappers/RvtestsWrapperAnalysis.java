@@ -41,8 +41,10 @@ public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
             try {
                 // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
                 Command cmd = new Command(getCommandLine())
-                        .setOutputOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDOUT_FILENAME).toFile())))
-                        .setErrorOutputStream(new DataOutputStream(new FileOutputStream(getOutDir().resolve(STDERR_FILENAME).toFile())));
+                        .setOutputOutputStream(
+                                new DataOutputStream(new FileOutputStream(getScratchDir().resolve(STDOUT_FILENAME).toFile())))
+                        .setErrorOutputStream(
+                                new DataOutputStream(new FileOutputStream(getScratchDir().resolve(STDERR_FILENAME).toFile())));
 
                 cmd.run();
 
@@ -50,20 +52,20 @@ public class RvtestsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 boolean success = false;
                 File file;
                 if ("rvtest".equals(params.getString(EXECUTABLE_PARAM))) {
-                    file = new File(getOutDir() + "/" + STDOUT_FILENAME);
+                    file = new File(getScratchDir() + "/" + STDOUT_FILENAME);
                     List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
                     if (lines.get(lines.size() - 1).contains("successfully")) {
                         success = true;
                     }
                 } else if ("vcf2kinship".equals(params.getString(EXECUTABLE_PARAM))) {
-                    file = new File(getOutDir() + "/" + STDERR_FILENAME);
+                    file = new File(getScratchDir() + "/" + STDERR_FILENAME);
                     List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
                     if (lines.get(lines.size() - 1).contains("Analysis took")) {
                         success = true;
                     }
                 }
                 if (!success) {
-                    file = new File(getOutDir() + "/" + STDERR_FILENAME);
+                    file = new File(getScratchDir() + "/" + STDERR_FILENAME);
                     String msg = "Something wrong executing Rvtests";
                     if (file.exists()) {
                         msg = StringUtils.join(FileUtils.readLines(file, Charset.defaultCharset()), ". ");

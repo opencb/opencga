@@ -54,12 +54,12 @@ public class ToolsCommandExecutor extends InternalCommandExecutor {
 
     private void executeTool() throws ToolException {
         ToolsCommandOptions.ExecuteToolCommandOptions cliOptions = this.toolCommandOptions.executeToolCommandOptions;
-        toolRunner.execute(cliOptions.toolId, new ObjectMap(cliOptions.params), Paths.get(cliOptions.outDir), sessionId);
+        toolRunner.execute(cliOptions.toolId, new ObjectMap(cliOptions.params), Paths.get(cliOptions.outDir), token);
     }
 
     private void executeJob() throws CatalogException, ToolException {
         ToolsCommandOptions.ExecuteJobCommandOptions cliOptions = this.toolCommandOptions.executeJobCommandOptions;
-        toolRunner.execute(cliOptions.job, sessionId);
+        toolRunner.execute(cliOptions.job, token);
     }
 
     private void listTools() {

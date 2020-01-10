@@ -38,6 +38,7 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.proto.ProtoFileWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.Locked;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
@@ -269,7 +270,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         final String species = metadataManager.getProjectMetadata().getSpecies();
 
-        Long lock = null;
+        Locked lock = null;
         try {
             long lockDuration = TimeUnit.MINUTES.toMillis(5);
             try {
@@ -343,7 +344,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         } finally {
             try {
                 if (lock != null) {
-                    metadataManager.unLockStudy(studyId, lock, GenomeHelper.PHOENIX_LOCK_COLUMN);
+                    lock.unlock();
                 }
             } catch (HBaseLock.IllegalLockStatusException e) {
                 logger.warn(e.getMessage());
@@ -378,7 +379,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
                 }
             } finally {
                 if (lock != null) {
-                    metadataManager.unLockStudy(studyId, lock, PHOENIX_INDEX_LOCK_COLUMN);
+                    lock.unlock();
                 }
             }
         }

@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -115,7 +115,7 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         OUTPUT("output", OBJECT, ""),
         TAGS("tags", TEXT_ARRAY, ""),
 
-        RESULT("result", OBJECT, ""),
+        EXECUTION("execution", OBJECT, ""),
 
         STDOUT("stdout", OBJECT, ""),
         STDERR("stderr", OBJECT, ""),
@@ -130,7 +130,6 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         START_TIME("startTime", INTEGER_ARRAY, ""),
         END_TIME("endTime", INTEGER_ARRAY, ""),
         OUTPUT_ERROR("outputError", TEXT_ARRAY, ""),
-        EXECUTION("execution", TEXT_ARRAY, ""),
         //PARAMS,
         VISITED("visited", BOOLEAN, ""),
         STATUS_NAME("status.name", TEXT, ""),

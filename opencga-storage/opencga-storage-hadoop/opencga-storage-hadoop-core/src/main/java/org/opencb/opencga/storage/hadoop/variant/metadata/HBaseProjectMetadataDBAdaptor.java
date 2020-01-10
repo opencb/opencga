@@ -10,6 +10,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.Locked;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -47,7 +48,7 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
     }
 
     @Override
-    public long lockProject(long lockDuration, long timeout) throws InterruptedException, TimeoutException, StorageEngineException {
+    public Locked lockProject(long lockDuration, long timeout) throws InterruptedException, TimeoutException, StorageEngineException {
         try {
             ensureTableExists();
             return lock.lock(getProjectRowKey(), getLockColumn(), lockDuration, timeout);

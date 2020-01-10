@@ -1,22 +1,15 @@
 package org.opencb.opencga.core.api.variant;
 
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.core.tools.ToolParams;
 
 /**
  * Do not use native values (like boolean or int), so they are null by default.
  */
-public class VariantQueryParams extends ToolParams {
+public class VariantQueryParams extends BasicVariantQueryParams {
 
-    private String id;
-    private String region;
     private String chromosome;
-    private String gene;
-    private String type;
     private String reference;
     private String alternate;
-    private String project;
-    private String study;
     private String release;
 
     private String includeStudy;
@@ -42,12 +35,8 @@ public class VariantQueryParams extends ToolParams {
     private String familyDisorder;
     private String familyProband;
     private String familySegregation;
-    private String panel;
 
     private String cohort;
-    private String cohortStatsRef;
-    private String cohortStatsAlt;
-    private String cohortStatsMaf;
     private String cohortStatsMgf;
     private String maf;
     private String mgf;
@@ -57,17 +46,8 @@ public class VariantQueryParams extends ToolParams {
 
     private String score;
 
-    private String ct;
-    private String xref;
-    private String biotype;
     @Deprecated private String polyphen;
     @Deprecated private String sift;
-    private String proteinSubstitution;
-    private String conservation;
-    private String populationFrequencyMaf;
-    private String populationFrequencyAlt;
-    private String populationFrequencyRef;
-    private String transcriptFlag;
     private String geneTraitId;
     private String geneTraitName;
     private String trait;
@@ -78,8 +58,6 @@ public class VariantQueryParams extends ToolParams {
     private String expression;
     private String proteinKeyword;
     private String drug;
-    private String functionalScore;
-    private String clinicalSignificance;
     private String customAnnotation;
 
     private String unknownGenotype;
@@ -99,52 +77,12 @@ public class VariantQueryParams extends ToolParams {
         return this;
     }
 
-    public Query toQuery() {
-        return new Query(toObjectMap());
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public VariantQueryParams setId(String id) {
-        this.id = id;
-        return this;
-    }
-
-    public String getRegion() {
-        return region;
-    }
-
-    public VariantQueryParams setRegion(String region) {
-        this.region = region;
-        return this;
-    }
-
     public String getChromosome() {
         return chromosome;
     }
 
     public VariantQueryParams setChromosome(String chromosome) {
         this.chromosome = chromosome;
-        return this;
-    }
-
-    public String getGene() {
-        return gene;
-    }
-
-    public VariantQueryParams setGene(String gene) {
-        this.gene = gene;
-        return this;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public VariantQueryParams setType(String type) {
-        this.type = type;
         return this;
     }
 
@@ -163,24 +101,6 @@ public class VariantQueryParams extends ToolParams {
 
     public VariantQueryParams setAlternate(String alternate) {
         this.alternate = alternate;
-        return this;
-    }
-
-    public String getProject() {
-        return project;
-    }
-
-    public VariantQueryParams setProject(String project) {
-        this.project = project;
-        return this;
-    }
-
-    public String getStudy() {
-        return study;
-    }
-
-    public VariantQueryParams setStudy(String study) {
-        this.study = study;
         return this;
     }
 
@@ -373,48 +293,12 @@ public class VariantQueryParams extends ToolParams {
         return this;
     }
 
-    public String getPanel() {
-        return panel;
-    }
-
-    public VariantQueryParams setPanel(String panel) {
-        this.panel = panel;
-        return this;
-    }
-
     public String getCohort() {
         return cohort;
     }
 
     public VariantQueryParams setCohort(String cohort) {
         this.cohort = cohort;
-        return this;
-    }
-
-    public String getCohortStatsRef() {
-        return cohortStatsRef;
-    }
-
-    public VariantQueryParams setCohortStatsRef(String cohortStatsRef) {
-        this.cohortStatsRef = cohortStatsRef;
-        return this;
-    }
-
-    public String getCohortStatsAlt() {
-        return cohortStatsAlt;
-    }
-
-    public VariantQueryParams setCohortStatsAlt(String cohortStatsAlt) {
-        this.cohortStatsAlt = cohortStatsAlt;
-        return this;
-    }
-
-    public String getCohortStatsMaf() {
-        return cohortStatsMaf;
-    }
-
-    public VariantQueryParams setCohortStatsMaf(String cohortStatsMaf) {
-        this.cohortStatsMaf = cohortStatsMaf;
         return this;
     }
 
@@ -481,33 +365,6 @@ public class VariantQueryParams extends ToolParams {
         return this;
     }
 
-    public String getCt() {
-        return ct;
-    }
-
-    public VariantQueryParams setCt(String ct) {
-        this.ct = ct;
-        return this;
-    }
-
-    public String getXref() {
-        return xref;
-    }
-
-    public VariantQueryParams setXref(String xref) {
-        this.xref = xref;
-        return this;
-    }
-
-    public String getBiotype() {
-        return biotype;
-    }
-
-    public VariantQueryParams setBiotype(String biotype) {
-        this.biotype = biotype;
-        return this;
-    }
-
     public String getPolyphen() {
         return polyphen;
     }
@@ -523,60 +380,6 @@ public class VariantQueryParams extends ToolParams {
 
     public VariantQueryParams setSift(String sift) {
         this.sift = sift;
-        return this;
-    }
-
-    public String getProteinSubstitution() {
-        return proteinSubstitution;
-    }
-
-    public VariantQueryParams setProteinSubstitution(String proteinSubstitution) {
-        this.proteinSubstitution = proteinSubstitution;
-        return this;
-    }
-
-    public String getConservation() {
-        return conservation;
-    }
-
-    public VariantQueryParams setConservation(String conservation) {
-        this.conservation = conservation;
-        return this;
-    }
-
-    public String getPopulationFrequencyMaf() {
-        return populationFrequencyMaf;
-    }
-
-    public VariantQueryParams setPopulationFrequencyMaf(String populationFrequencyMaf) {
-        this.populationFrequencyMaf = populationFrequencyMaf;
-        return this;
-    }
-
-    public String getPopulationFrequencyAlt() {
-        return populationFrequencyAlt;
-    }
-
-    public VariantQueryParams setPopulationFrequencyAlt(String populationFrequencyAlt) {
-        this.populationFrequencyAlt = populationFrequencyAlt;
-        return this;
-    }
-
-    public String getPopulationFrequencyRef() {
-        return populationFrequencyRef;
-    }
-
-    public VariantQueryParams setPopulationFrequencyRef(String populationFrequencyRef) {
-        this.populationFrequencyRef = populationFrequencyRef;
-        return this;
-    }
-
-    public String getTranscriptFlag() {
-        return transcriptFlag;
-    }
-
-    public VariantQueryParams setTranscriptFlag(String transcriptFlag) {
-        this.transcriptFlag = transcriptFlag;
         return this;
     }
 
@@ -667,24 +470,6 @@ public class VariantQueryParams extends ToolParams {
 
     public VariantQueryParams setDrug(String drug) {
         this.drug = drug;
-        return this;
-    }
-
-    public String getFunctionalScore() {
-        return functionalScore;
-    }
-
-    public VariantQueryParams setFunctionalScore(String functionalScore) {
-        this.functionalScore = functionalScore;
-        return this;
-    }
-
-    public String getClinicalSignificance() {
-        return clinicalSignificance;
-    }
-
-    public VariantQueryParams setClinicalSignificance(String clinicalSignificance) {
-        this.clinicalSignificance = clinicalSignificance;
         return this;
     }
 

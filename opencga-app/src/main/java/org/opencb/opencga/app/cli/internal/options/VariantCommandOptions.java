@@ -33,6 +33,8 @@ import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.api.variant.BasicVariantQueryParams;
+import org.opencb.opencga.core.api.variant.SampleVariantFilterParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
@@ -46,6 +48,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSampleQueryCommandOptions.SAMPLE_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
@@ -91,6 +94,7 @@ public class VariantCommandOptions {
     public final VariantExportStatsCommandOptions exportVariantStatsCommandOptions;
     public final VariantImportCommandOptions importVariantCommandOptions;
     public final VariantIbsCommandOptions ibsVariantCommandOptions;
+    public final VariantSampleQueryCommandOptions sampleQueryCommandOptions;
     public final VariantSamplesFilterCommandOptions samplesFilterCommandOptions;
     public final VariantHistogramCommandOptions histogramCommandOptions;
 
@@ -138,6 +142,7 @@ public class VariantCommandOptions {
         this.exportVariantStatsCommandOptions = new VariantExportStatsCommandOptions();
         this.importVariantCommandOptions = new VariantImportCommandOptions();
         this.ibsVariantCommandOptions = new VariantIbsCommandOptions();
+        this.sampleQueryCommandOptions = new VariantSampleQueryCommandOptions();
         this.samplesFilterCommandOptions = new VariantSamplesFilterCommandOptions();
         this.histogramCommandOptions = new VariantHistogramCommandOptions();
         this.gwasCommandOptions = new GwasCommandOptions();
@@ -561,38 +566,196 @@ public class VariantCommandOptions {
         public String outdir = "-";
     }
 
-    @Parameters(commandNames = {"samples"}, commandDescription = "Get samples given a set of variants")
-    public class VariantSamplesFilterCommandOptions {
-
-        @ParametersDelegate
-        public BasicVariantQueryOptions variantQueryOptions = new BasicVariantQueryOptions();
+    @Parameters(commandNames = {VariantSamplesFilterCommandOptions.SAMPLE_RUN_COMMAND}, commandDescription = "Get samples given a set of variants")
+    public class VariantSamplesFilterCommandOptions extends SampleVariantFilterParams {
+        public static final String SAMPLE_RUN_COMMAND = "sample-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @ParametersDelegate
-        public DataModelOptions dataModelOptions = commonDataModelOptions;
+        public SampleVariantFilterParamsAnnotated toolParams = new SampleVariantFilterParamsAnnotated();
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+    }
+
+    @Parameters(commandNames = {SAMPLE_QUERY_COMMAND}, commandDescription = "Get sample data of a given variant")
+    public class VariantSampleQueryCommandOptions extends SampleVariantFilterParams {
+        public static final String SAMPLE_QUERY_COMMAND = "sample-query";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public NumericOptions numericOptions = commonNumericOptions;
+
+        @Parameter(names = {"--variant"}, description = "Variant to query", required = true)
+        public String variant;
 
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
         public String study;
+
+        @Parameter(names = {"--genotype"}, description = "Genotypes that the sample must have to be selected")
+        public List<String> genotype;
+
+    }
+
+    public class SampleVariantFilterParamsAnnotated extends SampleVariantFilterParams {
 
         //TODO
 //        @Parameter(names = {"--sample-filter"}, description = SAMPLE_FILTER_DESC)
 //        public String sampleFilter;
 
-        @Parameter(names = {"--sample"}, description = "List of samples to check. By default, all samples")
-        public String samples;
-
-        @Parameter(names = {"--all"}, description = "Samples must be present in ALL variants or in ANY variant.")
-        public boolean all;
-
         @Parameter(names = {"--genotypes"}, description = "Genotypes that the sample must have to be selected")
-        public String genotypes = "0/1,1/1";
+        @Override
+        public SampleVariantFilterParams setGenotypes(List<String> genotypes) {
+            return super.setGenotypes(genotypes);
+        }
 
+        @Parameter(names = {"--sample"}, description = "List of samples to check. By default, all samples")
+        @Override
+        public SampleVariantFilterParams setSample(List<String> sample) {
+            return super.setSample(sample);
+        }
 
+        @Parameter(names = {"--samples-in-all-variants"}, description = "Samples must be present in ALL variants instead of ANY variant.")
+        @Override
+        public SampleVariantFilterParams setSamplesInAllVariants(boolean samplesInAllVariants) {
+            return super.setSamplesInAllVariants(samplesInAllVariants);
+        }
 
-//        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
-//        public String output;
+        @Parameter(names = {"--max-variants"}, description = "Limit the maximum number of variants to look up")
+        @Override
+        public SampleVariantFilterParams setMaxVariants(int maxVariants) {
+            return super.setMaxVariants(maxVariants);
+        }
+
+        @Parameter(names = {"--id"}, description = VariantQueryParam.ID_DESCR)
+        @Override
+        public BasicVariantQueryParams setId(String id) {
+            return super.setId(id);
+        }
+
+        @Parameter(names = {"--region"}, description = VariantQueryParam.REGION_DESCR)
+        @Override
+        public BasicVariantQueryParams setRegion(String region) {
+            return super.setRegion(region);
+        }
+
+        @Parameter(names = {"--gene"}, description = VariantQueryParam.GENE_DESCR)
+        @Override
+        public BasicVariantQueryParams setGene(String gene) {
+            return super.setGene(gene);
+        }
+
+        @Parameter(names = {"--type"}, description = VariantQueryParam.TYPE_DESCR)
+        @Override
+        public BasicVariantQueryParams setType(String type) {
+            return super.setType(type);
+        }
+
+        @Parameter(names = {"--project"}, description = PROJECT_DESC)
+        @Override
+        public BasicVariantQueryParams setProject(String project) {
+            return super.setProject(project);
+        }
+
+        @Parameter(names = {"--study"}, description = VariantQueryParam.STUDY_DESCR)
+        @Override
+        public BasicVariantQueryParams setStudy(String study) {
+            return super.setStudy(study);
+        }
+
+        @Parameter(names = {"--panel"}, description = PANEL_DESC)
+        @Override
+        public BasicVariantQueryParams setPanel(String panel) {
+            return super.setPanel(panel);
+        }
+
+        @Parameter(names = {"--cohort-stats-ref"}, description = VariantQueryParam.STATS_REF_DESCR)
+        @Override
+        public BasicVariantQueryParams setCohortStatsRef(String cohortStatsRef) {
+            return super.setCohortStatsRef(cohortStatsRef);
+        }
+
+        @Parameter(names = {"--cohort-stats-alt"}, description = VariantQueryParam.STATS_ALT_DESCR)
+        @Override
+        public BasicVariantQueryParams setCohortStatsAlt(String cohortStatsAlt) {
+            return super.setCohortStatsAlt(cohortStatsAlt);
+        }
+
+        @Parameter(names = {"--cohort-stats-maf"}, description = VariantQueryParam.STATS_MAF_DESCR)
+        @Override
+        public BasicVariantQueryParams setCohortStatsMaf(String cohortStatsMaf) {
+            return super.setCohortStatsMaf(cohortStatsMaf);
+        }
+
+        @Parameter(names = {"--ct", "--consequence-type"}, description = VariantQueryParam.ANNOT_CONSEQUENCE_TYPE_DESCR)
+        @Override
+        public BasicVariantQueryParams setCt(String ct) {
+            return super.setCt(ct);
+        }
+
+        @Parameter(names = {"--xref"}, description = VariantQueryParam.ANNOT_XREF_DESCR)
+        @Override
+        public BasicVariantQueryParams setXref(String xref) {
+            return super.setXref(xref);
+        }
+
+        @Parameter(names = {"--biotype"}, description = VariantQueryParam.ANNOT_BIOTYPE_DESCR)
+        @Override
+        public BasicVariantQueryParams setBiotype(String biotype) {
+            return super.setBiotype(biotype);
+        }
+
+        @Parameter(names = {"--protein-substitution"}, description = VariantQueryParam.ANNOT_PROTEIN_SUBSTITUTION_DESCR)
+        @Override
+        public BasicVariantQueryParams setProteinSubstitution(String proteinSubstitution) {
+            return super.setProteinSubstitution(proteinSubstitution);
+        }
+
+        @Parameter(names = {"--conservation"}, description = VariantQueryParam.ANNOT_CONSERVATION_DESCR)
+        @Override
+        public BasicVariantQueryParams setConservation(String conservation) {
+            return super.setConservation(conservation);
+        }
+
+        @Parameter(names = {"--population-frequency-maf"}, description = VariantQueryParam.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY_DESCR)
+        @Override
+        public BasicVariantQueryParams setPopulationFrequencyMaf(String populationFrequencyMaf) {
+            return super.setPopulationFrequencyMaf(populationFrequencyMaf);
+        }
+
+        @Parameter(names = {"--population-frequency-alt"}, description = VariantQueryParam.ANNOT_POPULATION_ALTERNATE_FREQUENCY_DESCR)
+        @Override
+        public BasicVariantQueryParams setPopulationFrequencyAlt(String populationFrequencyAlt) {
+            return super.setPopulationFrequencyAlt(populationFrequencyAlt);
+        }
+
+        @Parameter(names = {"--population-frequency-ref"}, description = VariantQueryParam.ANNOT_POPULATION_REFERENCE_FREQUENCY_DESCR)
+        @Override
+        public BasicVariantQueryParams setPopulationFrequencyRef(String populationFrequencyRef) {
+            return super.setPopulationFrequencyRef(populationFrequencyRef);
+        }
+
+        @Parameter(names = {"--transcript-flag"}, description = VariantQueryParam.ANNOT_TRANSCRIPT_FLAG_DESCR)
+        @Override
+        public BasicVariantQueryParams setTranscriptFlag(String transcriptFlag) {
+            return super.setTranscriptFlag(transcriptFlag);
+        }
+
+        @Parameter(names = {"--functional-score"}, description = VariantQueryParam.ANNOT_FUNCTIONAL_SCORE_DESCR)
+        @Override
+        public BasicVariantQueryParams setFunctionalScore(String functionalScore) {
+            return super.setFunctionalScore(functionalScore);
+        }
+
+        @Parameter(names = {"--clinical-significance"}, description = VariantQueryParam.ANNOT_CLINICAL_SIGNIFICANCE_DESCR)
+        @Override
+        public BasicVariantQueryParams setClinicalSignificance(String clinicalSignificance) {
+            return super.setClinicalSignificance(clinicalSignificance);
+        }
     }
 
     @Parameters(commandNames = {"histogram"}, commandDescription = "")
@@ -695,7 +858,7 @@ public class VariantCommandOptions {
                 + " For more information, please visit " + SampleCommandOptions.SearchCommandOptions.ANNOTATION_DOC_URL)
         public String samplesAnnotation;
 
-        @Parameter(names = {"--index-stats"}, description = "Index results in catalog."
+        @Parameter(names = {"--index"}, description = "Index results in catalog."
                 + "Create an AnnotationSet for the VariableSet " + SampleVariantStatsAnalysis.VARIABLE_SET_ID)
         public boolean index;
 

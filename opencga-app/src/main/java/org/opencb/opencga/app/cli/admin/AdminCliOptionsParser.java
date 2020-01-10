@@ -37,6 +37,7 @@ import java.util.List;
 public class AdminCliOptionsParser extends CliOptionsParser {
 
     private final AdminCommonCommandOptions commonCommandOptions;
+    private final IgnorePasswordCommonCommandOptions noPasswordCommonCommandOptions;
 
     private final CatalogCommandOptions catalogCommandOptions;
     private final UsersCommandOptions usersCommandOptions;
@@ -52,6 +53,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         jCommander.setProgramName("opencga-admin.sh");
 
         commonCommandOptions = new AdminCommonCommandOptions();
+        noPasswordCommonCommandOptions = new IgnorePasswordCommonCommandOptions();
 
         catalogCommandOptions = new CatalogCommandOptions();
         jCommander.addCommand("catalog", catalogCommandOptions);
@@ -108,6 +110,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         JCommander migrationSubCommands = this.jCommander.getCommands().get("migration");
         migrationSubCommands.addCommand("v1.3.0", this.migrationCommandOptions.getMigrateV130CommandOptions());
         migrationSubCommands.addCommand("v1.4.0", this.migrationCommandOptions.getMigrateV140CommandOptions());
+        migrationSubCommands.addCommand("v2.0.0", this.migrationCommandOptions.getMigrateV200CommandOptions());
 
     }
 
@@ -117,11 +120,11 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         if (parsedCommand != null) {
             JCommander jCommander2 = jCommander.getCommands().get(parsedCommand);
             List<Object> objects = jCommander2.getObjects();
-            if (!objects.isEmpty() && objects.get(0) instanceof AdminCommonCommandOptions) {
-                return ((AdminCommonCommandOptions) objects.get(0)).help;
+            if (!objects.isEmpty() && objects.get(0) instanceof GeneralCliOptions.CommonCommandOptions) {
+                return ((GeneralCliOptions.CommonCommandOptions) objects.get(0)).help;
             }
         }
-        return commonCommandOptions.help;
+        return commonCommandOptions.help || noPasswordCommonCommandOptions.help;
     }
 
 
@@ -149,6 +152,16 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
         @Parameter(names = {"-p", "--password"}, description = "Administrator password", hidden = true, password = true, arity = 0)
         public String adminPassword;
+
+    }
+
+    /**
+     * This class contains all those common parameters available for all 'subcommands' that do not need the password parameter.
+     */
+    public class IgnorePasswordCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
+
+        @Parameter(names = {"-p", "--password"}, description = "Administrator password", hidden = true, arity = 0)
+        public boolean adminPassword;
 
     }
 
@@ -259,7 +272,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public RestServerCommandOptions restServerCommandOptions;
         public GrpcServerCommandOptions grpcServerCommandOptions;
 
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions  commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
 
         public ServerCommandOptions() {
             this.restServerCommandOptions = new RestServerCommandOptions();
@@ -437,10 +450,10 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"--start"}, description = "File with the new tool to be installed", arity = 0)
+        @Parameter(names = {"--start"}, description = "Start OpenCGA Catalog daemon", arity = 0)
         public boolean start;
 
-        @Parameter(names = {"--stop"}, description = "File with the new tool to be installed", arity = 0)
+        @Parameter(names = {"--stop"}, description = "Stop OpenCGA Catalog daemon", arity = 0)
         public boolean stop;
     }
 
@@ -677,32 +690,35 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     /*
      * SERVER SUB-COMMANDS
      */
-    @Parameters(commandNames = {"rest"}, commandDescription = "Install and check a new tool")
+    @Parameters(commandNames = {"rest"}, commandDescription = "Start and stop OpenCGA REST server")
     public class RestServerCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
 
-        @Parameter(names = {"--start"}, description = "File with the new tool to be installed", arity = 0)
+        @Parameter(names = {"--start"}, description = "Start OpenCGA REST server", arity = 0)
         public boolean start;
 
-        @Parameter(names = {"--stop"}, description = "File with the new tool to be installed", arity = 0)
+        @Parameter(names = {"--stop"}, description = "Stop OpenCGA REST server", arity = 0)
         public boolean stop;
+
+        @Parameter(names = {"--port"}, description = "REST port to be used", arity = 1)
+        public int port;
 
         @Parameter(names = {"--bg", "--background"}, description = "Run the server in background as a daemon", arity = 0)
         public boolean background;
     }
 
-    @Parameters(commandNames = {"grpc"}, commandDescription = "Print a summary list of all tools")
+    @Parameters(commandNames = {"grpc"}, commandDescription = "Start and stop OpenCGA gRPC server")
     public class GrpcServerCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = AdminCliOptionsParser.this.noPasswordCommonCommandOptions;
 
-        @Parameter(names = {"--start"}, description = "File with the new tool to be installed", arity = 0)
+        @Parameter(names = {"--start"}, description = "Start OpenCGA gRPC server", arity = 0)
         public boolean start;
 
-        @Parameter(names = {"--stop"}, description = "File with the new tool to be installed", arity = 0)
+        @Parameter(names = {"--stop"}, description = "Stop OpenCGA gRPC server", arity = 0)
         public boolean stop;
 
         @Parameter(names = {"--bg", "--background"}, description = "Run the server in background as a daemon", arity = 0)

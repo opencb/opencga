@@ -11,15 +11,14 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.core.tools.variant.VariantStatsAnalysisExecutor;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.annotations.ToolExecutor;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.exception.ToolExecutorException;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageAnalysisExecutor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.tools.variant.VariantStatsAnalysisExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
@@ -35,34 +34,12 @@ import java.util.concurrent.ExecutionException;
 @ToolExecutor(id = "opencga-local", tool = VariantStatsAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
-public class VariantStatsLocalAnalysisExecutor extends VariantStatsAnalysisExecutor implements VariantStorageAnalysisExecutor {
+public class VariantStatsLocalAnalysisExecutor extends VariantStatsAnalysisExecutor implements VariantStorageToolExecutor {
 
     private final Logger logger = LoggerFactory.getLogger(VariantStatsLocalAnalysisExecutor.class);
 
     @Override
     public void run() throws ToolException {
-        if (isIndex()) {
-            calculateAndIndex();
-        } else {
-            calculate();
-        }
-    }
-
-    private void calculateAndIndex() throws ToolExecutorException {
-        QueryOptions calculateStatsOptions = new QueryOptions(executorParams);
-
-        VariantStorageEngine variantStorageEngine = getVariantStorageEngine();
-        try {
-            calculateStatsOptions.putAll(getVariantsQuery());
-
-            variantStorageEngine.calculateStats(getStudy(), getCohorts(), calculateStatsOptions);
-            variantStorageEngine.close();
-        } catch (IOException | StorageEngineException e) {
-            throw new ToolExecutorException(e);
-        }
-    }
-
-    private void calculate() throws ToolException {
         VariantStorageManager manager = getVariantStorageManager();
         Map<String, List<String>> cohorts = getCohorts();
         Set<String> allSamples = new HashSet<>();
@@ -100,4 +77,5 @@ public class VariantStatsLocalAnalysisExecutor extends VariantStatsAnalysisExecu
             throw new ToolExecutorException(e);
         }
     }
+
 }

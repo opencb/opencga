@@ -1,4 +1,4 @@
-{"collection": "user", "fields": {"id": 1}, "options": {"background": true}}
+{"collection": "user", "fields": {"id": 1}, "options": {"unique": true, "background": true}}
 {"collection": "user", "fields": {"projects.uid": 1}, "options": {"background": true}}
 {"collection": "user", "fields": {"projects.uuid": 1}, "options": {"background": true}}
 {"collection": "user", "fields": {"projects.id": 1, "uid": 1}, "options": {"background": true}}

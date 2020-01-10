@@ -19,33 +19,37 @@ package org.opencb.opencga.analysis.tools;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.biodata.models.commons.Analyst;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.annotations.ToolExecutor;
+import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.DataStore;
+import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
-import org.opencb.opencga.core.tools.result.ExecutorInfo;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
+import org.opencb.opencga.core.tools.result.ExecutorInfo;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -145,14 +149,14 @@ public abstract class OpenCgaTool {
         availableFrameworks = new ArrayList<>();
         sourceTypes = new ArrayList<>();
         if (storageConfiguration.getVariant().getDefaultEngine().equals("mongodb")) {
-            if (getToolType().equals(Enums.Resource.VARIANT)) {
+            if (getToolResource().equals(Enums.Resource.VARIANT)) {
                 sourceTypes.add(ToolExecutor.Source.MONGODB);
             }
         } else if (storageConfiguration.getVariant().getDefaultEngine().equals("hadoop")) {
             availableFrameworks.add(ToolExecutor.Framework.MAP_REDUCE);
             // TODO: Check from configuration if spark is available
 //            availableFrameworks.add(ToolExecutor.Framework.SPARK);
-            if (getToolType().equals(Enums.Resource.VARIANT)) {
+            if (getToolResource().equals(Enums.Resource.VARIANT)) {
                 sourceTypes.add(ToolExecutor.Source.HBASE);
             }
         }
@@ -184,6 +188,9 @@ public abstract class OpenCgaTool {
             if (!erm.isClosed()) {
                 privateLogger.error("Unexpected system shutdown!");
                 try {
+                    if (scratchDir != null) {
+                        deleteScratchDirectory();
+                    }
                     if (exception == null) {
                         exception = new RuntimeException("Unexpected system shutdown");
                     }
@@ -194,6 +201,8 @@ public abstract class OpenCgaTool {
             }
         });
         Runtime.getRuntime().addShutdownHook(hook);
+        Exception exception = null;
+        ExecutionResult result;
         try {
             if (scratchDir == null) {
                 Path baseScratchDir = this.outDir;
@@ -231,19 +240,24 @@ public abstract class OpenCgaTool {
             } catch (Exception e) {
                 throw new ToolException(e);
             }
-            try {
-                FileUtils.deleteDirectory(scratchDir.toFile());
-            } catch (IOException e) {
-                String warningMessage = "Error deleting scratch folder " + scratchDir + " : " + e.getMessage();
-                privateLogger.warn(warningMessage, e);
-                erm.addWarning(warningMessage);
-            }
-            return erm.close();
         } catch (RuntimeException | ToolException e) {
-            erm.close(e);
+            exception = e;
             throw e;
         } finally {
+            deleteScratchDirectory();
             Runtime.getRuntime().removeShutdownHook(hook);
+            result = erm.close(exception);
+        }
+        return result;
+    }
+
+    private void deleteScratchDirectory() throws ToolException {
+        try {
+            FileUtils.deleteDirectory(scratchDir.toFile());
+        } catch (IOException e) {
+            String warningMessage = "Error deleting scratch folder " + scratchDir + " : " + e.getMessage();
+            privateLogger.warn(warningMessage, e);
+            erm.addWarning(warningMessage);
         }
     }
 
@@ -276,19 +290,19 @@ public abstract class OpenCgaTool {
     }
 
     /**
+     * @return the tool id
+     */
+    protected final Enums.Resource getToolResource() {
+        return this.getClass().getAnnotation(Tool.class).resource();
+    }
+
+    /**
      * @return the tool steps
      */
     protected List<String> getSteps() {
         List<String> steps = new ArrayList<>();
         steps.add(getId());
         return steps;
-    }
-
-    /**
-     * @return the tool id
-     */
-    public final Enums.Resource getToolType() {
-        return this.getClass().getAnnotation(Tool.class).resource();
     }
 
     /**
@@ -305,8 +319,20 @@ public abstract class OpenCgaTool {
         return scratchDir;
     }
 
-    protected final String getToken() {
+    public final String getToken() {
         return token;
+    }
+
+    public CatalogManager getCatalogManager() {
+        return catalogManager;
+    }
+
+    public VariantStorageManager getVariantStorageManager() {
+        return variantStorageManager;
+    }
+
+    public ObjectMap getParams() {
+        return params;
     }
 
     public final OpenCgaTool addSource(ToolExecutor.Source source) {
@@ -337,12 +363,18 @@ public abstract class OpenCgaTool {
     protected final void step(String stepId, StepRunnable step) throws ToolException {
         if (checkStep(stepId)) {
             try {
+                StopWatch stopWatch = StopWatch.createStarted();
+                privateLogger.info("");
+                privateLogger.info("------- Executing step '" + stepId + "' -------");
                 step.run();
+                privateLogger.info("------- Step '" + stepId + "' executed in " + TimeUtils.durationToString(stopWatch) + " -------");
             } catch (ToolException e) {
                 throw e;
             } catch (Exception e) {
                 throw new ToolException("Exception from step " + stepId, e);
             }
+        } else {
+            privateLogger.info("------- Skip step " + stepId + " -------");
         }
     }
 
@@ -366,20 +398,15 @@ public abstract class OpenCgaTool {
         erm.addAttribute(key, value);
     }
 
-    protected final void moveFile(Path source, String catalogPathTarget) throws ToolException {
-        moveFile(source.toUri(), catalogPathTarget);
-    }
-
-    protected final void moveFile(URI source, String catalogPathTarget) throws ToolException {
+    protected final void moveFile(String study, Path source, Path destiny, String catalogDirectoryPath, String token) throws ToolException {
+        File file;
         try {
-            //TODO Move file
-            // catalogManager.getCatalogIOManagerFactory().get(source).moveFile(source, ...);
-            // catalogManager.getFileManager() ....
+            file = catalogManager.getFileManager().moveAndRegister(study, source, destiny, catalogDirectoryPath, token).first();
         } catch (Exception e) {
-            throw new ToolException("Error moving file from " + source + " to " + catalogPathTarget, e);
+            throw new ToolException("Error moving file from " + source + " to " + destiny, e);
         }
         // Add only if move is successful
-        erm.addExternalFile(source);
+        erm.addExternalFile(file.getUri());
     }
 
     protected final OpenCgaToolExecutor getToolExecutor()

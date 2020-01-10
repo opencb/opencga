@@ -21,6 +21,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.crypto.Data;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -30,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 public class TimeUtils {
 
+    private static final String yyyyMMdd = "yyyyMMdd";
     private static final String yyyyMMddHHmmss = "yyyyMMddHHmmss";
     private static final String yyyyMMddHHmmssSSS = "yyyyMMddHHmmssSSS";
 
@@ -57,6 +59,15 @@ public class TimeUtils {
         return sdfMillis.format(date);
     }
 
+    public static String getDay() {
+        return getDay(new Date());
+    }
+
+    public static String getDay(Date date) {
+        SimpleDateFormat sdf = new SimpleDateFormat(yyyyMMdd);
+        return sdf.format(date);
+    }
+
     public static String durationToString(StopWatch stopWatch) {
         return durationToString(stopWatch.getTime());
     }
@@ -65,6 +76,14 @@ public class TimeUtils {
         return durationToString(timeUnit.toMillis(duration));
     }
 
+    /**
+     * Prints a duration in millis as:
+     *
+     *  1234.5s [ 00:20:34 ]
+     *
+     * @param durationInMillis Duration in millis
+     * @return
+     */
     public static String durationToString(long durationInMillis) {
         long durationInSeconds = Math.round(durationInMillis / 1000.0);
         long h = durationInSeconds / 3600;
@@ -73,6 +92,24 @@ public class TimeUtils {
         return (durationInMillis / 1000.0) + "s [ "+ StringUtils.leftPad(String.valueOf(h), 2, '0') + ':'
                 + StringUtils.leftPad(String.valueOf(m), 2, '0') + ':'
                 + StringUtils.leftPad(String.valueOf(s), 2, '0') + " ]";
+    }
+
+    /**
+     * Prints a duration in millis as:
+     *
+     *  00:20:34
+     *
+     * @param durationInMillis Duration in millis
+     * @return
+     */
+    public static String durationToStringSimple(long durationInMillis) {
+        long durationInSeconds = Math.round(durationInMillis / 1000.0);
+        long h = durationInSeconds / 3600;
+        long m = (durationInSeconds % 3600) / 60;
+        long s = durationInSeconds % 60;
+        return StringUtils.leftPad(String.valueOf(h), 2, '0') + ':'
+                + StringUtils.leftPad(String.valueOf(m), 2, '0') + ':'
+                + StringUtils.leftPad(String.valueOf(s), 2, '0');
     }
 
     public static Date add24HtoDate(Date date) {

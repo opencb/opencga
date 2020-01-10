@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,7 +30,11 @@ public class ConfigurationUtils {
         Path path = Paths.get(opencgaHome).resolve("conf").resolve("configuration.yml");
         if (Files.exists(path)) {
             logger.debug("Loading configuration from '{}'", path.toAbsolutePath());
-            return Configuration.load(new FileInputStream(path.toFile()));
+            try (InputStream inputStream = FileUtils.newInputStream(path)) {
+                return Configuration.load(inputStream);
+            } catch (IOException e) {
+                throw new IOException("Error loading configuration file " + path.toAbsolutePath(), e);
+            }
         } else {
             logger.debug("Loading configuration from JAR file");
             return Configuration
@@ -51,7 +56,11 @@ public class ConfigurationUtils {
         Path path = Paths.get(opencgaHome).resolve("conf").resolve("storage-configuration.yml");
         if (Files.exists(path)) {
             logger.debug("Loading storage configuration from '{}'", path.toAbsolutePath());
-            return StorageConfiguration.load(new FileInputStream(path.toFile()));
+            try (FileInputStream is = new FileInputStream(path.toFile())) {
+                return StorageConfiguration.load(is);
+            } catch (IOException e) {
+                throw new IOException("Error loading storage configuration file " + path.toAbsolutePath());
+            }
         } else {
             logger.debug("Loading storage configuration from JAR file");
             return StorageConfiguration

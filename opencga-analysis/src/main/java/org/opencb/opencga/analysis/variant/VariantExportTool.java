@@ -60,10 +60,10 @@ public class VariantExportTool extends OpenCgaTool {
     protected void run() throws Exception {
         step(() -> {
             String outputFile = StringUtils.isEmpty(toolParams.getOutputFileName())
-                    ? ""
+                    ? getOutDir().toString()
                     : getOutDir().resolve(toolParams.getOutputFileName()).toString();
-            QueryOptions queryOptions = new QueryOptions(params);
             Query query = toolParams.toQuery();
+            QueryOptions queryOptions = new QueryOptions(params);
             for (VariantQueryParam param : VariantQueryParam.values()) {
                 queryOptions.remove(param.key());
             }

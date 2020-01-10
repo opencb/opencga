@@ -37,7 +37,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
@@ -2291,6 +2291,15 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         variant = query(new Query(INCLUDE_FORMAT.key(), "GT,XX,GL"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
         System.out.println("variant.toJson() = " + variant.toJson());
         assertEquals("GT:XX:GL", variant.getStudies().get(0).getFormatAsString());
+
+        variant = query(new Query(INCLUDE_FORMAT.key(), "GT,SAMPLE_ID"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        assertEquals("GT:SAMPLE_ID", variant.getStudies().get(0).getFormatAsString());
+
+        variant = query(new Query(INCLUDE_FORMAT.key(), "all"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        assertEquals("GT:DS:GL", variant.getStudies().get(0).getFormatAsString());
+
+        variant = query(new Query(INCLUDE_FORMAT.key(), "none"), new QueryOptions(QueryOptions.LIMIT, 1)).first();
+        assertEquals("", variant.getStudies().get(0).getFormatAsString());
     }
 
 /*

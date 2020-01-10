@@ -23,7 +23,6 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -33,12 +32,13 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -122,6 +122,45 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(File.Bioformat.ALIGNMENT, link.first().getBioformat());
         assertEquals(referenceFile.getId(), link.first().getRelatedFiles().get(0).getFile().getId());
         assertEquals(File.RelatedFile.Relation.REFERENCE_GENOME, link.first().getRelatedFiles().get(0).getRelation());
+    }
+
+    @Test
+    public void testUpdateRelatedFiles() throws CatalogException {
+        FileUpdateParams updateParams = new FileUpdateParams()
+                .setRelatedFiles(Collections.singletonList(new FileUpdateParams.RelatedFile(testFile2, File.RelatedFile.Relation.PRODUCED_FROM)));
+        fileManager.update(studyFqn, testFile1, updateParams, QueryOptions.empty(), sessionIdUser);
+
+        File file = fileManager.get(studyFqn, testFile1, QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(1, file.getRelatedFiles().size());
+        assertEquals(testFile2, file.getRelatedFiles().get(0).getFile().getPath());
+        assertEquals(File.RelatedFile.Relation.PRODUCED_FROM, file.getRelatedFiles().get(0).getRelation());
+
+        Map<String, String> actionMap = new HashMap<>();
+        actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), ParamUtils.UpdateAction.SET.name());
+
+        updateParams = new FileUpdateParams()
+                .setRelatedFiles(Collections.singletonList(new FileUpdateParams.RelatedFile(testFile2, File.RelatedFile.Relation.PART_OF_PAIR)));
+        fileManager.update(studyFqn, testFile1, updateParams, new QueryOptions(Constants.ACTIONS, actionMap), sessionIdUser);
+        file = fileManager.get(studyFqn, testFile1, QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(1, file.getRelatedFiles().size());
+        assertEquals(testFile2, file.getRelatedFiles().get(0).getFile().getPath());
+        assertEquals(File.RelatedFile.Relation.PART_OF_PAIR, file.getRelatedFiles().get(0).getRelation());
+
+        actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), ParamUtils.UpdateAction.REMOVE.name());
+        fileManager.update(studyFqn, testFile1, updateParams, new QueryOptions(Constants.ACTIONS, actionMap), sessionIdUser);
+        file = fileManager.get(studyFqn, testFile1, QueryOptions.empty(), sessionIdUser).first();
+        assertEquals(0, file.getRelatedFiles().size());
+
+        // We add it again
+        updateParams = new FileUpdateParams()
+                .setRelatedFiles(Collections.singletonList(new FileUpdateParams.RelatedFile(testFile2, File.RelatedFile.Relation.PRODUCED_FROM)));
+        fileManager.update(studyFqn, testFile1, updateParams, QueryOptions.empty(), sessionIdUser);
+
+        // And now we will update with an empty list
+        updateParams = new FileUpdateParams().setRelatedFiles(Collections.emptyList());
+        actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), ParamUtils.UpdateAction.SET.name());
+        fileManager.update(studyFqn, testFile1, updateParams, new QueryOptions(Constants.ACTIONS, actionMap), sessionIdUser);
+        assertEquals(0, file.getRelatedFiles().size());
     }
 
     @Test
@@ -1540,7 +1579,8 @@ public class FileManagerTest extends AbstractManagerTest {
         // Register in workspace folder
         OpenCGAResult<File> result = fileManager.moveAndRegister(studyFqn, copy, studyPath.resolve("myFolder"), "myFolder", sessionIdUser);
         assertEquals("myFolder/variant-test-file.vcf.gz", result.first().getPath());
-        assertEquals(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz").toString(), Paths.get(result.first().getUri()).toString());
+        assertEquals(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz").toString(),
+                Paths.get(result.first().getUri()).toString());
         assertTrue(Files.exists(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz")));
 
         // We remove the file to start again
@@ -1552,6 +1592,19 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // Register without passing the path
         result = fileManager.moveAndRegister(studyFqn, copy, studyPath.resolve("myFolder"), null, sessionIdUser);
+        assertEquals("myFolder/variant-test-file.vcf.gz", result.first().getPath());
+        assertEquals(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz").toString(), Paths.get(result.first().getUri()).toString());
+        assertTrue(Files.exists(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz")));
+
+        // We remove the file to start again
+        query = new Query(FileDBAdaptor.QueryParams.UID.key(), result.first().getUid());
+        setToPendingDelete(studyFqn, query);
+        fileManager.delete(studyFqn, query, new ObjectMap(Constants.SKIP_TRASH, true), sessionIdUser);
+        assertEquals(0, fileManager.search(studyFqn, query, QueryOptions.empty(), sessionIdUser).getNumResults());
+        Files.copy(sourcePath, copy);
+
+        // Register without passing the destiny path
+        result = fileManager.moveAndRegister(studyFqn, copy, null, "myFolder", sessionIdUser);
         assertEquals("myFolder/variant-test-file.vcf.gz", result.first().getPath());
         assertEquals(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz").toString(), Paths.get(result.first().getUri()).toString());
         assertTrue(Files.exists(studyPath.resolve("myFolder").resolve("variant-test-file.vcf.gz")));
@@ -1588,8 +1641,6 @@ public class FileManagerTest extends AbstractManagerTest {
         catalogManager.getStudyManager().updateGroup(studyFqn, "admins", new GroupParams("user2", GroupParams.Action.ADD), sessionIdUser);
 
         // and try the same action again
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().getDefault();
-        ioManager.deleteDirectory(UriUtils.createUri("/tmp/other"));
         result = fileManager.moveAndRegister(studyFqn, copy, Paths.get("/tmp/other/"), "a/b/c/", sessionIdUser2);
         assertEquals("a/b/c/variant-test-file.vcf.gz", result.first().getPath());
         assertEquals("/tmp/other/variant-test-file.vcf.gz", Paths.get(result.first().getUri()).toString());

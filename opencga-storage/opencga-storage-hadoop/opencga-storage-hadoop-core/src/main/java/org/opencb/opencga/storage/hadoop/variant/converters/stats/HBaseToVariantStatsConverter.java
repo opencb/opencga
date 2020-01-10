@@ -47,7 +47,7 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
 
     private final Logger logger = LoggerFactory.getLogger(HBaseToVariantStatsConverter.class);
 
-    public HBaseToVariantStatsConverter(GenomeHelper genomeHelper) {
+    public HBaseToVariantStatsConverter() {
         super(GenomeHelper.COLUMN_FAMILY_BYTES);
     }
 //

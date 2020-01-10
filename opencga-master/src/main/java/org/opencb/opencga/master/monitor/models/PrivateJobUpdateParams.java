@@ -22,7 +22,7 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
     private List<File> input;    // input files to this job
     private List<File> output;   // output files of this job
 
-    private ExecutionResult result;
+    private ExecutionResult execution;
 
     private File stdout;
     private File stderr;
@@ -41,7 +41,7 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
         sb.append(", tmpDir=").append(tmpDir);
         sb.append(", input=").append(input);
         sb.append(", output=").append(output);
-        sb.append(", result=").append(result);
+        sb.append(", execution=").append(execution);
         sb.append(", stdout=").append(stdout);
         sb.append(", stderr=").append(stderr);
         sb.append(", name='").append(getName()).append('\'');
@@ -125,12 +125,12 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
         return this;
     }
 
-    public ExecutionResult getResult() {
-        return result;
+    public ExecutionResult getExecution() {
+        return execution;
     }
 
-    public PrivateJobUpdateParams setResult(ExecutionResult result) {
-        this.result = result;
+    public PrivateJobUpdateParams setExecution(ExecutionResult execution) {
+        this.execution = execution;
         return this;
     }
 

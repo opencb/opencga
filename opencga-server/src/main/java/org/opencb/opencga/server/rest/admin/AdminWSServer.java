@@ -13,6 +13,7 @@ import org.opencb.opencga.catalog.managers.PanelManager;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.Group;
+import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
@@ -23,6 +24,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @Path("/{apiVersion}/admin")
 @Produces(MediaType.APPLICATION_JSON)
@@ -133,7 +135,7 @@ public class AdminWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/audit/groupBy")
-    @ApiOperation(value = "Group by operation")
+    @ApiOperation(value = "Group by operation", response = Map.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.COUNT, value = "Count the number of elements matching the group", dataType = "boolean",
                     paramType = "query"),
@@ -161,7 +163,7 @@ public class AdminWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/catalog/indexStats")
-    @ApiOperation(value = "Sync Catalog into the Solr")
+    @ApiOperation(value = "Sync Catalog into the Solr", response = Boolean.class)
     public Response syncSolr() {
         try {
             return createOkResponse(catalogManager.getStudyManager().indexCatalogIntoSolr(token));
@@ -193,7 +195,7 @@ public class AdminWSServer extends OpenCGAWSServer {
 
     @POST
     @Path("/catalog/panel")
-    @ApiOperation(value = "Handle global panels")
+    @ApiOperation(value = "Handle global panels", response = Panel.class)
     public Response diseasePanels(
             @ApiParam(value = "Import panels from PanelApp (GEL)", defaultValue = "false") @QueryParam("panelApp") boolean importPanels,
             @ApiParam(value = "Flag indicating to overwrite installed panels in case of an ID conflict", defaultValue = "false")

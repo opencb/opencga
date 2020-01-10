@@ -20,6 +20,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.core.exception.ToolException;
@@ -69,6 +70,9 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 break;
             case DeeptoolsWrapperAnalysis.ID:
                 deeptools();
+                break;
+            case FastqcWrapperAnalysis.ID:
+                fastqc();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -154,7 +158,7 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
                 .setIndexBaseFile(cliOptions.indexBaseFile)
                 .setFastq1File(cliOptions.fastq1File)
                 .setFastq2File(cliOptions.fastq2File)
-                .setSamFile(cliOptions.samFile);
+                .setSamFilename(cliOptions.samFilename);
 
         bwa.start();
     }
@@ -193,10 +197,26 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
         deeptools.setStudy(cliOptions.study);
 
         deeptools.setCommand(cliOptions.executable)
-                .setBamFile(cliOptions.bamFile)
-                .setCoverageFile(cliOptions.coverageFile);
+                .setBamFile(cliOptions.bamFile);
 
         deeptools.start();
+    }
+
+    // FastQC
+
+    private void fastqc() throws Exception {
+        AlignmentCommandOptions.FastqcCommandOptions cliOptions = alignmentCommandOptions.fastqcCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        FastqcWrapperAnalysis fastqc = new FastqcWrapperAnalysis();
+        fastqc.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.commonOptions.token);
+
+        fastqc.setStudy(cliOptions.study);
+
+        fastqc.setFile(cliOptions.file);
+
+        fastqc.start();
     }
 
     //-------------------------------------------------------------------------

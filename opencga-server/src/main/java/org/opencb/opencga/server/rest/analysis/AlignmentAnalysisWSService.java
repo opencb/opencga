@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.alignment.AlignmentStorageManager;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -39,8 +40,8 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.rest.RestResponse;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
@@ -76,7 +77,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
     @POST
     @Path("/index")
-    @ApiOperation(value = ALIGNMENT_INDEX_DESCRIPTION, response = RestResponse.class)
+    @ApiOperation(value = ALIGNMENT_INDEX_DESCRIPTION, response = Job.class)
     public Response index(@ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(value = FILE_ID_PARAM) String inputFile,
                           @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(STUDY_PARAM) String study) {
 
@@ -448,14 +449,14 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         public BwaRunParams() {
         }
 
-        public BwaRunParams(String command, String fastaFile, String indexBaseFile, String fastq1File, String fastq2File, String samFile,
-                            String outdir, Map<String, String> bwaParams) {
+        public BwaRunParams(String command, String fastaFile, String indexBaseFile, String fastq1File, String fastq2File,
+                            String samFilename, String outdir, Map<String, String> bwaParams) {
             this.command = command;
             this.fastaFile = fastaFile;
             this.indexBaseFile = indexBaseFile;
             this.fastq1File = fastq1File;
             this.fastq2File = fastq2File;
-            this.samFile = samFile;
+            this.samFilename = samFilename;
             this.outdir = outdir;
             this.bwaParams = bwaParams;
         }
@@ -465,7 +466,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         public String indexBaseFile; // Index base file
         public String fastq1File;    // FastQ #1 file
         public String fastq2File;    // FastQ #2 file
-        public String samFile;       // SAM file
+        public String samFilename;   // SAM file name
         public String outdir;
         public Map<String, String> bwaParams;
     }
@@ -535,17 +536,15 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         public DeeptoolsRunParams() {
         }
 
-        public DeeptoolsRunParams(String command, String bamFile, String coverageFile, String outdir, Map<String, String> deeptoolsParams) {
+        public DeeptoolsRunParams(String command, String bamFile, String outdir, Map<String, String> deeptoolsParams) {
             this.command = command;
             this.bamFile = bamFile;
-            this.coverageFile = coverageFile;
             this.outdir = outdir;
             this.deeptoolsParams = deeptoolsParams;
         }
 
         public String command;     // Valid values: bamCoverage
         public String bamFile;        // BAM file
-        public String coverageFile;   // Coverage file
         public String outdir;
         public Map<String, String> deeptoolsParams;
     }
@@ -560,6 +559,34 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             AlignmentAnalysisWSService.DeeptoolsRunParams params) {
         return submitJob(DeeptoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
+    }
+
+    // FastQC
+    public static class FastqcRunParams extends ToolParams {
+        public FastqcRunParams() {
+        }
+
+        public FastqcRunParams(String file, String outdir, Map<String, String> fastqcParams) {
+            this.file = file;
+            this.outdir = outdir;
+            this.fastqcParams = fastqcParams;
+        }
+
+        public String file;        // Input file
+        public String outdir;
+        public Map<String, String> fastqcParams;
+    }
+
+    @POST
+    @Path("/fastqc/run")
+    @ApiOperation(value = FastqcWrapperAnalysis.DESCRIPTION, response = Job.class)
+    public Response fastqcRun(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            AlignmentAnalysisWSService.FastqcRunParams params) {
+        return submitJob(FastqcWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     //-------------------------------------------------------------------------

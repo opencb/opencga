@@ -30,12 +30,13 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
+import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.rest.RestResponse;
+import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
 import org.opencb.opencga.server.grpc.ServiceTypesModel;
@@ -102,6 +103,9 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             case DeeptoolsWrapperAnalysis.ID:
                 queryResponse = deeptools();
                 break;
+            case FastqcWrapperAnalysis.ID:
+                queryResponse = fastqc();
+                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -137,7 +141,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             try {
                 queryGRPC(cliOptions);
             } catch(Exception e) {
-                System.out.println("GRPC not available. Trying on REST.");
+                System.out.println("gRPC not available. Trying on REST.");
                 queryResponse = queryRest(alignmentCommandOptions.queryAlignmentCommandOptions);
             }
         }
@@ -402,7 +406,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
                 alignmentCommandOptions.bwaCommandOptions.indexBaseFile,
                 alignmentCommandOptions.bwaCommandOptions.fastq1File,
                 alignmentCommandOptions.bwaCommandOptions.fastq2File,
-                alignmentCommandOptions.bwaCommandOptions.samFile,
+                alignmentCommandOptions.bwaCommandOptions.samFilename,
                 alignmentCommandOptions.bwaCommandOptions.outdir,
                 alignmentCommandOptions.bwaCommandOptions.commonOptions.params
         ).toObjectMap();
@@ -436,11 +440,21 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new AlignmentAnalysisWSService.DeeptoolsRunParams(
                 alignmentCommandOptions.deeptoolsCommandOptions.executable,
                 alignmentCommandOptions.deeptoolsCommandOptions.bamFile,
-                alignmentCommandOptions.deeptoolsCommandOptions.coverageFile,
                 alignmentCommandOptions.deeptoolsCommandOptions.outdir,
                 alignmentCommandOptions.deeptoolsCommandOptions.commonOptions.params
         ).toObjectMap();
         return openCGAClient.getAlignmentClient().deeptoolsRun(alignmentCommandOptions.deeptoolsCommandOptions.study, params);
+    }
+
+    // FastQC
+
+    private RestResponse<Job> fastqc() throws IOException {
+        ObjectMap params = new AlignmentAnalysisWSService.FastqcRunParams(
+                alignmentCommandOptions.fastqcCommandOptions.file,
+                alignmentCommandOptions.fastqcCommandOptions.outdir,
+                alignmentCommandOptions.fastqcCommandOptions.commonOptions.params
+        ).toObjectMap();
+        return openCGAClient.getAlignmentClient().fastqcRun(alignmentCommandOptions.fastqcCommandOptions.study, params);
     }
 
     //-------------------------------------------------------------------------

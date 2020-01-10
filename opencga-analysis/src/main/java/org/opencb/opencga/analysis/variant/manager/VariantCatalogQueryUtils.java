@@ -108,6 +108,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
             FAMILY_PROBAND,
             FAMILY_SEGREGATION,
             PANEL);
+    public static final String COMPOUND_HETEROZYGOUS = "CompoundHeterozygous";
 
     private final StudyFilterValidator studyFilterValidator;
     private final FileFilterValidator fileFilterValidator;
@@ -373,7 +374,7 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     } else {
                         query.put(SAMPLE_MENDELIAN_ERROR.key(), childrenSampleIds);
                     }
-                } else if (moiString.equalsIgnoreCase("CompoundHeterozygous")) {
+                } else if (moiString.equalsIgnoreCase(COMPOUND_HETEROZYGOUS)) {
                     List<Member> children;
                     if (StringUtils.isNotEmpty(proband)) {
                         Member probandMember = pedigree.getMembers()
@@ -428,14 +429,14 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
                     }
                     Disorder disorder;
                     if (isValidParam(query, FAMILY_DISORDER)) {
-                        String phenotypeId = query.getString(FAMILY_DISORDER.key());
+                        String disorderId = query.getString(FAMILY_DISORDER.key());
                         disorder = family.getDisorders()
                                 .stream()
-                                .filter(familyDisorder -> familyDisorder.getId().equals(phenotypeId))
+                                .filter(familyDisorder -> familyDisorder.getId().equals(disorderId))
                                 .findFirst()
                                 .orElse(null);
                         if (disorder == null) {
-                            throw VariantQueryException.malformedParam(FAMILY_DISORDER, phenotypeId,
+                            throw VariantQueryException.malformedParam(FAMILY_DISORDER, disorderId,
                                     "Available disorders: " + family.getDisorders()
                                             .stream()
                                             .map(Disorder::getId)

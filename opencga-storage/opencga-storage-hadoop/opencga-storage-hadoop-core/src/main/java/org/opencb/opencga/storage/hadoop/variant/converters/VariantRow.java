@@ -48,10 +48,20 @@ public class VariantRow {
         this.result = null;
     }
 
+    public static VariantRowWalker walker(Result result) {
+        return new VariantRow(result).walker();
+    }
+
+    public static VariantRowWalker walker(ResultSet resultSet) {
+        return new VariantRow(resultSet).walker();
+    }
+
     public Variant getVariant() {
         if (variant == null) {
             if (result != null) {
-                variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(result.getRow());
+                byte[] row = result.getRow();
+                Objects.requireNonNull(row, "Empty result. Missing variant rowkey.");
+                variant = VariantPhoenixKeyFactory.extractVariantFromVariantRowKey(row);
             } else {
                 variant = VariantPhoenixKeyFactory.extractVariantFromResultSet(resultSet);
             }
@@ -105,6 +115,8 @@ public class VariantRow {
                     } else if (columnName.endsWith(FILL_MISSING_SUFIX)) {
                         int studyId = Integer.valueOf(columnName.split("_")[1]);
                         walker.fillMissing(studyId, resultSet.getInt(i));
+                    } else if (columnName.equals(VariantColumn.FULL_ANNOTATION.column())) {
+                        walker.variantAnnotation(new BytesVariantAnnotationColumn(bytes));
                     }
                 }
             } catch (SQLException e) {
@@ -128,6 +140,8 @@ public class VariantRow {
                     int studyId = Integer.valueOf(columnName.split("_")[1]);
                     walker.fillMissing(studyId,
                             ((Integer) PInteger.INSTANCE.toObject(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength())));
+                } else if (columnName.equals(VariantColumn.FULL_ANNOTATION.column())) {
+                    walker.variantAnnotation(new BytesVariantAnnotationColumn(cell));
                 }
             }
         }
@@ -141,6 +155,7 @@ public class VariantRow {
         private Consumer<StatsColumn> statsConsumer = r -> { };
         private Consumer<VariantScoreColumn> variantScoreConsumer = r -> { };
         private BiConsumer<Integer, Integer> fillMissingConsumer = (k, v) -> { };
+        private Consumer<VariantAnnotationColumn> variantAnnotationConsummer = (k) -> { };
         private Variant variant;
 
         private void setVariant(Variant variant) {
@@ -173,6 +188,10 @@ public class VariantRow {
 
         protected void fillMissing(int studyId, int fillMissing) {
             fillMissingConsumer.accept(studyId, fillMissing);
+        }
+
+        protected void variantAnnotation(VariantAnnotationColumn column) {
+            variantAnnotationConsummer.accept(column);
         }
 
         public Variant walk() {
@@ -209,9 +228,14 @@ public class VariantRow {
             fillMissingConsumer = consumer;
             return this;
         }
+
+        public VariantRowWalker onVariantAnnotation(Consumer<VariantAnnotationColumn> consumer) {
+            variantAnnotationConsummer = consumer;
+            return this;
+        }
     }
 
-    public interface FileColumn {
+    public interface FileColumn extends Column {
         int getStudyId();
 
         int getFileId();
@@ -233,7 +257,7 @@ public class VariantRow {
         String getString(int idx);
     }
 
-    public interface SampleColumn {
+    public interface SampleColumn extends Column {
         int getStudyId();
 
         int getSampleId();
@@ -250,7 +274,7 @@ public class VariantRow {
 
     }
 
-    public interface StatsColumn {
+    public interface StatsColumn extends Column {
         int getStudyId();
 
         int getCohortId();
@@ -258,7 +282,7 @@ public class VariantRow {
         VariantProto.VariantStats toProto();
     }
 
-    public interface VariantScoreColumn {
+    public interface VariantScoreColumn extends Column {
         int getStudyId();
 
         int getScoreId();
@@ -266,6 +290,13 @@ public class VariantRow {
         float getScore();
 
         float getPValue();
+    }
+
+    public interface VariantAnnotationColumn extends Column {
+        ImmutableBytesWritable toBytesWritable();
+    }
+
+    public interface Column {
     }
 
     private static class BytesColumn {
@@ -283,6 +314,10 @@ public class VariantRow {
             valueArray = value;
             valueOffset = 0;
             valueLength = value.length;
+        }
+
+        public ImmutableBytesWritable toBytesWritable() {
+            return new ImmutableBytesWritable(valueArray, valueOffset, valueLength);
         }
 
         public String getString(int arrayIndex) {
@@ -447,17 +482,17 @@ public class VariantRow {
         }
     }
 
-    public static class BytesStatsColumn extends BytesColumn implements StatsColumn {
+    private static class BytesStatsColumn extends BytesColumn implements StatsColumn {
         private final int studyId;
         private final int cohortId;
 
-        public BytesStatsColumn(Cell cell, int studyId, int cohortId) {
+        BytesStatsColumn(Cell cell, int studyId, int cohortId) {
             super(cell);
             this.studyId = studyId;
             this.cohortId = cohortId;
         }
 
-        public BytesStatsColumn(byte[] value, int studyId, int cohortId) {
+        BytesStatsColumn(byte[] value, int studyId, int cohortId) {
             super(value);
             this.studyId = studyId;
             this.cohortId = cohortId;
@@ -483,17 +518,17 @@ public class VariantRow {
         }
     }
 
-    public static class BytesVariantScoreColumn extends BytesColumn implements VariantScoreColumn {
+    private static class BytesVariantScoreColumn extends BytesColumn implements VariantScoreColumn {
         private final int studyId;
         private final int scoreId;
 
-        public BytesVariantScoreColumn(Cell cell, int studyId, int scoreId) {
+        BytesVariantScoreColumn(Cell cell, int studyId, int scoreId) {
             super(cell);
             this.studyId = studyId;
             this.scoreId = scoreId;
         }
 
-        public BytesVariantScoreColumn(byte[] value, int studyId, int scoreId) {
+        BytesVariantScoreColumn(byte[] value, int studyId, int scoreId) {
             super(value);
             this.studyId = studyId;
             this.scoreId = scoreId;
@@ -518,6 +553,19 @@ public class VariantRow {
         public float getPValue() {
             return getFloat(1);
         }
+    }
+
+    private static class BytesVariantAnnotationColumn extends BytesColumn implements VariantAnnotationColumn {
+
+        BytesVariantAnnotationColumn(Cell cell) {
+            super(cell);
+        }
+
+        BytesVariantAnnotationColumn(byte[] value) {
+            super(value);
+        }
+
+
     }
 
 }

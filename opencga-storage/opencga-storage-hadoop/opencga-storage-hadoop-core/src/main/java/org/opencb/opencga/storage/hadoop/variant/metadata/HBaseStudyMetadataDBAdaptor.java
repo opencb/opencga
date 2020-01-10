@@ -93,21 +93,6 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
     }
 
     @Override
-    public long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
-        return lockStudy(studyId, lockDuration, timeout, StringUtils.isEmpty(lockName) ? getLockColumn() : Bytes.toBytes(lockName));
-    }
-
-    private long lockStudy(int studyId, long lockDuration, long timeout, byte[] lockName) throws StorageEngineException {
-        return lockToken(getStudyMetadataRowKey(studyId), lockName, lockDuration, timeout);
-    }
-
-    @Override
-    public void unLockStudy(int studyId, long lockToken, String lockName) {
-        byte[] column = StringUtils.isEmpty(lockName) ? getLockColumn() : Bytes.toBytes(lockName);
-        unLock(getStudyMetadataRowKey(studyId), column, lockToken);
-    }
-
-    @Override
     public DataResult<StudyConfiguration> getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
         StopWatch watch = new StopWatch().start();
         String error = null;

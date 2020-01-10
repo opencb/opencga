@@ -50,6 +50,7 @@ public class ParamConstants {
     public static final String FILES_DESCRIPTION = "Comma separated list of file ids or names" + UP_TO_100;
     public static final String FILE_ID_DESCRIPTION = "File ID";
     public static final String FILE_NAME_DESCRIPTION = "File name";
+    public static final String FILE_PATH_PARAM = "path";
     public static final String FILE_PATH_DESCRIPTION = "File path";
     public static final String FILE_TYPE_DESCRIPTION = "File type, either FILE or DIRECTORY";
     public static final String FILE_FORMAT_DESCRIPTION = "Comma separated Format values. For existing Formats see files/formats";
@@ -290,6 +291,6 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String RPC_METHOD_DESCRIPTION = "RPC method used: {auto, GRPC, REST}. When auto, it will first try with GRPC and "
+    public static final String RPC_METHOD_DESCRIPTION = "RPC method used: {auto, gRPC, REST}. When auto, it will first try with gRPC and "
             + "if that does not work, it will try with REST";
 }

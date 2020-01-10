@@ -24,7 +24,7 @@ import org.opencb.opencga.client.rest.analysis.AlignmentClient;
 import org.opencb.opencga.client.rest.analysis.VariantClient;
 import org.opencb.opencga.client.rest.catalog.*;
 import org.opencb.opencga.client.rest.operations.OperationClient;
-import org.opencb.opencga.core.rest.RestResponse;
+import org.opencb.opencga.core.response.RestResponse;
 
 import java.util.HashMap;
 import java.util.Map;

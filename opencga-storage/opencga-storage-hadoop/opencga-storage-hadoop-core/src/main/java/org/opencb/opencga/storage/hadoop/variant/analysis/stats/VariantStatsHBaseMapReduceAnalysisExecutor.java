@@ -9,15 +9,13 @@ import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.exception.ToolExecutorException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantAnalysisExecutor;
+import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantStorageToolExecutor;
 import org.opencb.opencga.storage.hadoop.variant.stats.VariantStatsDriver;
 import org.opencb.opencga.core.annotations.ToolExecutor;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,32 +23,10 @@ import java.util.Map;
 @ToolExecutor(id = "hbase-mapreduce", tool = "variant-stats",
         framework = ToolExecutor.Framework.MAP_REDUCE,
         source = ToolExecutor.Source.HBASE)
-public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnalysisExecutor implements HadoopVariantAnalysisExecutor {
+public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnalysisExecutor implements HadoopVariantStorageToolExecutor {
 
     @Override
     public void run() throws ToolException {
-        if (isIndex()) {
-            calculateAndIndex();
-        } else {
-            calculate();
-        }
-    }
-
-    private void calculateAndIndex() throws ToolExecutorException {
-        QueryOptions calculateStatsOptions = new QueryOptions(executorParams);
-
-        VariantStorageEngine variantStorageEngine = getHadoopVariantStorageEngine();
-        try {
-            calculateStatsOptions.putAll(getVariantsQuery());
-
-            variantStorageEngine.calculateStats(getStudy(), getCohorts(), calculateStatsOptions);
-            variantStorageEngine.close();
-        } catch (IOException | StorageEngineException e) {
-            throw new ToolExecutorException(e);
-        }
-    }
-
-    public void calculate() throws ToolException {
         HadoopVariantStorageEngine engine = getHadoopVariantStorageEngine();
 
         VariantHadoopDBAdaptor dbAdaptor;
@@ -105,4 +81,5 @@ public class VariantStatsHBaseMapReduceAnalysisExecutor extends VariantStatsAnal
             }
         }
     }
+
 }

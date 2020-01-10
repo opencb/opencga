@@ -158,7 +158,8 @@ public enum GenotypeClass {
                 || str.equals("1/1")
                 || str.equals("1|1")
                 || str.equals("0|1")
-                || str.equals("1|0")) {
+                || str.equals("1|0")
+                || str.equals("1")) {
             return true;
         }
         Genotype genotype = parseGenotype(str);
@@ -209,15 +210,15 @@ public enum GenotypeClass {
         return filter(Arrays.asList(gts));
     }
 
-    public List<String> filter(List<String> gts) {
+    public List<String> filter(Collection<String> gts) {
         return gts.stream().filter(predicate).collect(Collectors.toList());
     }
 
-    public static List<String> filter(List<String> gts, List<String> loadedGts) {
+    public static List<String> filter(Collection<String> gts, List<String> loadedGts) {
         return filter(gts, loadedGts, Arrays.asList("0/0", "./."));
     }
 
-    public static List<String> filter(List<String> gts, List<String> loadedGts, List<String> defaultGts) {
+    public static List<String> filter(Collection<String> gts, List<String> loadedGts, List<String> defaultGts) {
         Set<String> filteredGts = new LinkedHashSet<>(gts.size());
         for (String gt : gts) {
             GenotypeClass genotypeClass = GenotypeClass.from(gt);

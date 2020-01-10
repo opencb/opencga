@@ -21,8 +21,9 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.rest.RestResponse;
+import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
 
@@ -42,7 +43,7 @@ public class IndividualClient extends AnnotationClient<Individual> {
 
     public RestResponse<Individual> create(String studyId, ObjectMap bodyParams) throws IOException {
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull(STUDY, studyId);
+        params.putIfNotNull(ParamConstants.STUDY_PARAM, studyId);
         params.putIfNotNull("body", bodyParams);
         return execute(INDIVIDUALS_URL, "create", params, POST, Individual.class);
     }

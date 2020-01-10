@@ -47,8 +47,8 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.rest.RestResponse;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -164,6 +164,7 @@ public class OpenCGAWSServer {
         this.apiVersion = version;
         this.uriInfo = uriInfo;
         this.httpServletRequest = httpServletRequest;
+        httpServletRequest.setAttribute(OpenCGAWSServer.class.getName(), this);
 
         this.params = new ObjectMap();
         for (String key : uriInfo.getQueryParameters().keySet()) {
@@ -211,23 +212,31 @@ public class OpenCGAWSServer {
         // We must load the configuration files and init catalogManager, storageManagerFactory and Logger only the first time.
         // We first read 'config-dir' parameter passed
         ServletContext context = httpServletRequest.getServletContext();
-        String configDirString = context.getInitParameter("config-dir");
-        if (StringUtils.isEmpty(configDirString)) {
-            // If not environment variable then we check web.xml parameter
-            if (StringUtils.isNotEmpty(context.getInitParameter("OPENCGA_HOME"))) {
-                configDirString = context.getInitParameter("OPENCGA_HOME") + "/conf";
-            } else if (StringUtils.isNotEmpty(System.getenv("OPENCGA_HOME"))) {
-                // If not exists then we try the environment variable OPENCGA_HOME
-                configDirString = System.getenv("OPENCGA_HOME") + "/conf";
-            } else {
-                logger.error("No valid configuration directory provided!");
+//        String configDirString = context.getInitParameter("config-dir");
+//        if (StringUtils.isEmpty(configDirString)) {
+        // If not environment variable then we check web.xml parameter
+        String opencgaHomeStr = System.getenv("OPENCGA_HOME");
+        if (StringUtils.isEmpty(opencgaHomeStr)) {
+            opencgaHomeStr = context.getInitParameter("OPENCGA_HOME");
+            if (StringUtils.isEmpty(opencgaHomeStr)) {
+                logger.error("No valid OpenCGA home directory provided!");
             }
         }
+        opencgaHome = Paths.get(opencgaHomeStr);
+
+//        if (StringUtils.isNotEmpty(context.getInitParameter("OPENCGA_HOME"))) {
+//            configDirString = context.getInitParameter("OPENCGA_HOME") + "/conf";
+//        } else if (StringUtils.isNotEmpty(opencgaHomeStr)) {
+//            // If not exists then we try the environment variable OPENCGA_HOME
+//            configDirString = opencgaHomeStr + "/conf";
+//        } else {
+//            logger.error("No valid configuration directory provided!");
+//        }
+//        }
+
 
         // Check and execute the init methods
-        java.nio.file.Path configDirPath = Paths.get(configDirString);
-        opencgaHome = configDirPath.getParent();
-
+        java.nio.file.Path configDirPath = opencgaHome.resolve("conf");
         if (Files.exists(configDirPath) && Files.isDirectory(configDirPath)) {
             logger.info("|  * Configuration folder: '{}'", configDirPath.toString());
             initOpenCGAObjects(configDirPath);
@@ -240,7 +249,7 @@ public class OpenCGAWSServer {
             logger.info("|  * Server logfile: " + opencgaHome.resolve("logs").resolve("server.log"));
             initLogger(opencgaHome.resolve("logs"));
         } else {
-            errorMessage = "No valid configuration directory provided: '" + configDirString + "'";
+            errorMessage = "No valid configuration directory provided: '" + configDirPath.toString() + "'";
             logger.error(errorMessage);
         }
 
@@ -421,40 +430,7 @@ public class OpenCGAWSServer {
         }
     }
 
-    // Temporal method used by deprecated methods. This will be removed at some point.
-    protected AclParams getAclParams(
-            @ApiParam(value = "Comma separated list of permissions to add") @QueryParam("add") String addPermissions,
-            @ApiParam(value = "Comma separated list of permissions to remove") @QueryParam("remove") String removePermissions,
-            @ApiParam(value = "Comma separated list of permissions to set") @QueryParam("set") String setPermissions)
-            throws CatalogException {
-        int count = 0;
-        count += StringUtils.isNotEmpty(setPermissions) ? 1 : 0;
-        count += StringUtils.isNotEmpty(addPermissions) ? 1 : 0;
-        count += StringUtils.isNotEmpty(removePermissions) ? 1 : 0;
-        if (count > 1) {
-            throw new CatalogException("Only one of add, remove or set parameters are allowed.");
-        } else if (count == 0) {
-            throw new CatalogException("One of add, remove or set parameters is expected.");
-        }
-
-        String permissions = null;
-        AclParams.Action action = null;
-        if (StringUtils.isNotEmpty(addPermissions)) {
-            permissions = addPermissions;
-            action = AclParams.Action.ADD;
-        }
-        if (StringUtils.isNotEmpty(setPermissions)) {
-            permissions = setPermissions;
-            action = AclParams.Action.SET;
-        }
-        if (StringUtils.isNotEmpty(removePermissions)) {
-            permissions = removePermissions;
-            action = AclParams.Action.REMOVE;
-        }
-        return new AclParams(permissions, action);
-    }
-
-    protected Response createErrorResponse(Exception e) {
+    protected Response createErrorResponse(Throwable e) {
         // First we print the exception in Server logs
         logger.error("Catch error: " + e.getMessage(), e);
 
@@ -463,11 +439,7 @@ public class OpenCGAWSServer {
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
         queryResponse.setApiVersion(apiVersion);
         queryResponse.setParams(params);
-        if (StringUtils.isEmpty(e.getMessage())) {
-            addErrorEvent(queryResponse, e.toString());
-        } else {
-            addErrorEvent(queryResponse, e.getMessage());
-        }
+        addErrorEvent(queryResponse, e);
 
         OpenCGAResult<ObjectMap> result = OpenCGAResult.empty();
         queryResponse.setResponses(Arrays.asList(result));
@@ -513,8 +485,15 @@ public class OpenCGAWSServer {
         if (response.getEvents() == null) {
             response.setEvents(new ArrayList<>());
         }
-
         response.getEvents().add(new Event(Event.Type.ERROR, message));
+    }
+
+    private <T> void addErrorEvent(RestResponse<T> response, Throwable e) {
+        if (response.getEvents() == null) {
+            response.setEvents(new ArrayList<>());
+        }
+        response.getEvents().add(
+                new Event(Event.Type.ERROR, 0, e.getClass().getName(), e.getClass().getSimpleName(), e.getMessage()));
     }
 
     // TODO: Change signature
@@ -527,15 +506,17 @@ public class OpenCGAWSServer {
         queryResponse.setParams(params);
 
         // Guarantee that the RestResponse object contains a list of results
-        List list;
+        List<OpenCGAResult<?>> list;
         if (obj instanceof List) {
             list = (List) obj;
         } else {
-            list = new ArrayList();
-            if (!(obj instanceof DataResult)) {
-                list.add(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(obj), 1));
+            list = new ArrayList<>();
+            if (obj instanceof OpenCGAResult) {
+                list.add(((OpenCGAResult) obj));
+            } else if (obj instanceof DataResult) {
+                list.add(new OpenCGAResult<>(((DataResult) obj)));
             } else {
-                list.add(obj);
+                list.add(new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(obj), 1));
             }
         }
         queryResponse.setResponses(list);
@@ -727,7 +708,7 @@ public class OpenCGAWSServer {
         });
     }
 
-    public Response submitJob(String toolId, String study, Map<String, Object> paramsMap, String jobId, String jobName,
+    public Response submitJob(String toolId, String study, Map<String, Object> paramsMap, String jobName,
                               String jobDescription, String jobTagsStr) {
         return run(() -> {
             List<String> jobTags;
@@ -737,13 +718,21 @@ public class OpenCGAWSServer {
                 jobTags = Collections.emptyList();
             }
             return catalogManager.getJobManager()
-                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, jobId, jobName, jobDescription, jobTags, token);
+                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, null, jobName, jobDescription, jobTags, token);
         });
 
     }
 
     public Response createPendingResponse() {
         return createErrorResponse(new NotImplementedException("Pending " + uriInfo.getPath()));
+    }
+
+    public Response createDeprecatedRemovedResponse() {
+        return createErrorResponse(new NotImplementedException("Deprecated " + uriInfo.getPath()));
+    }
+
+    public Response createDeprecatedMovedResponse(String newEndpoint) {
+        return createErrorResponse(new NotImplementedException("Deprecated " + uriInfo.getPath() + " . Use instead " + newEndpoint));
     }
 
 }

@@ -13,7 +13,6 @@ public abstract class VariantStatsAnalysisExecutor extends OpenCgaToolExecutor {
     private String study;
     private Map<String, List<String>> cohorts;
     private Query variantsQuery;
-    private boolean index;
 
     public VariantStatsAnalysisExecutor() {
     }
@@ -54,12 +53,4 @@ public abstract class VariantStatsAnalysisExecutor extends OpenCgaToolExecutor {
         return variantsQuery;
     }
 
-    public boolean isIndex() {
-        return index;
-    }
-
-    public VariantStatsAnalysisExecutor setIndex(boolean index) {
-        this.index = index;
-        return this;
-    }
 }

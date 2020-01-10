@@ -25,9 +25,12 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.opencga.storage.core.metadata.models.Locked;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
 import static com.mongodb.client.model.Filters.*;
@@ -47,6 +50,7 @@ public class MongoLock {
 
     private static final String LOCK_FIELD = "lock";
     private static final String WRITE_FIELD = "write";
+    private static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
     private final String lockWriteField;
 
     private final MongoDBCollection collection;
@@ -74,7 +78,7 @@ public class MongoLock {
      * @throws InterruptedException if any thread has interrupted the current thread.
      * @throws TimeoutException if the operations takes more than the timeout value.
      */
-    public long lock(Object id, long lockDuration, long timeout)
+    public Locked lock(Object id, long lockDuration, long timeout)
             throws InterruptedException, TimeoutException {
 
         try {
@@ -113,8 +117,33 @@ public class MongoLock {
             }
         } while (modifiedCount == 0);
 
+        long lockToken = date.getTime();
+        return new Locked(THREAD_POOL, ((int) (lockDuration / 4)), lockToken) {
+            @Override
+            public void unlock0() {
+                MongoLock.this.unlock(id, lockToken);
+            }
 
-        return date.getTime();
+            @Override
+            public void refresh() {
+                setToken(MongoLock.this.refresh(id, getToken(), lockDuration));
+            }
+        };
+    }
+
+    public long refresh(Object id, long lockToken, long lockDuration) {
+        Date date = new Date(Calendar.getInstance().getTimeInMillis() + lockDuration);
+        Date lockToRefresh = new Date(lockToken);
+
+        Bson query = and(eq("_id", id), eq(lockWriteField, lockToRefresh));
+        Bson update = combine(set(lockWriteField, date));
+
+        long modifiedCount = collection.update(query, update, null).getNumUpdated();
+        if (modifiedCount == 0) {
+            throw new IllegalStateException("Lock token " + lockToken + " not found!");
+        } else {
+            return date.getTime();
+        }
     }
 
 

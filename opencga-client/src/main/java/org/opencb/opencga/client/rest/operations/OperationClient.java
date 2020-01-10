@@ -6,7 +6,7 @@ import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.api.operations.variant.*;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.rest.RestResponse;
+import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.io.IOException;
@@ -21,12 +21,6 @@ public class OperationClient extends AbstractParentClient {
     }
 
     private static final String OPERATION_URL = "operation";
-
-    public RestResponse<Job> variantFileDelete(String study, VariantFileDeleteParams deleteParams, Map<String, ?> params)
-            throws IOException {
-        return execute(OPERATION_URL, "/variant/file/delete",
-                buildRestDELETEParams(null, study, deleteParams, params), DELETE, Job.class);
-    }
 
     public RestResponse<Job> variantSecondaryIndex(String project, String study, VariantSecondaryIndexParams indexParams,
                                                    Map<String, ?> params)

@@ -14,7 +14,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.tools.variant.GwasAnalysisExecutor;
 import org.opencb.opencga.core.annotations.ToolExecutor;
 import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageAnalysisExecutor;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
@@ -30,7 +30,7 @@ import java.util.concurrent.ExecutionException;
         tool = GwasAnalysis.ID,
         source = ToolExecutor.Source.STORAGE,
         framework = ToolExecutor.Framework.LOCAL)
-public final class GwasLocalAnalysisExecutor extends GwasAnalysisExecutor implements VariantStorageAnalysisExecutor {
+public final class GwasLocalAnalysisExecutor extends GwasAnalysisExecutor implements VariantStorageToolExecutor {
 
     @Override
     public void run() throws ToolException {

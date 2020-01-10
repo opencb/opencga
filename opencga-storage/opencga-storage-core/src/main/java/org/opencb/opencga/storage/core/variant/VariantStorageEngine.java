@@ -28,7 +28,7 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngine;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -43,7 +43,6 @@ import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.MultiVariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -75,8 +74,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultLimit;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.addDefaultSampleLimit;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.*;
 import static org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName;
 import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.buildSamplesIndexCollectionName;
 
@@ -217,6 +215,11 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         }
         VariantExporter exporter = newVariantExporter(metadataFactory);
         query = preProcessQuery(query, queryOptions);
+        if (outputFormat == VariantOutputFormat.VCF || outputFormat == VariantOutputFormat.VCF_GZ) {
+            if (!isValidParam(query, VariantQueryParam.UNKNOWN_GENOTYPE)) {
+                query.put(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "./.");
+            }
+        }
         exporter.export(outputFile, outputFormat, variantsFile, query, queryOptions);
     }
 
@@ -923,7 +926,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return get(query, options);
     }
 
-    public DataResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions options) throws StorageEngineException {
+    public DataResult<Variant> getSampleData(String variant, String study, QueryOptions options) throws StorageEngineException {
         return new VariantSampleDataManager(getDBAdaptor()).getSampleData(variant, study, options);
     }
 

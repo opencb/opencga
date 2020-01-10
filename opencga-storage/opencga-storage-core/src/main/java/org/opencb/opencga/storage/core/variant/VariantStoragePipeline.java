@@ -418,7 +418,6 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
      * PreLoad step for modify the StudyMetadata and register the file to be loaded.
      * This step is executed inside a study lock.
      *
-     * @see VariantStorageMetadataManager#lockStudy(int)
      * @param studyMetadata         StudyMetadata
      * @param fileMetadata          VariantFileMetadata
      * @throws StorageEngineException  If any condition is wrong

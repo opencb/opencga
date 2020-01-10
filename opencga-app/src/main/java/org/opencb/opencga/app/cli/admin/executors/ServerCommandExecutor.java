@@ -20,6 +20,7 @@ package org.opencb.opencga.app.cli.admin.executors;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
+import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.server.RestServer;
 import org.opencb.opencga.server.grpc.AdminServiceGrpc;
@@ -34,7 +35,7 @@ import java.nio.file.Paths;
 /**
  * Created by imedina on 02/03/15.
  */
-public class ServerCommandExecutor extends AdminCommandExecutor {
+public class ServerCommandExecutor extends CommandExecutor {
 
     private AdminCliOptionsParser.ServerCommandOptions serverCommandOptions;
 
@@ -63,8 +64,12 @@ public class ServerCommandExecutor extends AdminCommandExecutor {
     }
 
     private void rest() throws Exception {
+        int port = (serverCommandOptions.restServerCommandOptions.port == 0)
+                ? configuration.getServer().getRest().getPort()
+                : serverCommandOptions.restServerCommandOptions.port;
+
         if (serverCommandOptions.restServerCommandOptions.start) {
-            RestServer server = new RestServer(Paths.get(this.conf));
+            RestServer server = new RestServer(Paths.get(this.appHome), port);
             server.start();
             if (!serverCommandOptions.restServerCommandOptions.background) {
                 server.blockUntilShutdown();
@@ -92,7 +97,7 @@ public class ServerCommandExecutor extends AdminCommandExecutor {
             if (!serverCommandOptions.grpcServerCommandOptions.background) {
                 server.blockUntilShutdown();
             }
-            logger.info("Shutting down OpenCGA Storage GRPC server");
+            logger.info("Shutting down OpenCGA Storage gRPC server");
         }
 
         if (serverCommandOptions.grpcServerCommandOptions.stop) {

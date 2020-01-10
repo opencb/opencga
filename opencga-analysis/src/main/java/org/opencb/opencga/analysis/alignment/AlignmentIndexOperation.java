@@ -4,15 +4,16 @@ import org.opencb.biodata.tools.alignment.BamManager;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 
 @Tool(id = AlignmentIndexOperation.ID, resource = Enums.Resource.ALIGNMENT, description = "Index alignment.")
 public class AlignmentIndexOperation extends OpenCgaTool {
@@ -23,6 +24,7 @@ public class AlignmentIndexOperation extends OpenCgaTool {
     private String study;
     private String inputFile;
 
+    private File inputCatalogFile;
     private Path inputPath;
     private Path outputPath;
 
@@ -39,7 +41,8 @@ public class AlignmentIndexOperation extends OpenCgaTool {
             throw new ToolException("File '" + inputFile + "' not found in study '" + study + "'");
         }
 
-        inputPath = Paths.get(fileResult.getResults().get(0).getUri());
+        inputCatalogFile = fileResult.getResults().get(0);
+        inputPath = Paths.get(inputCatalogFile.getUri());
         String filename = inputPath.getFileName().toString();
 
         // Check if the input file is .bam or .cram
@@ -68,8 +71,14 @@ public class AlignmentIndexOperation extends OpenCgaTool {
             if (!outputPath.toFile().exists()) {
                 throw new ToolException("Something wrong happened when computing index file for '" + inputFile + "'");
             } else {
-                // TODO: remove when daemon moves the output file
-                Files.createSymbolicLink(inputPath.getParent().resolve(outputPath.getFileName()), outputPath);
+                String catalogPath = Paths.get(new java.io.File(inputCatalogFile.getPath()).getParent()).toString();
+                moveFile(study, outputPath, Paths.get(inputPath.toFile().getParent()),
+                        catalogPath + "/" + outputPath.getFileName(), token);
+
+                FileUpdateParams updateParams = new FileUpdateParams()
+                        .setRelatedFiles(Collections.singletonList(new FileUpdateParams.RelatedFile(catalogPath + "/"
+                                + outputPath.getFileName(), File.RelatedFile.Relation.PRODUCED_FROM)));
+                catalogManager.getFileManager().update(study, inputFile, updateParams, QueryOptions.empty(), token);
             }
         });
     }

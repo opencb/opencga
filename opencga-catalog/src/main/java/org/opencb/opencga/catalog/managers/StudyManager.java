@@ -51,7 +51,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.summaries.StudySummary;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.slf4j.Logger;
@@ -248,7 +248,6 @@ public class StudyManager extends AbstractManager {
         long projectId = project.getUid();
 
         description = ParamUtils.defaultString(description, "");
-//        creatorId = ParamUtils.defaultString(creatorId, userId);
         creationDate = ParamUtils.defaultString(creationDate, TimeUtils.getTime());
         status = ParamUtils.defaultObject(status, Status::new);
         cipher = ParamUtils.defaultString(cipher, "none");
@@ -297,10 +296,10 @@ public class StudyManager extends AbstractManager {
             }
 
             LinkedList<File> files = new LinkedList<>();
-            File rootFile = new File(".", File.Type.DIRECTORY, null, null, "", null, "study root folder",
+            File rootFile = new File(".", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "", null, "study root folder",
                     new File.FileStatus(File.FileStatus.READY), 0, project.getCurrentRelease());
-            File jobsFile = new File("JOBS", File.Type.DIRECTORY, null, null, "JOBS/", null, "Default jobs folder", new File.FileStatus(),
-                    0, project.getCurrentRelease());
+            File jobsFile = new File("JOBS", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "JOBS/", null,
+                    "Default jobs folder", new File.FileStatus(), 0, project.getCurrentRelease());
 
             files.add(rootFile);
             files.add(jobsFile);
@@ -338,8 +337,7 @@ public class StudyManager extends AbstractManager {
             fileDBAdaptor.update(rootFileId, new ObjectMap("uri", uri), QueryOptions.empty());
 
             long jobFolder = fileDBAdaptor.getId(study.getUid(), "JOBS/");
-            URI jobUri = Paths.get(configuration.getJobDir()).resolve(userId).resolve(Long.toString(project.getUid()))
-                    .resolve(Long.toString(study.getUid())).resolve("JOBS/").toUri();
+            URI jobUri = Paths.get(configuration.getJobDir()).resolve("JOBS/").toUri();
             catalogIOManager.createDirectory(jobUri, true);
             fileDBAdaptor.update(jobFolder, new ObjectMap("uri", jobUri), QueryOptions.empty());
 
