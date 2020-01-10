@@ -312,7 +312,7 @@ public class VariantHbaseTestUtils {
         });
     }
 
-    private static void printMetaTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
+    public static void printMetaTable(VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws IOException {
 //        HBaseFileMetadataDBAdaptor fileDBAdaptor = dbAdaptor.getVariantFileMetadataDBAdaptor();
         String metaTableName = dbAdaptor.getTableNameGenerator().getMetaTableName();
         Path fileName = outDir.resolve("meta." + metaTableName + '.' + TimeUtils.getTimeMillis() + ".txt");

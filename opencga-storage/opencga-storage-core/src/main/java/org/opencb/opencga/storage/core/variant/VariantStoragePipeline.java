@@ -404,6 +404,27 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         getOrCreateStudyMetadata();
         int studyId = getStudyId();
 
+        int currentRelease = getMetadataManager().getProjectMetadata(options).getRelease();
+        if (options.containsKey(VariantStorageOptions.RELEASE.key())) {
+            int release = options.getInt(VariantStorageOptions.RELEASE.key(), VariantStorageOptions.RELEASE.defaultValue());
+            // Update current release
+            if (currentRelease != release) {
+                getMetadataManager().updateProjectMetadata(pm -> {
+                    if (release < pm.getRelease() || release <= 0) {
+                        //ERROR, asking to use a release lower than currentRelease
+                        throw StorageEngineException.invalidReleaseException(release, pm.getRelease());
+                    } else {
+                        // Update currentRelease in ProjectMetadata
+                        pm.setRelease(release);
+                    }
+                    return pm;
+
+                });
+            }
+        } else {
+            options.put(VariantStorageOptions.RELEASE.key(), currentRelease);
+        }
+
         VariantFileMetadata fileMetadata = readVariantFileMetadata(input);
         //Get the studyConfiguration. If there is no StudyMetadata, create a empty one.
         dbAdaptor.getMetadataManager().updateStudyMetadata(studyId, study -> {
@@ -423,14 +444,12 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
      * @throws StorageEngineException  If any condition is wrong
      */
     protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata fileMetadata) throws StorageEngineException {
-
         /*
          * Before load file, check and add fileName to the StudyMetadata.
          * FileName is read from the VariantFileMetadata
          * Will fail if:
          *     fileId was already in the studyConfiguration.indexedFiles
          */
-
         int studyId = studyMetadata.getId();
         int fileId = getMetadataManager().registerFile(studyId, fileMetadata);
         setFileId(fileId);
@@ -542,27 +561,6 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             }
 
             studyMetadata.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key(), extraFieldsType);
-        }
-
-        int currentRelease = getMetadataManager().getProjectMetadata(options).getRelease();
-        if (options.containsKey(VariantStorageOptions.RELEASE.key())) {
-            int release = options.getInt(VariantStorageOptions.RELEASE.key(), VariantStorageOptions.RELEASE.defaultValue());
-            // Update current release
-            if (currentRelease != release) {
-                getMetadataManager().updateProjectMetadata(pm -> {
-                    if (release < pm.getRelease() || release <= 0) {
-                        //ERROR, asking to use a release lower than currentRelease
-                        throw StorageEngineException.invalidReleaseException(release, pm.getRelease());
-                    } else {
-                        // Update currentRelease in ProjectMetadata
-                        pm.setRelease(release);
-                    }
-                    return pm;
-
-                });
-            }
-        } else {
-            options.put(VariantStorageOptions.RELEASE.key(), currentRelease);
         }
     }
 

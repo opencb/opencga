@@ -214,7 +214,7 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
     }
 
     @Override
-    public Iterator<TaskMetadata> taskIterator(int studyId, boolean reversed) {
+    public Iterator<TaskMetadata> taskIterator(int studyId, List<TaskMetadata.Status> statusFilter, boolean reversed) {
         TreeSet<TaskMetadata> t;
         if (reversed) {
             t = new TreeSet<>(Comparator.comparingInt(TaskMetadata::getId).reversed());
@@ -222,7 +222,14 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
             t = new TreeSet<>(Comparator.comparingInt(TaskMetadata::getId));
         }
 
-        t.addAll(TASK_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).values());
+        for (TaskMetadata value : TASK_METADATA_MAP.getOrDefault(studyId, Collections.emptyMap()).values()) {
+            if (statusFilter != null) {
+                if (!statusFilter.contains(value.currentStatus())) {
+                    continue;
+                }
+            }
+            t.add(value);
+        }
         return t.iterator();
     }
 

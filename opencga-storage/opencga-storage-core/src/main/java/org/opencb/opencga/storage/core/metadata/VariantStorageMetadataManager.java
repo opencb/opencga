@@ -1016,7 +1016,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     @Deprecated
     public TaskMetadata getTask(int studyId, String taskName, List<Integer> fileIds) {
         TaskMetadata task = null;
-        Iterator<TaskMetadata> it = taskIterator(studyId, true);
+        Iterator<TaskMetadata> it = taskIterator(studyId, null, true);
         while (it.hasNext()) {
             TaskMetadata t = it.next();
             if (t != null && t.getName().equals(taskName) && t.getFileIds().equals(fileIds)) {
@@ -1031,11 +1031,15 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     }
 
     public Iterator<TaskMetadata> taskIterator(int studyId) {
-        return taskIterator(studyId, false);
+        return taskIterator(studyId, null);
     }
 
-    public Iterator<TaskMetadata> taskIterator(int studyId, boolean reversed) {
-        return taskDBAdaptor.taskIterator(studyId, reversed);
+    public Iterator<TaskMetadata> taskIterator(int studyId, List<TaskMetadata.Status> statusFilter) {
+        return taskIterator(studyId, statusFilter, false);
+    }
+
+    public Iterator<TaskMetadata> taskIterator(int studyId, List<TaskMetadata.Status> statusFilter, boolean reversed) {
+        return taskDBAdaptor.taskIterator(studyId, statusFilter, reversed);
     }
 
     public Iterable<TaskMetadata> getRunningTasks(int studyId) {
@@ -1245,7 +1249,6 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public void registerFileSamples(int studyId, int fileId, List<String> sampleIds)
             throws StorageEngineException {
 
-
         updateFileMetadata(studyId, fileId, fileMetadata -> {
             //Assign new sampleIds
             LinkedHashSet<Integer> samples = new LinkedHashSet<>(sampleIds.size());
@@ -1402,22 +1405,27 @@ public class VariantStorageMetadataManager implements AutoCloseable {
 
                 // The file is not loaded. Check if it's being loaded.
                 if (!fileMetadata.getPath().equals(filePath)) {
-                    // Only register if the file is being loaded. Otherwise, replace the filePath
-                    Iterator<TaskMetadata> iterator = taskIterator(studyId, true);
-                    while (iterator.hasNext()) {
-                        TaskMetadata task = iterator.next();
-                        if (task.getFileIds().contains(fileMetadata.getId())) {
-                            if (task.getType().equals(TaskMetadata.Type.REMOVE)) {
-                                // If the file was removed. Can be replaced.
-                                break;
-                            } else {
-                                throw StorageEngineException.unableToExecute("Already registered with a different path",
-                                        fileMetadata.getId(), fileName);
-                            }
-                        }
+//                    // Only register if the file is being loaded. Otherwise, replace the filePath
+//                    Iterator<TaskMetadata> iterator = taskIterator(studyId, null, true);
+//                    while (iterator.hasNext()) {
+//                        TaskMetadata task = iterator.next();
+//                        if (task.getFileIds().contains(fileMetadata.getId())) {
+//                            if (task.getType().equals(TaskMetadata.Type.REMOVE)) {
+//                                // If the file was removed. Can be replaced.
+//                                break;
+//                            } else {
+//                                throw StorageEngineException.unableToExecute("Already registered with a different path",
+//                                        fileMetadata.getId(), fileName);
+//                            }
+//                        }
+//                    }
+                    if (fileMetadata.getIndexStatus().equals(TaskMetadata.Status.NONE)) {
+                        // Replace filePath
+                        fileMetadata.setPath(filePath);
+                    } else {
+                        throw StorageEngineException.unableToExecute("Already registered with a different path",
+                                fileMetadata.getId(), fileName);
                     }
-                    // Replace filePath
-                    fileMetadata.setPath(filePath);
                 }
                 return fileMetadata;
             });
@@ -1549,13 +1557,17 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             throws StorageEngineException {
 
         TaskMetadata resumeTask = null;
-        Iterator<TaskMetadata> iterator = taskIterator(studyId);
+        Iterator<TaskMetadata> iterator = taskIterator(studyId, Arrays.asList(
+                TaskMetadata.Status.DONE,
+                TaskMetadata.Status.RUNNING,
+                TaskMetadata.Status.ERROR));
         while (iterator.hasNext()) {
             TaskMetadata task = iterator.next();
             TaskMetadata.Status currentStatus = task.currentStatus();
 
             switch (currentStatus) {
                 case READY:
+                    logger.warn("Unexpected READY task. IGNORE");
                     // Ignore ready operations
                     break;
                 case DONE:
