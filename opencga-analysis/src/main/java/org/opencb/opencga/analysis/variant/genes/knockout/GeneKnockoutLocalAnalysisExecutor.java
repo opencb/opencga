@@ -21,10 +21,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
@@ -45,6 +42,11 @@ public class GeneKnockoutLocalAnalysisExecutor extends GeneKnockoutAnalysisExecu
     @Override
     protected void run() throws Exception {
         variantStorageManager = getVariantStorageManager();
+        List<String> biotype = StringUtils.isEmpty(getBiotype()) ? null : Arrays.asList(getBiotype().split(","));
+        if (biotype != null && biotype.contains(PROTEIN_CODING)) {
+            biotype = new ArrayList<>(biotype);
+            biotype.remove(PROTEIN_CODING);
+        }
 
         Query baseQuery = new Query()
                 .append(VariantQueryParam.STUDY.key(), getStudy())
@@ -60,21 +62,31 @@ public class GeneKnockoutLocalAnalysisExecutor extends GeneKnockoutAnalysisExecu
                 Query query = new Query(baseQuery)
                         .append(VariantQueryParam.ANNOT_BIOTYPE.key(), PROTEIN_CODING)
                         .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), getCt());
-                knockouts(query, sample, trio, knockoutGenes, b -> b.equals(PROTEIN_CODING), g -> true);
+                knockouts(query, sample, trio, knockoutGenes,
+                        getCts()::contains,
+                        b -> b.equals(PROTEIN_CODING),
+                        g -> true);
             } else if (!getProteinCodingGenes().isEmpty()) {
                 // Set of protein coding genes
                 Query query = new Query(baseQuery)
                         .append(VariantQueryParam.GENE.key(), getProteinCodingGenes())
                         .append(VariantQueryParam.ANNOT_BIOTYPE.key(), PROTEIN_CODING)
                         .append(VariantQueryParam.ANNOT_CONSEQUENCE_TYPE.key(), getCt());
-                knockouts(query, sample, trio, knockoutGenes, b -> b.equals(PROTEIN_CODING), getProteinCodingGenes()::contains);
+                knockouts(query, sample, trio, knockoutGenes,
+                        getCts()::contains,
+                        b -> b.equals(PROTEIN_CODING),
+                        getProteinCodingGenes()::contains);
             }
 
             // Other genes (if any)
             if (!getOtherGenes().isEmpty()) {
                 Query query = new Query(baseQuery)
+                        .append(VariantQueryParam.ANNOT_BIOTYPE.key(), biotype)
                         .append(VariantQueryParam.GENE.key(), getOtherGenes());
-                knockouts(query, sample, trio, knockoutGenes, b -> !b.equals(PROTEIN_CODING), getOtherGenes()::contains);
+                knockouts(query, sample, trio, knockoutGenes,
+                        ct -> true,  // Accept any CT
+                        new HashSet<>(biotype)::contains,
+                        getOtherGenes()::contains);
             }
 
             printSampleFile(sample, knockoutGenes, trio);
@@ -82,33 +94,34 @@ public class GeneKnockoutLocalAnalysisExecutor extends GeneKnockoutAnalysisExecu
     }
 
     private void knockouts(Query query, String sample, Trio trio, Map<String, GeneKnockout> knockoutGenes,
-                           Predicate<String> validBiotype,
-                           Predicate<String> validGene) throws Exception {
-        homAltKnockouts(sample, knockoutGenes, query, validBiotype, validGene);
+                           Predicate<String> ctFilter,
+                           Predicate<String> biotypeFilter,
+                           Predicate<String> geneFilter) throws Exception {
+        System.out.println("query = " + query.toJson());
+        homAltKnockouts(sample, knockoutGenes, query, ctFilter, biotypeFilter, geneFilter);
 
-        multiAllelicKnockouts(sample, knockoutGenes, query, validBiotype, validGene);
+        multiAllelicKnockouts(sample, knockoutGenes, query, ctFilter, biotypeFilter, geneFilter);
 
         if (trio != null) {
-            compHetKnockouts(sample, trio, knockoutGenes, query, validBiotype, validGene);
+            compHetKnockouts(sample, trio, knockoutGenes, query, ctFilter, biotypeFilter, geneFilter);
         }
 
-        structuralKnockouts(sample, knockoutGenes, query, validBiotype, validGene);
+        structuralKnockouts(sample, knockoutGenes, query, ctFilter, biotypeFilter, geneFilter);
     }
 
     protected void homAltKnockouts(String sample,
                                    Map<String, GeneKnockout> knockoutGenes,
                                    Query query,
-                                   Predicate<String> validBiotype,
-                                   Predicate<String> validGene)
+                                   Predicate<String> ctFilter,
+                                   Predicate<String> biotypeFilter,
+                                   Predicate<String> geneFilter)
             throws Exception {
         query = new Query(query)
                 .append(VariantQueryParam.GENOTYPE.key(), sample + IS + "1/1");
 
         int numVariants = iterate(query, v -> {
             for (ConsequenceType consequenceType : v.getAnnotation().getConsequenceTypes()) {
-                if (validCt(consequenceType)
-                        && validBiotype.test(consequenceType.getBiotype())
-                        && validGene.test(consequenceType.getGeneName())) {
+                if (validCt(consequenceType, ctFilter, biotypeFilter, geneFilter)) {
                     addGene(v.toString(), consequenceType, knockoutGenes, GeneKnockoutBySample.TranscriptKnockout::addHomAlt);
                 }
             }
@@ -119,8 +132,9 @@ public class GeneKnockoutLocalAnalysisExecutor extends GeneKnockoutAnalysisExecu
     protected void multiAllelicKnockouts(String sample,
                                          Map<String, GeneKnockout> knockoutGenes,
                                          Query query,
-                                         Predicate<String> validBiotype,
-                                         Predicate<String> validGene)
+                                         Predicate<String> ctFilter,
+                                         Predicate<String> biotypeFilter,
+                                         Predicate<String> geneFilter)
             throws Exception {
 
         query = new Query(query)
@@ -141,9 +155,7 @@ public class GeneKnockoutLocalAnalysisExecutor extends GeneKnockoutAnalysisExecu
             } else {
                 // The variant was already seen. i.e. there was a variant with this variant as secondary alternate
                 for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
-                    if (validCt(consequenceType)
-                            && validBiotype.test(consequenceType.getBiotype())
-                            && validGene.test(consequenceType.getGeneName())) {
+                    if (validCt(consequenceType, ctFilter, biotypeFilter, geneFilter)) {
                         addGene(variant.toString(), consequenceType, knockoutGenes,
                                 GeneKnockoutBySample.TranscriptKnockout::addMultiAllelic);
                         addGene(secVar.toString(), consequenceType, knockoutGenes,
@@ -174,8 +186,9 @@ public class GeneKnockoutLocalAnalysisExecutor extends GeneKnockoutAnalysisExecu
     protected void compHetKnockouts(String sample, Trio family,
                                     Map<String, GeneKnockout> knockoutGenes,
                                     Query query,
-                                    Predicate<String> validBiotype,
-                                    Predicate<String> validGene)
+                                    Predicate<String> ctFilter,
+                                    Predicate<String> biotypeFilter,
+                                    Predicate<String> geneFilter)
             throws Exception {
         query = new Query(query)
                 .append(VariantCatalogQueryUtils.FAMILY.key(), family.getId())
@@ -185,9 +198,7 @@ public class GeneKnockoutLocalAnalysisExecutor extends GeneKnockoutAnalysisExecu
 
         int numVariants = iterate(query, v -> {
             for (ConsequenceType consequenceType : v.getAnnotation().getConsequenceTypes()) {
-                if (validCt(consequenceType)
-                        && validBiotype.test(consequenceType.getBiotype())
-                        && validGene.test(consequenceType.getGeneName())) {
+                if (validCt(consequenceType, ctFilter, biotypeFilter, geneFilter)) {
                     addGene(v.toString(), consequenceType, knockoutGenes, GeneKnockoutBySample.TranscriptKnockout::addCompHet);
                 }
             }
@@ -198,8 +209,9 @@ public class GeneKnockoutLocalAnalysisExecutor extends GeneKnockoutAnalysisExecu
     protected void structuralKnockouts(String sample,
                                        Map<String, GeneKnockout> knockoutGenes,
                                        Query baseQuery,
-                                       Predicate<String> validBiotype,
-                                       Predicate<String> validGene) throws Exception {
+                                       Predicate<String> ctFilter,
+                                       Predicate<String> biotypeFilter,
+                                       Predicate<String> geneFilter) throws Exception {
         Query query = new Query(baseQuery)
                 .append(VariantQueryParam.SAMPLE.key(), sample)
                 .append(VariantQueryParam.TYPE.key(), VariantType.DELETION);
@@ -210,9 +222,7 @@ public class GeneKnockoutLocalAnalysisExecutor extends GeneKnockoutAnalysisExecu
         iterate(query, svVariant -> {
             Set<String> transcripts = new HashSet<>(svVariant.getAnnotation().getConsequenceTypes().size());
             for (ConsequenceType consequenceType : svVariant.getAnnotation().getConsequenceTypes()) {
-                if (validCt(consequenceType)
-                        && validBiotype.test(consequenceType.getBiotype())
-                        && validGene.test(consequenceType.getGeneName())) {
+                if (validCt(consequenceType, ctFilter, biotypeFilter, geneFilter)) {
                     transcripts.add(consequenceType.getEnsemblTranscriptId());
                 }
             }
@@ -225,9 +235,7 @@ public class GeneKnockoutLocalAnalysisExecutor extends GeneKnockoutAnalysisExecu
                     return;
                 }
                 for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
-                    if (validCt(consequenceType)
-                            && validBiotype.test(consequenceType.getBiotype())
-                            && validGene.test(consequenceType.getGeneName())) {
+                    if (validCt(consequenceType, ctFilter, biotypeFilter, geneFilter)) {
                         if (transcripts.contains(consequenceType.getEnsemblTranscriptId())) {
                             addGene(variant.toString(), consequenceType, knockoutGenes, GeneKnockoutBySample.TranscriptKnockout::addDelOverlap);
                             addGene(svVariant.toString(), consequenceType, knockoutGenes, GeneKnockoutBySample.TranscriptKnockout::addDelOverlap);
@@ -259,28 +267,31 @@ public class GeneKnockoutLocalAnalysisExecutor extends GeneKnockoutAnalysisExecu
                          BiConsumer<GeneKnockoutBySample.TranscriptKnockout, String> f) {
         GeneKnockout gene = knockoutGenes.computeIfAbsent(consequenceType.getGeneName(), GeneKnockout::new);
         gene.setId(consequenceType.getEnsemblGeneId());
-        gene.setBiotype(consequenceType.getBiotype());
+//        gene.setBiotype(consequenceType.getBiotype());
         if (StringUtils.isNotEmpty(consequenceType.getEnsemblTranscriptId())) {
             GeneKnockoutBySample.TranscriptKnockout t = gene.addTranscript(consequenceType.getEnsemblTranscriptId());
+            t.setBiotype(consequenceType.getBiotype());
             f.accept(t, variant);
         }
     }
 
-    private boolean validCt(ConsequenceType consequenceType) {
-        return validCt(consequenceType, getCts());
-    }
-
-    private boolean validCt(ConsequenceType consequenceType, Set<String> ctFilter) {
+    private boolean validCt(ConsequenceType consequenceType,
+                            Predicate<String> ctFilter,
+                            Predicate<String> biotypeFilter,
+                            Predicate<String> geneFilter) {
         if (StringUtils.isEmpty(consequenceType.getGeneName())) {
             return false;
         }
         if (StringUtils.isEmpty(consequenceType.getEnsemblTranscriptId())) {
             return false;
         }
-        if (!PROTEIN_CODING.equals(consequenceType.getBiotype())) {
+        if (!geneFilter.test(consequenceType.getGeneName())) {
             return false;
         }
-        if (consequenceType.getSequenceOntologyTerms().stream().noneMatch(so -> ctFilter.contains(so.getName()))) {
+        if (!biotypeFilter.test(consequenceType.getBiotype())) {
+            return false;
+        }
+        if (consequenceType.getSequenceOntologyTerms().stream().noneMatch(so -> ctFilter.test(so.getName()))) {
             return false;
         }
         return true;

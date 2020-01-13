@@ -182,6 +182,7 @@ public class GeneKnockoutBySample {
     public static class TranscriptKnockout {
 
         private String id;
+        private String biotype;
         private List<String> homAltVariants = new LinkedList<>();
         private List<String> multiAllelicVariants = new LinkedList<>();
         private List<String> compHetVariants = new LinkedList<>();
@@ -197,6 +198,15 @@ public class GeneKnockoutBySample {
 
         public TranscriptKnockout setId(String id) {
             this.id = id;
+            return this;
+        }
+
+        public String getBiotype() {
+            return biotype;
+        }
+
+        public TranscriptKnockout setBiotype(String biotype) {
+            this.biotype = biotype;
             return this;
         }
 

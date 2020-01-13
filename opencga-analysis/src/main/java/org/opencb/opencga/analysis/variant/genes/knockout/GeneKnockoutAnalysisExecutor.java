@@ -32,6 +32,7 @@ public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
 
     private String disorder;
     private String fileNamePattern;
+    private String biotype;
 
     public String getStudy() {
         return study;
@@ -76,6 +77,15 @@ public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
     public GeneKnockoutAnalysisExecutor setOtherGenes(Set<String> otherGenes) {
         this.otherGenes = otherGenes;
         return this;
+    }
+
+    public GeneKnockoutAnalysisExecutor setBiotype(String biotype) {
+        this.biotype = biotype;
+        return this;
+    }
+
+    public String getBiotype() {
+        return biotype;
     }
 
     public String getCt() {

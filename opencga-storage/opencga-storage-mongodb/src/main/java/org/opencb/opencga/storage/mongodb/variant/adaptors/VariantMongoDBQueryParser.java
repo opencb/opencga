@@ -195,10 +195,12 @@ public class VariantMongoDBQueryParser {
 
         }
 
-        logger.debug("----------------------");
-        logger.debug("Query         = {}", VariantQueryUtils.printQuery(originalQuery));
         Document mongoQuery = new Document(builder.get().toMap());
-        logger.debug("MongoDB Query = {}", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
+        if (logger.isDebugEnabled()) {
+            logger.debug("----------------------");
+            logger.debug("Query         = {}", VariantQueryUtils.printQuery(originalQuery));
+            logger.debug("MongoDB Query = {}", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
+        }
         return mongoQuery;
     }
 

@@ -4,11 +4,11 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.DiseasePanel;
 import org.opencb.biodata.models.core.Gene;
+import org.opencb.biodata.models.core.Transcript;
 import org.opencb.cellbase.core.api.GeneDBAdaptor;
 import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.core.annotations.Tool;
@@ -21,6 +21,8 @@ import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @Tool(id= GeneKnockoutAnalysis.ID, description = GeneKnockoutAnalysis.DESCRIPTION, resource = Enums.Resource.VARIANT)
 public class GeneKnockoutAnalysis extends OpenCgaToolScopeStudy {
@@ -44,11 +46,12 @@ public class GeneKnockoutAnalysis extends OpenCgaToolScopeStudy {
             if (CollectionUtils.isEmpty(analysisParams.getGene()) && CollectionUtils.isEmpty(analysisParams.getPanel())) {
                 analysisParams.setBiotype(VariantAnnotationUtils.PROTEIN_CODING);
             }
-        } else {
-            if (CollectionUtils.isNotEmpty(analysisParams.getGene()) || CollectionUtils.isNotEmpty(analysisParams.getPanel())) {
-                throw new ToolException("Unable to combine parameters 'gene' and 'panel' with 'biotype'");
-            }
         }
+//        else {
+//            if (CollectionUtils.isNotEmpty(analysisParams.getGene()) || CollectionUtils.isNotEmpty(analysisParams.getPanel())) {
+//                throw new ToolException("Unable to combine parameters 'gene' and 'panel' with 'biotype'");
+//            }
+//        }
 
         if (StringUtils.isEmpty(analysisParams.getConsequenceType())) {
             analysisParams.setConsequenceType(VariantQueryUtils.LOF);
@@ -65,10 +68,12 @@ public class GeneKnockoutAnalysis extends OpenCgaToolScopeStudy {
 
         step("list-genes", () -> {
             CellBaseUtils cellBaseUtils = getVariantStorageManager().getCellBaseUtils(studyFqn, token);
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "name,chromosome,start,end,biotype");
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, "id,name,chromosome,start,end,biotype,transcripts.biotype");
 
             boolean allProteinCoding = false;
-            if (StringUtils.isNotEmpty(analysisParams.getBiotype())) {
+            if (CollectionUtils.isEmpty(analysisParams.getGene()) && CollectionUtils.isEmpty(analysisParams.getPanel())) {
+                // No genes or panel given.
+                // Get genes by biotype
                 List<String> biotypes = new ArrayList<>(Arrays.asList(analysisParams.getBiotype().split(",")));
                 if (biotypes.contains(VariantAnnotationUtils.PROTEIN_CODING)) {
                     allProteinCoding = true;
@@ -76,13 +81,19 @@ public class GeneKnockoutAnalysis extends OpenCgaToolScopeStudy {
                     biotypes.remove(VariantAnnotationUtils.PROTEIN_CODING);
                 }
                 if (!biotypes.isEmpty()) {
-                    Query query = new Query(GeneDBAdaptor.QueryParams.BIOTYPE.key(), biotypes);
+                    Query query = new Query(GeneDBAdaptor.QueryParams.TRANSCRIPT_BIOTYPE.key(), String.join(",", biotypes));
                     for (Gene gene : cellBaseUtils.getCellBaseClient().getGeneClient().search(query, queryOptions).allResults()) {
                         otherGenes.add(gene.getName());
                     }
                 }
             } else {
                 Set<String> genes = new HashSet<>();
+                Predicate<String> biotypeFilter;
+                if (StringUtils.isNotEmpty(analysisParams.getBiotype())) {
+                    biotypeFilter = new HashSet<>(Arrays.asList(analysisParams.getBiotype().split(",")))::contains;
+                } else {
+                    biotypeFilter = s -> true;
+                }
                 if (CollectionUtils.isNotEmpty(analysisParams.getGene())) {
                     genes.addAll(analysisParams.getGene());
                 }
@@ -98,9 +109,14 @@ public class GeneKnockoutAnalysis extends OpenCgaToolScopeStudy {
                     }
                 }
                 for (Gene gene : cellBaseUtils.getCellBaseClient().getGeneClient().get(new ArrayList<>(genes), queryOptions).allResults()) {
-                    if (gene.getBiotype().equals(VariantAnnotationUtils.PROTEIN_CODING)) {
+                    Set<String> biotypes = gene.getTranscripts().stream()
+                            .map(Transcript::getBiotype)
+                            .filter(biotypeFilter)
+                            .collect(Collectors.toSet());
+                    if (biotypes.contains(VariantAnnotationUtils.PROTEIN_CODING)) {
                         proteinCodingGenes.add(gene.getName());
-                    } else {
+                    }
+                    if (biotypes.size() == 1 && !biotypes.contains(VariantAnnotationUtils.PROTEIN_CODING) || biotypes.size() > 1) {
                         otherGenes.add(gene.getName());
                     }
                 }
@@ -111,6 +127,9 @@ public class GeneKnockoutAnalysis extends OpenCgaToolScopeStudy {
                 addAttribute("proteinCodingGenesCount", proteinCodingGenes.size());
             }
             addAttribute("otherGenesCount", otherGenes.size());
+
+//            addAttribute("proteinCodingGenes", proteinCodingGenes);
+//            addAttribute("otherGenes", otherGenes);
         });
 
         Map<String, Trio> triosMap = new HashMap<>(analysisParams.getSample().size());
@@ -158,6 +177,7 @@ public class GeneKnockoutAnalysis extends OpenCgaToolScopeStudy {
                     .setFileNamePattern(getOutDir().resolve("knockout_genes.{sample}.json").toString())
                     .setProteinCodingGenes(new HashSet<>(proteinCodingGenes))
                     .setOtherGenes(new HashSet<>(otherGenes))
+                    .setBiotype(analysisParams.getBiotype())
                     .setFilter(analysisParams.getFilter())
                     .setQual(analysisParams.getQual())
                     .setCt(analysisParams.getConsequenceType())
