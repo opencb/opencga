@@ -21,8 +21,8 @@ setup(
     url='https://github.com/opencb/opencga/tree/develop/opencga-client/src/main/python/pyOpenCGA',
     packages=['pyopencga', 'pyopencga.rest_clients'],
     license='Apache Software License',
-    author='Daniel Perez-Gil, David Gomez-Peregrina, Pablo Marin-Garcia',
-    author_email='dperezgil89@gmail.com, david.gomez@mgviz.org, pmarin@kanteron.com',
+    author='David Gomez-Peregrina, Pablo Marin-Garcia, Daniel Perez-Gil',
+    author_email='david.gomez@mgviz.org, pmarin@kanteron.com, dp529@cam.ac.uk',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',

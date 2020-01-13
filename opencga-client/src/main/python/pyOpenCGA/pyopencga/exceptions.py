@@ -1,7 +1,8 @@
-class OpenCgaAuthorisationError(Exception):
+class OpencgaAuthorisationError(Exception):
     def __init__(self, message):
-        super(OpenCgaAuthorisationError, self).__init__(message)
+        super(OpencgaAuthorisationError, self).__init__(message)
 
-class OpenCgaInvalidToken(Exception):
+
+class OpencgaInvalidToken(Exception):
     def __init__(self, message):
-        super(OpenCgaInvalidToken, self).__init__(message)
+        super(OpencgaInvalidToken, self).__init__(message)

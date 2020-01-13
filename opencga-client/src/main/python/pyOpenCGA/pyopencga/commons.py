@@ -1,10 +1,11 @@
-import itertools
+import sys
 import threading
 from time import sleep
+import warnings
 
 import requests
 
-from pyopencga.exceptions import OpenCgaInvalidToken, OpenCgaAuthorisationError
+from pyopencga.exceptions import OpencgaInvalidToken, OpencgaAuthorisationError
 
 try:
     from Queue import Queue
@@ -14,77 +15,20 @@ except ImportError:
 _CALL_BATCH_SIZE = 2000
 _NUM_THREADS_DEFAULT = 4
 
-class RESTResponse:
-    def __init__(self, response):
-        self.apiVersion = response.get('apiVersion')
-        self.time = response.get('time')
-        self.warnings = response.get('warnings')
-        self.error = response.get('error')
-        self.params = response.get('params')
-        self.responses = response.get('responses')
 
-        # TODO: Remove deprecated response in future release. Added for backwards compatibility
-        self.response = response.get('responses')
-
-        for query_result in self.responses:
-            # TODO: Remove deprecated result. Added for backwards compatibility
-            query_result['result'] = query_result['results']
-
-
-    # TODO: Remove deprecated method in future release
-    def first(self):
-        return self.responses[0]
-
-    def result(self, result_pos=None, response_pos=0):
-        """
-        Return the result 'result_pos' of the response 'response_pos'.
-        If no 'response_pos' is passed, it will return the corresponding result from the first response.
-        """
-        if result_pos is None:
-            raise Exception('Missing mandatory field result_pos')
-        return self.responses[response_pos]['results'][result_pos]
-
-    def results(self, response_pos=0):
-        """
-        Return the list of results of the response_pos response.
-        """
-        return self.responses[response_pos]
-
-    def responses(self):
-        """
-        Return the list of responses
-        """
-        return self.responses
-
-    def response(self, response_pos=None):
-        """
-        Return the response_pos response.
-        """
-        if response_pos is None:
-            raise Exception('Missing mandatory field response_pos')
-        return self.responses[response_pos]
-
-    def num_matches(self):
-        """
-        Return the total number of matches taking of all the DataResponses
-        """
-        num_matches = 0
-        for query_result in self.responses:
-            num_matches += query_result['numMatches']
-        return num_matches
-
-    def num_results(self):
-        """
-        Return the total number of results taking of all the DataResponses
-        """
-        num_results = 0
-        for query_result in self.responses:
-            num_results += query_result['numResults']
-        return num_results
+def deprecated(func):
+    """Prints a warning for functions marked as deprecated"""
+    def new_func(*args, **kwargs):
+        warnings.simplefilter('always', DeprecationWarning)  # turn off filter
+        warnings.warn('Call to deprecated function "{}".'.format(func.__name__),
+                      category=DeprecationWarning, stacklevel=2)
+        warnings.simplefilter('default', DeprecationWarning)  # reset filter
+        return func(*args, **kwargs)
+    return new_func
 
 
 def _create_rest_url(host, version, sid, category, resource, subcategory=None, query_id=None,
-                     second_query_id=None, **options):
+                     second_query_id=None, options=None):
     """Creates the URL for querying the REST service"""
 
     # Creating the basic URL
@@ -114,7 +58,12 @@ def _create_rest_url(host, version, sid, category, resource, subcategory=None, q
     if options is not None:
         opts = []
         for k, v in options.items():
-            opts.append(k + '=' + str(v))
+            if k == 'debug':
+                continue
+            if isinstance(v, list):
+                opts.append(k + '=' + ','.join(map(str, v)))
+            else:
+                opts.append(k + '=' + str(v))
         if opts:
             url += '?' + '&'.join(opts)
 
@@ -122,7 +71,7 @@ def _create_rest_url(host, version, sid, category, resource, subcategory=None, q
 
 
 def _fetch(host, version, sid, category, resource, method, subcategory=None, query_id=None,
-           second_query_id=None, data=None, **options):
+           second_query_id=None, data=None, options=None):
     """Queries the REST service retrieving results until exhaustion or limit"""
     # HERE BE DRAGONS
     final_response = None
@@ -134,7 +83,7 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
     if options is None:
         opts = {'skip': call_skip, 'limit': call_limit}
     else:
-        opts = options.copy()['options']  # Do not modify original data!
+        opts = options.copy()  # Do not modify original data!
         if 'skip' not in opts:
             opts['skip'] = call_skip
         # If 'limit' is specified, a maximum of 'limit' results will be returned
@@ -181,8 +130,11 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
                                        query_id=current_query_id,
                                        second_query_id=second_query_id,
                                        resource=resource,
-                                       **opts)
-        # print(url)  # DEBUG
+                                       options=opts)
+
+        # DEBUG param
+        if opts is not None and 'debug' in opts and opts['debug']:
+            sys.stderr.write(url + '\n')
 
         # Getting REST response
         if method == 'get':
@@ -211,15 +163,23 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
         time_out_counter = 0
 
         if r.status_code == 401:
-            raise OpenCgaInvalidToken(r.content)
+            raise OpencgaInvalidToken(r.content)
         elif r.status_code == 403:
-            raise OpenCgaAuthorisationError(r.content)
+            raise OpencgaAuthorisationError(r.content)
 
         elif r.status_code != 200:
             raise Exception(r.content)
 
         try:
             response = r.json()
+
+            # TODO Remove deprecated response and result in future release. Added for backwards compatibility
+            if 'response' in response:
+                response['responses'] = response['response']
+            for query_result in response['responses']:
+                if 'result' in query_result:
+                    query_result['results'] = query_result['result']
+
         except ValueError:
             msg = 'Bad JSON format retrieved from server'
             raise ValueError(msg)
@@ -265,24 +225,48 @@ def _fetch(host, version, sid, category, resource, method, subcategory=None, que
     return final_response
 
 
-def _worker(queue, results, host, version, sid, species, category, resource, method, subcategory=None,
-            second_query_id=None, data=None, **options):
+def _worker(queue, results, host, version, sid, category, resource, method, subcategory=None,
+            second_query_id=None, data=None, options=None):
+
     """Manages the queue system for the threads"""
     while True:
         # Fetching new element from the queue
         index, query_id = queue.get()
-        response = _fetch(host=host, version=version, sid=sid, species=species, category=category,
-                          subcategory=subcategory,
-                          resource=resource, method=method, data=data,
-                          query_id=query_id, second_query_id=second_query_id, **options)
+        response = _fetch(host=host, version=version, sid=sid, category=category, subcategory=subcategory,
+                          resource=resource, method=method, data=data, query_id=query_id,
+                          second_query_id=second_query_id, options=options)
         # Store data in results at correct index
         results[index] = response
         # Signaling to the queue that task has been processed
         queue.task_done()
 
 
+def merge_query_responses(query_response_list):
+    final_response = query_response_list[0]
+    for i, query_response in enumerate(query_response_list):
+        if i != 0:
+            final_response['events'] += query_response['events']
+            final_response['time'] += query_response['time']
+            # final_response['responses'] += response['responses']
+
+            for key in query_response['params']:
+                if final_response['params'][key] != query_response['params'][key]:
+                    final_response['params'][key] += ',' + query_response['params'][key]
+
+            for j, query_result in enumerate(query_response['responses']):
+                if len(final_response['responses'])-1 < j:
+                    final_response['responses'] += []
+                for key in query_result:
+                    if key not in final_response['responses'][j]:
+                        final_response['responses'][j][key] = query_result[key]
+                    else:
+                        if isinstance(query_result[key], (int, list)):
+                            final_response['responses'][j][key] += query_result[key]
+    return final_response
+
+
 def execute(host, version, sid, category, resource, method, subcategory=None, query_id=None,
-            second_query_id=None, data=None, **options):
+            second_query_id=None, data=None, options=None):
     """Queries the REST service using multiple threads if needed"""
 
     # If query_id is an array, convert to comma-separated string
@@ -295,8 +279,8 @@ def execute(host, version, sid, category, resource, method, subcategory=None, qu
     # Multithread if the number of queries is greater than _CALL_BATCH_SIZE
     if query_id is None or len(query_id.split(',')) <= _CALL_BATCH_SIZE:
         response = _fetch(host=host, version=version, sid=sid, category=category, subcategory=subcategory,
-                          resource=resource, method=method, data=data,
-                          query_id=query_id, second_query_id=second_query_id, **options)
+                          resource=resource, method=method, data=data, query_id=query_id,
+                          second_query_id=second_query_id, options=options)
         return response
     else:
         if options is not None and 'num_threads' in options:
@@ -342,6 +326,8 @@ def execute(host, version, sid, category, resource, method, subcategory=None, qu
         q.join()
 
     # Joining all the responses into a one final response
-    final_response = list(itertools.chain.from_iterable(res))
+    final_query_response = merge_query_responses(res)
 
-    return final_response
+    return final_query_response
+
+
