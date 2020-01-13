@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,24 +25,28 @@ public abstract class Lock implements Closeable {
 
     private final AtomicLong token = new AtomicLong();
     private final AtomicBoolean keepAlive;
+    private final AtomicBoolean sleeping = new AtomicBoolean(false);
     private final AtomicReference<Exception> exception = new AtomicReference<>();
-    private boolean locked;
+    private boolean locked = true;
     private Future<?> keepAliveFuture;
 
     public Lock(long token) {
         this.token.set(token);
         this.keepAlive = new AtomicBoolean(false);
-        this.locked = true;
     }
 
     public Lock(ExecutorService executorService, int keepAliveIntervalMillis, long token) {
         this.token.set(token);
         this.keepAlive = new AtomicBoolean(true);
-        this.locked = true;
         keepAliveFuture = executorService.submit(() -> {
             try {
                 while (keepAlive.get()) {
+
+
+
+                    sleeping.set(true);
                     Thread.sleep(keepAliveIntervalMillis);
+                    sleeping.set(false);
                     if (keepAlive.get()) {
                         refresh();
                     }
@@ -93,8 +98,8 @@ public abstract class Lock implements Closeable {
     public final void unlock() {
         if (locked) {
             keepAliveStop();
-            unlock0();
             locked = false;
+            unlock0();
         }
     }
 
@@ -106,8 +111,24 @@ public abstract class Lock implements Closeable {
     public void keepAliveStop() {
         keepAlive.set(false);
         if (keepAliveFuture != null) {
-            keepAliveFuture.cancel(true);
+            if (sleeping.get()) {
+                // Interrupt thread only if sleeping
+                keepAliveFuture.cancel(true);
+            } else {
+//                logger.info("Skip cancel");
+                // If the thread is not sleeping, it should be about to finish.
+                try {
+                    keepAliveFuture.get();
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
+    }
+
+    @Override
+    public String toString() {
+        return token.toString();
     }
 
     protected abstract void unlock0();

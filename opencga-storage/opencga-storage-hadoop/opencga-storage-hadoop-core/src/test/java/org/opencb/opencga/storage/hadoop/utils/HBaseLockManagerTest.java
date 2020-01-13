@@ -61,8 +61,10 @@ public class HBaseLockManagerTest extends VariantStorageBaseTest implements Hado
     public void testLock() throws Exception {
         int lockId = 1;
         for (int i = 0; i < 10; i++) {
-            System.out.println("i = " + i);
+            int millis = 248 + (i % 13);
+            System.out.println("i = " + i + " " + millis + "ms");
             Lock lock = hbaseLock.lock(getColumn(lockId), 1000, 1000);
+            Thread.sleep(millis);
             System.out.println("lock = " + lock);
             lock.unlock();
         }
