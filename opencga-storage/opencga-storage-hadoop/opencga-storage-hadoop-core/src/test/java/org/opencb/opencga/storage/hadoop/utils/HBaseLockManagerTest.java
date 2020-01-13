@@ -23,7 +23,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
-import org.opencb.opencga.storage.core.metadata.models.Locked;
+import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 
@@ -38,12 +38,12 @@ import static org.junit.Assert.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseLockTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
+public class HBaseLockManagerTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
 
-    private HBaseLock hbaseLock;
+    private HBaseLockManager hbaseLock;
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -54,7 +54,7 @@ public class HBaseLockTest extends VariantStorageBaseTest implements HadoopVaria
         clearDB(DB_NAME);
         HBaseManager hbaseManager = new HBaseManager(configuration.get());
         hbaseManager.createTableIfNeeded(DB_NAME, Bytes.toBytes("0"), Compression.Algorithm.NONE);
-        hbaseLock = new HBaseLock(hbaseManager, DB_NAME, Bytes.toBytes("0"), Bytes.toBytes("R"));
+        hbaseLock = new HBaseLockManager(hbaseManager, DB_NAME, Bytes.toBytes("0"), Bytes.toBytes("R"));
     }
 
     @Test
@@ -62,11 +62,11 @@ public class HBaseLockTest extends VariantStorageBaseTest implements HadoopVaria
         int lockId = 1;
         for (int i = 0; i < 10; i++) {
             System.out.println("i = " + i);
-            Locked lock = hbaseLock.lock(getColumn(lockId), 1000, 1000);
+            Lock lock = hbaseLock.lock(getColumn(lockId), 1000, 1000);
             System.out.println("lock = " + lock);
             lock.unlock();
         }
-        assertEquals(1, ((ThreadPoolExecutor) HBaseLock.THREAD_POOL).getPoolSize());
+        assertEquals(1, ((ThreadPoolExecutor) HBaseLockManager.THREAD_POOL).getPoolSize());
     }
 
     @Test
@@ -84,7 +84,7 @@ public class HBaseLockTest extends VariantStorageBaseTest implements HadoopVaria
                 try {
                     for (int i = 0; i < 5; i++) {
                         System.out.println("i = " + i);
-                        Locked lock = hbaseLock.lock(getColumn(lockId), 1000, 20000);
+                        Lock lock = hbaseLock.lock(getColumn(lockId), 1000, 20000);
                         System.out.println("[" + Thread.currentThread().getName() + "] Enter LOCK");
                         assertEquals(threadWithLock.toString(), 0, threadWithLock.size());
                         threadWithLock.add(Thread.currentThread().getName());
@@ -120,7 +120,7 @@ public class HBaseLockTest extends VariantStorageBaseTest implements HadoopVaria
     @Test
     public void testLockAndLock() throws Exception {
         int lockId = 3;
-        Locked lock = hbaseLock.lock(getColumn(lockId), 1000, 2000);
+        Lock lock = hbaseLock.lock(getColumn(lockId), 1000, 2000);
         System.out.println("lock = " + lock);
 
         thrown.expect(TimeoutException.class);
@@ -131,7 +131,7 @@ public class HBaseLockTest extends VariantStorageBaseTest implements HadoopVaria
     @Test
     public void testLockAfterExpiring() throws Exception {
         int lockId = 4;
-        Locked lock = hbaseLock.lock(getColumn(lockId), 1000, 1000);
+        Lock lock = hbaseLock.lock(getColumn(lockId), 1000, 1000);
         lock.keepAliveStop();
         System.out.println("lock = " + lock);
 
@@ -145,18 +145,18 @@ public class HBaseLockTest extends VariantStorageBaseTest implements HadoopVaria
 
     @Test
     public void testLockExpireUnlock() throws Exception {
-        Locked lock = hbaseLock.lock(getColumn(1), 100, 100);
+        Lock lock = hbaseLock.lock(getColumn(1), 100, 100);
         lock.keepAliveStop();
         System.out.println("lock = " + lock);
         Thread.sleep(200);
 
-        thrown.expect(HBaseLock.IllegalLockStatusException.class);
+        thrown.expect(HBaseLockManager.IllegalLockStatusException.class);
         lock.unlock();
     }
 
     @Test
     public void testLockAndRefresh() throws Exception {
-        Locked lock = hbaseLock.lock(getColumn(1), 100, 100);
+        Lock lock = hbaseLock.lock(getColumn(1), 100, 100);
         lock.keepAliveStop();
         System.out.println("lock = " + lock);
 
@@ -170,27 +170,27 @@ public class HBaseLockTest extends VariantStorageBaseTest implements HadoopVaria
 
     @Test
     public void testLockRefreshExpireUnlock() throws Exception {
-        Locked lock = hbaseLock.lock(getColumn(1), 100, 100);
+        Lock lock = hbaseLock.lock(getColumn(1), 100, 100);
         lock.keepAliveStop();
         System.out.println("lock = " + lock);
         lock.refresh();
 
         Thread.sleep(200); // expire
 
-        thrown.expect(HBaseLock.IllegalLockStatusException.class);
+        thrown.expect(HBaseLockManager.IllegalLockStatusException.class);
         lock.unlock();
     }
 
     @Test
     public void testLockRefreshExpiredRefresh() throws Exception {
-        Locked lock = hbaseLock.lock(getColumn(1), 100, 100);
+        Lock lock = hbaseLock.lock(getColumn(1), 100, 100);
         lock.keepAliveStop();
         System.out.println("lock = " + lock);
         lock.keepAliveStop();
 
         Thread.sleep(200); // expire
 
-        thrown.expect(HBaseLock.IllegalLockStatusException.class);
+        thrown.expect(HBaseLockManager.IllegalLockStatusException.class);
         lock.refresh();
     }
 
@@ -200,31 +200,31 @@ public class HBaseLockTest extends VariantStorageBaseTest implements HadoopVaria
         String s;
 
         // Expired current token
-        s = HBaseLock.getCurrentLockToken(new String[]{"CURRENT-abc:123"});
+        s = HBaseLockManager.getCurrentLockToken(new String[]{"CURRENT-abc:123"});
         assertNull(s);
 
         // Valid current token
-        s = HBaseLock.getCurrentLockToken(new String[]{"CURRENT-abc:" + e});
+        s = HBaseLockManager.getCurrentLockToken(new String[]{"CURRENT-abc:" + e});
         assertEquals("abc", s);
 
         // Current expired, first refresh valid
-        s = HBaseLock.getCurrentLockToken(new String[]{"CURRENT-abc:123", "REFRESH-abc:" + e});
+        s = HBaseLockManager.getCurrentLockToken(new String[]{"CURRENT-abc:123", "REFRESH-abc:" + e});
         assertEquals("abc", s);
 
         // Current expired, first refresh expired, second refresh valid
-        s = HBaseLock.getCurrentLockToken(new String[]{"CURRENT-abc:123", "REFRESH-abc:200", "REFRESH-abc:" + e});
+        s = HBaseLockManager.getCurrentLockToken(new String[]{"CURRENT-abc:123", "REFRESH-abc:200", "REFRESH-abc:" + e});
         assertEquals("abc", s);
 
         // Expired refresh
-        s = HBaseLock.getCurrentLockToken(new String[]{"CURRENT-abc:123", "REFRESH-abc:200"});
+        s = HBaseLockManager.getCurrentLockToken(new String[]{"CURRENT-abc:123", "REFRESH-abc:200"});
         assertNull(s);
 
         // Wrong refresh
-        s = HBaseLock.getCurrentLockToken(new String[]{"CURRENT-abc:123", "REFRESH-efg:" + e});
+        s = HBaseLockManager.getCurrentLockToken(new String[]{"CURRENT-abc:123", "REFRESH-efg:" + e});
         assertNull(s);
 
         // There is an token in between
-        s = HBaseLock.getCurrentLockToken(new String[]{"CURRENT-abc:123", "zzz:" + e, "REFRESH-abc:" + e});
+        s = HBaseLockManager.getCurrentLockToken(new String[]{"CURRENT-abc:123", "zzz:" + e, "REFRESH-abc:" + e});
         assertNull(s);
     }
 

@@ -32,7 +32,7 @@ import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
-import org.opencb.opencga.storage.core.metadata.models.Locked;
+import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
@@ -87,7 +87,7 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
     }
 
     @Override
-    public Locked lock(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
+    public Lock lock(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
         byte[] column = StringUtils.isEmpty(lockName) ? getLockColumn() : Bytes.toBytes(lockName);
         return lock(getStudyMetadataRowKey(studyId), column, lockDuration, timeout);
     }

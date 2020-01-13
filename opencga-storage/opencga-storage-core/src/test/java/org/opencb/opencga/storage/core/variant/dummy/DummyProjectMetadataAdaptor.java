@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
-import org.opencb.opencga.storage.core.metadata.models.Locked;
+import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 
 import java.io.FileOutputStream;
@@ -29,8 +29,8 @@ public class DummyProjectMetadataAdaptor implements ProjectMetadataAdaptor {
     private static Map<String, Integer> counters = new HashMap<>();
 
     @Override
-    public Locked lockProject(long lockDuration, long timeout) throws InterruptedException, TimeoutException {
-        return new Locked(0) {
+    public Lock lockProject(long lockDuration, long timeout) throws InterruptedException, TimeoutException {
+        return new Lock(0) {
             @Override
             public void unlock0() {
 

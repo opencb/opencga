@@ -26,7 +26,7 @@ import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.storage.core.metadata.models.Locked;
+import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
 import java.util.*;
@@ -41,9 +41,9 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MongoLockTest implements MongoDBVariantStorageTest {
+public class MongoLockManagerTest implements MongoDBVariantStorageTest {
 
-    private MongoLock mongoLock;
+    private MongoLockManager mongoLock;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -58,7 +58,7 @@ public class MongoLockTest implements MongoDBVariantStorageTest {
         clearDB(DB_NAME);
         MongoDataStoreManager mongoDataStoreManager = getMongoDataStoreManager(DB_NAME);
         collection = mongoDataStoreManager.get(DB_NAME).getCollection("locks");
-        mongoLock = new MongoLock(collection);
+        mongoLock = new MongoLockManager(collection);
     }
 
     @Test
@@ -68,7 +68,7 @@ public class MongoLockTest implements MongoDBVariantStorageTest {
         for (int i = 0; i < 10; i++) {
             System.out.println("i = " + i);
 
-            Locked lock = mongoLock.lock(lockId, 10, 10);
+            Lock lock = mongoLock.lock(lockId, 10, 10);
             System.out.println("lock = " + lock);
 
             lock.unlock();
@@ -90,7 +90,7 @@ public class MongoLockTest implements MongoDBVariantStorageTest {
             futures.add(executorService.submit(() -> {
                 try {
                     for (int i = 0; i < 5; i++) {
-                        Locked lock = mongoLock.lock(lockId, 1000, 200000);
+                        Lock lock = mongoLock.lock(lockId, 1000, 200000);
                         System.out.println("[" + Thread.currentThread().getName() + "] Enter LOCK " + lock);
                         assertEquals(threadWithLock.toString(), 0, threadWithLock.size());
                         threadWithLock.add(Thread.currentThread().getName());
@@ -124,7 +124,7 @@ public class MongoLockTest implements MongoDBVariantStorageTest {
         int lockId = 3;
         insertDocument(lockId);
 
-        Locked lock = mongoLock.lock(lockId, 1000, 2000);
+        Lock lock = mongoLock.lock(lockId, 1000, 2000);
         System.out.println("lock = " + lock);
 
         thrown.expect(TimeoutException.class);
@@ -137,7 +137,7 @@ public class MongoLockTest implements MongoDBVariantStorageTest {
     public void testLockAfterExpiring() throws Exception {
         int lockId = 4;
         insertDocument(lockId);
-        Locked lock = mongoLock.lock(lockId, 1000, 1000);
+        Lock lock = mongoLock.lock(lockId, 1000, 1000);
         lock.keepAliveStop();
         System.out.println("lock = " + lock);
 
@@ -155,7 +155,7 @@ public class MongoLockTest implements MongoDBVariantStorageTest {
     public void testKeepAliveLock() throws Exception {
         int lockId = 4;
         insertDocument(lockId);
-        Locked lock = mongoLock.lock(lockId, 1000, 1000);
+        Lock lock = mongoLock.lock(lockId, 1000, 1000);
         System.out.println("lock = " + lock);
 
         Thread.sleep(2000);

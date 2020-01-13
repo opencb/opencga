@@ -16,12 +16,13 @@
 
 package org.opencb.opencga.storage.hadoop.utils;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.solr.common.StringUtils;
-import org.opencb.opencga.storage.core.metadata.models.Locked;
+import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,22 +61,25 @@ import java.util.concurrent.TimeoutException;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseLock {
+public class HBaseLockManager {
 
     private static final String LOCK_SEPARATOR = "_";
     private static final String LOCK_EXPIRING_DATE_SEPARATOR = ":";
     private static final String LOCK_PREFIX_SEPARATOR = "-";
     private static final String CURRENT = "CURRENT" + LOCK_PREFIX_SEPARATOR;
     private static final String REFRESH = "REFRESH" + LOCK_PREFIX_SEPARATOR;
-    protected static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool();
+    protected static final ExecutorService THREAD_POOL = Executors.newCachedThreadPool(
+            new ThreadFactoryBuilder()
+                    .setNameFormat("hbase-lock-%d")
+                    .build());
 
     protected final HBaseManager hbaseManager;
     protected final String tableName;
     protected final byte[] columnFamily;
     protected final byte[] defaultRow;
-    protected static Logger logger = LoggerFactory.getLogger(HBaseLock.class);
+    protected static Logger logger = LoggerFactory.getLogger(HBaseLockManager.class);
 
-    public HBaseLock(HBaseManager hbaseManager, String tableName, byte[] columnFamily, byte[] row) {
+    public HBaseLockManager(HBaseManager hbaseManager, String tableName, byte[] columnFamily, byte[] row) {
         this.hbaseManager = hbaseManager;
         this.tableName = tableName;
         this.columnFamily = columnFamily;
@@ -95,7 +99,7 @@ public class HBaseLock {
      * @throws TimeoutException if the operations takes more than the timeout value.
      * @throws IOException      if there is an error writing or reading from HBase.
      */
-    public Locked lock(byte[] column, long lockDuration, long timeout)
+    public Lock lock(byte[] column, long lockDuration, long timeout)
             throws InterruptedException, TimeoutException, IOException {
         return lock(defaultRow, column, lockDuration, timeout);
     }
@@ -114,7 +118,7 @@ public class HBaseLock {
      * @throws TimeoutException if the operations takes more than the timeout value.
      * @throws IOException      if there is an error writing or reading from HBase.
      */
-    public Locked lock(byte[] row, byte[] column, long lockDuration, long timeout)
+    public Lock lock(byte[] row, byte[] column, long lockDuration, long timeout)
             throws InterruptedException, TimeoutException, IOException {
         String token = RandomStringUtils.randomAlphanumeric(10);
 
@@ -164,23 +168,19 @@ public class HBaseLock {
 
         long tokenHash = token.hashCode();
         long finalLockDuration = lockDuration;
-        return new Locked(THREAD_POOL, (int) (finalLockDuration / 4), tokenHash) {
+        return new Lock(THREAD_POOL, (int) (finalLockDuration / 4), tokenHash) {
             @Override
             public void unlock0() {
                 try {
-                    HBaseLock.this.unlock(row, column, tokenHash);
+                    HBaseLockManager.this.unlock(row, column, tokenHash);
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
             }
 
             @Override
-            public synchronized void refresh() {
-                try {
-                    HBaseLock.this.refresh(row, column, tokenHash, finalLockDuration);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
+            public synchronized void refresh() throws IOException {
+                HBaseLockManager.this.refresh(row, column, tokenHash, finalLockDuration);
             }
         };
     }
@@ -231,6 +231,8 @@ public class HBaseLock {
         lockValue = readLockValue(row, column);
         String newLockToken = getCurrentLockToken(lockValue);
         if (newLockToken == null || !newLockToken.equals(currentLockToken)) {
+            logger.error("Current lock token:" + currentLockToken);
+            logger.error("New lock token: " + newLockToken);
             throw IllegalLockStatusException.inconsistentLock(row, column, lockToken, currentLockToken, lockValue);
         }
     }
@@ -411,6 +413,13 @@ public class HBaseLock {
                         // Expired token
                         long millis = System.currentTimeMillis() - readExpireDate(lockValue[0]);
                         msg = "Current lock '" + lockValue[0] + "' expired " + millis + "ms ago.";
+                        for (int i = lockValue.length - 1; i >= 0; i--) {
+                            if (lockValue[i].startsWith(REFRESH) && readLockToken(lockValue[i]).hashCode() == lockToken) {
+                                millis = System.currentTimeMillis() - readExpireDate(lockValue[i]);
+                                msg += " Last refreshed lock '" + lockValue[i] + "' expired " + millis + "ms ago.";
+                                break;
+                            }
+                        }
                     }
                 }
                 return new IllegalLockStatusException("Inconsistent lock status. You don't have the lock! "

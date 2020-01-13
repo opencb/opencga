@@ -59,8 +59,8 @@ import static org.opencb.opencga.storage.core.variant.annotation.annotators.Abst
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
 public class VariantStorageMetadataManager implements AutoCloseable {
-    private static final int DEFAULT_LOCK_DURATION = 1000;
-    private static final int DEFAULT_TIMEOUT = 10000;
+    private static final int DEFAULT_LOCK_DURATION = 5000;
+    private static final int DEFAULT_TIMEOUT = 60000;
     public static final String SECONDARY_INDEX_PREFIX = "__SECONDARY_INDEX_COHORT_";
 
     protected static Logger logger = LoggerFactory.getLogger(VariantStorageMetadataManager.class);
@@ -148,15 +148,15 @@ public class VariantStorageMetadataManager implements AutoCloseable {
         });
     }
 
-    public Locked lockStudy(int studyId) throws StorageEngineException {
-        return lockStudy(studyId, 10000, 60000);
+    public Lock lockStudy(int studyId) throws StorageEngineException {
+        return lockStudy(studyId, DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
     }
 
-    public Locked lockStudy(int studyId, long lockDuration, long timeout) throws StorageEngineException {
+    public Lock lockStudy(int studyId, long lockDuration, long timeout) throws StorageEngineException {
         return studyDBAdaptor.lock(studyId, lockDuration, timeout, null);
     }
 
-    public Locked lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
+    public Lock lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
         return studyDBAdaptor.lock(studyId, lockDuration, timeout, lockName);
     }
 
@@ -179,12 +179,13 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             throws StorageEngineException, E {
         int studyId = getStudyId(study);
 
-        Locked lock = lockStudy(studyId);
+        Lock lock = lockStudy(studyId);
         try {
             StudyMetadata sm = getStudyMetadata(studyId);
 
             sm = updater.update(sm);
 
+            lock.checkLocked();
             unsecureUpdateStudyMetadata(sm);
             return sm;
         } finally {
@@ -444,7 +445,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public <E extends Exception> ProjectMetadata updateProjectMetadata(UpdateFunction<ProjectMetadata, E> function)
             throws StorageEngineException, E {
         Objects.requireNonNull(function);
-        Locked lock;
+        Lock lock;
         try {
             lock = projectDBAdaptor.lockProject(DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
         } catch (InterruptedException e) {
@@ -463,6 +464,7 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             // If the function modifies the internal counters, update them
             boolean updateCounters = countersHash != newCountersHash;
 
+            lock.checkLocked();
             projectDBAdaptor.updateProjectMetadata(projectMetadata, updateCounters);
             return projectMetadata;
         } finally {
@@ -555,10 +557,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public <E extends Exception> FileMetadata updateFileMetadata(int studyId, int fileId, UpdateFunction<FileMetadata, E> update)
             throws E, StorageEngineException {
         getFileName(studyId, fileId); // Check file exists
-        Locked lock = fileDBAdaptor.lock(studyId, fileId, DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
+        Lock lock = fileDBAdaptor.lock(studyId, fileId, DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
         try {
             FileMetadata fileMetadata = getFileMetadata(studyId, fileId);
             fileMetadata = update.update(fileMetadata);
+            lock.checkLocked();
             unsecureUpdateFileMetadata(studyId, fileMetadata);
             return fileMetadata;
         } finally {
@@ -714,10 +717,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public <E extends Exception> SampleMetadata updateSampleMetadata(int studyId, int sampleId, UpdateFunction<SampleMetadata, E> update)
             throws E, StorageEngineException {
         getSampleName(studyId, sampleId); // Check sample exists
-        Locked lock = sampleDBAdaptor.lock(studyId, sampleId, DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
+        Lock lock = sampleDBAdaptor.lock(studyId, sampleId, DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
         try {
             SampleMetadata sample = getSampleMetadata(studyId, sampleId);
             sample = update.update(sample);
+            lock.checkLocked();
             unsecureUpdateSampleMetadata(studyId, sample);
             return sample;
         } finally {
@@ -850,10 +854,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public <E extends Exception> CohortMetadata updateCohortMetadata(int studyId, int cohortId, UpdateFunction<CohortMetadata, E> update)
             throws E, StorageEngineException {
         getCohortName(studyId, cohortId); // Check cohort exists
-        Locked lock = cohortDBAdaptor.lock(studyId, cohortId, DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
+        Lock lock = cohortDBAdaptor.lock(studyId, cohortId, DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
         try {
             CohortMetadata cohortMetadata = getCohortMetadata(studyId, cohortId);
             cohortMetadata = update.update(cohortMetadata);
+            lock.checkLocked();
             unsecureUpdateCohortMetadata(studyId, cohortMetadata);
             return cohortMetadata;
         } finally {
@@ -1057,10 +1062,11 @@ public class VariantStorageMetadataManager implements AutoCloseable {
     public <E extends Exception> TaskMetadata updateTask(int studyId, int taskId, UpdateFunction<TaskMetadata, E> update)
             throws E, StorageEngineException {
         getTask(studyId, taskId); // Check task exists
-        Locked lock = taskDBAdaptor.lock(studyId, taskId, DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
+        Lock lock = taskDBAdaptor.lock(studyId, taskId, DEFAULT_LOCK_DURATION, DEFAULT_TIMEOUT);
         try {
             TaskMetadata task = getTask(studyId, taskId);
             task = update.update(task);
+            lock.checkLocked();
             unsecureUpdateTask(studyId, task);
             return task;
         } finally {
