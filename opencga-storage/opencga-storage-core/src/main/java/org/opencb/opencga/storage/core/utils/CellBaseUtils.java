@@ -110,6 +110,17 @@ public class CellBaseUtils {
                     gene = result.first();
                 }
                 if (gene == null) {
+                    Query query = new Query();
+                    if (geneStr.startsWith("ENSG")) {
+                        query.put("id", geneStr);
+                    } else if (geneStr.startsWith("ENST")) {
+                        query.put("transcripts.id", geneStr);
+                    } else {
+                        query.put("name", geneStr);
+                    }
+                    gene = cellBaseClient.getGeneClient().search(query, options).getResponse().get(0).first();
+                }
+                if (gene == null) {
                     if (missingGenes == null) {
                         missingGenes = new ArrayList<>();
                     }
