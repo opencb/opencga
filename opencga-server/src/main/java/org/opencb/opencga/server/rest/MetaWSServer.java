@@ -65,7 +65,7 @@ public class MetaWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/about")
-    @ApiOperation(httpMethod = "GET", value = "Returns info about current OpenCGA code.")
+    @ApiOperation(httpMethod = "GET", value = "Returns info about current OpenCGA code.", response = Map.class)
     public Response getAbout() {
         Map<String, String> info = new HashMap<>(5);
         info.put("Program", "OpenCGA (OpenCB)");
@@ -82,7 +82,7 @@ public class MetaWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/ping")
-    @ApiOperation(httpMethod = "GET", value = "Ping Opencga webservices.")
+    @ApiOperation(httpMethod = "GET", value = "Ping Opencga webservices.", response = Map.class)
     public Response ping() {
 
         OpenCGAResult queryResult = new OpenCGAResult();
@@ -93,14 +93,14 @@ public class MetaWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/fail")
-    @ApiOperation(httpMethod = "GET", value = "Ping Opencga webservices.")
+    @ApiOperation(httpMethod = "GET", value = "Ping Opencga webservices.", response = Map.class)
     public Response fail() {
         throw new RuntimeException("Do fail!");
     }
 
     @GET
     @Path("/status")
-    @ApiOperation(httpMethod = "GET", value = "Database status.")
+    @ApiOperation(httpMethod = "GET", value = "Database status.", response = Map.class)
     public Response status() {
 
         OpenCGAResult queryResult = new OpenCGAResult();
@@ -171,7 +171,7 @@ public class MetaWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/api")
-    @ApiOperation(value = "API")
+    @ApiOperation(value = "API", response = Map.class)
     public Response api(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr) {
         List<LinkedHashMap<String, Object>> api = new ArrayList<>(20);
         Map<String, Class> classes = new LinkedHashMap<>();

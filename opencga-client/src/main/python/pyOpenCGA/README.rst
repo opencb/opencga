@@ -97,7 +97,7 @@ Now you can start asking to the OpenCGA RESTful service with pyOpenCGA:
 
 .. code-block:: python
 
-    >>> for project in projects.search(owner=user).results(): 
+    >>> for project in projects.search(owner=user).get_results():
     ...    print(project['id'])
     project1
     project2
@@ -107,8 +107,8 @@ There are two different ways to access to the query response data:
 
 .. code-block:: python
 
-    >>> foo_client.method().results() # Iterates over all the results of all the QueryResults
-    >>> foo_client.method().responses # Returns the raw response of the QueryResponse
+    >>> foo_client.method().get_results() # Iterates over all the results of all the QueryResults
+    >>> foo_client.method().get_responses() # Iterates over all the responses
 
 Data can be accessed specifying comma-separated IDs or a list of IDs:
 
@@ -118,13 +118,13 @@ Data can be accessed specifying comma-separated IDs or a list of IDs:
     >>> samples_list = ['NA12877','NA12878','NA12879']
     >>> sc = oc.samples
 
-    >>> for result in sc.info(query_id=samples, study='user@project1:study1').results():
+    >>> for result in sc.info(query_id=samples, study='user@project1:study1').get_results():
     ...     print(result['id'], result['attributes']['OPENCGA_INDIVIDUAL']['disorders'])
     NA12877 [{'id': 'OMIM6500', 'name': "Chron's Disease"}]
     NA12878 []
     NA12879 [{'id': 'OMIM6500', 'name': "Chron's Disease"}]
 
-    >>> for result in sc.info(query_id=samples_list, study='user@project1:study1').results():
+    >>> for result in sc.info(query_id=samples_list, study='user@project1:study1').get_results():
     ...     print(result['id'], result['attributes']['OPENCGA_INDIVIDUAL']['disorders'])
     NA12877 [{'id': 'OMIM6500', 'name': "Chron's Disease"}]
     NA12878 []

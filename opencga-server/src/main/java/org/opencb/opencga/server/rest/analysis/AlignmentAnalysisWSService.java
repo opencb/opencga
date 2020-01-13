@@ -77,7 +77,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
     @POST
     @Path("/index")
-    @ApiOperation(value = ALIGNMENT_INDEX_DESCRIPTION, response = RestResponse.class)
+    @ApiOperation(value = ALIGNMENT_INDEX_DESCRIPTION, response = Job.class)
     public Response index(@ApiParam(value = FILE_ID_DESCRIPTION, required = true) @QueryParam(value = FILE_ID_PARAM) String inputFile,
                           @ApiParam(value = STUDY_DESCRIPTION) @QueryParam(STUDY_PARAM) String study) {
 

@@ -4,7 +4,7 @@ This module defines a function to retry execution of a function.
 import sys
 import time
 
-from pyopencga.exceptions import OpenCgaAuthorisationError, OpenCgaInvalidToken
+from pyopencga.exceptions import OpencgaAuthorisationError, OpencgaInvalidToken
 
 
 def retry(func, max_attempts, initial_retry_seconds, max_retry_seconds,
@@ -34,13 +34,13 @@ def retry(func, max_attempts, initial_retry_seconds, max_retry_seconds,
     while True:
         try:
             return func()
-        except OpenCgaInvalidToken as e:
+        except OpencgaInvalidToken as e:
 
             if login_handler:
                 login_handler()
             else:
                 raise e
-        except OpenCgaAuthorisationError as e:
+        except OpencgaAuthorisationError as e:
             raise e
         except Exception as e:
             if dont_retry and any(string_ in str(e) for string_ in dont_retry):
