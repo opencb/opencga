@@ -1,21 +1,20 @@
 package org.opencb.opencga.analysis.variant.genes.knockout;
 
-import org.opencb.biodata.models.core.Gene;
-import org.opencb.biodata.models.core.Transcript;
 import org.opencb.opencga.analysis.variant.genes.knockout.result.GeneKnockoutBySample;
 import org.opencb.opencga.analysis.variant.genes.knockout.result.GeneKnockoutBySample.GeneKnockout;
+import org.opencb.opencga.analysis.variant.genes.knockout.result.VariantKnockout;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.Sample;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-
-import static org.opencb.opencga.analysis.variant.genes.knockout.result.GeneKnockoutBySample.*;
+import java.util.stream.Collectors;
 
 public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
 
@@ -31,7 +30,8 @@ public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
     private String qual;
 
     private String disorder;
-    private String fileNamePattern;
+    private String sampleFileNamePattern;
+    private String geneFileNamePattern;
     private String biotype;
 
     public String getStudy() {
@@ -133,81 +133,57 @@ public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
         return this;
     }
 
-    public String getFileNamePattern() {
-        return fileNamePattern;
+    public String getSampleFileNamePattern() {
+        return sampleFileNamePattern;
     }
 
-    public GeneKnockoutAnalysisExecutor setFileNamePattern(String fileNamePattern) {
-        this.fileNamePattern = fileNamePattern;
+    public GeneKnockoutAnalysisExecutor setSampleFileNamePattern(String sampleFileNamePattern) {
+        this.sampleFileNamePattern = sampleFileNamePattern;
         return this;
     }
 
-    public Path getFileName(String sample) {
-        return Paths.get(fileNamePattern.replace("{sample}", sample));
+    public Path getSampleFileName(String sample) {
+        return Paths.get(sampleFileNamePattern.replace("{sample}", sample));
     }
 
-    protected void printSampleFile(String sample, Map<String, GeneKnockout> knockoutGenes, Trio trio)
-            throws IOException {
-        Path path = getFileName(sample);
-        printSampleFileJson(sample, knockoutGenes, trio, path.toFile());
-//            printSampleFileTsv(sample, knockoutGenes, transcriptKnockoutCountMap, trio, file.toFile());
+    public String getGeneFileNamePattern() {
+        return geneFileNamePattern;
     }
 
-    private void printSampleFileJson(String sample, Map<String, GeneKnockout> knockoutGenes, Trio trio, File file) throws IOException {
-        GeneKnockoutBySample geneKnockoutBySample = new GeneKnockoutBySample()
-                .setSample(sample)
-                .setTrio(trio)
-                .setCountByType(new CountByType(
-                        knockoutGenes.values().stream().flatMap(g -> g.getTranscripts().stream())
-                                .mapToInt(TranscriptKnockout::getHomAltCount).sum(),
-                        knockoutGenes.values().stream().flatMap(g -> g.getTranscripts().stream())
-                                .mapToInt(TranscriptKnockout::getMultiAllelicCount).sum(),
-                        knockoutGenes.values().stream().flatMap(g -> g.getTranscripts().stream())
-                                .mapToInt(TranscriptKnockout::getCompHetCount).sum(),
-                        knockoutGenes.values().stream().flatMap(g -> g.getTranscripts().stream())
-                                .mapToInt(TranscriptKnockout::getDeletionOverlapCount).sum()
-                ))
-                .setGenesCount(knockoutGenes.size())
-                .setTranscriptsCount(knockoutGenes.values().stream().mapToInt(g -> g.getTranscripts().size()).sum())
-                .setGenes(knockoutGenes.values());
-
-        JacksonUtils.getDefaultObjectMapper().writerWithDefaultPrettyPrinter().writeValue(file, geneKnockoutBySample);
+    public GeneKnockoutAnalysisExecutor setGeneFileNamePattern(String geneFileNamePattern) {
+        this.geneFileNamePattern = geneFileNamePattern;
+        return this;
     }
 
-    private void printSampleFileTsv(String sample, Map<String, Gene> knockoutGenes, Map<String, TranscriptKnockout> transcriptKnockoutCountMap, Trio trio, File file) throws FileNotFoundException {
+    protected Path getGeneFileName(String gene) {
+        return Paths.get(geneFileNamePattern.replace("{gene}", gene));
+    }
 
-        try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
-            out.println("##SAMPLE=" + sample);
-            out.println("##DATE=" + TimeUtils.getDate());
-            if (trio != null) {
-                out.println("##FAMILY=" + trio.getId());
-            }
-            out.println("##num_genes=" + knockoutGenes.size());
-            out.println("##num_transcripts=" + knockoutGenes.values().stream().mapToInt(g -> g.getTranscripts().size()).sum());
-            out.println("#GENE\tGENE_ID\tTRANSCRIPT\tHOM_ALT\tMULTI_ALLELIC\tCOMP_HET\tDELETION_OVERLAP");
-            for (Gene gene : knockoutGenes.values()) {
-//                    out.print(gene.getName() + "\t" + gene.getId() + "\t");
-//                    int i = 0;
-//                    for (Transcript transcript : gene.getTranscripts()) {
-//                        if (i++ > 0) {
-//                            out.print(",");
-//                        }
-//                        out.print(transcript.getId());
-//                    }
-//                    out.println();
-                for (Transcript transcript : gene.getTranscripts()) {
-                    TranscriptKnockout count = transcriptKnockoutCountMap.get(transcript.getId());
-                    out.println(gene.getName()
-                            + "\t" + gene.getId()
-                            + "\t" + transcript.getId()
-                            + "\t" + count.getHomAltCount()
-                            + "\t" + count.getMultiAllelicCount()
-                            + "\t" + count.getCompHetCount()
-                            + "\t" + count.getDeletionOverlapCount());
-                }
-            }
+    protected GeneKnockoutBySample buildGeneKnockoutBySample(String sample, Map<String, GeneKnockout> knockoutGenes) {
+        GeneKnockoutBySample.GeneKnockoutBySampleStats stats = new GeneKnockoutBySample.GeneKnockoutBySampleStats()
+                .setNumGenes(knockoutGenes.size())
+                .setNumTranscripts(knockoutGenes.values().stream().mapToInt(g -> g.getTranscripts().size()).sum());
+        for (VariantKnockout.KnockoutType type : VariantKnockout.KnockoutType.values()) {
+            long count = knockoutGenes.values().stream().flatMap(g -> g.getTranscripts().stream())
+                    .flatMap(t -> t.getVariants().stream())
+                    .filter(v -> v.getKnockoutType().equals(type))
+                    .map(VariantKnockout::getVariant)
+                    .collect(Collectors.toSet())
+                    .size();
+            stats.getByType().put(type, count);
         }
+
+        return new GeneKnockoutBySample()
+                .setSample(new Sample().setId(sample))
+                .setStats(stats)
+                .setGenes(knockoutGenes.values());
     }
 
+    protected void printSampleFile(GeneKnockoutBySample geneKnockoutBySample) throws IOException {
+        File file = getSampleFileName(geneKnockoutBySample.getSample().getId()).toFile();
+
+        JacksonUtils.getDefaultObjectMapper()
+                .writerWithDefaultPrettyPrinter().writeValue(file, geneKnockoutBySample);
+    }
 }
 

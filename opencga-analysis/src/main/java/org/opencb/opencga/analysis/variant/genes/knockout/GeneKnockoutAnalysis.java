@@ -12,7 +12,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.core.annotations.Tool;
-import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.Family;
 import org.opencb.opencga.core.models.Panel;
 import org.opencb.opencga.core.models.common.Enums;
@@ -41,6 +41,11 @@ public class GeneKnockoutAnalysis extends OpenCgaToolScopeStudy {
     protected void check() throws Exception {
         analysisParams.updateParams(params);
         studyFqn = getStudyFqn();
+
+        if (CollectionUtils.isEmpty(analysisParams.getSample())
+                || analysisParams.getSample().size() == 1 && analysisParams.getSample().get(0).equals(ParamConstants.ALL)) {
+            analysisParams.setSample(new ArrayList<>(getVariantStorageManager().getIndexedSamples(studyFqn, getToken())));
+        }
 
         if (StringUtils.isEmpty(analysisParams.getBiotype())) {
             if (CollectionUtils.isEmpty(analysisParams.getGene()) && CollectionUtils.isEmpty(analysisParams.getPanel())) {
@@ -174,7 +179,8 @@ public class GeneKnockoutAnalysis extends OpenCgaToolScopeStudy {
             getToolExecutor(GeneKnockoutAnalysisExecutor.class)
                     .setStudy(studyFqn)
                     .setSamples(analysisParams.getSample())
-                    .setFileNamePattern(getOutDir().resolve("knockout_genes.{sample}.json").toString())
+                    .setSampleFileNamePattern(getOutDir().resolve("knockout.sample.{sample}.json").toString())
+                    .setGeneFileNamePattern(getOutDir().resolve("knockout.gene.{gene}.json").toString())
                     .setProteinCodingGenes(new HashSet<>(proteinCodingGenes))
                     .setOtherGenes(new HashSet<>(otherGenes))
                     .setBiotype(analysisParams.getBiotype())
