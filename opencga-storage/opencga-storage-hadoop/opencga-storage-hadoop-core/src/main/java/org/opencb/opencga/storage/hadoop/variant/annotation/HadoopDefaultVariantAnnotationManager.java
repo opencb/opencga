@@ -123,6 +123,8 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
                 } else {
                     long ts = System.currentTimeMillis();
 
+                    // Append all query to params to use the same filter also at the MR
+                    params = new ObjectMap(params).appendAll(query);
                     mrExecutor.run(DiscoverPendingVariantsToAnnotateDriver.class,
                             DiscoverPendingVariantsToAnnotateDriver.buildArgs(dbAdaptor.getVariantTable(), params),
                             params, "Prepare variants to annotate");
@@ -220,14 +222,6 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
             return;
         } else if (samples.isEmpty() || samples.size() == 1 && samples.get(0).equals(VariantQueryUtils.ALL)) {
             // Run on all pending samples
-            for (Integer studyId : studies) {
-                List<Integer> indexedSamples = metadataManager.getIndexedSamples(studyId);
-                if (!indexedSamples.isEmpty()) {
-                    indexAnnotationLoader.updateSampleAnnotation(studyId, indexedSamples, params);
-                }
-            }
-        } else if (samples.size() == 1 && samples.get(0).equals("force_all")) {
-            // Run on all indexed samples
             for (Integer studyId : studies) {
                 List<Integer> indexedSamples = metadataManager.getIndexedSamples(studyId);
                 if (!indexedSamples.isEmpty()) {
