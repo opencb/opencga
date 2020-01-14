@@ -58,6 +58,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
@@ -149,6 +150,10 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
             case RVTEST_RUN_COMMAND:
                 queryResponse = rvtests();
+                break;
+
+            case GATK_RUN_COMMAND:
+                queryResponse = gatk();
                 break;
 
             default:
@@ -626,6 +631,19 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.rvtestsCommandOptions.covarFile,
                         variantCommandOptions.rvtestsCommandOptions.outdir,
                         variantCommandOptions.rvtestsCommandOptions.basicOptions.params
+                ));
+    }
+
+
+    private RestResponse<Job> gatk() throws IOException {
+        return openCGAClient.getVariantClient().gatkRun(variantCommandOptions.gatkCommandOptions.study,
+                new GatkRunParams(
+                        variantCommandOptions.gatkCommandOptions.command,
+                        variantCommandOptions.gatkCommandOptions.fastaFile,
+                        variantCommandOptions.gatkCommandOptions.bamFile,
+                        variantCommandOptions.gatkCommandOptions.vcfFilename,
+                        variantCommandOptions.gatkCommandOptions.outdir,
+                        variantCommandOptions.gatkCommandOptions.basicOptions.params
                 ));
     }
 }

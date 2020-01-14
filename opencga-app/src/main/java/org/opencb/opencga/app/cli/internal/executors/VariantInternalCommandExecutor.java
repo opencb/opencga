@@ -43,6 +43,7 @@ import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
@@ -73,6 +74,7 @@ import java.util.Map;
 
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
@@ -196,6 +198,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 break;
             case RVTEST_RUN_COMMAND:
                 rvtests();
+                break;
+            case GATK_RUN_COMMAND:
+                gatk();
                 break;
             case SAMPLE_VARIANT_STATS_RUN_COMMAND:
                 sampleStats();
@@ -483,7 +488,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.genericVariantAnnotateOptions.create,
                 cliOptions.genericVariantAnnotateOptions.load,
                 cliOptions.genericVariantAnnotateOptions.customName
-                );
+        );
 
         toolRunner.execute(VariantAnnotationIndexOperationTool.class,
                 params.toObjectMap(cliOptions.commonOptions.params)
@@ -745,5 +750,22 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         rvtests.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
 
         rvtests.start();
+    }
+
+    private void gatk() throws Exception {
+        VariantCommandOptions.GatkCommandOptions cliOptions = variantCommandOptions.gatkCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.basicOptions.params);
+
+        GatkWrapperAnalysis gatk = new GatkWrapperAnalysis();
+        gatk.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.basicOptions.token);
+
+        gatk.setStudy(cliOptions.study);
+        gatk.setCommand(cliOptions.command);
+        gatk.setFastaFile(cliOptions.fastaFile);
+        gatk.setBamFile(cliOptions.bamFile);
+        gatk.setVcfFilename(cliOptions.vcfFilename);
+
+        gatk.start();
     }
 }
