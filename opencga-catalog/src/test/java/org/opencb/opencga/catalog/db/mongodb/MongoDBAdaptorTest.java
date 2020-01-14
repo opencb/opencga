@@ -36,6 +36,15 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.User;
 
 import java.io.IOException;
 import java.util.Arrays;

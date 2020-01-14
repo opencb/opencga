@@ -4,8 +4,23 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.mixin.*;
+import org.opencb.opencga.core.models.PrivateUidMixin;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyMixin;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileMixin;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualMixin;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.panel.PanelMixin;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.VariableSet;
 
 public class JacksonUtils {
 

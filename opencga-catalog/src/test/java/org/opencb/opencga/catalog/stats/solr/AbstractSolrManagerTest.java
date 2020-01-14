@@ -8,8 +8,13 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.GroupParams;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.Account;
 
 import java.io.IOException;
 import java.util.Arrays;

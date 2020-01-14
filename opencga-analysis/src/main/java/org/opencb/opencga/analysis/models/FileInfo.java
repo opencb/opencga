@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.analysis.models;
 
-import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.file.File;
 
 import java.nio.file.Path;
 

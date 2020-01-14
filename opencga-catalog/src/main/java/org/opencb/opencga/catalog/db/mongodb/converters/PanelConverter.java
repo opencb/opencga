@@ -19,7 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.Panel;
+import org.opencb.opencga.core.models.panel.Panel;
 
 /**
  * Created by pfurio on 01/06/16.

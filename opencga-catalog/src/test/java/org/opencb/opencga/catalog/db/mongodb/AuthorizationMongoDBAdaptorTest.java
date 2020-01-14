@@ -30,11 +30,11 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.PermissionRule;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
+import org.opencb.opencga.core.models.study.PermissionRule;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
 
 import java.io.IOException;

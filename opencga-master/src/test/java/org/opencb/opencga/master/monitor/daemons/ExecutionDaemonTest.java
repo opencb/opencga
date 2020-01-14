@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
@@ -88,8 +88,8 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     @Test
     public void testUseEmptyDirectory() throws Exception {
         // Create empty directory that is registered in OpenCGA
-        org.opencb.opencga.core.models.File directory = catalogManager.getFileManager().createFolder(studyFqn, "outputDir/",
-                new org.opencb.opencga.core.models.File.FileStatus(), true, "", QueryOptions.empty(), sessionIdUser).first();
+        org.opencb.opencga.core.models.file.File directory = catalogManager.getFileManager().createFolder(studyFqn, "outputDir/",
+                new org.opencb.opencga.core.models.file.File.FileStatus(), true, "", QueryOptions.empty(), sessionIdUser).first();
         catalogManager.getCatalogIOManagerFactory().get(directory.getUri()).createDirectory(directory.getUri(), true);
 
         HashMap<String, Object> params = new HashMap<>();
@@ -122,7 +122,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     public void testRunJob() throws Exception {
         HashMap<String, Object> params = new HashMap<>();
         params.put(ExecutionDaemon.OUTDIR_PARAM, "outDir");
-        org.opencb.opencga.core.models.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, sessionIdUser).first();
+        org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, sessionIdUser).first();
         params.put("myFile", inputFile.getPath());
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, sessionIdUser).first();
         String jobId = job.getId();
@@ -152,7 +152,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     public void testRegisterFilesSuccessfully() throws Exception {
         HashMap<String, Object> params = new HashMap<>();
         params.put(ExecutionDaemon.OUTDIR_PARAM, "outDir");
-        org.opencb.opencga.core.models.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, sessionIdUser).first();
+        org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, sessionIdUser).first();
         params.put("myFile", inputFile.getPath());
         Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, sessionIdUser).first();
         String jobId = job.getId();
@@ -189,7 +189,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         job = catalogManager.getJobManager().get(studyFqn, job.getId(), QueryOptions.empty(), sessionIdUser).first();
 
         assertEquals(4, job.getOutput().size());
-        for (org.opencb.opencga.core.models.File file : job.getOutput()) {
+        for (org.opencb.opencga.core.models.file.File file : job.getOutput()) {
             assertTrue(Arrays.asList("outDir/file1.txt", "outDir/file2.txt", "outDir/A/", "outDir/A/file3.txt").contains(file.getPath()));
         }
         assertEquals(0, job.getOutput().stream().filter(f -> f.getName().endsWith(ExecutionResultManager.FILE_EXTENSION))

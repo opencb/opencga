@@ -30,9 +30,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.FileTree;
-import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileTree;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.response.OpenCGAResult;
 

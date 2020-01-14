@@ -4,9 +4,9 @@ import org.junit.Test;
 import org.opencb.opencga.catalog.stats.solr.CohortSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogCohortToSolrCohortConverter;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.Cohort;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
 
 import java.time.LocalDate;
 import java.time.ZoneId;

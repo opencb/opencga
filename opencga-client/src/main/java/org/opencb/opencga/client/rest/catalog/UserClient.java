@@ -21,8 +21,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.core.models.Project;
-import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;

@@ -11,13 +11,14 @@ import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.PanelManager;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.Account;
-import org.opencb.opencga.core.models.Group;
-import org.opencb.opencga.core.models.Panel;
-import org.opencb.opencga.core.models.User;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.panel.PanelCreateParams;
+import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
-import org.opencb.opencga.server.rest.PanelWSServer;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -52,8 +53,8 @@ public class AdminWSServer extends OpenCGAWSServer {
                 user.type = Account.Type.GUEST;
             }
 
-            DataResult queryResult = catalogManager.getUserManager()
-                    .create(user.id, user.name, user.email, user.password, user.organization, null, user.type, token);
+            OpenCGAResult<User> queryResult = catalogManager.getUserManager()
+                    .create(user.getId(), user.getName(), user.getEmail(), user.getPassword(), user.getOrganization(), null, user.type, token);
 
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -202,7 +203,7 @@ public class AdminWSServer extends OpenCGAWSServer {
                 @QueryParam("overwrite") boolean overwrite,
             @ApiParam(value = "Comma separated list of global panel ids to delete")
                 @QueryParam("delete") String panelsToDelete,
-            @ApiParam(value = "Panel parameters to be installed") PanelWSServer.PanelPOST panelPost) {
+            @ApiParam(value = "Panel parameters to be installed") PanelCreateParams panelPost) {
         try {
             if (importPanels) {
                 catalogManager.getPanelManager().importPanelApp(token, overwrite);
@@ -283,7 +284,7 @@ public class AdminWSServer extends OpenCGAWSServer {
         }
     }
 
-    public static class UserCreateParams extends org.opencb.opencga.server.rest.UserWSServer.UserCreatePOST {
+    public static class UserCreateParams extends org.opencb.opencga.core.models.user.UserCreateParams {
         public Account.Type type;
     }
 

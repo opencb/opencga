@@ -50,7 +50,7 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
             return;
         }
 
-        OpenCGAResult<org.opencb.opencga.core.models.File> fileResult;
+        OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
         try {
             fileResult = catalogManager.getFileManager().get(getStudy(), filename,
                     QueryOptions.empty(), token);
@@ -79,7 +79,7 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
             return;
         }
 
-        OpenCGAResult<org.opencb.opencga.core.models.File> fileResult;
+        OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
         try {
             fileResult = catalogManager.getFileManager().get(getStudy(), filename,
                     QueryOptions.empty(), token);

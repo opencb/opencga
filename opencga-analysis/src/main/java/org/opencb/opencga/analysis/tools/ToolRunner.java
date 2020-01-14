@@ -7,7 +7,7 @@ import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.slf4j.Logger;

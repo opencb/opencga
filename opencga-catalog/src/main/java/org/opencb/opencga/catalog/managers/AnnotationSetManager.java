@@ -32,8 +32,13 @@ import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.common.Annotable;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.PrivateStudyUid;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
@@ -105,8 +110,8 @@ public abstract class AnnotationSetManager<R extends PrivateStudyUid> extends Re
     }
 
     public  <T extends Annotable> void checkUpdateAnnotations(Study study, T entry, ObjectMap parameters, QueryOptions options,
-                                       VariableSet.AnnotableDataModels annotableEntity, AnnotationSetDBAdaptor dbAdaptor, String user)
-            throws CatalogException {
+                                                              VariableSet.AnnotableDataModels annotableEntity,
+                                                              AnnotationSetDBAdaptor dbAdaptor, String user) throws CatalogException {
 
         List<VariableSet> variableSetList = study.getVariableSets();
         boolean confidentialPermissionsChecked = false;

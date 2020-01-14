@@ -21,8 +21,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.core.models.Status;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.study.Study;
 
 import javax.ws.rs.client.WebTarget;
 import java.io.IOException;

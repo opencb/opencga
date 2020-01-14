@@ -13,8 +13,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.models.Variable;
-import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -3,8 +3,8 @@ package org.opencb.opencga.analysis.variant.manager.operations;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.FileIndex;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 

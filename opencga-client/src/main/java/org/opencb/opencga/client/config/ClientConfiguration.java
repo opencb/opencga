@@ -19,7 +19,7 @@ package org.opencb.opencga.client.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.core.models.Project;
+import org.opencb.opencga.core.models.project.Project;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

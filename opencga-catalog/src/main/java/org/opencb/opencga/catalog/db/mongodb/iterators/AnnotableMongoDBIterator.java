@@ -6,7 +6,7 @@ import org.bson.Document;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.models.Annotable;
+import org.opencb.opencga.core.models.common.Annotable;
 
 import java.util.function.Function;
 

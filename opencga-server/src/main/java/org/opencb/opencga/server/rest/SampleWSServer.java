@@ -25,15 +25,16 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.SampleManager;
-import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleAclUpdateParams;
+import org.opencb.opencga.core.models.sample.SampleCreateParams;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -95,9 +96,9 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "DEPRECATED: It should be passed in the body.") @QueryParam("individual") String individual,
-            @ApiParam(value = "JSON containing sample information", required = true) CreateSamplePOST params) {
+            @ApiParam(value = "JSON containing sample information", required = true) SampleCreateParams params) {
         try {
-            params = ObjectUtils.defaultIfNull(params, new CreateSamplePOST());
+            params = ObjectUtils.defaultIfNull(params, new SampleCreateParams());
 
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
@@ -339,15 +340,6 @@ public class SampleWSServer extends OpenCGAWSServer {
         }
     }
 
-    public static class SampleAcl extends AclParams {
-        public String sample;
-        public String individual;
-        public String file;
-        public String cohort;
-
-        public boolean propagate;
-    }
-
     @POST
     @Path("/acl/{members}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
@@ -357,12 +349,12 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = "JSON containing the parameters to update the permissions. If propagate flag is set to true, it will "
                     + "propagate the permissions defined to the individuals that are associated to the matching samples", required = true)
-                    SampleAcl params) {
+                    SampleAclUpdateParams params) {
         try {
-            params = ObjectUtils.defaultIfNull(params, new SampleAcl());
+            params = ObjectUtils.defaultIfNull(params, new SampleAclUpdateParams());
             Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(
-                    params.getPermissions(), params.getAction(), params.individual, params.file, params.cohort, params.propagate);
-            List<String> idList = StringUtils.isEmpty(params.sample) ? Collections.emptyList() : getIdList(params.sample, false);
+                    params.getPermissions(), params.getAction(), params.getIndividual(), params.getFile(), params.getCohort(), params.isPropagate());
+            List<String> idList = StringUtils.isEmpty(params.getSample()) ? Collections.emptyList() : getIdList(params.getSample(), false);
             return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -404,19 +396,4 @@ public class SampleWSServer extends OpenCGAWSServer {
         }
     }
 
-    public static class CreateSamplePOST extends SampleUpdateParams {
-        @Deprecated
-        public String name;
-        @Deprecated
-        public Map<String, Object> stats;
-
-        public Sample toSample() {
-
-            String sampleId = StringUtils.isEmpty(this.getId()) ? name : this.getId();
-            String sampleName = StringUtils.isEmpty(name) ? sampleId : name;
-            return new Sample(sampleId, getSource(), getIndividualId(), getProcessing(), getCollection(), 1, 1, getDescription(), getType(),
-                    getSomatic(), getPhenotypes(), getAnnotationSets(), getAttributes())
-                    .setName(sampleName).setStats(stats);
-        }
-    }
 }

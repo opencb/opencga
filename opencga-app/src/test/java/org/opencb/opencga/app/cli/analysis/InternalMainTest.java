@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.app.cli.analysis;
 
-import ga4gh.Reads;
 import org.apache.commons.io.FileUtils;
 import org.ga4gh.models.ReadAlignment;
 import org.junit.Before;
@@ -36,7 +35,14 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.project.DataStore;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.slf4j.Logger;

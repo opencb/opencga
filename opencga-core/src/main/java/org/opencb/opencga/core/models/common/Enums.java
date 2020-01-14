@@ -1,7 +1,14 @@
 package org.opencb.opencga.core.models.common;
 
-import org.opencb.opencga.core.models.Status;
-import org.opencb.opencga.core.models.acls.permissions.*;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
+import org.opencb.opencga.core.models.cohort.CohortAclEntry;
+import org.opencb.opencga.core.models.family.FamilyAclEntry;
+import org.opencb.opencga.core.models.file.FileAclEntry;
+import org.opencb.opencga.core.models.individual.IndividualAclEntry;
+import org.opencb.opencga.core.models.job.JobAclEntry;
+import org.opencb.opencga.core.models.panel.PanelAclEntry;
+import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -154,6 +161,13 @@ public final class Enums {
             return this.value;
         }
 
+    }
+
+    public enum PermissionRuleAction {
+        ADD,
+        REMOVE,
+        REVERT,
+        NONE
     }
 
     public static class ExecutionStatus extends Status {

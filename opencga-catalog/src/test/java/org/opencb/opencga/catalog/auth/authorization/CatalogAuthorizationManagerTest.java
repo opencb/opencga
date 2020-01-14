@@ -32,12 +32,21 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
-import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.file.FileAclEntry;
+import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.study.GroupParams;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.Account;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -206,7 +215,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     /*--------------------------*/
 
     private DataResult<Group> updateGroup(String studyStr, String groupId, @Nullable String addUsers, @Nullable String removeUsers,
-                                           @Nullable String setUsers, String sessionId) throws CatalogException {
+                                          @Nullable String setUsers, String sessionId) throws CatalogException {
         GroupParams groupParams = null;
         if (org.apache.commons.lang3.StringUtils.isNotEmpty(addUsers)) {
             groupParams = new GroupParams(addUsers, GroupParams.Action.ADD);

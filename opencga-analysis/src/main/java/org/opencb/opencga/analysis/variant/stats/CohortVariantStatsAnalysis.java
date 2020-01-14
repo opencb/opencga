@@ -11,10 +11,10 @@ import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Variable;
-import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.variant.CohortVariantStatsAnalysisExecutor;
 

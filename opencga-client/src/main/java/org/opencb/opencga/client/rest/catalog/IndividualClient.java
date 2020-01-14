@@ -22,7 +22,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;

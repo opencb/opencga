@@ -21,9 +21,9 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.models.GroupParams;
-import org.opencb.opencga.core.models.MemberParams;
-import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.study.GroupParams;
+import org.opencb.opencga.core.models.study.MemberParams;
+import org.opencb.opencga.core.models.AclParams;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 

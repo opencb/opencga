@@ -20,33 +20,24 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.utils.StringUtils;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileUtils;
-import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.Account;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Status;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.study.Study;
 
-import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Paths;
-import java.util.LinkedList;
-import java.util.List;
 
 import static org.junit.Assert.*;
 

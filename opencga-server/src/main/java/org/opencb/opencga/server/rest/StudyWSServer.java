@@ -16,9 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
@@ -33,8 +31,9 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.servlet.http.HttpServletRequest;
@@ -77,9 +76,9 @@ public class StudyWSServer extends OpenCGAWSServer {
                 project = projectId;
             }
 
-            String studyId = StringUtils.isEmpty(study.id) ? study.alias : study.id;
-            return createOkResponse(catalogManager.getStudyManager().create(project, studyId, study.alias, study.name, study.type, null,
-                    study.description, null, null, null, null, null, study.stats, study.attributes, queryOptions, token));
+            String studyId = StringUtils.isEmpty(study.getId()) ? study.getAlias() : study.getId();
+            return createOkResponse(catalogManager.getStudyManager().create(project, studyId, study.getAlias(), study.getName(), study.getType(),
+                    null, study.getDescription(), null, null, null, null, null, study.getStats(), study.getAttributes(), queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -135,9 +134,9 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Update some study attributes", response = Study.class)
     public Response updateByPost(@ApiParam(value = ParamConstants.STUDY_DESCRIPTION,
             required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                 @ApiParam(value = "JSON containing the params to be updated.", required = true) StudyParams updateParams) {
+                                 @ApiParam(value = "JSON containing the params to be updated.", required = true) StudyUpdateParams updateParams) {
         try {
-            ObjectUtils.defaultIfNull(updateParams, new StudyParams());
+            ObjectUtils.defaultIfNull(updateParams, new StudyUpdateParams());
             DataResult queryResult = catalogManager.getStudyManager().update(studyStr,
                     new ObjectMap(getUpdateObjectMapper().writeValueAsString(updateParams)), null, token);
             return createOkResponse(queryResult);
@@ -217,13 +216,13 @@ public class StudyWSServer extends OpenCGAWSServer {
             OpenCGAResult<Group> group;
             if (action == ParamUtils.BasicUpdateAction.ADD) {
                 // TODO: Remove if condition in v2.0
-                if (StringUtils.isEmpty(params.id)) {
-                    params.id = params.name;
+                if (StringUtils.isEmpty(params.getId())) {
+                    params.setId(params.getName());
                 }
 
-                group = catalogManager.getStudyManager().createGroup(studyStr, params.id, params.name, params.users, token);
+                group = catalogManager.getStudyManager().createGroup(studyStr, params.getId(), params.getName(), params.getUsers(), token);
             } else {
-                group = catalogManager.getStudyManager().deleteGroup(studyStr, params.id, token);
+                group = catalogManager.getStudyManager().deleteGroup(studyStr, params.getId(), token);
             }
             return createOkResponse(group);
         } catch (Exception e) {
@@ -239,22 +238,18 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Group name") @PathParam("group") String groupId,
             @ApiParam(value = "Action to be performed: ADD, SET or REMOVE users to/from a group", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
             @QueryParam("action") GroupParams.Action action,
-            @ApiParam(value = "JSON containing the parameters", required = true) Users users) {
+            @ApiParam(value = "JSON containing the parameters", required = true) GroupUpdateParams users) {
         try {
             if (action == null) {
                 action = GroupParams.Action.ADD;
             }
 
-            GroupParams params = new GroupParams(users.users, action);
+            GroupParams params = new GroupParams(users.getUsers(), action);
             return createOkResponse(catalogManager.getStudyManager().updateGroup(studyStr, groupId, params, token));
 
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-    }
-
-    public static class Users {
-        public String users;
     }
 
     @GET
@@ -283,13 +278,13 @@ public class StudyWSServer extends OpenCGAWSServer {
                     + "existing permission rule (even if it overlaps any manual permission); REVERT to remove all permissions assigned by"
                     + " an existing permission rule (keep manual overlaps); NONE to remove an existing permission rule without removing "
                     + "any permissions that could have been assigned already by the permission rule.", allowableValues = "ADD,REMOVE,REVERT,NONE", defaultValue = "ADD")
-            @QueryParam("action") PermissionRuleAction action,
+            @QueryParam("action") Enums.PermissionRuleAction action,
             @ApiParam(value = "JSON containing the permission rule to be created or removed.", required = true) PermissionRule params) {
         try {
             if (action == null) {
-                action = PermissionRuleAction.ADD;
+                action = Enums.PermissionRuleAction.ADD;
             }
-            if (action == PermissionRuleAction.ADD) {
+            if (action == Enums.PermissionRuleAction.ADD) {
                 return createOkResponse(catalogManager.getStudyManager().createPermissionRule(studyStr, entity, params, token));
             } else {
                 PermissionRule.DeleteAction deleteAction;
@@ -311,13 +306,6 @@ public class StudyWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-    }
-
-    public enum PermissionRuleAction {
-        ADD,
-        REMOVE,
-        REVERT,
-        NONE
     }
 
     @GET
@@ -376,12 +364,12 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updateAcl(
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = "JSON containing the parameters to modify ACLs. 'template' could be either 'admin', 'analyst' or 'view_only'",
-                    required = true) StudyAcl params) {
+                    required = true) StudyAclUpdateParams params) {
         try {
-            ObjectUtils.defaultIfNull(params, new StudyAcl());
+            ObjectUtils.defaultIfNull(params, new StudyAclUpdateParams());
 
-            Study.StudyAclParams aclParams = new Study.StudyAclParams(params.getPermissions(), params.getAction(), params.template);
-            List<String> idList = getIdList(params.study, false);
+            Study.StudyAclParams aclParams = new Study.StudyAclParams(params.getPermissions(), params.getAction(), params.getTemplate());
+            List<String> idList = getIdList(params.getStudy(), false);
             return createOkResponse(studyManager.updateAcl(idList, memberId, aclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -458,7 +446,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed: ADD or REMOVE a variableSet", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
                 @QueryParam("action") ParamUtils.BasicUpdateAction action,
-            @ApiParam(value = "JSON containing the VariableSet to be created or removed.", required = true) VariableSetParameters params) {
+            @ApiParam(value = "JSON containing the VariableSet to be created or removed.", required = true) VariableSetCreateParams params) {
         try {
             if (action == null) {
                 action = ParamUtils.BasicUpdateAction.ADD;
@@ -468,16 +456,16 @@ public class StudyWSServer extends OpenCGAWSServer {
             if (action == ParamUtils.BasicUpdateAction.ADD) {
                 // Fix variable set params to support 1.3.x
                 // TODO: Remove in version 2.0.0
-                params.id = StringUtils.isNotEmpty(params.id) ? params.id : params.name;
-                for (Variable variable : params.variables) {
+                params.setId(StringUtils.isNotEmpty(params.getId()) ? params.getId() : params.getName());
+                for (Variable variable : params.getVariables()) {
                     fixVariable(variable);
                 }
 
-                queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, params.id, params.name, params.unique,
-                        params.confidential, params.description, null, params.variables, getAnnotableDataModelsList(params.entities),
-                        token);
+                queryResult = catalogManager.getStudyManager().createVariableSet(studyStr, params.getId(), params.getName(), params.getUnique(),
+                        params.getConfidential(), params.getDescription(), null, params.getVariables(),
+                        getAnnotableDataModelsList(params.getEntities()), token);
             } else {
-                queryResult = catalogManager.getStudyManager().deleteVariableSet(studyStr, params.id, token);
+                queryResult = catalogManager.getStudyManager().deleteVariableSet(studyStr, params.getId(), token);
             }
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -485,15 +473,15 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-    @POST
-    @Path("/{study}/variableSets/{variableSet}/update")
-    @ApiOperation(value = "Update fields of an existing VariableSet [PENDING]", hidden = true)
-    public Response updateVariableSets(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "VariableSet id of the VariableSet to be updated") @PathParam("variableSet") String variableSetId,
-            @ApiParam(value = "JSON containing the fields of the VariableSet to update.", required = true) UpdateableVariableSetParameters params) {
-        return createErrorResponse(new NotImplementedException("Pending of implementation"));
-    }
+//    @POST
+//    @Path("/{study}/variableSets/{variableSet}/update")
+//    @ApiOperation(value = "Update fields of an existing VariableSet [PENDING]", hidden = true)
+//    public Response updateVariableSets(
+//            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
+//            @ApiParam(value = "VariableSet id of the VariableSet to be updated") @PathParam("variableSet") String variableSetId,
+//            @ApiParam(value = "JSON containing the fields of the VariableSet to update.", required = true) UpdateableVariableSetParameters params) {
+//        return createErrorResponse(new NotImplementedException("Pending of implementation"));
+//    }
 
     @POST
     @Path("/{study}/variableSets/{variableSet}/variables/update")
@@ -534,20 +522,6 @@ public class StudyWSServer extends OpenCGAWSServer {
         return entities;
     }
 
-    private static class VariableSetParameters {
-        public Boolean unique;
-        public Boolean confidential;
-        public String id;
-        public String name;
-        public String description;
-        public List<String> entities;
-        public List<Variable> variables;
-    }
-
-    private static class UpdateableVariableSetParameters {
-
-    }
-
     private void fixVariable(Variable variable) {
         variable.setId(StringUtils.isNotEmpty(variable.getId()) ? variable.getId() : variable.getName());
         if (variable.getVariableSet() != null && variable.getVariableSet().size() > 0) {
@@ -555,39 +529,6 @@ public class StudyWSServer extends OpenCGAWSServer {
                 fixVariable(variable1);
             }
         }
-    }
-
-    public static class StudyAcl extends AclParams {
-        public String study;
-        public String template;
-    }
-
-    public static class StudyParams {
-        public String name;
-        public String alias;
-        public Study.Type type;
-        public String description;
-
-        public Map<String, Object> stats;
-        public Map<String, Object> attributes;
-
-        public boolean checkValidCreateParams() {
-            if (StringUtils.isEmpty(name) || StringUtils.isEmpty(alias)) {
-                return false;
-            }
-            return true;
-        }
-    }
-
-    public static class StudyCreateParams extends StudyParams {
-        public String id;
-    }
-
-    public static class GroupCreateParams {
-        @JsonProperty(required = true)
-        public String id;
-        public String name;
-        public String users;
     }
 
 }

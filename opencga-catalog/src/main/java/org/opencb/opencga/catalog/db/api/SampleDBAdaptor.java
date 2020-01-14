@@ -23,8 +23,8 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.List;

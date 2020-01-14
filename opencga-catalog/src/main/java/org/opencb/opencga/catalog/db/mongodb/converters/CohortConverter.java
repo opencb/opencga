@@ -18,8 +18,8 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
-import org.opencb.opencga.core.models.Cohort;
-import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.study.VariableSet;
 
 import java.util.HashSet;
 import java.util.List;

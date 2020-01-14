@@ -3,8 +3,8 @@ package org.opencb.opencga.catalog.utils;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Variable;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.study.Variable;
 
 import java.io.IOException;
 import java.util.*;

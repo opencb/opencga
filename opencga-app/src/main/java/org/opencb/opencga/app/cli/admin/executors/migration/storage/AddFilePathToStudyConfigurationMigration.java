@@ -5,8 +5,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Status;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.common.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

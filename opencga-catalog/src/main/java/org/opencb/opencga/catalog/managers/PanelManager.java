@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.ClinicalProperty;
 import org.opencb.biodata.models.commons.OntologyTerm;
@@ -24,19 +25,19 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
-import org.opencb.opencga.catalog.models.update.PanelUpdateParams;
+import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.Panel;
-import org.opencb.opencga.core.models.Status;
-import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.models.acls.permissions.PanelAclEntry;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.panel.PanelAclEntry;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -636,10 +637,17 @@ public class PanelManager extends ResourceManager<Panel> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse PanelUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyId)
                 .append("query", query)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
@@ -683,10 +691,17 @@ public class PanelManager extends ResourceManager<Panel> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse PanelUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("panelId", panelId)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("options", options)
                 .append("token", token);
 
@@ -734,7 +749,7 @@ public class PanelManager extends ResourceManager<Panel> {
      *                          exist or is not allowed to be updated.
      */
     public OpenCGAResult<Panel> update(String studyStr, List<String> panelIds, PanelUpdateParams updateParams, QueryOptions options,
-                                    String token) throws CatalogException {
+                                       String token) throws CatalogException {
         return update(studyStr, panelIds, updateParams, false, options, token);
     }
 
@@ -745,10 +760,17 @@ public class PanelManager extends ResourceManager<Panel> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse PanelUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("panelIds", panelIds)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
@@ -791,7 +813,11 @@ public class PanelManager extends ResourceManager<Panel> {
             throws CatalogException {
         ObjectMap parameters = new ObjectMap();
         if (updateParams != null) {
-            parameters = updateParams.getUpdateMap();
+            try {
+                parameters = updateParams.getUpdateMap();
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not parse PanelUpdateParams object: " + e.getMessage(), e);
+            }
         }
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -1146,7 +1172,7 @@ public class PanelManager extends ResourceManager<Panel> {
 
     // **************************   ACLs  ******************************** //
     public OpenCGAResult<Map<String, List<String>>> getAcls(String studyId, List<String> panelList, String member, boolean ignoreException,
-                                                   String token) throws CatalogException {
+                                                            String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
@@ -1217,7 +1243,7 @@ public class PanelManager extends ResourceManager<Panel> {
     }
 
     public OpenCGAResult<Map<String, List<String>>> updateAcl(String studyId, List<String> panelStrList, String memberList,
-                                                           AclParams aclParams, String token) throws CatalogException {
+                                                              AclParams aclParams, String token) throws CatalogException {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 

@@ -26,7 +26,7 @@ import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.models.Account;
+import org.opencb.opencga.core.models.user.Account;
 
 import java.util.List;
 

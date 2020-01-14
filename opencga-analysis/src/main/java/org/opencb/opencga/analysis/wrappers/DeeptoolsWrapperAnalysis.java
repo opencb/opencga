@@ -74,7 +74,7 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                         File coverageFile = new File(getOutDir() + "/" + file.getName() + ".bw");
                         if (coverageFile.exists()) {
                             // Get catalog path
-                            OpenCGAResult<org.opencb.opencga.core.models.File> fileResult;
+                            OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
                             try {
                                 fileResult = catalogManager.getFileManager().get(getStudy(), bamFile, QueryOptions.empty(), token);
                             } catch (CatalogException e) {

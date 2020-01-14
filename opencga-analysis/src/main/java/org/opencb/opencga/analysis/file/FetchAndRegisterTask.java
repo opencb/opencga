@@ -7,9 +7,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 

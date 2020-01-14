@@ -19,25 +19,20 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.commons.Disorder;
-import org.opencb.biodata.models.commons.Phenotype;
-import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.managers.FamilyManager;
-import org.opencb.opencga.catalog.models.update.FamilyUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Family;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Location;
-import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyAclUpdateParams;
+import org.opencb.opencga.core.models.family.FamilyCreateParams;
+import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -156,9 +151,9 @@ public class FamilyWSServer extends OpenCGAWSServer {
                     String studyStr,
             @ApiParam(value = "Comma separated list of member ids to be associated to the created family") @QueryParam("members")
                     String members,
-            @ApiParam(value = "JSON containing family information", required = true) FamilyPOST family) {
+            @ApiParam(value = "JSON containing family information", required = true) FamilyCreateParams family) {
         try {
-            family = ObjectUtils.defaultIfNull(family, new FamilyPOST());
+            family = ObjectUtils.defaultIfNull(family, new FamilyCreateParams());
             DataResult<Family> queryResult = familyManager.create(studyStr,
                     family.toFamily(), getIdList(members), queryOptions, token);
             return createOkResponse(queryResult);
@@ -307,10 +302,6 @@ public class FamilyWSServer extends OpenCGAWSServer {
         }
     }
 
-    public static class FamilyAcl extends AclParams {
-        public String family;
-    }
-
     @POST
     @Path("/acl/{members}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
@@ -318,11 +309,11 @@ public class FamilyWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
                     String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
-            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) FamilyWSServer.FamilyAcl params) {
+            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) FamilyAclUpdateParams params) {
         try {
-            params = ObjectUtils.defaultIfNull(params, new FamilyAcl());
+            params = ObjectUtils.defaultIfNull(params, new FamilyAclUpdateParams());
             AclParams familyAclParams = new AclParams(params.getPermissions(), params.getAction());
-            List<String> idList = getIdList(params.family, false);
+            List<String> idList = getIdList(params.getFamily(), false);
             return createOkResponse(familyManager.updateAcl(studyStr, idList, memberId, familyAclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -361,73 +352,6 @@ public class FamilyWSServer extends OpenCGAWSServer {
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
-        }
-    }
-
-    protected static class IndividualPOST {
-        public String id;
-        public String name;
-
-        public String father;
-        public String mother;
-        public Multiples multiples;
-        public Location location;
-
-        public IndividualProperty.Sex sex;
-        public String ethnicity;
-        public Boolean parentalConsanguinity;
-        public Individual.Population population;
-        public String dateOfBirth;
-        public IndividualProperty.KaryotypicSex karyotypicSex;
-        public IndividualProperty.LifeStatus lifeStatus;
-        public IndividualProperty.AffectationStatus affectationStatus;
-        public List<AnnotationSet> annotationSets;
-        public List<Phenotype> phenotypes;
-        public List<Disorder> disorders;
-        public Map<String, Object> attributes;
-
-
-        public Individual toIndividual() {
-            String individualId = StringUtils.isEmpty(id) ? name : id;
-            String individualName = StringUtils.isEmpty(name) ? individualId : name;
-            return new Individual(individualId, individualName, father != null ? new Individual().setId(father) : null,
-                    mother != null ? new Individual().setId(mother) : null, multiples, location,
-                    sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth,
-                    null, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes, disorders)
-                    .setAttributes(attributes);
-        }
-
-    }
-
-    private static class FamilyPOST {
-        public String id;
-        public String name;
-        public String description;
-
-        public List<Phenotype> phenotypes;
-        public List<Disorder> disorders;
-        public List<IndividualPOST> members;
-
-        public Integer expectedSize;
-
-        public Map<String, Object> attributes;
-        public List<AnnotationSet> annotationSets;
-
-        public Family toFamily() {
-
-            List<Individual> relatives = null;
-            if (members != null) {
-                relatives = new ArrayList<>(members.size());
-                for (IndividualPOST member : members) {
-                    relatives.add(member.toIndividual());
-                }
-            }
-
-            String familyId = StringUtils.isEmpty(id) ? name : id;
-            String familyName = StringUtils.isEmpty(name) ? familyId : name;
-            int familyExpectedSize = expectedSize != null ? expectedSize : -1;
-            return new Family(familyId, familyName, phenotypes, disorders, relatives, description, familyExpectedSize, annotationSets,
-                    attributes);
         }
     }
 }

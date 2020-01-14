@@ -29,7 +29,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.master.monitor.MonitorService;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
 import org.opencb.opencga.core.config.Admin;
-import org.opencb.opencga.core.models.Panel;
+import org.opencb.opencga.core.models.panel.Panel;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;

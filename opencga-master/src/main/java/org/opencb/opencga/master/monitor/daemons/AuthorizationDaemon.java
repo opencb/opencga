@@ -9,8 +9,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.PermissionRule;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.study.PermissionRule;
+import org.opencb.opencga.core.models.study.Study;
 
 import java.util.Arrays;
 import java.util.List;

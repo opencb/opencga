@@ -35,8 +35,8 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.Account;
-import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

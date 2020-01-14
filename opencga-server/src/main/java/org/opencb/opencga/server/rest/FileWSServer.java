@@ -17,14 +17,12 @@
 package org.opencb.opencga.server.rest;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.file.FetchAndRegisterTask;
 import org.opencb.opencga.analysis.file.FileDeleteTask;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -38,14 +36,12 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.FileTree;
-import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.*;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.servlet.http.HttpServletRequest;
@@ -95,13 +91,14 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(params, new FileCreateParams());
             DataResult<File> file;
-            if (params.directory) {
+            if (params.isDirectory()) {
                 // Create directory
-                file = fileManager.createFolder(studyStr, params.path, new File.FileStatus(File.FileStatus.READY), params.parents,
-                        params.description, queryOptions, token);
+                file = fileManager.createFolder(studyStr, params.getPath(), new File.FileStatus(File.FileStatus.READY), params.isParents(),
+                        params.getDescription(), queryOptions, token);
             } else {
                 // Create a file
-                file = fileManager.createFile(studyStr, params.path, params.description, params.parents, params.content, token);
+                file = fileManager.createFile(studyStr, params.getPath(), params.getDescription(), params.isParents(), params.getContent(),
+                        token);
             }
             return createOkResponse(file);
         } catch (Exception e) {
@@ -639,7 +636,7 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @JsonIgnoreProperties({"status"})
-    public static class FileUpdateParams extends org.opencb.opencga.catalog.models.update.FileUpdateParams {
+    public static class FileUpdateParams extends org.opencb.opencga.core.models.file.FileUpdateParams {
     }
 
     @POST
@@ -707,27 +704,27 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Create the parent directories if they do not exist") @DefaultValue("false") @QueryParam("parents") boolean parents,
             @ApiParam(name = "params", value = "File parameters", required = true) FileLinkParams params) {
         try {
-            if (StringUtils.isEmpty(params.uri)) {
+            if (StringUtils.isEmpty(params.getUri())) {
                 throw new CatalogException("Missing mandatory field 'uri'");
             }
 
             logger.debug("study: {}", studyStr);
-            logger.debug("uri: {}", params.uri);
+            logger.debug("uri: {}", params.getUri());
             logger.debug("params: {}", params);
 
             // TODO: We should stop doing this at some point. As the parameters are now passed through the body, users can already pass "/" characters
-            if (params.path == null) {
-                params.path = "";
+            if (params.getPath() == null) {
+                params.setPath("");
             }
-            params.path = params.path.replace(":", "/");
+            params.setPath(params.getPath().replace(":", "/"));
 
             ObjectMap objectMap = new ObjectMap("parents", parents);
-            objectMap.putIfNotEmpty("description", params.description);
+            objectMap.putIfNotEmpty("description", params.getDescription());
             objectMap.putIfNotNull("relatedFiles", params.getRelatedFiles());
 
             List<OpenCGAResult<File>> queryResultList = new ArrayList<>();
-            URI myUri = UriUtils.createUri(params.uri);
-            queryResultList.add(catalogManager.getFileManager().link(studyStr, myUri, params.path, objectMap, token));
+            URI myUri = UriUtils.createUri(params.getUri());
+            queryResultList.add(catalogManager.getFileManager().link(studyStr, myUri, params.getPath(), objectMap, token));
 
             return createOkResponse(queryResultList);
         } catch (Exception e) {
@@ -1061,50 +1058,6 @@ public class FileWSServer extends OpenCGAWSServer {
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
-        }
-    }
-
-    private static class FileCreateParams {
-        @JsonProperty(required = true)
-        public String path;
-        public String content;
-        public String description;
-        @JsonProperty(defaultValue = "false")
-        public boolean parents;
-        @JsonProperty(defaultValue = "false")
-        public boolean directory;
-    }
-
-    public static class RelatedFile {
-        public String file;
-        public File.RelatedFile.Relation relation;
-    }
-
-    private static class FileLinkParams {
-        public String uri;
-        public String path;
-        public String description;
-        public List<RelatedFile> relatedFiles;
-
-        @Override
-        public String toString() {
-            return "FileLinkParams{" +
-                    "uri='" + uri + '\'' +
-                    ", path='" + path + '\'' +
-                    ", description='" + description + '\'' +
-                    ", relatedFiles=" + relatedFiles +
-                    '}';
-        }
-
-        public List<File.RelatedFile> getRelatedFiles() {
-            if (ListUtils.isEmpty(relatedFiles)) {
-                return null;
-            }
-            List<File.RelatedFile> relatedFileList = new ArrayList<>(relatedFiles.size());
-            for (RelatedFile relatedFile : relatedFiles) {
-                relatedFileList.add(new File.RelatedFile(new File().setId(relatedFile.file), relatedFile.relation));
-            }
-            return relatedFileList;
         }
     }
 

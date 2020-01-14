@@ -27,8 +27,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.study.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

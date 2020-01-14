@@ -28,7 +28,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.Group;
+import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;

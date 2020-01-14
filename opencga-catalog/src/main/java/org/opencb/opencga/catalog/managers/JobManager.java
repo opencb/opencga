@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -33,19 +34,19 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
-import org.opencb.opencga.catalog.models.update.JobUpdateParams;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.ToolInfo;
-import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.models.acls.permissions.JobAclEntry;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.job.JobAclEntry;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobUpdateParams;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -726,10 +727,17 @@ public class JobManager extends ResourceManager<Job> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse JobUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("query", query)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
@@ -792,10 +800,17 @@ public class JobManager extends ResourceManager<Job> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse JobUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("jobIds", jobIds)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
@@ -840,10 +855,17 @@ public class JobManager extends ResourceManager<Job> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse JobUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("jobId", jobId)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("options", options)
                 .append("token", token);
 
@@ -883,7 +905,14 @@ public class JobManager extends ResourceManager<Job> {
         if (updateParams == null) {
             throw new CatalogException("Missing parameters to update");
         }
-        if (updateParams.getUpdateMap().isEmpty()) {
+
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams.getUpdateMap();
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse JobUpdateParams object: " + e.getMessage(), e);
+        }
+        if (updateMap.isEmpty()) {
             throw new CatalogException("Missing parameters to update");
         }
 
@@ -930,7 +959,7 @@ public class JobManager extends ResourceManager<Job> {
 //            updateParams.setErrorLog(getFile(study.getUid(), updateParams.getErrorLog().getPath(), userId));
 //        }
 
-        return jobDBAdaptor.update(job.getUid(), updateParams.getUpdateMap(), options);
+        return jobDBAdaptor.update(job.getUid(), updateMap, options);
     }
 
     private File getFile(long studyUid, String path, String userId) throws CatalogException {

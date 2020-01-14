@@ -28,13 +28,20 @@ import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CohortManager;
-import org.opencb.opencga.catalog.models.update.CohortUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortAclUpdateParams;
+import org.opencb.opencga.core.models.cohort.CohortCreateParams;
+import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.study.VariableSet;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -121,9 +128,9 @@ public class CohortWSServer extends OpenCGAWSServer {
                     String variableSetId,
             @ApiParam(value = ParamConstants.VARIANBLE_SET_DESCRIPTION) @QueryParam("variableSet") String variableSet,
             @ApiParam(value = "Variable name") @QueryParam("variable") String variableName,
-            @ApiParam(value = "JSON containing cohort information", required = true) CohortParameters params) {
+            @ApiParam(value = "JSON containing cohort information", required = true) CohortCreateParams params) {
         try {
-            params = ObjectUtils.defaultIfNull(params, new CohortParameters());
+            params = ObjectUtils.defaultIfNull(params, new CohortCreateParams());
             if (StringUtils.isNotEmpty(variableSetId)) {
                 variableSet = variableSetId;
             }
@@ -308,18 +315,6 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    @ApiModel
-    public static class AnnotationsetParameters {
-        @ApiModelProperty(required = true)
-        public String id;
-
-        @Deprecated
-        public String name;
-
-        @ApiModelProperty
-        public Map<String, Object> annotations;
-    }
-
     @GET
     @Path("/{cohorts}/acl")
     @ApiOperation(value = "Return the acl of the cohort. If member is provided, it will only return the acl for the member.", response = Map.class)
@@ -337,21 +332,17 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    public static class CohortAcl extends AclParams {
-        public String cohort;
-    }
-
     @POST
     @Path("/acl/{members}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
-            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) CohortAcl params) {
+            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) CohortAclUpdateParams params) {
         try {
-            ObjectUtils.defaultIfNull(params, new CohortAcl());
+            ObjectUtils.defaultIfNull(params, new CohortAclUpdateParams());
             AclParams aclParams = new AclParams(params.getPermissions(), params.getAction());
-            List<String> idList = getIdList(params.cohort, false);
+            List<String> idList = getIdList(params.getCohort(), false);
             return createOkResponse(cohortManager.updateAcl(studyStr, idList, memberId, aclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -389,17 +380,6 @@ public class CohortWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-    }
-
-    protected static class CohortParameters {
-        public String id;
-        @Deprecated
-        public String name;
-        public Study.Type type;
-        public String description;
-        public List<String> samples;
-        public List<AnnotationSet> annotationSets;
-        public Map<String, Object> attributes;
     }
 
 }

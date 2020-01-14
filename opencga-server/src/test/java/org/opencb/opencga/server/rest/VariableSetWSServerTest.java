@@ -20,10 +20,10 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Variable;
-import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.study.VariableSet;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
