@@ -106,7 +106,7 @@ public class GeneKnockoutBySample {
             return this;
         }
 
-        public TranscriptKnockout addTranscript(String transcript) {
+        public TranscriptKnockout getTranscript(String transcript) {
             return transcriptsMap.computeIfAbsent(transcript, TranscriptKnockout::new);
         }
 

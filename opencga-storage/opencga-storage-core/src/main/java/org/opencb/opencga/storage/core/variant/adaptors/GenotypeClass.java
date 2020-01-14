@@ -54,6 +54,9 @@ public enum GenotypeClass {
      * 0/1, 1/2, 0/2, 2/4, 0|1, 1|0, 0/0/1, ...
      */
     HET(str -> {
+        if (str.equals("0/1")) {
+            return true;
+        }
         Genotype gt = parseGenotype(str);
         if (gt == null) {
             // Skip invalid genotypes
@@ -80,6 +83,9 @@ public enum GenotypeClass {
      * 0/1, 0/2, 0/3, 0|1, ...
      */
     HET_REF(str -> {
+        if (str.equals("0/1")) {
+            return true;
+        }
         Genotype gt = parseGenotype(str);
         if (gt == null) {
             // Skip invalid genotypes

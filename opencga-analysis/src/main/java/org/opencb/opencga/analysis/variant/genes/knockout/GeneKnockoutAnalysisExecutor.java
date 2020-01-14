@@ -1,5 +1,7 @@
 package org.opencb.opencga.analysis.variant.genes.knockout;
 
+import com.fasterxml.jackson.databind.ObjectWriter;
+import org.opencb.opencga.analysis.variant.genes.knockout.result.GeneKnockoutByGene;
 import org.opencb.opencga.analysis.variant.genes.knockout.result.GeneKnockoutBySample;
 import org.opencb.opencga.analysis.variant.genes.knockout.result.GeneKnockoutBySample.GeneKnockout;
 import org.opencb.opencga.analysis.variant.genes.knockout.result.VariantKnockout;
@@ -181,9 +183,14 @@ public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
 
     protected void printSampleFile(GeneKnockoutBySample geneKnockoutBySample) throws IOException {
         File file = getSampleFileName(geneKnockoutBySample.getSample().getId()).toFile();
+        ObjectWriter writer = JacksonUtils.getDefaultObjectMapper().writerFor(GeneKnockoutBySample.class).withDefaultPrettyPrinter();
+        writer.writeValue(file, geneKnockoutBySample);
+    }
 
-        JacksonUtils.getDefaultObjectMapper()
-                .writerWithDefaultPrettyPrinter().writeValue(file, geneKnockoutBySample);
+    protected void printGeneFile(GeneKnockoutByGene geneKnockoutByGene) throws IOException {
+        File file = getGeneFileName(geneKnockoutByGene.getName()).toFile();
+        ObjectWriter writer = JacksonUtils.getDefaultObjectMapper().writerFor(GeneKnockoutByGene.class).withDefaultPrettyPrinter();
+        writer.writeValue(file, geneKnockoutByGene);
     }
 }
 

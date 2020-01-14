@@ -1,13 +1,12 @@
 package org.opencb.opencga.analysis.variant.genes.knockout.result;
 
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 public class GeneKnockoutByGene {
 
     private String id;
     private String name;
-    private List<KnockoutSample> samples;
+    private List<KnockoutSample> samples = new LinkedList<>();
 
     public String getId() {
         return id;
@@ -27,6 +26,10 @@ public class GeneKnockoutByGene {
         return this;
     }
 
+    public KnockoutSample getSample(String sample) {
+        return samples.stream().filter(s -> s.getId().equals(sample)).findFirst().orElseGet(() -> new KnockoutSample().setId(sample));
+    }
+
     public List<KnockoutSample> getSamples() {
         return samples;
     }
@@ -36,10 +39,15 @@ public class GeneKnockoutByGene {
         return this;
     }
 
+    public GeneKnockoutByGene addSample(KnockoutSample sample) {
+        this.samples.add(sample);
+        return this;
+    }
+
 
     public static class KnockoutSample {
         private String id;
-        private Collection<TranscriptKnockout> transcripts;
+        private Map<String, TranscriptKnockout> transcriptsMap = new HashMap<>(); // Internal only
 
         public String getId() {
             return id;
@@ -50,12 +58,23 @@ public class GeneKnockoutByGene {
             return this;
         }
 
+        public TranscriptKnockout getTranscript(String transcript) {
+            return transcriptsMap.computeIfAbsent(transcript, TranscriptKnockout::new);
+        }
+
         public Collection<TranscriptKnockout> getTranscripts() {
-            return transcripts;
+            return transcriptsMap.values();
         }
 
         public KnockoutSample setTranscripts(Collection<TranscriptKnockout> transcripts) {
-            this.transcripts = transcripts;
+            if (transcripts == null) {
+                transcriptsMap = null;
+            } else {
+                transcriptsMap = new HashMap<>();
+                for (TranscriptKnockout transcript : transcripts) {
+                    transcriptsMap.put(transcript.getId(), transcript);
+                }
+            }
             return this;
         }
     }
