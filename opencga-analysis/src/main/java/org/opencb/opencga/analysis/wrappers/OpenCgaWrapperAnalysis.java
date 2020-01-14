@@ -47,7 +47,7 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
 
     protected String getCatalogPath(String inputFile) throws ToolException {
         // Get catalog path
-        OpenCGAResult<org.opencb.opencga.core.models.File> fileResult;
+        OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
         try {
             fileResult = catalogManager.getFileManager().get(getStudy(), inputFile, QueryOptions.empty(), token);
         } catch (CatalogException e) {
