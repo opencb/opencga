@@ -32,9 +32,14 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.List;
 
+import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.BwaCommandOptions.BWA_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.DeeptoolsCommandOptions.DEEPTOOLS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.FastqcCommandOptions.FASTQC_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.SamtoolsCommandOptions.SAMTOOLS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
@@ -133,6 +138,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(COHORT_VARIANT_STATS_QUERY_COMMAND, variantCommandOptions.cohortVariantStatsQueryCommandOptions);
         variantSubCommands.addCommand(PLINK_RUN_COMMAND, variantCommandOptions.plinkCommandOptions);
         variantSubCommands.addCommand(RVTEST_RUN_COMMAND, variantCommandOptions.rvtestsCommandOptions);
+        variantSubCommands.addCommand(GATK_RUN_COMMAND, variantCommandOptions.gatkCommandOptions);
 
         alignmentCommandOptions = new AlignmentCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("alignment", alignmentCommandOptions);
@@ -140,13 +146,13 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexAlignmentCommandOptions);
         alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentCommandOptions);
         alignmentSubCommands.addCommand("stats-run", alignmentCommandOptions.statsAlignmentCommandOptions);
-        alignmentSubCommands.addCommand("stats-info", alignmentCommandOptions.statsAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("stats-info", alignmentCommandOptions.statsInfoAlignmentCommandOptions);
         alignmentSubCommands.addCommand("coverage-run", alignmentCommandOptions.coverageAlignmentCommandOptions);
 //        alignmentSubCommands.addCommand("annotate", alignmentCommandOptions.annotateVariantCommandOptions);
-        alignmentSubCommands.addCommand(BwaWrapperAnalysis.ID, alignmentCommandOptions.bwaCommandOptions);
-        alignmentSubCommands.addCommand(SamtoolsWrapperAnalysis.ID, alignmentCommandOptions.samtoolsCommandOptions);
-        alignmentSubCommands.addCommand(DeeptoolsWrapperAnalysis.ID, alignmentCommandOptions.deeptoolsCommandOptions);
-        alignmentSubCommands.addCommand(FastqcWrapperAnalysis.ID, alignmentCommandOptions.fastqcCommandOptions);
+        alignmentSubCommands.addCommand(BWA_RUN_COMMAND, alignmentCommandOptions.bwaCommandOptions);
+        alignmentSubCommands.addCommand(SAMTOOLS_RUN_COMMAND, alignmentCommandOptions.samtoolsCommandOptions);
+        alignmentSubCommands.addCommand(DEEPTOOLS_RUN_COMMAND, alignmentCommandOptions.deeptoolsCommandOptions);
+        alignmentSubCommands.addCommand(FASTQC_RUN_COMMAND, alignmentCommandOptions.fastqcCommandOptions);
 
         toolsCommandOptions = new ToolsCommandOptions(commonCommandOptions, jCommander);
         jCommander.addCommand("tools", toolsCommandOptions);

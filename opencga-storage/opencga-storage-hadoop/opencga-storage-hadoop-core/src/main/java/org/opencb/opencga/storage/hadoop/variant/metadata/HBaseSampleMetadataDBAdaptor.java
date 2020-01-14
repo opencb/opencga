@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.metadata;
 
 import org.apache.hadoop.conf.Configuration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.Locked;
+import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.metadata.adaptors.SampleMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -42,7 +42,7 @@ public class HBaseSampleMetadataDBAdaptor extends AbstractHBaseDBAdaptor impleme
     }
 
     @Override
-    public Locked lock(int studyId, int id, long lockDuration, long timeout) throws StorageEngineException {
+    public Lock lock(int studyId, int id, long lockDuration, long timeout) throws StorageEngineException {
         return lock(getSampleMetadataRowKey(studyId, id), lockDuration, timeout);
     }
 }

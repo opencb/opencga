@@ -9,6 +9,11 @@ public class VariantExportParams extends VariantQueryParams {
     private String outputFormat;
     private boolean compress;
     private String variantsFile;
+    private String include;
+    private String exclude;
+    private int limit;
+    private int skip;
+    private boolean summary;
 
     public VariantExportParams() {
     }
@@ -65,5 +70,50 @@ public class VariantExportParams extends VariantQueryParams {
 
     public String getVariantsFile() {
         return variantsFile;
+    }
+
+    public String getInclude() {
+        return include;
+    }
+
+    public VariantExportParams setInclude(String include) {
+        this.include = include;
+        return this;
+    }
+
+    public String getExclude() {
+        return exclude;
+    }
+
+    public VariantExportParams setExclude(String exclude) {
+        this.exclude = exclude;
+        return this;
+    }
+
+    public int getLimit() {
+        return limit;
+    }
+
+    public VariantExportParams setLimit(int limit) {
+        this.limit = limit;
+        return this;
+    }
+
+    public int getSkip() {
+        return skip;
+    }
+
+    public VariantExportParams setSkip(int skip) {
+        this.skip = skip;
+        return this;
+    }
+
+    public boolean isSummary() {
+        return summary;
+    }
+
+    public VariantExportParams setSummary(boolean summary) {
+        this.summary = summary;
+        return this;
     }
 }

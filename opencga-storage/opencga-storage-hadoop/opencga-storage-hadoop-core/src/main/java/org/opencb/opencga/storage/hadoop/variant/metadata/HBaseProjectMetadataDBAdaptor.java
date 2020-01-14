@@ -10,8 +10,9 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
-import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
+import org.opencb.opencga.storage.hadoop.utils.HBaseLockManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 import org.slf4j.Logger;
@@ -35,7 +36,7 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
 
     private static Logger logger = LoggerFactory.getLogger(HBaseStudyMetadataDBAdaptor.class);
 
-    private final HBaseLock lock;
+    private final HBaseLockManager lock;
 
     public HBaseProjectMetadataDBAdaptor(VariantTableHelper helper) {
         this(null, helper.getMetaTableAsString(), helper.getConf());
@@ -43,11 +44,11 @@ public class HBaseProjectMetadataDBAdaptor extends AbstractHBaseDBAdaptor implem
 
     public HBaseProjectMetadataDBAdaptor(HBaseManager hBaseManager, String metaTableName, Configuration configuration) {
         super(hBaseManager, metaTableName, configuration);
-        lock = new HBaseLock(this.hBaseManager, this.tableName, family, null);
+        lock = new HBaseLockManager(this.hBaseManager, this.tableName, family, null);
     }
 
     @Override
-    public long lockProject(long lockDuration, long timeout) throws InterruptedException, TimeoutException, StorageEngineException {
+    public Lock lockProject(long lockDuration, long timeout) throws InterruptedException, TimeoutException, StorageEngineException {
         try {
             ensureTableExists();
             return lock.lock(getProjectRowKey(), getLockColumn(), lockDuration, timeout);

@@ -75,7 +75,7 @@ public class InternalMain {
 //                            commandExecutor = new FunctionalCommandExecutor(cliOptionsParser.getFunctionalCommandOptions());
 //                            break;
                         case "variant":
-                            commandExecutor = new VariantCommandExecutor(cliOptionsParser.getVariantCommandOptions());
+                            commandExecutor = new VariantInternalCommandExecutor(cliOptionsParser.getVariantCommandOptions());
                             break;
                         case "alignment":
                             commandExecutor = new AlignmentCommandExecutor(cliOptionsParser.getAlignmentCommandOptions());

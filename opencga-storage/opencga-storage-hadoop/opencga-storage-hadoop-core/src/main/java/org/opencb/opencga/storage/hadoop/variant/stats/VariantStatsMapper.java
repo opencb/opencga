@@ -76,7 +76,7 @@ public class VariantStatsMapper extends VariantMapper<ImmutableBytesWritable, Pu
             samples.put(cohort, samplesInCohort);
         });
 
-        converter = new VariantStatsToHBaseConverter(helper, studyMetadata, cohortIds);
+        converter = new VariantStatsToHBaseConverter(studyMetadata, cohortIds);
 
     }
 

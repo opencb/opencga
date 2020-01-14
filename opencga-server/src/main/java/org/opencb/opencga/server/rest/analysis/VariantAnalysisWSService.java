@@ -37,6 +37,7 @@ import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
@@ -49,13 +50,11 @@ import org.opencb.opencga.core.models.AnnotationSet;
 import org.opencb.opencga.core.models.Cohort;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.rest.RestResponse;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
-import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
-import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleDataManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import javax.servlet.http.HttpServletRequest;
@@ -525,27 +524,25 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Deprecated
     @GET
     @Path("/{variant}/sampleData")
-    @ApiOperation(value = DEPRECATED + " User sample/data", hidden = true, response = VariantSampleData.class)
+    @ApiOperation(value = DEPRECATED + " User sample/query", hidden = true, response = Variant.class)
     public Response sampleDataOld(
             @ApiParam(value = "Variant") @PathParam("variant") String variant,
             @ApiParam(value = "Study where all the samples belong to") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Genotypes that the sample must have to be selected") @QueryParam("genotype") @DefaultValue("0/1,1/1") String genotypesStr,
-            @ApiParam(value = "Do not group by genotype. Return all genotypes merged.") @QueryParam(VariantSampleDataManager.MERGE) @DefaultValue("false") boolean merge) {
-        return sampleData(variant, studyStr, genotypesStr, merge);
+            @ApiParam(value = "Genotypes that the sample must have to be selected") @QueryParam("genotype") @DefaultValue("0/1,1/1") String genotypesStr) {
+        return sampleQuery(variant, studyStr, genotypesStr);
     }
 
     @GET
-    @Path("/sample/data")
-    @ApiOperation(value = "Get sample data of a given variant", response = VariantSampleData.class)
+    @Path("/sample/query")
+    @ApiOperation(value = "Get sample data of a given variant", response = Variant.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query")
     })
-    public Response sampleData(
+    public Response sampleQuery(
             @ApiParam(value = "Variant") @QueryParam("variant") String variant,
             @ApiParam(value = "Study where all the samples belong to") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Genotypes that the sample must have to be selected") @QueryParam("genotype") @DefaultValue("0/1,1/1") String genotypesStr,
-            @ApiParam(value = "Do not group by genotype. Return all genotypes merged.") @QueryParam(VariantSampleDataManager.MERGE) @DefaultValue("false") boolean merge
+            @ApiParam(value = "Genotypes that the sample must have to be selected") @QueryParam("genotype") String genotypesStr
     ) {
         return run(() -> {
             queryOptions.putAll(query);
@@ -816,7 +813,19 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         return submitJob(RvtestsWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
-//    @POST
+    @POST
+    @Path("/gatk/run")
+    @ApiOperation(value = GatkWrapperAnalysis.DESCRIPTION, response = Job.class)
+    public Response gatkRun(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = GatkRunParams.DESCRIPTION) GatkRunParams params) {
+        return submitJob(GatkWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
+    }
+
+    //    @POST
 //    @Path("/hw/run")
 //    @ApiOperation(value = PENDING, response = Job.class)
 //    public Response hwRun() {

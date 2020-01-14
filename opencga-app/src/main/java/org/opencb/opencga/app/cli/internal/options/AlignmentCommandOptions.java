@@ -339,6 +339,7 @@ public class AlignmentCommandOptions {
 
     @Parameters(commandNames = BwaWrapperAnalysis.ID, commandDescription = BwaWrapperAnalysis.DESCRIPTION)
     public class BwaCommandOptions {
+        public static final String BWA_RUN_COMMAND = BwaWrapperAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
@@ -361,8 +362,8 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"--fastq2-file"}, description = "FastQ #2 file.")
         public String fastq2File;
 
-        @Parameter(names = {"--sam-file"}, description = "SAM file.")
-        public String samFile;
+        @Parameter(names = {"--sam-filename"}, description = "SAM file name.")
+        public String samFilename;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
@@ -372,6 +373,7 @@ public class AlignmentCommandOptions {
 
     @Parameters(commandNames = SamtoolsWrapperAnalysis.ID, commandDescription = SamtoolsWrapperAnalysis.DESCRIPTION)
     public class SamtoolsCommandOptions {
+        public static final String SAMTOOLS_RUN_COMMAND = SamtoolsWrapperAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
@@ -417,6 +419,7 @@ public class AlignmentCommandOptions {
 
     @Parameters(commandNames = DeeptoolsWrapperAnalysis.ID, commandDescription = DeeptoolsWrapperAnalysis.DESCRIPTION)
     public class DeeptoolsCommandOptions {
+        public static final String DEEPTOOLS_RUN_COMMAND = DeeptoolsWrapperAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
@@ -430,9 +433,6 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"--bam-file"}, description = "BAM file.")
         public String bamFile;
 
-        @Parameter(names = {"--coverage-file"}, description = "Coverage file.")
-        public String coverageFile;
-
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
     }
@@ -441,6 +441,7 @@ public class AlignmentCommandOptions {
 
     @Parameters(commandNames = FastqcWrapperAnalysis.ID, commandDescription = FastqcWrapperAnalysis.DESCRIPTION)
     public class FastqcCommandOptions {
+        public static final String FASTQC_RUN_COMMAND = FastqcWrapperAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;

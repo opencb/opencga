@@ -12,7 +12,7 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.core.tools.variant.CohortVariantStatsAnalysisExecutor;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.exception.ToolExecutorException;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageAnalysisExecutor;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
 import org.opencb.opencga.core.annotations.ToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
@@ -24,12 +24,10 @@ import java.util.List;
 @ToolExecutor(id="opencga-local", tool = CohortVariantStatsAnalysis.ID,
         framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.STORAGE)
-public class CohortVariantStatsLocalAnalysisExecutor extends CohortVariantStatsAnalysisExecutor implements VariantStorageAnalysisExecutor {
+public class CohortVariantStatsLocalAnalysisExecutor extends CohortVariantStatsAnalysisExecutor implements VariantStorageToolExecutor {
 
     @Override
     public void run() throws ToolException {
-
-
         VariantStorageManager variantStorageManager = getVariantStorageManager();
 
         List<String> sampleNames = getSampleNames();

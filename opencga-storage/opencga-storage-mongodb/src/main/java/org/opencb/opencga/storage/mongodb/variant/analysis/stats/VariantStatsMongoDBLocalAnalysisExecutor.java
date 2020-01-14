@@ -16,17 +16,15 @@ import org.opencb.opencga.core.tools.variant.VariantStatsAnalysisExecutor;
 import org.opencb.opencga.core.annotations.ToolExecutor;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.exception.ToolExecutorException;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
-import org.opencb.opencga.storage.mongodb.variant.analysis.MongoDBAnalysisExecutor;
+import org.opencb.opencga.storage.mongodb.variant.analysis.MongoDBVariantStorageToolExecutor;
 import org.opencb.opencga.storage.mongodb.variant.stats.MongoDBVariantStatsCalculator;
 
 import java.io.BufferedOutputStream;
@@ -38,32 +36,10 @@ import java.util.concurrent.ExecutionException;
 @ToolExecutor(id = "mongodb-local", tool = "variant-stats",
         framework = ToolExecutor.Framework.LOCAL,
         source = ToolExecutor.Source.MONGODB)
-public class VariantStatsMongoDBLocalAnalysisExecutor extends VariantStatsAnalysisExecutor implements MongoDBAnalysisExecutor {
+public class VariantStatsMongoDBLocalAnalysisExecutor extends VariantStatsAnalysisExecutor implements MongoDBVariantStorageToolExecutor {
 
     @Override
     public void run() throws ToolException {
-        if (isIndex()) {
-            calculateAndIndex();
-        } else {
-            calculate();
-        }
-    }
-
-    private void calculateAndIndex() throws ToolExecutorException {
-        QueryOptions calculateStatsOptions = new QueryOptions(executorParams);
-
-        VariantStorageEngine variantStorageEngine = getMongoDBVariantStorageEngine();
-        try {
-            calculateStatsOptions.putAll(getVariantsQuery());
-
-            variantStorageEngine.calculateStats(getStudy(), getCohorts(), calculateStatsOptions);
-            variantStorageEngine.close();
-        } catch (IOException | StorageEngineException e) {
-            throw new ToolExecutorException(e);
-        }
-    }
-
-    public void calculate() throws ToolException {
         MongoDBVariantStorageEngine engine = getMongoDBVariantStorageEngine();
 
         VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
@@ -131,4 +107,5 @@ public class VariantStatsMongoDBLocalAnalysisExecutor extends VariantStatsAnalys
             throw new ToolExecutorException(e);
         }
     }
+
 }

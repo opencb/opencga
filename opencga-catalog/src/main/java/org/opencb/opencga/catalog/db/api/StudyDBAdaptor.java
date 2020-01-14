@@ -26,7 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;

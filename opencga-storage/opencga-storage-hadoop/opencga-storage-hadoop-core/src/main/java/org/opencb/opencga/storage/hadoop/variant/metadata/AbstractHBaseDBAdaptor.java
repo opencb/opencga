@@ -4,16 +4,18 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.UnmodifiableIterator;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.Locked;
+import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.IteratorWithClosable;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
-import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
+import org.opencb.opencga.storage.hadoop.utils.HBaseLockManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
@@ -25,6 +27,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 
@@ -41,7 +44,7 @@ public abstract class AbstractHBaseDBAdaptor {
 
     protected final HBaseManager hBaseManager;
     protected final ObjectMapper objectMapper;
-    private final HBaseLock lock;
+    private final HBaseLockManager lock;
     protected final String tableName;
     private Boolean tableExists = null; // unknown
     protected byte[] family;
@@ -65,7 +68,7 @@ public abstract class AbstractHBaseDBAdaptor {
             // Create a new instance of HBaseManager to close only if needed
             this.hBaseManager = new HBaseManager(hBaseManager);
         }
-        lock = new HBaseLock(this.hBaseManager, this.tableName, family, null);
+        lock = new HBaseLockManager(this.hBaseManager, this.tableName, family, null);
     }
 
     protected void ensureTableExists() {
@@ -101,6 +104,10 @@ public abstract class AbstractHBaseDBAdaptor {
     }
 
     protected <T> Iterator<T> iterator(byte[] rowKeyPrefix, Class<T> clazz, byte[] valueColumn, boolean reversed) {
+        return iterator(rowKeyPrefix, clazz, valueColumn, reversed, null);
+    }
+
+    protected <T> Iterator<T> iterator(byte[] rowKeyPrefix, Class<T> clazz, byte[] valueColumn, boolean reversed, Filter filter) {
         if (!tableExists()) {
             return Collections.emptyIterator();
         }
@@ -115,6 +122,9 @@ public abstract class AbstractHBaseDBAdaptor {
             scan.setStopRow(startRow);
         }
         scan.addColumn(family, valueColumn);
+        if (filter != null) {
+            scan.setFilter(filter);
+        }
 
         try {
             return hBaseManager.act(tableName, table -> {
@@ -134,7 +144,40 @@ public abstract class AbstractHBaseDBAdaptor {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
 
+    protected <T> Iterator<T> iterator(Iterator<byte[]> rows, Class<T> clazz, byte[] valueColumn) {
+        if (!tableExists()) {
+            return Collections.emptyIterator();
+        }
+
+        try {
+            return hBaseManager.act(tableName, table -> {
+                Iterator<Get> getsIterator = Iterators.transform(rows, row -> new Get(row).addColumn(family, valueColumn));
+                // Group gets in lists of 100 elements
+                UnmodifiableIterator<List<Get>> groupedIterator = Iterators.partition(getsIterator, 100);
+                // Table.get
+                Iterator<Iterator<Result>> resultsIteratorIterator = Iterators.transform(groupedIterator, subList -> {
+                    try {
+                        return Iterators.forArray(table.get(subList));
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
+                // Concat and filter out null values
+                Iterator<Result> resultsIterator = Iterators.filter(Iterators.concat(resultsIteratorIterator), Objects::nonNull);
+                // Convert to clazz
+                return Iterators.transform(resultsIterator, result -> {
+                    try {
+                        return convertResult(result, clazz);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                });
+            });
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     protected <T> T readValue(byte[] rowKey, Class<T> clazz) {
@@ -216,16 +259,15 @@ public abstract class AbstractHBaseDBAdaptor {
         }
     }
 
-    protected Locked lock(byte[] rowKey, long lockDuration, long timeout) throws StorageEngineException {
+    protected Lock lock(byte[] rowKey, long lockDuration, long timeout) throws StorageEngineException {
         return lock(rowKey, getLockColumn(), lockDuration, timeout);
     }
 
-    protected Locked lock(byte[] rowKey, byte[] lockName, long lockDuration, long timeout) throws StorageEngineException {
-        long token = lockToken(rowKey, lockName, lockDuration, timeout);
-        return () -> unLock(rowKey, lockName, token);
+    protected Lock lock(byte[] rowKey, byte[] lockName, long lockDuration, long timeout) throws StorageEngineException {
+        return lockToken(rowKey, lockName, lockDuration, timeout);
     }
 
-    protected long lockToken(byte[] rowKey, byte[] lockName, long lockDuration, long timeout) throws StorageEngineException {
+    protected Lock lockToken(byte[] rowKey, byte[] lockName, long lockDuration, long timeout) throws StorageEngineException {
         try {
             ensureTableExists();
             return this.lock.lock(rowKey, lockName, lockDuration, timeout);

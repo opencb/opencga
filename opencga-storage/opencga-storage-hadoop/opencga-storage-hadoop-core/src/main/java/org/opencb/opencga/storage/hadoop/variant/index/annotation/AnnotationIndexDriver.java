@@ -97,7 +97,7 @@ public class AnnotationIndexDriver extends AbstractVariantsTableDriver {
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            annotationConverter = new HBaseToVariantAnnotationConverter(new GenomeHelper(context.getConfiguration()), -1);
+            annotationConverter = new HBaseToVariantAnnotationConverter();
             annotationIndexConverter = new AnnotationIndexConverter();
         }
 

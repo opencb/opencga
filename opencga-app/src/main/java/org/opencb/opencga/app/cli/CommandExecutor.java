@@ -58,7 +58,7 @@ public abstract class CommandExecutor {
     @Deprecated
     protected String userId;
     @Deprecated
-    protected String sessionId;
+    protected String token;
     @Nullable
     protected CliSession cliSession;
 
@@ -136,7 +136,7 @@ public abstract class CommandExecutor {
             privateLogger.debug("CLI session file is: {}", this.cliSession);
 
             if (cliSession != null) {
-                this.sessionId = cliSession.getToken();
+                this.token = cliSession.getToken();
                 this.userId = cliSession.getUser();
             }
 

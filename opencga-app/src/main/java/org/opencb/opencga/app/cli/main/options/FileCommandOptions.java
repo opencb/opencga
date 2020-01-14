@@ -185,7 +185,8 @@ public class FileCommandOptions {
 
     @Parameters(commandNames = {"download"}, commandDescription = "Download file")
     public class DownloadCommandOptions extends BaseFileCommand {
-
+        @Parameter(names = {"--to"}, description = "Path where the file will be downloaded", arity = 1, required = true)
+        public String fileDestiny;
     }
 
     @Parameters(commandNames = {"grep"}, commandDescription = "Get file information")

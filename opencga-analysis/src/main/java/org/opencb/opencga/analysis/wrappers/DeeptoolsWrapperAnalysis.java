@@ -2,15 +2,19 @@ package org.opencb.opencga.analysis.wrappers;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,13 +23,12 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     public final static String ID = "deeptools";
     public final static String DESCRIPTION = "Deeptools is a suite of python tools particularly developed for the efficient analysis of"
-        + " high-throughput sequencing data, such as ChIP-seq, RNA-seq or MNase-seq.";
+            + " high-throughput sequencing data, such as ChIP-seq, RNA-seq or MNase-seq.";
 
     public final static String DEEPTOOLS_DOCKER_IMAGE = "dhspence/docker-deeptools";
 
     private String command;
     private String bamFile;
-    private String coverageFile;
 
     protected void check() throws Exception {
         super.check();
@@ -38,9 +41,6 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
             case "bamCoverage":
                 if (StringUtils.isEmpty(bamFile)) {
                     throw new ToolException("Missing BAM file when executing 'deeptools " + command + "'.");
-                }
-                if (StringUtils.isEmpty(coverageFile)) {
-                    throw new ToolException("Missing coverage file when executing 'deeptools " + command + "'.");
                 }
                 break;
             default:
@@ -70,7 +70,27 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                 boolean success = false;
                 switch (command) {
                     case "bamCoverage": {
-                        if (new File(coverageFile).exists()) {
+                        File file = new File(fileUriMap.get(bamFile).getPath());
+                        File coverageFile = new File(getOutDir() + "/" + file.getName() + ".bw");
+                        if (coverageFile.exists()) {
+                            // Get catalog path
+                            OpenCGAResult<org.opencb.opencga.core.models.File> fileResult;
+                            try {
+                                fileResult = catalogManager.getFileManager().get(getStudy(), bamFile, QueryOptions.empty(), token);
+                            } catch (CatalogException e) {
+                                throw new ToolException("Error accessing file '" + bamFile + "' of the study " + getStudy() + "'", e);
+                            }
+                            if (fileResult.getNumResults() <= 0) {
+                                throw new ToolException("File '" + bamFile + "' not found in study '" + getStudy() + "'");
+                            }
+
+                            String catalogPath = new File(fileResult.getResults().get(0).getPath()).getParent() + "/"
+                                    + coverageFile.getName();
+                            Path src = coverageFile.toPath();
+                            Path dest = new File(file.getParent()).toPath();
+
+                            moveFile(getStudy(), src, dest, catalogPath, token);
+
                             success = true;
                         }
                         break;
@@ -129,8 +149,10 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
         switch (command) {
             case "bamCoverage": {
                 File file = new File(fileUriMap.get(bamFile).getPath());
+                String coverageFilename = file.getName() + ".bw";
+
                 sb.append(" -b ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
-                sb.append(" -o ").append(DOCKER_OUTPUT_PATH).append("/").append(new File(coverageFile).getName());
+                sb.append(" -o ").append(DOCKER_OUTPUT_PATH).append("/").append(coverageFilename);
                 break;
             }
         }
@@ -164,15 +186,6 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
 
     public DeeptoolsWrapperAnalysis setBamFile(String bamFile) {
         this.bamFile = bamFile;
-        return this;
-    }
-
-    public String getCoverageFile() {
-        return coverageFile;
-    }
-
-    public DeeptoolsWrapperAnalysis setCoverageFile(String coverageFile) {
-        this.coverageFile = coverageFile;
         return this;
     }
 }

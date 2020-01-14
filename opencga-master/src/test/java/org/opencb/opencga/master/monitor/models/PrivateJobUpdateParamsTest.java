@@ -8,7 +8,7 @@ import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.HashMap;
 

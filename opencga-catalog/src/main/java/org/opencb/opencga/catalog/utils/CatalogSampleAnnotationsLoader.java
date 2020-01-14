@@ -54,7 +54,6 @@ public class CatalogSampleAnnotationsLoader {
     }
 
     public DataResult<Sample> loadSampleAnnotations(File pedFile, String variableSetId, String sessionId) throws CatalogException {
-
         if (!pedFile.getFormat().equals(File.Format.PED)) {
             throw new CatalogException(pedFile.getUid() + " is not a pedigree file");
         }
@@ -114,19 +113,27 @@ public class CatalogSampleAnnotationsLoader {
             loadedSamples.put(sample.getId(), sample);
         }
 
+        QueryOptions options = new QueryOptions()
+                .append(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD));
         auxTime = System.currentTimeMillis();
         for (Individual individual : ped.getIndividuals().values()) {
+            Map<String, Object> annotations = getAnnotation(individual, sampleMap, variableSet, ped.getFields());
+            AnnotationSet annotationSet = new AnnotationSet("pedigreeAnnotation", variableSet.getId(), annotations);
             Sample sample;
             if (loadedSamples.containsKey(individual.getId())) {
                 sample = loadedSamples.get(individual.getId());
                 logger.info("Sample " + individual.getId() + " already loaded with id : " + sample.getId());
+                logger.info("Annotating sample {}", individual.getId());
+                catalogManager.getSampleManager().update(study.getFqn(), individual.getId(), new SampleUpdateParams()
+                        .setAnnotationSets(Collections.singletonList(annotationSet)), options, sessionId);
             } else {
                 DataResult<Sample> sampleDataResult = catalogManager.getSampleManager().create(study.getFqn(),
                         new Sample()
                                 .setId(individual.getId())
                                 .setSource(pedFile.getName())
                                 .setDescription("Sample loaded from the pedigree File = {path: " + pedFile.getPath() + ", name: \""
-                                        + pedFile.getName() + "\" }"),
+                                        + pedFile.getName() + "\" }")
+                                .setAnnotationSets(Collections.singletonList(annotationSet)),
                         QueryOptions.empty(), sessionId);
                 sample = sampleDataResult.getResults().get(0);
             }
@@ -134,19 +141,19 @@ public class CatalogSampleAnnotationsLoader {
         }
         logger.debug("Added {} samples in {}ms", ped.getIndividuals().size(), System.currentTimeMillis() - auxTime);
 
-        //Annotate Samples
-        auxTime = System.currentTimeMillis();
-        QueryOptions options = new QueryOptions()
-                .append(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD));
-        for (Map.Entry<String, Sample> entry : sampleMap.entrySet()) {
-            Map<String, Object> annotations = getAnnotation(ped.getIndividuals().get(entry.getKey()), sampleMap, variableSet, ped
-                    .getFields());
-            catalogManager.getSampleManager().update(study.getFqn(), entry.getValue().getId(), new SampleUpdateParams()
-                    .setAnnotationSets(Collections.singletonList(
-                            new AnnotationSet("pedigreeAnnotation", variableSet.getId(), annotations)
-                    )), options, sessionId);
-        }
-        logger.debug("Annotated {} samples in {}ms", ped.getIndividuals().size(), System.currentTimeMillis() - auxTime);
+//        //Annotate Samples
+//        auxTime = System.currentTimeMillis();
+//        QueryOptions options = new QueryOptions()
+//                .append(Constants.ACTIONS, new ObjectMap(AnnotationSetManager.ANNOTATION_SETS, ParamUtils.UpdateAction.ADD));
+//        for (Map.Entry<String, Sample> entry : sampleMap.entrySet()) {
+//            Map<String, Object> annotations = getAnnotation(ped.getIndividuals().get(entry.getKey()), sampleMap, variableSet, ped
+//                    .getFields());
+//            catalogManager.getSampleManager().update(study.getFqn(), entry.getValue().getId(), new SampleUpdateParams()
+//                    .setAnnotationSets(Collections.singletonList(
+//                            new AnnotationSet("pedigreeAnnotation", variableSet.getId(), annotations)
+//                    )), options, sessionId);
+//        }
+//        logger.debug("Annotated {} samples in {}ms", ped.getIndividuals().size(), System.currentTimeMillis() - auxTime);
 
         //TODO: Create Cohort
 

@@ -26,6 +26,7 @@ import org.opencb.opencga.analysis.variant.operations.VariantFamilyIndexOperatio
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
@@ -48,6 +49,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND_DESCRIPTION;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSampleQueryCommandOptions.SAMPLE_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexCommandOptions.SECONDARY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSecondaryIndexDeleteCommandOptions.SECONDARY_INDEX_DELETE_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.AggregateCommandOptions.AGGREGATE_COMMAND;
@@ -93,6 +95,7 @@ public class VariantCommandOptions {
     public final VariantExportStatsCommandOptions exportVariantStatsCommandOptions;
     public final VariantImportCommandOptions importVariantCommandOptions;
     public final VariantIbsCommandOptions ibsVariantCommandOptions;
+    public final VariantSampleQueryCommandOptions sampleQueryCommandOptions;
     public final VariantSamplesFilterCommandOptions samplesFilterCommandOptions;
     public final VariantHistogramCommandOptions histogramCommandOptions;
 
@@ -106,6 +109,7 @@ public class VariantCommandOptions {
     // Wrappers
     public final PlinkCommandOptions plinkCommandOptions;
     public final RvtestsCommandOptions rvtestsCommandOptions;
+    public final GatkCommandOptions gatkCommandOptions;
 
     public final JCommander jCommander;
     public final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -140,6 +144,7 @@ public class VariantCommandOptions {
         this.exportVariantStatsCommandOptions = new VariantExportStatsCommandOptions();
         this.importVariantCommandOptions = new VariantImportCommandOptions();
         this.ibsVariantCommandOptions = new VariantIbsCommandOptions();
+        this.sampleQueryCommandOptions = new VariantSampleQueryCommandOptions();
         this.samplesFilterCommandOptions = new VariantSamplesFilterCommandOptions();
         this.histogramCommandOptions = new VariantHistogramCommandOptions();
         this.gwasCommandOptions = new GwasCommandOptions();
@@ -149,6 +154,7 @@ public class VariantCommandOptions {
         this.cohortVariantStatsQueryCommandOptions = new CohortVariantStatsQueryCommandOptions();
         this.plinkCommandOptions = new PlinkCommandOptions();
         this.rvtestsCommandOptions = new RvtestsCommandOptions();
+        this.gatkCommandOptions = new GatkCommandOptions();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = VariantIndexOperationTool.DESCRIPTION)
@@ -563,7 +569,7 @@ public class VariantCommandOptions {
         public String outdir = "-";
     }
 
-    @Parameters(commandNames = {"samples"}, commandDescription = "Get samples given a set of variants")
+    @Parameters(commandNames = {VariantSamplesFilterCommandOptions.SAMPLE_RUN_COMMAND}, commandDescription = "Get samples given a set of variants")
     public class VariantSamplesFilterCommandOptions extends SampleVariantFilterParams {
         public static final String SAMPLE_RUN_COMMAND = "sample-run";
 
@@ -575,6 +581,26 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
+    }
+
+    @Parameters(commandNames = {SAMPLE_QUERY_COMMAND}, commandDescription = "Get sample data of a given variant")
+    public class VariantSampleQueryCommandOptions extends SampleVariantFilterParams {
+        public static final String SAMPLE_QUERY_COMMAND = "sample-query";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public NumericOptions numericOptions = commonNumericOptions;
+
+        @Parameter(names = {"--variant"}, description = "Variant to query", required = true)
+        public String variant;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
+        public String study;
+
+        @Parameter(names = {"--genotype"}, description = "Genotypes that the sample must have to be selected")
+        public List<String> genotype;
 
     }
 
@@ -835,7 +861,7 @@ public class VariantCommandOptions {
                 + " For more information, please visit " + SampleCommandOptions.SearchCommandOptions.ANNOTATION_DOC_URL)
         public String samplesAnnotation;
 
-        @Parameter(names = {"--index-stats"}, description = "Index results in catalog."
+        @Parameter(names = {"--index"}, description = "Index results in catalog."
                 + "Create an AnnotationSet for the VariableSet " + SampleVariantStatsAnalysis.VARIABLE_SET_ID)
         public boolean index;
 
@@ -951,6 +977,32 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--covar-file"}, description = "Covariate file.")
         public String covarFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+    }
+
+    @Parameters(commandNames = GatkCommandOptions.GATK_RUN_COMMAND, commandDescription = GatkWrapperAnalysis.DESCRIPTION)
+    public class GatkCommandOptions {
+        public static final String GATK_RUN_COMMAND = GatkWrapperAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study.")
+        public String study;
+
+        @Parameter(names = {"--command"}, description = "Gatk command. Currently, the only command supported is 'HaplotypeCaller'")
+        public String command = "HaplotypeCaller";
+
+        @Parameter(names = {"--fasta-file"}, description = "FASTA file for reference genome")
+        public String fastaFile;
+
+        @Parameter(names = {"--bam-file"}, description = "BAM file for input alignments.")
+        public String bamFile;
+
+        @Parameter(names = {"--vcf-filename"}, description = "VCF filename.")
+        public String vcfFilename;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;

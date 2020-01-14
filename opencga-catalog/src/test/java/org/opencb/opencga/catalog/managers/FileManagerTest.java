@@ -38,7 +38,7 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;

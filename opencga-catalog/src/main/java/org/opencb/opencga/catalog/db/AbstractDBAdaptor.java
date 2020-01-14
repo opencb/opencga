@@ -20,7 +20,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;

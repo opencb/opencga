@@ -32,8 +32,8 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.api.operations.variant.VariantFileDeleteParams;
 import org.opencb.opencga.core.api.variant.*;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.rest.RestResponse;
-import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.io.IOException;
@@ -149,6 +149,21 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "/sample/run", buildRestPOSTParams(null, study, body), POST, Job.class);
     }
 
+    public RestResponse<Variant> sampleQuery(String variant, String study, List<String> genotype, int limit, int skip, QueryOptions options)
+            throws IOException {
+        if (options == null) {
+            options = new QueryOptions();
+        } else {
+            options = new QueryOptions(options);
+        }
+        options.append(ParamConstants.STUDY_PARAM, study)
+                .append("variant", variant)
+                .append("genotype", genotype == null ? null : String.join(",", genotype))
+                .append(QueryOptions.LIMIT, limit)
+                .append(QueryOptions.SKIP, skip);
+        return execute(VARIANT_URL, "/sample/query", options, GET, Variant.class);
+    }
+
     public RestResponse<Job> sampleStatsRun(String study, SampleVariantStatsAnalysisParams body) throws IOException {
         return execute(VARIANT_URL, "/sample/stats/run", buildRestPOSTParams(null, study, body), POST, Job.class);
     }
@@ -190,6 +205,10 @@ public class VariantClient extends AbstractParentClient {
 
     public RestResponse<Job> rvtestsRun(String study, RvtestsRunParams body) throws IOException {
         return execute(VARIANT_URL, "/rvtests/run", buildRestPOSTParams(null, study, body), POST, Job.class);
+    }
+
+    public RestResponse<Job> gatkRun(String study, GatkRunParams body) throws IOException {
+        return execute(VARIANT_URL, "/gatk/run", buildRestPOSTParams(null, study, body), POST, Job.class);
     }
 
     private ObjectMap buildRestDELETEParams(String project, String study, ToolParams deleteParams) {

@@ -2,16 +2,20 @@ package org.opencb.opencga.analysis.wrappers;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,7 +34,7 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
     private String indexBaseFile;
     private String fastq1File;
     private String fastq2File;
-    private String samFile;
+    private String samFilename;
 
     private Map<String, URI> fileUriMap = new HashMap<>();
 
@@ -74,18 +78,40 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
                                 ? new File(params.getString("p"))
                                 : new File(fileUriMap.get(fastaFile).getPath());
                         String prefix = getOutDir().toAbsolutePath() + "/" + file.getName();
+                        String[] suffixes = new String[]{".sa", ".bwt", ".pac", ".amb", ".ann"};
+                        success = true;
+                        for (String suffix : suffixes) {
+                            if (!new File(prefix + suffix).exists()) {
+                                success = false;
+                                break;
+                            }
+                        }
+                        if (success) {
+                            // Get catalog path
+                            OpenCGAResult<org.opencb.opencga.core.models.File> fileResult;
+                            try {
+                                fileResult = catalogManager.getFileManager().get(getStudy(), fastaFile, QueryOptions.empty(), token);
+                            } catch (CatalogException e) {
+                                throw new ToolException("Error accessing file '" + fastaFile + "' of the study " + getStudy() + "'", e);
+                            }
+                            if (fileResult.getNumResults() <= 0) {
+                                throw new ToolException("File '" + fastaFile + "' not found in study '" + getStudy() + "'");
+                            }
 
-                        if (new File(prefix + ".sa").exists()
-                                && new File(prefix + ".bwt").exists()
-                                && new File(prefix + ".pac").exists()
-                                && new File(prefix + ".amb").exists()
-                                && new File(prefix + ".ann").exists()) {
-                            success = true;
+                            String catalogPath = fileResult.getResults().get(0).getPath();
+                            Path dest = new File(file.getParent()).toPath();
+
+                            for (String suffix : suffixes) {
+                                Path src = new File(prefix + suffix).toPath();
+
+                                System.out.println("src = " + src + ", dest = " + dest + ", catalog path = " + catalogPath.concat(suffix));
+                                moveFile(getStudy(), src, dest, catalogPath.concat(suffix), token);
+                            }
                         }
                         break;
                     }
                     case "mem": {
-                        if (new File(samFile).exists()) {
+                        if (new File(getOutDir() + "/" + samFilename).exists()) {
                             success = true;
                         }
                         break;
@@ -161,23 +187,23 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
             }
 
             case "mem": {
-                if (StringUtils.isEmpty(samFile)) {
-                    samFile = DOCKER_OUTPUT_PATH + "/out.sam";
+                if (StringUtils.isEmpty(samFilename)) {
+                    samFilename = "out.sam";
                 }
-                sb.append(" -o ").append(DOCKER_OUTPUT_PATH).append("/").append(new File(samFile).getName());
+                sb.append(" -o ").append(DOCKER_OUTPUT_PATH).append("/").append(samFilename);
 
                 if (StringUtils.isNotEmpty(indexBaseFile)) {
-                    File file = new File(indexBaseFile);
+                    File file = new File(fileUriMap.get(indexBaseFile).getPath());
                     sb.append(" ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
                 }
 
                 if (StringUtils.isNotEmpty(fastq1File)) {
-                    File file = new File(fastq1File);
+                    File file = new File(fileUriMap.get(fastq1File).getPath());
                     sb.append(" ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
                 }
 
                 if (StringUtils.isNotEmpty(fastq2File)) {
-                    File file = new File(fastq1File);
+                    File file = new File(fileUriMap.get(fastq2File).getPath());
                     sb.append(" ").append(srcTargetMap.get(file.getParentFile().getAbsolutePath())).append("/").append(file.getName());
                 }
                 break;
@@ -244,12 +270,12 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
         return this;
     }
 
-    public String getSamFile() {
-        return samFile;
+    public String getSamFilename() {
+        return samFilename;
     }
 
-    public BwaWrapperAnalysis setSamFile(String samFile) {
-        this.samFile = samFile;
+    public BwaWrapperAnalysis setSamFilename(String samFilename) {
+        this.samFilename = samFilename;
         return this;
     }
 }

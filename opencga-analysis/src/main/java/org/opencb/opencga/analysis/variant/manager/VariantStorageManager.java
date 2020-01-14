@@ -33,10 +33,9 @@ import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.datastore.solr.SolrManager;
 import org.opencb.opencga.analysis.StorageManager;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
-import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
+import org.opencb.opencga.analysis.variant.manager.operations.*;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.analysis.variant.metadata.CatalogVariantMetadataFactory;
-import org.opencb.opencga.analysis.variant.manager.operations.*;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.audit.AuditRecord;
@@ -49,7 +48,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -58,11 +57,11 @@ import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
+import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.sample.VariantSampleData;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
@@ -228,17 +227,19 @@ public class VariantStorageManager extends StorageManager {
         String projectId = getProjectId(projectStr, studies, token);
         secureOperation(VariantAnnotationIndexOperationTool.ID, projectId, params, token, engine -> {
             new VariantAnnotationOperationManager(this, engine)
-                    .annotationLoad(projectStr, studies, params, loadFile, token);
+                    .annotationLoad(projectStr, getStudiesFqn(studies, token), params, loadFile, token);
             return null;
         });
     }
 
-    public void annotate(String projectStr, List<String> studies, String region, boolean overwriteAnnotations, String outDir, String outputFileName, ObjectMap params, String token)
+    public void annotate(String projectStr, List<String> studies, String region, boolean overwriteAnnotations, String outDir,
+                         String outputFileName, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
         String projectId = getProjectId(projectStr, studies, token);
         secureOperationByProject(VariantAnnotationIndexOperationTool.ID, projectId, params, token, engine -> {
+            List<String> studiesFqn = getStudiesFqn(studies, token);
             new VariantAnnotationOperationManager(this, engine)
-                    .annotate(projectStr, studies, region, outputFileName, Paths.get(outDir), params, token, overwriteAnnotations);
+                    .annotate(projectStr, studiesFqn, region, outputFileName, Paths.get(outDir), params, token, overwriteAnnotations);
             return null;
         });
     }
@@ -374,6 +375,12 @@ public class VariantStorageManager extends StorageManager {
         });
     }
 
+    public List<List<String>> getTriosFromFamily(String study, Family family, boolean skipIncompleteFamilies, String token)
+            throws CatalogException, StorageEngineException {
+        VariantStorageEngine variantStorageEngine = getVariantStorageEngine(study, token);
+        return catalogUtils.getTriosFromFamily(study, family, variantStorageEngine.getMetadataManager(), skipIncompleteFamilies, token);
+    }
+
     public void aggregateFamily(String studyStr, List<String> samples, ObjectMap params, String token)
             throws CatalogException, StorageEngineException {
 
@@ -486,7 +493,7 @@ public class VariantStorageManager extends StorageManager {
         });
     }
 
-    public VariantIterable iterable(String token) throws CatalogException, StorageEngineException {
+    public VariantIterable iterable(String token) {
         return (query, options) -> {
             try {
                 return iterator(query, options, token);
@@ -522,7 +529,7 @@ public class VariantStorageManager extends StorageManager {
         return get(intersectQuery, queryOptions, token);
     }
 
-    public DataResult<VariantSampleData> getSampleData(String variant, String study, QueryOptions inputOptions, String token)
+    public DataResult<Variant> getSampleData(String variant, String study, QueryOptions inputOptions, String token)
             throws CatalogException, IOException, StorageEngineException {
         Query query = new Query(VariantQueryParam.STUDY.key(), study);
         QueryOptions options = inputOptions == null ? new QueryOptions() : new QueryOptions(inputOptions);
@@ -623,6 +630,14 @@ public class VariantStorageManager extends StorageManager {
                 .stream()
                 .map(Sample::getId)
                 .collect(Collectors.toSet());
+    }
+
+    public CellBaseUtils getCellBaseUtils(String study, String token) throws StorageEngineException, CatalogException {
+        try (VariantStorageEngine storageEngine = getVariantStorageEngine(study, token)) {
+            return storageEngine.getCellBaseUtils();
+        } catch (IOException e) {
+            throw new StorageEngineException("Error closing the VariantStorageEngine", e);
+        }
     }
 
     // Permission related methods
@@ -979,6 +994,17 @@ public class VariantStorageManager extends StorageManager {
             responses.add(beaconResponse);
         }
         return responses;
+    }
+
+    private List<String> getStudiesFqn(List<String> studies, String token) throws CatalogException {
+        List<String> studiesFqn = null;
+        if (studies != null) {
+            studiesFqn = new ArrayList<>(studies.size());
+            for (String study : studies) {
+                studiesFqn.add(getStudyFqn(study, token));
+            }
+        }
+        return studiesFqn;
     }
 
     private String getStudyFqn(String study, String token) throws CatalogException {

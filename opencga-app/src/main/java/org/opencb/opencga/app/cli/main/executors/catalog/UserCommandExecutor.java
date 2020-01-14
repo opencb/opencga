@@ -30,8 +30,8 @@ import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.core.rest.RestResponse;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.IOException;
 import java.util.ArrayList;

@@ -29,7 +29,7 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.Study;
 import org.opencb.opencga.core.models.VariableSet;
-import org.opencb.opencga.core.rest.RestResponse;
+import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
 import java.util.List;

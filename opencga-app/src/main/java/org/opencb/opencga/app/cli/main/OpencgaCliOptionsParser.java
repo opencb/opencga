@@ -29,11 +29,17 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.*;
 
+import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.BwaCommandOptions.BWA_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.DeeptoolsCommandOptions.DEEPTOOLS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.FastqcCommandOptions.FASTQC_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.SamtoolsCommandOptions.SAMTOOLS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSampleQueryCommandOptions.SAMPLE_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSamplesFilterCommandOptions.SAMPLE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantStatsCommandOptions.STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.main.options.OperationsCommandOptions.*;
@@ -159,6 +165,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         jobSubCommands.addCommand("create", jobCommandOptions.createCommandOptions);
         jobSubCommands.addCommand("info", jobCommandOptions.infoCommandOptions);
         jobSubCommands.addCommand("search", jobCommandOptions.searchCommandOptions);
+        jobSubCommands.addCommand("top", jobCommandOptions.topCommandOptions);
         jobSubCommands.addCommand("visit", jobCommandOptions.visitCommandOptions);
         jobSubCommands.addCommand("delete", jobCommandOptions.deleteCommandOptions);
         jobSubCommands.addCommand("group-by", jobCommandOptions.groupByCommandOptions);
@@ -275,15 +282,15 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexAlignmentCommandOptions);
         alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentCommandOptions);
         alignmentSubCommands.addCommand("stats-run", alignmentCommandOptions.statsAlignmentCommandOptions);
-        alignmentSubCommands.addCommand("stats-info", alignmentCommandOptions.statsAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("stats-info", alignmentCommandOptions.statsInfoAlignmentCommandOptions);
         alignmentSubCommands.addCommand("stats-query", alignmentCommandOptions.statsQueryAlignmentCommandOptions);
         alignmentSubCommands.addCommand("coverage-run", alignmentCommandOptions.coverageAlignmentCommandOptions);
         alignmentSubCommands.addCommand("coverage-query", alignmentCommandOptions.coverageQueryAlignmentCommandOptions);
         alignmentSubCommands.addCommand("coverage-ratio", alignmentCommandOptions.coverageRatioAlignmentCommandOptions);
-        alignmentSubCommands.addCommand(BwaWrapperAnalysis.ID, alignmentCommandOptions.bwaCommandOptions);
-        alignmentSubCommands.addCommand(SamtoolsWrapperAnalysis.ID, alignmentCommandOptions.samtoolsCommandOptions);
-        alignmentSubCommands.addCommand(DeeptoolsWrapperAnalysis.ID, alignmentCommandOptions.deeptoolsCommandOptions);
-        alignmentSubCommands.addCommand(FastqcWrapperAnalysis.ID, alignmentCommandOptions.fastqcCommandOptions);
+        alignmentSubCommands.addCommand(BWA_RUN_COMMAND, alignmentCommandOptions.bwaCommandOptions);
+        alignmentSubCommands.addCommand(SAMTOOLS_RUN_COMMAND, alignmentCommandOptions.samtoolsCommandOptions);
+        alignmentSubCommands.addCommand(DEEPTOOLS_RUN_COMMAND, alignmentCommandOptions.deeptoolsCommandOptions);
+        alignmentSubCommands.addCommand(FASTQC_RUN_COMMAND, alignmentCommandOptions.fastqcCommandOptions);
 
         variantCommandOptions = new VariantCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("variant", variantCommandOptions);
@@ -295,12 +302,14 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(ANNOTATION_QUERY_COMMAND, variantCommandOptions.annotationQueryCommandOptions);
         variantSubCommands.addCommand(ANNOTATION_METADATA_COMMAND, variantCommandOptions.annotationMetadataCommandOptions);
         variantSubCommands.addCommand(STATS_RUN_COMMAND, variantCommandOptions.statsVariantCommandOptions);
+        variantSubCommands.addCommand(SAMPLE_QUERY_COMMAND, variantCommandOptions.sampleQueryCommandOptions);
         variantSubCommands.addCommand(SAMPLE_RUN_COMMAND, variantCommandOptions.samplesFilterCommandOptions);
         variantSubCommands.addCommand(SAMPLE_VARIANT_STATS_RUN_COMMAND, variantCommandOptions.sampleVariantStatsCommandOptions);
         variantSubCommands.addCommand(COHORT_VARIANT_STATS_RUN_COMMAND, variantCommandOptions.cohortVariantStatsCommandOptions);
         variantSubCommands.addCommand(GWAS_RUN_COMMAND, variantCommandOptions.gwasCommandOptions);
         variantSubCommands.addCommand(PLINK_RUN_COMMAND, variantCommandOptions.plinkCommandOptions);
         variantSubCommands.addCommand(RVTEST_RUN_COMMAND, variantCommandOptions.rvtestsCommandOptions);
+        variantSubCommands.addCommand(GATK_RUN_COMMAND, variantCommandOptions.gatkCommandOptions);
 
         operationsCommandOptions = new OperationsCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand(OPERATIONS_COMMAND, operationsCommandOptions);

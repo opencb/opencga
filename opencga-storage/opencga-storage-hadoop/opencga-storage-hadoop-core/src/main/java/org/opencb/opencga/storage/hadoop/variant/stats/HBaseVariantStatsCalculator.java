@@ -14,6 +14,7 @@ import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
@@ -37,13 +38,13 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
     //    private List<byte[]> rows;
     private HBaseToGenotypeCountConverter converter;
 
-    public HBaseVariantStatsCalculator(byte[] columnFamily, VariantStorageMetadataManager metadataManager, StudyMetadata sm,
+    public HBaseVariantStatsCalculator(VariantStorageMetadataManager metadataManager, StudyMetadata sm,
                                        List<Integer> sampleIds, boolean statsMultiAllelic, String unknownGenotype) {
-        super(columnFamily);
+        super(GenomeHelper.COLUMN_FAMILY_BYTES);
         this.sm = sm;
         this.sampleIds = sampleIds;
         this.statsMultiAllelic = statsMultiAllelic;
-        converter = new HBaseToGenotypeCountConverter(metadataManager, columnFamily, statsMultiAllelic, unknownGenotype);
+        converter = new HBaseToGenotypeCountConverter(metadataManager, statsMultiAllelic, unknownGenotype);
     }
 
     @Override
@@ -85,9 +86,9 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
         private final Set<Integer> fileIds;
         private final Map<Integer, Collection<Integer>> samplesInFile;
 
-        private HBaseToGenotypeCountConverter(VariantStorageMetadataManager metadataManager, byte[] columnFamily,
+        private HBaseToGenotypeCountConverter(VariantStorageMetadataManager metadataManager,
                                               boolean statsMultiAllelic, String unknownGenotype) {
-            super(columnFamily, metadataManager, null);
+            super(metadataManager, null);
             sampleIdsSet = new HashSet<>(sampleIds);
             if (excludeFiles(statsMultiAllelic, unknownGenotype, Aggregation.NONE)) {
                 fileIds = Collections.emptySet();

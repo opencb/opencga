@@ -58,9 +58,8 @@ public class VariantStatsToHBaseConverterTest {
         cohortIds.put("c2", 2);
 
         genomeHelper = new GenomeHelper(new Configuration());
-        toHbase = new VariantStatsToHBaseConverter(genomeHelper, studyMetadata, cohortIds);
-        toJava = new HBaseToVariantStatsConverter(genomeHelper);
-
+        toHbase = new VariantStatsToHBaseConverter(studyMetadata, cohortIds);
+        toJava = new HBaseToVariantStatsConverter();
     }
 
     @Test

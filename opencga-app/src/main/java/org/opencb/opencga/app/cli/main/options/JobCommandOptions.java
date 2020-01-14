@@ -33,6 +33,7 @@ public class JobCommandOptions {
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public SearchCommandOptions searchCommandOptions;
+    public TopCommandOptions topCommandOptions;
     public VisitCommandOptions visitCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
@@ -56,6 +57,7 @@ public class JobCommandOptions {
         this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
+        this.topCommandOptions = new TopCommandOptions();
         this.visitCommandOptions = new VisitCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
@@ -89,9 +91,6 @@ public class JobCommandOptions {
 
         @Parameter(names = {"-d", "--description"}, description = "Job description", arity = 1)
         public String description;
-
-        @Parameter(names = {"--execution"}, description = "Execution", arity = 1)
-        public String execution;
 
         @Parameter(names = {"--start-time"}, description = "Start time of the job", arity = 1)
         public long startTime;
@@ -155,6 +154,21 @@ public class JobCommandOptions {
         @Parameter(names = {"--output-files"}, description = "Comma separated list of output file ids.", required = false, arity = 1)
         public String outputFiles;
 
+    }
+
+    @Parameters(commandNames = {"top"}, commandDescription = "Provide a view of jobs activity in real time.")
+    public class TopCommandOptions extends StudyOption {
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-d", "--delay"}, description = "Delay between iterations in seconds", required = false, arity = 1)
+        public int delay = 2;
+
+        @Parameter(names = { "--iterations"}, description = "Exit after N iterations", required = false, arity = 1)
+        public Integer iterations;
+
+        @Parameter(names = {"-n", "--jobs"}, description = "Number of jobs to print", required = false, arity = 1)
+        public int jobsLimit = 20;
     }
 
     @Parameters(commandNames = {"visit"}, commandDescription = "Increment job visits")

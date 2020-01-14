@@ -32,7 +32,7 @@ import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
-import org.opencb.opencga.storage.core.metadata.models.Locked;
+import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
@@ -87,24 +87,9 @@ public class HBaseStudyMetadataDBAdaptor extends AbstractHBaseDBAdaptor implemen
     }
 
     @Override
-    public Locked lock(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
+    public Lock lock(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
         byte[] column = StringUtils.isEmpty(lockName) ? getLockColumn() : Bytes.toBytes(lockName);
         return lock(getStudyMetadataRowKey(studyId), column, lockDuration, timeout);
-    }
-
-    @Override
-    public long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
-        return lockStudy(studyId, lockDuration, timeout, StringUtils.isEmpty(lockName) ? getLockColumn() : Bytes.toBytes(lockName));
-    }
-
-    private long lockStudy(int studyId, long lockDuration, long timeout, byte[] lockName) throws StorageEngineException {
-        return lockToken(getStudyMetadataRowKey(studyId), lockName, lockDuration, timeout);
-    }
-
-    @Override
-    public void unLockStudy(int studyId, long lockToken, String lockName) {
-        byte[] column = StringUtils.isEmpty(lockName) ? getLockColumn() : Bytes.toBytes(lockName);
-        unLock(getStudyMetadataRowKey(studyId), column, lockToken);
     }
 
     @Override

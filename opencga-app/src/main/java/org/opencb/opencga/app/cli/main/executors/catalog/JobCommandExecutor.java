@@ -29,7 +29,7 @@ import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.rest.RestResponse;
+import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -66,6 +66,9 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
             case "search":
                 queryResponse = search();
                 break;
+            case "top":
+                top();
+                break;
             case "visit":
                 queryResponse = visit();
                 break;
@@ -98,7 +101,6 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.NAME.key(), jobsCommandOptions.createCommandOptions.name);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.TOOL_NAME.key(), jobsCommandOptions.createCommandOptions.toolName);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.DESCRIPTION.key(), jobsCommandOptions.createCommandOptions.description);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.EXECUTION.key(), jobsCommandOptions.createCommandOptions.execution);
         if (jobsCommandOptions.createCommandOptions.startTime > 0) {
             params.put(JobDBAdaptor.QueryParams.START_TIME.key(), jobsCommandOptions.createCommandOptions.startTime);
         }
@@ -160,6 +162,12 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
 
             return openCGAClient.getJobClient().search(query, queryOptions);
         }
+    }
+
+    private void top() throws Exception {
+        JobCommandOptions.TopCommandOptions c = jobsCommandOptions.topCommandOptions;
+        String study = resolveStudy(jobsCommandOptions.searchCommandOptions.study);
+        new JobsTop(openCGAClient, study, c.iterations, c.jobsLimit, c.delay).run();
     }
 
     private RestResponse<Job> visit() throws CatalogException, IOException {

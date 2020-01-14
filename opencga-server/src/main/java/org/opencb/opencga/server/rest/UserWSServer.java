@@ -33,7 +33,7 @@ import org.opencb.opencga.core.models.Account;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Project;
 import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -47,7 +47,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 @Path("/{apiVersion}/users")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Users", position = 1, description = "Methods for working with 'users' endpoint")
+@Api(value = "Users", description = "Methods for working with 'users' endpoint")
 public class UserWSServer extends OpenCGAWSServer {
 
 
@@ -105,7 +105,8 @@ public class UserWSServer extends OpenCGAWSServer {
             notes = "Login method is implemented using JSON Web Tokens that use the standard RFC 7519. The provided tokens are not " +
                     "stored by OpenCGA so there is not a logout method anymore. Tokens are provided with an expiration time that, once " +
                     "finished, will no longer be valid.\nIf password is provided it will attempt to login the user. If no password is " +
-                    "provided and a valid token is given, a new token will be provided extending the expiration time.")
+                    "provided and a valid token is given, a new token will be provided extending the expiration time.",
+            response = Map.class)
     public Response loginPost(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
                               @ApiParam(value = "JSON containing the parameter 'password'") LoginModel login) {
         try {
@@ -130,7 +131,8 @@ public class UserWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{user}/password")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Change the password of a user", notes = "It doesn't work if the user is authenticated against LDAP.")
+    @ApiOperation(value = "Change the password of a user", notes = "It doesn't work if the user is authenticated against LDAP.",
+            response = User.class)
     public Response changePasswordPost(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
                                        @ApiParam(value = "JSON containing the params 'password' (old password) and 'newPassword' (new "
                                                + "password)", required = true) ChangePasswordModel params) {
@@ -149,10 +151,10 @@ public class UserWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{user}/reset-password")
     @ApiOperation(value = "Reset password", hidden = true,
-            notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.")
+            notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.", response = User.class)
     public Response resetPassword(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId) {
         try {
-            DataResult result = catalogManager.getUserManager().resetPassword(userId, token);
+            OpenCGAResult result = catalogManager.getUserManager().resetPassword(userId, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -163,7 +165,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @Path("/{user}/projects")
     @ApiOperation(value = "Retrieve the projects of the user", notes = "Retrieve the list of projects and studies belonging to the user"
             + " performing the query. This will not fetch shared projects. To get those, please use /projects/search web service.",
-            response = Project[].class)
+            response = Project.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
                     dataType = "string", paramType = "query"),
@@ -186,7 +188,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{user}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some user attributes", position = 9, response = User.class)
+    @ApiOperation(value = "Update some user attributes", response = User.class)
     public Response updateByPost(@ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
                                  @ApiParam(name = "params", value = "JSON containing the params to be updated.", required = true)
                                          UserUpdatePOST parameters) {
@@ -194,7 +196,7 @@ public class UserWSServer extends OpenCGAWSServer {
             ObjectUtils.defaultIfNull(parameters, new UserUpdatePOST());
 
             ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(parameters));
-            DataResult result = catalogManager.getUserManager().update(userId, params, null, token);
+            OpenCGAResult<User> result = catalogManager.getUserManager().update(userId, params, null, token);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -208,7 +210,7 @@ public class UserWSServer extends OpenCGAWSServer {
                     + "The aim of this is to provide a place to store this things for every user.")
     public Response updateConfiguration(
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
-            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD")
+            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
                 @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(name = "params", value = "JSON containing anything useful for the application such as user or default preferences. " +
                     "When removing, only the id will be necessary.", required = true) CustomConfig params) {
@@ -252,8 +254,8 @@ public class UserWSServer extends OpenCGAWSServer {
                     + "storing as many different filters as the user might want in order not to type the same filters.")
     public Response updateFilters(
             @ApiParam(value = ParamConstants.USER_DESCRIPTION, required = true) @PathParam("user") String userId,
-            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", defaultValue = "ADD")
-            @QueryParam("action") ParamUtils.BasicUpdateAction action,
+            @ApiParam(value = "Action to be performed: ADD or REMOVE a group", allowableValues = "ADD,REMOVE", defaultValue = "ADD")
+                @QueryParam("action") ParamUtils.BasicUpdateAction action,
             @ApiParam(name = "params", value = "Filter parameters. When removing, only the 'name' of the filter will be necessary",
                     required = true) User.Filter params) {
         try {

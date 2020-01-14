@@ -6,7 +6,9 @@ import org.hamcrest.CoreMatchers;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
@@ -14,6 +16,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.ToolRunner;
+import org.opencb.opencga.analysis.variant.genes.knockout.GeneKnockoutAnalysis;
+import org.opencb.opencga.analysis.variant.genes.knockout.GeneKnockoutAnalysisParams;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
@@ -24,7 +28,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
-import org.opencb.opencga.core.annotations.ToolExecutor;
 import org.opencb.opencga.core.api.variant.VariantExportParams;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.*;
@@ -45,10 +48,7 @@ import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RunWith(Parameterized.class)
@@ -135,6 +135,33 @@ public class VariantAnalysisTest {
             catalogManager.getCohortManager().create(STUDY, "c1", null, null, file.getSamples().subList(0, 2), null, null, token);
             catalogManager.getCohortManager().create(STUDY, "c2", null, null, file.getSamples().subList(2, 4), null, null, token);
 
+            Phenotype phenotype = new Phenotype("phenotype", "phenotype", "");
+            Disorder disorder = new Disorder("disorder", "disorder", "", "", Collections.singletonList(phenotype), Collections.emptyMap());
+            List<Individual> individuals = new ArrayList<>(4);
+            List<String> sampleIds = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
+
+            String father = "NA19661";
+            String mother = "NA19660";
+            String son = "NA19685";
+            String daughter = "NA19600";
+            // Father
+            individuals.add(catalogManager.getIndividualManager()
+                    .create(STUDY, new Individual(father, father, IndividualProperty.Sex.MALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()), Collections.singletonList(father), null, token).first());
+            // Mother
+            individuals.add(catalogManager.getIndividualManager()
+                    .create(STUDY, new Individual(mother, mother, IndividualProperty.Sex.FEMALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()), Collections.singletonList(mother), null, token).first());
+            // Son
+            individuals.add(catalogManager.getIndividualManager()
+                    .create(STUDY, new Individual(son, son, IndividualProperty.Sex.MALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)).setDisorders(Collections.singletonList(disorder)), Collections.singletonList(son), null, token).first());
+            // Daughter
+            individuals.add(catalogManager.getIndividualManager()
+                    .create(STUDY, new Individual(daughter, daughter, IndividualProperty.Sex.FEMALE, null, null, 0, Collections.emptyList(), Collections.emptyMap()).setFather(individuals.get(0)).setMother(individuals.get(1)), Collections.singletonList(daughter), null, token).first());
+            catalogManager.getFamilyManager().create(
+                    STUDY,
+                    new Family("f1", "f1", Collections.singletonList(phenotype), Collections.singletonList(disorder), null, null, 3, null, null),
+                    individuals.stream().map(Individual::getId).collect(Collectors.toList()), new QueryOptions(),
+                    token);
+
 
             if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
                 VariantStorageEngine engine = opencga.getStorageEngineFactory().getVariantStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID, DB_NAME);
@@ -177,7 +204,7 @@ public class VariantAnalysisTest {
         variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
 
         ExecutionResult ar = variantStatsAnalysis.start();
-        checkAnalysisResult(ar);
+        checkExecutionResult(ar);
 
         MutableInt count = new MutableInt();
         java.io.File file = getOutputFile(outDir);
@@ -202,7 +229,7 @@ public class VariantAnalysisTest {
         variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
 
         ExecutionResult ar = variantStatsAnalysis.start();
-        checkAnalysisResult(ar);
+        checkExecutionResult(ar);
 
         MutableInt count = new MutableInt();
         java.io.File file = getOutputFile(outDir);
@@ -230,7 +257,7 @@ public class VariantAnalysisTest {
         variantStatsAnalysis.setUp(opencga.getOpencgaHome().toString(), catalogManager, variantStorageManager, executorParams, outDir, token);
 
         ExecutionResult ar = variantStatsAnalysis.start();
-        checkAnalysisResult(ar);
+        checkExecutionResult(ar);
 
         MutableInt count = new MutableInt();
         java.io.File file = getOutputFile(outDir);
@@ -264,7 +291,7 @@ public class VariantAnalysisTest {
         analysis.setSampleNames(samples)
                 .setStudy(STUDY)
                 .setIndexResults(true);
-        checkAnalysisResult(analysis.start());
+        checkExecutionResult(analysis.start(), storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
 
         for (String sample : samples) {
             AnnotationSet annotationSet = catalogManager.getSampleManager().get(STUDY, sample, null, token).first().getAnnotationSets().get(0);
@@ -286,7 +313,7 @@ public class VariantAnalysisTest {
         List<String> samples = file.getSamples().stream().map(Sample::getId).collect(Collectors.toList());
         analysis.setStudy(STUDY)
                 .setSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(0, 3)));
-        checkAnalysisResult(analysis.start());
+        checkExecutionResult(analysis.start(), storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
     }
 
     @Test
@@ -300,7 +327,7 @@ public class VariantAnalysisTest {
         analysis.setStudy(STUDY)
                 .setCohortName(StudyEntry.DEFAULT_COHORT)
                 .setIndexResults(true);
-        checkAnalysisResult(analysis.start());
+        checkExecutionResult(analysis.start(), storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
     }
 
     @Test
@@ -328,7 +355,7 @@ public class VariantAnalysisTest {
         analysis.setStudy(STUDY)
                 .setCaseCohortSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(0, 2)))
                 .setControlCohortSamplesQuery(new Query(SampleDBAdaptor.QueryParams.ID.key(), samples.subList(2, 4)));
-        checkAnalysisResult(analysis.start());
+        checkExecutionResult(analysis.start(), storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
     }
 
     @Test
@@ -341,7 +368,7 @@ public class VariantAnalysisTest {
 
         analysis.setStudy(STUDY)
                 .setPhenotype(PHENOTYPE_NAME);
-        checkAnalysisResult(analysis.start());
+        checkExecutionResult(analysis.start(), storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID));
     }
 
     @Test
@@ -363,7 +390,7 @@ public class VariantAnalysisTest {
                 .setControlCohort("CONTROL")
                 .setIndex(true)
                 .setIndexScoreId("GwasScore");
-        checkAnalysisResult(analysis.start());
+        checkExecutionResult(analysis.start());
 
         List<VariantScoreMetadata> scores = variantStorageManager.listVariantScores(STUDY, token);
         System.out.println("scores.get(0) = " + JacksonUtils.getDefaultObjectMapper().writeValueAsString(scores));
@@ -375,16 +402,30 @@ public class VariantAnalysisTest {
         }
     }
 
-    public void checkAnalysisResult(ExecutionResult ar) {
-        if (storageEngine.equals("hadoop")) {
-            Assert.assertEquals("hbase-mapreduce", ar.getExecutor().getId());
-        } else {
-            String toolId = ar.getExecutor().getClazz().getAnnotation(ToolExecutor.class).tool();
-            if (toolId.equals(VariantStatsAnalysis.ID)) {
-                Assert.assertEquals("mongodb-local", ar.getExecutor().getId());
+    @Test
+    public void testKnockoutGenes() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_knockout_genes"));
+        System.out.println("outDir = " + outDir);
+        GeneKnockoutAnalysisParams params = new GeneKnockoutAnalysisParams();
+        params.setSample(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+
+        ExecutionResult er = toolRunner.execute(GeneKnockoutAnalysis.class, params.toObjectMap(), outDir, token);
+        checkExecutionResult(er, false);
+    }
+
+    public void checkExecutionResult(ExecutionResult er) {
+        checkExecutionResult(er, true);
+    }
+
+    public void checkExecutionResult(ExecutionResult er, boolean customExecutor) {
+        if (customExecutor) {
+            if (storageEngine.equals("hadoop")) {
+                Assert.assertEquals("hbase-mapreduce", er.getExecutor().getId());
             } else {
-                Assert.assertEquals("opencga-local", ar.getExecutor().getId());
+                Assert.assertEquals("mongodb-local", er.getExecutor().getId());
             }
+        } else {
+            Assert.assertEquals("opencga-local", er.getExecutor().getId());
         }
     }
 }

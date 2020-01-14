@@ -97,7 +97,7 @@ public class ServerCommandExecutor extends CommandExecutor {
             if (!serverCommandOptions.grpcServerCommandOptions.background) {
                 server.blockUntilShutdown();
             }
-            logger.info("Shutting down OpenCGA Storage GRPC server");
+            logger.info("Shutting down OpenCGA Storage gRPC server");
         }
 
         if (serverCommandOptions.grpcServerCommandOptions.stop) {

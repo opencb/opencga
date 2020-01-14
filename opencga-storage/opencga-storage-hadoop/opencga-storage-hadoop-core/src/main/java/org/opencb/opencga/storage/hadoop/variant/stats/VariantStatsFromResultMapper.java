@@ -65,7 +65,7 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
                 List<Integer> samplesInCohort = cohort.getSamples();
                 samples.put(cohort.getName(), samplesInCohort);
             });
-            converter = new VariantStatsToHBaseConverter(helper, studyMetadata, cohortIds);
+            converter = new VariantStatsToHBaseConverter(studyMetadata, cohortIds);
 
         }
 
@@ -79,7 +79,7 @@ public class VariantStatsFromResultMapper extends TableMapper<ImmutableBytesWrit
         try (VariantStorageMetadataManager metadataManager = new VariantStorageMetadataManager(
                 new HBaseVariantStorageMetadataDBAdaptorFactory(helper))) {
             samples.forEach((cohort, samples) -> calculators.put(cohort, new HBaseVariantStatsCalculator(
-                    GenomeHelper.COLUMN_FAMILY_BYTES, metadataManager, studyMetadata, samples, statsMultiAllelic, unknownGenotype)));
+                    metadataManager, studyMetadata, samples, statsMultiAllelic, unknownGenotype)));
         }
     }
 

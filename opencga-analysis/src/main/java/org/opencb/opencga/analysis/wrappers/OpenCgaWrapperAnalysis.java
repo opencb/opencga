@@ -1,22 +1,17 @@
 package org.opencb.opencga.analysis.wrappers;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
 
@@ -48,6 +43,25 @@ public abstract class OpenCgaWrapperAnalysis extends OpenCgaTool {
             }
         }
         return sb.toString();
+    }
+
+    protected String getCatalogPath(String inputFile) throws ToolException {
+        // Get catalog path
+        OpenCGAResult<org.opencb.opencga.core.models.File> fileResult;
+        try {
+            fileResult = catalogManager.getFileManager().get(getStudy(), inputFile, QueryOptions.empty(), token);
+        } catch (CatalogException e) {
+            throw new ToolException("Error accessing file '" + inputFile + "' of the study " + getStudy() + "'", e);
+        }
+        if (fileResult.getNumResults() <= 0) {
+            throw new ToolException("File '" + inputFile + "' not found in study '" + getStudy() + "'");
+        }
+
+        return new File(fileResult.getResults().get(0).getPath()).getParent();
+    }
+
+    protected boolean isValidFile(File file) {
+        return file.exists() && (FileUtils.sizeOf(file) > 0);
     }
 
     protected void updateSrcTargetMap(String filename, StringBuilder sb, Map<String, String> srcTargetMap) throws ToolException {

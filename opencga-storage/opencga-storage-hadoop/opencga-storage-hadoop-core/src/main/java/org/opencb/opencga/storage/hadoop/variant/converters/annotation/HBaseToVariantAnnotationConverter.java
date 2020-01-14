@@ -23,7 +23,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.Cell;
-import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PInteger;
@@ -76,7 +75,11 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
     private Map<Integer, String> annotationIds;
     private boolean includeIndexStatus;
 
-    public HBaseToVariantAnnotationConverter(GenomeHelper genomeHelper, long ts) {
+    public HBaseToVariantAnnotationConverter() {
+        this(-1);
+    }
+
+    public HBaseToVariantAnnotationConverter(long ts) {
         this(GenomeHelper.COLUMN_FAMILY_BYTES, ts);
     }
 
@@ -156,26 +159,10 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
 
         Cell cell = result.getColumnLatestCell(columnFamily, annotationColumn);
         if (cell != null && cell.getValueLength() > 0) {
-            try {
-                if (cell.getValueArray()[cell.getValueOffset()] == '{') {
-                    // Value looks to be uncompressed. Try to parse. If fails, try to decompress and parse.
-                    try {
-                        variantAnnotation = objectMapper.readValue(cell.getValueArray(), cell.getValueOffset(), cell.getValueLength(),
-                                VariantAnnotation.class);
-                    } catch (IOException e) {
-                        byte[] value = CompressionUtils.decompress(CellUtil.cloneValue(cell));
-                        variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
-                    }
-                } else {
-                    // Value is compressed. Decompress and parse
-                    byte[] value = CompressionUtils.decompress(CellUtil.cloneValue(cell));
-                    variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            } catch (DataFormatException e) {
-                throw new IllegalStateException(e);
-            }
+            byte[] valueArray = cell.getValueArray();
+            int valueOffset = cell.getValueOffset();
+            int valueLength = cell.getValueLength();
+            variantAnnotation = convert(valueArray, valueOffset, valueLength);
         }
         List<Integer> releases = new ArrayList<>();
         for (byte[] bytes : result.getFamilyMap(columnFamily).tailMap(VariantPhoenixHelper.RELEASE_PREFIX_BYTES).keySet()) {
@@ -226,22 +213,10 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         if (column != null) {
             try {
                 byte[] value = resultSet.getBytes(column);
-                if (value != null && value.length > 0) {
-                    if (value[0] == '{') {
-                        // Value looks to be uncompressed. Try to parse. If fails, try to decompress and parse.
-                        try {
-                            variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
-                        } catch (IOException e) {
-                            value = CompressionUtils.decompress(value);
-                            variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
-                        }
-                    } else {
-                        // Value is compressed. Decompress and parse
-                        value = CompressionUtils.decompress(value);
-                        variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
-                    }
+                if (value != null) {
+                    variantAnnotation = convert(value, 0, value.length);
                 }
-            } catch (IOException | DataFormatException | SQLException e) {
+            } catch (SQLException e) {
                 // This should never happen!
                 throw new IllegalStateException(e);
             }
@@ -301,6 +276,35 @@ public class HBaseToVariantAnnotationConverter extends AbstractPhoenixConverter 
         }
 
         return post(variantAnnotation, releases, syncStatus, studies, annotationId);
+    }
+
+    public VariantAnnotation convert(byte[] valueArray, int valueOffset, int valueLength) {
+        VariantAnnotation variantAnnotation;
+        try {
+            if (valueArray[valueOffset] == '{') {
+                // Value looks to be uncompressed. Try to parse. If fails, try to decompress and parse.
+                try {
+                    variantAnnotation = objectMapper.readValue(valueArray, valueOffset, valueLength,
+                            VariantAnnotation.class);
+                } catch (IOException e) {
+                    byte[] destination = new byte[valueLength];
+                    System.arraycopy(valueArray, valueOffset, destination, 0, valueLength);
+                    byte[] value = CompressionUtils.decompress(destination);
+                    variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
+                }
+            } else {
+                // Value is compressed. Decompress and parse
+                byte[] destination = new byte[valueLength];
+                System.arraycopy(valueArray, valueOffset, destination, 0, valueLength);
+                byte[] value = CompressionUtils.decompress(destination);
+                variantAnnotation = objectMapper.readValue(value, VariantAnnotation.class);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (DataFormatException e) {
+            throw new IllegalStateException(e);
+        }
+        return variantAnnotation;
     }
 
     public Integer findColumn(ResultSet resultSet, String column) {

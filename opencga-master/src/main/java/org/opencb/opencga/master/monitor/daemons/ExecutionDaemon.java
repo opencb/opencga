@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.clinical.interpretation.CancerTieringInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAnalysis;
@@ -53,7 +54,7 @@ import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.Status;
@@ -67,7 +68,9 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -78,6 +81,7 @@ import java.util.stream.Stream;
 public class ExecutionDaemon extends MonitorParentDaemon {
 
     public static final String OUTDIR_PARAM = "outdir";
+    public static final int EXECUTION_RESULT_FILE_EXPIRATION_MINUTES = 10;
     private String internalCli;
     private JobManager jobManager;
     private FileManager fileManager;
@@ -109,10 +113,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put("alignment-index", "alignment index");
             put("alignment-coverage-run", "alignment coverage-run");
             put("alignment-stats-run", "alignment stats-run");
-            put(BwaWrapperAnalysis.ID, "alignment " + BwaWrapperAnalysis.ID);
-            put(SamtoolsWrapperAnalysis.ID, "alignment " + SamtoolsWrapperAnalysis.ID);
-            put(DeeptoolsWrapperAnalysis.ID, "alignment " + DeeptoolsWrapperAnalysis.ID);
-            put(FastqcWrapperAnalysis.ID, "alignment " + FastqcWrapperAnalysis.ID);
+            put(BwaWrapperAnalysis.ID, "alignment " + BwaWrapperAnalysis.ID + "-run");
+            put(SamtoolsWrapperAnalysis.ID, "alignment " + SamtoolsWrapperAnalysis.ID + "-run");
+            put(DeeptoolsWrapperAnalysis.ID, "alignment " + DeeptoolsWrapperAnalysis.ID + "-run");
+            put(FastqcWrapperAnalysis.ID, "alignment " + FastqcWrapperAnalysis.ID + "-run");
 
             put(VariantIndexOperationTool.ID, "variant index");
             put(VariantExportTool.ID, "variant export");
@@ -123,6 +127,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(GwasAnalysis.ID, "variant gwas-run");
             put(PlinkWrapperAnalysis.ID, "variant " + PlinkWrapperAnalysis.ID + "-run");
             put(RvtestsWrapperAnalysis.ID, "variant " + RvtestsWrapperAnalysis.ID + "-run");
+            put(GatkWrapperAnalysis.ID, "variant " + GatkWrapperAnalysis.ID + "-run");
             put(VariantFileDeleteOperationTool.ID, "variant file-delete");
             put(VariantSecondaryIndexOperationTool.ID, "variant secondary-index");
             put(VariantSecondaryIndexSamplesDeleteOperationTool.ID, "variant secondary-index-delete");
@@ -233,7 +238,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
                 ExecutionResult result = readAnalysisResult(job);
                 if (result != null) {
                     // Update the result of the job
-                    PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setResult(result);
+                    PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(result);
                     try {
                         jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
                     } catch (CatalogException e) {
@@ -460,16 +465,21 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             throw new CatalogException("Cannot create job directory '" + folder.getUri() + "' for path '" + folder.getPath() + "'");
         }
 
-        // Add permissions to do anything under that path to the user launching the job
-        String allFilePermissions = EnumSet.allOf(FileAclEntry.FilePermissions.class)
-                .stream()
-                .map(FileAclEntry.FilePermissions::toString)
-                .collect(Collectors.joining(","));
-        fileManager.updateAcl(job.getStudyUuid(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
-                new File.FileAclParams(allFilePermissions, AclParams.Action.SET, null), token);
-        // Revoke permissions to any other user that is not the one launching the job
-        fileManager.updateAcl(job.getStudyUuid(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), FileAclEntry.USER_OTHERS_ID,
-                new File.FileAclParams("", AclParams.Action.SET, null), token);
+        // Check if the user already has permissions set in his folder
+        OpenCGAResult<Map<String, List<String>>> result = fileManager.getAcls(job.getStudyUuid(),
+                Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(), true, token);
+        if (result.getNumResults() == 0 || result.first().isEmpty() || ListUtils.isEmpty(result.first().get(job.getUserId()))) {
+            // Add permissions to do anything under that path to the user launching the job
+            String allFilePermissions = EnumSet.allOf(FileAclEntry.FilePermissions.class)
+                    .stream()
+                    .map(FileAclEntry.FilePermissions::toString)
+                    .collect(Collectors.joining(","));
+            fileManager.updateAcl(job.getStudyUuid(), Collections.singletonList("JOBS/" + job.getUserId() + "/"), job.getUserId(),
+                    new File.FileAclParams(allFilePermissions, AclParams.Action.SET, null), token);
+            // Revoke permissions to any other user that is not the one launching the job
+            fileManager.updateAcl(job.getStudyUuid(), Collections.singletonList("JOBS/" + job.getUserId() + "/"),
+                    FileAclEntry.USER_OTHERS_ID, new File.FileAclParams("", AclParams.Action.SET, null), token);
+        }
 
         return folder;
     }
@@ -559,7 +569,14 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         if (resultJson != null && Files.exists(resultJson)) {
             ExecutionResult execution = readAnalysisResult(resultJson);
             if (execution != null) {
-                return new Enums.ExecutionStatus(execution.getStatus().getName().name());
+                long lastStatusUpdate = execution.getStatus().getDate().getTime();
+                long fileAgeInMillis = Instant.now().toEpochMilli() - lastStatusUpdate;
+                if (TimeUnit.MILLISECONDS.toMinutes(fileAgeInMillis) > EXECUTION_RESULT_FILE_EXPIRATION_MINUTES) {
+                    logger.warn("Ignoring file '" + resultJson + "'. The file is more than "
+                            + EXECUTION_RESULT_FILE_EXPIRATION_MINUTES + " minutes old");
+                } else {
+                    return new Enums.ExecutionStatus(execution.getStatus().getName().name());
+                }
             } else {
                 if (Files.exists(resultJson)) {
                     logger.warn("File '" + resultJson + "' seems corrupted.");
@@ -661,7 +678,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         if (analysisResultPath != null) {
             execution = readAnalysisResult(analysisResultPath);
             if (execution != null) {
-                PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setResult(execution);
+                PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setExecution(execution);
                 try {
                     jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
                 } catch (CatalogException e) {

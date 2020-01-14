@@ -42,9 +42,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.operations.variant.VariantFileDeleteParams;
 import org.opencb.opencga.core.api.variant.*;
 import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.rest.RestResponse;
-import org.opencb.opencga.core.results.OpenCGAResult;
-import org.opencb.opencga.core.results.VariantQueryResult;
+import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericServiceModel;
 import org.opencb.opencga.server.grpc.VariantServiceGrpc;
@@ -58,11 +58,13 @@ import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSampleQueryCommandOptions.SAMPLE_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSamplesFilterCommandOptions.SAMPLE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantStatsCommandOptions.STATS_RUN_COMMAND;
 import static org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions.GenericAnnotationMetadataCommandOptions.ANNOTATION_METADATA_COMMAND;
@@ -117,6 +119,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             case SAMPLE_VARIANT_STATS_RUN_COMMAND:
                 queryResponse = sampleStats();
                 break;
+            case SAMPLE_QUERY_COMMAND:
+                queryResponse = sampleQuery();
+                break;
             case SAMPLE_RUN_COMMAND:
                 queryResponse = sampleRun();
                 break;
@@ -145,6 +150,10 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
             case RVTEST_RUN_COMMAND:
                 queryResponse = rvtests();
+                break;
+
+            case GATK_RUN_COMMAND:
+                queryResponse = gatk();
                 break;
 
             default:
@@ -182,6 +191,19 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 variantCommandOptions.samplesFilterCommandOptions.toolParams.getStudy(),
                 variantCommandOptions.samplesFilterCommandOptions.toolParams
         );
+    }
+
+    private RestResponse<Variant> sampleQuery() throws IOException {
+        QueryOptions options = new QueryOptions();
+        options.putAll(variantCommandOptions.sampleQueryCommandOptions.commonOptions.params);
+
+        return openCGAClient.getVariantClient().sampleQuery(
+                variantCommandOptions.sampleQueryCommandOptions.variant,
+                variantCommandOptions.sampleQueryCommandOptions.study,
+                variantCommandOptions.sampleQueryCommandOptions.genotype,
+                variantCommandOptions.sampleQueryCommandOptions.numericOptions.limit,
+                variantCommandOptions.sampleQueryCommandOptions.numericOptions.skip,
+                options);
     }
 
     private RestResponse<Job> sampleStats() throws IOException {
@@ -383,7 +405,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             GenericServiceModel.Request request = GenericServiceModel.Request.newBuilder()
                     .putAllQuery(queryMap)
                     .putAllOptions(queryOptionsMap)
-                    .setSessionId(sessionId == null ? "" : sessionId)
+                    .setSessionId(token == null ? "" : token)
                     .build();
 
             RestResponse queryResponse = null;
@@ -432,7 +454,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             case "AUTO":
                 grpc = isGrpcAvailable() == null;
                 if (grpc) {
-                    logger.debug("Using GRPC mode");
+                    logger.debug("Using gRPC mode");
                 } else {
                     logger.debug("Using REST mode");
                 }
@@ -609,6 +631,19 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.rvtestsCommandOptions.covarFile,
                         variantCommandOptions.rvtestsCommandOptions.outdir,
                         variantCommandOptions.rvtestsCommandOptions.basicOptions.params
+                ));
+    }
+
+
+    private RestResponse<Job> gatk() throws IOException {
+        return openCGAClient.getVariantClient().gatkRun(variantCommandOptions.gatkCommandOptions.study,
+                new GatkRunParams(
+                        variantCommandOptions.gatkCommandOptions.command,
+                        variantCommandOptions.gatkCommandOptions.fastaFile,
+                        variantCommandOptions.gatkCommandOptions.bamFile,
+                        variantCommandOptions.gatkCommandOptions.vcfFilename,
+                        variantCommandOptions.gatkCommandOptions.outdir,
+                        variantCommandOptions.gatkCommandOptions.basicOptions.params
                 ));
     }
 }

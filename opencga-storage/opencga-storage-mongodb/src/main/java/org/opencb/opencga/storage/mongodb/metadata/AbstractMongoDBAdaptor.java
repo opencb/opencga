@@ -14,8 +14,8 @@ import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.Locked;
-import org.opencb.opencga.storage.mongodb.utils.MongoLock;
+import org.opencb.opencga.storage.core.metadata.models.Lock;
+import org.opencb.opencga.storage.mongodb.utils.MongoLockManager;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -35,7 +35,7 @@ public class AbstractMongoDBAdaptor<T> {
     protected final MongoDataStore db;
     protected final MongoDBCollection collection;
     protected final GenericDocumentComplexConverter<T> converter;
-    private final MongoLock mongoLock;
+    private final MongoLockManager mongoLock;
     private final String collectionName;
 
     protected static final String SEPARATOR = "_";
@@ -46,7 +46,7 @@ public class AbstractMongoDBAdaptor<T> {
         this.collection = getCollection(this.collectionName);
         converter = new GenericDocumentComplexConverter<>(clazz);
         converter.getObjectMapper().configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        mongoLock = new MongoLock(collection, "_lock");
+        mongoLock = new MongoLockManager(collection, "_lock");
     }
 
     protected MongoDBCollection getCollection(String collectionName) {
@@ -107,12 +107,11 @@ public class AbstractMongoDBAdaptor<T> {
         );
     }
 
-    public Locked lock(int studyId, int resourceId, long lockDuration, long timeout) throws StorageEngineException {
-        long lock = lock(buildPrivateId(studyId, resourceId), lockDuration, timeout);
-        return () -> unLock(buildPrivateId(studyId, resourceId), lock);
+    public Lock lock(int studyId, int resourceId, long lockDuration, long timeout) throws StorageEngineException {
+        return lock(buildPrivateId(studyId, resourceId), lockDuration, timeout);
     }
 
-    public long lock(Object id, long lockDuration, long timeout) throws StorageEngineException {
+    public Lock lock(Object id, long lockDuration, long timeout) throws StorageEngineException {
         try {
             return mongoLock.lock(id, lockDuration, timeout);
         } catch (InterruptedException e) {

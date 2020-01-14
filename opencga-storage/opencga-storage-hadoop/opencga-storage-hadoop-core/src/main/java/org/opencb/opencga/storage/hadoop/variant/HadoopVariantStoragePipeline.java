@@ -38,12 +38,13 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.proto.ProtoFileWriter;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.FileMetadata;
+import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
-import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
+import org.opencb.opencga.storage.hadoop.utils.HBaseLockManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.phoenix.VariantPhoenixHelper;
@@ -269,7 +270,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         final String species = metadataManager.getProjectMetadata().getSpecies();
 
-        Long lock = null;
+        Lock lock = null;
         try {
             long lockDuration = TimeUnit.MINUTES.toMillis(5);
             try {
@@ -343,9 +344,9 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         } finally {
             try {
                 if (lock != null) {
-                    metadataManager.unLockStudy(studyId, lock, GenomeHelper.PHOENIX_LOCK_COLUMN);
+                    lock.unlock();
                 }
-            } catch (HBaseLock.IllegalLockStatusException e) {
+            } catch (HBaseLockManager.IllegalLockStatusException e) {
                 logger.warn(e.getMessage());
                 logger.debug(e.getMessage(), e);
             }
@@ -378,7 +379,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
                 }
             } finally {
                 if (lock != null) {
-                    metadataManager.unLockStudy(studyId, lock, PHOENIX_INDEX_LOCK_COLUMN);
+                    lock.unlock();
                 }
             }
         }

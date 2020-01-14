@@ -1,10 +1,14 @@
 package org.opencb.opencga.analysis.variant.operations;
 
+import io.jsonwebtoken.lang.Collections;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.api.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+
+import java.util.List;
 
 import static org.opencb.opencga.analysis.variant.manager.operations.VariantFileIndexerOperationManager.LOAD;
 import static org.opencb.opencga.analysis.variant.manager.operations.VariantFileIndexerOperationManager.TRANSFORM;
@@ -70,7 +74,12 @@ public class VariantIndexOperationTool extends OperationTool {
     @Override
     protected void run() throws Exception {
         step(() -> {
-            variantStorageManager.index(study, indexParams.getFile(), getOutDir(keepIntermediateFiles).toString(), params, token);
+            List<StoragePipelineResult> results =
+                    variantStorageManager.index(study, indexParams.getFile(), getOutDir(keepIntermediateFiles).toString(), params, token);
+            addAttribute("indexedFiles", Collections.size(results));
+            if (Collections.isEmpty(results)) {
+                addWarning("Nothing to do!");
+            }
         });
     }
 }

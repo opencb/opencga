@@ -84,7 +84,7 @@ class ClientConfiguration(object):
 
     @property
     def version(self):
-        return 'v1'
+        return 'v2'
 
     @property
     def configuration(self):

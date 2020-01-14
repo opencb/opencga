@@ -12,8 +12,9 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.adaptors.ProjectMetadataAdaptor;
+import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
-import org.opencb.opencga.storage.mongodb.utils.MongoLock;
+import org.opencb.opencga.storage.mongodb.utils.MongoLockManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +32,7 @@ public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
     public static final String ID = "META";
     public static final Document QUERY = new Document("_id", ID);
     public static final String COUNTERS_FIELD = "counters";
-    private final MongoLock mongoLock;
+    private final MongoLockManager mongoLock;
     private final MongoDBCollection collection;
     private GenericDocumentComplexConverter<ProjectMetadata> converter;
 
@@ -40,11 +41,11 @@ public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
         this.collection = db.getCollection(collectionName)
                 .withReadPreference(ReadPreference.primary())
                 .withWriteConcern(WriteConcern.ACKNOWLEDGED);
-        mongoLock = new MongoLock(collection, "_lock");
+        mongoLock = new MongoLockManager(collection, "_lock");
     }
 
     @Override
-    public long lockProject(long lockDuration, long timeout) throws InterruptedException, TimeoutException {
+    public Lock lockProject(long lockDuration, long timeout) throws InterruptedException, TimeoutException {
         return mongoLock.lock(ID, lockDuration, timeout);
     }
 
@@ -103,12 +104,10 @@ public class MongoDBProjectMetadataDBAdaptor implements ProjectMetadataAdaptor {
     }
 
     protected void ensureProjectMetadataExists() throws StorageEngineException {
-        try {
-            long lock = lockProject(100, 1000);
+        try (Lock lock = lockProject(100, 1000)) {
             if (getProjectMetadata().first() == null) {
                 updateProjectMetadata(new ProjectMetadata(), false);
             }
-            unLockProject(lock);
         } catch (InterruptedException | TimeoutException e) {
             throw new StorageEngineException("Unable to get lock over project", e);
         }
