@@ -89,7 +89,6 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                             Path src = coverageFile.toPath();
                             Path dest = new File(file.getParent()).toPath();
 
-                            System.out.println("src = " + src + ", dest = " + dest + ", catalog path = " + catalogPath);
                             moveFile(getStudy(), src, dest, catalogPath, token);
 
                             success = true;

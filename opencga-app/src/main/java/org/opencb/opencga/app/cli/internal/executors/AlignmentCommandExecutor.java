@@ -28,6 +28,11 @@ import org.opencb.opencga.core.exception.ToolException;
 import java.nio.file.Paths;
 import java.util.Map;
 
+import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.BwaCommandOptions.BWA_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.DeeptoolsCommandOptions.DEEPTOOLS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.FastqcCommandOptions.FASTQC_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.SamtoolsCommandOptions.SAMTOOLS_RUN_COMMAND;
+
 /**
  * Created on 09/05/16
  *
@@ -62,16 +67,16 @@ public class AlignmentCommandExecutor extends InternalCommandExecutor {
             case "delete":
                 delete();
                 break;
-            case BwaWrapperAnalysis.ID:
+            case BWA_RUN_COMMAND:
                 bwa();
                 break;
-            case SamtoolsWrapperAnalysis.ID:
+            case SAMTOOLS_RUN_COMMAND:
                 samtools();
                 break;
-            case DeeptoolsWrapperAnalysis.ID:
+            case DEEPTOOLS_RUN_COMMAND:
                 deeptools();
                 break;
-            case FastqcWrapperAnalysis.ID:
+            case FASTQC_RUN_COMMAND:
                 fastqc();
                 break;
             default:

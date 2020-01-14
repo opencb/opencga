@@ -207,6 +207,10 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "/rvtests/run", buildRestPOSTParams(null, study, body), POST, Job.class);
     }
 
+    public RestResponse<Job> gatkRun(String study, GatkRunParams body) throws IOException {
+        return execute(VARIANT_URL, "/gatk/run", buildRestPOSTParams(null, study, body), POST, Job.class);
+    }
+
     private ObjectMap buildRestDELETEParams(String project, String study, ToolParams deleteParams) {
         ObjectMap restParams = deleteParams.toObjectMap();
         restParams.putIfNotEmpty(ParamConstants.PROJECT_PARAM, project);

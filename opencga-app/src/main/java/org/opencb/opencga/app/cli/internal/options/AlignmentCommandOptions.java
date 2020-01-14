@@ -339,6 +339,7 @@ public class AlignmentCommandOptions {
 
     @Parameters(commandNames = BwaWrapperAnalysis.ID, commandDescription = BwaWrapperAnalysis.DESCRIPTION)
     public class BwaCommandOptions {
+        public static final String BWA_RUN_COMMAND = BwaWrapperAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
@@ -372,6 +373,7 @@ public class AlignmentCommandOptions {
 
     @Parameters(commandNames = SamtoolsWrapperAnalysis.ID, commandDescription = SamtoolsWrapperAnalysis.DESCRIPTION)
     public class SamtoolsCommandOptions {
+        public static final String SAMTOOLS_RUN_COMMAND = SamtoolsWrapperAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
@@ -417,6 +419,7 @@ public class AlignmentCommandOptions {
 
     @Parameters(commandNames = DeeptoolsWrapperAnalysis.ID, commandDescription = DeeptoolsWrapperAnalysis.DESCRIPTION)
     public class DeeptoolsCommandOptions {
+        public static final String DEEPTOOLS_RUN_COMMAND = DeeptoolsWrapperAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
@@ -438,6 +441,7 @@ public class AlignmentCommandOptions {
 
     @Parameters(commandNames = FastqcWrapperAnalysis.ID, commandDescription = FastqcWrapperAnalysis.DESCRIPTION)
     public class FastqcCommandOptions {
+        public static final String FASTQC_RUN_COMMAND = FastqcWrapperAnalysis.ID + "-run";
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
