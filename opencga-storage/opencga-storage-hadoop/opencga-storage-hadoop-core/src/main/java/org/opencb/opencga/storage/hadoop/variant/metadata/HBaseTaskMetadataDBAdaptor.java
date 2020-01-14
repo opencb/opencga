@@ -1,14 +1,14 @@
 package org.opencb.opencga.storage.hadoop.variant.metadata;
 
+import com.google.common.collect.Iterators;
 import org.apache.hadoop.conf.Configuration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.Locked;
+import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.metadata.adaptors.TaskMetadataDBAdaptor;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantMetadataUtils.*;
 
@@ -27,8 +27,23 @@ public class HBaseTaskMetadataDBAdaptor extends AbstractHBaseDBAdaptor implement
     }
 
     @Override
-    public Iterator<TaskMetadata> taskIterator(int studyId, boolean reversed) {
-        return iterator(getTaskRowKeyPrefix(studyId), TaskMetadata.class, reversed);
+    public Iterator<TaskMetadata> taskIterator(int studyId, List<TaskMetadata.Status> statusFilter, boolean reversed) {
+        if (statusFilter == null) {
+            return iterator(getTaskRowKeyPrefix(studyId), TaskMetadata.class, reversed);
+        } else if (statusFilter.contains(TaskMetadata.Status.READY)) {
+            EnumSet<TaskMetadata.Status> set = EnumSet.copyOf(statusFilter);
+            return Iterators.filter(iterator(getTaskRowKeyPrefix(studyId), TaskMetadata.class, reversed),
+                    t -> set.contains(t.currentStatus()));
+        } else {
+            List<Iterator<Integer>> idsIterators = new ArrayList<>(statusFilter.size());
+            for (TaskMetadata.Status status : statusFilter) {
+                idsIterators.add(iterator(getTaskStatusIndexRowKeyPrefix(studyId, status), Integer.class));
+            }
+            Iterator<Integer> allIds = Iterators.concat(idsIterators.iterator());
+            Iterator<byte[]> rowKeys = Iterators.transform(allIds, id -> getTaskRowKey(studyId, id));
+
+            return iterator(rowKeys, TaskMetadata.class, getValueColumn());
+        }
     }
 
     @Override
@@ -47,7 +62,7 @@ public class HBaseTaskMetadataDBAdaptor extends AbstractHBaseDBAdaptor implement
     }
 
     @Override
-    public Locked lock(int studyId, int id, long lockDuration, long timeout) throws StorageEngineException {
+    public Lock lock(int studyId, int id, long lockDuration, long timeout) throws StorageEngineException {
         return lock(getTaskRowKey(studyId, id), lockDuration, timeout);
     }
 

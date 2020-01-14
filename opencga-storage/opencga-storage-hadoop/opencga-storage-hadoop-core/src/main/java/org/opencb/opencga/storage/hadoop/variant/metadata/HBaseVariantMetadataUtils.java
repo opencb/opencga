@@ -145,6 +145,10 @@ class HBaseVariantMetadataUtils {
         return getStudyResourceRowKey(studyId, COHORT_NAME_INDEX_SEPARATOR, cohortName);
     }
 
+    static byte[] getTaskStatusIndexRowKeyPrefix(int studyId, TaskMetadata.Status status) {
+        return getStudyResourceRowKey(studyId, TASK_STATUS_INDEX_SEPARATOR, status.name() + "_");
+    }
+
     static byte[] getTaskStatusIndexRowKey(int studyId, TaskMetadata.Status status, int taskId) {
         return getStudyResourceRowKey(studyId, TASK_STATUS_INDEX_SEPARATOR, status.name() + "_" + taskId);
     }

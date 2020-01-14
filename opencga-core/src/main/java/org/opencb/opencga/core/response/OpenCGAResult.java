@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.results;
+package org.opencb.opencga.core.response;
 
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Event;

@@ -24,7 +24,8 @@ import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.FileTree;
-import org.opencb.opencga.core.rest.RestResponse;
+import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
 
@@ -56,9 +57,9 @@ public class FileClient extends AnnotationClient<File> {
         return execute(FILES_URL, fileId.replace("/", ":"), "relink", params, GET, File.class);
     }
 
-    public RestResponse<File> unlink(String fileId, ObjectMap params) throws IOException {
-        params = addParamsToObjectMap(params, "fileId", fileId);
-        return execute(FILES_URL, "unlink", params, GET, File.class);
+    public RestResponse<Job> unlink(String study, String fileId, ObjectMap params) throws IOException {
+        params.putIfNotNull("study", study);
+        return execute(FILES_URL, fileId.replace("/", ":"), "unlink", params, DELETE, Job.class);
     }
 
     public RestResponse<File> content(String fileId, ObjectMap params) throws IOException {
@@ -81,8 +82,9 @@ public class FileClient extends AnnotationClient<File> {
         return execute(FILES_URL, folderId, "list", options, GET, File.class);
     }
 
-    public RestResponse<File> delete(String fileId, ObjectMap params) throws IOException {
-        return execute(FILES_URL, fileId.replace("/", ":"), "delete", params, GET, File.class);
+    public RestResponse<Job> delete(String study, String fileId, ObjectMap params) throws IOException {
+        params.putIfNotNull("study", study);
+        return execute(FILES_URL, fileId.replace("/", ":"), "delete", params, DELETE, Job.class);
     }
 
     public RestResponse<FileTree> tree(String folderId, ObjectMap params) throws IOException {

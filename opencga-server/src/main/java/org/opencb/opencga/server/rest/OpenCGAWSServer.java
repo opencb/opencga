@@ -47,8 +47,8 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.rest.RestResponse;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -428,39 +428,6 @@ public class OpenCGAWSServer {
         if (key != null && value) {
             params.put(key, Boolean.toString(value));
         }
-    }
-
-    // Temporal method used by deprecated methods. This will be removed at some point.
-    protected AclParams getAclParams(
-            @ApiParam(value = "Comma separated list of permissions to add") @QueryParam("add") String addPermissions,
-            @ApiParam(value = "Comma separated list of permissions to remove") @QueryParam("remove") String removePermissions,
-            @ApiParam(value = "Comma separated list of permissions to set") @QueryParam("set") String setPermissions)
-            throws CatalogException {
-        int count = 0;
-        count += StringUtils.isNotEmpty(setPermissions) ? 1 : 0;
-        count += StringUtils.isNotEmpty(addPermissions) ? 1 : 0;
-        count += StringUtils.isNotEmpty(removePermissions) ? 1 : 0;
-        if (count > 1) {
-            throw new CatalogException("Only one of add, remove or set parameters are allowed.");
-        } else if (count == 0) {
-            throw new CatalogException("One of add, remove or set parameters is expected.");
-        }
-
-        String permissions = null;
-        AclParams.Action action = null;
-        if (StringUtils.isNotEmpty(addPermissions)) {
-            permissions = addPermissions;
-            action = AclParams.Action.ADD;
-        }
-        if (StringUtils.isNotEmpty(setPermissions)) {
-            permissions = setPermissions;
-            action = AclParams.Action.SET;
-        }
-        if (StringUtils.isNotEmpty(removePermissions)) {
-            permissions = removePermissions;
-            action = AclParams.Action.REMOVE;
-        }
-        return new AclParams(permissions, action);
     }
 
     protected Response createErrorResponse(Throwable e) {

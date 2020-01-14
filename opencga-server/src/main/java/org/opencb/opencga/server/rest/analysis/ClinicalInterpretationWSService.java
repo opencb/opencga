@@ -32,7 +32,7 @@ import org.opencb.opencga.core.models.Interpretation;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.results.OpenCGAResult;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
 import javax.servlet.http.HttpServletRequest;
@@ -54,14 +54,14 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 @Path("/{apiVersion}/analysis/clinical")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Analysis - Clinical Interpretation", position = 4, description = "Methods for working with Clinical Interpretations")
-public class InterpretationWSService extends AnalysisWSService {
+public class ClinicalInterpretationWSService extends AnalysisWSService {
 
     private final ClinicalAnalysisManager clinicalManager;
     private final InterpretationManager catalogInterpretationManager;
     private final ClinicalInterpretationManager clinicalInterpretationManager;
 
-    public InterpretationWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                                   @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public ClinicalInterpretationWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                                           @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
 
         clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory,
@@ -71,8 +71,8 @@ public class InterpretationWSService extends AnalysisWSService {
         clinicalManager = catalogManager.getClinicalAnalysisManager();
     }
 
-    public InterpretationWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                                   @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public ClinicalInterpretationWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                                           @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest, httpHeaders);
 
         clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory,
@@ -85,7 +85,7 @@ public class InterpretationWSService extends AnalysisWSService {
     @POST
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create a new clinical analysis", position = 1, response = ClinicalAnalysis.class)
+    @ApiOperation(value = "Create a new clinical analysis", response = ClinicalAnalysis.class)
     public Response create(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
                     String studyStr,
@@ -101,7 +101,7 @@ public class InterpretationWSService extends AnalysisWSService {
     @POST
     @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update clinical analysis attributes", position = 1, response = ClinicalAnalysis.class)
+    @ApiOperation(value = "Update clinical analysis attributes", response = ClinicalAnalysis.class, hidden = true)
     public Response update(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Clinical analysis type") @QueryParam("type") String type,
@@ -141,7 +141,7 @@ public class InterpretationWSService extends AnalysisWSService {
     @POST
     @Path("/{clinicalAnalyses}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update clinical analysis attributes", position = 1, response = ClinicalAnalysis.class)
+    @ApiOperation(value = "Update clinical analysis attributes", response = ClinicalAnalysis.class)
     public Response update(
             @ApiParam(value = "Comma separated list of clinical analysis ids") @PathParam(value = "clinicalAnalyses") String clinicalAnalysisStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
@@ -164,7 +164,7 @@ public class InterpretationWSService extends AnalysisWSService {
     @POST
     @Path("/{clinicalAnalysis}/interpretations/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Add or remove Interpretations to/from a Clinical Analysis", position = 1, response = ClinicalAnalysis.class)
+    @ApiOperation(value = "Add or remove Interpretations to/from a Clinical Analysis", response = ClinicalAnalysis.class)
     public Response interpretationUpdate(
             @ApiParam(value = "Clinical analysis ID") @PathParam(value = "clinicalAnalysis") String clinicalAnalysisStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
@@ -192,7 +192,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
     @GET
     @Path("/{clinicalAnalyses}/info")
-    @ApiOperation(value = "Clinical analysis info", position = 3, response = ClinicalAnalysis[].class)
+    @ApiOperation(value = "Clinical analysis info", response = ClinicalAnalysis.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
                     example = "name,attributes", dataType = "string", paramType = "query"),
@@ -216,7 +216,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "Clinical analysis search.", position = 12, response = ClinicalAnalysis[].class)
+    @ApiOperation(value = "Clinical analysis search.", response = ClinicalAnalysis.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -259,45 +259,10 @@ public class InterpretationWSService extends AnalysisWSService {
         }
     }
 
-//    @GET
-//    @Path("/groupBy")
-//    @ApiOperation(value = "Group clinical analysis by several fields", position = 10, hidden = true,
-//            notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
-//    @ApiImplicitParams({
-//            @ApiImplicitParam(name = QueryOptions.COUNT, value = "Count the number of elements matching the group", dataType = "boolean",
-//                    paramType = "query"),
-//            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Maximum number of documents (groups) to be returned", dataType = "integer",
-//                    paramType = "query", defaultValue = "50")
-//    })
-//    public Response groupBy(
-//            @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
-//            @ApiParam(value = Params.STUDY_DESCRIPTION) @QueryParam(Params.STUDY_PARAM)
-//                    String studyId,
-//            @ApiParam(value = "Comma separated list of ids.") @QueryParam("id") String id,
-//            @ApiParam(value = "DEPRECATED: Comma separated list of names.") @QueryParam("name") String name,
-//            @ApiParam(value = "Clinical analysis type") @QueryParam("type") ClinicalAnalysis.Type type,
-//            @ApiParam(value = "Clinical analysis status") @QueryParam("status") String status,
-//            @ApiParam(value = "Germline") @QueryParam("germline") String germline,
-//            @ApiParam(value = "Somatic") @QueryParam("somatic") String somatic,
-//            @ApiParam(value = "Family") @QueryParam("family") String family,
-//            @ApiParam(value = "Proband") @QueryParam("proband") String proband,
-//            @ApiParam(value = "Sample") @QueryParam("sample") String sample,
-//            @ApiParam(value = "Release value (Current release from the moment the families were first created)") @QueryParam("release") String release) {
-//        try {
-//            query.remove(Params.STUDY_PARAM);
-//            query.remove("fields");
-//
-//            DataResult result = clinicalManager.groupBy(studyId, query, fields, queryOptions, sessionId);
-//            return createOkResponse(result);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
-
     @GET
     @Path("/{clinicalAnalyses}/acl")
     @ApiOperation(value = "Returns the acl of the clinical analyses. If member is provided, it will only return the acl for the member.",
-            position = 18)
+            response = Map.class)
     public Response getAcls(
             @ApiParam(value = ParamConstants.CLINICAL_ANALYSES_DESCRIPTION, required = true)
             @PathParam("clinicalAnalyses") String clinicalAnalysis,
@@ -319,7 +284,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
     @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
@@ -460,7 +425,7 @@ public class InterpretationWSService extends AnalysisWSService {
     @POST
     @Path("/{clinicalAnalysis}/interpretations/{interpretation}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update Interpretation fields", position = 1,
+    @ApiOperation(value = "Update Interpretation fields",
             response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
     public Response update(
             @ApiParam(value = "[[user@]project:]study id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
@@ -479,7 +444,7 @@ public class InterpretationWSService extends AnalysisWSService {
     @POST
     @Path("/{clinicalAnalysis}/interpretations/{interpretation}/comments/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update comments of an Interpretation", position = 1,
+    @ApiOperation(value = "Update comments of an Interpretation",
             response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
     public Response commentsUpdate(
             @ApiParam(value = "[[user@]project:]study id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
@@ -504,7 +469,7 @@ public class InterpretationWSService extends AnalysisWSService {
     @POST
     @Path("/{clinicalAnalysis}/interpretations/{interpretation}/primaryFindings/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update reported variants of an interpretation", position = 1,
+    @ApiOperation(value = "Update reported variants of an interpretation",
             response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
     public Response reportedVariantUpdate(
             @ApiParam(value = "[[user@]project:]study id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
@@ -527,7 +492,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
     @GET
     @Path("/interpretation/index")
-    @ApiOperation(value = "Index clinical analysis interpretations in the clinical variant database", position = 14, response = QueryResponse.class)
+    @ApiOperation(value = "Index clinical analysis interpretations in the clinical variant database", response = QueryResponse.class)
     public Response index(@ApiParam(value = "Comma separated list of interpretation IDs to be indexed in the clinical variant database") @QueryParam(value = "interpretationId") String interpretationId,
                           @ApiParam(value = "Comma separated list of clinical analysis IDs to be indexed in the clinical variant database") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
                           @ApiParam(value = "Reset the clinical variant database and import the specified interpretations") @QueryParam("false") boolean reset,
@@ -543,7 +508,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
     @GET
     @Path("/interpretation/query")
-    @ApiOperation(value = "Query for reported variants", position = 14, response = QueryResponse.class)
+    @ApiOperation(value = "Query for reported variants", response = QueryResponse.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -667,7 +632,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
     @GET
     @Path("/interpretation/stats")
-    @ApiOperation(value = "Clinical interpretation analysis", position = 14, response = QueryResponse.class)
+    @ApiOperation(value = "Clinical interpretation analysis", response = QueryResponse.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -765,7 +730,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
     @POST
     @Path("/interpretation/team/run")
-    @ApiOperation(value = "TEAM interpretation analysis", position = 14, response = QueryResponse.class)
+    @ApiOperation(value = "TEAM interpretation analysis", response = Job.class)
     @ApiImplicitParams({
             // Interpretation filters
             @ApiImplicitParam(name = ClinicalUtils.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
@@ -797,7 +762,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
     @POST
     @Path("/interpretation/tiering/run")
-    @ApiOperation(value = "GEL Tiering interpretation analysis", position = 14, response = QueryResponse.class)
+    @ApiOperation(value = "GEL Tiering interpretation analysis", response = Job.class)
     @ApiImplicitParams({
             // Interpretation filters
             @ApiImplicitParam(name = ClinicalUtils.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
@@ -830,7 +795,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
     @POST
     @Path("/interpretation/custom/run")
-    @ApiOperation(value = "Interpretation custom analysis", position = 15, response = QueryResponse.class)
+    @ApiOperation(value = "Interpretation custom analysis", response = Job.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -945,7 +910,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
     @POST
     @Path("/interpretation/cancerTiering/run")
-    @ApiOperation(value = "Cancer Tiering interpretation analysis", position = 14, response = QueryResponse.class)
+    @ApiOperation(value = "Cancer Tiering interpretation analysis", response = Job.class)
     @ApiImplicitParams({
             // Interpretation filters
             @ApiImplicitParam(name = ClinicalUtils.INCLUDE_LOW_COVERAGE_PARAM, value = "Include low coverage regions", dataType = "boolean", paramType = "query", defaultValue = "false"),
@@ -977,7 +942,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
     @GET
     @Path("/interpretation/primaryFindings")
-    @ApiOperation(value = "Search for secondary findings for a given query", position = 15, response = QueryResponse.class)
+    @ApiOperation(value = "Search for secondary findings for a given query", response = ReportedVariant.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -1088,7 +1053,7 @@ public class InterpretationWSService extends AnalysisWSService {
 
     @GET
     @Path("/interpretation/secondaryFindings")
-    @ApiOperation(value = "Search for secondary findings for a given sample", position = 14, response = QueryResponse.class)
+    @ApiOperation(value = "Search for secondary findings for a given sample", response = ReportedVariant.class)
     public Response secondaryFindings(
             @ApiParam(value = ParamConstants.SAMPLE_ID_DESCRIPTION) @QueryParam("sample") String sampleId,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyId) {

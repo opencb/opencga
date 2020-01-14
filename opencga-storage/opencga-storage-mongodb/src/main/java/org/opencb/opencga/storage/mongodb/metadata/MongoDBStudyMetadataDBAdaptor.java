@@ -29,7 +29,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.adaptors.StudyMetadataDBAdaptor;
-import org.opencb.opencga.storage.core.metadata.models.Locked;
+import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyConfigurationConverter;
 import org.slf4j.Logger;
@@ -69,28 +69,11 @@ public class MongoDBStudyMetadataDBAdaptor extends AbstractMongoDBAdaptor<StudyM
     }
 
     @Override
-    public Locked lock(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
-        if (StringUtils.isNotEmpty(lockName)) {
-            throw new UnsupportedOperationException("Unsupported lockStudy given a lockName");
-        }
-        long lock = lock(studyId, lockDuration, timeout);
-        return () -> unLock(studyId, lock);
-    }
-
-    @Override
-    public long lockStudy(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
+    public Lock lock(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
         if (StringUtils.isNotEmpty(lockName)) {
             throw new UnsupportedOperationException("Unsupported lockStudy given a lockName");
         }
         return lock(studyId, lockDuration, timeout);
-    }
-
-    @Override
-    public void unLockStudy(int studyId, long lockId, String lockName) {
-        if (StringUtils.isNotEmpty(lockName)) {
-            throw new UnsupportedOperationException("Unsupported unlockStudy given a lockName");
-        }
-        unLock(studyId, lockId);
     }
 
     private DataResult<StudyConfiguration> getStudyConfiguration(Integer studyId, String studyName, Long timeStamp,
