@@ -1,19 +1,12 @@
 package org.opencb.opencga.server.rest.analysis;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.clinical.interpretation.*;
-import org.opencb.biodata.models.commons.Analyst;
-import org.opencb.biodata.models.commons.Disorder;
-import org.opencb.biodata.models.commons.Software;
 import org.opencb.biodata.tools.clinical.DefaultReportedVariantCreator;
 import org.opencb.commons.datastore.core.DataResult;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.analysis.clinical.ClinicalInterpretationManager;
 import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.analysis.clinical.interpretation.*;
@@ -29,11 +22,7 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
@@ -42,14 +31,11 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.analysis.clinical.interpretation.InterpretationAnalysis.*;
-import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 import static org.opencb.opencga.storage.core.clinical.ReportedVariantQueryParam.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
 
@@ -92,7 +78,7 @@ public class ClinicalInterpretationWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
                     String studyStr,
             @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
-                    ClinicalAnalysisParameters params) {
+                    ClinicalAnalysisCreateParams params) {
         try {
             return createOkResponse(clinicalManager.create(studyStr, params.toClinicalAnalysis(), queryOptions, token));
         } catch (Exception e) {
@@ -173,7 +159,7 @@ public class ClinicalInterpretationWSService extends AnalysisWSService {
             @ApiParam(value = "Action to be performed if the array of interpretations is being updated.", defaultValue = "ADD")
             @QueryParam("action") ParamUtils.BasicUpdateAction interpretationAction,
             @ApiParam(name = "params", value = "JSON containing clinical analysis information", required = true)
-                    ClinicalInterpretationParameters params) {
+                    InterpretationCreateParams params) {
         try {
             if (interpretationAction == null) {
                 interpretationAction = ParamUtils.BasicUpdateAction.ADD;
@@ -280,126 +266,23 @@ public class ClinicalInterpretationWSService extends AnalysisWSService {
         }
     }
 
-    public static class ClinicalAnalysisAcl extends AclParams {
-        public String clinicalAnalysis;
-    }
-
     @POST
     @Path("/acl/{members}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
-            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) ClinicalAnalysisAcl params) {
+            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) ClinicalAnalysisAclUpdateParams params) {
         try {
-            params = ObjectUtils.defaultIfNull(params, new ClinicalAnalysisAcl());
+            params = ObjectUtils.defaultIfNull(params, new ClinicalAnalysisAclUpdateParams());
             AclParams clinicalAclParams = new AclParams(params.getPermissions(), params.getAction());
-            List<String> idList = getIdList(params.clinicalAnalysis);
+            List<String> idList = getIdList(params.getClinicalAnalysis());
             return createOkResponse(clinicalManager.updateAcl(studyStr, idList, memberId, clinicalAclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
-
-    private static class SampleParams {
-        public String id;
-    }
-
-    private static class ProbandParam {
-        public String id;
-        public List<SampleParams> samples;
-    }
-
-    private static class FamilyParam {
-        public String id;
-        public List<ProbandParam> members;
-    }
-
-    private static class ClinicalAnalystParam {
-        public String assignee;
-    }
-
-    private static class ClinicalAnalysisParameters {
-        public String id;
-        @Deprecated
-        public String name;
-        public String description;
-        public ClinicalAnalysis.Type type;
-
-        public Disorder disorder;
-
-        public Map<String, List<String>> files;
-
-        public ProbandParam proband;
-        public FamilyParam family;
-        public Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband;
-        public ClinicalAnalystParam analyst;
-        public ClinicalAnalysis.ClinicalStatus status;
-        public List<ClinicalInterpretationParameters> interpretations;
-
-        public ClinicalConsent consent;
-
-        public String dueDate;
-        public List<Comment> comments;
-        public List<Alert> alerts;
-        public Enums.Priority priority;
-        public List<String> flags;
-
-        public Map<String, Object> attributes;
-
-        public ClinicalAnalysis toClinicalAnalysis() {
-
-            Individual individual = null;
-            if (proband != null) {
-                individual = new Individual().setId(proband.id);
-                if (proband.samples != null) {
-                    List<Sample> sampleList = proband.samples.stream()
-                            .map(sample -> new Sample().setId(sample.id))
-                            .collect(Collectors.toList());
-                    individual.setSamples(sampleList);
-                }
-            }
-
-            Map<String, List<File>> fileMap = new HashMap<>();
-            if (files != null) {
-                for (Map.Entry<String, List<String>> entry : files.entrySet()) {
-                    List<File> fileList = entry.getValue().stream().map(fileId -> new File().setId(fileId)).collect(Collectors.toList());
-                    fileMap.put(entry.getKey(), fileList);
-                }
-            }
-
-            Family f = null;
-            if (family != null) {
-                f = new Family().setId(family.id);
-                if (family.members != null) {
-                    List<Individual> members = new ArrayList<>(family.members.size());
-                    for (ProbandParam member : family.members) {
-                        Individual auxIndividual = new Individual().setId(member.id);
-                        if (member.samples != null) {
-                            List<Sample> samples = member.samples.stream().map(s -> new Sample().setId(s.id)).collect(Collectors.toList());
-                            auxIndividual.setSamples(samples);
-                        }
-                        members.add(auxIndividual);
-                    }
-                    f.setMembers(members);
-                }
-            }
-
-            List<org.opencb.opencga.core.models.clinical.Interpretation> interpretationList =
-                    interpretations != null
-                            ? interpretations.stream()
-                            .map(ClinicalInterpretationParameters::toClinicalInterpretation)
-                            .collect(Collectors.toList())
-                            : new ArrayList<>();
-            String clinicalId = StringUtils.isEmpty(id) ? name : id;
-            String assignee = analyst != null ? analyst.assignee : "";
-            return new ClinicalAnalysis(clinicalId, description, type, disorder, fileMap, individual, f, roleToProband, consent,
-                    interpretationList, priority, new ClinicalAnalysis.ClinicalAnalyst(assignee, ""), flags, null,
-                    dueDate, comments, alerts, status, 1, attributes).setName(name);
-        }
-    }
-    
     /*
     
     /interpretation    
@@ -431,6 +314,7 @@ public class ClinicalInterpretationWSService extends AnalysisWSService {
             response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
     public Response update(
             @ApiParam(value = "[[user@]project:]study id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Clinical analysis id") @PathParam("clinicalAnalysis") String clinicalId,
             @ApiParam(value = "Interpretation id") @PathParam("interpretation") String interpretationId,
 //            @ApiParam(value = "Create a new version of clinical interpretation", defaultValue = "false")
 //                @QueryParam(Constants.INCREMENT_VERSION) boolean incVersion,
@@ -450,6 +334,7 @@ public class ClinicalInterpretationWSService extends AnalysisWSService {
             response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
     public Response commentsUpdate(
             @ApiParam(value = "[[user@]project:]study id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Clinical analysis id") @PathParam("clinicalAnalysis") String clinicalId,
             @ApiParam(value = "Interpretation id") @PathParam("interpretation") String interpretationId,
             // TODO: Think about having an action in this web service. Are we ever going to allow people to set or remove comments?
             @ApiParam(value = "Action to be performed.", defaultValue = "ADD") @QueryParam("action") ParamUtils.UpdateAction action,
@@ -475,6 +360,7 @@ public class ClinicalInterpretationWSService extends AnalysisWSService {
             response = org.opencb.biodata.models.clinical.interpretation.Interpretation.class)
     public Response reportedVariantUpdate(
             @ApiParam(value = "[[user@]project:]study id") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Clinical analysis id") @PathParam("clinicalAnalysis") String clinicalId,
             @ApiParam(value = "Interpretation id") @PathParam("interpretation") String interpretationId,
             @ApiParam(value = "Action to be performed.", defaultValue = "ADD") @QueryParam("action") ParamUtils.UpdateAction action,
             @ApiParam(name = "params", value = "JSON containing a list of reported variants", required = true)
@@ -494,7 +380,7 @@ public class ClinicalInterpretationWSService extends AnalysisWSService {
 
     @GET
     @Path("/interpretation/index")
-    @ApiOperation(value = "Index clinical analysis interpretations in the clinical variant database", response = QueryResponse.class)
+    @ApiOperation(value = "Index clinical analysis interpretations in the clinical variant database", response = Map.class)
     public Response index(@ApiParam(value = "Comma separated list of interpretation IDs to be indexed in the clinical variant database") @QueryParam(value = "interpretationId") String interpretationId,
                           @ApiParam(value = "Comma separated list of clinical analysis IDs to be indexed in the clinical variant database") @QueryParam("clinicalAnalysisId") String clinicalAnalysisId,
                           @ApiParam(value = "Reset the clinical variant database and import the specified interpretations") @QueryParam("false") boolean reset,
@@ -510,7 +396,7 @@ public class ClinicalInterpretationWSService extends AnalysisWSService {
 
     @GET
     @Path("/interpretation/query")
-    @ApiOperation(value = "Query for reported variants", response = QueryResponse.class)
+    @ApiOperation(value = "Query for reported variants", response = Map.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -634,7 +520,7 @@ public class ClinicalInterpretationWSService extends AnalysisWSService {
 
     @GET
     @Path("/interpretation/stats")
-    @ApiOperation(value = "Clinical interpretation analysis", response = QueryResponse.class)
+    @ApiOperation(value = "Clinical interpretation analysis", response = Map.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -1075,32 +961,6 @@ public class ClinicalInterpretationWSService extends AnalysisWSService {
             return createAnalysisOkResponse(secondaryFindings);
         } catch (Exception e) {
             return createErrorResponse(e);
-        }
-    }
-
-    private static class ClinicalInterpretationParameters {
-        public String id;
-        public String description;
-        public String clinicalAnalysisId;
-        public List<DiseasePanel> panels;
-        public Software software;
-        public Analyst analyst;
-        public List<Software> dependencies;
-        public Map<String, Object> filters;
-        public String creationDate;
-        public List<ReportedVariant> primaryFindings;
-        public List<ReportedVariant> secondaryFindings;
-        public List<ReportedLowCoverage> reportedLowCoverages;
-        public List<Comment> comments;
-        public Map<String, Object> attributes;
-
-        public org.opencb.opencga.core.models.clinical.Interpretation toClinicalInterpretation() {
-            return new org.opencb.opencga.core.models.clinical.Interpretation(id, description, clinicalAnalysisId, panels, software, analyst, dependencies, filters, creationDate,
-                    primaryFindings, secondaryFindings, reportedLowCoverages, comments, attributes);
-        }
-
-        public ObjectMap toInterpretationObjectMap() throws JsonProcessingException {
-            return new ObjectMap(getUpdateObjectMapper().writeValueAsString(this.toClinicalInterpretation()));
         }
     }
 

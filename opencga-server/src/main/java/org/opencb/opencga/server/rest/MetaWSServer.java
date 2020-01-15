@@ -230,6 +230,9 @@ public class MetaWSServer extends OpenCGAWSServer {
                 endpoint.put("path", map.get("path") + pathAnnotation.value());
                 endpoint.put("method", httpMethod);
                 endpoint.put("response", StringUtils.substringAfterLast(apiOperationAnnotation.response().getName().replace("Void", ""), "."));
+
+                String responseClass = apiOperationAnnotation.response().getName().replace("Void", "");
+                endpoint.put("responseClass", responseClass.endsWith(";") ? responseClass : responseClass + ";");
                 endpoint.put("notes", apiOperationAnnotation.notes());
                 endpoint.put("description", apiOperationAnnotation.value());
 
@@ -269,9 +272,10 @@ public class MetaWSServer extends OpenCGAWSServer {
                             }
 
                             // Get type in lower case except for 'body' param
-                            String type = methodParameter.getType().getName();
-                            if (type.contains(".")) {
-                                String[] split = type.split("\\.");
+                            String typeClass = methodParameter.getType().getName();
+                            String type = typeClass;
+                            if (typeClass.contains(".")) {
+                                String[] split = typeClass.split("\\.");
                                 type = split[split.length - 1];
                                 if (!parameter.get("param").equals("body")) {
                                     type = type.toLowerCase();
@@ -280,9 +284,12 @@ public class MetaWSServer extends OpenCGAWSServer {
                                     if (type.contains("$")) {
                                         type = "enum";
                                     }
+                                } else {
+                                    type = "object";
                                 }
                             }
                             parameter.put("type", type);
+                            parameter.put("typeClass", typeClass.endsWith(";") ? typeClass : typeClass + ";");
                             parameter.put("allowedValues", apiParam.allowableValues());
                             parameter.put("required", apiParam.required());
                             parameter.put("defaultValue", apiParam.defaultValue());
