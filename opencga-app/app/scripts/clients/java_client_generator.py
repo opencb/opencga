@@ -14,7 +14,7 @@ class JavaClientGenerator(RestClientGenerator):
             'ObjectMap': 'org.opencb.commons.datastore.core.ObjectMap;'
         }
         self.ignore_types = [
-            'Integer', 'String', 'boolean', 'int'
+            'Integer', 'String', 'boolean', 'int', 'Boolean'
         ]
         self.categories = {
             'Users': 'User',
@@ -90,7 +90,7 @@ class JavaClientGenerator(RestClientGenerator):
         text.append('')
         text.append('')
         text.append('/**')
-        text.append(' * This class contains methods for the {} webservices'.format(
+        text.append(' * This class contains methods for the {} webservices.'.format(
             self.categories[self.get_category_name(category)]))
         text.append(' *{}Client version: {}'.format(' ' * 4, self.version))
         text.append(' *{}PATH: {}'.format(' ' * 4, self.get_category_path(category)))
@@ -103,7 +103,7 @@ class JavaClientGenerator(RestClientGenerator):
         return '\n'.join(text)
 
     def get_class_end(self):
-        return '}'
+        return '}\n'
 
     def get_method_definition(self, category, endpoint):
         parameters = self.get_method_parameters(endpoint)
@@ -165,11 +165,12 @@ class JavaClientGenerator(RestClientGenerator):
         parameters = []
         parameters.extend(self.get_path_params(endpoint))
         parameters.extend(self.get_mandatory_query_params(endpoint))
-        if self.has_optional_params(endpoint):
-            parameters.append('params')
 
         if 'data' in self.parameters:
             parameters.append('data')
+
+        if self.has_optional_params(endpoint):
+            parameters.append('params')
 
         return parameters
 
@@ -237,6 +238,13 @@ def _append_text(array, string, sep, comment):
         array.append(string)
     else:
         my_string = string
+        throw_string = None
+
+        if 'throws' in my_string:
+            pos = my_string.find('throws')
+            throw_string = my_string[pos:]
+            my_string = my_string[:pos - 1]
+
         while len(my_string) > 140:
             max = 0
             for it in re.finditer(' ', my_string):
@@ -249,7 +257,15 @@ def _append_text(array, string, sep, comment):
                 text += '*'
             text += ' ' * sep + my_string[max + 1:]
             my_string = text
-        array.append(my_string)
+
+        if throw_string:
+            if len(my_string + ' ' + throw_string) <= 140:
+                array.append(my_string + ' ' + throw_string)
+            else:
+                array.append(my_string)
+                array.append(' ' * sep * 3 + throw_string)
+        else:
+            array.append(my_string)
 
 
 def _setup_argparse():
