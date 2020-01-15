@@ -18,11 +18,11 @@ public class VariantScoreIndexParams extends ToolParams {
             + "e.g. 'CHROM=0,POS=1,REF=3,ALT=4,SCORE=5,PVALUE=6' or 'VAR=0,SCORE=1,PVALUE=2'";
     public static final String RESUME = "Resume a previously failed indexation";
 
-    public static final String DESCRIPTION = "Variant score index params.\n"
-            + "scoreName: " + SCORE_NAME + ".\n"
-            + "cohort1: " + COHORT1 + ".\n"
-            + "cohort2: " + COHORT2 + ".\n"
-            + "inputColumns: " + INPUT_COLUMNS + ".\n"
+    public static final String DESCRIPTION = "Variant score index params. "
+            + "scoreName: " + SCORE_NAME + ". "
+            + "cohort1: " + COHORT1 + ". "
+            + "cohort2: " + COHORT2 + ". "
+            + "inputColumns: " + INPUT_COLUMNS + ". "
             + "resume: " + RESUME;
 
     private String scoreName;
