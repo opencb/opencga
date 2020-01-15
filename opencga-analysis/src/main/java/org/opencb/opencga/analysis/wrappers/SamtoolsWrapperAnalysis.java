@@ -2,13 +2,14 @@ package org.opencb.opencga.analysis.wrappers;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.update.FileUpdateParams;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.core.models.AnnotationSet;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 
 import java.io.DataOutputStream;
@@ -17,7 +18,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.util.*;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.opencb.opencga.core.api.ParamConstants.SAMTOOLS_COMMANDS;
 import static org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine.ALIGNMENT_STATS_VARIABLE_SET;
@@ -133,15 +138,29 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                     case "view": {
                         if (outputFile.exists()) {
                             success = true;
+
+                            if (!"view".equals(command)) {
+                                String catalogPath = getCatalogPath(inputFile);
+                                File file = new File(fileUriMap.get(inputFile).getPath());
+
+                                Path dest = new File(file.getParent()).toPath();
+                                Path src = outputFile.toPath();
+
+                                moveFile(getStudy(), src, dest, catalogPath, token);
+                            }
                         }
                         break;
                     }
                     case "faidx": {
                         File file = new File(fileUriMap.get(inputFile).getPath());
                         File faidxFile = file.getParentFile().toPath().resolve(file.getName() + ".fai").toFile();
-                        if (faidxFile.exists()) {
-                            success = true;
+                        success = isValidFile(faidxFile);
+                        if (success) {
+                            String catalogPath = getCatalogPath(inputFile);
+                            catalogManager.getFileManager().link(getStudy(), faidxFile.toURI(), catalogPath, new ObjectMap("parents", true),
+                                    token);
                         }
+                        break;
                     }
                     case "stats": {
                         File file = getScratchDir().resolve(STDOUT_FILENAME).toFile();
@@ -164,6 +183,7 @@ public class SamtoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                         break;
                     }
                 }
+
                 if (!success) {
                     File file = getScratchDir().resolve(STDERR_FILENAME).toFile();
                     String msg = "Something wrong happened when executing Samtools";

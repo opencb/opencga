@@ -27,8 +27,8 @@ import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecu
 import org.opencb.opencga.app.cli.main.options.StudyCommandOptions;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;

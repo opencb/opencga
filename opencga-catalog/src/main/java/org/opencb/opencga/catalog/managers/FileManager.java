@@ -15,6 +15,7 @@
  */
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -35,17 +36,26 @@ import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
-import org.opencb.opencga.catalog.models.update.FileUpdateParams;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.*;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.HookConfiguration;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.Experiment;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.file.FileAclEntry;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.file.FileTree;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1679,156 +1689,6 @@ public class FileManager extends AnnotationSetManager<File> {
         }
 
         return result;
-
-//        URI fileUri = getUri(file);
-//        CatalogIOManager ioManager = catalogIOManagerFactory.get(fileUri);
-//
-//        // Set the path suffix to DELETED
-//        String suffixName = INTERNAL_DELIMITER + File.FileStatus.DELETED + "_" + TimeUtils.getTime();
-//
-//        long numMatched = 0;
-//        long numModified = 0;
-//        List<OpenCGAResult.Fail> failedList = new ArrayList<>();
-//
-//        if (file.getType() == File.Type.FILE) {
-//            logger.debug("Deleting physical file {}" + file.getPath());
-//
-//            numMatched += 1;
-//
-//            try {
-//                // 1. Set the file status to deleting
-//                ObjectMap update = new ObjectMap()
-//                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETING)
-//                        .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath() + suffixName);
-//
-//                fileDBAdaptor.update(file.getUid(), update, QueryOptions.empty());
-//
-//                // 2. Delete the file from disk
-//                try {
-//                    Files.delete(Paths.get(fileUri));
-//                } catch (IOException e) {
-//                    logger.error("{}", e.getMessage(), e);
-//
-//                    // We rollback and leave the file/folder in PENDING_DELETE status
-//                    update = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE);
-//                    fileDBAdaptor.update(file.getUid(), update, QueryOptions.empty());
-//
-//                    throw new CatalogException("Could not delete physical file/folder: " + e.getMessage(), e);
-//                }
-//
-//                // 3. Update the file status in the database. Set to delete
-//                update = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED);
-//                fileDBAdaptor.update(file.getUid(), update, QueryOptions.empty());
-//
-//                numModified += 1;
-//            } catch (CatalogException e) {
-//                failedList.add(new OpenCGAResult.Fail(file.getId(), e.getMessage()));
-//            }
-//        } else {
-//            logger.debug("Starting physical deletion of folder {}", file.getId());
-//
-//            // Rename the directory in the filesystem.
-//            URI newURI;
-//            String basePath = Paths.get(file.getPath()).toString();
-//            String suffixedPath;
-//
-//            if (!File.FileStatus.PENDING_DELETE.equals(currentStatus)) {
-//                try {
-//                    newURI = UriUtils.createDirectoryUri(Paths.get(fileUri).toString() + suffixName);
-//                } catch (URISyntaxException e) {
-//                    logger.error("URI exception: {}", e.getMessage(), e);
-//                    throw new CatalogException("URI exception: " + e.getMessage(), e);
-//                }
-//
-//                logger.debug("Renaming {} to {}", fileUri.toString(), newURI.toString());
-//                ioManager.rename(fileUri, newURI);
-//
-//                suffixedPath = basePath + suffixName;
-//            } else {
-//                // newURI is actually = to fileURI
-//                newURI = fileUri;
-//
-//                // suffixedPath = basePath
-//                suffixedPath = basePath;
-//            }
-//
-//            // Obtain all files and folders within the folder
-//            Query query = new Query()
-//                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
-//                    .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
-//                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), GET_NON_DELETED_FILES);
-//            logger.debug("Looking for files and folders inside {} to mark as {}", file.getPath(), forceDelete
-//                    ? File.FileStatus.DELETED : File.FileStatus.PENDING_DELETE);
-//
-//            QueryOptions options = new QueryOptions();
-//            if (forceDelete) {
-//                options.append(QueryOptions.SORT, FileDBAdaptor.QueryParams.PATH.key())
-//                        .append(QueryOptions.ORDER, QueryOptions.DESCENDING);
-//            }
-//            DBIterator<File> iterator = fileDBAdaptor.iterator(query, options);
-//
-//            while (iterator.hasNext()) {
-//                File auxFile = iterator.next();
-//                numMatched += 1;
-//
-//                String newPath;
-//                String newUri;
-//
-//                if (!File.FileStatus.PENDING_DELETE.equals(currentStatus)) {
-//                    // Edit the PATH
-//                    newPath = auxFile.getPath().replaceFirst(basePath, suffixedPath);
-//                    newUri = auxFile.getUri().toString().replaceFirst(fileUri.toString(), newURI.toString());
-//                } else {
-//                    newPath = auxFile.getPath();
-//                    newUri = auxFile.getUri().toString();
-//                }
-//
-//                try {
-//                    if (!forceDelete) {
-//                        // Deferred deletion
-//                        logger.debug("Replacing old uri {} for {}, old path {} for {}, and setting the status to {}",
-//                                auxFile.getUri().toString(), newUri, auxFile.getPath(), newPath, File.FileStatus.PENDING_DELETE);
-//
-//                        ObjectMap updateParams = new ObjectMap()
-//                                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE)
-//                                .append(FileDBAdaptor.QueryParams.URI.key(), newUri)
-//                                .append(FileDBAdaptor.QueryParams.PATH.key(), newPath);
-//                        fileDBAdaptor.update(auxFile.getUid(), updateParams, QueryOptions.empty());
-//                    } else {
-//                        // We delete the files and folders now
-//
-//                        // 1. Set the file status to deleting
-//                        ObjectMap update = new ObjectMap()
-//                                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETING)
-//                                .append(FileDBAdaptor.QueryParams.URI.key(), newUri)
-//                                .append(FileDBAdaptor.QueryParams.PATH.key(), newPath);
-//                        fileDBAdaptor.update(auxFile.getUid(), update, QueryOptions.empty());
-//
-//                        // 2. Delete the file from disk
-//                        try {
-//                            Files.delete(Paths.get(newUri.replaceFirst("file://", "")));
-//                        } catch (IOException e) {
-//                            logger.error("{}", e.getMessage(), e);
-//
-//                            // We rollback and leave the file/folder in PENDING_DELETE status
-//                            update = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE);
-//                            fileDBAdaptor.update(auxFile.getUid(), update, QueryOptions.empty());
-//
-//                            throw new CatalogException("Could not delete physical file/folder: " + e.getMessage(), e);
-//                        }
-//
-//                        // 3. Update the file status in the database. Set to delete
-//                        update = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED);
-//                        fileDBAdaptor.update(auxFile.getUid(), update, QueryOptions.empty());
-//                    }
-//                    numModified += 1;
-//                } catch (CatalogException e) {
-//                    failedList.add(new OpenCGAResult.Fail(auxFile.getId(), e.getMessage()));
-//                }
-//            }
-//        }
-//
-//        return new OpenCGAResult("delete", (int) watch.getTime(TimeUnit.MILLISECONDS), numMatched, numModified, failedList, null, null);
     }
 
     private OpenCGAResult sendToTrash(File file) throws CatalogDBException {
@@ -1889,10 +1749,17 @@ public class FileManager extends AnnotationSetManager<File> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse FileUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("query", query)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
@@ -1945,10 +1812,17 @@ public class FileManager extends AnnotationSetManager<File> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse FileUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("fileId", fileId)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("options", options)
                 .append("token", token);
 
@@ -2010,10 +1884,17 @@ public class FileManager extends AnnotationSetManager<File> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse FileUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("fileIds", fileIds)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
@@ -2059,7 +1940,11 @@ public class FileManager extends AnnotationSetManager<File> {
                                        String token) throws CatalogException {
         ObjectMap parameters = new ObjectMap();
         if (updateParams != null) {
-            parameters = updateParams.getUpdateMap();
+            try {
+                parameters = updateParams.getUpdateMap();
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not parse FileUpdateParams object: " + e.getMessage(), e);
+            }
         }
         ParamUtils.checkUpdateParametersMap(parameters);
 

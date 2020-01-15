@@ -20,13 +20,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.Project;
-import org.opencb.opencga.core.models.Status;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.common.Status;
 
 import static org.junit.Assert.*;
 

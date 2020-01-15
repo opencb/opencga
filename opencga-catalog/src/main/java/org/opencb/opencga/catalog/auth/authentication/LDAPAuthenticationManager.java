@@ -20,8 +20,8 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
-import org.opencb.opencga.core.models.Account;
-import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 

@@ -37,6 +37,7 @@ import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
@@ -45,10 +46,10 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.api.operations.variant.VariantFileDeleteParams;
 import org.opencb.opencga.core.api.variant.*;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Cohort;
-import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.server.WebServiceException;
@@ -812,7 +813,19 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         return submitJob(RvtestsWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
-//    @POST
+    @POST
+    @Path("/gatk/run")
+    @ApiOperation(value = GatkWrapperAnalysis.DESCRIPTION, response = Job.class)
+    public Response gatkRun(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = GatkRunParams.DESCRIPTION) GatkRunParams params) {
+        return submitJob(GatkWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
+    }
+
+    //    @POST
 //    @Path("/hw/run")
 //    @ApiOperation(value = PENDING, response = Job.class)
 //    public Response hwRun() {

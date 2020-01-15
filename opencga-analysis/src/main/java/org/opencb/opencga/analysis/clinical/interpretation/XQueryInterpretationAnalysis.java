@@ -58,7 +58,7 @@ public class XQueryInterpretationAnalysis extends InterpretationAnalysis {
             throw new AnalysisException("Missing proband in clinical analysis " + clinicalAnalysisId);
         }
 
-        org.opencb.opencga.core.models.Individual proband = clinicalAnalysis.getProband();
+        org.opencb.opencga.core.models.individual.Individual proband = clinicalAnalysis.getProband();
         if (ListUtils.isEmpty(proband.getSamples())) {
             throw new AnalysisException("Missing samples in proband " + proband.getId() + " in clinical analysis " + clinicalAnalysisId);
         }

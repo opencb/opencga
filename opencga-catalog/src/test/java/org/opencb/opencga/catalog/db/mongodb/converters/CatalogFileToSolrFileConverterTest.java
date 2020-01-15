@@ -5,9 +5,9 @@ import org.opencb.biodata.models.commons.Software;
 import org.opencb.opencga.catalog.stats.solr.FileSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogFileToSolrFileConverter;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
 
 import java.time.LocalDate;
 import java.time.ZoneId;

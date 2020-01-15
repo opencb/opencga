@@ -39,7 +39,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
-import org.opencb.opencga.catalog.models.update.FamilyUpdateParams;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyUpdateParams;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -47,11 +50,13 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.family.FamilyAclEntry;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -653,10 +658,17 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse FamilyUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("query", query)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
@@ -708,10 +720,17 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse FamilyUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("familyId", familyId)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("options", options)
                 .append("token", token);
 
@@ -771,10 +790,17 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse FamilyUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("familyIds", familyIds)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
@@ -819,7 +845,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         ObjectMap parameters = new ObjectMap();
         if (updateParams != null) {
-            parameters = updateParams.getUpdateMap();
+            try {
+                parameters = updateParams.getUpdateMap();
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not parse FamilyUpdateParams object: " + e.getMessage(), e);
+            }
         }
 
         if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {

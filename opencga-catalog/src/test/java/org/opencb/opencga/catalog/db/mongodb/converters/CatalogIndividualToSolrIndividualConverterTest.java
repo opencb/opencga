@@ -6,10 +6,10 @@ import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.opencga.catalog.stats.solr.IndividualSolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogIndividualToSolrIndividualConverter;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Status;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.study.Study;
 
 import java.time.LocalDate;
 import java.time.ZoneId;

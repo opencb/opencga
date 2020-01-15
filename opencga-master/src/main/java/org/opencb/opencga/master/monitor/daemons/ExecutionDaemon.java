@@ -49,10 +49,10 @@ import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
@@ -113,10 +113,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put("alignment-index", "alignment index");
             put("alignment-coverage-run", "alignment coverage-run");
             put("alignment-stats-run", "alignment stats-run");
-            put(BwaWrapperAnalysis.ID, "alignment " + BwaWrapperAnalysis.ID);
-            put(SamtoolsWrapperAnalysis.ID, "alignment " + SamtoolsWrapperAnalysis.ID);
-            put(DeeptoolsWrapperAnalysis.ID, "alignment " + DeeptoolsWrapperAnalysis.ID);
-            put(FastqcWrapperAnalysis.ID, "alignment " + FastqcWrapperAnalysis.ID);
+            put(BwaWrapperAnalysis.ID, "alignment " + BwaWrapperAnalysis.ID + "-run");
+            put(SamtoolsWrapperAnalysis.ID, "alignment " + SamtoolsWrapperAnalysis.ID + "-run");
+            put(DeeptoolsWrapperAnalysis.ID, "alignment " + DeeptoolsWrapperAnalysis.ID + "-run");
+            put(FastqcWrapperAnalysis.ID, "alignment " + FastqcWrapperAnalysis.ID + "-run");
 
             put(VariantIndexOperationTool.ID, "variant index");
             put(VariantExportTool.ID, "variant export");
@@ -127,6 +127,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(GwasAnalysis.ID, "variant gwas-run");
             put(PlinkWrapperAnalysis.ID, "variant " + PlinkWrapperAnalysis.ID + "-run");
             put(RvtestsWrapperAnalysis.ID, "variant " + RvtestsWrapperAnalysis.ID + "-run");
+            put(GatkWrapperAnalysis.ID, "variant " + GatkWrapperAnalysis.ID + "-run");
             put(VariantFileDeleteOperationTool.ID, "variant file-delete");
             put(VariantSecondaryIndexOperationTool.ID, "variant secondary-index");
             put(VariantSecondaryIndexSamplesDeleteOperationTool.ID, "variant secondary-index-delete");

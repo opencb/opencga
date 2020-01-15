@@ -26,6 +26,7 @@ import org.opencb.opencga.analysis.variant.operations.VariantFamilyIndexOperatio
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
@@ -108,6 +109,7 @@ public class VariantCommandOptions {
     // Wrappers
     public final PlinkCommandOptions plinkCommandOptions;
     public final RvtestsCommandOptions rvtestsCommandOptions;
+    public final GatkCommandOptions gatkCommandOptions;
 
     public final JCommander jCommander;
     public final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -152,6 +154,7 @@ public class VariantCommandOptions {
         this.cohortVariantStatsQueryCommandOptions = new CohortVariantStatsQueryCommandOptions();
         this.plinkCommandOptions = new PlinkCommandOptions();
         this.rvtestsCommandOptions = new RvtestsCommandOptions();
+        this.gatkCommandOptions = new GatkCommandOptions();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = VariantIndexOperationTool.DESCRIPTION)
@@ -974,6 +977,32 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--covar-file"}, description = "Covariate file.")
         public String covarFile;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
+        public String outdir;
+    }
+
+    @Parameters(commandNames = GatkCommandOptions.GATK_RUN_COMMAND, commandDescription = GatkWrapperAnalysis.DESCRIPTION)
+    public class GatkCommandOptions {
+        public static final String GATK_RUN_COMMAND = GatkWrapperAnalysis.ID + "-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study.")
+        public String study;
+
+        @Parameter(names = {"--command"}, description = "Gatk command. Currently, the only command supported is 'HaplotypeCaller'")
+        public String command = "HaplotypeCaller";
+
+        @Parameter(names = {"--fasta-file"}, description = "FASTA file for reference genome")
+        public String fastaFile;
+
+        @Parameter(names = {"--bam-file"}, description = "BAM file for input alignments.")
+        public String bamFile;
+
+        @Parameter(names = {"--vcf-filename"}, description = "VCF filename.")
+        public String vcfFilename;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;

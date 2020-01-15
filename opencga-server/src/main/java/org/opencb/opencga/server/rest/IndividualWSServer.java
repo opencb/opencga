@@ -19,26 +19,20 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.commons.Disorder;
-import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty;
-import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.IndividualManager;
-import org.opencb.opencga.catalog.models.update.IndividualUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Location;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualAclUpdateParams;
+import org.opencb.opencga.core.models.individual.IndividualCreateParams;
+import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -71,7 +65,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     String studyStr,
             @ApiParam(value = "Comma separated list of sample ids to be associated to the created individual") @QueryParam("samples")
                     String samples,
-            @ApiParam(value = "JSON containing individual information", required = true) IndividualCreatePOST params) {
+            @ApiParam(value = "JSON containing individual information", required = true) IndividualCreateParams params) {
         try {
             return createOkResponse(individualManager.create(studyStr, params.toIndividual(), getIdList(samples), queryOptions, token));
         } catch (Exception e) {
@@ -344,13 +338,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
         }
     }
 
-    public static class IndividualAcl extends AclParams {
-        public String individual;
-        public String sample;
-
-        public boolean propagate;
-    }
-
     @POST
     @Path("/acl/{members}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
@@ -360,13 +347,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = "JSON containing the parameters to update the permissions. If propagate flag is set to true, it will "
                     + "propagate the permissions defined to the samples that are associated to the matching individuals",
-                    required = true) IndividualAcl params) {
+                    required = true) IndividualAclUpdateParams params) {
         try {
-            ObjectUtils.defaultIfNull(params, new IndividualAcl());
+            ObjectUtils.defaultIfNull(params, new IndividualAclUpdateParams());
 
             Individual.IndividualAclParams aclParams = new Individual.IndividualAclParams(params.getPermissions(), params.getAction(),
-                    params.sample, params.propagate);
-            List<String> idList = StringUtils.isEmpty(params.individual) ? Collections.emptyList() : getIdList(params.individual, false);
+                    params.getSample(), params.isPropagate());
+            List<String> idList = StringUtils.isEmpty(params.getIndividual()) ? Collections.emptyList() : getIdList(params.getIndividual(), false);
             return createOkResponse(individualManager.updateAcl(studyStr, idList, memberId, aclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -417,47 +404,4 @@ public class IndividualWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
-
-    // Data models
-    protected static class IndividualCreatePOST {
-        public String id;
-        public String name;
-
-        public String father;
-        public String mother;
-        public Multiples multiples;
-        public Location location;
-        public List<SampleWSServer.CreateSamplePOST> samples;
-        public IndividualProperty.Sex sex;
-        public String ethnicity;
-        public Boolean parentalConsanguinity;
-        public Individual.Population population;
-        public String dateOfBirth;
-        public IndividualProperty.KaryotypicSex karyotypicSex;
-        public IndividualProperty.LifeStatus lifeStatus;
-        public IndividualProperty.AffectationStatus affectationStatus;
-        public List<AnnotationSet> annotationSets;
-        public List<Phenotype> phenotypes;
-        public List<Disorder> disorders;
-        public Map<String, Object> attributes;
-
-        public Individual toIndividual() {
-
-            List<Sample> sampleList = null;
-            if (samples != null) {
-                sampleList = new ArrayList<>(samples.size());
-                for (SampleWSServer.CreateSamplePOST sample : samples) {
-                    sampleList.add(sample.toSample());
-                }
-            }
-
-            String individualId = StringUtils.isEmpty(id) ? name : id;
-            String individualName = StringUtils.isEmpty(name) ? individualId : name;
-            return new Individual(individualId, individualName, new Individual().setId(father), new Individual().setId(mother), multiples,
-                    location, sex, karyotypicSex, ethnicity, population, lifeStatus, affectationStatus, dateOfBirth,
-                    sampleList, parentalConsanguinity != null ? parentalConsanguinity : false, 1, annotationSets, phenotypes, disorders)
-                    .setAttributes(attributes);
-        }
-    }
-
 }

@@ -18,7 +18,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 

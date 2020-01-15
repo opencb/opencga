@@ -3,17 +3,17 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.managers.PanelManager;
-import org.opencb.opencga.catalog.models.update.PanelUpdateParams;
+import org.opencb.opencga.core.models.panel.PanelAclUpdateParams;
+import org.opencb.opencga.core.models.panel.PanelCreateParams;
+import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.Panel;
-import org.opencb.opencga.core.models.Status;
-import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.AclParams;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -21,8 +21,6 @@ import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
-import static org.opencb.biodata.models.clinical.interpretation.DiseasePanel.*;
 
 @Path("/{apiVersion}/panels")
 @Produces(MediaType.APPLICATION_JSON)
@@ -46,7 +44,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Comma separated list of installation panel ids to be imported. To import them all at once, write the "
                     + "special word 'ALL_GLOBAL_PANELS'")
             @QueryParam("import") String panelIds,
-            @ApiParam(name = "params", value = "Panel parameters") PanelPOST params) {
+            @ApiParam(name = "params", value = "Panel parameters") PanelCreateParams params) {
         try {
             if (StringUtils.isNotEmpty(panelIds)) {
                 if ("ALL_GLOBAL_PANELS".equals(panelIds.toUpperCase())) {
@@ -221,52 +219,21 @@ public class PanelWSServer extends OpenCGAWSServer {
         }
     }
 
-    public static class PanelAcl extends AclParams {
-        public String panel;
-    }
-
     @POST
     @Path("/acl/{members}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
-            @ApiParam(value = "JSON containing the parameters to update the permissions.", required = true) PanelAcl params) {
+            @ApiParam(value = "JSON containing the parameters to update the permissions.", required = true) PanelAclUpdateParams params) {
         try {
-            params = ObjectUtils.defaultIfNull(params, new PanelAcl());
+            params = ObjectUtils.defaultIfNull(params, new PanelAclUpdateParams());
             AclParams panelAclParams = new AclParams(params.getPermissions(), params.getAction());
-            List<String> idList = getIdList(params.panel, false);
+            List<String> idList = getIdList(params.getPanel(), false);
             return createOkResponse(panelManager.updateAcl(studyStr, idList, memberId, panelAclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
-
-    public static class PanelPOST {
-        public String id;
-        public String name;
-        public String description;
-        @Deprecated
-        public String author;
-        public SourcePanel source;
-
-        public List<PanelCategory> categories;
-        public List<String> tags;
-        public List<Phenotype> phenotypes;
-        public List<VariantPanel> variants;
-        public List<GenePanel> genes;
-        public List<RegionPanel> regions;
-        public List<STR> strs;
-
-        public Map<String, Integer> stats;
-
-        public Map<String, Object> attributes;
-
-        public Panel toPanel() {
-            return new Panel(id, name, categories, phenotypes, tags, variants, genes, regions, strs, stats, 1, 1, author,
-                    source, new Status(), description, attributes);
-        }
-    }
-
 
 }

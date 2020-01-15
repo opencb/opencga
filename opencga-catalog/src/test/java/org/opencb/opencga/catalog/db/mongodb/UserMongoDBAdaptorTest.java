@@ -24,9 +24,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Status;
-import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.user.User;
 
 import java.io.IOException;
 import java.util.Arrays;

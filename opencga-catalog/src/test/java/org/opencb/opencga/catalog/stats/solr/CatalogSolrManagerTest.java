@@ -16,10 +16,10 @@ import org.opencb.opencga.catalog.stats.solr.converters.CatalogCohortToSolrCohor
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampleConverter;
 import org.opencb.opencga.catalog.stats.solr.converters.SolrConverterUtil;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.models.Cohort;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.sample.Sample;
 
 import java.io.IOException;
 import java.util.Arrays;

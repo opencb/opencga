@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -17,16 +18,16 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
-import org.opencb.opencga.catalog.models.update.InterpretationUpdateParams;
+import org.opencb.opencga.core.models.clinical.InterpretationUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.Interpretation;
-import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.models.acls.permissions.ClinicalAnalysisAclEntry;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.Interpretation;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -180,7 +181,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     public OpenCGAResult<Interpretation> create(String studyStr, String clinicalAnalysisStr, Interpretation interpretation,
-                                             QueryOptions options, String token) throws CatalogException {
+                                                QueryOptions options, String token) throws CatalogException {
         // We check if the user can create interpretations in the clinical analysis
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
@@ -238,7 +239,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     public OpenCGAResult<Interpretation> update(String studyStr, Query query, InterpretationUpdateParams updateParams, QueryOptions options,
-                                             String token) throws CatalogException {
+                                                String token) throws CatalogException {
         return update(studyStr, query, updateParams, false, options, token);
     }
 
@@ -251,10 +252,17 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse InterpretationUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("query", query)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
@@ -296,7 +304,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     public OpenCGAResult<Interpretation> update(String studyStr, String interpretationId, InterpretationUpdateParams updateParams,
-                                             QueryOptions options, String token) throws CatalogException {
+                                                QueryOptions options, String token) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getUserId(token);
@@ -304,10 +312,17 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse InterpretationUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("interpretationId", interpretationId)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("options", options)
                 .append("token", token);
 
@@ -356,7 +371,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
      *                          exist or is not allowed to be updated.
      */
     public OpenCGAResult<Interpretation> update(String studyStr, List<String> interpretationIds, InterpretationUpdateParams updateParams,
-                                             QueryOptions options, String token) throws CatalogException {
+                                                QueryOptions options, String token) throws CatalogException {
         return update(studyStr, interpretationIds, updateParams, false, options, token);
     }
 
@@ -369,10 +384,17 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse InterpretationUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("interpretationIds", interpretationIds)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
@@ -413,14 +435,21 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
     }
 
     private OpenCGAResult update(Study study, Interpretation interpretation, InterpretationUpdateParams updateParams, QueryOptions options,
-                              String userId) throws CatalogException {
+                                 String userId) throws CatalogException {
         // Check if user has permissions to write clinical analysis
         ClinicalAnalysis clinicalAnalysis = catalogManager.getClinicalAnalysisManager().internalGet(study.getUid(),
                 interpretation.getClinicalAnalysisId(), ClinicalAnalysisManager.INCLUDE_CLINICAL_IDS, userId).first();
         authorizationManager.checkClinicalAnalysisPermission(study.getUid(), clinicalAnalysis.getUid(), userId,
                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE);
 
-        ObjectMap parameters = updateParams.getUpdateMap();
+        ObjectMap parameters = new ObjectMap();
+        if (updateParams != null) {
+            try {
+                parameters = updateParams.getUpdateMap();
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not parse InterpretationUpdateParams object: " + e.getMessage(), e);
+            }
+        }
 
         if (ListUtils.isNotEmpty(interpretation.getPrimaryFindings()) && (parameters.size() > 1
                 || !parameters.containsKey(InterpretationDBAdaptor.QueryParams.REPORTED_VARIANTS.key()))) {

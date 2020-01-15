@@ -65,6 +65,12 @@ public class SolrQueryParser {
     private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
     private static final Pattern NUMERIC_PATTERN = Pattern.compile("(!=?|<=?|>=?|=?)([^=<>!]+.*)$");
 
+    private static final Pattern FACET_RANGE_PATTERN = Pattern.compile("([_a-zA-Z]+)\\[([_a-zA-Z]+):([.a-zA-Z0-9]+)\\]:([.0-9]+)$");
+    private static final Pattern FACET_RANGE_STUDY_PATTERN = Pattern.compile("([_a-zA-Z]+)\\[([_a-zA-Z0-9]+):([_a-zA-Z0-9]+):"
+            + "([.a-zA-Z0-9]+)\\]:([.0-9]+)$");
+    private static final Pattern FACET_FUNCTION_STUDY_PATTERN = Pattern.compile("([_a-zA-Z]+)\\(([a-zA-Z]+)\\[([_a-zA-Z0-9]+):"
+            + "([_a-zA-Z0-9]+)\\]\\)$");
+
     protected static Logger logger = LoggerFactory.getLogger(SolrQueryParser.class);
 
     static {
@@ -118,11 +124,8 @@ public class SolrQueryParser {
         if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
             try {
                 FacetQueryParser facetQueryParser = new FacetQueryParser();
-                String facetQuery = queryOptions.getString(QueryOptions.FACET);
 
-                if (facetQuery.contains(CHROM_DENSITY)) {
-                    facetQuery = parseFacet(facetQuery);
-                }
+                String facetQuery = parseFacet(queryOptions.getString(QueryOptions.FACET));
                 String jsonFacet = facetQueryParser.parse(facetQuery);
 
                 solrQuery.set("json.facet", jsonFacet);
@@ -624,62 +627,136 @@ public class SolrQueryParser {
                 return "((" + regionXrefPart + ") AND (" + combinationPart + ")) OR (" + geneCombinationPart + ")";
             }
         }
-
     }
 
     private String parseFacet(String facetQuery) {
+        StringBuilder sb = new StringBuilder();
         List<String> facetList = new ArrayList<>();
         String[] facets = facetQuery.split(FacetQueryParser.FACET_SEPARATOR);
-        for (String facet: facets) {
-            if (facet.contains(CHROM_DENSITY)) {
-                // Categorical...
-                Matcher matcher = FacetQueryParser.CATEGORICAL_PATTERN.matcher(facet);
-                if (matcher.find()) {
-                    if (matcher.group(1).equals(CHROM_DENSITY)) {
-                        // Step management
-                        int step = 1000000;
-                        if (StringUtils.isNotEmpty(matcher.group(3))) {
-                            step = Integer.parseInt(matcher.group(3).substring(1));
-                        }
-                        int maxLength = 0;
-                        // Include management
-                        List<String> chromList;
-                        String include = matcher.group(2);
-                        if (StringUtils.isNotEmpty(include)) {
-                            chromList = new ArrayList<>();
-                            include = include.replace("]", "").replace("[", "");
-                            for (String value: include.split(FacetQueryParser.INCLUDE_SEPARATOR)) {
-                                chromList.add(value);
-                            }
-                        } else {
-                            chromList = new ArrayList<>(chromosomeMap.keySet());
-                        }
 
-                        List<String> chromQueryList = new ArrayList<>();
-                        for (String chrom: chromList) {
-                            if (chromosomeMap.get(chrom) > maxLength) {
-                                maxLength = chromosomeMap.get(chrom);
-                            }
-                            chromQueryList.add("chromosome:" + chrom);
-                        }
-                        facetList.add("start[1.." + maxLength + "]:" + step + ":chromDensity"
-                                + FacetQueryParser.LABEL_SEPARATOR + "chromosome:"
-                                + StringUtils.join(chromQueryList, " OR "));
-//                        for (String chr: chromosomes) {
-//                            facetList.add("start[1.." + chromosomeMap.get(chr) + "]:" + step + ":chromDensity." + chr
-//                                    + ":chromosome:" + chr);
-//                        }
-                    } else {
-                        throw VariantQueryException.malformedParam(null, CHROM_DENSITY, "Invalid syntax: " + facet);
-                    }
-                } else {
-                    throw VariantQueryException.malformedParam(null, CHROM_DENSITY, "Invalid syntax: " + facet);
+        for (int i = 0; i < facets.length; i++) {
+            if (i > 0) {
+                sb.append(FacetQueryParser.FACET_SEPARATOR);
+            }
+            String[] nestedFacets = facets[i].split(FacetQueryParser.NESTED_FACET_SEPARATOR);
+            for (int j = 0; j < nestedFacets.length; j++) {
+                if (j > 0) {
+                    sb.append(FacetQueryParser.NESTED_FACET_SEPARATOR);
                 }
-            } else {
-                facetList.add(facet);
+                String[] nestedSubfacets = nestedFacets[j].split(FacetQueryParser.NESTED_SUBFACET_SEPARATOR);
+                for (int k = 0; k < nestedSubfacets.length; k++) {
+                    if (k > 0) {
+                        sb.append(FacetQueryParser.NESTED_SUBFACET_SEPARATOR);
+                    }
+                    // Convert to Solr schema fields, if necessary
+                    sb.append(toSolrSchemaFields(nestedSubfacets[k]));
+                }
             }
         }
-        return StringUtils.join(facetList, FacetQueryParser.FACET_SEPARATOR);
+
+        return sb.toString();
+    }
+
+    private String toSolrSchemaFields(String facet) {
+        if (facet.contains(CHROM_DENSITY)) {
+            return parseChromDensity(facet);
+        } else if (facet.contains(ANNOT_FUNCTIONAL_SCORE.key())) {
+            return parseFacet(facet, ANNOT_FUNCTIONAL_SCORE.key());
+        } else if (facet.contains(ANNOT_CONSERVATION.key())) {
+            return parseFacet(facet, ANNOT_CONSERVATION.key());
+        } else if (facet.contains(ANNOT_PROTEIN_SUBSTITUTION.key())) {
+            return parseFacet(facet, ANNOT_PROTEIN_SUBSTITUTION.key());
+        } else if (facet.contains(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key())) {
+            return parseFacetWithStudy(facet, "popFreq");
+        } else if (facet.contains(STATS_ALT.key())) {
+            return parseFacetWithStudy(facet, "stats");
+        } else if (facet.contains(SCORE.key())) {
+            return parseFacetWithStudy(facet, SCORE.key());
+        } else {
+            return facet;
+        }
+    }
+
+    private String parseFacet(String facet, String categoryName) {
+        if (facet.contains("(")) {
+            // Aggregation function
+            return facet.replace(categoryName, "").replace("[", "").replace("]", "");
+        } else if (facet.contains("..")) {
+            // Range
+            Matcher matcher = FACET_RANGE_PATTERN.matcher(facet);
+            if (matcher.find()) {
+                return matcher.group(2) + "[" + matcher.group(3) + "]:" + matcher.group(4);
+            } else {
+                throw VariantQueryException.malformedParam(categoryName, facet, "Invalid syntax for facet range.");
+            }
+        }
+        // Nothing to do
+        return facet;
+    }
+
+    private String parseFacetWithStudy(String facet, String categoryName) {
+        if (facet.contains("(")) {
+            // Aggregation function
+            Matcher matcher = FACET_FUNCTION_STUDY_PATTERN.matcher(facet);
+            if (matcher.find()) {
+                return matcher.group(1) + "(" + categoryName + FIELD_SEPARATOR + matcher.group(3) + FIELD_SEPARATOR + matcher.group(4)
+                        + ")";
+            } else {
+                throw VariantQueryException.malformedParam(categoryName, facet, "Invalid syntax for facet function.");
+            }
+        } else if (facet.contains("..")) {
+            // Range
+            Matcher matcher = FACET_RANGE_STUDY_PATTERN.matcher(facet);
+            if (matcher.find()) {
+                return categoryName + FIELD_SEPARATOR + matcher.group(2) + FIELD_SEPARATOR + matcher.group(3) + "[" + matcher.group(4)
+                        + "]:" + matcher.group(5);
+            } else {
+                throw VariantQueryException.malformedParam(categoryName, facet, "Invalid syntax for facet range.");
+            }
+        }
+        // Nothing to do
+        return facet;
+    }
+
+    private String parseChromDensity(String facet) {
+        // Categorical...
+        Matcher matcher = FacetQueryParser.CATEGORICAL_PATTERN.matcher(facet);
+        if (matcher.find()) {
+            if (matcher.group(1).equals(CHROM_DENSITY)) {
+                // Step management
+                int step = 1000000;
+                if (StringUtils.isNotEmpty(matcher.group(3))) {
+                    step = Integer.parseInt(matcher.group(3).substring(1));
+                }
+                int maxLength = 0;
+                // Include management
+                List<String> chromList;
+                String include = matcher.group(2);
+                if (StringUtils.isNotEmpty(include)) {
+                    chromList = new ArrayList<>();
+                    include = include.replace("]", "").replace("[", "");
+                    for (String value : include.split(FacetQueryParser.INCLUDE_SEPARATOR)) {
+                        chromList.add(value);
+                    }
+                } else {
+                    chromList = new ArrayList<>(chromosomeMap.keySet());
+                }
+
+                List<String> chromQueryList = new ArrayList<>();
+                for (String chrom : chromList) {
+                    if (chromosomeMap.get(chrom) > maxLength) {
+                        maxLength = chromosomeMap.get(chrom);
+                    }
+                    chromQueryList.add("chromosome:" + chrom);
+                }
+                return "start[1.." + maxLength + "]:" + step + ":chromDensity" + FacetQueryParser.LABEL_SEPARATOR + "chromosome:"
+                        + StringUtils.join(chromQueryList, " OR ");
+            } else {
+                throw VariantQueryException.malformedParam(CHROM_DENSITY, facet, "Invalid syntax.");
+            }
+        } else {
+            throw VariantQueryException.malformedParam(CHROM_DENSITY, facet, "Invalid syntax.");
+        }
     }
 
     /**

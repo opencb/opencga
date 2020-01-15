@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.demo;
 
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 
 import java.io.FileInputStream;

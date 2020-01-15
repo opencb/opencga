@@ -22,7 +22,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;

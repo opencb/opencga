@@ -11,7 +11,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.api.variant.SampleVariantFilterParams;
 import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;

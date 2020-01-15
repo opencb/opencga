@@ -1,6 +1,6 @@
 package org.opencb.opencga.analysis.variant.genes.knockout.result;
 
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.sample.Sample;
 
 import java.util.*;
 

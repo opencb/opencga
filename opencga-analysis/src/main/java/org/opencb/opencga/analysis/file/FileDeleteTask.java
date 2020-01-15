@@ -12,13 +12,13 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.catalog.models.update.FileUpdateParams;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.FileIndex;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 

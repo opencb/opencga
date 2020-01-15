@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.opencga.core.models.common.Status;
+
 import java.util.List;
 import java.util.Map;
 

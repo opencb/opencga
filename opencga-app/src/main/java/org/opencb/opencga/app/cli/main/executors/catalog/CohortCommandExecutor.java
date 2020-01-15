@@ -28,8 +28,8 @@ import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.models.Cohort;
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;

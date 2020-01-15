@@ -31,7 +31,7 @@ import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.api.operations.variant.VariantFileDeleteParams;
 import org.opencb.opencga.core.api.variant.*;
-import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.core.tools.ToolParams;
@@ -205,6 +205,10 @@ public class VariantClient extends AbstractParentClient {
 
     public RestResponse<Job> rvtestsRun(String study, RvtestsRunParams body) throws IOException {
         return execute(VARIANT_URL, "/rvtests/run", buildRestPOSTParams(null, study, body), POST, Job.class);
+    }
+
+    public RestResponse<Job> gatkRun(String study, GatkRunParams body) throws IOException {
+        return execute(VARIANT_URL, "/gatk/run", buildRestPOSTParams(null, study, body), POST, Job.class);
     }
 
     private ObjectMap buildRestDELETEParams(String project, String study, ToolParams deleteParams) {

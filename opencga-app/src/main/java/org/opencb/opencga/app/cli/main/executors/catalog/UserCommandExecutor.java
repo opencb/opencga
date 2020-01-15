@@ -27,9 +27,9 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.core.models.Project;
-import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.response.OpenCGAResult;
 

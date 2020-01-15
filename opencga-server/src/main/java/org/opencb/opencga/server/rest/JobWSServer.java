@@ -21,26 +21,22 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.managers.JobManager;
-import org.opencb.opencga.catalog.models.update.JobUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.models.ToolInfo;
-import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobAclUpdateParams;
+import org.opencb.opencga.core.models.job.JobCreateParams;
+import org.opencb.opencga.core.models.job.JobUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
-import org.opencb.opencga.core.tools.result.ExecutionResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Path("/{apiVersion}/jobs")
 @Produces(MediaType.APPLICATION_JSON)
@@ -55,133 +51,6 @@ public class JobWSServer extends OpenCGAWSServer {
         jobManager = catalogManager.getJobManager();
     }
 
-
-    public static class InputJob {
-
-        public InputJob() {
-        }
-
-        private String id;
-        private String name;
-        private String description;
-
-        private ToolInfo tool;
-
-        private Enums.Priority priority;
-
-        private String commandLine;
-
-        private Map<String, Object> params;
-
-        private String creationDate;
-        private Enums.ExecutionStatus status;
-
-        private TinyFile outDir;
-        private List<TinyFile> input;    // input files to this job
-        private List<TinyFile> output;   // output files of this job
-        private List<String> tags;
-
-        private ExecutionResult result;
-
-        private TinyFile log;
-        private TinyFile errorLog;
-
-        private Map<String, Object> attributes;
-
-        public String getId() {
-            return id;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-
-        public ToolInfo getTool() {
-            return tool;
-        }
-
-        public Enums.Priority getPriority() {
-            return priority;
-        }
-
-        public String getCommandLine() {
-            return commandLine;
-        }
-
-        public Map<String, Object> getParams() {
-            return params;
-        }
-
-        public String getCreationDate() {
-            return creationDate;
-        }
-
-        public Enums.ExecutionStatus getStatus() {
-            return status;
-        }
-
-        public TinyFile getOutDir() {
-            return outDir;
-        }
-
-        public List<TinyFile> getInput() {
-            return input != null ? input : Collections.emptyList();
-        }
-
-        public List<TinyFile> getOutput() {
-            return output != null ? output : Collections.emptyList();
-        }
-
-        public List<String> getTags() {
-            return tags;
-        }
-
-        public ExecutionResult getResult() {
-            return result;
-        }
-
-        public TinyFile getLog() {
-            return log;
-        }
-
-        public TinyFile getErrorLog() {
-            return errorLog;
-        }
-
-        public Map<String, Object> getAttributes() {
-            return attributes;
-        }
-
-        public Job toJob() {
-            return new Job(id, null, name, description, tool, null, commandLine, params, creationDate, null, priority, status,
-                    outDir != null ? outDir.toFile() : null,
-                    getInput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
-                    getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
-                    tags, result, false, log != null ? log.toFile() : null, errorLog != null ? errorLog.toFile() : null, 1, null, attributes);
-        }
-
-    }
-
-    public class TinyFile {
-        private String path;
-
-        public TinyFile() {
-        }
-
-        public String getPath() {
-            return path;
-        }
-
-        public File toFile() {
-            return new File().setPath(path);
-        }
-
-    }
-
     @POST
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -191,7 +60,7 @@ public class JobWSServer extends OpenCGAWSServer {
     public Response createJobPOST(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "job", required = true) InputJob inputJob) {
+            @ApiParam(value = "job", required = true) JobCreateParams inputJob) {
         try {
             OpenCGAResult<Job> result = catalogManager.getJobManager().create(studyStr, inputJob.toJob(), queryOptions, token);
             return createOkResponse(result);
@@ -325,20 +194,16 @@ public class JobWSServer extends OpenCGAWSServer {
         }
     }
 
-    public static class JobAcl extends AclParams {
-        public String job;
-    }
-
     @POST
     @Path("/acl/{members}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
     public Response updateAcl(
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
-            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) JobAcl params) {
+            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) JobAclUpdateParams params) {
         try {
-            ObjectUtils.defaultIfNull(params, new JobAcl());
+            ObjectUtils.defaultIfNull(params, new JobAclUpdateParams());
             AclParams aclParams = new AclParams(params.getPermissions(), params.getAction());
-            List<String> idList = getIdList(params.job, false);
+            List<String> idList = getIdList(params.getJob(), false);
             return createOkResponse(jobManager.updateAcl(null, idList, memberId, aclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);

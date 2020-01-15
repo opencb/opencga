@@ -19,7 +19,7 @@ package org.opencb.opencga.client.rest.catalog;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.core.models.Panel;
+import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;

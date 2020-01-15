@@ -14,10 +14,10 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.update.PanelUpdateParams;
-import org.opencb.opencga.core.models.Account;
-import org.opencb.opencga.core.models.Panel;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.panel.PanelUpdateParams;
+import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.study.Study;
 
 import java.io.IOException;
 import java.util.Collections;

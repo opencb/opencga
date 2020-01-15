@@ -8,7 +8,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

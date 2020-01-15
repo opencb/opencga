@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.master.monitor.executors;
 
-import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.job.Job;
 
 /**
  * Created by pfurio on 22/08/16.

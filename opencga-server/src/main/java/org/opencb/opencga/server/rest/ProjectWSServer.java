@@ -25,8 +25,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.Project;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectCreateParams;
+import org.opencb.opencga.core.models.project.ProjectUpdateParams;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.QueryParam;
@@ -56,14 +59,14 @@ public class ProjectWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(project, new ProjectCreateParams());
 
-            String projectId = StringUtils.isEmpty(project.id) ? project.alias : project.id;
+            String projectId = StringUtils.isEmpty(project.getId()) ? project.getAlias() : project.getId();
 
-            DataResult queryResult = catalogManager.getProjectManager()
-                    .create(projectId, project.name, project.description, project.organization,
-                            project.organism != null ? project.organism.getScientificName() : null,
-                            project.organism != null ? project.organism.getCommonName() : null,
-                            project.organism != null ? Integer.toString(project.organism.getTaxonomyCode()) : null,
-                            project.organism != null ? project.organism.getAssembly() : null, queryOptions, token);
+            OpenCGAResult<Project> queryResult = catalogManager.getProjectManager()
+                    .create(projectId, project.getName(), project.getDescription(), project.getOrganization(),
+                            project.getOrganism() != null ? project.getOrganism().getScientificName() : null,
+                            project.getOrganism() != null ? project.getOrganism().getCommonName() : null,
+                            project.getOrganism() != null ? Integer.toString(project.getOrganism().getTaxonomyCode()) : null,
+                            project.getOrganism() != null ? project.getOrganism().getAssembly() : null, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -209,18 +212,18 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
             ParamUtils.checkIsSingleID(projectStr);
             ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(updateParams));
-            if (updateParams.organism != null) {
-                if (StringUtils.isNotEmpty(updateParams.organism.getAssembly())) {
-                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), updateParams.organism.getAssembly());
+            if (updateParams.getOrganism() != null) {
+                if (StringUtils.isNotEmpty(updateParams.getOrganism().getAssembly())) {
+                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), updateParams.getOrganism().getAssembly());
                 }
-                if (StringUtils.isNotEmpty(updateParams.organism.getCommonName())) {
-                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), updateParams.organism.getCommonName());
+                if (StringUtils.isNotEmpty(updateParams.getOrganism().getCommonName())) {
+                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), updateParams.getOrganism().getCommonName());
                 }
-                if (StringUtils.isNotEmpty(updateParams.organism.getScientificName())) {
-                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(), updateParams.organism.getScientificName());
+                if (StringUtils.isNotEmpty(updateParams.getOrganism().getScientificName())) {
+                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(), updateParams.getOrganism().getScientificName());
                 }
-                if (updateParams.organism.getTaxonomyCode() > 0) {
-                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), updateParams.organism.getTaxonomyCode());
+                if (updateParams.getOrganism().getTaxonomyCode() > 0) {
+                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), updateParams.getOrganism().getTaxonomyCode());
                 }
                 params.remove("organism");
             }
@@ -230,23 +233,6 @@ public class ProjectWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-    }
-
-    protected static class ProjectParams {
-        public String name;
-        public String description;
-        public String organization;
-        public Project.Organism organism;
-    }
-
-    protected static class ProjectCreateParams extends ProjectParams {
-        public String id;
-        @Deprecated
-        public String alias;
-    }
-
-    protected static class ProjectUpdateParams extends ProjectParams {
-        public Map<String, Object> attributes;
     }
 
 }

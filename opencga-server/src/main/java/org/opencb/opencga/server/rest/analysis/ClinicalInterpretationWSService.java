@@ -22,16 +22,18 @@ import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.managers.ClinicalAnalysisManager;
 import org.opencb.opencga.catalog.managers.InterpretationManager;
-import org.opencb.opencga.catalog.models.update.ClinicalUpdateParams;
-import org.opencb.opencga.catalog.models.update.InterpretationUpdateParams;
+import org.opencb.opencga.core.models.clinical.*;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.Interpretation;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
@@ -178,7 +180,7 @@ public class ClinicalInterpretationWSService extends AnalysisWSService {
             }
 
             if (interpretationAction == ParamUtils.BasicUpdateAction.ADD) {
-                Interpretation interpretation = params.toClinicalInterpretation();
+                org.opencb.opencga.core.models.clinical.Interpretation interpretation = params.toClinicalInterpretation();
                 interpretation.setClinicalAnalysisId(clinicalAnalysisStr);
                 return createOkResponse(catalogInterpretationManager.create(studyStr, clinicalAnalysisStr, interpretation, queryOptions, token));
             } else {
@@ -384,7 +386,7 @@ public class ClinicalInterpretationWSService extends AnalysisWSService {
                 }
             }
 
-            List<Interpretation> interpretationList =
+            List<org.opencb.opencga.core.models.clinical.Interpretation> interpretationList =
                     interpretations != null
                             ? interpretations.stream()
                             .map(ClinicalInterpretationParameters::toClinicalInterpretation)
@@ -1092,8 +1094,8 @@ public class ClinicalInterpretationWSService extends AnalysisWSService {
         public List<Comment> comments;
         public Map<String, Object> attributes;
 
-        public Interpretation  toClinicalInterpretation() {
-            return new Interpretation(id, description, clinicalAnalysisId, panels, software, analyst, dependencies, filters, creationDate,
+        public org.opencb.opencga.core.models.clinical.Interpretation toClinicalInterpretation() {
+            return new org.opencb.opencga.core.models.clinical.Interpretation(id, description, clinicalAnalysisId, panels, software, analyst, dependencies, filters, creationDate,
                     primaryFindings, secondaryFindings, reportedLowCoverages, comments, attributes);
         }
 

@@ -22,8 +22,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Variable;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.study.Variable;
 
 import java.util.*;
 

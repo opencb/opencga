@@ -22,8 +22,8 @@ import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.Interpretation;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.clinical.Interpretation;
 
 import java.util.ArrayList;
 import java.util.Collections;

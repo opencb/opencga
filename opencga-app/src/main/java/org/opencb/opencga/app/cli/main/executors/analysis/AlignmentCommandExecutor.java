@@ -34,8 +34,8 @@ import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
@@ -48,6 +48,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.BwaCommandOptions.BWA_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.DeeptoolsCommandOptions.DEEPTOOLS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.FastqcCommandOptions.FASTQC_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.SamtoolsCommandOptions.SAMTOOLS_RUN_COMMAND;
 import static org.opencb.opencga.core.api.ParamConstants.*;
 
 /**
@@ -94,16 +98,16 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             case "coverage-ratio":
                 queryResponse = coverageRatio();
                 break;
-            case BwaWrapperAnalysis.ID:
+            case BWA_RUN_COMMAND:
                 queryResponse = bwa();
                 break;
-            case SamtoolsWrapperAnalysis.ID:
+            case SAMTOOLS_RUN_COMMAND:
                 queryResponse = samtools();
                 break;
-            case DeeptoolsWrapperAnalysis.ID:
+            case DEEPTOOLS_RUN_COMMAND:
                 queryResponse = deeptools();
                 break;
-            case FastqcWrapperAnalysis.ID:
+            case FASTQC_RUN_COMMAND:
                 queryResponse = fastqc();
                 break;
             default:

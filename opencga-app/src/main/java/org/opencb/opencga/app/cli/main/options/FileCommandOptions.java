@@ -27,7 +27,7 @@ import org.opencb.opencga.app.cli.GeneralCliOptions.StudyOption;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.file.File;
 
 import java.util.List;
 

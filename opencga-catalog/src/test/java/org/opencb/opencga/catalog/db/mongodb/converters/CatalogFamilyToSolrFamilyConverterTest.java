@@ -3,9 +3,9 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import org.junit.Test;
 import org.opencb.opencga.catalog.stats.solr.FamilySolrModel;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogFamilyToSolrFamilyConverter;
-import org.opencb.opencga.core.models.Family;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.study.Study;
 
 import java.util.Arrays;
 import java.util.HashMap;

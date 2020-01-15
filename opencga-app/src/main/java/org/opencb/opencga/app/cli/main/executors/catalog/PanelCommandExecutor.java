@@ -26,7 +26,7 @@ import org.opencb.opencga.app.cli.main.options.PanelCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.Panel;
+import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;

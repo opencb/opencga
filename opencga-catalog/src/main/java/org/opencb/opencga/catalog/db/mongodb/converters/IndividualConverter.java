@@ -18,9 +18,9 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 
 import org.bson.Document;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.VariableSet;
 
 import java.util.HashMap;
 import java.util.List;

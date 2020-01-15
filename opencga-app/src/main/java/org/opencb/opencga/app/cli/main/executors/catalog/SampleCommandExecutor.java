@@ -30,8 +30,8 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.response.OpenCGAResult;
 

@@ -14,7 +14,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.models.Annotable;
+import org.opencb.opencga.core.models.common.Annotable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

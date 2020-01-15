@@ -28,9 +28,15 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.FileUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.study.VariableSet;
+import org.opencb.opencga.core.models.user.Account;
 
 import java.io.FileInputStream;
 import java.io.IOException;

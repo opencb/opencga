@@ -24,7 +24,11 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.study.VariableSet;
 
 import java.util.Arrays;
 import java.util.Collections;

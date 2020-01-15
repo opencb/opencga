@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.*;
@@ -31,7 +32,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
-import org.opencb.opencga.catalog.models.update.CohortUpdateParams;
+import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -39,11 +41,14 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.models.acls.permissions.CohortAclEntry;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.cohort.CohortAclEntry;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -181,7 +186,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
     @Deprecated
     public OpenCGAResult<Cohort> create(long studyId, String name, Study.Type type, String description, List<Sample> samples,
-                                     List<AnnotationSet> annotationSetList, Map<String, Object> attributes, String sessionId)
+                                        List<AnnotationSet> annotationSetList, Map<String, Object> attributes, String sessionId)
             throws CatalogException {
         return create(String.valueOf(studyId), name, type, description, samples, annotationSetList, attributes, sessionId);
     }
@@ -626,10 +631,17 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse CohortUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("cohortId", cohortId)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("allowModifyCohortAll", allowModifyCohortAll)
                 .append("options", options)
                 .append("token", token);
@@ -693,10 +705,17 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse CohortUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("cohortIds", cohortIds)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("allowModifyCohortAll", allowModifyCohortAll)
                 .append("ignoreException", ignoreException)
                 .append("options", options)
@@ -762,10 +781,17 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse CohortUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("query", query)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("allowModifyCohortAll", allowModifyCohortAll)
                 .append("options", options)
                 .append("token", token);
@@ -811,7 +837,11 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
 
         ObjectMap parameters = new ObjectMap();
         if (updateParams != null) {
+            try {
             parameters = updateParams.getUpdateMap();
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not parse CohortUpdateParams object: " + e.getMessage(), e);
+            }
         }
         ParamUtils.checkUpdateParametersMap(parameters);
 

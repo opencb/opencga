@@ -14,12 +14,11 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.FileIndex;
-import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.study.Study;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -201,12 +200,12 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                     logger.info("Creating JOBS/ folder for study {}", study.getFqn());
 
                     // JOBS folder does not exist
-                    org.opencb.opencga.core.models.File file = new org.opencb.opencga.core.models.File("JOBS",
-                            org.opencb.opencga.core.models.File.Type.DIRECTORY, org.opencb.opencga.core.models.File.Format.UNKNOWN,
-                            org.opencb.opencga.core.models.File.Bioformat.UNKNOWN,
+                    org.opencb.opencga.core.models.file.File file = new org.opencb.opencga.core.models.file.File("JOBS",
+                            org.opencb.opencga.core.models.file.File.Type.DIRECTORY, org.opencb.opencga.core.models.file.File.Format.UNKNOWN,
+                            org.opencb.opencga.core.models.file.File.Bioformat.UNKNOWN,
                             Paths.get(options.jobFolder).normalize().toAbsolutePath().resolve("JOBS").toUri(),
                             "JOBS/", null, TimeUtils.getTime(), TimeUtils.getTime(), "Default jobs folder",
-                            new org.opencb.opencga.core.models.File.FileStatus(), false, 0, null, null, Collections.emptyList(), new Job(),
+                            new org.opencb.opencga.core.models.file.File.FileStatus(), false, 0, null, null, Collections.emptyList(), new Job(),
                             Collections.emptyList(), new FileIndex(), study.getRelease(), Collections.emptyList(), Collections.emptyMap(),
                             Collections.emptyMap());
                     file.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));

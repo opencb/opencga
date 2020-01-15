@@ -25,8 +25,8 @@ import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.ProjectCommandOptions;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.Project;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;

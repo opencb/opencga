@@ -9,7 +9,7 @@ import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.api.operations.variant.*;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 import org.opencb.opencga.core.tools.ToolParams;
 

@@ -26,7 +26,7 @@ import org.opencb.opencga.app.cli.main.options.VariableCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor.VariableSetParams;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.File;

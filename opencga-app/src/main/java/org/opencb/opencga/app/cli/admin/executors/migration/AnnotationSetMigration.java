@@ -15,8 +15,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

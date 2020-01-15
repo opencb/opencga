@@ -18,8 +18,8 @@ package org.opencb.opencga.catalog.auth.authorization;
 
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.PermissionRule;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.study.PermissionRule;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 

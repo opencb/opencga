@@ -6,7 +6,7 @@ import org.opencb.opencga.analysis.variant.genes.knockout.result.GeneKnockoutByS
 import org.opencb.opencga.analysis.variant.genes.knockout.result.GeneKnockoutBySample.GeneKnockout;
 import org.opencb.opencga.analysis.variant.genes.knockout.result.VariantKnockout;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;

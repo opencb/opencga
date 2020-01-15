@@ -88,7 +88,7 @@ public class BwaWrapperAnalysis extends OpenCgaWrapperAnalysis {
                         }
                         if (success) {
                             // Get catalog path
-                            OpenCGAResult<org.opencb.opencga.core.models.File> fileResult;
+                            OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
                             try {
                                 fileResult = catalogManager.getFileManager().get(getStudy(), fastaFile, QueryOptions.empty(), token);
                             } catch (CatalogException e) {
