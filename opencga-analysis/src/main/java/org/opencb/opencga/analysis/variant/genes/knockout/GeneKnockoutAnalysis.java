@@ -139,18 +139,17 @@ public class GeneKnockoutAnalysis extends OpenCgaToolScopeStudy {
 
         Map<String, Trio> triosMap = new HashMap<>(analysisParams.getSample().size());
         step("list-families", () -> {
-            for (String sample : analysisParams.getSample()) {
-                Query familyQuery = new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sample);
-                Family family = getCatalogManager().getFamilyManager()
-                        .search(studyFqn, familyQuery, new QueryOptions(), getToken()).first();
+            Query familyQuery = new Query(IndividualDBAdaptor.QueryParams.SAMPLES.key(), analysisParams.getSample());
+            for (Family family : getCatalogManager().getFamilyManager()
+                    .search(studyFqn, familyQuery, new QueryOptions(), getToken()).getResults()) {
                 if (family == null || StringUtils.isEmpty(family.getId())) {
                     continue;
                 }
                 List<List<String>> trios = variantStorageManager.getTriosFromFamily(studyFqn, family, true, getToken());
                 for (List<String> trio : trios) {
-                    if (trio.get(2).equals(sample)) {
-                        triosMap.put(sample, new Trio(family.getId(), trio.get(0), trio.get(1), trio.get(2)));
-                        break;
+                    String child = trio.get(2);
+                    if (analysisParams.getSample().contains(child)) {
+                        triosMap.put(child, new Trio(family.getId(), trio.get(0), trio.get(1), child));
                     }
                 }
             }

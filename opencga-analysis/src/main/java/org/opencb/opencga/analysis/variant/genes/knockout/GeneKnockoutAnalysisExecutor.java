@@ -181,16 +181,26 @@ public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
                 .setGenes(knockoutGenes.values());
     }
 
-    protected void printSampleFile(GeneKnockoutBySample geneKnockoutBySample) throws IOException {
+    protected void writeSampleFile(GeneKnockoutBySample geneKnockoutBySample) throws IOException {
         File file = getSampleFileName(geneKnockoutBySample.getSample().getId()).toFile();
         ObjectWriter writer = JacksonUtils.getDefaultObjectMapper().writerFor(GeneKnockoutBySample.class).withDefaultPrettyPrinter();
         writer.writeValue(file, geneKnockoutBySample);
     }
 
-    protected void printGeneFile(GeneKnockoutByGene geneKnockoutByGene) throws IOException {
+    protected GeneKnockoutBySample readSampleFile(String sample) throws IOException {
+        File file = getSampleFileName(sample).toFile();
+        return JacksonUtils.getDefaultObjectMapper().readValue(file, GeneKnockoutBySample.class);
+    }
+
+    protected void writeGeneFile(GeneKnockoutByGene geneKnockoutByGene) throws IOException {
         File file = getGeneFileName(geneKnockoutByGene.getName()).toFile();
         ObjectWriter writer = JacksonUtils.getDefaultObjectMapper().writerFor(GeneKnockoutByGene.class).withDefaultPrettyPrinter();
         writer.writeValue(file, geneKnockoutByGene);
+    }
+
+    protected GeneKnockoutByGene readGeneFile(String gene) throws IOException {
+        File file = getGeneFileName(gene).toFile();
+        return JacksonUtils.getDefaultObjectMapper().readValue(file, GeneKnockoutByGene.class);
     }
 }
 

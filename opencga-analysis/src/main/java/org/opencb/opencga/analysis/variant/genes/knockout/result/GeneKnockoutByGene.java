@@ -27,7 +27,14 @@ public class GeneKnockoutByGene {
     }
 
     public KnockoutSample getSample(String sample) {
-        return samples.stream().filter(s -> s.getId().equals(sample)).findFirst().orElseGet(() -> new KnockoutSample().setId(sample));
+        for (KnockoutSample s : samples) {
+            if (s.getId().equals(sample)) {
+                return s;
+            }
+        }
+        KnockoutSample knockoutSample = new KnockoutSample().setId(sample);
+        samples.add(knockoutSample);
+        return knockoutSample;
     }
 
     public List<KnockoutSample> getSamples() {

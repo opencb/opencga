@@ -431,7 +431,7 @@ public class VariantAnalysisTest {
         params.setSample(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
         params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
 
-        ExecutionResult er = toolRunner.execute(GeneKnockoutAnalysis.class, params.toObjectMap(), outDir, token);
+        ExecutionResult er = toolRunner.execute(GeneKnockoutAnalysis.class, params.toObjectMap().append("executionMethod", "byGene"), outDir, token);
         checkExecutionResult(er, false);
         Assert.assertEquals(4, er.getAttributes().get("otherGenesCount"));
         Assert.assertEquals(3, er.getAttributes().get("proteinCodingGenesCount"));
