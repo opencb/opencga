@@ -150,7 +150,6 @@ public class StorageVariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.IndexCommandOptions commonIndexOptions = indexCommandOptions;
 
-
         @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", arity = 1)
         public String study;
 
@@ -159,6 +158,12 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--stdout"}, description = "Write the transformed variants file to the standard output")
         public boolean stdout;
+
+        @Parameter(names = {"--species"}, description = "Species. Default hsapiens", arity = 1)
+        public String species = "hsapiens";
+
+        @Parameter(names = {"--assembly"}, description = "Assembly. Default GRch37", arity = 1)
+        public String assembly = "GRCh37";
 
 //        @Deprecated
 //        @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
