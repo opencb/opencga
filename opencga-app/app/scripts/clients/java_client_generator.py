@@ -30,7 +30,7 @@ class JavaClientGenerator(RestClientGenerator):
             'Analysis - Alignment': 'Alignment',
             'Analysis - Variant': 'Variant',
             'Analysis - Clinical Interpretation': 'Clinical',
-            'Operations - Variant Storage': 'VariantOperations',
+            'Operations - Variant Storage': 'Operation',
             'Meta': 'Meta',
             'GA4GH': 'GA4GH',
             'Admin': 'Admin'
