@@ -138,6 +138,10 @@ public class MongoLockManager {
     public long refresh(Object id, long lockToken, long lockDuration) {
         Date date = new Date(Calendar.getInstance().getTimeInMillis() + lockDuration);
         Date lockToRefresh = new Date(lockToken);
+        if (date.equals(lockToRefresh)) {
+            // Token is the same. Nothing to refresh
+            return date.getTime();
+        }
 
         Bson query = and(eq("_id", id), eq(lockWriteField, lockToRefresh));
         Bson update = combine(set(lockWriteField, date));
