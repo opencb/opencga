@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -36,7 +35,6 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.job.Job;
@@ -635,9 +633,9 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
-    @JsonIgnoreProperties({"status"})
-    public static class FileUpdateParams extends org.opencb.opencga.core.models.file.FileUpdateParams {
-    }
+//    @JsonIgnoreProperties({"status"})
+//    public static class FileUpdateParams extends org.opencb.opencga.core.models.file.FileUpdateParams {
+//    }
 
     @POST
     @Path("/{file}/annotationSets/{annotationSet}/annotations/update")
@@ -976,11 +974,6 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
-    public static class FileAcl extends AclParams {
-        public String file;
-        public String sample;
-    }
-
     @POST
     @Path("/acl/{members}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
@@ -988,13 +981,13 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
                     String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
-            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) FileAcl params) {
+            @ApiParam(value = "JSON containing the parameters to add ACLs", required = true) FileAclUpdateParams params) {
         try {
-            ObjectUtils.defaultIfNull(params, new FileAcl());
+            ObjectUtils.defaultIfNull(params, new FileAclUpdateParams());
 
             File.FileAclParams aclParams = new File.FileAclParams(
-                    params.getPermissions(), params.getAction(), params.sample);
-            List<String> idList = StringUtils.isEmpty(params.file) ? Collections.emptyList() : getIdList(params.file, false);
+                    params.getPermissions(), params.getAction(), params.getSample());
+            List<String> idList = StringUtils.isEmpty(params.getFile()) ? Collections.emptyList() : getIdList(params.getFile(), false);
             return createOkResponse(fileManager.updateAcl(studyStr, idList, memberId, aclParams, token));
         } catch (Exception e) {
             return createErrorResponse(e);

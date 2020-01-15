@@ -165,7 +165,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
     @GET
     @Path("/query")
-    @ApiOperation(value = ParamConstants.VARIANTS_QUERY_DESCRIPTION, response = Variant[].class)
+    @ApiOperation(value = ParamConstants.VARIANTS_QUERY_DESCRIPTION, response = Variant.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -318,7 +318,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @Deprecated
     @POST
     @Path("/query")
-    @ApiOperation(value = DEPRECATED + ParamConstants.VARIANTS_QUERY_DESCRIPTION, response = Variant[].class, hidden = true)
+    @ApiOperation(value = DEPRECATED + ParamConstants.VARIANTS_QUERY_DESCRIPTION, response = Variant.class, hidden = true)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -367,7 +367,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
     @GET
     @Path("/annotation/query")
-    @ApiOperation(value = "Query variant annotations from any saved versions", response = VariantAnnotation[].class)
+    @ApiOperation(value = "Query variant annotations from any saved versions", response = VariantAnnotation.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "id", value = ID_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "region", value = REGION_DESCR, dataType = "string", paramType = "query"),
@@ -389,7 +389,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
     @GET
     @Path("/annotation/metadata")
-    @ApiOperation(value = "Read variant annotations metadata from any saved versions", response = VariantAnnotation[].class)
+    @ApiOperation(value = "Read variant annotations metadata from any saved versions", response = VariantAnnotation.class)
     public Response getAnnotationMetadata(@ApiParam(value = "Annotation identifier") @QueryParam("annotationId") String annotationId,
                                           @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project) {
         return run(() -> variantManager.getAnnotationMetadata(annotationId, project, token));

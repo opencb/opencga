@@ -25,6 +25,7 @@ class RestClientGenerator(ABC):
         self.endpoints = {
             'users/{user}/configs/filters/update': {'method_name': 'update_filters'},
             'users/{user}/configs/filters/{name}/update': {'method_name': 'update_filter'},
+            'analysis/clinical/{clinicalAnalysis}/interpretations/{interpretation}/update': {'method_name': 'update_interpretation'},
             'ga4gh/reads/{study}/{file}': {'method_name': 'fetch_reads'}
         }
 
@@ -47,6 +48,10 @@ class RestClientGenerator(ABC):
     @staticmethod
     def get_endpoint_response(endpoint):
         return endpoint['response']
+
+    @staticmethod
+    def get_endpoint_response_class(endpoint):
+        return endpoint['responseClass']
 
     @staticmethod
     def get_endpoint_method(endpoint):
@@ -72,8 +77,14 @@ class RestClientGenerator(ABC):
     def is_required(self, parameter):
         return self.parameters[parameter]['required']
 
+    def is_path_param(self, parameter):
+        return self.parameters[parameter]['param'] == 'path'
+
     def get_parameter_type(self, parameter):
         return self.parameters[parameter]['type']
+
+    def get_parameter_type_class(self, parameter):
+        return self.parameters[parameter]['typeClass']
 
     def get_parameter_description(self, parameter):
         return self.parameters[parameter]['description'] if self.parameters[parameter]['description'].endswith(".") \
@@ -109,14 +120,14 @@ class RestClientGenerator(ABC):
         items = subpath.split('/')
         if len(items) == 1:
             method_name = items[0]
-        if len(items) == 2:
+        elif len(items) == 2:
             # e.g. /{apiVersion}/ga4gh/reads/search
             if not self.any_arg(items):
                 method_name = '_'.join(items[::-1])
             # e.g. /{apiVersion}/users/{user}/info
             elif self.any_arg([items[0]]) and not self.any_arg([items[1]]):
                 method_name = items[1]
-        if len(items) == 3:
+        elif len(items) == 3:
             # e.g. /{apiVersion}/analysis/variant/cohort/stats/run
             if not self.any_arg(items):
                 method_name = '_'.join([items[2], items[0], items[1]])
@@ -126,11 +137,11 @@ class RestClientGenerator(ABC):
             # e.g. /{apiVersion}/studies/acl/{members}/update
             elif self.any_arg([items[1]]) and not self.any_arg([items[0], items[2]]):
                 method_name = '_'.join([items[2], items[0]])
-        if len(items) == 4:
+        elif len(items) == 4:
             # e.g. /{apiVersion}/operation/variant/sample/genotype/index
             if not self.any_arg(items):
                 method_name = '_'.join([items[3], items[1], items[2]])
-        if len(items) == 5:
+        elif len(items) == 5:
             # e.g. /{apiVersion}/files/{file}/annotationSets/{annotationSet}/annotations/update
             if self.all_arg([items[0], items[2]]) and not self.any_arg([items[1], items[3], items[4]]):
                 method_name = '_'.join([items[4], items[3]])
@@ -185,7 +196,7 @@ class RestClientGenerator(ABC):
                 fhand.write('\n'.join(text))
 
     def parse_resources(self, category, endpoint):
-        self.category = None
+        self.category = self.get_category_path(category)
         self.subcategory = None
         self.action = None
         self.id1 = None
@@ -204,16 +215,15 @@ class RestClientGenerator(ABC):
         resources = [i.strip('/') for i in resources]
 
         if len(resources) == 1:
-            self.action = resources[0]
-        elif len(resources) > 1:
-            if '/' in resources[1]:
-                splitted = resources[1].split('/')
-                self.category = resources[0]
+            if '/' in resources[0]:
+                splitted = resources[0].split('/')
                 self.subcategory = '/'.join(splitted[:(len(splitted) - 1)])
                 self.action = splitted[-1]
             else:
-                self.subcategory = resources[0]
-                self.action = resources[1]
+                self.action = resources[0]
+        elif len(resources) > 1:
+            self.subcategory = resources[0]
+            self.action = resources[1]
         if path_params:
             self.id1 = path_params[0]
         if len(path_params) > 1:
