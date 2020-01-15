@@ -67,7 +67,7 @@ class JavaClientGenerator(RestClientGenerator):
         headers.append('')
 
         imports = set()
-        imports.add('java.io.IOException;')
+        imports.add('org.opencb.opencga.client.exceptions.ClientException;')
         imports.add('org.opencb.opencga.client.config.ClientConfiguration;')
         # imports.append('import org.opencb.opencga.client.rest.AbstractParentClient;')
         imports.add('org.opencb.opencga.core.response.RestResponse;')
@@ -121,10 +121,10 @@ class JavaClientGenerator(RestClientGenerator):
         for parameter in parameters:
             append_comment_text(text, '{}* @param {} {}'.format(' ' * 5, parameter, self.get_parameter_description(parameter)), 5)
         append_comment_text(text, '{}* @return a RestResponse object.'.format(' ' * 5), 5)
-        append_comment_text(text, '{}* @throws IOException IOException if there is any server error.'.format(' ' * 5), 5)
+        append_comment_text(text, '{}* @throws ClientException ClientException if there is any server error.'.format(' ' * 5), 5)
         append_comment_text(text, '{}*/'.format(' ' * 5), 5)
 
-        append_text(text, '{}public RestResponse<{}> {}({}) throws IOException {{'.format(
+        append_text(text, '{}public RestResponse<{}> {}({}) throws ClientException {{'.format(
             ' ' * 4, response_type, self.get_method_name(endpoint, category),
             ', '.join(typed_parameters)), 4)
 
