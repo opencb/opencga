@@ -85,7 +85,9 @@ public class CatalogManagerExternalResource extends ExternalResource {
     public void after() {
         super.after();
         try {
-            catalogManager.close();
+            if (catalogManager != null) {
+                catalogManager.close();
+            }
         } catch (CatalogException e) {
             throw new RuntimeException(e);
         }
