@@ -10,7 +10,7 @@ public class GeneKnockoutBySample {
 
     private GeneKnockoutBySampleStats stats;
 
-    private Collection<GeneKnockout> genes;
+    private Map<String, GeneKnockout> genesMap = new HashMap<>();
 
     public Sample getSample() {
         return sample;
@@ -31,11 +31,22 @@ public class GeneKnockoutBySample {
     }
 
     public Collection<GeneKnockout> getGenes() {
-        return genes;
+        return genesMap.values();
+    }
+
+    public GeneKnockout getGene(String gene) {
+        return genesMap.computeIfAbsent(gene, GeneKnockout::new);
     }
 
     public GeneKnockoutBySample setGenes(Collection<GeneKnockout> genes) {
-        this.genes = genes;
+        if (genes == null) {
+            genesMap = null;
+        } else {
+            genesMap = new HashMap<>(genes.size());
+            for (GeneKnockout gene : genes) {
+                genesMap.put(gene.getName(), gene);
+            }
+        }
         return this;
     }
 
@@ -112,6 +123,13 @@ public class GeneKnockoutBySample {
 
         public Collection<TranscriptKnockout> getTranscripts() {
             return transcriptsMap.values();
+        }
+
+        public GeneKnockout addTranscripts(Collection<TranscriptKnockout> transcripts) {
+            for (TranscriptKnockout transcript : transcripts) {
+                transcriptsMap.put(transcript.getId(), transcript);
+            }
+            return this;
         }
 
         public GeneKnockout setTranscripts(List<TranscriptKnockout> transcripts) {
