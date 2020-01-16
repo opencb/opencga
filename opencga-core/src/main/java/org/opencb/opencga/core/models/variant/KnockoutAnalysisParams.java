@@ -26,6 +26,24 @@ public class KnockoutAnalysisParams extends ToolParams {
     private String filter;
     private String qual;
 
+
+    private String outdir;
+
+    public KnockoutAnalysisParams() {
+    }
+
+    public KnockoutAnalysisParams(List<String> sample, List<String> gene, List<String> panel, String biotype, String consequenceType,
+                                  String filter, String qual, String outdir) {
+        this.sample = sample;
+        this.gene = gene;
+        this.panel = panel;
+        this.biotype = biotype;
+        this.consequenceType = consequenceType;
+        this.filter = filter;
+        this.qual = qual;
+        this.outdir = outdir;
+    }
+
     public List<String> getSample() {
         return sample;
     }
@@ -86,6 +104,15 @@ public class KnockoutAnalysisParams extends ToolParams {
 
     public KnockoutAnalysisParams setQual(String qual) {
         this.qual = qual;
+        return this;
+    }
+
+    public String getOutdir() {
+        return outdir;
+    }
+
+    public KnockoutAnalysisParams setOutdir(String outdir) {
+        this.outdir = outdir;
         return this;
     }
 }

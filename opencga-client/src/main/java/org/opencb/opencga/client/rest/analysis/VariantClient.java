@@ -188,6 +188,10 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "/gwas/run", buildRestPOSTParams(null, study, body), POST, Job.class);
     }
 
+    public RestResponse<Job> knockoutRun(String study, KnockoutAnalysisParams body) throws IOException {
+        return execute(VARIANT_URL, "/knockout/run", buildRestPOSTParams(null, study, body), POST, Job.class);
+    }
+
 //    public RestResponse<Job> hwRun(ObjectMap params) throws IOException {
 //        return execute(VARIANT_URL, "/hw/run", new ObjectMap("body", params), POST, Job.class);
 //    }
