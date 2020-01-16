@@ -79,7 +79,7 @@ public class VariantSearchManager {
 
     private Logger logger;
 
-    public static final String CONF_SET = "OpenCGAConfSet-1.4.0";
+//    public static final String CONF_SET = "OpenCGAConfSet-1.4.0";
     public static final String SEARCH_ENGINE_ID = "solr";
     public static final String USE_SEARCH_INDEX = "useSearchIndex";
     public static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
@@ -113,7 +113,7 @@ public class VariantSearchManager {
 
     public void create(String dbName) throws VariantSearchException {
         try {
-            solrManager.create(dbName, CONF_SET);
+            solrManager.create(dbName, this.storageConfiguration.getSearch().getConfigSet());
         } catch (SolrException e) {
             throw new VariantSearchException("Error creating Solr collection '" + dbName + "'", e);
         }
@@ -127,21 +127,21 @@ public class VariantSearchManager {
         }
     }
 
-    public void createCore(String coreName, String configSet) throws VariantSearchException {
-        try {
-            solrManager.createCore(coreName, configSet);
-        } catch (SolrException e) {
-            throw new VariantSearchException("Error creating Solr core '" + coreName + "'", e);
-        }
-    }
-
-    public void createCollection(String collectionName, String configSet) throws VariantSearchException {
-        try {
-            solrManager.createCollection(collectionName, configSet);
-        } catch (SolrException e) {
-            throw new VariantSearchException("Error creating Solr collection '" + collectionName + "'", e);
-        }
-    }
+//    public void createCore(String coreName, String configSet) throws VariantSearchException {
+//        try {
+//            solrManager.createCore(coreName, configSet);
+//        } catch (SolrException e) {
+//            throw new VariantSearchException("Error creating Solr core '" + coreName + "'", e);
+//        }
+//    }
+//
+//    public void createCollection(String collectionName, String configSet) throws VariantSearchException {
+//        try {
+//            solrManager.createCollection(collectionName, configSet);
+//        } catch (SolrException e) {
+//            throw new VariantSearchException("Error creating Solr collection '" + collectionName + "'", e);
+//        }
+//    }
 
     public boolean exists(String dbName) throws VariantSearchException {
         try {
