@@ -19,6 +19,7 @@ package org.opencb.opencga.analysis.variant.manager;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.solr.client.solrj.request.SolrPing;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -603,7 +604,7 @@ public class VariantStorageManager extends StorageManager {
                     storageConfiguration.getSearch().getTimeout());
             String collectionName = "test_connection";
             if (!solrManager.exists(collectionName)) {
-                solrManager.create(collectionName, VariantSearchManager.CONF_SET);
+                solrManager.create(collectionName, storageConfiguration.getSearch().getConfigSet());
             }
         } catch (Exception e) {
             logger.warn("Ignore exception checking if Solr is available", e);

@@ -55,7 +55,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
 
 
         String collection = solr.coreName;
-        variantSearchManager.createCore(collection, VariantSearchManager.CONF_SET);
+        variantSearchManager.create(collection);
 
         variantSearchManager.insert(collection, annotatedVariants);
 
@@ -187,7 +187,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         scm.createStudy(studyId);
 
         String collection = solr.coreName;
-        variantSearchManager.createCore(collection, VariantSearchManager.CONF_SET);
+        variantSearchManager.create(collection);
 
         LinkedHashMap<String, Integer> samplePosition = new LinkedHashMap<>();
         samplePosition.put("A-A", 0);
@@ -230,7 +230,7 @@ public class VariantSearchTest extends VariantStorageBaseTest implements DummyVa
         metadataManager.createStudy("s1");
 
         String collection = solr.coreName;
-        variantSearchManager.createCore(collection, VariantSearchManager.CONF_SET);
+        variantSearchManager.create(collection);
 
         variantSearchManager.insert(collection, annotatedVariants);
 
