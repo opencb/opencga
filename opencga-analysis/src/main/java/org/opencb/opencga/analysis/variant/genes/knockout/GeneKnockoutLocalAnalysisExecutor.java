@@ -68,9 +68,33 @@ public class GeneKnockoutLocalAnalysisExecutor extends GeneKnockoutAnalysisExecu
         allProteinCoding = getProteinCodingGenes().size() == 1 && getProteinCodingGenes().iterator().next().equals(ALL);
 
         String executionMethod = getExecutorParams().getString("executionMethod", "auto");
-        boolean bySample = executionMethod.equalsIgnoreCase("bySample");
-        boolean auto = executionMethod.equalsIgnoreCase("auto");
-        if (bySample || (auto && (allProteinCoding || (getProteinCodingGenes().size() + getOtherGenes().size()) >= getSamples().size()))) {
+        boolean bySample;
+        switch (executionMethod) {
+            case "bySample":
+                bySample = true;
+                break;
+            case "byGene":
+                if (allProteinCoding) {
+                    throw new IllegalArgumentException("Unable to execute '" + executionMethod + "' "
+                            + "when analysing all protein coding genes");
+                }
+                bySample = false;
+                break;
+            case "auto":
+            case "":
+                if (allProteinCoding) {
+                    bySample = true;
+                } else if (getSamples().size() < (getProteinCodingGenes().size() + getOtherGenes().size())) {
+                    bySample = true;
+                } else {
+                    bySample = false;
+                }
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown executionMethod '" + executionMethod + "'");
+        }
+//        if (bySample || (auto && (allProteinCoding || (getProteinCodingGenes().size() + getOtherGenes().size()) >= getSamples().size()))) {
+        if (bySample) {
             logger.info("Execute knockout analysis by sample");
             addAttribute("executionMethod", "bySample");
             new KnockoutBySample().run();
@@ -343,6 +367,7 @@ public class GeneKnockoutLocalAnalysisExecutor extends GeneKnockoutAnalysisExecu
 
         private void knockoutGene(Query baseQuery, String gene, Predicate<String> ctFilter, Predicate<String> biotypeFilter) throws Exception {
             GeneKnockoutByGene knockout;
+            StopWatch stopWatch = StopWatch.createStarted();
             if (getGeneFileName(gene).toFile().exists()) {
                 knockout = readGeneFile(gene);
             } else {
@@ -434,6 +459,8 @@ public class GeneKnockoutLocalAnalysisExecutor extends GeneKnockoutAnalysisExecu
                 // Check overlapping deletions for other samples if there is any large deletion
                 structuralKnockouts(baseQuery, knockout, entry.getKey(), ctFilter, biotypeFilter);
             }
+            logger.info("Gene {} processed in {}", gene, TimeUtils.durationToString(stopWatch));
+            logger.info("-----------------------------------------------------------");
             writeGeneFile(knockout);
         }
 

@@ -41,7 +41,7 @@ public class GeneKnockoutAnalysis extends OpenCgaToolScopeStudy {
     protected void check() throws Exception {
         analysisParams.updateParams(params);
         studyFqn = getStudyFqn();
-        executorParams.put("executionMethod", params.getString("executionMethod"));
+        executorParams.put("executionMethod", params.getString("executionMethod", "auto"));
 
         if (CollectionUtils.isEmpty(analysisParams.getSample())
                 || analysisParams.getSample().size() == 1 && analysisParams.getSample().get(0).equals(ParamConstants.ALL)) {

@@ -245,6 +245,9 @@ public abstract class OpenCgaTool {
             deleteScratchDirectory();
             Runtime.getRuntime().removeShutdownHook(hook);
             result = erm.close(exception);
+
+            privateLogger.info("------- Tool '" + getId() + "' executed in "
+                    + TimeUtils.durationToString(result.getEnd().getTime() - result.getStart().getTime()) + " -------");
         }
         return result;
     }

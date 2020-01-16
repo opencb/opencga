@@ -537,11 +537,13 @@ public class VariantStorageManager extends StorageManager {
 
     public DataResult<Variant> getSampleData(String variant, String study, QueryOptions inputOptions, String token)
             throws CatalogException, IOException, StorageEngineException {
-        Query query = new Query(VariantQueryParam.STUDY.key(), study);
         QueryOptions options = inputOptions == null ? new QueryOptions() : new QueryOptions(inputOptions);
         options.remove(QueryOptions.INCLUDE);
         options.remove(QueryOptions.EXCLUDE);
         options.remove(VariantField.SUMMARY);
+        Query query = new Query(options)
+                .append(VariantQueryParam.STUDY.key(), study);
+        query.remove(GENOTYPE.key());
         return secure(query, options, token, Enums.Action.SAMPLE_DATA, engine -> {
             String studyFqn = query.getString(STUDY.key());
             options.putAll(query);
