@@ -2,7 +2,7 @@ package org.opencb.opencga.analysis.variant.tools;
 
 import org.junit.Test;
 import org.opencb.opencga.analysis.variant.operations.OperationTool;
-import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.reflections.Reflections;
 
 import static org.junit.Assert.*;

@@ -43,7 +43,7 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.HookConfiguration;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.Experiment;
+import org.opencb.opencga.core.models.file.Experiment;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.study.StudyAclEntry;

@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.clinical.interpretation.*;
 import org.opencb.opencga.app.cli.internal.options.InterpretationCommandOptions;
-import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.exceptions.ToolException;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

@@ -22,7 +22,7 @@ import org.opencb.opencga.analysis.variant.genes.knockout.result.VariantKnockout
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
-import org.opencb.opencga.core.annotations.ToolExecutor;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.storage.core.metadata.models.Trio;

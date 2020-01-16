@@ -2,7 +2,7 @@ package org.opencb.opencga.app.cli.main.executors.operations;
 
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.OperationsCommandOptions;
-import org.opencb.opencga.core.api.operations.variant.*;
+import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 

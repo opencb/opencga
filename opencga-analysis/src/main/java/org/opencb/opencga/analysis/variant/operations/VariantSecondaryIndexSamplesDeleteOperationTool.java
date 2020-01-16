@@ -1,6 +1,6 @@
 package org.opencb.opencga.analysis.variant.operations;
 
-import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.models.common.Enums;
 
 @Tool(id = VariantSecondaryIndexSamplesDeleteOperationTool.ID,

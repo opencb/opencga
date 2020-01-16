@@ -21,7 +21,7 @@ import io.swagger.annotations.ApiParam;
 import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 

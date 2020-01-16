@@ -17,7 +17,7 @@
 package org.opencb.opencga.server.rest.analysis;
 
 import org.opencb.opencga.catalog.managers.JobManager;
-import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
 import javax.servlet.http.HttpServletRequest;

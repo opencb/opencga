@@ -135,6 +135,7 @@
                 <filtering>true</filtering>
                 <includes>
                     <include>${storage.configuration.file}</include>
+                    <include>managed-schema</include>
                 </includes>
             </resource>
         </resources>

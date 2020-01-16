@@ -1,9 +1,9 @@
 package org.opencb.opencga.analysis.variant.operations;
 
 import io.jsonwebtoken.lang.Collections;
-import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.api.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;

@@ -29,6 +29,7 @@ import java.util.List;
 public class SearchConfiguration {
 
     private List<String> hosts;
+    private String configSet;
     private String mode;
     private String user;
     private String password;
@@ -37,24 +38,20 @@ public class SearchConfiguration {
     private int timeout;
     private int insertBatchSize;
 
-    private static final String DEFAULT_HOST = "http://localhost:8983/solr/";
     private static final String DEFAULT_MODE = "cloud";
-    private static final String DEFAULT_USER = "";
-    private static final String DEFAULT_PASSWORD = "";
-    private static final String DEFAULT_MANAGER = "";
     private static final boolean DEFAULT_ACTIVE = true;
     private static final int DEFAULT_TIMEOUT = 30000;
     private static final int DEFAULT_INSERT_BATCH_SIZE = 10000;
 
 
     public SearchConfiguration() {
-        this(Collections.singletonList(DEFAULT_HOST), DEFAULT_MODE, DEFAULT_USER, DEFAULT_PASSWORD, DEFAULT_MANAGER, DEFAULT_ACTIVE,
-                DEFAULT_TIMEOUT, DEFAULT_INSERT_BATCH_SIZE);
+        this(Collections.emptyList(), "", DEFAULT_MODE, "", "", "", DEFAULT_ACTIVE, DEFAULT_TIMEOUT, DEFAULT_INSERT_BATCH_SIZE);
     }
 
-    public SearchConfiguration(List<String> hosts, String mode, String user, String password, String manager, boolean active, int timeout,
-                               int insertBatchSize) {
+    public SearchConfiguration(List<String> hosts, String configSet, String mode, String user, String password, String manager,
+                               boolean active, int timeout, int insertBatchSize) {
         this.hosts = hosts;
+        this.configSet = configSet;
         this.mode = mode;
         this.user = user;
         this.password = password;
@@ -66,17 +63,17 @@ public class SearchConfiguration {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("SearchConfiguration{");
-        sb.append("hosts='").append(hosts).append('\'');
-        sb.append(", mode='").append(mode).append('\'');
-        sb.append(", user='").append(user).append('\'');
-        sb.append(", password='").append(password).append('\'');
-        sb.append(", manager='").append(manager).append('\'');
-        sb.append(", active=").append(active);
-        sb.append(", timeout=").append(timeout);
-        sb.append(", insertBatchSize=").append(insertBatchSize);
-        sb.append('}');
-        return sb.toString();
+        return "SearchConfiguration{" +
+                "hosts=" + hosts +
+                ", configSet='" + configSet + '\'' +
+                ", mode='" + mode + '\'' +
+                ", user='" + user + '\'' +
+                ", password='" + password + '\'' +
+                ", manager='" + manager + '\'' +
+                ", active=" + active +
+                ", timeout=" + timeout +
+                ", insertBatchSize=" + insertBatchSize +
+                '}';
     }
 
     @Deprecated
@@ -96,6 +93,14 @@ public class SearchConfiguration {
     public SearchConfiguration setHosts(List<String> hosts) {
         this.hosts = hosts;
         return this;
+    }
+
+    public String getConfigSet() {
+        return configSet;
+    }
+
+    public void setConfigSet(String configSet) {
+        this.configSet = configSet;
     }
 
     public String getMode() {

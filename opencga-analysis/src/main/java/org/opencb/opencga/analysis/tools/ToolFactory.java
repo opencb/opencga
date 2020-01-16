@@ -1,8 +1,8 @@
 package org.opencb.opencga.analysis.tools;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.core.annotations.Tool;
-import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
