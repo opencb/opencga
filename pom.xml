@@ -51,7 +51,7 @@
         <protobuf>3.9.0</protobuf>
         <grpc>1.23.0</grpc>
         <slf4j.version>1.7.25</slf4j.version>
-        <solr.version>6.6.6</solr.version>
+        <solr.version>8.4.1</solr.version>
         <jetty.version>9.4.17.v20190418</jetty.version>
         <junit.version>4.12</junit.version>
 
