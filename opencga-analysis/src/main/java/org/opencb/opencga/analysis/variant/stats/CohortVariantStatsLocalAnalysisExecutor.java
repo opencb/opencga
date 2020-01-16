@@ -13,7 +13,7 @@ import org.opencb.opencga.core.tools.variant.CohortVariantStatsAnalysisExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
-import org.opencb.opencga.core.annotations.ToolExecutor;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;

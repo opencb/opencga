@@ -12,7 +12,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.core.tools.variant.GwasAnalysisExecutor;
-import org.opencb.opencga.core.annotations.ToolExecutor;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;

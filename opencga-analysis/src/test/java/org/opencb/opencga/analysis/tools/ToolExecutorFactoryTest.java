@@ -1,7 +1,7 @@
 package org.opencb.opencga.analysis.tools;
 
 import org.junit.Test;
-import org.opencb.opencga.core.annotations.ToolExecutor;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 

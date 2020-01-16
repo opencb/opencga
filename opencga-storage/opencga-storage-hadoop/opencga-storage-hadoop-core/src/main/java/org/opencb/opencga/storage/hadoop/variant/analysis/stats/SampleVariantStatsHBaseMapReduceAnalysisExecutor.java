@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.analysis.stats;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.tools.variant.SampleVariantStatsAnalysisExecutor;
-import org.opencb.opencga.core.annotations.ToolExecutor;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;

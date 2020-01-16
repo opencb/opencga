@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.annotations;
-
-import org.opencb.opencga.core.models.common.Enums;
+package org.opencb.opencga.core.tools.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -25,42 +23,44 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-public @interface Tool {
+public @interface ToolExecutor {
 
     /**
-     * @return Tool ID. Must be unique in the classpath.
+     * @return Tool executor ID.
      */
     String id();
 
     /**
-     * @return Tool resource.
+     * @return Tool ID.
      */
-    Enums.Resource resource();
+    String tool();
 
     /**
-     * @return Tool type.
+     * @return List of accepted sources.
      */
-    Type type() default Type.ANALYSIS;
+    Source source();
 
     /**
-     * @return Tool scope.
+     * @return Required frameworks.
      */
-    Scope scope() default Scope.STUDY;
+    Framework framework();
 
     /**
      * @return Tool executor description.
      */
     String description() default "";
 
-    enum Type {
-        OPERATION,
-        ANALYSIS;
+    enum Source {
+        FILE,
+        PARQUET_FILE,
+        MONGODB,
+        HBASE,
+        STORAGE
     }
 
-    enum Scope {
-        GLOBAL,
-        PROJECT,
-        STUDY
+    enum Framework {
+        LOCAL,
+        MAP_REDUCE,
+        SPARK
     }
-
 }

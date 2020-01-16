@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.api.variant;
+package org.opencb.opencga.core.models.variant;
 
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.opencga.core.tools.ToolParams;

@@ -14,7 +14,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantStorageToolExecutor;
 import org.opencb.opencga.storage.hadoop.variant.stats.VariantStatsDriver;
-import org.opencb.opencga.core.annotations.ToolExecutor;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
 import java.util.ArrayList;
 import java.util.List;

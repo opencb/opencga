@@ -17,7 +17,7 @@
 package org.opencb.opencga.analysis.clinical.interpretation;
 
 import org.opencb.bionetdb.core.BioNetDbManager;
-import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 

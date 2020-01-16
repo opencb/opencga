@@ -9,7 +9,7 @@ import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
-import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.AnnotationSet;

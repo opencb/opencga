@@ -1,8 +1,8 @@
 package org.opencb.opencga.analysis.variant.operations;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.opencb.opencga.core.annotations.Tool;
-import org.opencb.opencga.core.api.operations.variant.VariantSampleIndexParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.ArrayList;

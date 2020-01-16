@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.api.variant;
+package org.opencb.opencga.core.models.variant;
 
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.core.tools.ToolParams;

@@ -1,8 +1,8 @@
 package org.opencb.opencga.analysis.variant.operations;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.opencb.opencga.core.annotations.Tool;
-import org.opencb.opencga.core.api.operations.variant.VariantFamilyIndexParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.models.operations.variant.VariantFamilyIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
 
 @Tool(id = VariantFamilyIndexOperationTool.ID, description = VariantFamilyIndexOperationTool.DESCRIPTION,

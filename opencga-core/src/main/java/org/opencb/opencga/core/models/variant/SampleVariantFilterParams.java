@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.api.variant;
+package org.opencb.opencga.core.models.variant;
 
 import java.util.Arrays;
 import java.util.List;

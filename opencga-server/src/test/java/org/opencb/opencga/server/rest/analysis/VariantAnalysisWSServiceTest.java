@@ -2,7 +2,7 @@ package org.opencb.opencga.server.rest.analysis;
 
 import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.opencga.core.api.variant.VariantQueryParams;
+import org.opencb.opencga.core.models.variant.VariantQueryParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
 import java.util.Arrays;

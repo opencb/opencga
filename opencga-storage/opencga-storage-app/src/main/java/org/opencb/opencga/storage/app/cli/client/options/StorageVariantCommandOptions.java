@@ -19,7 +19,7 @@ package org.opencb.opencga.storage.app.cli.client.options;
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
-import org.opencb.opencga.core.api.operations.variant.VariantScoreIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;

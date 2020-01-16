@@ -20,7 +20,7 @@ import org.opencb.opencga.analysis.clinical.ClinicalUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FamilyManager;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
-import org.opencb.opencga.core.annotations.ToolExecutor;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.models.individual.Individual;

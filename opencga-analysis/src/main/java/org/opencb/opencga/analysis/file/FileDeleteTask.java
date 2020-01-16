@@ -15,7 +15,7 @@ import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;

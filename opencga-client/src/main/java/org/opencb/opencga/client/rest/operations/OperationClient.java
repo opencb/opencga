@@ -4,7 +4,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.api.operations.variant.*;
+import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.tools.ToolParams;
