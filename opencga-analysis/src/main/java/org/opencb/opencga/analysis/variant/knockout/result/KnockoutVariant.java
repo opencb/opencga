@@ -1,10 +1,10 @@
-package org.opencb.opencga.analysis.variant.genes.knockout.result;
+package org.opencb.opencga.analysis.variant.knockout.result;
 
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 
 import java.util.List;
 
-public class VariantKnockout {
+public class KnockoutVariant {
 
     private String variant;
     private String genotype;
@@ -20,10 +20,10 @@ public class VariantKnockout {
         DELETION_OVERLAP
     }
 
-    public VariantKnockout() {
+    public KnockoutVariant() {
     }
 
-    public VariantKnockout(String variant, String genotype, String filter, String qual, KnockoutType knockoutType,
+    public KnockoutVariant(String variant, String genotype, String filter, String qual, KnockoutType knockoutType,
                            List<SequenceOntologyTerm> sequenceOntologyTerms) {
         this.variant = variant;
         this.genotype = genotype;
@@ -37,7 +37,7 @@ public class VariantKnockout {
         return variant;
     }
 
-    public VariantKnockout setVariant(String variant) {
+    public KnockoutVariant setVariant(String variant) {
         this.variant = variant;
         return this;
     }
@@ -46,7 +46,7 @@ public class VariantKnockout {
         return genotype;
     }
 
-    public VariantKnockout setGenotype(String genotype) {
+    public KnockoutVariant setGenotype(String genotype) {
         this.genotype = genotype;
         return this;
     }
@@ -55,7 +55,7 @@ public class VariantKnockout {
         return filter;
     }
 
-    public VariantKnockout setFilter(String filter) {
+    public KnockoutVariant setFilter(String filter) {
         this.filter = filter;
         return this;
     }
@@ -64,7 +64,7 @@ public class VariantKnockout {
         return qual;
     }
 
-    public VariantKnockout setQual(String qual) {
+    public KnockoutVariant setQual(String qual) {
         this.qual = qual;
         return this;
     }
@@ -73,7 +73,7 @@ public class VariantKnockout {
         return knockoutType;
     }
 
-    public VariantKnockout setKnockoutType(KnockoutType knockoutType) {
+    public KnockoutVariant setKnockoutType(KnockoutType knockoutType) {
         this.knockoutType = knockoutType;
         return this;
     }
@@ -82,7 +82,7 @@ public class VariantKnockout {
         return sequenceOntologyTerms;
     }
 
-    public VariantKnockout setSequenceOntologyTerms(List<SequenceOntologyTerm> sequenceOntologyTerms) {
+    public KnockoutVariant setSequenceOntologyTerms(List<SequenceOntologyTerm> sequenceOntologyTerms) {
         this.sequenceOntologyTerms = sequenceOntologyTerms;
         return this;
     }

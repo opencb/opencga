@@ -1,11 +1,12 @@
-package org.opencb.opencga.analysis.variant.genes.knockout;
+package org.opencb.opencga.core.models.variant;
 
 import org.opencb.opencga.core.tools.ToolParams;
 
 import java.util.List;
 
-public class GeneKnockoutAnalysisParams extends ToolParams {
+public class KnockoutAnalysisParams extends ToolParams {
 
+    public static final String DESCRIPTION = "Gene knockout analysis params";
     // Sample filter
     private List<String> sample;
     // family
@@ -29,7 +30,7 @@ public class GeneKnockoutAnalysisParams extends ToolParams {
         return sample;
     }
 
-    public GeneKnockoutAnalysisParams setSample(List<String> sample) {
+    public KnockoutAnalysisParams setSample(List<String> sample) {
         this.sample = sample;
         return this;
     }
@@ -38,7 +39,7 @@ public class GeneKnockoutAnalysisParams extends ToolParams {
         return gene;
     }
 
-    public GeneKnockoutAnalysisParams setGene(List<String> gene) {
+    public KnockoutAnalysisParams setGene(List<String> gene) {
         this.gene = gene;
         return this;
     }
@@ -47,7 +48,7 @@ public class GeneKnockoutAnalysisParams extends ToolParams {
         return panel;
     }
 
-    public GeneKnockoutAnalysisParams setPanel(List<String> panel) {
+    public KnockoutAnalysisParams setPanel(List<String> panel) {
         this.panel = panel;
         return this;
     }
@@ -56,7 +57,7 @@ public class GeneKnockoutAnalysisParams extends ToolParams {
         return biotype;
     }
 
-    public GeneKnockoutAnalysisParams setBiotype(String biotype) {
+    public KnockoutAnalysisParams setBiotype(String biotype) {
         this.biotype = biotype;
         return this;
     }
@@ -65,7 +66,7 @@ public class GeneKnockoutAnalysisParams extends ToolParams {
         return consequenceType;
     }
 
-    public GeneKnockoutAnalysisParams setConsequenceType(String consequenceType) {
+    public KnockoutAnalysisParams setConsequenceType(String consequenceType) {
         this.consequenceType = consequenceType;
         return this;
     }
@@ -74,7 +75,7 @@ public class GeneKnockoutAnalysisParams extends ToolParams {
         return filter;
     }
 
-    public GeneKnockoutAnalysisParams setFilter(String filter) {
+    public KnockoutAnalysisParams setFilter(String filter) {
         this.filter = filter;
         return this;
     }
@@ -83,7 +84,7 @@ public class GeneKnockoutAnalysisParams extends ToolParams {
         return qual;
     }
 
-    public GeneKnockoutAnalysisParams setQual(String qual) {
+    public KnockoutAnalysisParams setQual(String qual) {
         this.qual = qual;
         return this;
     }
