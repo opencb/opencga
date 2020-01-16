@@ -2,7 +2,7 @@ package org.opencb.opencga.analysis.tools;
 
 import org.junit.Test;
 import org.opencb.opencga.core.annotations.Tool;
-import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.Arrays;

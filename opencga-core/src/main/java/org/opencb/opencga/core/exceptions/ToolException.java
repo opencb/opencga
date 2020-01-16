@@ -1,4 +1,4 @@
-package org.opencb.opencga.core.exception;
+package org.opencb.opencga.core.exceptions;
 
 /**
  * Created by pfurio on 23/05/17.

@@ -25,6 +25,7 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.file.Experiment;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;

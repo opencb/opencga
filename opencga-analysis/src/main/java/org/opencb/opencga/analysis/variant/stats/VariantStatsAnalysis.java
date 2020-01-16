@@ -34,7 +34,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.api.variant.VariantStatsAnalysisParams;
-import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;

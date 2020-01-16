@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.exception;
+package org.opencb.opencga.core.exceptions;
 
 /**
  * Created by imedina on 08/06/15.

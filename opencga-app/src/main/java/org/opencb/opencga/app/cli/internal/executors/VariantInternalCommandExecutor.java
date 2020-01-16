@@ -55,7 +55,7 @@ import org.opencb.opencga.core.api.variant.VariantExportParams;
 import org.opencb.opencga.core.api.variant.VariantIndexParams;
 import org.opencb.opencga.core.api.variant.VariantStatsAnalysisParams;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;

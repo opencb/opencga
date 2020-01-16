@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.models;
+package org.opencb.opencga.core.models.file;
 
 import java.util.HashMap;
 import java.util.Map;

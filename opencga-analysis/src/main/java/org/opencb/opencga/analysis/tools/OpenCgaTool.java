@@ -33,7 +33,7 @@ import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.annotations.ToolExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.user.User;
