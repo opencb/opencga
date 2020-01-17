@@ -134,6 +134,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             case COHORT_VARIANT_STATS_QUERY_COMMAND:
                 queryResponse = cohortStatsQuery();
                 break;
+            case VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND:
+                queryResponse = knockout();
+                break;
 //            case "family-stats":
 //                queryResponse = familyStats();
 //                break;
@@ -143,19 +146,15 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             case GWAS_RUN_COMMAND:
                 queryResponse = gwas();
                 break;
-
             case PLINK_RUN_COMMAND:
                 queryResponse = plink();
                 break;
-
             case RVTEST_RUN_COMMAND:
                 queryResponse = rvtests();
                 break;
-
             case GATK_RUN_COMMAND:
                 queryResponse = gatk();
                 break;
-
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -239,6 +238,19 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 variantCommandOptions.cohortVariantStatsQueryCommandOptions.study,
                 variantCommandOptions.cohortVariantStatsQueryCommandOptions.cohort
         );
+    }
+
+    private RestResponse<Job> knockout() throws IOException {
+        return openCGAClient.getVariantClient().knockoutRun(variantCommandOptions.knockoutCommandOptions.study,
+                new KnockoutAnalysisParams(
+                        variantCommandOptions.knockoutCommandOptions.sample,
+                        variantCommandOptions.knockoutCommandOptions.gene,
+                        variantCommandOptions.knockoutCommandOptions.panel,
+                        variantCommandOptions.knockoutCommandOptions.biotype,
+                        variantCommandOptions.knockoutCommandOptions.consequenceType,
+                        variantCommandOptions.knockoutCommandOptions.filter,
+                        variantCommandOptions.knockoutCommandOptions.qual,
+                        variantCommandOptions.knockoutCommandOptions.outdir));
     }
 
 //    private RestResponse<Job> familyStats() {

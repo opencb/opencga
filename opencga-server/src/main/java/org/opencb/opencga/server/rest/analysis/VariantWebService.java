@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
+import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
@@ -824,6 +825,18 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = GatkRunParams.DESCRIPTION) GatkRunParams params) {
         return submitJob(GatkWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
+    }
+
+    @POST
+    @Path("/knockout/run")
+    @ApiOperation(value = KnockoutAnalysis.DESCRIPTION, response = Job.class)
+    public Response knockoutRun(
+            @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = KnockoutAnalysisParams.DESCRIPTION) KnockoutAnalysisParams params) {
+        return submitJob(KnockoutAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
     //    @POST

@@ -91,6 +91,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
     private final AtomicLong numAnnotationsToLoad = new AtomicLong(0);
     protected static Logger logger = LoggerFactory.getLogger(DefaultVariantAnnotationManager.class);
     protected Map<Integer, List<Integer>> filesToBeAnnotated = new HashMap<>();
+    protected Map<Integer, List<Integer>> alreadyAnnotatedFiles = new HashMap<>();
     private final IOConnectorProvider ioConnectorProvider;
     private final VariantReaderUtils variantReaderUtils;
 
@@ -392,6 +393,7 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
             List<Integer> studies = VariantQueryUtils.getIncludeStudies(query, null, metadataManager);
             for (Integer studyId : studies) {
                 List<Integer> files = new LinkedList<>();
+                List<Integer> annotatedFiles = new LinkedList<>();
                 if (!filesFilter.isEmpty()) {
                     for (String file : filesFilter) {
                         FileMetadata fileMetadata = metadataManager.getFileMetadata(studyId, file);
@@ -401,12 +403,17 @@ public class DefaultVariantAnnotationManager extends VariantAnnotationManager {
                     }
                 } else {
                     metadataManager.fileMetadataIterator(studyId).forEachRemaining(fileMetadata -> {
-                        if (fileMetadata.isIndexed() && !fileMetadata.isAnnotated()) {
-                            files.add(fileMetadata.getId());
+                        if (fileMetadata.isIndexed()) {
+                            if (fileMetadata.isAnnotated()) {
+                                annotatedFiles.add(fileMetadata.getId());
+                            } else {
+                                files.add(fileMetadata.getId());
+                            }
                         }
                     });
                 }
                 filesToBeAnnotated.put(studyId, files);
+                alreadyAnnotatedFiles.put(studyId, annotatedFiles);
             }
         }
     }

@@ -1,10 +1,10 @@
-package org.opencb.opencga.analysis.variant.genes.knockout;
+package org.opencb.opencga.analysis.variant.knockout;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.opencb.opencga.analysis.variant.genes.knockout.result.GeneKnockoutByGene;
-import org.opencb.opencga.analysis.variant.genes.knockout.result.GeneKnockoutBySample;
-import org.opencb.opencga.analysis.variant.genes.knockout.result.GeneKnockoutBySample.GeneKnockout;
-import org.opencb.opencga.analysis.variant.genes.knockout.result.VariantKnockout;
+import org.opencb.opencga.analysis.variant.knockout.result.KnockoutByGene;
+import org.opencb.opencga.analysis.variant.knockout.result.KnockoutBySample;
+import org.opencb.opencga.analysis.variant.knockout.result.KnockoutBySample.KnockoutGene;
+import org.opencb.opencga.analysis.variant.knockout.result.KnockoutVariant;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
@@ -18,7 +18,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
+public abstract class KnockoutAnalysisExecutor extends OpenCgaToolExecutor {
 
     private String study;
     private List<String> samples;
@@ -40,7 +40,7 @@ public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
         return study;
     }
 
-    public GeneKnockoutAnalysisExecutor setStudy(String study) {
+    public KnockoutAnalysisExecutor setStudy(String study) {
         this.study = study;
         return this;
     }
@@ -49,7 +49,7 @@ public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
         return samples;
     }
 
-    public GeneKnockoutAnalysisExecutor setSamples(List<String> samples) {
+    public KnockoutAnalysisExecutor setSamples(List<String> samples) {
         this.samples = samples;
         return this;
     }
@@ -58,7 +58,7 @@ public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
         return trios;
     }
 
-    public GeneKnockoutAnalysisExecutor setTrios(Map<String, Trio> trios) {
+    public KnockoutAnalysisExecutor setTrios(Map<String, Trio> trios) {
         this.trios = trios;
         return this;
     }
@@ -67,7 +67,7 @@ public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
         return proteinCodingGenes;
     }
 
-    public GeneKnockoutAnalysisExecutor setProteinCodingGenes(Set<String> proteinCodingGenes) {
+    public KnockoutAnalysisExecutor setProteinCodingGenes(Set<String> proteinCodingGenes) {
         this.proteinCodingGenes = proteinCodingGenes;
         return this;
     }
@@ -76,12 +76,12 @@ public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
         return otherGenes;
     }
 
-    public GeneKnockoutAnalysisExecutor setOtherGenes(Set<String> otherGenes) {
+    public KnockoutAnalysisExecutor setOtherGenes(Set<String> otherGenes) {
         this.otherGenes = otherGenes;
         return this;
     }
 
-    public GeneKnockoutAnalysisExecutor setBiotype(String biotype) {
+    public KnockoutAnalysisExecutor setBiotype(String biotype) {
         this.biotype = biotype;
         return this;
     }
@@ -94,7 +94,7 @@ public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
         return ct;
     }
 
-    public GeneKnockoutAnalysisExecutor setCt(String ct) {
+    public KnockoutAnalysisExecutor setCt(String ct) {
         this.ct = ct;
         if (ct != null && !ct.isEmpty()) {
             cts = new HashSet<>(VariantQueryUtils.parseConsequenceTypes(Arrays.asList(ct.split(","))));
@@ -112,7 +112,7 @@ public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
         return filter;
     }
 
-    public GeneKnockoutAnalysisExecutor setFilter(String filter) {
+    public KnockoutAnalysisExecutor setFilter(String filter) {
         this.filter = filter;
         return this;
     }
@@ -121,7 +121,7 @@ public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
         return qual;
     }
 
-    public GeneKnockoutAnalysisExecutor setQual(String qual) {
+    public KnockoutAnalysisExecutor setQual(String qual) {
         this.qual = qual;
         return this;
     }
@@ -130,7 +130,7 @@ public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
         return disorder;
     }
 
-    public GeneKnockoutAnalysisExecutor setDisorder(String disorder) {
+    public KnockoutAnalysisExecutor setDisorder(String disorder) {
         this.disorder = disorder;
         return this;
     }
@@ -139,7 +139,7 @@ public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
         return sampleFileNamePattern;
     }
 
-    public GeneKnockoutAnalysisExecutor setSampleFileNamePattern(String sampleFileNamePattern) {
+    public KnockoutAnalysisExecutor setSampleFileNamePattern(String sampleFileNamePattern) {
         this.sampleFileNamePattern = sampleFileNamePattern;
         return this;
     }
@@ -152,7 +152,7 @@ public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
         return geneFileNamePattern;
     }
 
-    public GeneKnockoutAnalysisExecutor setGeneFileNamePattern(String geneFileNamePattern) {
+    public KnockoutAnalysisExecutor setGeneFileNamePattern(String geneFileNamePattern) {
         this.geneFileNamePattern = geneFileNamePattern;
         return this;
     }
@@ -161,46 +161,46 @@ public abstract class GeneKnockoutAnalysisExecutor extends OpenCgaToolExecutor {
         return Paths.get(geneFileNamePattern.replace("{gene}", gene));
     }
 
-    protected GeneKnockoutBySample buildGeneKnockoutBySample(String sample, Map<String, GeneKnockout> knockoutGenes) {
-        GeneKnockoutBySample.GeneKnockoutBySampleStats stats = new GeneKnockoutBySample.GeneKnockoutBySampleStats()
+    protected KnockoutBySample buildGeneKnockoutBySample(String sample, Map<String, KnockoutGene> knockoutGenes) {
+        KnockoutBySample.GeneKnockoutBySampleStats stats = new KnockoutBySample.GeneKnockoutBySampleStats()
                 .setNumGenes(knockoutGenes.size())
                 .setNumTranscripts(knockoutGenes.values().stream().mapToInt(g -> g.getTranscripts().size()).sum());
-        for (VariantKnockout.KnockoutType type : VariantKnockout.KnockoutType.values()) {
+        for (KnockoutVariant.KnockoutType type : KnockoutVariant.KnockoutType.values()) {
             long count = knockoutGenes.values().stream().flatMap(g -> g.getTranscripts().stream())
                     .flatMap(t -> t.getVariants().stream())
                     .filter(v -> v.getKnockoutType().equals(type))
-                    .map(VariantKnockout::getVariant)
+                    .map(KnockoutVariant::getVariant)
                     .collect(Collectors.toSet())
                     .size();
             stats.getByType().put(type, count);
         }
 
-        return new GeneKnockoutBySample()
+        return new KnockoutBySample()
                 .setSample(new Sample().setId(sample))
                 .setStats(stats)
                 .setGenes(knockoutGenes.values());
     }
 
-    protected void writeSampleFile(GeneKnockoutBySample geneKnockoutBySample) throws IOException {
-        File file = getSampleFileName(geneKnockoutBySample.getSample().getId()).toFile();
-        ObjectWriter writer = JacksonUtils.getDefaultObjectMapper().writerFor(GeneKnockoutBySample.class).withDefaultPrettyPrinter();
-        writer.writeValue(file, geneKnockoutBySample);
+    protected void writeSampleFile(KnockoutBySample knockoutBySample) throws IOException {
+        File file = getSampleFileName(knockoutBySample.getSample().getId()).toFile();
+        ObjectWriter writer = JacksonUtils.getDefaultObjectMapper().writerFor(KnockoutBySample.class).withDefaultPrettyPrinter();
+        writer.writeValue(file, knockoutBySample);
     }
 
-    protected GeneKnockoutBySample readSampleFile(String sample) throws IOException {
+    protected KnockoutBySample readSampleFile(String sample) throws IOException {
         File file = getSampleFileName(sample).toFile();
-        return JacksonUtils.getDefaultObjectMapper().readValue(file, GeneKnockoutBySample.class);
+        return JacksonUtils.getDefaultObjectMapper().readValue(file, KnockoutBySample.class);
     }
 
-    protected void writeGeneFile(GeneKnockoutByGene geneKnockoutByGene) throws IOException {
-        File file = getGeneFileName(geneKnockoutByGene.getName()).toFile();
-        ObjectWriter writer = JacksonUtils.getDefaultObjectMapper().writerFor(GeneKnockoutByGene.class).withDefaultPrettyPrinter();
-        writer.writeValue(file, geneKnockoutByGene);
+    protected void writeGeneFile(KnockoutByGene knockoutByGene) throws IOException {
+        File file = getGeneFileName(knockoutByGene.getName()).toFile();
+        ObjectWriter writer = JacksonUtils.getDefaultObjectMapper().writerFor(KnockoutByGene.class).withDefaultPrettyPrinter();
+        writer.writeValue(file, knockoutByGene);
     }
 
-    protected GeneKnockoutByGene readGeneFile(String gene) throws IOException {
+    protected KnockoutByGene readGeneFile(String gene) throws IOException {
         File file = getGeneFileName(gene).toFile();
-        return JacksonUtils.getDefaultObjectMapper().readValue(file, GeneKnockoutByGene.class);
+        return JacksonUtils.getDefaultObjectMapper().readValue(file, KnockoutByGene.class);
     }
 }
 

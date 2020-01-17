@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.variant.genes.knockout;
+package org.opencb.opencga.analysis.variant.knockout;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -11,6 +11,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.common.Enums;
@@ -24,12 +25,12 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-@Tool(id= GeneKnockoutAnalysis.ID, description = GeneKnockoutAnalysis.DESCRIPTION, resource = Enums.Resource.VARIANT)
-public class GeneKnockoutAnalysis extends OpenCgaToolScopeStudy {
-    public static final String ID = "gene-knockout";
+@Tool(id= KnockoutAnalysis.ID, description = KnockoutAnalysis.DESCRIPTION, resource = Enums.Resource.VARIANT)
+public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
+    public static final String ID = "knockout";
     public static final String DESCRIPTION = "";
 
-    private GeneKnockoutAnalysisParams analysisParams = new GeneKnockoutAnalysisParams();
+    private KnockoutAnalysisParams analysisParams = new KnockoutAnalysisParams();
     private String studyFqn;
 
     @Override
@@ -41,7 +42,7 @@ public class GeneKnockoutAnalysis extends OpenCgaToolScopeStudy {
     protected void check() throws Exception {
         analysisParams.updateParams(params);
         studyFqn = getStudyFqn();
-        executorParams.put("executionMethod", params.getString("executionMethod"));
+        executorParams.put("executionMethod", params.getString("executionMethod", "auto"));
 
         if (CollectionUtils.isEmpty(analysisParams.getSample())
                 || analysisParams.getSample().size() == 1 && analysisParams.getSample().get(0).equals(ParamConstants.ALL)) {
@@ -53,11 +54,6 @@ public class GeneKnockoutAnalysis extends OpenCgaToolScopeStudy {
                 analysisParams.setBiotype(VariantAnnotationUtils.PROTEIN_CODING);
             }
         }
-//        else {
-//            if (CollectionUtils.isNotEmpty(analysisParams.getGene()) || CollectionUtils.isNotEmpty(analysisParams.getPanel())) {
-//                throw new ToolException("Unable to combine parameters 'gene' and 'panel' with 'biotype'");
-//            }
-//        }
 
         if (StringUtils.isEmpty(analysisParams.getConsequenceType())) {
             analysisParams.setConsequenceType(VariantQueryUtils.LOF);
@@ -176,7 +172,7 @@ public class GeneKnockoutAnalysis extends OpenCgaToolScopeStudy {
             setUpStorageEngineExecutor(studyFqn);
 //            MappingIterator<String> objectMappingIterator = JacksonUtils.getDefaultObjectMapper().reader().readValues(genesFile);
 //            List<String> genes = objectMappingIterator.readAll(new ArrayList<>());
-            getToolExecutor(GeneKnockoutAnalysisExecutor.class)
+            getToolExecutor(KnockoutAnalysisExecutor.class)
                     .setStudy(studyFqn)
                     .setSamples(analysisParams.getSample())
                     .setSampleFileNamePattern(getOutDir().resolve("knockout.sample.{sample}.json").toString())
