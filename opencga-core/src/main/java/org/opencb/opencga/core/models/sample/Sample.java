@@ -20,10 +20,10 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.AclParams;
 
 import java.util.*;
 
@@ -60,7 +60,7 @@ public class Sample extends Annotable {
     }
 
     public Sample(String id, String source, String individualId, String description, int release) {
-        this(id, source, individualId, null, null, release, 1, description, "", false, new LinkedList<>(), new ArrayList<>(),
+        this(id, source, individualId, null, null, release, 1, description, "", false, new ArrayList<>(), new ArrayList<>(),
                 new HashMap<>());
     }
 

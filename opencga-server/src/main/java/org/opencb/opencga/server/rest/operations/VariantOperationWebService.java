@@ -26,14 +26,14 @@ import java.util.Map;
 @Path("/{apiVersion}/operation")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Operations - Variant Storage", description = "Internal operations for the variant storage engine")
-public class OperationsWSService extends OpenCGAWSServer {
+public class VariantOperationWebService extends OpenCGAWSServer {
 
-    public OperationsWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public VariantOperationWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public OperationsWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public VariantOperationWebService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws VersionException {
         super(version, uriInfo, httpServletRequest, httpHeaders);
     }

@@ -23,11 +23,11 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
-import org.opencb.opencga.server.rest.analysis.AlignmentAnalysisWSService;
-import org.opencb.opencga.server.rest.analysis.ClinicalInterpretationWSService;
-import org.opencb.opencga.server.rest.analysis.VariantAnalysisWSService;
+import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
+import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
+import org.opencb.opencga.server.rest.analysis.VariantWebService;
 import org.opencb.opencga.server.rest.ga4gh.Ga4ghWSServer;
-import org.opencb.opencga.server.rest.operations.OperationsWSService;
+import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -185,10 +185,10 @@ public class MetaWSServer extends OpenCGAWSServer {
         classes.put("families", FamilyWSServer.class);
         classes.put("cohorts", CohortWSServer.class);
         classes.put("panels", PanelWSServer.class);
-        classes.put("alignment", AlignmentAnalysisWSService.class);
-        classes.put("variant", VariantAnalysisWSService.class);
-        classes.put("clinical", ClinicalInterpretationWSService.class);
-        classes.put("variantOperations", OperationsWSService.class);
+        classes.put("alignment", AlignmentWebService.class);
+        classes.put("variant", VariantWebService.class);
+        classes.put("clinical", ClinicalWebService.class);
+        classes.put("variantOperations", VariantOperationWebService.class);
         classes.put("meta", MetaWSServer.class);
         classes.put("ga4gh", Ga4ghWSServer.class);
         classes.put("admin", AdminWSServer.class);
@@ -244,6 +244,7 @@ public class MetaWSServer extends OpenCGAWSServer {
                         parameter.put("name", apiImplicitParam.name());
                         parameter.put("param", apiImplicitParam.paramType());
                         parameter.put("type", apiImplicitParam.dataType());
+                        parameter.put("typeClass", "java.lang." + StringUtils.capitalize(apiImplicitParam.dataType()));
                         parameter.put("allowedValues", apiImplicitParam.allowableValues());
                         parameter.put("required", apiImplicitParam.required());
                         parameter.put("defaultValue", apiImplicitParam.defaultValue());
@@ -256,7 +257,7 @@ public class MetaWSServer extends OpenCGAWSServer {
                 if (methodParameters != null) {
                     for (Parameter methodParameter : methodParameters) {
                         ApiParam apiParam = methodParameter.getAnnotation(ApiParam.class);
-                        if (apiParam!= null && !apiParam.hidden()) {
+                        if (apiParam != null && !apiParam.hidden()) {
                             LinkedHashMap<String, Object> parameter = new LinkedHashMap<>();
                             if (methodParameter.getAnnotation(PathParam.class) != null) {
                                 parameter.put("name", methodParameter.getAnnotation(PathParam.class).value());
@@ -272,8 +273,8 @@ public class MetaWSServer extends OpenCGAWSServer {
                             }
 
                             // Get type in lower case except for 'body' param
-                            String typeClass = methodParameter.getType().getName();
-                            String type = typeClass;
+                            String type = methodParameter.getType().getName();
+                            String typeClass = type;
                             if (typeClass.contains(".")) {
                                 String[] split = typeClass.split("\\.");
                                 type = split[split.length - 1];

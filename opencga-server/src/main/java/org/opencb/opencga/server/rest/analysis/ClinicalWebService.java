@@ -42,14 +42,14 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 @Path("/{apiVersion}/analysis/clinical")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Analysis - Clinical Interpretation", position = 4, description = "Methods for working with Clinical Interpretations")
-public class ClinicalInterpretationWSService extends AnalysisWSService {
+public class ClinicalWebService extends AnalysisWebService {
 
     private final ClinicalAnalysisManager clinicalManager;
     private final InterpretationManager catalogInterpretationManager;
     private final ClinicalInterpretationManager clinicalInterpretationManager;
 
-    public ClinicalInterpretationWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                                           @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public ClinicalWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                              @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
 
         clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory,
@@ -59,8 +59,8 @@ public class ClinicalInterpretationWSService extends AnalysisWSService {
         clinicalManager = catalogManager.getClinicalAnalysisManager();
     }
 
-    public ClinicalInterpretationWSService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
-                                           @Context HttpHeaders httpHeaders) throws IOException, VersionException {
+    public ClinicalWebService(String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest,
+                              @Context HttpHeaders httpHeaders) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest, httpHeaders);
 
         clinicalInterpretationManager = new ClinicalInterpretationManager(catalogManager, storageEngineFactory,

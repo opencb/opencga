@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.individual;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.biodata.models.pedigree.IndividualProperty.AffectationStatus;
@@ -24,15 +25,13 @@ import org.opencb.biodata.models.pedigree.IndividualProperty.LifeStatus;
 import org.opencb.biodata.models.pedigree.IndividualProperty.Sex;
 import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.sample.Sample;
 
 import java.util.*;
-
-import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -97,27 +96,27 @@ public class Individual extends Annotable {
                       List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
-        this.father = defaultObject(father, Individual::new);
-        this.mother = defaultObject(mother, Individual::new);
-        this.multiples = defaultObject(multiples, Multiples::new);
+        this.father = ObjectUtils.defaultIfNull(father, new Individual());
+        this.mother = ObjectUtils.defaultIfNull(mother, new Individual());
+        this.multiples = ObjectUtils.defaultIfNull(multiples, new Multiples());
         this.location = location;
         this.sex = sex;
         this.karyotypicSex = karyotypicSex;
         this.ethnicity = ethnicity;
-        this.population = defaultObject(population, Population::new);
+        this.population = ObjectUtils.defaultIfNull(population, new Population());
         this.dateOfBirth = dateOfBirth;
         this.release = release;
         this.version = version;
-        this.creationDate = defaultObject(creationDate, TimeUtils::getTime);
-        this.status = defaultObject(status, Status::new);
+        this.creationDate = ObjectUtils.defaultIfNull(creationDate, TimeUtils.getTime());
+        this.status = ObjectUtils.defaultIfNull(status, new Status());
         this.lifeStatus = lifeStatus;
         this.affectationStatus = affectationStatus;
-        this.phenotypes = defaultObject(phenotypes, ArrayList::new);
-        this.disorders = defaultObject(disorders, ArrayList::new);
-        this.samples = defaultObject(samples, ArrayList::new);
+        this.phenotypes = ObjectUtils.defaultIfNull(phenotypes, new ArrayList<>());
+        this.disorders = ObjectUtils.defaultIfNull(disorders, new ArrayList<>());
+        this.samples = ObjectUtils.defaultIfNull(samples, new ArrayList<>());
         this.parentalConsanguinity = parentalConsanguinity;
         this.annotationSets = annotationSets;
-        this.attributes = defaultObject(attributes, HashMap::new);
+        this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
     }
 
     public static class Population {
