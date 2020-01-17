@@ -58,14 +58,14 @@ import static org.opencb.opencga.core.api.ParamConstants.*;
 @Path("/{apiVersion}/analysis/alignment")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Analysis - Alignment", description = "Methods for working with 'files' endpoint")
-public class AlignmentAnalysisWSService extends AnalysisWSService {
+public class AlignmentWebService extends AnalysisWebService {
 
-    public AlignmentAnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public AlignmentWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public AlignmentAnalysisWSService(String apiVersion, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public AlignmentWebService(String apiVersion, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(apiVersion, uriInfo, httpServletRequest, httpHeaders);
     }
@@ -478,7 +478,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            AlignmentAnalysisWSService.BwaRunParams params) {
+            AlignmentWebService.BwaRunParams params) {
         return submitJob(BwaWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
@@ -526,7 +526,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            AlignmentAnalysisWSService.SamtoolsRunParams params) {
+            AlignmentWebService.SamtoolsRunParams params) {
         return submitJob(SamtoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
@@ -556,7 +556,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            AlignmentAnalysisWSService.DeeptoolsRunParams params) {
+            AlignmentWebService.DeeptoolsRunParams params) {
         return submitJob(DeeptoolsWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 
@@ -584,7 +584,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            AlignmentAnalysisWSService.FastqcRunParams params) {
+            AlignmentWebService.FastqcRunParams params) {
         return submitJob(FastqcWrapperAnalysis.ID, study, params, jobName, jobDescription, jobTags);
     }
 

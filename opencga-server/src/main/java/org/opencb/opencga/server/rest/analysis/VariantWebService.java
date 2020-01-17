@@ -73,7 +73,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 @Path("/{apiVersion}/analysis/variant")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Analysis - Variant", description = "Methods for working with 'files' endpoint")
-public class VariantAnalysisWSService extends AnalysisWSService {
+public class VariantWebService extends AnalysisWebService {
 
     private static final String DEPRECATED = " [DEPRECATED] ";
     public static final String PENDING = " [PENDING] ";
@@ -120,12 +120,12 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         DEPRECATED_VARIANT_QUERY_PARAM = Collections.unmodifiableMap(map);
     }
 
-    public VariantAnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public VariantWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public VariantAnalysisWSService(String apiVersion, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public VariantWebService(String apiVersion, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(apiVersion, uriInfo, httpServletRequest, httpHeaders);
     }
