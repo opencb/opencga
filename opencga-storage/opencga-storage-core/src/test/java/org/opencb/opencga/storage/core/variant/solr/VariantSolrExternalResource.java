@@ -62,10 +62,11 @@ public class VariantSolrExternalResource extends ExternalResource {
 
         Path rootDir = getTmpRootDir();
 
-        String configSet = "OpenCGAConfigSet";
+        String configSet = "OpenCGAConfigSet-2.0.0-dev";
+
         // Copy configuration
         getResourceUri("configsets/variantsCollection/solrconfig.xml", "configsets/" + configSet + "/solrconfig.xml");
-        getResourceUri("solr/variant/managed-schema", "configsets/" + configSet + "/managed-schema");
+        getResourceUri("managed-schema", "configsets/" + configSet + "/managed-schema");
         getResourceUri("configsets/variantsCollection/params.json", "configsets/" + configSet + "/params.json");
         getResourceUri("configsets/variantsCollection/protwords.txt", "configsets/" + configSet + "/protwords.txt");
         getResourceUri("configsets/variantsCollection/stopwords.txt", "configsets/" + configSet + "/stopwords.txt");
@@ -155,6 +156,8 @@ public class VariantSolrExternalResource extends ExternalResource {
         } else {
             solrHomeDir.mkdirs();
         }
+
+        System.setProperty("solr.solr.home", solrHomeDir.toPath().toAbsolutePath().normalize().toString());
 
         final SolrResourceLoader loader = new SolrResourceLoader(solrHomeDir.toPath());
         final Path configSetPath = Paths.get(configSetHome).toAbsolutePath();
