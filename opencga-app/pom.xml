@@ -259,7 +259,9 @@
                                     <arg value="${build.dir}/clients"/>
                                     <arg value="${build.dir}/conf"/>
                                     <arg value="${build.dir}/test"/>
+                                    <!--
                                     <arg value="${build.dir}/misc/solr/${solr.configset.name}-${opencga.version}"/>
+                                    -->
                                 </exec>
 
                                 <echo>Copying to ${build.dir}</echo>
@@ -318,7 +320,7 @@
                                     <arg value="${project.basedir}/../opencga-client/target/classes/client-configuration.yml"/>
                                     <arg value="${build.dir}/conf"/>
                                 </exec>
-
+<!--
                                 <echo>Copying Solr managed-schema file</echo>
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/../opencga-storage/opencga-storage-core/target/classes/managed-schema"/>
@@ -341,8 +343,13 @@
                                 <exec executable="tar">
                                     <arg value="czvf"/>
                                     <arg value="${build.dir}/misc/solr/opencga-${opencga.version}-solr-${solr.version}.tar.gz"/>
-                                    <arg value="--directory=${build.dir}/misc/solr"/>
+                                    <arg value="-directory=${build.dir}/misc/solr"/>
                                     <arg value="${solr.configset.name}-${opencga.version}"/>
+                                </exec>
+-->
+                                <exec executable="${project.basedir}/app/misc/solr/prepare_configsets.sh">
+                                    <arg value="${project.basedir}/.."/>
+                                    <arg value="${opencga.version}"/>
                                 </exec>
 
                                 <echo>Copying war file</echo>
