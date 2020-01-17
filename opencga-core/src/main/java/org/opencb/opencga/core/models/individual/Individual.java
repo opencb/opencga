@@ -24,10 +24,10 @@ import org.opencb.biodata.models.pedigree.IndividualProperty.LifeStatus;
 import org.opencb.biodata.models.pedigree.IndividualProperty.Sex;
 import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.sample.Sample;
 
 import java.util.*;
@@ -517,6 +517,16 @@ public class Individual extends Annotable {
 
         public IndividualAclParams setPropagate(boolean propagate) {
             this.propagate = propagate;
+            return this;
+        }
+
+        public IndividualAclParams setPermissions(String permissions) {
+            super.setPermissions(permissions);
+            return this;
+        }
+
+        public IndividualAclParams setAction(Action action) {
+            super.setAction(action);
             return this;
         }
     }

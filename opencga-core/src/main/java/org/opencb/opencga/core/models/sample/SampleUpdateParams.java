@@ -13,17 +13,17 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 public class SampleUpdateParams {
 
-    protected String id;
-    protected String description;
-    protected String type;
-    protected String individualId;
-    protected SampleProcessing processing;
-    protected SampleCollection collection;
-    protected String source;
-    protected Boolean somatic;
-    protected List<Phenotype> phenotypes;
-    protected List<AnnotationSet> annotationSets;
-    protected Map<String, Object> attributes;
+    private String id;
+    private String description;
+    private String type;
+    private String individualId;
+    private SampleProcessing processing;
+    private SampleCollection collection;
+    private String source;
+    private Boolean somatic;
+    private List<Phenotype> phenotypes;
+    private List<AnnotationSet> annotationSets;
+    private Map<String, Object> attributes;
 
     public SampleUpdateParams() {
     }

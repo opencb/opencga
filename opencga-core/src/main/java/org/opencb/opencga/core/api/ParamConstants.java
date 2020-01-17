@@ -128,7 +128,7 @@ public class ParamConstants {
 
     // ---------------------------------------------
 
-    public static final String VARIANBLE_SET_DESCRIPTION = "Variable set id or name";
+    public static final String VARIABLE_SET_DESCRIPTION = "Variable set id or name";
     public static final String ANNOTATION_DESCRIPTION = "Annotation, e.g: key1=value(,key2=value)";
     public static final String ANNOTATION_AS_MAP_DESCRIPTION = "Indicates whether to show the annotations as key-value";
     public static final String ANNOTATION_SET_ID = "AnnotationSet id to be updated.";

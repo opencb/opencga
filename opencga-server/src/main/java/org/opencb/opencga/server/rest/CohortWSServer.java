@@ -124,9 +124,8 @@ public class CohortWSServer extends OpenCGAWSServer {
     public Response createCohort(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
                     String studyStr,
-            @ApiParam(value = ParamConstants.VARIANBLE_SET_DESCRIPTION, hidden = true) @QueryParam("variableSetId")
-                    String variableSetId,
-            @ApiParam(value = ParamConstants.VARIANBLE_SET_DESCRIPTION) @QueryParam("variableSet") String variableSet,
+            @ApiParam(value = ParamConstants.VARIABLE_SET_DESCRIPTION, hidden = true) @QueryParam("variableSetId") String variableSetId,
+            @ApiParam(value = ParamConstants.VARIABLE_SET_DESCRIPTION) @QueryParam("variableSet") String variableSet,
             @ApiParam(value = "Variable name") @QueryParam("variable") String variableName,
             @ApiParam(value = "JSON containing cohort information", required = true) CohortCreateParams params) {
         try {

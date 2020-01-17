@@ -27,4 +27,14 @@ public class JobAclUpdateParams extends AclParams {
         this.job = job;
         return this;
     }
+
+    public JobAclUpdateParams setPermissions(String permissions) {
+        super.setPermissions(permissions);
+        return this;
+    }
+
+    public JobAclUpdateParams setAction(Action action) {
+        super.setAction(action);
+        return this;
+    }
 }

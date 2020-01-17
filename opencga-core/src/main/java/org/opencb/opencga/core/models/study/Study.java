@@ -19,11 +19,12 @@ package org.opencb.opencga.core.models.study;
 
 import org.opencb.opencga.core.common.FieldUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.Dataset;
+import org.opencb.opencga.core.models.Experiment;
+import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -484,6 +485,16 @@ public class Study extends PrivateFields {
 
         public StudyAclParams setTemplate(String template) {
             this.template = template;
+            return this;
+        }
+
+        public StudyAclParams setPermissions(String permissions) {
+            super.setPermissions(permissions);
+            return this;
+        }
+
+        public StudyAclParams setAction(Action action) {
+            super.setAction(action);
             return this;
         }
     }

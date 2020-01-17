@@ -177,8 +177,9 @@ class RestClientGenerator(ABC):
             for endpoint in category['endpoints']:
                 # We update the dictionary of parameters of the endpoint
                 self.parameters = {}
-                for parameter in endpoint['parameters']:
-                    self.parameters[parameter['name'] if parameter['name'] != 'body' else 'data'] = parameter
+                if self.get_endpoint_path(endpoint) != 'files/upload':
+                    for parameter in endpoint['parameters']:
+                        self.parameters[parameter['name'] if parameter['name'] != 'body' else 'data'] = parameter
 
                 # We extract the resources of the endpoint
                 self.parse_resources(category, endpoint)

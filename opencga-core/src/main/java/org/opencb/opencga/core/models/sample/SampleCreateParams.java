@@ -1,10 +1,25 @@
 package org.opencb.opencga.core.models.sample;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.commons.Phenotype;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 
+import java.util.List;
 import java.util.Map;
 
-public class SampleCreateParams extends SampleUpdateParams {
+public class SampleCreateParams {
+
+    private String id;
+    private String description;
+    private String type;
+    private String individualId;
+    private SampleProcessing processing;
+    private SampleCollection collection;
+    private String source;
+    private Boolean somatic;
+    private List<Phenotype> phenotypes;
+    private List<AnnotationSet> annotationSets;
+    private Map<String, Object> attributes;
 
     @Deprecated
     public String name;
@@ -58,6 +73,105 @@ public class SampleCreateParams extends SampleUpdateParams {
 
     public SampleCreateParams setStats(Map<String, Object> stats) {
         this.stats = stats;
+        return this;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public SampleCreateParams setId(String id) {
+        this.id = id;
+        return this;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public SampleCreateParams setDescription(String description) {
+        this.description = description;
+        return this;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public SampleCreateParams setType(String type) {
+        this.type = type;
+        return this;
+    }
+
+    public String getIndividualId() {
+        return individualId;
+    }
+
+    public SampleCreateParams setIndividualId(String individualId) {
+        this.individualId = individualId;
+        return this;
+    }
+
+    public SampleProcessing getProcessing() {
+        return processing;
+    }
+
+    public SampleCreateParams setProcessing(SampleProcessing processing) {
+        this.processing = processing;
+        return this;
+    }
+
+    public SampleCollection getCollection() {
+        return collection;
+    }
+
+    public SampleCreateParams setCollection(SampleCollection collection) {
+        this.collection = collection;
+        return this;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public SampleCreateParams setSource(String source) {
+        this.source = source;
+        return this;
+    }
+
+    public Boolean getSomatic() {
+        return somatic;
+    }
+
+    public SampleCreateParams setSomatic(Boolean somatic) {
+        this.somatic = somatic;
+        return this;
+    }
+
+    public List<Phenotype> getPhenotypes() {
+        return phenotypes;
+    }
+
+    public SampleCreateParams setPhenotypes(List<Phenotype> phenotypes) {
+        this.phenotypes = phenotypes;
+        return this;
+    }
+
+    public List<AnnotationSet> getAnnotationSets() {
+        return annotationSets;
+    }
+
+    public SampleCreateParams setAnnotationSets(List<AnnotationSet> annotationSets) {
+        this.annotationSets = annotationSets;
+        return this;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public SampleCreateParams setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
         return this;
     }
 }

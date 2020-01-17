@@ -21,8 +21,8 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.Experiment;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Status;
@@ -30,7 +30,10 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
 
 import java.net.URI;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -643,6 +646,16 @@ public class File extends Annotable {
 
         public FileAclParams setSample(String sample) {
             this.sample = sample;
+            return this;
+        }
+
+        public FileAclParams setPermissions(String permissions) {
+            super.setPermissions(permissions);
+            return this;
+        }
+
+        public FileAclParams setAction(Action action) {
+            super.setAction(action);
             return this;
         }
     }

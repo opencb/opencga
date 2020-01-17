@@ -27,4 +27,14 @@ public class CohortAclUpdateParams extends AclParams {
         this.cohort = cohort;
         return this;
     }
+
+    public CohortAclUpdateParams setPermissions(String permissions) {
+        super.setPermissions(permissions);
+        return this;
+    }
+
+    public CohortAclUpdateParams setAction(Action action) {
+        super.setAction(action);
+        return this;
+    }
 }

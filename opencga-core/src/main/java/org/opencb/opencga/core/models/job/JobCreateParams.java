@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 public class JobCreateParams {
 
     private String id;
-    private String name;
     private String description;
 
     private ToolInfo tool;
@@ -45,7 +44,6 @@ public class JobCreateParams {
     public String toString() {
         final StringBuilder sb = new StringBuilder("JobCreateParams{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", tool=").append(tool);
         sb.append(", priority=").append(priority);
@@ -72,15 +70,6 @@ public class JobCreateParams {
 
     public JobCreateParams setId(String id) {
         this.id = id;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public JobCreateParams setName(String name) {
-        this.name = name;
         return this;
     }
 
@@ -220,7 +209,7 @@ public class JobCreateParams {
     }
 
     public Job toJob() {
-        return new Job(id, null, name, description, tool, null, commandLine, params, creationDate, null, priority, status,
+        return new Job(id, null, id, description, tool, null, commandLine, params, creationDate, null, priority, status,
                 outDir != null ? outDir.toFile() : null,
                 getInput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
                 getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
@@ -231,6 +220,11 @@ public class JobCreateParams {
         private String path;
 
         public TinyFile() {
+        }
+
+        public TinyFile setPath(String path) {
+            this.path = path;
+            return this;
         }
 
         public String getPath() {

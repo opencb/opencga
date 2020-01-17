@@ -38,4 +38,14 @@ public class FileAclUpdateParams extends AclParams {
         this.sample = sample;
         return this;
     }
+
+    public FileAclUpdateParams setPermissions(String permissions) {
+        super.setPermissions(permissions);
+        return this;
+    }
+
+    public FileAclUpdateParams setAction(Action action) {
+        super.setAction(action);
+        return this;
+    }
 }

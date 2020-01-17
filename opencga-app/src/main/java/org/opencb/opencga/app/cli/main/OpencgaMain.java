@@ -126,12 +126,6 @@ public class OpencgaMain {
                         case "families":
                             commandExecutor = new FamilyCommandExecutor(cliOptionsParser.getFamilyCommands());
                             break;
-                        case "tools":
-                            commandExecutor = new ToolCommandExecutor(cliOptionsParser.getToolCommands());
-                            break;
-                        case "variables":
-                            commandExecutor = new VariableCommandExecutor(cliOptionsParser.getVariableCommands());
-                            break;
                         case "alignments":
                             commandExecutor = new AlignmentCommandExecutor(cliOptionsParser.getAlignmentCommands());
                             break;

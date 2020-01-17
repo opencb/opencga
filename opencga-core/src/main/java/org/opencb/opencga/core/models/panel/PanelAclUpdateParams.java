@@ -27,4 +27,14 @@ public class PanelAclUpdateParams extends AclParams {
         this.panel = panel;
         return this;
     }
+
+    public PanelAclUpdateParams setPermissions(String permissions) {
+        super.setPermissions(permissions);
+        return this;
+    }
+
+    public PanelAclUpdateParams setAction(Action action) {
+        super.setAction(action);
+        return this;
+    }
 }

@@ -39,11 +39,12 @@ import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.io.VcfOutputWriter;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.api.operations.variant.VariantFileDeleteParams;
 import org.opencb.opencga.core.api.variant.*;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericServiceModel;
@@ -168,7 +169,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private RestResponse stats() throws IOException {
+    private RestResponse stats() throws ClientException {
         return openCGAClient.getVariantClient().statsRun(variantCommandOptions.statsVariantCommandOptions.study,
                 new VariantStatsAnalysisParams(
                         variantCommandOptions.statsVariantCommandOptions.cohort,
@@ -186,14 +187,14 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 ));
     }
 
-    private RestResponse<Job> sampleRun() throws IOException {
+    private RestResponse<Job> sampleRun() throws ClientException {
         return openCGAClient.getVariantClient().sampleRun(
                 variantCommandOptions.samplesFilterCommandOptions.toolParams.getStudy(),
                 variantCommandOptions.samplesFilterCommandOptions.toolParams
         );
     }
 
-    private RestResponse<Variant> sampleQuery() throws IOException {
+    private RestResponse<Variant> sampleQuery() throws ClientException {
         QueryOptions options = new QueryOptions();
         options.putAll(variantCommandOptions.sampleQueryCommandOptions.commonOptions.params);
 
@@ -206,7 +207,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 options);
     }
 
-    private RestResponse<Job> sampleStats() throws IOException {
+    private RestResponse<Job> sampleStats() throws ClientException {
         return openCGAClient.getVariantClient().sampleStatsRun(variantCommandOptions.sampleVariantStatsCommandOptions.study,
                 new SampleVariantStatsAnalysisParams(
                         variantCommandOptions.sampleVariantStatsCommandOptions.sample,
@@ -217,13 +218,13 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 ));
     }
 
-    private RestResponse<SampleVariantStats> sampleStatsQuery() throws IOException {
+    private RestResponse<SampleVariantStats> sampleStatsQuery() throws ClientException {
         return openCGAClient.getVariantClient()
                 .sampleStatsInfo(variantCommandOptions.sampleVariantStatsQueryCommandOptions.study,
                         variantCommandOptions.sampleVariantStatsQueryCommandOptions.sample);
     }
 
-    private RestResponse<Job> cohortStats() throws IOException {
+    private RestResponse<Job> cohortStats() throws ClientException {
         return openCGAClient.getVariantClient().cohortStatsRun(variantCommandOptions.cohortVariantStatsCommandOptions.study,
                 new CohortVariantStatsAnalysisParams(
                         variantCommandOptions.cohortVariantStatsCommandOptions.cohort,
@@ -234,7 +235,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 ));
     }
 
-    private RestResponse<VariantSetStats> cohortStatsQuery() throws IOException {
+    private RestResponse<VariantSetStats> cohortStatsQuery() throws ClientException {
         return openCGAClient.getVariantClient().cohortStatsInfo(
                 variantCommandOptions.cohortVariantStatsQueryCommandOptions.study,
                 variantCommandOptions.cohortVariantStatsQueryCommandOptions.cohort
@@ -249,7 +250,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 //        openCGAClient.getVariantClient().familyStatsQuery()
 //    }
 
-    private RestResponse<Job> gwas() throws IOException {
+    private RestResponse<Job> gwas() throws ClientException {
         return openCGAClient.getVariantClient().gwasRun(variantCommandOptions.gwasCommandOptions.study,
                 new GwasAnalysisParams(
                         variantCommandOptions.gwasCommandOptions.phenotype,
@@ -273,7 +274,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 : Arrays.asList(s.split(","));
     }
 
-    private RestResponse<Job> export() throws IOException {
+    private RestResponse<Job> export() throws ClientException, IOException {
         VariantCommandOptions.VariantExportCommandOptions c = variantCommandOptions.exportVariantCommandOptions;
 
         c.study = resolveStudy(c.study);
@@ -290,7 +291,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 .export(study, query, options, c.outdir, c.outputFileName, c.commonOptions.outputFormat, c.compress);
     }
 
-    private RestResponse<Job> index() throws IOException {
+    private RestResponse<Job> index() throws ClientException {
         VariantCommandOptions.VariantIndexCommandOptions variantIndex = variantCommandOptions.indexVariantCommandOptions;
         return openCGAClient.getVariantClient().index(variantIndex.study,
                 new VariantIndexParams(
@@ -315,7 +316,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 ));
     }
 
-    private RestResponse<Job> fileDelete() throws IOException {
+    private RestResponse<Job> fileDelete() throws ClientException {
         VariantCommandOptions.VariantDeleteCommandOptions cliOptions = variantCommandOptions.variantDeleteCommandOptions;
 
         return openCGAClient.getVariantClient().fileDelete(
@@ -325,7 +326,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         cliOptions.genericVariantDeleteOptions.resume));
     }
 
-    private RestResponse query() throws CatalogException, IOException, InterruptedException {
+    private RestResponse query() throws CatalogException, ClientException, InterruptedException, IOException {
         logger.debug("Listing variants of a study.");
 
         VariantCommandOptions.VariantQueryCommandOptions queryCommandOptions = variantCommandOptions.queryVariantCommandOptions;
@@ -578,7 +579,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         return study;
     }
 
-    public RestResponse<VariantAnnotation> annotationQuery() throws IOException {
+    public RestResponse<VariantAnnotation> annotationQuery() throws ClientException {
         VariantCommandOptions.AnnotationQueryCommandOptions cliOptions = variantCommandOptions.annotationQueryCommandOptions;
 
 
@@ -598,7 +599,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().annotationQuery(cliOptions.annotationId, query, options);
     }
 
-    public RestResponse<ObjectMap> annotationMetadata() throws IOException {
+    public RestResponse<ObjectMap> annotationMetadata() throws ClientException {
         VariantCommandOptions.AnnotationMetadataCommandOptions cliOptions = variantCommandOptions.annotationMetadataCommandOptions;
 
         QueryOptions options = new QueryOptions();
@@ -609,7 +610,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
     // Wrappers
 
-    private RestResponse<Job> plink() throws IOException {
+    private RestResponse<Job> plink() throws ClientException {
         return openCGAClient.getVariantClient().plinkRun(variantCommandOptions.plinkCommandOptions.study,
                 new PlinkRunParams(
                         variantCommandOptions.plinkCommandOptions.tpedFile,
@@ -620,7 +621,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 ));
     }
 
-    private RestResponse<Job> rvtests() throws IOException {
+    private RestResponse<Job> rvtests() throws ClientException {
         return openCGAClient.getVariantClient().rvtestsRun(variantCommandOptions.rvtestsCommandOptions.study,
                 new RvtestsRunParams(
                         variantCommandOptions.rvtestsCommandOptions.executable,
@@ -635,7 +636,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-    private RestResponse<Job> gatk() throws IOException {
+    private RestResponse<Job> gatk() throws ClientException {
         return openCGAClient.getVariantClient().gatkRun(variantCommandOptions.gatkCommandOptions.study,
                 new GatkRunParams(
                         variantCommandOptions.gatkCommandOptions.command,

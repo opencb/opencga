@@ -22,7 +22,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.client.rest.catalog.StudyClient;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.RestResponse;
 
@@ -81,7 +80,7 @@ public class StudyClientTest {
     @Test
     public void get() throws Exception {
         studyClient = openCGAClient.getStudyClient();
-        RestResponse<Study> info = studyClient.get("2", null);
+        RestResponse<Study> info = studyClient.info("2", null);
         assertNotNull(info.firstResult());
     }
 
