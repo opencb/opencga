@@ -445,7 +445,7 @@ public class VariantQueryParser {
             for (String genotypeStr : entry.getValue()) {
                 boolean negated = isNegated(genotypeStr);
                 if (negated) {
-                    removeNegation(genotypeStr);
+                    genotypeStr = removeNegation(genotypeStr);
                 }
                 Genotype genotype = new Genotype(genotypeStr);
                 int[] allelesIdx = genotype.getAllelesIdx();
