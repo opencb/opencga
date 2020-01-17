@@ -73,6 +73,7 @@ public class GeneralCliOptions {
         @Parameter(names = {"-v", "--verbose"}, description = "Increase the verbosity of logs")
         public boolean verbose = false;
 
+        @Deprecated
         @Parameter(names = {"-S", "--sid", "--session-id"}, description = "Token session id. Deprecated, use --token instead", arity = 1)
         public void setToken(String token) {
             this.token = token;

@@ -46,6 +46,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     private final ServerCommandOptions serverCommandOptions;
     private final AdminCliOptionsParser.MetaCommandOptions metaCommandOptions;
     private final MigrationCommandOptions migrationCommandOptions;
+    private final DemoCommandOptions demoCommandOptions;
 
     protected static final String DEPRECATED = "[DEPRECATED] ";
 
@@ -112,6 +113,12 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         migrationSubCommands.addCommand("v1.4.0", this.migrationCommandOptions.getMigrateV140CommandOptions());
         migrationSubCommands.addCommand("v2.0.0", this.migrationCommandOptions.getMigrateV200CommandOptions());
 
+        this.demoCommandOptions = new DemoCommandOptions();
+        this.jCommander.addCommand("demo", this.demoCommandOptions);
+        JCommander demoSubCommands = this.jCommander.getCommands().get("demo");
+        demoSubCommands.addCommand("load", this.demoCommandOptions.loadDemoCommandOptions);
+        demoSubCommands.addCommand("add", this.demoCommandOptions.addDemoCommandOptions);
+        demoSubCommands.addCommand("delete", this.demoCommandOptions.deleteDemoCommandOptions);
     }
 
     @Override
@@ -288,6 +295,22 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
         public MetaCommandOptions() {
             this.metaKeyCommandOptions = new MetaKeyCommandOptions();
+        }
+    }
+
+    @Parameters(commandNames = {"demo"}, commandDescription = "Implements different tools work with the demo")
+    public class DemoCommandOptions extends CommandOptions {
+
+        public LoadDemoCommandOptions loadDemoCommandOptions;
+        public AddDemoCommandOptions addDemoCommandOptions;
+        public DeleteDemoCommandOptions deleteDemoCommandOptions;
+
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+
+        public DemoCommandOptions() {
+            this.loadDemoCommandOptions = new LoadDemoCommandOptions();
+            this.addDemoCommandOptions = new AddDemoCommandOptions();
+            this.deleteDemoCommandOptions = new DeleteDemoCommandOptions();
         }
     }
 
@@ -737,6 +760,50 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public String algorithm;
     }
 
+    /*
+     * DEMO SUB-COMMANDS
+     */
+    @Parameters(commandNames = {"load"}, commandDescription = "Get clinical analysis information")
+    public class LoadDemoCommandOptions {
+
+        @ParametersDelegate
+        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+
+        @Parameter(names = {"-s", "--study"}, arity = 1, description = "Define the studies from configuration to be loaded")
+        public String study;
+
+        @Parameter(names = {"--force"}, description = "If this parameters is set, it will override the database installation.")
+        public boolean force;
+    }
+
+    @Parameters(commandNames = {"add"}, commandDescription = "Get clinical analysis information")
+    public class AddDemoCommandOptions {
+
+        @ParametersDelegate
+        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+
+        @Parameter(names = {"--database-prefix"}, description = "Prefix name for the catalog demo database. If not present, it will be "
+                + "set to 'demo'.")
+        public String prefix;
+
+        @Parameter(names = {"--force"}, description = "If this parameters is set, it will override the database installation.")
+        public boolean force;
+    }
+
+    @Parameters(commandNames = {"delete"}, commandDescription = "Get clinical analysis information")
+    public class DeleteDemoCommandOptions {
+
+        @ParametersDelegate
+        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+
+        @Parameter(names = {"--database-prefix"}, description = "Prefix name for the catalog demo database. If not present, it will be "
+                + "set to 'demo'.")
+        public String prefix;
+
+        @Parameter(names = {"--force"}, description = "If this parameters is set, it will override the database installation.")
+        public boolean force;
+    }
+
 
     @Override
     public void printUsage() {
@@ -804,5 +871,9 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
     public MigrationCommandOptions getMigrationCommandOptions() {
         return migrationCommandOptions;
+    }
+
+    public DemoCommandOptions getDemoCommandOptions() {
+        return demoCommandOptions;
     }
 }
