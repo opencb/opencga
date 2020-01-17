@@ -33,6 +33,7 @@
     <properties>
         <build.dir>${project.basedir}/../build</build.dir>
         <app.dir>${project.basedir}/app</app.dir>
+        <solr.configset.name>OpenCGAConfigSet</solr.configset.name>
         <sonar.skip>true</sonar.skip>
     </properties>
 
@@ -258,7 +259,7 @@
                                     <arg value="${build.dir}/clients"/>
                                     <arg value="${build.dir}/conf"/>
                                     <arg value="${build.dir}/test"/>
-                                    <arg value="${build.dir}/misc/solr/opencga-configset-${opencga.version}"/>
+                                    <arg value="${build.dir}/misc/solr/${solr.configset.name}-${opencga.version}"/>
                                 </exec>
 
                                 <echo>Copying to ${build.dir}</echo>
@@ -325,13 +326,13 @@
                                 </exec>
                                 <exec executable="mv">
                                     <arg value="${build.dir}/misc/solr/conf"/>
-                                    <arg value="${build.dir}/misc/solr/opencga-configset-${opencga.version}"/>
+                                    <arg value="${build.dir}/misc/solr/${solr.configset.name}-${opencga.version}"/>
                                 </exec>
                                 <exec executable="tar">
                                     <arg value="czvf"/>
-                                    <arg value="${build.dir}/misc/solr/opencga-configset-${opencga.version}.tar.gz"/>
+                                    <arg value="${build.dir}/misc/solr/opencga-${opencga.version}-solr-${solr.version}.tar.gz"/>
                                     <arg value="--directory=${build.dir}/misc/solr"/>
-                                    <arg value="opencga-configset-${opencga.version}"/>
+                                    <arg value="${solr.configset.name}-${opencga.version}"/>
                                 </exec>
 
                                 <echo>Copying war file</echo>

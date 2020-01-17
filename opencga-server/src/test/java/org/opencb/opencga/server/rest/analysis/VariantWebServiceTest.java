@@ -15,7 +15,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.VARIANT_CATALOG_QUERY_PARAMS;
 
-public class VariantAnalysisWSServiceTest {
+public class VariantWebServiceTest {
 
     @Test
     public void testVariantQueryParams() {

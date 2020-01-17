@@ -115,7 +115,7 @@ class RestResponse:
                 outfhand.write('#{}\n'.format(separator.join(fields)))
             for result in response['results'][:limit]:
                 values = [self._get_param_value(result, field) for field in fields]
-                outfhand.write(separator.join(values) + '\n')
+                outfhand.write(separator.join(map(str, values)) + '\n')
 
     def get_response_events(self, event_type=None):
         """
@@ -153,7 +153,8 @@ class RestResponse:
         else:
             num_matches = 0
             for query_result in self.responses:
-                num_matches += query_result['numMatches']
+                if 'numMatches' in query_result:
+                    num_matches += query_result['numMatches']
             return num_matches
 
     def get_num_results(self, response_pos=None):
@@ -165,7 +166,8 @@ class RestResponse:
         else:
             num_results = 0
             for query_result in self.responses:
-                num_results += query_result['numResults']
+                if 'numResults' in query_result:
+                    num_results += query_result['numResults']
             return num_results
 
     def get_num_inserted(self, response_pos=None):
@@ -177,7 +179,8 @@ class RestResponse:
         else:
             num_inserted = 0
             for query_result in self.responses:
-                num_inserted += query_result['numInserted']
+                if 'numInserted' in query_result:
+                    num_inserted += query_result['numInserted']
             return num_inserted
 
     def get_num_updated(self, response_pos=None):
@@ -189,7 +192,8 @@ class RestResponse:
         else:
             num_updated = 0
             for query_result in self.responses:
-                num_updated += query_result['numUpdated']
+                if 'numUpdated' in query_result:
+                    num_updated += query_result['numUpdated']
             return num_updated
 
     def get_num_deleted(self, response_pos=None):
@@ -201,5 +205,6 @@ class RestResponse:
         else:
             num_deleted = 0
             for query_result in self.responses:
-                num_deleted += query_result['numDeleted']
+                if 'numDeleted' in query_result:
+                    num_deleted += query_result['numDeleted']
             return num_deleted

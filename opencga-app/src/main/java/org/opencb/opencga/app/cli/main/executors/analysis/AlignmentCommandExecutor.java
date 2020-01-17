@@ -28,10 +28,6 @@ import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmentBiConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.wrappers.BwaWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
-import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.core.models.file.File;
@@ -40,7 +36,7 @@ import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
 import org.opencb.opencga.server.grpc.ServiceTypesModel;
-import org.opencb.opencga.server.rest.analysis.AlignmentAnalysisWSService;
+import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -404,7 +400,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     // BWA
 
     private RestResponse<Job> bwa() throws IOException {
-        ObjectMap params = new AlignmentAnalysisWSService.BwaRunParams(
+        ObjectMap params = new AlignmentWebService.BwaRunParams(
                 alignmentCommandOptions.bwaCommandOptions.command,
                 alignmentCommandOptions.bwaCommandOptions.fastaFile,
                 alignmentCommandOptions.bwaCommandOptions.indexBaseFile,
@@ -420,7 +416,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     // Samtools
 
     private RestResponse<Job> samtools() throws IOException {
-        ObjectMap params = new AlignmentAnalysisWSService.SamtoolsRunParams(
+        ObjectMap params = new AlignmentWebService.SamtoolsRunParams(
                 alignmentCommandOptions.samtoolsCommandOptions.command,
                 alignmentCommandOptions.samtoolsCommandOptions.inputFile,
                 alignmentCommandOptions.samtoolsCommandOptions.outputFilename,
@@ -441,7 +437,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     // Deeptools
 
     private RestResponse<Job> deeptools() throws IOException {
-        ObjectMap params = new AlignmentAnalysisWSService.DeeptoolsRunParams(
+        ObjectMap params = new AlignmentWebService.DeeptoolsRunParams(
                 alignmentCommandOptions.deeptoolsCommandOptions.executable,
                 alignmentCommandOptions.deeptoolsCommandOptions.bamFile,
                 alignmentCommandOptions.deeptoolsCommandOptions.outdir,
@@ -453,7 +449,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
     // FastQC
 
     private RestResponse<Job> fastqc() throws IOException {
-        ObjectMap params = new AlignmentAnalysisWSService.FastqcRunParams(
+        ObjectMap params = new AlignmentWebService.FastqcRunParams(
                 alignmentCommandOptions.fastqcCommandOptions.file,
                 alignmentCommandOptions.fastqcCommandOptions.outdir,
                 alignmentCommandOptions.fastqcCommandOptions.commonOptions.params

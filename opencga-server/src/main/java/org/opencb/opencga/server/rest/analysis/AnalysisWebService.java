@@ -29,16 +29,16 @@ import java.io.IOException;
 /**
  * Created by imedina on 17/08/16.
  */
-public class AnalysisWSService extends OpenCGAWSServer {
+public class AnalysisWebService extends OpenCGAWSServer {
 
     protected JobManager jobManager;
 
-    public AnalysisWSService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public AnalysisWebService(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         this(uriInfo.getPathParameters().getFirst("apiVersion"), uriInfo, httpServletRequest, httpHeaders);
     }
 
-    public AnalysisWSService(String apiVersion, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
+    public AnalysisWebService(String apiVersion, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders)
             throws IOException, VersionException {
         super(apiVersion, uriInfo, httpServletRequest, httpHeaders);
 
