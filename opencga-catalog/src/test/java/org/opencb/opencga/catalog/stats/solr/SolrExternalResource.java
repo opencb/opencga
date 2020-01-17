@@ -30,11 +30,11 @@ public class SolrExternalResource extends CatalogManagerExternalResource {
         Path rootDir = getOpencgaHome();
 
         // Copy configuration
-        copyConfiguration("cohort-managed-schema.xml", CatalogSolrManager.COHORT_CONF_SET);
-        copyConfiguration("family-managed-schema.xml", CatalogSolrManager.FAMILY_CONF_SET);
-        copyConfiguration("file-managed-schema.xml", CatalogSolrManager.FILE_CONF_SET);
-        copyConfiguration("individual-managed-schema.xml", CatalogSolrManager.INDIVIDUAL_CONF_SET);
-        copyConfiguration("sample-managed-schema.xml", CatalogSolrManager.SAMPLE_CONF_SET);
+        copyConfiguration("cohort-managed-schema", CatalogSolrManager.COHORT_CONF_SET);
+        copyConfiguration("family-managed-schema", CatalogSolrManager.FAMILY_CONF_SET);
+        copyConfiguration("file-managed-schema", CatalogSolrManager.FILE_CONF_SET);
+        copyConfiguration("individual-managed-schema", CatalogSolrManager.INDIVIDUAL_CONF_SET);
+        copyConfiguration("sample-managed-schema", CatalogSolrManager.SAMPLE_CONF_SET);
 
         String solrHome = rootDir.resolve("solr").toString();
 
