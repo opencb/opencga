@@ -14,10 +14,10 @@ class Meta(_ParentRestClient):
 
     def api(self, **options):
         """
-        API
+        API.
         PATH: /{apiVersion}/meta/api
 
-        :param str category: List of categories to get API from
+        :param str category: List of categories to get API from.
         """
 
         return self._get('api', **options)
@@ -26,8 +26,6 @@ class Meta(_ParentRestClient):
         """
         Returns info about current OpenCGA code.
         PATH: /{apiVersion}/meta/about
-
-
         """
 
         return self._get('about', **options)
@@ -36,8 +34,6 @@ class Meta(_ParentRestClient):
         """
         Ping Opencga webservices.
         PATH: /{apiVersion}/meta/ping
-
-
         """
 
         return self._get('ping', **options)
@@ -46,8 +42,6 @@ class Meta(_ParentRestClient):
         """
         Database status.
         PATH: /{apiVersion}/meta/status
-
-
         """
 
         return self._get('status', **options)
@@ -56,8 +50,7 @@ class Meta(_ParentRestClient):
         """
         Ping Opencga webservices.
         PATH: /{apiVersion}/meta/fail
-
-
         """
 
         return self._get('fail', **options)
+

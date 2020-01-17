@@ -13,8 +13,9 @@ class RestClientGenerator(ABC):
 
         self.server_url = server_url
         self.output_dir = output_dir
-        self.version = requests.get(server_url + '/webservices/rest/v2/meta/about').json()['responses'][0]['results'][
-            0]['Version'].split('-')[0]
+        self.version = requests.get(
+            server_url + '/webservices/rest/v2/meta/about'
+        ).json()['responses'][0]['results'][0]['Version'].split('-')[0]
         self.parameters = {}
         self.category = None
         self.subcategory = None
@@ -68,11 +69,9 @@ class RestClientGenerator(ABC):
                 params.append(parameter['name'])
         return params
 
-    def has_optional_params(self, endpoint):
-        for parameter in endpoint['parameters']:
-            if parameter['required'] is False:
-                return True
-        return False
+    @staticmethod
+    def has_optional_params(endpoint):
+        return any([parameter['required'] is False for parameter in endpoint['parameters']])
 
     def is_required(self, parameter):
         return self.parameters[parameter]['required']
@@ -90,6 +89,9 @@ class RestClientGenerator(ABC):
         return self.parameters[parameter]['description'] if self.parameters[parameter]['description'].endswith(".") \
             else self.parameters[parameter]['description'] + "."
 
+    def get_parameter_allowed_values(self, parameter):
+        return self.parameters[parameter]['allowedValues']
+
     def get_endpoint_category(self):
         return self.category
 
@@ -105,10 +107,12 @@ class RestClientGenerator(ABC):
     def get_endpoint_id2(self):
         return self.id2
 
-    def any_arg(self, items):
+    @staticmethod
+    def any_arg(items):
         return any([True if '{' in item and '}' in item else False for item in items])
 
-    def all_arg(self, items):
+    @staticmethod
+    def all_arg(items):
         return all([True if '{' in item and '}' in item else False for item in items])
 
     def get_method_name(self, endpoint, category):
