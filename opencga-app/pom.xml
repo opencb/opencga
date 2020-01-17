@@ -328,6 +328,16 @@
                                     <arg value="${build.dir}/misc/solr/conf"/>
                                     <arg value="${build.dir}/misc/solr/${solr.configset.name}-${opencga.version}"/>
                                 </exec>
+                                <exec executable="sed">
+                                    <arg value="-i"/>
+                                    <arg value="s/CONFIGSET/${solr.configset.name}/g"/>
+                                    <arg value="${build.dir}/misc/solr/INSTALL.md"/>
+                                </exec>
+                                <exec executable="sed">
+                                    <arg value="-i"/>
+                                    <arg value="s/VERSION/${opencga.version}/g"/>
+                                    <arg value="${build.dir}/misc/solr/INSTALL.md"/>
+                                </exec>
                                 <exec executable="tar">
                                     <arg value="czvf"/>
                                     <arg value="${build.dir}/misc/solr/opencga-${opencga.version}-solr-${solr.version}.tar.gz"/>
