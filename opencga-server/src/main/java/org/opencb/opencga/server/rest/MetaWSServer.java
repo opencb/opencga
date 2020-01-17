@@ -244,6 +244,7 @@ public class MetaWSServer extends OpenCGAWSServer {
                         parameter.put("name", apiImplicitParam.name());
                         parameter.put("param", apiImplicitParam.paramType());
                         parameter.put("type", apiImplicitParam.dataType());
+                        parameter.put("typeClass", "java.lang." + StringUtils.capitalize(apiImplicitParam.dataType()));
                         parameter.put("allowedValues", apiImplicitParam.allowableValues());
                         parameter.put("required", apiImplicitParam.required());
                         parameter.put("defaultValue", apiImplicitParam.defaultValue());
@@ -256,7 +257,7 @@ public class MetaWSServer extends OpenCGAWSServer {
                 if (methodParameters != null) {
                     for (Parameter methodParameter : methodParameters) {
                         ApiParam apiParam = methodParameter.getAnnotation(ApiParam.class);
-                        if (apiParam!= null && !apiParam.hidden()) {
+                        if (apiParam != null && !apiParam.hidden()) {
                             LinkedHashMap<String, Object> parameter = new LinkedHashMap<>();
                             if (methodParameter.getAnnotation(PathParam.class) != null) {
                                 parameter.put("name", methodParameter.getAnnotation(PathParam.class).value());
@@ -272,8 +273,8 @@ public class MetaWSServer extends OpenCGAWSServer {
                             }
 
                             // Get type in lower case except for 'body' param
-                            String typeClass = methodParameter.getType().getName();
-                            String type = typeClass;
+                            String type = methodParameter.getType().getName();
+                            String typeClass = type;
                             if (typeClass.contains(".")) {
                                 String[] split = typeClass.split("\\.");
                                 type = split[split.length - 1];
