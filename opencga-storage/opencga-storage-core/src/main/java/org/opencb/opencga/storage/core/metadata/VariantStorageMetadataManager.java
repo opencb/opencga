@@ -671,6 +671,8 @@ public class VariantStorageMetadataManager implements AutoCloseable {
             logger.info("Register file " + name + " as INDEXED");
         }
         fileDBAdaptor.addIndexedFiles(studyId, fileIds);
+        fileIdsFromSampleIdCache.clear();
+        fileIdIndexedCache.clear();
     }
 
     public void removeIndexedFiles(int studyId, Collection<Integer> fileIds) throws StorageEngineException {

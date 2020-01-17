@@ -215,30 +215,24 @@ public class HadoopDefaultVariantAnnotationManager extends DefaultVariantAnnotat
 
         List<Integer> studies = VariantQueryUtils.getIncludeStudies(query, null, metadataManager);
 
-        List<String> samples = params.getAsStringList("sampleIndexAnnotation");
+        boolean skipSampleIndexAnnotation = params.getBoolean("skipSampleIndexAnnotation");
 
-        if (samples.size() == 1 && (samples.get(0).equals(VariantQueryUtils.NONE) || samples.get(0).equals("skip"))) {
+        if (skipSampleIndexAnnotation) {
+            logger.info("Skip Sample Index Annotation");
             // Nothing to do!
             return;
-        } else if (samples.isEmpty() || samples.size() == 1 && samples.get(0).equals(VariantQueryUtils.ALL)) {
+        } else {
             // Run on all pending samples
             for (Integer studyId : studies) {
-                List<Integer> indexedSamples = metadataManager.getIndexedSamples(studyId);
-                if (!indexedSamples.isEmpty()) {
-                    indexAnnotationLoader.updateSampleAnnotation(studyId, indexedSamples, params);
+                Set<Integer> samplesToUpdate = new HashSet<>();
+                for (Integer file : filesToBeAnnotated.get(studyId)) {
+                    samplesToUpdate.addAll(metadataManager.getFileMetadata(studyId, file).getSamples());
                 }
-            }
-        } else {
-            for (Integer studyId : studies) {
-                List<Integer> sampleIds = new ArrayList<>(samples.size());
-                for (String sample : samples) {
-                    Integer sampleId = metadataManager.getSampleId(studyId, sample);
-                    if (sampleId != null) {
-                        sampleIds.add(sampleId);
-                    }
+                for (Integer file : alreadyAnnotatedFiles.get(studyId)) {
+                    samplesToUpdate.addAll(metadataManager.getFileMetadata(studyId, file).getSamples());
                 }
-                if (!sampleIds.isEmpty()) {
-                    indexAnnotationLoader.updateSampleAnnotation(studyId, sampleIds, params);
+                if (!samplesToUpdate.isEmpty()) {
+                    indexAnnotationLoader.updateSampleAnnotation(studyId, new ArrayList<>(samplesToUpdate), params);
                 }
             }
         }
