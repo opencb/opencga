@@ -64,19 +64,6 @@ public class JobClient extends AbstractParentClient {
     }
 
     /**
-     * Register an executed job with POST method.
-     * @param data job.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Job> create(JobCreateParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("jobs", null, null, null, "create", params, POST, Job.class);
-    }
-
-    /**
      * Return the acl of the job. If member is provided, it will only return the acl for the member.
      * @param jobs Comma separated list of job IDs or UUIDs up to a maximum of 100.
      * @param params Map containing any additional optional parameters.
@@ -99,6 +86,19 @@ public class JobClient extends AbstractParentClient {
         ObjectMap params = new ObjectMap();
         params.put("body", data);
         return execute("jobs", members, null, null, "update", params, POST, ObjectMap.class);
+    }
+
+    /**
+     * Register an executed job with POST method.
+     * @param data job.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> create(JobCreateParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("jobs", null, null, null, "create", params, POST, Job.class);
     }
 
     /**

@@ -38,19 +38,6 @@ public class AlignmentClient extends AbstractParentClient {
     }
 
     /**
-     * Compute stats for a given alignment file.
-     * @param file File ID.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Job> runStats(String file, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.putIfNotNull("file", file);
-        return execute("analysis/alignment", null, "stats", null, "run", params, POST, Job.class);
-    }
-
-    /**
      * Compute coverage for a list of alignment files.
      * @param file File ID.
      * @param params Map containing any additional optional parameters.
@@ -89,6 +76,19 @@ public class AlignmentClient extends AbstractParentClient {
         params.putIfNotNull("file1", file1);
         params.putIfNotNull("file2", file2);
         return execute("analysis/alignment", null, "coverage", null, "ratio", params, GET, RegionCoverage.class);
+    }
+
+    /**
+     * Compute stats for a given alignment file.
+     * @param file File ID.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> runStats(String file, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.putIfNotNull("file", file);
+        return execute("analysis/alignment", null, "stats", null, "run", params, POST, Job.class);
     }
 
     /**

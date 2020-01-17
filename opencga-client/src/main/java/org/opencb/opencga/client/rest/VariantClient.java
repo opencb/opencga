@@ -27,7 +27,17 @@ import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
-import org.opencb.opencga.core.models.variant.*;
+import org.opencb.opencga.core.models.variant.CohortVariantStatsAnalysisParams;
+import org.opencb.opencga.core.models.variant.GatkRunParams;
+import org.opencb.opencga.core.models.variant.GwasAnalysisParams;
+import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
+import org.opencb.opencga.core.models.variant.PlinkRunParams;
+import org.opencb.opencga.core.models.variant.RvtestsRunParams;
+import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
+import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
+import org.opencb.opencga.core.models.variant.VariantExportParams;
+import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
 import org.opencb.opencga.core.response.RestResponse;
 
 
@@ -78,6 +88,19 @@ public class VariantClient extends AbstractParentClient {
     }
 
     /**
+     * Compute variant stats for any cohort and any set of variants. Optionally, index the result in the variant storage database.
+     * @param data Variant stats params.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> runStats(VariantStatsAnalysisParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("analysis/variant", null, "stats", null, "run", params, POST, Job.class);
+    }
+
+    /**
      * Remove variant files from the variant storage.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
@@ -97,19 +120,6 @@ public class VariantClient extends AbstractParentClient {
     public RestResponse<VariantAnnotation> metadataAnnotation(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("analysis/variant", null, "annotation", null, "metadata", params, GET, VariantAnnotation.class);
-    }
-
-    /**
-     * Compute variant stats for any cohort and any set of variants. Optionally, index the result in the variant storage database.
-     * @param data Variant stats params.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Job> runStats(VariantStatsAnalysisParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("analysis/variant", null, "stats", null, "run", params, POST, Job.class);
     }
 
     /**
@@ -282,6 +292,19 @@ public class VariantClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("analysis/variant", null, "gatk", null, "run", params, POST, Job.class);
+    }
+
+    /**
+     * .
+     * @param data Gene knockout analysis params.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> runKnockout(KnockoutAnalysisParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("analysis/variant", null, "knockout", null, "run", params, POST, Job.class);
     }
 
     /**

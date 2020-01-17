@@ -71,42 +71,6 @@ public class IndividualClient extends AbstractParentClient {
     }
 
     /**
-     * Get individual information.
-     * @param individuals Comma separated list of individual names or ids up to a maximum of 100.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Individual> info(String individuals, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("individuals", individuals, null, null, "info", params, GET, Individual.class);
-    }
-
-    /**
-     * Create individual.
-     * @param data JSON containing individual information.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Individual> create(IndividualCreateParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("individuals", null, null, null, "create", params, POST, Individual.class);
-    }
-
-    /**
-     * Search for individuals.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Individual> search(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("individuals", null, null, null, "search", params, GET, Individual.class);
-    }
-
-    /**
      * Return the acl of the individual. If member is provided, it will only return the acl for the member.
      * @param individuals Comma separated list of individual names or ids up to a maximum of 100.
      * @param params Map containing any additional optional parameters.
@@ -142,6 +106,42 @@ public class IndividualClient extends AbstractParentClient {
     public RestResponse<FacetField> aggregationStats(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("individuals", null, null, null, "aggregationStats", params, GET, FacetField.class);
+    }
+
+    /**
+     * Get individual information.
+     * @param individuals Comma separated list of individual names or ids up to a maximum of 100.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Individual> info(String individuals, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("individuals", individuals, null, null, "info", params, GET, Individual.class);
+    }
+
+    /**
+     * Create individual.
+     * @param data JSON containing individual information.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Individual> create(IndividualCreateParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("individuals", null, null, null, "create", params, POST, Individual.class);
+    }
+
+    /**
+     * Search for individuals.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Individual> search(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("individuals", null, null, null, "search", params, GET, Individual.class);
     }
 
     /**

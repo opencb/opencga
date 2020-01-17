@@ -39,19 +39,6 @@ public class FamilyClient extends AbstractParentClient {
     }
 
     /**
-     * Create family and the individual objects if they do not exist.
-     * @param data JSON containing family information.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Family> create(FamilyCreateParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("families", null, null, null, "create", params, POST, Family.class);
-    }
-
-    /**
      * Update some family attributes.
      * @param families Comma separated list of family ids.
      * @param data params.
@@ -81,6 +68,19 @@ public class FamilyClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("families", family, "annotationSets", annotationSet, "annotations/update", params, POST, Family.class);
+    }
+
+    /**
+     * Create family and the individual objects if they do not exist.
+     * @param data JSON containing family information.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Family> create(FamilyCreateParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("families", null, null, null, "create", params, POST, Family.class);
     }
 
     /**

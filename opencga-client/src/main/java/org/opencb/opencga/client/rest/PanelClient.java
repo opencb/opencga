@@ -76,20 +76,6 @@ public class PanelClient extends AbstractParentClient {
     }
 
     /**
-     * Update panel attributes.
-     * @param panels Comma separated list of panel ids.
-     * @param data Panel parameters.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Panel> update(String panels, PanelUpdateParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("panels", panels, null, null, "update", params, POST, Panel.class);
-    }
-
-    /**
      * Delete existing panels.
      * @param panels Comma separated list of panel ids.
      * @param params Map containing any additional optional parameters.
@@ -112,6 +98,20 @@ public class PanelClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("panels", null, null, null, "create", params, POST, Panel.class);
+    }
+
+    /**
+     * Update panel attributes.
+     * @param panels Comma separated list of panel ids.
+     * @param data Panel parameters.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Panel> update(String panels, PanelUpdateParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("panels", panels, null, null, "update", params, POST, Panel.class);
     }
 
     /**

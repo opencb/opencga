@@ -42,18 +42,6 @@ public class UserClient extends AbstractParentClient {
     }
 
     /**
-     * Return the user information including its projects and studies.
-     * @param user User id.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<User> info(String user, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("users", user, null, null, "info", params, GET, User.class);
-    }
-
-    /**
      * Fetch a user configuration.
      * @param user User id.
      * @param params Map containing any additional optional parameters.
@@ -63,6 +51,18 @@ public class UserClient extends AbstractParentClient {
     public RestResponse<ObjectMap> configs(String user, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("users", user, null, null, "configs", params, GET, ObjectMap.class);
+    }
+
+    /**
+     * Return the user information including its projects and studies.
+     * @param user User id.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<User> info(String user, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("users", user, null, null, "info", params, GET, User.class);
     }
 
     /**

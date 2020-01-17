@@ -20,7 +20,14 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.operations.variant.*;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateFamilyParams;
+import org.opencb.opencga.core.models.operations.variant.VariantAggregateParams;
+import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantAnnotationSaveParams;
+import org.opencb.opencga.core.models.operations.variant.VariantFamilyIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantSampleIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantSecondaryIndexParams;
 import org.opencb.opencga.core.response.RestResponse;
 
 
@@ -62,36 +69,14 @@ public class OperationClient extends AbstractParentClient {
     }
 
     /**
-     * Index a variant score in the database.
-     * @param data Variant score index params. scoreName: Unique name of the score within the study. cohort1: Cohort used to compute the
-     *     score. Use the cohort 'ALL' if all samples from the study where used to compute the score. cohort2: Second cohort used to
-     *     compute the score, typically to compare against the first cohort. If only one cohort was used to compute the score, leave empty.
-     *     inputColumns: Indicate which columns to load from the input file. Provide the column position (starting in 0) for the column
-     *     with the score with 'SCORE=n'. Optionally, the PValue column with 'PVALUE=n'. The, to indicate the variant associated with the
-     *     score, provide either the columns ['CHROM', 'POS', 'REF', 'ALT'], or the column 'VAR' containing a variant representation with
-     *     format 'chr:start:ref:alt'. e.g. 'CHROM=0,POS=1,REF=3,ALT=4,SCORE=5,PVALUE=6' or 'VAR=0,SCORE=1,PVALUE=2'. resume: Resume a
-     *     previously failed indexation.
+     * Remove a secondary index from the search engine for a specific set of samples.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ObjectMap> indexVariantScore(VariantScoreIndexParams data, ObjectMap params) throws ClientException {
+    public RestResponse<ObjectMap> deleteVariantSecondaryIndex(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("operation", null, "variant/score", null, "index", params, POST, ObjectMap.class);
-    }
-
-    /**
-     * Find variants where not all the samples are present, and fill the empty values.
-     * @param data Variant aggregate family params.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ObjectMap> aggregateVariantFamily(VariantAggregateFamilyParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("operation", null, "variant/family", null, "aggregate", params, POST, ObjectMap.class);
+        return execute("operation", null, "variant/secondaryIndex", null, "delete", params, DELETE, ObjectMap.class);
     }
 
     /**
@@ -105,17 +90,6 @@ public class OperationClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("operation", null, "variant", null, "secondaryIndex", params, POST, ObjectMap.class);
-    }
-
-    /**
-     * Remove a secondary index from the search engine for a specific set of samples.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ObjectMap> deleteVariantSecondaryIndex(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("operation", null, "variant/secondaryIndex", null, "delete", params, DELETE, ObjectMap.class);
     }
 
     /**
@@ -145,16 +119,16 @@ public class OperationClient extends AbstractParentClient {
     }
 
     /**
-     * Build the family index.
-     * @param data Variant family index params.
+     * Find variants where not all the samples are present, and fill the empty values.
+     * @param data Variant aggregate family params.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> indexFamilyGenotype(VariantFamilyIndexParams data, ObjectMap params) throws ClientException {
+    public RestResponse<ObjectMap> aggregateVariantFamily(VariantAggregateFamilyParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("operation", null, "variant/family/genotype", null, "index", params, POST, Job.class);
+        return execute("operation", null, "variant/family", null, "aggregate", params, POST, ObjectMap.class);
     }
 
     /**
@@ -177,5 +151,38 @@ public class OperationClient extends AbstractParentClient {
     public RestResponse<ObjectMap> deleteVariantScore(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("operation", null, "variant/score", null, "delete", params, DELETE, ObjectMap.class);
+    }
+
+    /**
+     * Build the family index.
+     * @param data Variant family index params.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> indexFamilyGenotype(VariantFamilyIndexParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("operation", null, "variant/family/genotype", null, "index", params, POST, Job.class);
+    }
+
+    /**
+     * Index a variant score in the database.
+     * @param data Variant score index params. scoreName: Unique name of the score within the study. cohort1: Cohort used to compute the
+     *     score. Use the cohort 'ALL' if all samples from the study where used to compute the score. cohort2: Second cohort used to
+     *     compute the score, typically to compare against the first cohort. If only one cohort was used to compute the score, leave empty.
+     *     inputColumns: Indicate which columns to load from the input file. Provide the column position (starting in 0) for the column
+     *     with the score with 'SCORE=n'. Optionally, the PValue column with 'PVALUE=n'. The, to indicate the variant associated with the
+     *     score, provide either the columns ['CHROM', 'POS', 'REF', 'ALT'], or the column 'VAR' containing a variant representation with
+     *     format 'chr:start:ref:alt'. e.g. 'CHROM=0,POS=1,REF=3,ALT=4,SCORE=5,PVALUE=6' or 'VAR=0,SCORE=1,PVALUE=2'. resume: Resume a
+     *     previously failed indexation.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> indexVariantScore(VariantScoreIndexParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("operation", null, "variant/score", null, "index", params, POST, ObjectMap.class);
     }
 }

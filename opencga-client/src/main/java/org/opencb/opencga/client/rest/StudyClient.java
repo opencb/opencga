@@ -110,16 +110,16 @@ public class StudyClient extends AbstractParentClient {
     }
 
     /**
-     * Create a new study.
-     * @param data study.
+     * Search studies.
+     * @param project Project [user@]project where project can be either the ID or the alias.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Study> create(StudyCreateParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Study> search(String project, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("studies", null, null, null, "create", params, POST, Study.class);
+        params.putIfNotNull("project", project);
+        return execute("studies", null, null, null, "search", params, GET, Study.class);
     }
 
     /**
@@ -221,19 +221,6 @@ public class StudyClient extends AbstractParentClient {
     }
 
     /**
-     * Search studies.
-     * @param project Project [user@]project where project can be either the ID or the alias.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Study> search(String project, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.putIfNotNull("project", project);
-        return execute("studies", null, null, null, "search", params, GET, Study.class);
-    }
-
-    /**
      * Add or remove variables to a VariableSet.
      * @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
      * @param variableSet VariableSet id of the VariableSet to be updated.
@@ -247,5 +234,18 @@ public class StudyClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("studies", study, "variableSets", variableSet, "variables/update", params, POST, VariableSet.class);
+    }
+
+    /**
+     * Create a new study.
+     * @param data study.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Study> create(StudyCreateParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("studies", null, null, null, "create", params, POST, Study.class);
     }
 }

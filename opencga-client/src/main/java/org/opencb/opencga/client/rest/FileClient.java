@@ -43,16 +43,15 @@ public class FileClient extends AbstractParentClient {
     }
 
     /**
-     * Link an external file into catalog.
-     * @param data File parameters.
+     * Unlink linked files and folders.
+     * @param files Comma separated list of file ids, names or paths.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<File> link(FileLinkParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> unlink(String files, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("files", null, null, null, "link", params, POST, File.class);
+        return execute("files", files, null, null, "unlink", params, DELETE, Job.class);
     }
 
     /**
@@ -66,6 +65,19 @@ public class FileClient extends AbstractParentClient {
     }
 
     /**
+     * Link an external file into catalog.
+     * @param data File parameters.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<File> link(FileLinkParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("files", null, null, null, "link", params, POST, File.class);
+    }
+
+    /**
      * Refresh metadata from the selected file or folder. Return updated files.
      * @param file File id, name or path. Paths must be separated by : instead of /.
      * @param params Map containing any additional optional parameters.
@@ -75,18 +87,6 @@ public class FileClient extends AbstractParentClient {
     public RestResponse<File> refresh(String file, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("files", file, null, null, "refresh", params, GET, File.class);
-    }
-
-    /**
-     * Unlink linked files and folders.
-     * @param files Comma separated list of file ids, names or paths.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Job> unlink(String files, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("files", files, null, null, "unlink", params, DELETE, Job.class);
     }
 
     /**
@@ -129,6 +129,38 @@ public class FileClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("files", file, "annotationSets", annotationSet, "annotations/update", params, POST, File.class);
+    }
+
+    /**
+     * Download an external file to catalog and register it.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> fetch(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("files", null, null, null, "fetch", params, POST, Job.class);
+    }
+
+    /**
+     * List of accepted file bioformats.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<File.Bioformat> bioformats() throws ClientException {
+        ObjectMap params = new ObjectMap();
+        return execute("files", null, null, null, "bioformats", params, GET, File.Bioformat.class);
+    }
+
+    /**
+     * Resource to upload a file by chunks.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<File> upload(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("files", null, null, null, "upload", params, POST, File.class);
     }
 
     /**
@@ -182,16 +214,6 @@ public class FileClient extends AbstractParentClient {
     }
 
     /**
-     * List of accepted file bioformats.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<File.Bioformat> bioformats() throws ClientException {
-        ObjectMap params = new ObjectMap();
-        return execute("files", null, null, null, "bioformats", params, GET, File.Bioformat.class);
-    }
-
-    /**
      * Create file or folder.
      * @param data File parameters.
      * @param params Map containing any additional optional parameters.
@@ -202,28 +224,6 @@ public class FileClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("files", null, null, null, "create", params, POST, File.class);
-    }
-
-    /**
-     * Download an external file to catalog and register it.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Job> fetch(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("files", null, null, null, "fetch", params, POST, Job.class);
-    }
-
-    /**
-     * Resource to upload a file by chunks.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<File> upload(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("files", null, null, null, "upload", params, POST, File.class);
     }
 
     /**

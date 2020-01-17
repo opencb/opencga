@@ -71,31 +71,6 @@ public class SampleClient extends AbstractParentClient {
     }
 
     /**
-     * Load samples from a ped file [EXPERIMENTAL].
-     * @param file file.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Sample> load(String file, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.putIfNotNull("file", file);
-        return execute("samples", null, null, null, "load", params, GET, Sample.class);
-    }
-
-    /**
-     * Get sample information.
-     * @param samples Comma separated list sample IDs or UUIDs up to a maximum of 100.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Sample> info(String samples, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("samples", samples, null, null, "info", params, GET, Sample.class);
-    }
-
-    /**
      * Returns the acl of the samples. If member is provided, it will only return the acl for the member.
      * @param samples Comma separated list sample IDs or UUIDs up to a maximum of 100.
      * @param params Map containing any additional optional parameters.
@@ -144,6 +119,31 @@ public class SampleClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("samples", null, null, null, "create", params, POST, Sample.class);
+    }
+
+    /**
+     * Load samples from a ped file [EXPERIMENTAL].
+     * @param file file.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Sample> load(String file, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.putIfNotNull("file", file);
+        return execute("samples", null, null, null, "load", params, GET, Sample.class);
+    }
+
+    /**
+     * Get sample information.
+     * @param samples Comma separated list sample IDs or UUIDs up to a maximum of 100.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Sample> info(String samples, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("samples", samples, null, null, "info", params, GET, Sample.class);
     }
 
     /**

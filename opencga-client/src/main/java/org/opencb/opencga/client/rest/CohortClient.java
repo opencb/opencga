@@ -71,18 +71,6 @@ public class CohortClient extends AbstractParentClient {
     }
 
     /**
-     * Get cohort information.
-     * @param cohorts Comma separated list of cohort names or ids up to a maximum of 100.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Cohort> info(String cohorts, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("cohorts", cohorts, null, null, "info", params, GET, Cohort.class);
-    }
-
-    /**
      * Return the acl of the cohort. If member is provided, it will only return the acl for the member.
      * @param cohorts Comma separated list of cohort names or ids up to a maximum of 100.
      * @param params Map containing any additional optional parameters.
@@ -120,6 +108,31 @@ public class CohortClient extends AbstractParentClient {
     }
 
     /**
+     * Get cohort information.
+     * @param cohorts Comma separated list of cohort names or ids up to a maximum of 100.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Cohort> info(String cohorts, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("cohorts", cohorts, null, null, "info", params, GET, Cohort.class);
+    }
+
+    /**
+     * Create a cohort.
+     * @param data JSON containing cohort information.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Cohort> create(CohortCreateParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("cohorts", null, null, null, "create", params, POST, Cohort.class);
+    }
+
+    /**
      * Search cohorts.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
@@ -140,18 +153,5 @@ public class CohortClient extends AbstractParentClient {
     public RestResponse<Cohort> delete(String cohorts, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("cohorts", cohorts, null, null, "delete", params, DELETE, Cohort.class);
-    }
-
-    /**
-     * Create a cohort.
-     * @param data JSON containing cohort information.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Cohort> create(CohortCreateParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("cohorts", null, null, null, "create", params, POST, Cohort.class);
     }
 }

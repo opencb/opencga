@@ -44,6 +44,17 @@ public class ClinicalClient extends AbstractParentClient {
     }
 
     /**
+     * Clinical interpretation analysis.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> statsInterpretation(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("analysis/clinical", null, "interpretation", null, "stats", params, GET, ObjectMap.class);
+    }
+
+    /**
      * Clinical analysis info.
      * @param clinicalAnalyses Comma separated list of clinical analysis IDs or names up to a maximum of 100.
      * @param params Map containing any additional optional parameters.
@@ -53,17 +64,6 @@ public class ClinicalClient extends AbstractParentClient {
     public RestResponse<ClinicalAnalysis> info(String clinicalAnalyses, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("analysis/clinical", clinicalAnalyses, null, null, "info", params, GET, ClinicalAnalysis.class);
-    }
-
-    /**
-     * Clinical interpretation analysis.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ObjectMap> statsInterpretation(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("analysis/clinical", null, "interpretation", null, "stats", params, GET, ObjectMap.class);
     }
 
     /**

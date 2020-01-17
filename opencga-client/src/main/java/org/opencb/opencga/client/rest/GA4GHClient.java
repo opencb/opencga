@@ -34,16 +34,6 @@ public class GA4GHClient extends AbstractParentClient {
     }
 
     /**
-     * Description.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ObjectMap> searchVariants() throws ClientException {
-        ObjectMap params = new ObjectMap();
-        return execute("ga4gh", null, "variants", null, "search", params, POST, ObjectMap.class);
-    }
-
-    /**
      * Fetch alignment files using HTSget protocol.
      * @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
      * @param file File id, name or path.
@@ -64,6 +54,16 @@ public class GA4GHClient extends AbstractParentClient {
     public RestResponse<ObjectMap> searchReads() throws ClientException {
         ObjectMap params = new ObjectMap();
         return execute("ga4gh", null, "reads", null, "search", params, POST, ObjectMap.class);
+    }
+
+    /**
+     * Description.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> searchVariants() throws ClientException {
+        ObjectMap params = new ObjectMap();
+        return execute("ga4gh", null, "variants", null, "search", params, POST, ObjectMap.class);
     }
 
     /**

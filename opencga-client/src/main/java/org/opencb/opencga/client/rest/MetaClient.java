@@ -34,6 +34,16 @@ public class MetaClient extends AbstractParentClient {
     }
 
     /**
+     * Ping Opencga webservices.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> fail() throws ClientException {
+        ObjectMap params = new ObjectMap();
+        return execute("meta", null, null, null, "fail", params, GET, ObjectMap.class);
+    }
+
+    /**
      * API.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
@@ -42,16 +52,6 @@ public class MetaClient extends AbstractParentClient {
     public RestResponse<ObjectMap> api(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("meta", null, null, null, "api", params, GET, ObjectMap.class);
-    }
-
-    /**
-     * Ping Opencga webservices.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ObjectMap> fail() throws ClientException {
-        ObjectMap params = new ObjectMap();
-        return execute("meta", null, null, null, "fail", params, GET, ObjectMap.class);
     }
 
     /**
