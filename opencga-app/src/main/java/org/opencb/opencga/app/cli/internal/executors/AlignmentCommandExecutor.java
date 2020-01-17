@@ -23,7 +23,7 @@ import org.opencb.opencga.analysis.wrappers.DeeptoolsWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.FastqcWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.SamtoolsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions;
-import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.exceptions.ToolException;
 
 import java.nio.file.Paths;
 import java.util.Map;

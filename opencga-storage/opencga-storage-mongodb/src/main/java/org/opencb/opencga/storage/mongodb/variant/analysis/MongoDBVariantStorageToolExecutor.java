@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.mongodb.variant.analysis;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.core.exception.ToolExecutorException;
+import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;

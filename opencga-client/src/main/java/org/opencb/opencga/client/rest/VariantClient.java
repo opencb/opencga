@@ -25,18 +25,9 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.core.api.variant.CohortVariantStatsAnalysisParams;
-import org.opencb.opencga.core.api.variant.GatkRunParams;
-import org.opencb.opencga.core.api.variant.GwasAnalysisParams;
-import org.opencb.opencga.core.api.variant.PlinkRunParams;
-import org.opencb.opencga.core.api.variant.RvtestsRunParams;
-import org.opencb.opencga.core.api.variant.SampleVariantFilterParams;
-import org.opencb.opencga.core.api.variant.SampleVariantStatsAnalysisParams;
-import org.opencb.opencga.core.api.variant.VariantExportParams;
-import org.opencb.opencga.core.api.variant.VariantIndexParams;
-import org.opencb.opencga.core.api.variant.VariantStatsAnalysisParams;
-import org.opencb.opencga.core.api.variant.VariantStatsExportParams;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
+import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
 
 

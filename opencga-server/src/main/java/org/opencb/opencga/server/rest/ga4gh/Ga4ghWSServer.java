@@ -37,7 +37,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;

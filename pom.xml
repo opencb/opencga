@@ -51,7 +51,7 @@
         <protobuf>3.9.0</protobuf>
         <grpc>1.23.0</grpc>
         <slf4j.version>1.7.25</slf4j.version>
-        <solr.version>6.6.6</solr.version>
+        <solr.version>8.4.1</solr.version>
         <jetty.version>9.4.17.v20190418</jetty.version>
         <junit.version>4.12</junit.version>
 
@@ -714,6 +714,7 @@
                 <OPENCGA.STORAGE.VARIANT.DB.USER></OPENCGA.STORAGE.VARIANT.DB.USER>
                 <OPENCGA.STORAGE.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.VARIANT.DB.PASSWORD>
                 <OPENCGA.STORAGE.SEARCH.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.SEARCH.HOST>
+                <OPENCGA.STORAGE.SEARCH.CONFIG_SET>OpenCGAConfigSet-${opencga.version}</OPENCGA.STORAGE.SEARCH.CONFIG_SET>
                 <OPENCGA.STORAGE.SEARCH.TIMEOUT>30000</OPENCGA.STORAGE.SEARCH.TIMEOUT>
                 <OPENCGA.STORAGE.CLINICAL.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.CLINICAL.HOST>
                 <OPENCGA.STORAGE.CLINICAL.MANAGER>""</OPENCGA.STORAGE.CLINICAL.MANAGER>

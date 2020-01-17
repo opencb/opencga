@@ -19,6 +19,7 @@ package org.opencb.opencga.analysis.variant.manager;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.solr.client.solrj.request.SolrPing;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -537,11 +538,13 @@ public class VariantStorageManager extends StorageManager {
 
     public DataResult<Variant> getSampleData(String variant, String study, QueryOptions inputOptions, String token)
             throws CatalogException, IOException, StorageEngineException {
-        Query query = new Query(VariantQueryParam.STUDY.key(), study);
         QueryOptions options = inputOptions == null ? new QueryOptions() : new QueryOptions(inputOptions);
         options.remove(QueryOptions.INCLUDE);
         options.remove(QueryOptions.EXCLUDE);
         options.remove(VariantField.SUMMARY);
+        Query query = new Query(options)
+                .append(VariantQueryParam.STUDY.key(), study);
+        query.remove(GENOTYPE.key());
         return secure(query, options, token, Enums.Action.SAMPLE_DATA, engine -> {
             String studyFqn = query.getString(STUDY.key());
             options.putAll(query);
@@ -603,7 +606,7 @@ public class VariantStorageManager extends StorageManager {
                     storageConfiguration.getSearch().getTimeout());
             String collectionName = "test_connection";
             if (!solrManager.exists(collectionName)) {
-                solrManager.create(collectionName, VariantSearchManager.CONF_SET);
+                solrManager.create(collectionName, storageConfiguration.getSearch().getConfigSet());
             }
         } catch (Exception e) {
             logger.warn("Ignore exception checking if Solr is available", e);

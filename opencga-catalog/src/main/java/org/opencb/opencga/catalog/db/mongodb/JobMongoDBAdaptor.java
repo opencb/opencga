@@ -40,7 +40,7 @@ import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.ToolInfo;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.job.JobAclEntry;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.common.Enums;

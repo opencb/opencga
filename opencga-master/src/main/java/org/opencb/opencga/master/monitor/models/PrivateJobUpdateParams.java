@@ -2,7 +2,7 @@ package org.opencb.opencga.master.monitor.models;
 
 import org.opencb.opencga.core.models.job.JobUpdateParams;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.ToolInfo;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 

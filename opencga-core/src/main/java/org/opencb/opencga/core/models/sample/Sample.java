@@ -60,7 +60,7 @@ public class Sample extends Annotable {
     }
 
     public Sample(String id, String source, String individualId, String description, int release) {
-        this(id, source, individualId, null, null, release, 1, description, "", false, new LinkedList<>(), new ArrayList<>(),
+        this(id, source, individualId, null, null, release, 1, description, "", false, new ArrayList<>(), new ArrayList<>(),
                 new HashMap<>());
     }
 

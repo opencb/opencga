@@ -22,7 +22,6 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opencb.biodata.models.commons.Software;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AclParams;
-import org.opencb.opencga.core.models.Experiment;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Status;

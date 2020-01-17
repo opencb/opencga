@@ -38,7 +38,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.ToolInfo;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.job.JobAclEntry;
 import org.opencb.opencga.core.models.study.StudyAclEntry;

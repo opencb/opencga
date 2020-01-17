@@ -22,6 +22,7 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantFamilyIndexOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
@@ -34,8 +35,8 @@ import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.api.variant.BasicVariantQueryParams;
-import org.opencb.opencga.core.api.variant.SampleVariantFilterParams;
+import org.opencb.opencga.core.models.variant.BasicVariantQueryParams;
+import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
@@ -105,6 +106,7 @@ public class VariantCommandOptions {
     public final SampleVariantStatsQueryCommandOptions sampleVariantStatsQueryCommandOptions;
     public final CohortVariantStatsCommandOptions cohortVariantStatsCommandOptions;
     public final CohortVariantStatsQueryCommandOptions cohortVariantStatsQueryCommandOptions;
+    public final KnockoutCommandOptions knockoutCommandOptions;
 
     // Wrappers
     public final PlinkCommandOptions plinkCommandOptions;
@@ -152,6 +154,7 @@ public class VariantCommandOptions {
         this.sampleVariantStatsQueryCommandOptions = new SampleVariantStatsQueryCommandOptions();
         this.cohortVariantStatsCommandOptions = new CohortVariantStatsCommandOptions();
         this.cohortVariantStatsQueryCommandOptions = new CohortVariantStatsQueryCommandOptions();
+        this.knockoutCommandOptions = new KnockoutCommandOptions();
         this.plinkCommandOptions = new PlinkCommandOptions();
         this.rvtestsCommandOptions = new RvtestsCommandOptions();
         this.gatkCommandOptions = new GatkCommandOptions();
@@ -924,6 +927,42 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--cohort"}, description = "List of cohorts.")
         public List<String> cohort;
+    }
+
+    @Parameters(commandNames = KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND, commandDescription = KnockoutAnalysis.DESCRIPTION)
+    public class KnockoutCommandOptions {
+        public static final String KNOCKOUT_RUN_COMMAND = "knockout-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = ParamConstants.STUDY_DESCRIPTION)
+        public String study;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        public String outdir;
+
+        @Parameter(names = {"--sample"}, description = "List of samples to analyse. The analysis will produce a file for each sample.")
+        public List<String> sample;
+
+        @Parameter(names = {"--gene"}, description = "List of genes of interest. In combination with parameter panel, all genes will be used.")
+        public List<String> gene;
+
+        @Parameter(names = {"--panel"}, description = "List of panels of interest. In combination with parameter gene, all genes will be used.")
+        public List<String> panel;
+
+        @Parameter(names = {"--biotype"}, description = "List of biotypes. Used to filter by transcripts biotype.")
+        public String biotype;
+
+        @Parameter(names = {"--ct", "--consequence-type"}, description = "Consequence type as a list of SequenceOntology terms. "
+                + "This filter is only applied on protein_coding genes. By default filters by loss of function consequence types.")
+        public String consequenceType;
+
+        @Parameter(names = {"--filter"}, description = VariantQueryParam.FILTER_DESCR)
+        public String filter;
+
+        @Parameter(names = {"--qual"}, description = VariantQueryParam.QUAL_DESCR)
+        public String qual;
     }
 
     @Parameters(commandNames = PlinkCommandOptions.PLINK_RUN_COMMAND, commandDescription = PlinkWrapperAnalysis.DESCRIPTION)

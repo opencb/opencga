@@ -37,6 +37,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.file.Experiment;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
@@ -181,7 +182,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                                 new File.FileStatus(File.FileStatus.READY), 1000, 1),
                                         new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", null, "",
                                                 new File.FileStatus(File.FileStatus.READY), 1000, 1)
-                                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                                         Collections.emptyList(), new LinkedList<>(), null, null, null, 1, Collections.emptyMap(),
                                         Collections.emptyMap()
                         )
@@ -205,7 +206,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                                 new File("alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
                                                         "data/alignment.bam", null, "Tophat alignment file",
                                                         new File.FileStatus(File.FileStatus.READY), 5000, 1)
-                                                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                                                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
                                         new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null, 1,
                                         Collections.emptyMap(), Collections.emptyMap()
                                 ),
@@ -220,7 +221,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                                 new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
                                                         "data/alignment.bam", null, "Tophat alignment file",
                                                         new File.FileStatus(File.FileStatus.READY), 5000, 1)
-                                        ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                                        ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
                                         new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null, 1,
                                         Collections.emptyMap(), Collections.emptyMap())
                         ), Collections.emptyMap(), Collections.emptyMap(), 1)

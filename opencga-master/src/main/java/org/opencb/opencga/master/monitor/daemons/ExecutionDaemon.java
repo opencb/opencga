@@ -30,6 +30,7 @@ import org.opencb.opencga.analysis.file.FetchAndRegisterTask;
 import org.opencb.opencga.analysis.file.FileDeleteTask;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
@@ -141,6 +142,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(VariantAnnotationDeleteOperationTool.ID, "variant annotation-delete");
             put(VariantAnnotationSaveOperationTool.ID, "variant annotation-save");
             put(SampleVariantFilterAnalysis.ID, "variant sample-run");
+            put(KnockoutAnalysis.ID, "variant knockout-run");
 
             put(TeamInterpretationAnalysis.ID, "interpretation " + TeamInterpretationAnalysis.ID);
             put(TieringInterpretationAnalysis.ID, "interpretation " + TieringInterpretationAnalysis.ID);

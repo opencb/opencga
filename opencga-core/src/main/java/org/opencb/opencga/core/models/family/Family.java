@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.family;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -24,12 +25,7 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-import static org.opencb.opencga.core.common.FieldUtils.defaultObject;
+import java.util.*;
 
 /**
  * Created by pfurio on 02/05/17.
@@ -68,17 +64,17 @@ public class Family extends Annotable {
                   List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
-        this.phenotypes = defaultObject(phenotypes, Collections::emptyList);
-        this.disorders = defaultObject(disorders, Collections::emptyList);
-        this.members = defaultObject(members, Collections::emptyList);
-        this.creationDate = defaultObject(creationDate, TimeUtils::getTime);
-        this.status = defaultObject(status, new FamilyStatus());
+        this.phenotypes = ObjectUtils.defaultIfNull(phenotypes, new ArrayList<>());
+        this.disorders = ObjectUtils.defaultIfNull(disorders, new ArrayList<>());
+        this.members = ObjectUtils.defaultIfNull(members, new ArrayList<>());
+        this.creationDate = ObjectUtils.defaultIfNull(creationDate, TimeUtils.getTime());
+        this.status = ObjectUtils.defaultIfNull(status, new FamilyStatus());
         this.expectedSize = expectedSize;
         this.description = description;
         this.release = release;
         this.version = version;
-        this.annotationSets = defaultObject(annotationSets, Collections::emptyList);
-        this.attributes = defaultObject(attributes, Collections::emptyMap);
+        this.annotationSets = ObjectUtils.defaultIfNull(annotationSets, new ArrayList<>());
+        this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
     }
 
     public static class FamilyStatus extends Status {

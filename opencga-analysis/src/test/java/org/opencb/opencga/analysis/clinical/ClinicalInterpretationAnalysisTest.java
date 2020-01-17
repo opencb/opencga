@@ -12,7 +12,7 @@ import org.opencb.opencga.analysis.variant.OpenCGATestExternalResource;
 import org.opencb.opencga.catalog.managers.AbstractClinicalManagerTest;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
-import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;

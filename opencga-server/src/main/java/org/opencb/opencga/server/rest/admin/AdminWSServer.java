@@ -10,7 +10,7 @@ import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.PanelManager;
-import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.admin.*;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.panel.Panel;

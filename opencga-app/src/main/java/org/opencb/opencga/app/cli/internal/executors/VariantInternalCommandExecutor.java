@@ -36,6 +36,7 @@ import org.opencb.opencga.analysis.old.execution.plugins.ibs.IbsAnalysis;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.operations.*;
@@ -50,12 +51,13 @@ import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.api.operations.variant.*;
-import org.opencb.opencga.core.api.variant.VariantExportParams;
-import org.opencb.opencga.core.api.variant.VariantIndexParams;
-import org.opencb.opencga.core.api.variant.VariantStatsAnalysisParams;
+import org.opencb.opencga.core.models.operations.variant.*;
+import org.opencb.opencga.core.models.variant.*;
+import org.opencb.opencga.core.models.variant.VariantExportParams;
+import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -76,6 +78,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
@@ -192,6 +195,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 break;
             case GWAS_RUN_COMMAND:
                 gwas();
+            case KNOCKOUT_RUN_COMMAND:
+                knockout();
                 break;
             case PLINK_RUN_COMMAND:
                 plink();
@@ -652,6 +657,24 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .setCaseCohortSamples(cliOptions.caseCohortSamples)
                 .setControlCohortSamples(cliOptions.controlCohortSamples)
                 .start();
+    }
+
+    private void knockout() throws Exception {
+        VariantCommandOptions.KnockoutCommandOptions cliOptions = variantCommandOptions.knockoutCommandOptions;
+
+        ObjectMap params = new KnockoutAnalysisParams(
+                cliOptions.sample,
+                cliOptions.gene,
+                cliOptions.panel,
+                cliOptions.biotype,
+                cliOptions.consequenceType,
+                cliOptions.filter,
+                cliOptions.qual,
+                cliOptions.outdir)
+                .toObjectMap(cliOptions.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(KnockoutAnalysis.class, params, Paths.get(cliOptions.outdir), token);
     }
 
     private void sampleStats() throws Exception {

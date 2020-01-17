@@ -33,6 +33,7 @@
     <properties>
         <build.dir>${project.basedir}/../build</build.dir>
         <app.dir>${project.basedir}/app</app.dir>
+        <solr.configset.name>OpenCGAConfigSet</solr.configset.name>
         <sonar.skip>true</sonar.skip>
     </properties>
 
@@ -258,6 +259,7 @@
                                     <arg value="${build.dir}/clients"/>
                                     <arg value="${build.dir}/conf"/>
                                     <arg value="${build.dir}/test"/>
+                                    <arg value="${build.dir}/misc/solr/${solr.configset.name}-${opencga.version}"/>
                                 </exec>
 
                                 <echo>Copying to ${build.dir}</echo>
@@ -268,7 +270,7 @@
                                     <arg value="${project.basedir}/target/conf"/>
                                     <arg value="${app.dir}/analysis"/>
                                     <arg value="${app.dir}/cloud"/>
-                                    <arg value="${app.dir}/scripts"/>
+                                    <arg value="${app.dir}/misc"/>
                                     <!--<arg value="${project.basedir}/../opencga-storage/build/bin"/>-->
                                     <arg value="${project.basedir}/../LICENSE"/>
                                     <arg value="${project.basedir}/../README.md"/>
@@ -289,7 +291,7 @@
                                 </exec>
 
                                 <exec executable="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh">
-                                    <arg value="${build.dir}/scripts/completion"/>
+                                    <arg value="${build.dir}/misc/completion"/>
                                 </exec>
 
                                 <echo>Copying Python and R to ${build.dir}/clients</echo>
@@ -315,6 +317,32 @@
                                     <arg value="${project.basedir}/../opencga-storage/opencga-storage-core/target/classes/storage-configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-client/target/classes/client-configuration.yml"/>
                                     <arg value="${build.dir}/conf"/>
+                                </exec>
+
+                                <echo>Copying Solr managed-schema file</echo>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/../opencga-storage/opencga-storage-core/target/classes/managed-schema"/>
+                                    <arg value="${build.dir}/misc/solr/conf"/>
+                                </exec>
+                                <exec executable="mv">
+                                    <arg value="${build.dir}/misc/solr/conf"/>
+                                    <arg value="${build.dir}/misc/solr/${solr.configset.name}-${opencga.version}"/>
+                                </exec>
+                                <exec executable="sed">
+                                    <arg value="-i"/>
+                                    <arg value="s/CONFIGSET/${solr.configset.name}/g"/>
+                                    <arg value="${build.dir}/misc/solr/INSTALL.md"/>
+                                </exec>
+                                <exec executable="sed">
+                                    <arg value="-i"/>
+                                    <arg value="s/VERSION/${opencga.version}/g"/>
+                                    <arg value="${build.dir}/misc/solr/INSTALL.md"/>
+                                </exec>
+                                <exec executable="tar">
+                                    <arg value="czvf"/>
+                                    <arg value="${build.dir}/misc/solr/opencga-${opencga.version}-solr-${solr.version}.tar.gz"/>
+                                    <arg value="--directory=${build.dir}/misc/solr"/>
+                                    <arg value="${solr.configset.name}-${opencga.version}"/>
                                 </exec>
 
                                 <echo>Copying war file</echo>

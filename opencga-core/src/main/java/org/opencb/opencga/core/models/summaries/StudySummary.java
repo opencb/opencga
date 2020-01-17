@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.core.models.summaries;
 
-import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.file.Experiment;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.VariableSet;

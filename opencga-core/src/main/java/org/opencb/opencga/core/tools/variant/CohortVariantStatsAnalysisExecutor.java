@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
-import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.exceptions.ToolException;
 
 import java.io.File;
 import java.io.PrintWriter;

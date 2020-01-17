@@ -4,8 +4,8 @@ package org.opencb.opencga.analysis.wrappers;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.exec.Command;
-import org.opencb.opencga.core.annotations.Tool;
-import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 
 import java.io.DataOutputStream;

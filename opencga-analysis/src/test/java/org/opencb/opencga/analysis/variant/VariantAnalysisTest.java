@@ -17,8 +17,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.ToolRunner;
-import org.opencb.opencga.analysis.variant.genes.knockout.GeneKnockoutAnalysis;
-import org.opencb.opencga.analysis.variant.genes.knockout.GeneKnockoutAnalysisParams;
+import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
+import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
@@ -32,7 +32,7 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
-import org.opencb.opencga.core.api.variant.VariantExportParams;
+import org.opencb.opencga.core.models.variant.VariantExportParams;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
@@ -423,10 +423,10 @@ public class VariantAnalysisTest {
     public void testKnockoutGenes() throws Exception {
         Path outDir = Paths.get(opencga.createTmpOutdir("_knockout_genes"));
         System.out.println("outDir = " + outDir);
-        GeneKnockoutAnalysisParams params = new GeneKnockoutAnalysisParams();
+        KnockoutAnalysisParams params = new KnockoutAnalysisParams();
         params.setSample(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
 
-        ExecutionResult er = toolRunner.execute(GeneKnockoutAnalysis.class, params.toObjectMap(), outDir, token);
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, token);
         checkExecutionResult(er, false);
     }
 
@@ -434,11 +434,11 @@ public class VariantAnalysisTest {
     public void testKnockoutGenesSpecificGenes() throws Exception {
         Path outDir = Paths.get(opencga.createTmpOutdir("_knockout_genes_specific_genes"));
         System.out.println("outDir = " + outDir);
-        GeneKnockoutAnalysisParams params = new GeneKnockoutAnalysisParams();
+        KnockoutAnalysisParams params = new KnockoutAnalysisParams();
         params.setSample(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
         params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
 
-        ExecutionResult er = toolRunner.execute(GeneKnockoutAnalysis.class, params.toObjectMap().append("executionMethod", "byGene"), outDir, token);
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap().append("executionMethod", "byGene"), outDir, token);
         checkExecutionResult(er, false);
         Assert.assertEquals(4, er.getAttributes().get("otherGenesCount"));
         Assert.assertEquals(3, er.getAttributes().get("proteinCodingGenesCount"));
@@ -448,12 +448,12 @@ public class VariantAnalysisTest {
     public void testKnockoutGenesSpecificGenesAndBiotypeProteinCoding() throws Exception {
         Path outDir = Paths.get(opencga.createTmpOutdir("_knockout_genes_specific_genes_bt_protein_coding"));
         System.out.println("outDir = " + outDir);
-        GeneKnockoutAnalysisParams params = new GeneKnockoutAnalysisParams();
+        KnockoutAnalysisParams params = new KnockoutAnalysisParams();
         params.setSample(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
         params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
         params.setBiotype(VariantAnnotationUtils.PROTEIN_CODING);
 
-        ExecutionResult er = toolRunner.execute(GeneKnockoutAnalysis.class, params.toObjectMap(), outDir, token);
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, token);
         checkExecutionResult(er, false);
         Assert.assertEquals(0, er.getAttributes().get("otherGenesCount"));
         Assert.assertEquals(3, er.getAttributes().get("proteinCodingGenesCount"));
@@ -463,12 +463,12 @@ public class VariantAnalysisTest {
     public void testKnockoutGenesSpecificGenesAndBiotypeNMD() throws Exception {
         Path outDir = Paths.get(opencga.createTmpOutdir("_knockout_genes_specific_genes_bt_NMD"));
         System.out.println("outDir = " + outDir);
-        GeneKnockoutAnalysisParams params = new GeneKnockoutAnalysisParams();
+        KnockoutAnalysisParams params = new KnockoutAnalysisParams();
         params.setSample(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
         params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
         params.setBiotype("nonsense_mediated_decay");
 
-        ExecutionResult er = toolRunner.execute(GeneKnockoutAnalysis.class, params.toObjectMap(), outDir, token);
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, token);
         checkExecutionResult(er, false);
         Assert.assertEquals(3, er.getAttributes().get("otherGenesCount")); // MIR1909 only has miRNA biotype
         Assert.assertEquals(0, er.getAttributes().get("proteinCodingGenesCount"));
@@ -478,7 +478,7 @@ public class VariantAnalysisTest {
     public void testKnockoutGenesByBiotype() throws Exception {
         Path outDir = Paths.get(opencga.createTmpOutdir("_knockout_genes_by_biotype"));
         System.out.println("outDir = " + outDir);
-        GeneKnockoutAnalysisParams params = new GeneKnockoutAnalysisParams();
+        KnockoutAnalysisParams params = new KnockoutAnalysisParams();
         params.setSample(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
         params.setBiotype("miRNA,rRNA");
 //        params.setBiotype("processed_transcript"
@@ -504,7 +504,7 @@ public class VariantAnalysisTest {
 //                + "," + "non_stop_decay"
 //                + "," + "TR_V_gene");
 
-        ExecutionResult er = toolRunner.execute(GeneKnockoutAnalysis.class, params.toObjectMap(), outDir, token);
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, token);
         checkExecutionResult(er, false);
     }
 

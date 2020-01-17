@@ -17,15 +17,14 @@
 
 package org.opencb.opencga.core.models.study;
 
-import org.opencb.opencga.core.common.FieldUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AclParams;
-import org.opencb.opencga.core.models.Dataset;
-import org.opencb.opencga.core.models.Experiment;
 import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.file.Experiment;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
@@ -91,14 +90,13 @@ public class Study extends PrivateFields {
     public Study(String name, String alias, Type type, String description, Status status, URI uri, int release) {
         this(alias, name, alias, type, TimeUtils.getTime(), description, status, null, 0, "",
                 new ArrayList<>(), new ArrayList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), new HashMap<>(),
-                uri, new HashMap<>(), release, new HashMap<>(), new HashMap<>()
-        );
+                new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), new HashMap<>(),
+                uri, new HashMap<>(), release, new HashMap<>(), new HashMap<>());
     }
 
     public Study(String id, String name, String alias, Type type, String creationDate, String description, Status status,
                  String lastModified, long size, String cipher, List<Group> groups, List<Experiment> experiments, List<File> files,
-                 List<Job> jobs, List<Individual> individuals, List<Sample> samples, List<Dataset> datasets, List<Cohort> cohorts,
+                 List<Job> jobs, List<Individual> individuals, List<Sample> samples, List<Cohort> cohorts,
                  List<Panel> panels, List<VariableSet> variableSets, Map<Entity, List<PermissionRule>> permissionRules,
                  URI uri, Map<File.Bioformat, DataStore> dataStores, int release, Map<String, Object> stats,
                  Map<String, Object> attributes) {
@@ -112,21 +110,21 @@ public class Study extends PrivateFields {
         this.lastModified = lastModified;
         this.size = size;
         this.cipher = cipher;
-        this.groups = FieldUtils.defaultObject(groups, ArrayList::new);
-        this.experiments = FieldUtils.defaultObject(experiments, ArrayList::new);
-        this.files = FieldUtils.defaultObject(files, ArrayList::new);
-        this.jobs = FieldUtils.defaultObject(jobs, ArrayList::new);
-        this.individuals = FieldUtils.defaultObject(individuals, ArrayList::new);
-        this.samples = FieldUtils.defaultObject(samples, ArrayList::new);
-        this.cohorts = FieldUtils.defaultObject(cohorts, ArrayList::new);
-        this.panels = FieldUtils.defaultObject(panels, ArrayList::new);
-        this.variableSets = FieldUtils.defaultObject(variableSets, ArrayList::new);
-        this.permissionRules = FieldUtils.defaultObject(permissionRules, HashMap::new);
+        this.groups = ObjectUtils.defaultIfNull(groups, new ArrayList<>());
+        this.experiments = ObjectUtils.defaultIfNull(experiments, new ArrayList<>());
+        this.files = ObjectUtils.defaultIfNull(files, new ArrayList<>());
+        this.jobs = ObjectUtils.defaultIfNull(jobs, new ArrayList<>());
+        this.individuals = ObjectUtils.defaultIfNull(individuals, new ArrayList<>());
+        this.samples = ObjectUtils.defaultIfNull(samples, new ArrayList<>());
+        this.cohorts = ObjectUtils.defaultIfNull(cohorts, new ArrayList<>());
+        this.panels = ObjectUtils.defaultIfNull(panels, new ArrayList<>());
+        this.variableSets = ObjectUtils.defaultIfNull(variableSets, new ArrayList<>());
+        this.permissionRules = ObjectUtils.defaultIfNull(permissionRules, new HashMap<>());
         this.uri = uri;
-        this.stats = FieldUtils.defaultObject(stats, HashMap::new);
+        this.stats = ObjectUtils.defaultIfNull(stats, new HashMap<>());
         this.release = release;
-        this.dataStores = FieldUtils.defaultObject(dataStores, HashMap::new);
-        this.attributes = FieldUtils.defaultObject(attributes, HashMap::new);
+        this.dataStores = ObjectUtils.defaultIfNull(dataStores, new HashMap<>());
+        this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
     }
 
     public enum Type {

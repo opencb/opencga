@@ -19,15 +19,8 @@ package org.opencb.opencga.client.rest;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.core.api.operations.variant.VariantAggregateFamilyParams;
-import org.opencb.opencga.core.api.operations.variant.VariantAggregateParams;
-import org.opencb.opencga.core.api.operations.variant.VariantAnnotationIndexParams;
-import org.opencb.opencga.core.api.operations.variant.VariantAnnotationSaveParams;
-import org.opencb.opencga.core.api.operations.variant.VariantFamilyIndexParams;
-import org.opencb.opencga.core.api.operations.variant.VariantSampleIndexParams;
-import org.opencb.opencga.core.api.operations.variant.VariantScoreIndexParams;
-import org.opencb.opencga.core.api.operations.variant.VariantSecondaryIndexParams;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
 
 

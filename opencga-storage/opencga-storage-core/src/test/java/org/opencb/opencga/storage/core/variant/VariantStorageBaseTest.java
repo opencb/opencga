@@ -31,6 +31,7 @@ import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -146,7 +147,13 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
             Files.createDirectories(resourcePath.getParent());
         }
         if (!resourcePath.toFile().exists()) {
-            InputStream stream = VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(resourceName);
+            InputStream stream;
+            if ("managed-schema".equals(resourceName)) {
+                stream = VariantSearchManager.class.getClassLoader().getResourceAsStream(resourceName);
+            } else {
+                stream = VariantStorageEngineTest.class.getClassLoader().getResourceAsStream(resourceName);
+            }
+
             Files.copy(stream, resourcePath, StandardCopyOption.REPLACE_EXISTING);
         }
         return resourcePath.toUri();

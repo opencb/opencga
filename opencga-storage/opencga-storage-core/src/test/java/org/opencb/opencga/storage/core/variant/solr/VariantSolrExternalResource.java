@@ -62,15 +62,16 @@ public class VariantSolrExternalResource extends ExternalResource {
 
         Path rootDir = getTmpRootDir();
 
-        String confFolder = VariantSearchManager.CONF_SET;
+        String configSet = "OpenCGAConfigSet-2.0.0-dev";
+
         // Copy configuration
-        getResourceUri("configsets/variantsCollection/solrconfig.xml", "configsets/" + confFolder + "/solrconfig.xml");
-        getResourceUri("solr/variant/managed-schema", "configsets/" + confFolder + "/managed-schema");
-        getResourceUri("configsets/variantsCollection/params.json", "configsets/" + confFolder + "/params.json");
-        getResourceUri("configsets/variantsCollection/protwords.txt", "configsets/" + confFolder + "/protwords.txt");
-        getResourceUri("configsets/variantsCollection/stopwords.txt", "configsets/" + confFolder + "/stopwords.txt");
-        getResourceUri("configsets/variantsCollection/synonyms.txt", "configsets/" + confFolder + "/synonyms.txt");
-        getResourceUri("configsets/variantsCollection/lang/stopwords_en.txt", "configsets/" + confFolder + "/lang/stopwords_en.txt");
+        getResourceUri("configsets/variantsCollection/solrconfig.xml", "configsets/" + configSet + "/solrconfig.xml");
+        getResourceUri("managed-schema", "configsets/" + configSet + "/managed-schema");
+        getResourceUri("configsets/variantsCollection/params.json", "configsets/" + configSet + "/params.json");
+        getResourceUri("configsets/variantsCollection/protwords.txt", "configsets/" + configSet + "/protwords.txt");
+        getResourceUri("configsets/variantsCollection/stopwords.txt", "configsets/" + configSet + "/stopwords.txt");
+        getResourceUri("configsets/variantsCollection/synonyms.txt", "configsets/" + configSet + "/synonyms.txt");
+        getResourceUri("configsets/variantsCollection/lang/stopwords_en.txt", "configsets/" + configSet + "/lang/stopwords_en.txt");
 
         String solrHome = rootDir.resolve("solr").toString();
 
@@ -78,7 +79,6 @@ public class VariantSolrExternalResource extends ExternalResource {
             solrClient = create(solrHome, rootDir.resolve("configsets").toString(), coreName);
         } else {
             String host = "http://localhost:8983/solr";
-            String configSet = VariantSearchManager.CONF_SET;
             int timeout = 5000;
 
             SolrManager solrManager = new SolrManager(host, "core", timeout);
@@ -156,6 +156,8 @@ public class VariantSolrExternalResource extends ExternalResource {
         } else {
             solrHomeDir.mkdirs();
         }
+
+        System.setProperty("solr.solr.home", solrHomeDir.toPath().toAbsolutePath().normalize().toString());
 
         final SolrResourceLoader loader = new SolrResourceLoader(solrHomeDir.toPath());
         final Path configSetPath = Paths.get(configSetHome).toAbsolutePath();
