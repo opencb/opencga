@@ -115,7 +115,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             logger.info("Creating demo database");
             CatalogDemo.createDemoDatabase(catalogManager, adminPassword, catalogCommandOptions.demoCatalogCommandOptions.force);
             token = catalogManager.getUserManager().login("user1", "user1_pass");
-            Path pedigreePath = Paths.get(this.appHome).resolve("scripts/examples/20130606_g1k.ped");
+            Path pedigreePath = Paths.get(this.appHome).resolve("misc/examples/20130606_g1k.ped");
             logger.info("Inserting pedigree file from " + pedigreePath);
             AnalysisDemo.insertPedigreeFile(catalogManager, pedigreePath, token);
         }
