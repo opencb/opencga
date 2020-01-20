@@ -22,7 +22,6 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
-import org.opencb.opencga.catalog.utils.ParamUtils;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
@@ -38,17 +37,11 @@ public class SampleCommandOptions {
     public SearchCommandOptions searchCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
-    public GroupByCommandOptions groupByCommandOptions;
-    public IndividualCommandOptions individualCommandOptions;
     public StatsCommandOptions statsCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
     public SampleAclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
-    public AnnotationCommandOptions.AnnotationSetsCreateCommandOptions annotationCreateCommandOptions;
-    public AnnotationCommandOptions.AnnotationSetsSearchCommandOptions annotationSearchCommandOptions;
-    public AnnotationCommandOptions.AnnotationSetsDeleteCommandOptions annotationDeleteCommandOptions;
-    public AnnotationCommandOptions.AnnotationSetsInfoCommandOptions annotationInfoCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsUpdateCommandOptions annotationUpdateCommandOptions;
 
     public JCommander jCommander;
@@ -72,15 +65,9 @@ public class SampleCommandOptions {
         this.searchCommandOptions = new SearchCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
-        this.groupByCommandOptions = new GroupByCommandOptions();
-        this.individualCommandOptions = new IndividualCommandOptions();
         this.statsCommandOptions = new StatsCommandOptions();
 
         AnnotationCommandOptions annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
-        this.annotationCreateCommandOptions = annotationCommandOptions.getCreateCommandOptions();
-        this.annotationSearchCommandOptions = annotationCommandOptions.getSearchCommandOptions();
-        this.annotationDeleteCommandOptions = annotationCommandOptions.getDeleteCommandOptions();
-        this.annotationInfoCommandOptions = annotationCommandOptions.getInfoCommandOptions();
         this.annotationUpdateCommandOptions = annotationCommandOptions.getUpdateCommandOptions();
 
         SampleAclCommandOptions aclCommandOptions = new SampleAclCommandOptions(commonCommandOptions);
@@ -121,25 +108,22 @@ public class SampleCommandOptions {
         @Parameter(names = {"--id"}, description = "Sample id", required = true, arity = 1)
         public String id;
 
-        @Parameter(names = {"--json"}, description = "JSON file containing the rest of the sample fields", arity = 1)
-        public String json;
-
-        @Parameter(names = {"-n", "--name"}, description = DEPRECATED + "Use --json instead.", arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Sample name.", arity = 1)
         public String name;
 
-        @Parameter(names = {"--source"}, description = DEPRECATED + "Use --json instead.", arity = 1)
+        @Parameter(names = {"--source"}, description = "Source from which this sample is created such as VCF file", arity = 1)
         public String source;
 
-        @Parameter(names = {"-d", "--description"}, description = DEPRECATED + "Use --json instead.", arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = "Description of the sample", arity = 1)
         public String description;
 
-        @Parameter(names = {"--individual"}, description = DEPRECATED + "Use --json instead.", arity = 1)
+        @Parameter(names = {"--individual"}, description = "Individual name or id to whom the sample belongs to", arity = 1)
         public String individual;
 
-        @Parameter(names = {"--somatic"}, description = DEPRECATED + "Use --json instead.", arity = 0)
+        @Parameter(names = {"--somatic"}, description = "Flag indicating that the sample comes from somatic cells", arity = 0)
         public boolean somatic;
 
-        @Parameter(names = {"--type"}, description = DEPRECATED + "Use --json instead.", arity = 1)
+        @Parameter(names = {"--type"}, description = "Sample type", arity = 1)
         public String type;
     }
 
@@ -170,13 +154,13 @@ public class SampleCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"-n", "--name"}, description = "List of id or names separated by commas", required = false, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "List of id or names separated by commas", arity = 1)
         public String name;
 
         @Parameter(names = {"--source"}, description = "Filter by the sample source such as the VCF file name from which this sample was created", arity = 1)
         public String source;
 
-        @Parameter(names = {"--individual"}, description = "Filter by id or name of the individual", required = false, arity = 1)
+        @Parameter(names = {"--individual"}, description = "Filter by id or name of the individual", arity = 1)
         public String individual;
 
         @Parameter(names = {"--type"}, description = "Sample type", arity = 1)
@@ -198,74 +182,28 @@ public class SampleCommandOptions {
     @Parameters(commandNames = {"update"}, commandDescription = "Update sample")
     public class UpdateCommandOptions extends BaseSampleCommand {
 
-        @Parameter(names = {"--json"}, description = "JSON file containing the sample fields to be updated", arity = 1)
-        public String json;
+        @Parameter(names = {"--id"}, description = "New sample id.", arity = 1)
+        public String id;
 
-        @Parameter(names = {"-n", "--name"}, description = DEPRECATED + "Use --json instead.", required = false, arity = 1)
-        public String name;
-
-        @Parameter(names = {"--individual"}, description = DEPRECATED + "Use --json instead.", required = false, arity = 1)
+        @Parameter(names = {"--individual"}, description = "Individual id or name", arity = 1)
         public String individual;
 
-        @Parameter(names = {"--source"}, description = DEPRECATED + "Use --json instead.", required = false, arity = 1)
+        @Parameter(names = {"--source"}, description = "Source", arity = 1)
         public String source;
 
-        @Parameter(names = {"-d", "--description"}, description = DEPRECATED + "Use --json instead.", required = false, arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = "Description", arity = 1)
         public String description;
 
-        @Parameter(names = {"--somatic"}, description = DEPRECATED + "Use --json instead.", arity = 1)
+        @Parameter(names = {"--somatic"}, description = "Boolean indicating whether the sample comes from somatic cells or not", arity = 1)
         public Boolean somatic;
 
-        @Parameter(names = {"--type"}, description = DEPRECATED + "Use --json instead.", arity = 1)
+        @Parameter(names = {"--type"}, description = "Sample type", arity = 1)
         public String type;
-
-        @Parameter(names = {"--annotation-sets-action"}, description = "Action to be performed if the array of annotationSets is being updated. (ADD, SET, REMOVE)",
-                arity = 1)
-        public ParamUtils.UpdateAction annotationSetsAction;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete the selected sample")
     public class DeleteCommandOptions extends BaseSampleCommand {
 
-    }
-
-    @Parameters(commandNames = {"group-by"}, commandDescription = "Group samples")
-    public class GroupByCommandOptions extends StudyOption {
-
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Deprecated
-        @Parameter(names = {"--ids"}, description = "[DEPRECATED] Comma separated list of ids.", required = false, arity = 1)
-        public String id;
-
-        @Parameter(names = {"-f", "--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
-        public String fields;
-
-        @Parameter(names = {"-n", "--name"}, description = "Comma separated list of names.", required = false, arity = 0)
-        public String name;
-
-        @Parameter(names = {"--source"}, description = "Source.", required = false, arity = 0)
-        public String source;
-
-        @Parameter(names = {"--individual"}, description = "Individual id or name", required = false, arity = 0)
-        public String individual;
-
-        @Parameter(names = {"-a", "--annotation"}, description = "SampleAnnotations values. <variableName>:<annotationValue>(,<annotationValue>)*", arity = 1)
-        public String annotation;
-    }
-
-    @Parameters(commandNames = {"individuals"}, commandDescription = "Get the individuals of a list of samples.")
-    public class IndividualCommandOptions extends StudyOption {
-
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @ParametersDelegate
-        public DataModelOptions dataModelOptions = commonDataModelOptions;
-
-        @Parameter(names = {"--sample"}, description = "List of sample ids or aliases", required = true, arity = 1)
-        public String sample;
     }
 
     public class SampleAclCommandOptions extends AclCommandOptions {

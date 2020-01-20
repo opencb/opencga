@@ -72,4 +72,14 @@ public class SampleAclUpdateParams extends AclParams {
         this.propagate = propagate;
         return this;
     }
+
+    public SampleAclUpdateParams setPermissions(String permissions) {
+        super.setPermissions(permissions);
+        return this;
+    }
+
+    public SampleAclUpdateParams setAction(Action action) {
+        super.setAction(action);
+        return this;
+    }
 }

@@ -24,6 +24,8 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 
+import java.util.List;
+
 /**
  * Created by pfurio on 15/05/17.
  */
@@ -33,17 +35,12 @@ public class FamilyCommandOptions {
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public SearchCommandOptions searchCommandOptions;
-    public GroupByCommandOptions groupByCommandOptions;
     public StatsCommandOptions statsCommandOptions;
 //    public UpdateCommandOptions updateCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
     public AclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
-    public AnnotationCommandOptions.AnnotationSetsCreateCommandOptions annotationCreateCommandOptions;
-    public AnnotationCommandOptions.AnnotationSetsSearchCommandOptions annotationSearchCommandOptions;
-    public AnnotationCommandOptions.AnnotationSetsDeleteCommandOptions annotationDeleteCommandOptions;
-    public AnnotationCommandOptions.AnnotationSetsInfoCommandOptions annotationInfoCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsUpdateCommandOptions annotationUpdateCommandOptions;
 
     public JCommander jCommander;
@@ -62,15 +59,10 @@ public class FamilyCommandOptions {
         this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
-        this.groupByCommandOptions = new GroupByCommandOptions();
         this.statsCommandOptions = new StatsCommandOptions();
 //        this.updateCommandOptions = new UpdateCommandOptions();
 
         AnnotationCommandOptions annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
-        this.annotationCreateCommandOptions = annotationCommandOptions.getCreateCommandOptions();
-        this.annotationSearchCommandOptions = annotationCommandOptions.getSearchCommandOptions();
-        this.annotationDeleteCommandOptions = annotationCommandOptions.getDeleteCommandOptions();
-        this.annotationInfoCommandOptions = annotationCommandOptions.getInfoCommandOptions();
         this.annotationUpdateCommandOptions = annotationCommandOptions.getUpdateCommandOptions();
 
         AclCommandOptions aclCommandOptions = new AclCommandOptions(commonCommandOptions);
@@ -104,7 +96,7 @@ public class FamilyCommandOptions {
         public String description;
 
         @Parameter(names = {"--members"}, description = "Comma separated list of family members", arity = 1)
-        public String members;
+        public List<String> members;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get family information")
@@ -147,28 +139,6 @@ public class FamilyCommandOptions {
         @Parameter(names = {"--flatten-annotations"}, description = "Flag indicating whether nested annotations should be returned flattened",
                 arity = 0)
         public boolean flattenAnnotations;
-    }
-
-    @Parameters(commandNames = {"group-by"}, commandDescription = "Group families")
-    public class GroupByCommandOptions extends GeneralCliOptions.StudyOption {
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-f", "--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
-        public String fields;
-
-        @Parameter(names = {"-n", "--name"}, description = "Comma separated list of names.", required = false, arity = 0)
-        public String name;
-
-        @Parameter(names = {"--annotation"}, description = "Annotation, e.g: key1=value(,key2=value)", required = false, arity = 1)
-        public String annotation;
-
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 0)
-        public String annotationSetName;
-
-        @Parameter(names = {"--variable-set"}, description = "Variable set ids", required = false, arity = 1)
-        public String variableSetId;
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Family stats")

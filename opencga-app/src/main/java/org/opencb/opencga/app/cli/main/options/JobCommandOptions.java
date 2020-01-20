@@ -21,6 +21,9 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
+import org.opencb.opencga.core.models.common.Enums;
+
+import java.util.List;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
@@ -34,9 +37,7 @@ public class JobCommandOptions {
     public InfoCommandOptions infoCommandOptions;
     public SearchCommandOptions searchCommandOptions;
     public TopCommandOptions topCommandOptions;
-    public VisitCommandOptions visitCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
-    public GroupByCommandOptions groupByCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
     public AclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
@@ -58,9 +59,7 @@ public class JobCommandOptions {
         this.infoCommandOptions = new InfoCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.topCommandOptions = new TopCommandOptions();
-        this.visitCommandOptions = new VisitCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
-        this.groupByCommandOptions = new GroupByCommandOptions();
 
         AclCommandOptions aclCommandOptions = new AclCommandOptions(commonCommandOptions);
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
@@ -83,33 +82,39 @@ public class JobCommandOptions {
         @ParametersDelegate
         CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-n", "--name"}, description = "Job name", required = true, arity = 1)
-        public String name;
+        @Parameter(names = {"--id"}, description = "Job id", required = true, arity = 1)
+        public String id;
 
-        @Parameter(names = {"--tool-name"}, description = "Tool name", required = true, arity = 1)
-        public String toolName;
+        @Parameter(names = {"--tool-id"}, description = "Tool id", required = true, arity = 1)
+        public String toolId;
 
         @Parameter(names = {"-d", "--description"}, description = "Job description", arity = 1)
         public String description;
 
-        @Parameter(names = {"--start-time"}, description = "Start time of the job", arity = 1)
-        public long startTime;
-
-        @Parameter(names = {"--end-time"}, description = "End time of the job", arity = 1)
-        public long endTime;
-
-        @Parameter(names = {"--command-line"}, description = "Command line", required = true, arity = 1)
+        @Parameter(names = {"--command-line"}, description = "Command line", arity = 1)
         public String commandLine;
+
+        @Parameter(names = {"--priority"}, description = "Priority", arity = 1)
+        public Enums.Priority priority;
+
+        @Parameter(names = {"--creation-date"}, description = "Creation date", arity = 1)
+        public String creationDate;
+
+        @Parameter(names = {"--status"}, description = "Job status", arity = 1)
+        public Enums.ExecutionStatus executionStatus;
 
         @Parameter(names = {"--output-directory"}, description = "Directory (previously registered in catalog) where the output is stored",
                 required = true, arity = 1)
         public String outDir;
 
         @Parameter(names = {"--input"}, description = "Comma separated list of file ids used as input of the job", arity = 1)
-        public String input;
+        public List<String> input;
 
         @Parameter(names = {"--output"}, description = "Comma separated list of file ids used as output of the job", arity = 1)
-        public String output;
+        public List<String> output;
+
+        @Parameter(names = {"--tags"}, description = "Comma separated list of tags", arity = 1)
+        public List<String> tags;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get job information")
@@ -171,52 +176,11 @@ public class JobCommandOptions {
         public int jobsLimit = 20;
     }
 
-    @Parameters(commandNames = {"visit"}, commandDescription = "Increment job visits")
-    public class VisitCommandOptions extends BaseJobCommand {
-
-    }
-
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete job")
     public class DeleteCommandOptions extends BaseJobCommand {
 
         @Parameter(names = {"--delete-files"}, description = "Delete files, default:true", required = false, arity = 0)
         public boolean deleteFiles = true;
-    }
-
-    @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy job")
-    public class GroupByCommandOptions extends StudyOption {
-
-        @ParametersDelegate
-        CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-f", "--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
-        public String fields;
-
-        @Deprecated
-        @Parameter(names = {"--ids"}, description = "[DEPRECATED] Comma separated list of ids.", required = false, arity = 1)
-        public String id;
-
-        @Parameter(names = {"-n", "--name"}, description = "Comma separated list of names.", required = false, arity = 1)
-        public String name;
-
-        @Parameter(names = {"--path"}, description = "Path.", required = false, arity = 1)
-        public String path;
-
-        @Parameter(names = {"--status"}, description = "Status.", required = false, arity = 1)
-        public String status;
-
-        @Parameter(names = {"--owner-id"}, description = "Owner id.", required = false, arity = 1)
-        public String ownerId;
-
-        @Parameter(names = {"--creation-date"}, description = "Creation date.", required = false, arity = 1)
-        public String creationDate;
-
-        @Deprecated
-        @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
-        public String description;
-
-        @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
-        public String attributes;
     }
 
 }

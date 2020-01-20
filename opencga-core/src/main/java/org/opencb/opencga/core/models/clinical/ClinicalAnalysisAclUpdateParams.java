@@ -27,4 +27,15 @@ public class ClinicalAnalysisAclUpdateParams extends AclParams {
         this.clinicalAnalysis = clinicalAnalysis;
         return this;
     }
+
+    public ClinicalAnalysisAclUpdateParams setPermissions(String permissions) {
+        super.setPermissions(permissions);
+        return this;
+    }
+
+    public ClinicalAnalysisAclUpdateParams setAction(Action action) {
+        super.setAction(action);
+        return this;
+    }
+
 }

@@ -149,6 +149,10 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     }
 
     protected ObjectMap loadFile(String filePath) throws CatalogException {
+        return loadFile(filePath, ObjectMap.class);
+    }
+
+    protected <T> T loadFile(String filePath, Class<T> clazz) throws CatalogException {
         File file = Paths.get(filePath).toFile();
         if (!file.exists() || file.isDirectory()) {
             throw new CatalogException("File " + filePath + " not found");
@@ -161,7 +165,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         }
         ObjectMapper objectMapper = JacksonUtils.getUpdateObjectMapper();
         try {
-            return objectMapper.readValue(fileInputStream, ObjectMap.class);
+            return objectMapper.readValue(fileInputStream, clazz);
         } catch (IOException e) {
             throw new CatalogException("Could not parse file " + filePath + ". Is it a valid JSON file?. "
                     + e.getMessage(), e);
@@ -223,6 +227,8 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             return ids;
         }
     }
+
+
 
     public void createOutput(RestResponse queryResponse) {
         if (queryResponse != null) {

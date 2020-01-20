@@ -19,7 +19,6 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.UserCommandOptions;
@@ -29,9 +28,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.PasswordChangeParams;
 import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.core.models.user.UserCreateParams;
+import org.opencb.opencga.core.models.user.UserUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.response.RestResponse;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -68,9 +70,6 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
             case "info":
                 queryResponse = info();
                 break;
-            case "delete":
-                delete();
-                break;
             case "update":
                 queryResponse = update();
                 break;
@@ -106,11 +105,11 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
                 List<String> studies = new ArrayList<>();
 
                 RestResponse<Project> projects = openCGAClient.getProjectClient().search(
-                        new Query(ProjectDBAdaptor.QueryParams.OWNER.key(), user), QueryOptions.empty());
+                        new ObjectMap(ProjectDBAdaptor.QueryParams.OWNER.key(), user));
 
                 if (projects.getResponses().get(0).getNumResults() == 0) {
                     // We try to fetch shared projects and studies instead when the user does not owe any project or study
-                    projects = openCGAClient.getProjectClient().search(new Query(), QueryOptions.empty());
+                    projects = openCGAClient.getProjectClient().search(new ObjectMap());
                 }
                 for (Project project : projects.getResponses().get(0).getResults()) {
                     for (Study study : project.getStudies()) {
@@ -137,38 +136,44 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         logoutCliSessionFile();
     }
 
-    private RestResponse<User> create() throws CatalogException, IOException {
+    private RestResponse<User> create() throws ClientException {
         logger.debug("Creating user...");
 
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(UserDBAdaptor.QueryParams.ID.key(), usersCommandOptions.createCommandOptions.user);
-        params.putIfNotEmpty(UserDBAdaptor.QueryParams.NAME.key(), usersCommandOptions.createCommandOptions.name);
-        params.putIfNotEmpty(UserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.createCommandOptions.email);
-        params.putIfNotEmpty(UserDBAdaptor.QueryParams.PASSWORD.key(), usersCommandOptions.createCommandOptions.password);
-        params.putIfNotEmpty(UserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.createCommandOptions.organization);
+        UserCommandOptions.CreateCommandOptions c = usersCommandOptions.createCommandOptions;
 
-        return openCGAClient.getUserClient().create(usersCommandOptions.createCommandOptions.user,
-                usersCommandOptions.createCommandOptions.password, params);
+        UserCreateParams createParams = new UserCreateParams()
+                .setId(c.user)
+                .setName(c.name)
+                .setEmail(c.email)
+                .setOrganization(c.organization)
+                .setPassword(c.password);
+
+        return openCGAClient.getUserClient().create(createParams);
     }
 
-    private RestResponse<User> info() throws ClientException, IOException {
+    private RestResponse<User> info() throws ClientException {
         logger.debug("User info");
 
-        QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(usersCommandOptions.infoCommandOptions.userParam.user)) {
-            queryOptions.putIfNotEmpty("userId", usersCommandOptions.infoCommandOptions.userParam.user);
+        UserCommandOptions.InfoCommandOptions c = usersCommandOptions.infoCommandOptions;
+
+        ObjectMap params = new ObjectMap();
+        String userId;
+        if (StringUtils.isNotEmpty(c.userParam.user)) {
+            userId = c.userParam.user;
         } else if (cliSession != null && StringUtils.isNotEmpty(cliSession.getUser())) {
-            queryOptions.putIfNotEmpty("userId", cliSession.getUser());
+            userId = cliSession.getUser();
+        } else {
+            throw new ClientException("Missing user parameter");
         }
 
-        queryOptions.putIfNotEmpty(UserDBAdaptor.QueryParams.LAST_MODIFIED.key(), usersCommandOptions.infoCommandOptions.lastModified);
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, usersCommandOptions.infoCommandOptions.dataModelOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, usersCommandOptions.infoCommandOptions.dataModelOptions.exclude);
+        params.putIfNotEmpty(UserDBAdaptor.QueryParams.LAST_MODIFIED.key(), c.lastModified);
+        params.putIfNotEmpty(QueryOptions.INCLUDE, c.dataModelOptions.include);
+        params.putIfNotEmpty(QueryOptions.EXCLUDE, c.dataModelOptions.exclude);
 
-        RestResponse<User> userQueryResponse = openCGAClient.getUserClient().get(queryOptions);
+        RestResponse<User> userQueryResponse = openCGAClient.getUserClient().info(userId, params);
         if (userQueryResponse.getResponses().size() == 1 && userQueryResponse.getResponses().get(0).getNumResults() == 1) {
-            queryOptions.put("shared", true);
-            RestResponse<Project> sharedProjects = openCGAClient.getUserClient().getProjects(queryOptions);
+            params.put("shared", true);
+            RestResponse<Project> sharedProjects = openCGAClient.getUserClient().projects(userId, params);
             if (sharedProjects.getResponses().size() > 0 && sharedProjects.getResponses().get(0).getNumResults() > 0) {
                 OpenCGAResult<User> userQueryResult = userQueryResponse.getResponses().get(0);
                 List<Project> newProjectList = Stream
@@ -181,41 +186,45 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         return userQueryResponse;
     }
 
-    private RestResponse<Project> projects() throws ClientException, IOException {
+    private RestResponse<Project> projects() throws ClientException {
         logger.debug("List all projects and studies of user");
 
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, usersCommandOptions.projectsCommandOptions.dataModelOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, usersCommandOptions.projectsCommandOptions.dataModelOptions.exclude);
-        queryOptions.put(QueryOptions.LIMIT, usersCommandOptions.projectsCommandOptions.numericOptions.limit);
-        queryOptions.put(QueryOptions.SKIP, usersCommandOptions.projectsCommandOptions.numericOptions.skip);
+        UserCommandOptions.ProjectsCommandOptions c = usersCommandOptions.projectsCommandOptions;
 
-        if (StringUtils.isNotEmpty(usersCommandOptions.projectsCommandOptions.userParam.user)) {
-            queryOptions.putIfNotEmpty("userId", usersCommandOptions.projectsCommandOptions.userParam.user);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(QueryOptions.INCLUDE, c.dataModelOptions.include);
+        params.putIfNotEmpty(QueryOptions.EXCLUDE, c.dataModelOptions.exclude);
+        params.put(QueryOptions.LIMIT, c.numericOptions.limit);
+        params.put(QueryOptions.SKIP, c.numericOptions.skip);
+
+        String userId;
+        if (StringUtils.isNotEmpty(c.userParam.user)) {
+            userId = c.userParam.user;
         } else if (cliSession != null) {
-            queryOptions.putIfNotEmpty("userId", cliSession.getUser());
+            userId = cliSession.getUser();
+        } else {
+            throw new ClientException("Missing user parameter");
         }
 
-        return openCGAClient.getUserClient().getProjects(queryOptions);
+        return openCGAClient.getUserClient().projects(userId, params);
     }
 
-    private void delete() throws CatalogException, IOException {
-        System.out.println("Pending functionality");
-        logger.debug("Deleting user");
-
-//        openCGAClient.getUserClient().delete(usersCommandOptions.deleteCommandOptions.user, new ObjectMap());
-    }
-
-    private RestResponse<User> update() throws IOException, CatalogException {
+    private RestResponse<User> update() throws ClientException, CatalogException {
         logger.debug("Updating user");
 
-        ObjectMap params = loadFile(usersCommandOptions.updateCommandOptions.json);
-        return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, null, params);
+        UserUpdateParams params = loadFile(usersCommandOptions.updateCommandOptions.json, UserUpdateParams.class);
+
+        return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, params);
     }
 
     private RestResponse<User> changePassword () throws ClientException, IOException {
-        return openCGAClient.getUserClient().changePassword(usersCommandOptions.changePasswordCommandOptions.password,
-                usersCommandOptions.changePasswordCommandOptions.npassword, new ObjectMap());
+        UserCommandOptions.ChangePasswordCommandOptions c = usersCommandOptions.changePasswordCommandOptions;
+
+        PasswordChangeParams changeParams = new PasswordChangeParams()
+                .setPassword(c.password)
+                .setNewPassword(c.npassword);
+
+        return openCGAClient.getUserClient().password(c.user, changeParams);
     }
 
 }

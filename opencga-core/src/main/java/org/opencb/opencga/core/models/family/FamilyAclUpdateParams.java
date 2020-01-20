@@ -27,4 +27,14 @@ public class FamilyAclUpdateParams extends AclParams {
         this.family = family;
         return this;
     }
+
+    public FamilyAclUpdateParams setPermissions(String permissions) {
+        super.setPermissions(permissions);
+        return this;
+    }
+
+    public FamilyAclUpdateParams setAction(Action action) {
+        super.setAction(action);
+        return this;
+    }
 }

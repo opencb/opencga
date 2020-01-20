@@ -13,7 +13,6 @@ public class ClinicalCommandOptions {
 
     public SearchCommandOptions searchCommandOptions;
     public InfoCommandOptions infoCommandOptions;
-    public GroupByCommandOptions groupByCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
     public AclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
@@ -34,7 +33,6 @@ public class ClinicalCommandOptions {
 
         this.infoCommandOptions = new InfoCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
-        this.groupByCommandOptions = new GroupByCommandOptions();
 
         AclCommandOptions aclCommandOptions = new AclCommandOptions(commonCommandOptions);
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
@@ -111,31 +109,6 @@ public class ClinicalCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.DataModelOptions dataModelOptions = commonDataModelOptions;
 
-    }
-
-    @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy clinical analysis")
-    public class GroupByCommandOptions extends GeneralCliOptions.StudyOption {
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-f", "--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
-        public String fields;
-
-        @Parameter(names = {"--type"}, description = "Clinical analysis type.", arity = 1)
-        public String type;
-
-        @Parameter(names = {"--status"}, description = "Status.", arity = 1)
-        public String status;
-
-        @Parameter(names = {"--family"}, description = "Family id", required = false, arity = 1)
-        public String family;
-
-        @Parameter(names = {"--proband"}, description = "Proband id of the clinical analysis", required = false, arity = 1)
-        public String proband;
-
-        @Parameter(names = {"--sample"}, description = "Sampe id", arity = 1)
-        public String sample;
     }
 
 }

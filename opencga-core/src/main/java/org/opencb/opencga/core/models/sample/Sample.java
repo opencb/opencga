@@ -439,6 +439,16 @@ public class Sample extends Annotable {
             this.propagate = propagate;
             return this;
         }
+
+        public SampleAclParams setPermissions(String permissions) {
+            super.setPermissions(permissions);
+            return this;
+        }
+
+        public SampleAclParams setAction(Action action) {
+            super.setAction(action);
+            return this;
+        }
     }
 
 }

@@ -26,7 +26,6 @@ import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.StudyOption;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
-import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.file.File;
 
 import java.util.List;
@@ -52,10 +51,10 @@ public class FileCommandOptions {
     public UploadCommandOptions uploadCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
     public LinkCommandOptions linkCommandOptions;
-    public RelinkCommandOptions relinkCommandOptions;
+//    public RelinkCommandOptions relinkCommandOptions;
     public UnlinkCommandOptions unlinkCommandOptions;
     public RefreshCommandOptions refreshCommandOptions;
-    public GroupByCommandOptions groupByCommandOptions;
+//    public GroupByCommandOptions groupByCommandOptions;
     public StatsCommandOptions statsCommandOptions;
 //    public VariantsCommandOptions variantsCommandOptions;
 
@@ -89,13 +88,11 @@ public class FileCommandOptions {
         this.contentCommandOptions = new ContentCommandOptions();
 //        this.fetchCommandOptions = new FetchCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
-        this.relinkCommandOptions = new RelinkCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.refreshCommandOptions = new RefreshCommandOptions();
         this.unlinkCommandOptions = new UnlinkCommandOptions();
         this.linkCommandOptions = new LinkCommandOptions();
         this.uploadCommandOptions = new UploadCommandOptions();
-        this.groupByCommandOptions = new GroupByCommandOptions();
         this.statsCommandOptions = new StatsCommandOptions();
 //        this.variantsCommandOptions = new VariantsCommandOptions();
 
@@ -407,11 +404,11 @@ public class FileCommandOptions {
 
         @Parameter(names = {"--format"}, description = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)",
                 required = false, arity = 1)
-        public String format;
+        public File.Format format;
 
         @Parameter(names = {"--bioformat"}, description = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)",
                 required = false, arity = 1)
-        public String bioformat;
+        public File.Bioformat bioformat;
 
         @Parameter(names = {"--description"}, description = "Description of the file", required = false, arity = 1)
         public String description;
@@ -423,29 +420,18 @@ public class FileCommandOptions {
         public String stats;
 
         @Parameter(names = {"--samples"}, description = "Comma separated list of sample names or ids", required = false, arity = 1)
-        public String sampleIds;
-
-        @Parameter(names = {"--job-id"}, description = "Job id", required = false, arity = 1)
-        public String jobId;
-
-        @Parameter(names = {"--path"}, description = "Path", required = false, arity = 1)
-        public String path;
-
-        @Parameter(names = {"--annotation-sets-action"}, description = "Action to be performed if the array of annotationSets is being updated. (ADD, SET, REMOVE)",
-                arity = 1)
-        public ParamUtils.UpdateAction annotationSetsAction;
-
+        public List<String> sampleIds;
     }
 
-    @Parameters(commandNames = {"relink"}, commandDescription = "Change location of linked or STAGED file.")
-    public class RelinkCommandOptions extends BaseFileCommand {
-
-        @Parameter(names = {"--uri"}, description = "New URI", required = true, arity = 1)
-        public String uri;
-
-        @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
-        public boolean calculateChecksum;
-    }
+//    @Parameters(commandNames = {"relink"}, commandDescription = "Change location of linked or STAGED file.")
+//    public class RelinkCommandOptions extends BaseFileCommand {
+//
+//        @Parameter(names = {"--uri"}, description = "New URI", required = true, arity = 1)
+//        public String uri;
+//
+//        @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
+//        public boolean calculateChecksum;
+//    }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete file")
     public class DeleteCommandOptions extends BaseFileCommand {
@@ -550,68 +536,6 @@ public class FileCommandOptions {
 
         @Parameter(names = {"-ch", "--checksum"}, description = "[PENDING] Calculate checksum", required = false, arity = 0)
         public boolean calculateChecksum;
-    }
-
-    @Parameters(commandNames = {"group-by"}, commandDescription = "Group by fields in file")
-    public class GroupByCommandOptions extends StudyOption {
-
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
-        public String fields;
-
-        @Deprecated
-        @Parameter(names = {"--file"}, description = "Comma separated list of ids, names or paths.", required = false, arity = 1)
-        public String id;
-
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
-        public String name;
-
-        @Parameter(names = {"--path"}, description = "Path.", required = false, arity = 1)
-        public String path;
-
-        @Parameter(names = {"--type"}, description = "Comma separated Type values.", required = false, arity = 1)
-        public String type;
-
-        @Parameter(names = {"--bioformat"}, description = "Comma separated bioformat values.", required = false, arity = 1)
-        public String bioformat;
-
-        @Parameter(names = {"--format"}, description = "Comma separated Format values.", required = false, arity = 1)
-        public String format;
-
-        @Parameter(names = {"--status"}, description = "Status.", required = false, arity = 1)
-        public String status;
-
-        @Parameter(names = {"--directory"}, description = "Directory.", required = false, arity = 1)
-        public String directory;
-
-        @Parameter(names = {"--owner-id"}, description = "Owner id.", required = false, arity = 1)
-        public String ownerId;
-
-        @Parameter(names = {"--creation-date"}, description = "Creation date.", required = false, arity = 1)
-        public String creationDate;
-
-        @Parameter(names = {"--modification-date"}, description = "Modification date.", required = false, arity = 1)
-        public String modificationDate;
-
-        @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
-        public String description;
-
-        @Parameter(names = {"--size"}, description = "Filter by size", required = false, arity = 1)
-        public String size;
-
-        @Parameter(names = {"--samples"}, description = "Comma separated list of sample ids or names", required = false, arity = 1)
-        public String sampleIds;
-
-        @Parameter(names = {"--job"}, description = "Job id", required = false, arity = 1)
-        public String job;
-
-        @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
-        public String attributes;
-
-        @Parameter(names = {"--nattributes"}, description = "numerical attributes", required = false, arity = 1)
-        public String nattributes;
     }
 
     @Deprecated

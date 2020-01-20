@@ -485,6 +485,16 @@ public class Study extends PrivateFields {
             this.template = template;
             return this;
         }
+
+        public StudyAclParams setPermissions(String permissions) {
+            super.setPermissions(permissions);
+            return this;
+        }
+
+        public StudyAclParams setAction(Action action) {
+            super.setAction(action);
+            return this;
+        }
     }
 
 }

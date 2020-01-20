@@ -38,4 +38,14 @@ public class StudyAclUpdateParams extends AclParams {
         this.template = template;
         return this;
     }
+
+    public StudyAclUpdateParams setPermissions(String permissions) {
+        super.setPermissions(permissions);
+        return this;
+    }
+
+    public StudyAclUpdateParams setAction(Action action) {
+        super.setAction(action);
+        return this;
+    }
 }

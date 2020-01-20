@@ -518,6 +518,16 @@ public class Individual extends Annotable {
             this.propagate = propagate;
             return this;
         }
+
+        public IndividualAclParams setPermissions(String permissions) {
+            super.setPermissions(permissions);
+            return this;
+        }
+
+        public IndividualAclParams setAction(Action action) {
+            super.setAction(action);
+            return this;
+        }
     }
 
 }

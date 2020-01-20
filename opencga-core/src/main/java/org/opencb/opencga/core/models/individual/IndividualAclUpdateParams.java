@@ -49,4 +49,14 @@ public class IndividualAclUpdateParams extends AclParams {
         this.propagate = propagate;
         return this;
     }
+
+    public IndividualAclUpdateParams setPermissions(String permissions) {
+        super.setPermissions(permissions);
+        return this;
+    }
+
+    public IndividualAclUpdateParams setAction(Action action) {
+        super.setAction(action);
+        return this;
+    }
 }
