@@ -689,8 +689,7 @@ public class OpenCGAWSServer {
         }
     }
 
-    public Response submitJob(String toolId, String study, ToolParams bodyParams, String jobName, String jobDescription,
-                              String jobTagsStr) {
+    public Response submitJob(String toolId, String study, ToolParams bodyParams, String jobId, String jobDescription, String jobTagsStr) {
         return run(() -> {
             List<String> jobTags;
             if (StringUtils.isNotEmpty(jobTagsStr)) {
@@ -703,12 +702,12 @@ public class OpenCGAWSServer {
                 paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
             }
             return catalogManager.getJobManager()
-                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, null, jobName, jobDescription, jobTags, token);
+                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, jobId, jobDescription, jobTags, token);
         });
     }
 
-    public Response submitJob(String toolId, String study, Map<String, Object> paramsMap, String jobName,
-                              String jobDescription, String jobTagsStr) {
+    public Response submitJob(String toolId, String study, Map<String, Object> paramsMap, String jobId, String jobDescription,
+                              String jobTagsStr) {
         return run(() -> {
             List<String> jobTags;
             if (StringUtils.isNotEmpty(jobTagsStr)) {
@@ -717,7 +716,7 @@ public class OpenCGAWSServer {
                 jobTags = Collections.emptyList();
             }
             return catalogManager.getJobManager()
-                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, null, jobName, jobDescription, jobTags, token);
+                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, jobId, jobDescription, jobTags, token);
         });
 
     }

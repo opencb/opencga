@@ -44,7 +44,6 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
         sb.append(", execution=").append(execution);
         sb.append(", stdout=").append(stdout);
         sb.append(", stderr=").append(stderr);
-        sb.append(", name='").append(getName()).append('\'');
         sb.append(", description='").append(getDescription()).append('\'');
         sb.append(", tags=").append(getTags());
         sb.append(", visited=").append(getVisited());
@@ -149,12 +148,6 @@ public class PrivateJobUpdateParams extends JobUpdateParams {
 
     public PrivateJobUpdateParams setStderr(File stderr) {
         this.stderr = stderr;
-        return this;
-    }
-
-    @Override
-    public PrivateJobUpdateParams setName(String name) {
-        super.setName(name);
         return this;
     }
 

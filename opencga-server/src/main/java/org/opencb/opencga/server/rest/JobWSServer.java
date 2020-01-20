@@ -58,8 +58,7 @@ public class JobWSServer extends OpenCGAWSServer {
             notes = "Registers a job that has been previously run outside catalog into catalog. <br>"
                     + "Required values: [name, toolName, commandLine, outDirId]", response = Job.class)
     public Response createJobPOST(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "job", required = true) JobCreateParams inputJob) {
         try {
             OpenCGAResult<Job> result = catalogManager.getJobManager().create(studyStr, inputJob.toJob(), queryOptions, token);
@@ -103,7 +102,7 @@ public class JobWSServer extends OpenCGAWSServer {
     })
     public Response search(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME_PARAM) String name,
+            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID_PARAM) String name,
             @ApiParam(value = ParamConstants.JOB_TOOL_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_PARAM) String tool,
             @ApiParam(value = ParamConstants.JOB_USER_DESCRIPTION) @QueryParam(ParamConstants.JOB_USER_PARAM) String user,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.JOB_PRIORITY_PARAM) String priority,
@@ -130,7 +129,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Update some job attributes", hidden = true, response = Job.class)
     public Response updateByPost(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME_PARAM) String name,
+            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID_PARAM) String name,
             @ApiParam(value = ParamConstants.JOB_TOOL_DESCRIPTION) @QueryParam(ParamConstants.JOB_TOOL_PARAM) String tool,
             @ApiParam(value = ParamConstants.JOB_USER_DESCRIPTION) @QueryParam(ParamConstants.JOB_USER_PARAM) String user,
             @ApiParam(value = ParamConstants.JOB_PRIORITY_DESCRIPTION) @QueryParam(ParamConstants.JOB_PRIORITY_PARAM) String priority,

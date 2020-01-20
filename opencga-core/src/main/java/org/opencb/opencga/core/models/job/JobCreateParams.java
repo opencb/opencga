@@ -208,7 +208,7 @@ public class JobCreateParams {
     }
 
     public Job toJob() {
-        return new Job(id, null, id, description, tool, null, commandLine, params, creationDate, null, priority, status,
+        return new Job(id, null, description, tool, null, commandLine, params, creationDate, null, priority, status,
                 outDir != null ? outDir.toFile() : null,
                 getInput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
                 getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()),

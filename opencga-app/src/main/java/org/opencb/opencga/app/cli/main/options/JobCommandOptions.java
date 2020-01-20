@@ -138,8 +138,8 @@ public class JobCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"-n", "--name"}, description = "Comma separated list of names.", required = false, arity = 1)
-        public String name;
+        @Parameter(names = {"--id"}, description = "Comma separated list of job ids.", required = false, arity = 1)
+        public String id;
 
         @Parameter(names = {"--tool-name"}, description = "Tool name.", required = false, arity = 1)
         public String toolName;

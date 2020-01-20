@@ -31,7 +31,6 @@ public class Job extends PrivateStudyUid {
 
     private String id;
     private String uuid;
-    private String name;
     private String description;
 
     private ToolInfo tool;
@@ -68,13 +67,12 @@ public class Job extends PrivateStudyUid {
     public Job() {
     }
 
-    public Job(String id, String uuid, String name, String description, ToolInfo tool, String userId, String commandLine,
-               Map<String, Object> params, String creationDate, String modificationDate, Enums.Priority priority,
-               Enums.ExecutionStatus status, File outDir, List<File> input, List<File> output, List<String> tags, ExecutionResult execution,
-               boolean visited, File stdout, File stderr, int release, String studyUuid, Map<String, Object> attributes) {
+    public Job(String id, String uuid, String description, ToolInfo tool, String userId, String commandLine, Map<String, Object> params,
+               String creationDate, String modificationDate, Enums.Priority priority, Enums.ExecutionStatus status, File outDir,
+               List<File> input, List<File> output, List<String> tags, ExecutionResult execution, boolean visited, File stdout, File stderr,
+               int release, String studyUuid, Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
-        this.name = name;
         this.tool = tool;
         this.description = description;
         this.userId = userId;
@@ -102,7 +100,6 @@ public class Job extends PrivateStudyUid {
         final StringBuilder sb = new StringBuilder("Job{");
         sb.append("id='").append(id).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
-        sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", tool='").append(tool).append('\'');
         sb.append(", userId='").append(userId).append('\'');
@@ -157,15 +154,6 @@ public class Job extends PrivateStudyUid {
 
     public Job setUuid(String uuid) {
         this.uuid = uuid;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public Job setName(String name) {
-        this.name = name;
         return this;
     }
 

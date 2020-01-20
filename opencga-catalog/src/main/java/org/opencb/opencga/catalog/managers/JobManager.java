@@ -234,7 +234,6 @@ public class JobManager extends ResourceManager<Job> {
 
             ParamUtils.checkObj(job, "Job");
             ParamUtils.checkAlias(job.getId(), "job id");
-            job.setName(ParamUtils.defaultString(job.getName(), ""));
             job.setDescription(ParamUtils.defaultString(job.getDescription(), ""));
             job.setCommandLine(ParamUtils.defaultString(job.getCommandLine(), ""));
             job.setCreationDate(ParamUtils.defaultString(job.getCreationDate(), TimeUtils.getTime()));
@@ -370,11 +369,11 @@ public class JobManager extends ResourceManager<Job> {
 
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String token)
             throws CatalogException {
-        return submit(studyStr, toolId, priority, params, null, null, null, null, token);
+        return submit(studyStr, toolId, priority, params, null, null, null, token);
     }
 
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String jobId,
-                                     String jobName, String jobDescription, List<String> jobTags, String token) throws CatalogException {
+                                     String jobDescription, List<String> jobTags, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
@@ -387,7 +386,6 @@ public class JobManager extends ResourceManager<Job> {
 
         Job job = new Job();
         job.setId(jobId);
-        job.setName(jobName);
         job.setDescription(jobDescription);
         job.setTool(new ToolInfo().setId(toolId));
         job.setTags(jobTags);

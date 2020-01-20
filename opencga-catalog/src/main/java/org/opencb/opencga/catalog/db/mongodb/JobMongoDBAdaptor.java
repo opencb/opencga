@@ -376,9 +376,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     private Document getValidatedUpdateParams(ObjectMap parameters) throws CatalogDBException {
         Document jobParameters = new Document();
 
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.USER_ID.key(), QueryParams.DESCRIPTION.key(),
-                QueryParams.COMMAND_LINE.key(),
-        };
+        String[] acceptedParams = {QueryParams.USER_ID.key(), QueryParams.DESCRIPTION.key(), QueryParams.COMMAND_LINE.key()};
         filterStringParams(parameters, jobParameters, acceptedParams);
 
         String[] acceptedBooleanParams = {QueryParams.VISITED.key()};
@@ -672,7 +670,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                 StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name(), Enums.Resource.JOB.name());
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
-        return groupBy(jobCollection, bsonQuery, field, QueryParams.NAME.key(), fixOptions(options));
+        return groupBy(jobCollection, bsonQuery, field, QueryParams.ID.key(), fixOptions(options));
     }
 
     @Override
@@ -682,7 +680,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
                 StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name(), Enums.Resource.JOB.name());
         Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
-        return groupBy(jobCollection, bsonQuery, fields, QueryParams.NAME.key(), fixOptions(options));
+        return groupBy(jobCollection, bsonQuery, fields, QueryParams.ID.key(), fixOptions(options));
     }
 
     @Override
@@ -817,7 +815,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
                     case ID:
-                    case NAME:
                     case UUID:
                     case USER_ID:
                     case TYPE:

@@ -894,10 +894,10 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     }
 
     private void checkGetAllJobs(Collection<Long> expectedJobs, String sessionId) throws CatalogException {
-        DataResult<Job> allJobs = catalogManager.getJobManager().search(studyFqn, (Query) null, null, sessionId);
+        DataResult<Job> allJobs = catalogManager.getJobManager().search(studyFqn, null, null, sessionId);
 
         assertEquals(expectedJobs.size(), allJobs.getNumResults());
-        allJobs.getResults().forEach(job -> assertTrue(expectedJobs + " does not contain job " + job.getName(), expectedJobs.contains(job
+        allJobs.getResults().forEach(job -> assertTrue(expectedJobs + " does not contain job " + job.getId(), expectedJobs.contains(job
                 .getUid())));
     }
 
