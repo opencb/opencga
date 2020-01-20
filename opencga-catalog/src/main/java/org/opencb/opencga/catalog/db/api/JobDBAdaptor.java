@@ -112,6 +112,7 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
 
         INPUT("input", OBJECT, ""),
         OUTPUT("output", OBJECT, ""),
+        DEPENDS_ON("dependsOn", TEXT_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
 
         EXECUTION("execution", OBJECT, ""),

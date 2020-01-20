@@ -4,6 +4,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -211,7 +212,7 @@ public class JobCreateParams {
         return new Job(id, null, description, tool, null, commandLine, params, creationDate, null, priority, status,
                 outDir != null ? outDir.toFile() : null,
                 getInput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
-                getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
+                getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()), Collections.emptyList(),
                 tags, result, false, log != null ? log.toFile() : null, errorLog != null ? errorLog.toFile() : null, 1, null, attributes);
     }
 

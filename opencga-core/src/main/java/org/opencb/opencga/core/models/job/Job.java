@@ -50,6 +50,7 @@ public class Job extends PrivateStudyUid {
     private List<File> input;    // input files to this job
     private List<File> output;   // output files of this job
     private List<String> tags;
+    private List<Job> dependsOn;
 
     private ExecutionResult execution;
 
@@ -69,8 +70,8 @@ public class Job extends PrivateStudyUid {
 
     public Job(String id, String uuid, String description, ToolInfo tool, String userId, String commandLine, Map<String, Object> params,
                String creationDate, String modificationDate, Enums.Priority priority, Enums.ExecutionStatus status, File outDir,
-               List<File> input, List<File> output, List<String> tags, ExecutionResult execution, boolean visited, File stdout, File stderr,
-               int release, String studyUuid, Map<String, Object> attributes) {
+               List<File> input, List<File> output, List<Job> dependsOn, List<String> tags, ExecutionResult execution, boolean visited,
+               File stdout, File stderr, int release, String studyUuid, Map<String, Object> attributes) {
         this.id = id;
         this.uuid = uuid;
         this.tool = tool;
@@ -85,6 +86,7 @@ public class Job extends PrivateStudyUid {
         this.outDir = outDir;
         this.input = input;
         this.output = output;
+        this.dependsOn = dependsOn;
         this.tags = tags;
         this.execution = execution;
         this.visited = visited;
@@ -112,6 +114,7 @@ public class Job extends PrivateStudyUid {
         sb.append(", outDir=").append(outDir);
         sb.append(", input=").append(input);
         sb.append(", output=").append(output);
+        sb.append(", dependsOn=").append(dependsOn);
         sb.append(", tags=").append(tags);
         sb.append(", execution=").append(execution);
         sb.append(", visited=").append(visited);
@@ -262,6 +265,15 @@ public class Job extends PrivateStudyUid {
 
     public Job setOutput(List<File> output) {
         this.output = output;
+        return this;
+    }
+
+    public List<Job> getDependsOn() {
+        return dependsOn;
+    }
+
+    public Job setDependsOn(List<Job> dependsOn) {
+        this.dependsOn = dependsOn;
         return this;
     }
 

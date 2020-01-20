@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.opencb.opencga.core.api.ParamConstants.JOB_DEPENDS_ON;
+
 /**
  * Created by imedina on 17/08/16.
  */
@@ -44,11 +46,12 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     public Response secondaryIndex(
             @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = VariantSecondaryIndexParams.DESCRIPTION) VariantSecondaryIndexParams params) {
-        return submitOperation(VariantSecondaryIndexOperationTool.ID, project, study, params, jobName, jobDescription, jobTags);
+        return submitOperation(VariantSecondaryIndexOperationTool.ID, project, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @DELETE
@@ -57,13 +60,14 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     public Response secondaryIndex(
             @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "Samples to remove. Needs to provide all the samples in the secondary index.") @QueryParam("samples") String samples) {
         HashMap<String, Object> params = new HashMap<>();
         params.put(ParamConstants.STUDY_PARAM, study);
         params.put("samples", samples);
-        return submitOperation(VariantSecondaryIndexSamplesDeleteOperationTool.ID, params, jobName, jobDescription, jobTags);
+        return submitOperation(VariantSecondaryIndexSamplesDeleteOperationTool.ID, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -72,11 +76,12 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     public Response annotation(
             @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = VariantAnnotationIndexParams.DESCRIPTION) VariantAnnotationIndexParams params) {
-        return submitOperation(VariantAnnotationIndexOperationTool.ID, project, study, params, jobName, jobDescription, jobTags);
+        return submitOperation(VariantAnnotationIndexOperationTool.ID, project, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @DELETE
@@ -85,6 +90,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     public Response annotationDelete(
             @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = "Annotation identifier") @QueryParam("annotationId") String annotationId
@@ -92,7 +98,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
         Map<String, Object> params = new HashMap<>();
         params.put(ParamConstants.PROJECT_PARAM, project);
         params.put("annotationId", annotationId);
-        return submitOperationToProject(VariantAnnotationDeleteOperationTool.ID, project, params, jobName, jobDescription, jobTags);
+        return submitOperationToProject(VariantAnnotationDeleteOperationTool.ID, project, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -101,10 +107,11 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     public Response annotationSave(
             @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project,
             @ApiParam(value = VariantAnnotationSaveParams.DESCRIPTION) VariantAnnotationSaveParams params) {
-        return submitOperationToProject(VariantAnnotationSaveOperationTool.ID, project, params, jobName, jobDescription, jobTags);
+        return submitOperationToProject(VariantAnnotationSaveOperationTool.ID, project, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -113,10 +120,11 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     public Response scoreIndex(
             @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = VariantScoreIndexParams.DESCRIPTION) VariantScoreIndexParams params) {
-        return submitOperation(VariantScoreIndexOperationTool.ID, study, params, jobName, jobDescription, jobTags);
+        return submitOperation(VariantScoreIndexOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @DELETE
@@ -125,6 +133,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     public Response scoreDelete(
             @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = "Unique name of the score within the study") @QueryParam("name") String name,
@@ -136,7 +145,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
         params.put("name", name);
         if (resume) params.put("resume", "");
         if (force) params.put("force", "");
-        return submitOperation(VariantScoreDeleteParams.ID, params, jobName, jobDescription, jobTags);
+        return submitOperation(VariantScoreDeleteParams.ID, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -145,10 +154,11 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     public Response sampleIndex(
             @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = VariantSampleIndexParams.DESCRIPTION) VariantSampleIndexParams params) {
-        return submitOperation(VariantSampleIndexOperationTool.ID, study, params, jobName, jobDescription, jobTags);
+        return submitOperation(VariantSampleIndexOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -157,10 +167,11 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     public Response familyIndex(
             @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = VariantFamilyIndexParams.DESCRIPTION) VariantFamilyIndexParams params) {
-        return submitOperation(VariantFamilyIndexOperationTool.ID, study, params, jobName, jobDescription, jobTags);
+        return submitOperation(VariantFamilyIndexOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -169,10 +180,11 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     public Response aggregateFamily(
             @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = VariantAggregateFamilyParams.DESCRIPTION) VariantAggregateFamilyParams params) {
-        return submitOperation(VariantAggregateFamilyOperationTool.ID, study, params, jobName, jobDescription, jobTags);
+        return submitOperation(VariantAggregateFamilyOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
     @POST
@@ -181,27 +193,30 @@ public class VariantOperationWebService extends OpenCGAWSServer {
     public Response aggregate(
             @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
             @ApiParam(value = VariantAggregateParams.DESCRIPTION) VariantAggregateParams params) {
-        return submitOperation(VariantAggregateOperationTool.ID, study, params, jobName, jobDescription, jobTags);
+        return submitOperation(VariantAggregateOperationTool.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
-    public Response submitOperation(String toolId, ToolParams params, String jobName, String jobDescription, String jobTags) {
-        return submitOperation(toolId, null, params, jobName, jobDescription, jobTags);
+    public Response submitOperation(String toolId, ToolParams params, String jobName, String jobDescription, String jobDependsOn,
+                                    String jobTags) {
+        return submitOperation(toolId, null, params, jobName, jobDescription, jobDependsOn, jobTags);
     }
 
     public Response submitOperation(String toolId, String study, ToolParams params,
-                               String jobName, String jobDescription, String jobTags) {
-        return submitOperation(toolId, null, study, params, jobName, jobDescription, jobTags);
+                                    String jobName, String jobDescription, String jobDependsOn, String jobTags) {
+        return submitOperation(toolId, null, study, params, jobName, jobDescription, jobDependsOn, jobTags);
     }
 
-    public Response submitOperationToProject(String toolId, String project, ToolParams params,
-                               String jobName, String jobDescription, String jobTags) {
-        return submitOperation(toolId, project, null, params, jobName, jobDescription, jobTags);
+    public Response submitOperationToProject(String toolId, String project, ToolParams params, String jobName, String jobDescription,
+                                             String jobDependsOn, String jobTags) {
+        return submitOperation(toolId, project, null, params, jobName, jobDescription, jobDependsOn, jobTags);
     }
 
-    public Response submitOperation(String toolId, String project, String study, ToolParams params, String jobName, String jobDescription, String jobTags) {
+    public Response submitOperation(String toolId, String project, String study, ToolParams params, String jobName, String jobDescription,
+                                    String jobDependsOn, String jobTags) {
         try {
             Map<String, Object> paramsMap = params.toParams();
             if (StringUtils.isNotEmpty(study)) {
@@ -210,25 +225,26 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(project)) {
                 paramsMap.put(ParamConstants.PROJECT_PARAM, project);
             }
-            return submitOperation(toolId, paramsMap, jobName, jobDescription, jobTags);
+            return submitOperation(toolId, paramsMap, jobName, jobDescription, jobDependsOn, jobTags);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     public Response submitOperationToProject(String toolId, String project, Map<String, Object> paramsMap,
-                               String jobName, String jobDescription, String jobTags) {
-        return submitOperation(toolId, project, null, paramsMap, jobName, jobDescription, jobTags);
+                                             String jobName, String jobDescription, String jobDependsOn, String jobTags) {
+        return submitOperation(toolId, project, null, paramsMap, jobName, jobDescription, jobDependsOn, jobTags);
     }
 
     public Response submitOperation(String toolId, Map<String, Object> paramsMap,
-                               String jobName, String jobDescription, String jobTags) {
+                                    String jobName, String jobDescription, String jobDependsOn, String jobTags) {
         String project = (String) paramsMap.get(ParamConstants.PROJECT_PARAM);
         String study = (String) paramsMap.get(ParamConstants.STUDY_PARAM);
-        return submitOperation(toolId, project, study, paramsMap, jobName, jobDescription, jobTags);
+        return submitOperation(toolId, project, study, paramsMap, jobName, jobDescription, jobDependsOn, jobTags);
     }
 
-    public Response submitOperation(String toolId, String project, String study, Map<String, Object> paramsMap, String jobName, String jobDescription, String jobTags) {
+    public Response submitOperation(String toolId, String project, String study, Map<String, Object> paramsMap, String jobName,
+                                    String jobDescription, String jobDependsOne, String jobTags) {
         Map<String, String> dynamicParamsMap = new HashMap<>();
         for (String key : this.params.keySet()) {
             String prefix = "dynamic_";
@@ -248,7 +264,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
             // FIXME
             return createPendingResponse();
         } else {
-            return submitJob(toolId, study, paramsMap, jobName, jobDescription, jobTags);
+            return submitJob(toolId, study, paramsMap, jobName, jobDescription, jobDependsOne, jobTags);
         }
     }
 }

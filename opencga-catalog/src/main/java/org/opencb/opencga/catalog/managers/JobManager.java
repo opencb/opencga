@@ -38,15 +38,15 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.AclParams;
-import org.opencb.opencga.core.models.job.JobAclEntry;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobAclEntry;
 import org.opencb.opencga.core.models.job.JobUpdateParams;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -364,16 +364,28 @@ public class JobManager extends ResourceManager<Job> {
         }
         job.setInput(inputFiles);
 
+        if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
+            try {
+                InternalGetDataResult<Job> dependsOnResult = internalGet(study.getUid(),
+                        job.getDependsOn().stream().map(Job::getId).collect(Collectors.toList()), null, INCLUDE_JOB_IDS, job.getUserId(),
+                        false);
+                job.setDependsOn(dependsOnResult.getResults());
+            } catch (CatalogException e) {
+                throw new CatalogException("Unable to find jobs the job depends on. " + e.getMessage(), e);
+            }
+        }
+
         job.setAttributes(ParamUtils.defaultObject(job.getAttributes(), HashMap::new));
     }
 
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String token)
             throws CatalogException {
-        return submit(studyStr, toolId, priority, params, null, null, null, token);
+        return submit(studyStr, toolId, priority, params, null, null, null, null, token);
     }
 
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String jobId,
-                                     String jobDescription, List<String> jobTags, String token) throws CatalogException {
+                                     String jobDescription, List<String> jobDependsOn, List<String> jobTags, String token)
+            throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
@@ -382,6 +394,10 @@ public class JobManager extends ResourceManager<Job> {
                 .append("toolId", toolId)
                 .append("priority", priority)
                 .append("params", params)
+                .append("jobId", jobId)
+                .append("jobDescription", jobDescription)
+                .append("jobDependsOn", jobDependsOn)
+                .append("jobTags", jobTags)
                 .append("token", token);
 
         Job job = new Job();
@@ -397,6 +413,9 @@ public class JobManager extends ResourceManager<Job> {
             job.setUserId(userId);
             job.setParams(params);
             job.setPriority(priority);
+            job.setDependsOn(jobDependsOn != null
+                    ? jobDependsOn.stream().map(j -> new Job().setId(j)).collect(Collectors.toList())
+                    : Collections.emptyList());
 
             autoCompleteNewJob(study, job, token);
 

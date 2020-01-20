@@ -108,6 +108,9 @@ public class ParamConstants {
     public static final String JOB_ID_PARAM = "id";
     public static final String JOB_DESCRIPTION = "jobDescription";
     public static final String JOB_DESCRIPTION_DESCRIPTION = "Job description";
+    public static final String JOB_DEPENDS_ON = "jobDependsOn";
+    public static final String JOB_DEPENDS_ON_PARAM = "dependsOn";
+    public static final String JOB_DEPENDS_ON_DESCRIPTION = "Comma separated list of existing job ids the job will depend on.";
     public static final String JOB_TOOL_PARAM = "tool";
     public static final String JOB_TOOL_DESCRIPTION = "Tool executed by the job";
     public static final String JOB_USER_PARAM = "user";
