@@ -440,12 +440,19 @@ public class VariantQueryParser {
     protected String preProcessGenotypesFilter(Map<Object, List<String>> map, QueryOperation op, List<String> loadedGenotypes) {
         StringBuilder sb = new StringBuilder();
         for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
-//                List<String> genotypes = GenotypeClass.filter(entry.getValue(), loadedGenotypes, defaultGenotypes);
+
             List<String> genotypes = new ArrayList<>(entry.getValue());
+
+            // Loop for multi-allelic values genotypes
+            // Iterate on entry.getValue(), as this loop may add new values to List<String> genotypes
             for (String genotypeStr : entry.getValue()) {
                 boolean negated = isNegated(genotypeStr);
                 if (negated) {
                     genotypeStr = removeNegation(genotypeStr);
+                }
+                if (GenotypeClass.from(genotypeStr) != null) {
+                    // Discard GenotypeClass
+                    continue;
                 }
                 Genotype genotype = new Genotype(genotypeStr);
                 int[] allelesIdx = genotype.getAllelesIdx();
