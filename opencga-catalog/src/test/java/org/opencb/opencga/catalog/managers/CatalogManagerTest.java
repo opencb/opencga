@@ -29,25 +29,24 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.*;
+import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortUpdateParams;
 import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
-import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.models.AclParams;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
-import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
@@ -407,8 +406,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 .collect(Collectors.toSet()));
 
 //        catalogManager.getStudyManager().createGroup(Long.toString(study_4), "admins", "user3", sessionIdUser);
-        catalogManager.getStudyManager().updateGroup(study_4, "admins", new GroupParams("user3", GroupParams.Action.SET),
-                token);
+        catalogManager.getStudyManager().updateGroup(study_4, "admins", ParamUtils.UpdateAction.SET,
+                new GroupUpdateParams(Collections.singletonList("user3")), token);
         assertEquals(new HashSet<>(Arrays.asList("study_4")), catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams
                 .GROUP_USER_IDS.key(), "user3"), null, token).getResults().stream().map(Study::getId)
                 .collect(Collectors.toSet()));
@@ -511,7 +510,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         } catch (CatalogException e) {
         }
 
-        catalogManager.getStudyManager().updateGroup("phase3", "@members", new GroupParams("*", GroupParams.Action.ADD), sessionIdUser2);
+        catalogManager.getStudyManager().updateGroup("phase3", "@members", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("*")), sessionIdUser2);
 
         List<Study> studies = studyManager.resolveIds(Collections.emptyList(), "*");
         assertEquals(1, studies.size());
@@ -530,7 +530,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Create another study with alias phase3
         DataResult<Study> study = catalogManager.getStudyManager().create(project2, "phase3", null, "Phase 3", Study.Type.CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, sessionIdUser2);
-        catalogManager.getStudyManager().updateGroup("phase3", "@members", new GroupParams("*", GroupParams.Action.ADD), sessionIdUser2);
+        catalogManager.getStudyManager().updateGroup("phase3", "@members", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("*")), sessionIdUser2);
 
         List<Study> studies = studyManager.resolveIds(Collections.singletonList("phase3"), "*");
         assertEquals(1, studies.size());
@@ -604,8 +605,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         StudyManager studyManager = catalogManager.getStudyManager();
 
         // Assign permissions to study
-        DataResult<Group> groupDataResult = studyManager.updateGroup(studyFqn, "@members",
-                new GroupParams("user2,user3", GroupParams.Action.ADD), token);
+        DataResult<Group> groupDataResult = studyManager.updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Arrays.asList("user2", "user3")), token);
         assertEquals(3, groupDataResult.first().getUserIds().size());
         assertEquals("@members", groupDataResult.first().getId());
 
@@ -632,8 +633,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
 
         // Remove all the permissions to both users in the study. That should also remove the permissions they had in all the samples.
-        groupDataResult = studyManager.updateGroup(studyFqn, "@members", new GroupParams("user2,user3",
-                GroupParams.Action.REMOVE), token);
+        groupDataResult = studyManager.updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.REMOVE,
+                new GroupUpdateParams(Arrays.asList("user2", "user3")), token);
         assertEquals(1, groupDataResult.first().getUserIds().size());
 
         // Get sample permissions for those members
@@ -652,8 +653,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
         StudyManager studyManager = catalogManager.getStudyManager();
 
         // Assign permissions to study
-        DataResult<Group> groupDataResult = studyManager.updateGroup(studyFqn, "@members",
-                new GroupParams("user2,user3", GroupParams.Action.ADD), token);
+        DataResult<Group> groupDataResult = studyManager.updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Arrays.asList("user2", "user3")), token);
         assertEquals(3, groupDataResult.first().getUserIds().size());
         assertEquals("@members", groupDataResult.first().getId());
 
@@ -678,8 +679,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
                     SampleAclEntry.SamplePermissions.UPDATE.name())));
         }
 
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members",
-                new GroupParams("user2,user3", GroupParams.Action.REMOVE), token);
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.REMOVE,
+                new GroupUpdateParams(Arrays.asList("user2", "user3")), token);
 
         String userId1 = catalogManager.getUserManager().getUserId(token);
         Study study3 = catalogManager.getStudyManager().resolveId(studyFqn, userId1);
@@ -787,7 +788,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void submitJobFromAdminsGroup() throws CatalogException {
         // Add user to admins group
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", new GroupParams("user3", GroupParams.Action.ADD), token);
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("user3")), token);
 
         OpenCGAResult<Job> job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 token);

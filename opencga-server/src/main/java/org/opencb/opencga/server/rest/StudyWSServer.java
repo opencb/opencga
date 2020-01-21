@@ -236,16 +236,15 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updateUsersFromGroupPOST(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Group name") @PathParam("group") String groupId,
-            @ApiParam(value = "Action to be performed: ADD, SET or REMOVE users to/from a group", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD")
-            @QueryParam("action") GroupParams.Action action,
-            @ApiParam(value = "JSON containing the parameters", required = true) GroupUpdateParams users) {
+            @ApiParam(value = "Action to be performed: ADD, SET or REMOVE users to/from a group", allowableValues = "ADD,SET,REMOVE",
+                    defaultValue = "ADD") @QueryParam("action") ParamUtils.UpdateAction action,
+            @ApiParam(value = "JSON containing the parameters", required = true) GroupUpdateParams updateParams) {
         try {
             if (action == null) {
-                action = GroupParams.Action.ADD;
+                action = ParamUtils.UpdateAction.ADD;
             }
 
-            GroupParams params = new GroupParams(users.getUsers(), action);
-            return createOkResponse(catalogManager.getStudyManager().updateGroup(studyStr, groupId, params, token));
+            return createOkResponse(catalogManager.getStudyManager().updateGroup(studyStr, groupId, action, updateParams, token));
 
         } catch (Exception e) {
             return createErrorResponse(e);

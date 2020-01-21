@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -43,7 +44,7 @@ import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.Group;
-import org.opencb.opencga.core.models.study.GroupParams;
+import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.user.Account;
@@ -163,8 +164,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.getFileManager().create(studyFqn, new File().setPath("data/d1/d2/d3/d4/my.txt"), false, "file content", null, ownerSessionId);
 
         // Add studyAdminUser1 and studyAdminUser2 to admin group and admin role.
-        catalogManager.getStudyManager().updateGroup(studyFqn, groupAdmin, new GroupParams(studyAdminUser1 + "," + studyAdminUser2,
-                GroupParams.Action.SET), ownerSessionId);
+        catalogManager.getStudyManager().updateGroup(studyFqn, groupAdmin, ParamUtils.UpdateAction.SET,
+                new GroupUpdateParams(Arrays.asList(studyAdminUser1, studyAdminUser2)), ownerSessionId);
 
         Study.StudyAclParams aclParams1 = new Study.StudyAclParams("", AclParams.Action.ADD, AuthorizationManager.ROLE_ANALYST);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), memberUser, aclParams1, studyAdmin1SessionId);
@@ -216,18 +217,22 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     private DataResult<Group> updateGroup(String studyStr, String groupId, @Nullable String addUsers, @Nullable String removeUsers,
                                           @Nullable String setUsers, String sessionId) throws CatalogException {
-        GroupParams groupParams = null;
+        GroupUpdateParams groupParams = null;
+        ParamUtils.UpdateAction action = null;
         if (org.apache.commons.lang3.StringUtils.isNotEmpty(addUsers)) {
-            groupParams = new GroupParams(addUsers, GroupParams.Action.ADD);
+            groupParams = new GroupUpdateParams(Arrays.asList(addUsers.split(",")));
+            action = ParamUtils.UpdateAction.ADD;
         } else if (org.apache.commons.lang3.StringUtils.isNotEmpty(removeUsers)) {
-            groupParams = new GroupParams(removeUsers, GroupParams.Action.REMOVE);
+            groupParams = new GroupUpdateParams(Arrays.asList(removeUsers.split(",")));
+            action = ParamUtils.UpdateAction.REMOVE;
         } else if (org.apache.commons.lang3.StringUtils.isNotEmpty(setUsers)) {
-            groupParams = new GroupParams(setUsers, GroupParams.Action.SET);
+            groupParams = new GroupUpdateParams(Arrays.asList(setUsers.split(",")));
+            action = ParamUtils.UpdateAction.SET;
         }
         if (groupParams == null) {
             throw new CatalogException("No action");
         }
-        return catalogManager.getStudyManager().updateGroup(studyStr, groupId, groupParams, sessionId);
+        return catalogManager.getStudyManager().updateGroup(studyStr, groupId, action, groupParams, sessionId);
     }
 
     @Test
@@ -485,8 +490,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readProjectDeny() throws CatalogException {
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", new GroupParams(externalUser, GroupParams.Action.REMOVE),
-                ownerSessionId);
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.REMOVE,
+                new GroupUpdateParams(Collections.singletonList(externalUser)), ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getProjectManager().get(p1, null, externalSessionId);
     }
@@ -505,8 +510,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readStudyDeny() throws CatalogException {
-        catalogManager.getStudyManager().updateGroup(String.valueOf(studyFqn), "@members", new GroupParams(externalUser,
-                GroupParams.Action.REMOVE), ownerSessionId);
+        catalogManager.getStudyManager().updateGroup(String.valueOf(studyFqn), "@members", ParamUtils.UpdateAction.REMOVE,
+                new GroupUpdateParams(Collections.singletonList(externalUser)), ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getStudyManager().get(studyFqn, null, externalSessionId);
     }
@@ -788,8 +793,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         String newUser = "newUser";
         catalogManager.getUserManager().create(newUser, newUser, "asda@mail.com", password, "org", 1000L, Account.Type.FULL, null);
         String sessionId = catalogManager.getUserManager().login(ownerUser, password);
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", new GroupParams(newUser, GroupParams.Action.ADD),
-                ownerSessionId);
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList(newUser)), ownerSessionId);
 
         DataResult<Sample> sample = catalogManager.getSampleManager().get(studyFqn, smp6.getId(), null, sessionId);
         assertEquals(1, sample.getNumResults());

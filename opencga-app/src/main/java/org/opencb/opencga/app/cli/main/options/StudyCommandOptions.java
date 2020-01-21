@@ -22,7 +22,6 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.AclParams;
-import org.opencb.opencga.core.models.study.GroupParams;
 import org.opencb.opencga.core.models.study.Study;
 
 import java.util.List;
@@ -277,10 +276,10 @@ public class StudyCommandOptions {
         public String groupId;
 
         @Parameter(names = {"--users"}, description = "Comma separated list of users", required = true, arity = 1)
-        public String users;
+        public List<String> users;
 
         @Parameter(names = {"--action"}, description = "Action to be performed over users (ADD, SET, REMOVE)", required = true, arity = 1)
-        public GroupParams.Action action = GroupParams.Action.ADD;
+        public ParamUtils.UpdateAction action = ParamUtils.UpdateAction.ADD;
     }
 
     @Parameters(commandNames = {"variable-sets"}, commandDescription = "Return the variable sets of a study")

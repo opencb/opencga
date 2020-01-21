@@ -13,22 +13,18 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
-import org.opencb.opencga.core.models.project.Project;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.AclParams;
-import org.opencb.opencga.core.models.individual.IndividualAclEntry;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.individual.Individual;
-import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.sample.SampleCollection;
-import org.opencb.opencga.core.models.sample.SampleProcessing;
-import org.opencb.opencga.core.models.study.GroupParams;
+import org.opencb.opencga.core.models.individual.IndividualAclEntry;
+import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.sample.*;
+import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -1143,23 +1139,23 @@ public class SampleManagerTest extends AbstractManagerTest {
     public void getSharedProject() throws CatalogException, IOException {
         catalogManager.getUserManager().create("dummy", "dummy", "asd@asd.asd", "dummy", "", 50000L,
                 Account.Type.GUEST, null);
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", new GroupParams("dummy",
-                GroupParams.Action.ADD), token);
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("dummy")), token);
 
         String token = catalogManager.getUserManager().login("dummy", "dummy");
         DataResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("dummy", QueryOptions.empty(), token);
         assertEquals(1, queryResult.getNumResults());
 
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", new GroupParams("*", GroupParams.Action.ADD),
-                this.token);
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("*")), this.token);
         queryResult = catalogManager.getProjectManager().getSharedProjects("*", QueryOptions.empty(), null);
         assertEquals(1, queryResult.getNumResults());
     }
 
     @Test
     public void smartResolutorStudyAliasFromAnonymousUser() throws CatalogException {
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", new GroupParams("*", GroupParams.Action.ADD),
-                token);
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("*")), token);
         Study study = catalogManager.getStudyManager().resolveId(studyFqn, "*");
         assertTrue(study != null);
     }

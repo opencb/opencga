@@ -26,8 +26,9 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.variant.manager.operations.AbstractVariantOperationManagerTest;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.core.models.study.GroupParams;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -129,7 +130,8 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
     @Test
     public void testQueryAnonymous() throws Exception {
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", new GroupParams("*", GroupParams.Action.ADD), sessionId);
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("*")), sessionId);
 
 //        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), "s1");
 //        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), "p1:s1");

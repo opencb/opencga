@@ -27,8 +27,9 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.user.Account;
-import org.opencb.opencga.core.models.study.GroupParams;
+import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 
@@ -106,8 +107,8 @@ public class ProjectManagerTest extends GenericTest {
 
         // Create a new study in project2 with some dummy permissions for user
         String s2 = catalogManager.getStudyManager().create(project2, "s2", null, "Study 2", Study.Type.CONTROL_SET, null, "", null, null, null, null, null, null, null, null, sessionIdUser2).first().getId();
-        catalogManager.getStudyManager().updateGroup(s2, "@members", new GroupParams("user", GroupParams.Action.ADD),
-                sessionIdUser2);
+        catalogManager.getStudyManager().updateGroup(s2, "@members", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("user")), sessionIdUser2);
 
         DataResult<Project> queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(1, queryResult.getNumResults());
@@ -124,8 +125,8 @@ public class ProjectManagerTest extends GenericTest {
 
         // Add permissions to user in a study of user3
         String s3 = catalogManager.getStudyManager().create(project3, "s3", null, "StudyProject3", Study.Type.CONTROL_SET, null, "", null, null, null, null, null, null, null, null, sessionIdUser3).first().getId();
-        catalogManager.getStudyManager().updateGroup(String.valueOf(s3), "@members", new GroupParams("user", GroupParams.Action.ADD),
-                sessionIdUser3);
+        catalogManager.getStudyManager().updateGroup(String.valueOf(s3), "@members", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("user")), sessionIdUser3);
 
         queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(2, queryResult.getNumResults());

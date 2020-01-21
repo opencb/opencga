@@ -8,11 +8,12 @@ import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.GroupParams;
+import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 
@@ -70,7 +71,8 @@ public class AbstractSolrManagerTest extends GenericTest {
         studyFqn = catalogManager.getStudyManager().create(project.getFqn(), "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null,
                 null, null, null, null, null, null, null, sessionIdOwner).first().getFqn();
 
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", new GroupParams("admin1", GroupParams.Action.ADD), sessionIdOwner);
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@admins", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("admin1")), sessionIdOwner);
         catalogManager.getStudyManager().createGroup(studyFqn, "@study_allow", "@study_allow", Collections.singletonList("user1"), sessionIdAdmin);
         catalogManager.getStudyManager().createGroup(studyFqn, "@study_deny", "@study_deny", Collections.singletonList("user2"), sessionIdAdmin);
 
