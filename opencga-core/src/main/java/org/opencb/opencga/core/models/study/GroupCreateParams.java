@@ -2,12 +2,14 @@ package org.opencb.opencga.core.models.study;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
+
 public class GroupCreateParams {
 
     @JsonProperty(required = true)
     private String id;
     private String name;
-    private String users;
+    private List<String> users;
 
     public GroupCreateParams() {
     }
@@ -40,11 +42,11 @@ public class GroupCreateParams {
         return this;
     }
 
-    public String getUsers() {
+    public List<String> getUsers() {
         return users;
     }
 
-    public GroupCreateParams setUsers(String users) {
+    public GroupCreateParams setUsers(List<String> users) {
         this.users = users;
         return this;
     }

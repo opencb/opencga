@@ -811,13 +811,12 @@ public class StudyManager extends AbstractManager {
         return results;
     }
 
-    public OpenCGAResult<Group> createGroup(String studyStr, String groupId, String groupName, String users, String sessionId)
+    public OpenCGAResult<Group> createGroup(String studyStr, String groupId, String groupName, List<String> users, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(groupId, "group id");
         String name = StringUtils.isEmpty(groupName) ? groupId : groupName;
 
-        List<String> userList = StringUtils.isNotEmpty(users) ? Arrays.asList(users.split(",")) : Collections.emptyList();
-        return createGroup(studyStr, new Group(groupId, name, userList, null), sessionId);
+        return createGroup(studyStr, new Group(groupId, name, users, null), sessionId);
     }
 
     public OpenCGAResult<Group> createGroup(String studyId, Group group, String token) throws CatalogException {

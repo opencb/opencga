@@ -25,6 +25,8 @@ import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.study.GroupParams;
 import org.opencb.opencga.core.models.study.Study;
 
+import java.util.List;
+
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
 /**
@@ -256,7 +258,7 @@ public class StudyCommandOptions {
         public String groupName;
 
         @Parameter(names = {"--users"}, description = "Comma separated list of members that will form the group", arity = 1)
-        public String users;
+        public List<String> users;
 
     }
 
