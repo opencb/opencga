@@ -40,7 +40,6 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
@@ -247,11 +246,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         }
 
         return checkStudyPermission((Document) queryResult.first(), user, permission.name());
-    }
-
-    @Override
-    public OpenCGAResult<Study> updateStudyLastModified(long studyId) throws CatalogDBException {
-        return update(studyId, new ObjectMap("lastModified", TimeUtils.getTime()), QueryOptions.empty());
     }
 
     @Override
@@ -1293,7 +1287,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         Document studyParameters = new Document();
 
         String[] acceptedParams = {QueryParams.ALIAS.key(), QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(),
-                QueryParams.DESCRIPTION.key(), QueryParams.CIPHER.key(), };
+                QueryParams.DESCRIPTION.key(), };
         filterStringParams(parameters, studyParameters, acceptedParams);
 
         String[] acceptedLongParams = {QueryParams.SIZE.key()};
@@ -1784,10 +1778,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     case UUID:
                     case NAME:
                     case DESCRIPTION:
-                    case CIPHER:
                     case STATUS_MSG:
                     case STATUS_DATE:
-                    case LAST_MODIFIED:
                     case DATASTORES:
                     case SIZE:
                     case URI:
@@ -1797,15 +1789,6 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                     case GROUP_ID:
                     case GROUP_USER_IDS:
                     case RELEASE:
-                    case EXPERIMENT_ID:
-                    case EXPERIMENT_NAME:
-                    case EXPERIMENT_TYPE:
-                    case EXPERIMENT_PLATFORM:
-                    case EXPERIMENT_MANUFACTURER:
-                    case EXPERIMENT_DATE:
-                    case EXPERIMENT_LAB:
-                    case EXPERIMENT_CENTER:
-                    case EXPERIMENT_RESPONSIBLE:
                     case COHORTS:
                     case VARIABLE_SET:
                     case VARIABLE_SET_UID:
