@@ -18,6 +18,14 @@ public class FileCreateParams {
     public FileCreateParams() {
     }
 
+    public FileCreateParams(String path, String content, String description, boolean parents, boolean directory) {
+        this.path = path;
+        this.content = content;
+        this.description = description;
+        this.parents = parents;
+        this.directory = directory;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FileCreateParams{");

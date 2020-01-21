@@ -9,10 +9,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ClinicalAnalysisCreateParams {
@@ -45,6 +42,69 @@ public class ClinicalAnalysisCreateParams {
     private Map<String, Object> attributes;
 
     public ClinicalAnalysisCreateParams() {
+    }
+
+    public ClinicalAnalysisCreateParams(String id, String name, String description, ClinicalAnalysis.Type type, Disorder disorder,
+                                        Map<String, List<String>> files, ProbandParam proband, FamilyParam family,
+                                        Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband, ClinicalAnalystParam analyst,
+                                        ClinicalAnalysis.ClinicalStatus status, List<InterpretationCreateParams> interpretations,
+                                        ClinicalConsent consent, String dueDate, List<Comment> comments, List<Alert> alerts,
+                                        Enums.Priority priority, List<String> flags, Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.type = type;
+        this.disorder = disorder;
+        this.files = files;
+        this.proband = proband;
+        this.family = family;
+        this.roleToProband = roleToProband;
+        this.analyst = analyst;
+        this.status = status;
+        this.interpretations = interpretations;
+        this.consent = consent;
+        this.dueDate = dueDate;
+        this.comments = comments;
+        this.alerts = alerts;
+        this.priority = priority;
+        this.flags = flags;
+        this.attributes = attributes;
+    }
+
+    public static ClinicalAnalysisCreateParams of(ClinicalAnalysis clinicalAnalysis) {
+        Map<String, List<String>> files;
+        if (clinicalAnalysis.getFiles() != null) {
+            files = new HashMap<>();
+            for (Map.Entry<String, List<File>> entry : clinicalAnalysis.getFiles().entrySet()) {
+                List<String> tmpFiles = new ArrayList<>();
+                if (entry.getValue() != null) {
+                    for (File file : entry.getValue()) {
+                        if (StringUtils.isNotEmpty(file.getPath())) {
+                            tmpFiles.add(file.getPath());
+                        } else {
+                            tmpFiles.add(file.getUuid());
+                        }
+                    }
+                }
+                if (StringUtils.isNotEmpty(entry.getKey())) {
+                    files.put(entry.getKey(), tmpFiles);
+                }
+            }
+        } else {
+            files = Collections.emptyMap();
+        }
+        return new ClinicalAnalysisCreateParams(clinicalAnalysis.getId(), clinicalAnalysis.getName(), clinicalAnalysis.getDescription(),
+                clinicalAnalysis.getType(), clinicalAnalysis.getDisorder(), files,
+                clinicalAnalysis.getProband() != null ? ProbandParam.of(clinicalAnalysis.getProband()) : null,
+                clinicalAnalysis.getFamily() != null ? FamilyParam.of(clinicalAnalysis.getFamily()) : null,
+                clinicalAnalysis.getRoleToProband(),
+                clinicalAnalysis.getAnalyst() != null ? ClinicalAnalystParam.of(clinicalAnalysis.getAnalyst()) : null,
+                clinicalAnalysis.getStatus(),
+                clinicalAnalysis.getInterpretations() != null
+                        ? clinicalAnalysis.getInterpretations().stream().map(InterpretationCreateParams::of).collect(Collectors.toList())
+                        : Collections.emptyList(), clinicalAnalysis.getConsent(), clinicalAnalysis.getDueDate(),
+                clinicalAnalysis.getComments(), clinicalAnalysis.getAlerts(), clinicalAnalysis.getPriority(), clinicalAnalysis.getFlags(),
+                clinicalAnalysis.getAttributes());
     }
 
     @Override
@@ -297,20 +357,160 @@ public class ClinicalAnalysisCreateParams {
 
 
     private static class SampleParams {
-        public String id;
+        private String id;
+
+        public SampleParams() {
+        }
+
+        public SampleParams(String id) {
+            this.id = id;
+        }
+
+        public static SampleParams of(Sample sample) {
+            return new SampleParams(sample.getId());
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("SampleParams{");
+            sb.append("id='").append(id).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public SampleParams setId(String id) {
+            this.id = id;
+            return this;
+        }
     }
 
     private static class ProbandParam {
-        public String id;
-        public List<SampleParams> samples;
+        private String id;
+        private List<SampleParams> samples;
+
+        public ProbandParam() {
+        }
+
+        public ProbandParam(String id, List<SampleParams> samples) {
+            this.id = id;
+            this.samples = samples;
+        }
+
+        public static ProbandParam of(Individual individual) {
+            return new ProbandParam(individual.getId(),
+                    individual.getSamples() != null
+                            ? individual.getSamples().stream().map(SampleParams::of).collect(Collectors.toList())
+                            : Collections.emptyList());
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("ProbandParam{");
+            sb.append("id='").append(id).append('\'');
+            sb.append(", samples=").append(samples);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public ProbandParam setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public List<SampleParams> getSamples() {
+            return samples;
+        }
+
+        public ProbandParam setSamples(List<SampleParams> samples) {
+            this.samples = samples;
+            return this;
+        }
     }
 
     private static class FamilyParam {
-        public String id;
-        public List<ProbandParam> members;
+        private String id;
+        private List<ProbandParam> members;
+
+        public FamilyParam() {
+        }
+
+        public FamilyParam(String id, List<ProbandParam> members) {
+            this.id = id;
+            this.members = members;
+        }
+
+        public static FamilyParam of(Family family) {
+            return new FamilyParam(family.getId(),
+                    family.getMembers() != null
+                            ? family.getMembers().stream().map(ProbandParam::of).collect(Collectors.toList())
+                            : Collections.emptyList());
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("FamilyParam{");
+            sb.append("id='").append(id).append('\'');
+            sb.append(", members=").append(members);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public FamilyParam setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public List<ProbandParam> getMembers() {
+            return members;
+        }
+
+        public FamilyParam setMembers(List<ProbandParam> members) {
+            this.members = members;
+            return this;
+        }
     }
 
     private static class ClinicalAnalystParam {
-        public String assignee;
+        private String assignee;
+
+        public ClinicalAnalystParam() {
+        }
+
+        public ClinicalAnalystParam(String assignee) {
+            this.assignee = assignee;
+        }
+
+        public static ClinicalAnalystParam of(ClinicalAnalysis.ClinicalAnalyst clinicalAnalyst) {
+            return new ClinicalAnalystParam(clinicalAnalyst.getAssignee());
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("ClinicalAnalystParam{");
+            sb.append("assignee='").append(assignee).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getAssignee() {
+            return assignee;
+        }
+
+        public ClinicalAnalystParam setAssignee(String assignee) {
+            this.assignee = assignee;
+            return this;
+        }
     }
 }

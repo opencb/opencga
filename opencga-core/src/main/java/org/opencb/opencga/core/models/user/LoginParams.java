@@ -7,6 +7,10 @@ public class LoginParams {
     public LoginParams() {
     }
 
+    public LoginParams(String password) {
+        this.password = password;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("LoginParams{");

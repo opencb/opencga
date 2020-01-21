@@ -50,6 +50,33 @@ public class ClinicalUpdateParams {
     public ClinicalUpdateParams() {
     }
 
+    public ClinicalUpdateParams(String id, String name, String description, ClinicalAnalysis.Type type, Disorder disorder, Map<String,
+            List<String>> files, ProbandParam proband, FamilyParam family, Map<String, ClinicalAnalysis.FamiliarRelationship> roleToProband,
+                                ClinicalAnalystParam analyst, ClinicalAnalysis.ClinicalStatus status,
+                                List<InterpretationUpdateParams> interpretations, ClinicalConsent consent, String dueDate,
+                                List<Comment> comments, List<Alert> alerts, Enums.Priority priority, List<String> flags,
+                                Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.type = type;
+        this.disorder = disorder;
+        this.files = files;
+        this.proband = proband;
+        this.family = family;
+        this.roleToProband = roleToProband;
+        this.analyst = analyst;
+        this.status = status;
+        this.interpretations = interpretations;
+        this.consent = consent;
+        this.dueDate = dueDate;
+        this.comments = comments;
+        this.alerts = alerts;
+        this.priority = priority;
+        this.flags = flags;
+        this.attributes = attributes;
+    }
+
     @JsonIgnore
     public ObjectMap getUpdateMap() throws JsonProcessingException {
         return new ObjectMap(getUpdateObjectMapper().writeValueAsString(this));

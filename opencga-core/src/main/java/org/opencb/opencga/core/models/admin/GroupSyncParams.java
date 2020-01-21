@@ -11,6 +11,14 @@ public class GroupSyncParams {
     public GroupSyncParams() {
     }
 
+    public GroupSyncParams(String authenticationOriginId, String from, String to, String study, boolean force) {
+        this.authenticationOriginId = authenticationOriginId;
+        this.from = from;
+        this.to = to;
+        this.study = study;
+        this.force = force;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("GroupSyncParams{");

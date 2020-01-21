@@ -14,6 +14,13 @@ public class FilterUpdateParams {
     public FilterUpdateParams() {
     }
 
+    public FilterUpdateParams(File.Bioformat bioformat, String description, Query query, QueryOptions options) {
+        this.bioformat = bioformat;
+        this.description = description;
+        this.query = query;
+        this.options = options;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FilterUpdateParams{");

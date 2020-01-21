@@ -10,6 +10,13 @@ public class InstallationParams {
     public InstallationParams() {
     }
 
+    public InstallationParams(String secretKey, String password, String email, String organization) {
+        this.secretKey = secretKey;
+        this.password = password;
+        this.email = email;
+        this.organization = organization;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("InstallationParams{");

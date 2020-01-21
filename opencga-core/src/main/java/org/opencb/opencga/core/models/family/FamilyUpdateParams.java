@@ -26,6 +26,20 @@ public class FamilyUpdateParams {
     public FamilyUpdateParams() {
     }
 
+    public FamilyUpdateParams(String id, String name, String description, List<Phenotype> phenotypes, List<Disorder> disorders,
+                              List<String> members, Integer expectedSize, List<AnnotationSet> annotationSets,
+                              Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.phenotypes = phenotypes;
+        this.disorders = disorders;
+        this.members = members;
+        this.expectedSize = expectedSize;
+        this.annotationSets = annotationSets;
+        this.attributes = attributes;
+    }
+
     @JsonIgnore
     public ObjectMap getUpdateMap() throws JsonProcessingException {
         List<AnnotationSet> annotationSetList = this.annotationSets;

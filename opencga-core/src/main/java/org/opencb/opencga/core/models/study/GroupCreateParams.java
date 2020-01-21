@@ -14,6 +14,16 @@ public class GroupCreateParams {
     public GroupCreateParams() {
     }
 
+    public GroupCreateParams(String id, String name, List<String> users) {
+        this.id = id;
+        this.name = name;
+        this.users = users;
+    }
+
+    public static GroupCreateParams of(Group group) {
+        return new GroupCreateParams(group.getId(), group.getName(), group.getUserIds());
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("GroupCreateParams{");

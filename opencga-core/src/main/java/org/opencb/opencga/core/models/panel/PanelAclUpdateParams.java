@@ -9,6 +9,11 @@ public class PanelAclUpdateParams extends AclParams {
     public PanelAclUpdateParams() {
     }
 
+    public PanelAclUpdateParams(String permissions, Action action, String panel) {
+        super(permissions, action);
+        this.panel = panel;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("PanelAclUpdateParams{");

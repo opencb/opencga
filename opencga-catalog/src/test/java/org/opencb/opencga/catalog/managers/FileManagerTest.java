@@ -131,7 +131,7 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testUpdateRelatedFiles() throws CatalogException {
         FileUpdateParams updateParams = new FileUpdateParams()
-                .setRelatedFiles(Collections.singletonList(new FileUpdateParams.RelatedFile(testFile2, File.RelatedFile.Relation.PRODUCED_FROM)));
+                .setRelatedFiles(Collections.singletonList(new SmallRelatedFileParams(testFile2, File.RelatedFile.Relation.PRODUCED_FROM)));
         fileManager.update(studyFqn, testFile1, updateParams, QueryOptions.empty(), token);
 
         File file = fileManager.get(studyFqn, testFile1, QueryOptions.empty(), token).first();
@@ -143,7 +143,7 @@ public class FileManagerTest extends AbstractManagerTest {
         actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), ParamUtils.UpdateAction.SET.name());
 
         updateParams = new FileUpdateParams()
-                .setRelatedFiles(Collections.singletonList(new FileUpdateParams.RelatedFile(testFile2, File.RelatedFile.Relation.PART_OF_PAIR)));
+                .setRelatedFiles(Collections.singletonList(new SmallRelatedFileParams(testFile2, File.RelatedFile.Relation.PART_OF_PAIR)));
         fileManager.update(studyFqn, testFile1, updateParams, new QueryOptions(Constants.ACTIONS, actionMap), token);
         file = fileManager.get(studyFqn, testFile1, QueryOptions.empty(), token).first();
         assertEquals(1, file.getRelatedFiles().size());
@@ -157,7 +157,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // We add it again
         updateParams = new FileUpdateParams()
-                .setRelatedFiles(Collections.singletonList(new FileUpdateParams.RelatedFile(testFile2, File.RelatedFile.Relation.PRODUCED_FROM)));
+                .setRelatedFiles(Collections.singletonList(new SmallRelatedFileParams(testFile2, File.RelatedFile.Relation.PRODUCED_FROM)));
         fileManager.update(studyFqn, testFile1, updateParams, QueryOptions.empty(), token);
 
         // And now we will update with an empty list

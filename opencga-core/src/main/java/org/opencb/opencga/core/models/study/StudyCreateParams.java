@@ -16,6 +16,22 @@ public class StudyCreateParams {
     public StudyCreateParams() {
     }
 
+    public StudyCreateParams(String id, String name, String alias, Study.Type type, String description, Map<String, Object> stats,
+                             Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.alias = alias;
+        this.type = type;
+        this.description = description;
+        this.stats = stats;
+        this.attributes = attributes;
+    }
+
+    public static StudyCreateParams of(Study study) {
+        return new StudyCreateParams(study.getId(), study.getName(), study.getAlias(), study.getType(), study.getDescription(),
+                study.getStats(), study.getAttributes());
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("StudyCreateParams{");

@@ -21,6 +21,13 @@ public class JobUpdateParams {
     public JobUpdateParams() {
     }
 
+    public JobUpdateParams(String description, List<String> tags, Boolean visited, Map<String, Object> attributes) {
+        this.description = description;
+        this.tags = tags;
+        this.visited = visited;
+        this.attributes = attributes;
+    }
+
     @JsonIgnore
     public ObjectMap getUpdateMap() throws JsonProcessingException {
         return new ObjectMap(getDefaultNonNullObjectMapper().writeValueAsString(this));

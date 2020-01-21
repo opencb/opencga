@@ -7,6 +7,10 @@ public class JWTParams {
     public JWTParams() {
     }
 
+    public JWTParams(String secretKey) {
+        this.secretKey = secretKey;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("JWTParams{");

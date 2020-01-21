@@ -9,6 +9,11 @@ public class CohortAclUpdateParams extends AclParams {
     public CohortAclUpdateParams() {
     }
 
+    public CohortAclUpdateParams(String permissions, Action action, String cohort) {
+        super(permissions, action);
+        this.cohort = cohort;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CohortAclUpdateParams{");

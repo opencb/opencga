@@ -29,6 +29,30 @@ public class SampleCreateParams {
     public SampleCreateParams() {
     }
 
+    public SampleCreateParams(String id, String description, String type, String individualId, SampleProcessing processing,
+                              SampleCollection collection, String source, Boolean somatic, List<Phenotype> phenotypes,
+                              List<AnnotationSet> annotationSets, Map<String, Object> attributes, String name, Map<String, Object> stats) {
+        this.id = id;
+        this.description = description;
+        this.type = type;
+        this.individualId = individualId;
+        this.processing = processing;
+        this.collection = collection;
+        this.source = source;
+        this.somatic = somatic;
+        this.phenotypes = phenotypes;
+        this.annotationSets = annotationSets;
+        this.attributes = attributes;
+        this.name = name;
+        this.stats = stats;
+    }
+
+    public static SampleCreateParams of(Sample sample) {
+        return new SampleCreateParams(sample.getId(), sample.getDescription(), sample.getType(), sample.getIndividualId(),
+                sample.getProcessing(), sample.getCollection(), sample.getSource(), sample.isSomatic(), sample.getPhenotypes(),
+                sample.getAnnotationSets(), sample.getAttributes(), sample.getName(), sample.getStats());
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleCreateParams{");
