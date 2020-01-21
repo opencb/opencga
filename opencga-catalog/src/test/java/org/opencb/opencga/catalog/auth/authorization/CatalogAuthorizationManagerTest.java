@@ -125,10 +125,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Before
     public void before() throws Exception {
-        Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
-                .openStream());
-        configuration.getAdmin().setAlgorithm("HS256");
-        configuration.getAdmin().setSecretKey("dummy");
+        Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
         CatalogManagerExternalResource.clearCatalog(configuration);
 
         catalogManager = new CatalogManager(configuration);

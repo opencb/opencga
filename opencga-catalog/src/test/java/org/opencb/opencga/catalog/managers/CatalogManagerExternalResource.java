@@ -63,21 +63,15 @@ public class CatalogManagerExternalResource extends ExternalResource {
         } while (opencgaHome.toFile().exists());
         Files.createDirectories(opencgaHome);
         configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
-        configuration.getAdmin().setAlgorithm("HS256");
-        configuration.getAdmin().setSecretKey("dummy");
         configuration.setWorkspace(opencgaHome.resolve("sessions").toAbsolutePath().toString());
         configuration.setJobDir(opencgaHome.resolve("jobs").toAbsolutePath().toString());
 
-        catalogManager = new CatalogManager(configuration);
-        try {
-            String token = catalogManager.getUserManager().loginAsAdmin("admin");
-            catalogManager.deleteCatalogDB(token);
-        } catch (Exception ignore) {}
         clearCatalog(configuration);
         if (!opencgaHome.toFile().exists()) {
             deleteFolderTree(opencgaHome.toFile());
             Files.createDirectory(opencgaHome);
         }
+        catalogManager = new CatalogManager(configuration);
         catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "");
     }
 

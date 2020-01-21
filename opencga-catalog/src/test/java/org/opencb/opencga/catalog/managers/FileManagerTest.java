@@ -1576,6 +1576,9 @@ public class FileManagerTest extends AbstractManagerTest {
         if (Files.notExists(copy)) {
             Files.copy(sourcePath, copy);
         }
+        if (Files.exists(Paths.get("/tmp/other"))) {
+            catalogManager.getCatalogIOManagerFactory().getDefault().deleteDirectory(Paths.get("/tmp/other").toUri());
+        }
 
         Study study = catalogManager.getStudyManager().resolveId(studyFqn, "user");
 
