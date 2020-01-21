@@ -53,6 +53,7 @@ public class User {
     private long quota;
 
     private List<Project> projects;
+    @Deprecated
     private List<Tool> tools;
 
     private UserConfiguration configs;

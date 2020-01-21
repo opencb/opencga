@@ -19,6 +19,7 @@ package org.opencb.opencga.core.models;
 /**
  * Created by jacobo on 11/09/14.
  */
+@Deprecated
 public class Tool {
 
     private long id;
