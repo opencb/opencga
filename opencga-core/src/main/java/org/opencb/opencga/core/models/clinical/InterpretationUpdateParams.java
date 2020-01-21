@@ -35,6 +35,27 @@ public class InterpretationUpdateParams {
     public InterpretationUpdateParams() {
     }
 
+    public InterpretationUpdateParams(String id, String description, String clinicalAnalysisId, List<DiseasePanel> panels,
+                                      Software software, Analyst analyst, List<Software> dependencies, Map<String, Object> filters,
+                                      String creationDate, List<ReportedVariant> primaryFindings, List<ReportedVariant> secondaryFindings,
+                                      List<ReportedLowCoverage> reportedLowCoverages, List<Comment> comments,
+                                      Map<String, Object> attributes) {
+        this.id = id;
+        this.description = description;
+        this.clinicalAnalysisId = clinicalAnalysisId;
+        this.panels = panels;
+        this.software = software;
+        this.analyst = analyst;
+        this.dependencies = dependencies;
+        this.filters = filters;
+        this.creationDate = creationDate;
+        this.primaryFindings = primaryFindings;
+        this.secondaryFindings = secondaryFindings;
+        this.reportedLowCoverages = reportedLowCoverages;
+        this.comments = comments;
+        this.attributes = attributes;
+    }
+
     @JsonIgnore
     public ObjectMap getUpdateMap() throws JsonProcessingException {
         return new ObjectMap(getUpdateObjectMapper().writeValueAsString(this));

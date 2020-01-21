@@ -1,7 +1,5 @@
 package org.opencb.opencga.core.models.study;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.util.Map;
 
 public class StudyUpdateParams {
@@ -15,6 +13,16 @@ public class StudyUpdateParams {
     private Map<String, Object> attributes;
 
     public StudyUpdateParams() {
+    }
+
+    public StudyUpdateParams(String name, String alias, Study.Type type, String description, Map<String, Object> stats,
+                             Map<String, Object> attributes) {
+        this.name = name;
+        this.alias = alias;
+        this.type = type;
+        this.description = description;
+        this.stats = stats;
+        this.attributes = attributes;
     }
 
     @Override

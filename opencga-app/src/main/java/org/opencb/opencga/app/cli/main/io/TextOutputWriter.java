@@ -427,8 +427,8 @@ public class TextOutputWriter extends AbstractOutputWriter {
             }
 
             for (Job job : queryResult.getResults()) {
-                sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-                        StringUtils.defaultIfEmpty(job.getId(), "-"), StringUtils.defaultIfEmpty(job.getName(), "-"),
+                sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%s\n",
+                        StringUtils.defaultIfEmpty(job.getId(), "-"),
                         StringUtils.defaultIfEmpty(job.getCreationDate(), "-"),
                         job.getStatus() != null ? StringUtils.defaultIfEmpty(job.getStatus().getName(), "-") : "-",
                         StringUtils.join(job.getInput(), ", "),

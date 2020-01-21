@@ -131,7 +131,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.NAME.key(), commandOptions.name);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.ID.key(), commandOptions.id);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.TOOL_NAME.key(), commandOptions.toolName);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.STATUS_NAME.key(), commandOptions.status);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.USER_ID.key(), commandOptions.ownerId);

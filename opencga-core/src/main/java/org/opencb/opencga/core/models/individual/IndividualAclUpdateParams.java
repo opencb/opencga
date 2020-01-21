@@ -11,6 +11,13 @@ public class IndividualAclUpdateParams extends AclParams {
     public IndividualAclUpdateParams() {
     }
 
+    public IndividualAclUpdateParams(String permissions, Action action, String individual, String sample, boolean propagate) {
+        super(permissions, action);
+        this.individual = individual;
+        this.sample = sample;
+        this.propagate = propagate;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("IndividualAclUpdateParams{");

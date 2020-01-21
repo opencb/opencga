@@ -12,6 +12,13 @@ public class UserUpdateParams {
     public UserUpdateParams() {
     }
 
+    public UserUpdateParams(String name, String email, String organization, Map<String, Object> attributes) {
+        this.name = name;
+        this.email = email;
+        this.organization = organization;
+        this.attributes = attributes;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("UserUpdateParams{");

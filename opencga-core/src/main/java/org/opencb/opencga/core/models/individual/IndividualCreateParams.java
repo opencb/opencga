@@ -10,8 +10,10 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleCreateParams;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class IndividualCreateParams {
 
@@ -37,6 +39,46 @@ public class IndividualCreateParams {
     private Map<String, Object> attributes;
 
     public IndividualCreateParams() {
+    }
+
+    public IndividualCreateParams(String id, String name, String father, String mother, Multiples multiples, Location location,
+                                  List<SampleCreateParams> samples, IndividualProperty.Sex sex, String ethnicity,
+                                  Boolean parentalConsanguinity, Individual.Population population, String dateOfBirth,
+                                  IndividualProperty.KaryotypicSex karyotypicSex, IndividualProperty.LifeStatus lifeStatus,
+                                  IndividualProperty.AffectationStatus affectationStatus, List<AnnotationSet> annotationSets,
+                                  List<Phenotype> phenotypes, List<Disorder> disorders, Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.father = father;
+        this.mother = mother;
+        this.multiples = multiples;
+        this.location = location;
+        this.samples = samples;
+        this.sex = sex;
+        this.ethnicity = ethnicity;
+        this.parentalConsanguinity = parentalConsanguinity;
+        this.population = population;
+        this.dateOfBirth = dateOfBirth;
+        this.karyotypicSex = karyotypicSex;
+        this.lifeStatus = lifeStatus;
+        this.affectationStatus = affectationStatus;
+        this.annotationSets = annotationSets;
+        this.phenotypes = phenotypes;
+        this.disorders = disorders;
+        this.attributes = attributes;
+    }
+
+    public static IndividualCreateParams of(Individual individual) {
+        return new IndividualCreateParams(individual.getId(), individual.getName(),
+                individual.getFather() != null ? individual.getFather().getId() : null,
+                individual.getMother() != null ? individual.getMother().getId() : null,
+                individual.getMultiples(), individual.getLocation(),
+                individual.getSamples() != null
+                        ? individual.getSamples().stream().map(SampleCreateParams::of).collect(Collectors.toList())
+                        : Collections.emptyList(),
+                individual.getSex(), individual.getEthnicity(), individual.isParentalConsanguinity(), individual.getPopulation(),
+                individual.getDateOfBirth(), individual.getKaryotypicSex(), individual.getLifeStatus(), individual.getAffectationStatus(),
+                individual.getAnnotationSets(), individual.getPhenotypes(), individual.getDisorders(), individual.getAttributes());
     }
 
     @Override

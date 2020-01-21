@@ -8,6 +8,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.FileMongoDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.JobMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -26,6 +27,10 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
     private final long studyUid;
     private final String user;
 
+    private final JobMongoDBAdaptor jobDBAdaptor;
+    private final QueryOptions jobQueryOptions = new QueryOptions(QueryOptions.INCLUDE,
+            Arrays.asList(JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.UUID.key(),
+                    JobDBAdaptor.QueryParams.STUDY_UID.key(), JobDBAdaptor.QueryParams.STATUS.key()));
     private final FileMongoDBAdaptor fileDBAdaptor;
     private final QueryOptions fileQueryOptions = FileManager.INCLUDE_FILE_URI_PATH;
 
@@ -33,15 +38,16 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
 
     private Logger logger = LoggerFactory.getLogger(JobMongoDBIterator.class);
 
-    public JobMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, JobConverter converter,
+    public JobMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, JobConverter converter, JobMongoDBAdaptor jobDBAdaptor,
                               FileMongoDBAdaptor fileDBAdaptor, QueryOptions options) {
-        this(mongoCursor, clientSession, converter, fileDBAdaptor, options, 0, null);
+        this(mongoCursor, clientSession, converter, jobDBAdaptor, fileDBAdaptor, options, 0, null);
     }
 
-    public JobMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, JobConverter converter,
+    public JobMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, JobConverter converter, JobMongoDBAdaptor jobDBAdaptor,
                               FileMongoDBAdaptor fileDBAdaptor, QueryOptions options, long studyUid, String user) {
         super(mongoCursor, clientSession, converter, null);
         this.fileDBAdaptor = fileDBAdaptor;
+        this.jobDBAdaptor = jobDBAdaptor;
         this.user = user;
         this.studyUid = studyUid;
         this.options = options == null ? QueryOptions.empty() : options;
@@ -50,16 +56,18 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
     @Override
     protected void fetchNextBatch(Queue<Document> buffer, int bufferSize) {
         Set<Long> fileUids = new HashSet<>();
+        Set<Long> jobUids = new HashSet<>();
         while (mongoCursor.hasNext() && buffer.size() < bufferSize) {
             Document job = (Document) mongoCursor.next();
             buffer.add(job);
 
             if (!options.getBoolean(NATIVE_QUERY)) {
-                getFiles(fileUids, job, JobDBAdaptor.QueryParams.INPUT);
-                getFiles(fileUids, job, JobDBAdaptor.QueryParams.OUTPUT);
+                getDocumentUids(fileUids, job, JobDBAdaptor.QueryParams.INPUT);
+                getDocumentUids(fileUids, job, JobDBAdaptor.QueryParams.OUTPUT);
                 getFile(fileUids, job, JobDBAdaptor.QueryParams.OUT_DIR);
                 getFile(fileUids, job, JobDBAdaptor.QueryParams.STDOUT);
                 getFile(fileUids, job, JobDBAdaptor.QueryParams.STDERR);
+                getDocumentUids(jobUids, job, JobDBAdaptor.QueryParams.DEPENDS_ON);
             }
         }
 
@@ -83,11 +91,35 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
                     .collect(Collectors.toMap(d -> d.getLong(FileDBAdaptor.QueryParams.UID.key()), d -> d));
 
             buffer.forEach(job -> {
-                setFiles(fileMap, job, JobDBAdaptor.QueryParams.INPUT);
-                setFiles(fileMap, job, JobDBAdaptor.QueryParams.OUTPUT);
+                setDocuments(fileMap, job, JobDBAdaptor.QueryParams.INPUT);
+                setDocuments(fileMap, job, JobDBAdaptor.QueryParams.OUTPUT);
                 setFile(fileMap, job, JobDBAdaptor.QueryParams.OUT_DIR);
                 setFile(fileMap, job, JobDBAdaptor.QueryParams.STDOUT);
                 setFile(fileMap, job, JobDBAdaptor.QueryParams.STDERR);
+            });
+        }
+
+        if (!jobUids.isEmpty()) {
+            Query query = new Query(JobDBAdaptor.QueryParams.UID.key(), new ArrayList<>(jobUids));
+            List<Document> jobDocuments;
+            try {
+                if (user == null) {
+                    jobDocuments = jobDBAdaptor.nativeGet(query, jobQueryOptions).getResults();
+                } else {
+                    jobDocuments = jobDBAdaptor.nativeGet(studyUid, query, jobQueryOptions, user).getResults();
+                }
+            } catch (CatalogDBException | CatalogAuthorizationException e) {
+                logger.warn("Could not obtain the jobs the original jobs depend on: {}", e.getMessage(), e);
+                return;
+            }
+
+            // Map each fileId uid to the file entry
+            Map<Long, Document> jobMap = jobDocuments
+                    .stream()
+                    .collect(Collectors.toMap(d -> d.getLong(JobDBAdaptor.QueryParams.UID.key()), d -> d));
+
+            buffer.forEach(job -> {
+                setDocuments(jobMap, job, JobDBAdaptor.QueryParams.DEPENDS_ON);
             });
         }
     }
@@ -112,11 +144,11 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
         }
     }
 
-    private void getFiles(Set<Long> fileUids, Document job, JobDBAdaptor.QueryParams param) {
+    private void getDocumentUids(Set<Long> fileUids, Document job, JobDBAdaptor.QueryParams param) {
         Object files = job.get(param.key());
         if (files != null) {
             for (Object file : ((Collection) files)) {
-                Number fileUid = ((Number) ((Document) file).get(FileDBAdaptor.QueryParams.UID.key()));
+                Number fileUid = ((Number) ((Document) file).get(JobDBAdaptor.QueryParams.UID.key()));
                 if (fileUid != null && fileUid.longValue() > 0) {
                     fileUids.add(fileUid.longValue());
                 }
@@ -124,12 +156,12 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
         }
     }
 
-    private void setFiles(Map<Long, Document> fileMap, Document job, JobDBAdaptor.QueryParams param) {
+    private void setDocuments(Map<Long, Document> fileMap, Document job, JobDBAdaptor.QueryParams param) {
         Object files = job.get(param.key());
         if (files != null) {
             List<Document> updatedfiles = new ArrayList<>(((Collection) files).size());
             for (Object file : ((Collection) files)) {
-                Number fileUid = ((Number) ((Document) file).get(FileDBAdaptor.QueryParams.UID.key()));
+                Number fileUid = ((Number) ((Document) file).get(JobDBAdaptor.QueryParams.UID.key()));
                 if (fileUid != null && fileUid.longValue() > 0) {
                     updatedfiles.add(fileMap.get(fileUid.longValue()));
                 }
