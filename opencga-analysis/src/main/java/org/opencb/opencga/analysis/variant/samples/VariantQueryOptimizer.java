@@ -10,15 +10,28 @@ import java.util.Set;
 
 public class VariantQueryOptimizer {
 
+    public static TreeQuery optimize(TreeQuery query) {
+        return query.setRoot(optimize(query.getRoot()));
+    }
+
     public static TreeQuery.Node optimize(TreeQuery.Node node) {
-        List<TreeQuery.Node> nodes = node.getNodes();
-        if (nodes != null) {
+        if (node.getType().equals(TreeQuery.Node.Type.COMPLEMENT)) {
+            TreeQuery.ComplementNode compNode = (TreeQuery.ComplementNode) node;
+            if (compNode.getNodes().get(0).getType().equals(TreeQuery.Node.Type.COMPLEMENT)) {
+                // Remove double negations
+                return optimize(compNode.getNodes().get(0).getNodes().get(0));
+            } else {
+                TreeQuery.Node subNode = optimize(compNode.getNodes().get(0));
+                compNode.setNode(subNode);
+            }
+        } else if (node.getType().equals(TreeQuery.Node.Type.INTERSECTION) || node.getType().equals(TreeQuery.Node.Type.UNION)) {
+            List<TreeQuery.Node> nodes = node.getNodes();
             nodes.replaceAll(VariantQueryOptimizer::optimize);
 
             // Merge intersections
             if (node.getType().equals(TreeQuery.Node.Type.INTERSECTION)) {
                 if (nodes.stream().map(TreeQuery.Node::getType).allMatch(type -> type.equals(TreeQuery.Node.Type.QUERY))) {
-                    for (int j = 0; j < nodes.size(); j++) {
+                    for (int j = nodes.size() - 1; j >= 0; j--) {
                         QueryNode thisNode = ((QueryNode) nodes.get(j));
                         Set<VariantQueryParam> thisNodeParams = VariantQueryUtils.validParams(thisNode.getQuery());
 

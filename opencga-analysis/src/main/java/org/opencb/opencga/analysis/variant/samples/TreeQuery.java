@@ -4,12 +4,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class TreeQuery {
-    private final Node root;
+    private Node root;
 
     public TreeQuery(String q) {
         root = parse(q);
@@ -19,7 +20,21 @@ public class TreeQuery {
         return root;
     }
 
-    public static Node parse(String q) {
+    public TreeQuery setRoot(Node root) {
+        this.root = root;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        String s = root.toString();
+        if (s.startsWith("(") && s.endsWith(")")) {
+            return s.substring(1, s.length() - 1);
+        }
+        return s;
+    }
+
+    private static Node parse(String q) {
         q = StringUtils.trim(q);
         int open = StringUtils.countMatches(q, "(");
         int close = StringUtils.countMatches(q, ")");
@@ -27,6 +42,10 @@ public class TreeQuery {
             throw new IllegalArgumentException("Malformed query '" + q + "'");
         }
         if (open == 0) {
+            if (q.startsWith("NOT")) {
+                return new ComplementNode(parse(q.replaceFirst("NOT", "")));
+            }
+
             Query query = new Query();
             for (String token : q.split(" AND ")) {
                 token = token.replace(" ", "");
@@ -57,6 +76,7 @@ public class TreeQuery {
         int beginIndex = 0;
         int endIndex = 0;
         Node.Type type = null;
+        boolean complement = false;
         q += " ";
         for (int i = 0; i < q.length(); i++) {
             char c = q.charAt(i);
@@ -74,8 +94,17 @@ public class TreeQuery {
             }
             if (level == 0 && c == ' ') {
                 String subQuery = q.substring(beginIndex, endIndex > 0 ? endIndex : i);
+                if (subQuery.equals("NOT")) {
+                    complement = true;
+                    continue;
+                }
                 endIndex = -1;
-                nodes.add(parse(subQuery));
+                Node subNode = parse(subQuery);
+                if (complement) {
+                    subNode = new ComplementNode(subNode);
+                    complement = false;
+                }
+                nodes.add(subNode);
 
                 int nextOpen = q.indexOf("(", i);
                 if (nextOpen < 0) {
@@ -88,12 +117,18 @@ public class TreeQuery {
                     } else if (type != Node.Type.UNION) {
                         throw new IllegalArgumentException("Unable to mix OR and AND in the same statement: " + q);
                     }
+                    if (operator.contains("NOT")) {
+                        complement = true;
+                    }
                 }
                 if (operator.contains("AND")) {
                     if (type == null) {
                         type = Node.Type.INTERSECTION;
                     } else if (type != Node.Type.INTERSECTION) {
                         throw new IllegalArgumentException("Unable to mix OR and AND in the same statement: " + q);
+                    }
+                    if (operator.contains("NOT")) {
+                        complement = true;
                     }
                 }
                 if (type == null) {
@@ -117,7 +152,10 @@ public class TreeQuery {
 
     public interface Node {
         enum Type {
-            QUERY,INTERSECTION,UNION
+            QUERY,
+            COMPLEMENT,
+            INTERSECTION,
+            UNION
         }
 
         Node.Type getType();
@@ -155,10 +193,40 @@ public class TreeQuery {
 
         @Override
         public String toString() {
-//                final StringBuilder sb = new StringBuilder("QueryNode{");
-//                sb.append("query=").append(query.toJson());
-//                sb.append('}');
-            return query.entrySet().stream().map(e -> e.getKey() + (StringUtils.startsWithAny(e.getValue().toString(), "=", ">", "<", "!", "~") ? "" : "=") + e.getValue()).collect(Collectors.joining(" AND "));
+            return query.entrySet().stream()
+                    .map(e -> {
+                        boolean withOperator = StringUtils.startsWithAny(e.getValue().toString(), "=", ">", "<", "!", "~");
+                        return e.getKey() + (withOperator ? "" : "=") + e.getValue();
+                    })
+                    .collect(Collectors.joining(" AND ", "(", ")"));
+        }
+    }
+
+    public static class ComplementNode implements Node {
+
+        public ComplementNode(Node node) {
+            this.node = node;
+        }
+
+        private Node node;
+
+        @Override
+        public Type getType() {
+            return Type.COMPLEMENT;
+        }
+
+        @Override
+        public List<Node> getNodes() {
+            return Arrays.asList(node);
+        }
+
+        public ComplementNode setNode(Node node) {
+            this.node = node;
+            return this;
+        }
+        @Override
+        public String toString() {
+            return "(NOT " + node.toString() + ")";
         }
     }
 
@@ -184,10 +252,7 @@ public class TreeQuery {
 
         @Override
         public String toString() {
-//                final StringBuilder sb = new StringBuilder("IntersectionNode{");
-//                sb.append("nodes=").append(nodes);
-//                sb.append('}');
-            return nodes.stream().map(Object::toString).collect(Collectors.joining(") AND (", "(", ")"));
+            return nodes.stream().map(Object::toString).collect(Collectors.joining(" AND ", "(", ")"));
         }
     }
 
@@ -213,11 +278,7 @@ public class TreeQuery {
 
         @Override
         public String toString() {
-//                final StringBuilder sb = new StringBuilder("UnionNode{");
-//                sb.append("nodes=").append(nodes);
-//                sb.append('}');
-//                return sb.toString();
-            return nodes.stream().map(Object::toString).collect(Collectors.joining(") OR (", "(", ")"));
+            return nodes.stream().map(Object::toString).collect(Collectors.joining(" OR ", "(", ")"));
         }
     }
 
