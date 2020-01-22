@@ -62,4 +62,8 @@ if (user === null) {
 }
 
 
+// Remove experiments,lastModified, cipher and tools from studies and users documents
+db.getCollection("study").update({}, {"$unset": {"experiments": "", "lastModified": "", "cipher": ""}}, {"multi": true});
+db.getCollection("user").update({}, {"$unset": {"tools": ""}}, {"multi": true});
+
 // TODO: Add indexes for new "deleted" collections
