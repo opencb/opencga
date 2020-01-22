@@ -1,9 +1,9 @@
 package org.opencb.opencga.analysis.variant.samples;
 
+import org.opencb.opencga.analysis.variant.samples.TreeQuery.QueryNode;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -19,7 +19,7 @@ public class VariantQueryOptimizer {
             if (node.getType().equals(TreeQuery.Node.Type.INTERSECTION)) {
                 if (nodes.stream().map(TreeQuery.Node::getType).allMatch(type -> type.equals(TreeQuery.Node.Type.QUERY))) {
                     for (int j = 0; j < nodes.size(); j++) {
-                        TreeQuery.Node thisNode = nodes.get(j);
+                        QueryNode thisNode = ((QueryNode) nodes.get(j));
                         Set<VariantQueryParam> thisNodeParams = VariantQueryUtils.validParams(thisNode.getQuery());
 
                         boolean collide = false;
@@ -30,7 +30,7 @@ public class VariantQueryOptimizer {
                             if (subNode == null || subNode == thisNode) {
                                 continue;
                             }
-                            if (checkQueryCollide(thisNode, thisNodeParams, subNode)) {
+                            if (checkQueryCollide(thisNode, thisNodeParams, ((QueryNode) subNode))) {
                                 // Non disjoint params. Query nodes overlap
                                 collide = true;
                                 break;
@@ -61,18 +61,30 @@ public class VariantQueryOptimizer {
         return node;
     }
 
-    public static boolean checkQueryCollide(TreeQuery.Node thisNode, Set<VariantQueryParam> thisNodeParams, TreeQuery.Node subNode) {
-        if (Collections.disjoint(thisNodeParams, VariantQueryUtils.validParams(subNode.getQuery()))) {
-            // Disjoint params. Does not collide
-            return false;
-        }
+    public static boolean checkQueryCollide(QueryNode thisNode, Set<VariantQueryParam> thisNodeParams, QueryNode subNode) {
         for (VariantQueryParam thisNodeParam : thisNodeParams) {
             if (VariantQueryUtils.isValidParam(subNode.getQuery(), thisNodeParam)) {
                 if (!thisNode.getQuery().getString(thisNodeParam.key()).equals(subNode.getQuery().getString(thisNodeParam.key()))) {
+                    // Two elements with different content
                     return true;
                 }
             }
         }
+        if (withPositionalFilter(thisNode) && withPositionalFilter(subNode)) {
+            // Different positional filters that are implemented with an OR underneath
+            return true;
+        }
+//        if (Collections.disjoint(thisNodeParams, VariantQueryUtils.validParams(subNode.getQuery()))) {
+//            // Disjoint params. Does not collide
+//            return false;
+//        }
         return false;
+    }
+
+    public static boolean withPositionalFilter(QueryNode queryNode) {
+        return VariantQueryUtils.isValidParam(queryNode.getQuery(), VariantQueryParam.REGION)
+                || VariantQueryUtils.isValidParam(queryNode.getQuery(), VariantQueryParam.GENE)
+                || VariantQueryUtils.isValidParam(queryNode.getQuery(), VariantQueryParam.ID)
+                || VariantQueryUtils.isValidParam(queryNode.getQuery(), VariantQueryParam.ANNOT_XREF);
     }
 }

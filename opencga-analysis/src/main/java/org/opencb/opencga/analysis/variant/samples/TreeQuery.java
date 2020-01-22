@@ -86,14 +86,14 @@ public class TreeQuery {
                     if (type == null) {
                         type = Node.Type.UNION;
                     } else if (type != Node.Type.UNION) {
-                        throw new IllegalArgumentException();
+                        throw new IllegalArgumentException("Unable to mix OR and AND in the same statement: " + q);
                     }
                 }
                 if (operator.contains("AND")) {
                     if (type == null) {
                         type = Node.Type.INTERSECTION;
                     } else if (type != Node.Type.INTERSECTION) {
-                        throw new IllegalArgumentException();
+                        throw new IllegalArgumentException("Unable to mix OR and AND in the same statement: " + q);
                     }
                 }
                 if (type == null) {

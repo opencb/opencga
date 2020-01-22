@@ -515,7 +515,7 @@ public class VariantAnalysisTest {
         Path outDir = Paths.get(opencga.createTmpOutdir("_SampleMultiVariantFilterAnalysis"));
         System.out.println("outDir = " + outDir);
         SampleMultiVariantFilterAnalysisParams params = new SampleMultiVariantFilterAnalysisParams();
-        params.setQuery("(biotype:protein_coding AND ct:missense_variant AND gene:BRCA2) OR (gene:BTN3A2)");
+        params.setQuery("(biotype=protein_coding AND ct=missense_variant AND gene=BRCA2) OR (gene=BTN3A2)");
 
         ExecutionResult er = toolRunner.execute(SampleMultiVariantFilterAnalysis.class, params.toObjectMap(), outDir, token);
         checkExecutionResult(er, false);
