@@ -9,6 +9,11 @@ public class FamilyAclUpdateParams extends AclParams {
     public FamilyAclUpdateParams() {
     }
 
+    public FamilyAclUpdateParams(String permissions, Action action, String family) {
+        super(permissions, action);
+        this.family = family;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FamilyAclUpdateParams{");
@@ -25,6 +30,16 @@ public class FamilyAclUpdateParams extends AclParams {
 
     public FamilyAclUpdateParams setFamily(String family) {
         this.family = family;
+        return this;
+    }
+
+    public FamilyAclUpdateParams setPermissions(String permissions) {
+        super.setPermissions(permissions);
+        return this;
+    }
+
+    public FamilyAclUpdateParams setAction(Action action) {
+        super.setAction(action);
         return this;
     }
 }

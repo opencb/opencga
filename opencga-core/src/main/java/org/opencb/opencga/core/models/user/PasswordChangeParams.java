@@ -14,6 +14,11 @@ public class PasswordChangeParams {
     public PasswordChangeParams() {
     }
 
+    public PasswordChangeParams(String oldPassword, String newPassword) {
+        this.password = oldPassword;
+        this.newPassword = newPassword;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("PasswordChangeParams{");

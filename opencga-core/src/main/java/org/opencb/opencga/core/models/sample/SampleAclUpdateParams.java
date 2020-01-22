@@ -14,6 +14,16 @@ public class SampleAclUpdateParams extends AclParams {
     public SampleAclUpdateParams() {
     }
 
+    public SampleAclUpdateParams(String permissions, Action action, String sample, String individual, String file, String cohort,
+                                 boolean propagate) {
+        super(permissions, action);
+        this.sample = sample;
+        this.individual = individual;
+        this.file = file;
+        this.cohort = cohort;
+        this.propagate = propagate;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleAclUpdateParams{");
@@ -70,6 +80,16 @@ public class SampleAclUpdateParams extends AclParams {
 
     public SampleAclUpdateParams setPropagate(boolean propagate) {
         this.propagate = propagate;
+        return this;
+    }
+
+    public SampleAclUpdateParams setPermissions(String permissions) {
+        super.setPermissions(permissions);
+        return this;
+    }
+
+    public SampleAclUpdateParams setAction(Action action) {
+        super.setAction(action);
         return this;
     }
 }

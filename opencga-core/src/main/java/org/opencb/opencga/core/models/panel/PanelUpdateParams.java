@@ -32,6 +32,27 @@ public class PanelUpdateParams {
     public PanelUpdateParams() {
     }
 
+    public PanelUpdateParams(String id, String name, String description, String author, DiseasePanel.SourcePanel source,
+                             List<DiseasePanel.PanelCategory> categories, List<String> tags, List<Phenotype> phenotypes,
+                             List<DiseasePanel.VariantPanel> variants, List<DiseasePanel.GenePanel> genes,
+                             List<DiseasePanel.RegionPanel> regions, List<DiseasePanel.STR> strs, Map<String, Integer> stats,
+                             Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.author = author;
+        this.source = source;
+        this.categories = categories;
+        this.tags = tags;
+        this.phenotypes = phenotypes;
+        this.variants = variants;
+        this.genes = genes;
+        this.regions = regions;
+        this.strs = strs;
+        this.stats = stats;
+        this.attributes = attributes;
+    }
+
     @JsonIgnore
     public ObjectMap getUpdateMap() throws JsonProcessingException {
         return new ObjectMap(getUpdateObjectMapper().writeValueAsString(this));

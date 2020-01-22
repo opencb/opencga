@@ -10,6 +10,12 @@ public class StudyAclUpdateParams extends AclParams {
     public StudyAclUpdateParams() {
     }
 
+    public StudyAclUpdateParams(String permissions, Action action, String study, String template) {
+        super(permissions, action);
+        this.study = study;
+        this.template = template;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("StudyAclUpdateParams{");
@@ -36,6 +42,16 @@ public class StudyAclUpdateParams extends AclParams {
 
     public StudyAclUpdateParams setTemplate(String template) {
         this.template = template;
+        return this;
+    }
+
+    public StudyAclUpdateParams setPermissions(String permissions) {
+        super.setPermissions(permissions);
+        return this;
+    }
+
+    public StudyAclUpdateParams setAction(Action action) {
+        super.setAction(action);
         return this;
     }
 }

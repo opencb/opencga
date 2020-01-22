@@ -96,7 +96,6 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         ID("id", TEXT, ""),
         UID("uid", LONG, ""),
         UUID("uuid", TEXT, ""),
-        NAME("name", TEXT, ""),
         USER_ID("userId", TEXT, ""),
         COMMAND_LINE("commandLine", TEXT, ""),
         PARAMS("params", MAP, ""),
@@ -113,6 +112,7 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
 
         INPUT("input", OBJECT, ""),
         OUTPUT("output", OBJECT, ""),
+        DEPENDS_ON("dependsOn", TEXT_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
 
         EXECUTION("execution", OBJECT, ""),

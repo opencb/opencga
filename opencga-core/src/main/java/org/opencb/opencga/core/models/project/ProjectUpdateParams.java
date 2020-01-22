@@ -12,6 +12,15 @@ public class ProjectUpdateParams {
     public ProjectUpdateParams() {
     }
 
+    public ProjectUpdateParams(String name, String description, String organization, Project.Organism organism,
+                               Map<String, Object> attributes) {
+        this.name = name;
+        this.description = description;
+        this.organization = organization;
+        this.organism = organism;
+        this.attributes = attributes;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ProjectUpdateParams{");

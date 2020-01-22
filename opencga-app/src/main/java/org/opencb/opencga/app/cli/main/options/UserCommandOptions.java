@@ -35,7 +35,6 @@ public class UserCommandOptions {
     public InfoCommandOptions infoCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
     public ChangePasswordCommandOptions changePasswordCommandOptions;
-    public DeleteCommandOptions deleteCommandOptions;
     public ProjectsCommandOptions projectsCommandOptions;
     public LoginCommandOptions loginCommandOptions;
     public LogoutCommandOptions logoutCommandOptions;
@@ -59,7 +58,6 @@ public class UserCommandOptions {
         this.infoCommandOptions = new InfoCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.changePasswordCommandOptions = new ChangePasswordCommandOptions();
-        this.deleteCommandOptions = new DeleteCommandOptions();
         this.projectsCommandOptions = new ProjectsCommandOptions();
         this.loginCommandOptions = new LoginCommandOptions();
         this.logoutCommandOptions = new LogoutCommandOptions();
@@ -143,16 +141,14 @@ public class UserCommandOptions {
     @Parameters(commandNames = {"password"}, commandDescription = "Change the user's password")
     public class ChangePasswordCommandOptions {
 
+        @Parameter(names = {"-u", "--user"}, description = "User id", arity = 1, required = true)
+        public String user;
+
         @Parameter(names = {"--password"}, description = "Old password", arity = 1, required = true)
         public String password;
 
         @Parameter(names = {"--new-password"}, description = "New password", arity = 1, required = true)
         public String npassword;
-    }
-
-    @Parameters(commandNames = {"delete"}, commandDescription = "[PENDING] Delete a user")
-    public class DeleteCommandOptions extends BaseUserCommand {
-
     }
 
     @Parameters(commandNames = {"projects"}, commandDescription = "List all projects and studies belonging to the user")

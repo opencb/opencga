@@ -13,19 +13,35 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 public class SampleUpdateParams {
 
-    protected String id;
-    protected String description;
-    protected String type;
-    protected String individualId;
-    protected SampleProcessing processing;
-    protected SampleCollection collection;
-    protected String source;
-    protected Boolean somatic;
-    protected List<Phenotype> phenotypes;
-    protected List<AnnotationSet> annotationSets;
-    protected Map<String, Object> attributes;
+    private String id;
+    private String description;
+    private String type;
+    private String individualId;
+    private SampleProcessing processing;
+    private SampleCollection collection;
+    private String source;
+    private Boolean somatic;
+    private List<Phenotype> phenotypes;
+    private List<AnnotationSet> annotationSets;
+    private Map<String, Object> attributes;
 
     public SampleUpdateParams() {
+    }
+
+    public SampleUpdateParams(String id, String description, String type, String individualId, SampleProcessing processing,
+                              SampleCollection collection, String source, Boolean somatic, List<Phenotype> phenotypes,
+                              List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+        this.id = id;
+        this.description = description;
+        this.type = type;
+        this.individualId = individualId;
+        this.processing = processing;
+        this.collection = collection;
+        this.source = source;
+        this.somatic = somatic;
+        this.phenotypes = phenotypes;
+        this.annotationSets = annotationSets;
+        this.attributes = attributes;
     }
 
     @JsonIgnore

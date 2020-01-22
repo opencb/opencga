@@ -9,6 +9,11 @@ public class PanelAclUpdateParams extends AclParams {
     public PanelAclUpdateParams() {
     }
 
+    public PanelAclUpdateParams(String permissions, Action action, String panel) {
+        super(permissions, action);
+        this.panel = panel;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("PanelAclUpdateParams{");
@@ -25,6 +30,16 @@ public class PanelAclUpdateParams extends AclParams {
 
     public PanelAclUpdateParams setPanel(String panel) {
         this.panel = panel;
+        return this;
+    }
+
+    public PanelAclUpdateParams setPermissions(String permissions) {
+        super.setPermissions(permissions);
+        return this;
+    }
+
+    public PanelAclUpdateParams setAction(Action action) {
+        super.setAction(action);
         return this;
     }
 }

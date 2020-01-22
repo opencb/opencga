@@ -78,10 +78,10 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             setCatalogDatabaseCredentials(options, options.commonOptions);
 
             try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-                String sessionId = catalogManager.getUserManager().login("admin", options.commonOptions.adminPassword);
+                String sessionId = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword);
 
                 // Catalog
-                String basePath = appHome + "/scripts/migration/v1.3.0/";
+                String basePath = appHome + "/misc/migration/v1.3.0/";
 
                 String authentication = "";
                 if (StringUtils.isNotEmpty(configuration.getCatalog().getDatabase().getUser())
@@ -149,13 +149,13 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             // We get a non-expiring token
-            String token = catalogManager.getUserManager().login("admin", options.commonOptions.adminPassword);
-            String nonExpiringToken = catalogManager.getUserManager().getNonExpiringToken("admin", token);
+            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword);
+            String nonExpiringToken = catalogManager.getUserManager().getAdminNonExpiringToken(token);
 
             // Catalog
             if (!skipCatalogJS) {
                 logger.info("Starting Catalog migration for 1.4.0");
-                runMigration(catalogManager, appHome + "/scripts/migration/v1.4.0/", "opencga_catalog_v1.3.x_to_1.4.0.js");
+                runMigration(catalogManager, appHome + "/misc/migration/v1.4.0/", "opencga_catalog_v1.3.x_to_1.4.0.js");
             }
 
             if (!skipAnnotations) {
@@ -184,7 +184,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             // 1. Catalog Javascript migration
             logger.info("Starting Catalog migration for 2.0.0");
-            runMigration(catalogManager, appHome + "/scripts/migration/v2.0.0/", "opencga_catalog_v1.4.2_to_v.2.0.0.js");
+            runMigration(catalogManager, appHome + "/misc/migration/v2.0.0/", "opencga_catalog_v1.4.2_to_v.2.0.0.js");
 
             // Create default JOBS folder for analysis
             MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration);

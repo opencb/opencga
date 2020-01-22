@@ -69,11 +69,11 @@ public class SampleIndexAnnotationLoader {
         for (Integer sampleId : samples) {
             SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
             if (sampleMetadata.isAnnotated()) {
-                if (overwrite || sampleMetadata.isReady(SAMPLE_INDEX_STATUS)) {
-                    finalSamplesList.add(sampleId);
-                } else {
+                if (sampleMetadata.isReady(SAMPLE_INDEX_STATUS) && !overwrite) {
                     // SamplesIndex already annotated
                     alreadyAnnotated.add(sampleMetadata.getName());
+                } else {
+                    finalSamplesList.add(sampleId);
                 }
             } else {
                 // Discard non-annotated samples
@@ -308,8 +308,7 @@ public class SampleIndexAnnotationLoader {
             throws StorageEngineException {
         for (Integer sampleId : samples) {
             metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                sampleMetadata.setStatus(SAMPLE_INDEX_STATUS, TaskMetadata.Status.READY);
-                return sampleMetadata;
+                return SampleIndexDBAdaptor.setSampleIndexStatus(sampleMetadata, TaskMetadata.Status.READY);
             });
         }
     }

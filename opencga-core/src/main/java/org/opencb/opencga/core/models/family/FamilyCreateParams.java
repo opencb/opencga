@@ -7,8 +7,10 @@ import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.individual.Individual;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class FamilyCreateParams {
 
@@ -26,6 +28,29 @@ public class FamilyCreateParams {
     private List<AnnotationSet> annotationSets;
 
     public FamilyCreateParams() {
+    }
+
+    public FamilyCreateParams(String id, String name, String description, List<Phenotype> phenotypes, List<Disorder> disorders,
+                              List<IndividualCreateParams> members, Integer expectedSize, Map<String, Object> attributes,
+                              List<AnnotationSet> annotationSets) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.phenotypes = phenotypes;
+        this.disorders = disorders;
+        this.members = members;
+        this.expectedSize = expectedSize;
+        this.attributes = attributes;
+        this.annotationSets = annotationSets;
+    }
+
+    public static FamilyCreateParams of(Family family) {
+        return new FamilyCreateParams(family.getId(), family.getName(), family.getDescription(), family.getPhenotypes(),
+                family.getDisorders(),
+                family.getMembers() != null
+                        ? family.getMembers().stream().map(IndividualCreateParams::of).collect(Collectors.toList())
+                        : Collections.emptyList(),
+                family.getExpectedSize(), family.getAttributes(), family.getAnnotationSets());
     }
 
     @Override

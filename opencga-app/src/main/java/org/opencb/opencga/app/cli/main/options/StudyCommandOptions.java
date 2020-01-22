@@ -21,9 +21,10 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.models.study.GroupParams;
-import org.opencb.opencga.core.models.study.MemberParams;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.study.Study;
+
+import java.util.List;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
@@ -35,20 +36,18 @@ public class StudyCommandOptions {
 
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
-    public ScanFilesCommandOptions scanFilesCommandOptions;
-    public ResyncFilesCommandOptions resyncFilesCommandOptions;
-    public StatusCommandOptions statusCommandOptions;
+//    public ScanFilesCommandOptions scanFilesCommandOptions;
+//    public ResyncFilesCommandOptions resyncFilesCommandOptions;
+//    public StatusCommandOptions statusCommandOptions;
     public SearchCommandOptions searchCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
-    public DeleteCommandOptions deleteCommandOptions;
+//    public DeleteCommandOptions deleteCommandOptions;
     public StatsCommandOptions statsCommandOptions;
 
     public GroupsCommandOptions groupsCommandOptions;
     public GroupsCreateCommandOptions groupsCreateCommandOptions;
     public GroupsDeleteCommandOptions groupsDeleteCommandOptions;
     public GroupsUpdateCommandOptions groupsUpdateCommandOptions;
-    public MemberGroupUpdateCommandOptions memberGroupUpdateCommandOptions;
-    public AdminsGroupUpdateCommandOptions adminsGroupUpdateCommandOptions;
 
     public VariableSetsCommandOptions variableSetsCommandOptions;
     public VariableSetsUpdateCommandOptions variableSetsUpdateCommandOptions;
@@ -74,20 +73,16 @@ public class StudyCommandOptions {
 
         this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
-        this.scanFilesCommandOptions = new ScanFilesCommandOptions();
-        this.resyncFilesCommandOptions = new ResyncFilesCommandOptions();
-        this.statusCommandOptions = new StatusCommandOptions();
+//        this.scanFilesCommandOptions = new ScanFilesCommandOptions();
+//        this.resyncFilesCommandOptions = new ResyncFilesCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
-        this.deleteCommandOptions = new DeleteCommandOptions();
         this.statsCommandOptions = new StatsCommandOptions();
 
         this.groupsCommandOptions = new GroupsCommandOptions();
         this.groupsCreateCommandOptions = new GroupsCreateCommandOptions();
         this.groupsDeleteCommandOptions = new GroupsDeleteCommandOptions();
         this.groupsUpdateCommandOptions = new GroupsUpdateCommandOptions();
-        this.memberGroupUpdateCommandOptions = new MemberGroupUpdateCommandOptions();
-        this.adminsGroupUpdateCommandOptions = new AdminsGroupUpdateCommandOptions();
 
         this.variableSetsCommandOptions = new VariableSetsCommandOptions();
         this.variableSetsUpdateCommandOptions = new VariableSetsUpdateCommandOptions();
@@ -123,7 +118,7 @@ public class StudyCommandOptions {
         public String alias;
 
         @Parameter(names = {"-t", "--type"}, description = "Type of study, ej.CASE_CONTROL,CASE_SET,...", arity = 1)
-        public String type = "CASE_CONTROL";
+        public Study.Type type = Study.Type.CASE_CONTROL;
 
         @Parameter(names = {"-d", "--description"}, description = "Description", arity = 1)
         public String description;
@@ -151,6 +146,9 @@ public class StudyCommandOptions {
         @Parameter(names = {"-p", "--project"}, description = "Project id or alias", arity = 1)
         public String project;
 
+        @Parameter(names = {"--id"}, description = "Study id.", arity = 1)
+        public String id;
+
         @Parameter(names = {"-n", "--name"}, description = "Study name.", arity = 1)
         public String name;
 
@@ -158,7 +156,7 @@ public class StudyCommandOptions {
         public String alias;
 
         @Parameter(names = {"-t", "--type"}, description = "Type of study, ej.CASE_CONTROL,CASE_SET,...", arity = 1)
-        public String type;
+        public Study.Type type;
 
         @Parameter(names = {"--creation-date"}, description = "Creation date.", arity = 1)
         public String creationDate;
@@ -189,11 +187,6 @@ public class StudyCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"status"}, commandDescription = "Scans the study folder to find untracked or missing files")
-    public class StatusCommandOptions extends BaseStudyCommand {
-
-    }
-
     @Parameters(commandNames = {"update"}, commandDescription = "Update a study")
     public class UpdateCommandOptions {
 
@@ -203,28 +196,20 @@ public class StudyCommandOptions {
         @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study.", arity = 1, required = true)
         public String study;
 
-        @Parameter(names = {"--json"}, description = "JSON file containing the study fields to be updated", arity = 1)
-        public String json;
-
-        @Parameter(names = {"-n", "--name"}, description = DEPRECATED + "Use --json instead.", arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Study name", arity = 1)
         public String name;
 
-        @Parameter(names = {"-t", "--type"}, description = DEPRECATED + "Use --json instead.", arity = 1)
-        public String type;
+        @Parameter(names = {"-t", "--type"}, description = "Type of study, ej.CASE_CONTROL,CASE_SET,...", arity = 1)
+        public Study.Type type;
 
-        @Parameter(names = {"-d", "--description"}, description = DEPRECATED + "Use --json instead.", arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = "Organization", arity = 1)
         public String description;
 
-        @Parameter(names = {"--stats"}, description = DEPRECATED + "Use --json instead.", arity = 1)
+        @Parameter(names = {"--stats"}, description = "Stats", arity = 1)
         public String stats;
 
-        @Parameter(names = {"--attributes"}, description = DEPRECATED + "Use --json instead.", arity = 1)
+        @Parameter(names = {"--attributes"}, description = "Attributes", arity = 1)
         public String attributes;
-
-    }
-
-    @Parameters(commandNames = {"delete"}, commandDescription = "[PENDING] Delete a study")
-    public class DeleteCommandOptions extends BaseStudyCommand {
 
     }
 
@@ -272,7 +257,7 @@ public class StudyCommandOptions {
         public String groupName;
 
         @Parameter(names = {"--users"}, description = "Comma separated list of members that will form the group", arity = 1)
-        public String users;
+        public List<String> users;
 
     }
 
@@ -291,30 +276,10 @@ public class StudyCommandOptions {
         public String groupId;
 
         @Parameter(names = {"--users"}, description = "Comma separated list of users", required = true, arity = 1)
-        public String users;
+        public List<String> users;
 
         @Parameter(names = {"--action"}, description = "Action to be performed over users (ADD, SET, REMOVE)", required = true, arity = 1)
-        public GroupParams.Action action;
-    }
-
-    @Parameters(commandNames = {"members-update"}, commandDescription = "Add/Remove users to access the study")
-    public class MemberGroupUpdateCommandOptions extends BaseStudyCommand {
-
-        @Parameter(names = {"--users"}, description = "Comma separated list of users", required = true, arity = 1)
-        public String users;
-
-        @Parameter(names = {"--action"}, description = "Action to be performed over users (ADD, REMOVE)", required = true, arity = 1)
-        public MemberParams.Action action;
-    }
-
-    @Parameters(commandNames = {"admins-update"}, commandDescription = "Add/Remove administrative users to the study")
-    public class AdminsGroupUpdateCommandOptions extends BaseStudyCommand {
-
-        @Parameter(names = {"--users"}, description = "Comma separated list of users", required = true, arity = 1)
-        public String users;
-
-        @Parameter(names = {"--action"}, description = "Action to be performed over users (ADD, REMOVE)", required = true, arity = 1)
-        public MemberParams.Action action;
+        public ParamUtils.UpdateAction action = ParamUtils.UpdateAction.ADD;
     }
 
     @Parameters(commandNames = {"variable-sets"}, commandDescription = "Return the variable sets of a study")

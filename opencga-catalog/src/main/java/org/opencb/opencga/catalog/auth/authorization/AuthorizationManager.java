@@ -17,18 +17,18 @@
 package org.opencb.opencga.catalog.auth.authorization;
 
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
 import org.opencb.opencga.core.models.cohort.CohortAclEntry;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.family.FamilyAclEntry;
 import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
 import org.opencb.opencga.core.models.job.JobAclEntry;
 import org.opencb.opencga.core.models.panel.PanelAclEntry;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
-import org.opencb.opencga.core.models.study.GroupParams;
 import org.opencb.opencga.core.models.study.PermissionRule;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -106,7 +106,7 @@ public interface AuthorizationManager {
 
     void checkSyncGroupPermissions(long studyId, String userId, String group) throws CatalogException;
 
-    void checkUpdateGroupPermissions(long studyId, String userId, String group, GroupParams params) throws CatalogException;
+    void checkUpdateGroupPermissions(long studyId, String userId, String group, ParamUtils.UpdateAction action) throws CatalogException;
 
     void checkNotAssigningPermissionsToAdminsGroup(List<String> members) throws CatalogException;
 

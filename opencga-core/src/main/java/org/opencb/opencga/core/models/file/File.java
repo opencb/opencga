@@ -29,7 +29,10 @@ import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
 
 import java.net.URI;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -642,6 +645,16 @@ public class File extends Annotable {
 
         public FileAclParams setSample(String sample) {
             this.sample = sample;
+            return this;
+        }
+
+        public FileAclParams setPermissions(String permissions) {
+            super.setPermissions(permissions);
+            return this;
+        }
+
+        public FileAclParams setAction(Action action) {
+            super.setAction(action);
             return this;
         }
     }

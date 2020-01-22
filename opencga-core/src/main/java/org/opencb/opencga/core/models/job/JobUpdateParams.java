@@ -11,7 +11,6 @@ import static org.opencb.opencga.core.common.JacksonUtils.getDefaultNonNullObjec
 
 public class JobUpdateParams {
 
-    private String name;
     private String description;
 
     private List<String> tags;
@@ -22,6 +21,13 @@ public class JobUpdateParams {
     public JobUpdateParams() {
     }
 
+    public JobUpdateParams(String description, List<String> tags, Boolean visited, Map<String, Object> attributes) {
+        this.description = description;
+        this.tags = tags;
+        this.visited = visited;
+        this.attributes = attributes;
+    }
+
     @JsonIgnore
     public ObjectMap getUpdateMap() throws JsonProcessingException {
         return new ObjectMap(getDefaultNonNullObjectMapper().writeValueAsString(this));
@@ -30,22 +36,12 @@ public class JobUpdateParams {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("JobUpdateParams{");
-        sb.append("name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", tags=").append(tags);
         sb.append(", visited=").append(visited);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public JobUpdateParams setName(String name) {
-        this.name = name;
-        return this;
     }
 
     public String getDescription() {

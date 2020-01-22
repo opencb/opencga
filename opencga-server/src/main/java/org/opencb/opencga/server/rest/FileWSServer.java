@@ -199,7 +199,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Path within catalog where the file will be located (default: root folder)") @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
             @ApiParam(value = "description") @DefaultValue("") @FormDataParam("description")
                     String description,
-            @ApiParam(value = "Create the parent directories if they do not exist") @DefaultValue("true") @FormDataParam("parents") boolean parents) {
+            @ApiParam(value = "Create the parent directories if they do not exist", type = "form") @DefaultValue("true") @FormDataParam("parents") boolean parents) {
 
         if (StringUtils.isNotEmpty(studyIdStr)) {
             studyStr = studyIdStr;
@@ -732,7 +732,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @DELETE
     @Path("/{files}/unlink")
-    @ApiOperation(value = "Unlink linked files and folders", response = File.class)
+    @ApiOperation(value = "Unlink linked files and folders", response = Job.class)
     public Response unlink(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)  @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of file ids, names or paths.") @PathParam("files") String files) {
@@ -936,7 +936,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @DELETE
     @Path("/{files}/delete")
-    @ApiOperation(value = "Delete existing files and folders", response = File.class)
+    @ApiOperation(value = "Delete existing files and folders", response = Job.class)
     public Response delete(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of file ids, names or paths.") @PathParam("files") String files,

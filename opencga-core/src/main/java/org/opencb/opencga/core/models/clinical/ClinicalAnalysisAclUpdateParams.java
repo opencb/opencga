@@ -9,6 +9,11 @@ public class ClinicalAnalysisAclUpdateParams extends AclParams {
     public ClinicalAnalysisAclUpdateParams() {
     }
 
+    public ClinicalAnalysisAclUpdateParams(String permissions, Action action, String clinicalAnalysis) {
+        super(permissions, action);
+        this.clinicalAnalysis = clinicalAnalysis;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClinicalAnalysisAclUpdateParams{");
@@ -27,4 +32,15 @@ public class ClinicalAnalysisAclUpdateParams extends AclParams {
         this.clinicalAnalysis = clinicalAnalysis;
         return this;
     }
+
+    public ClinicalAnalysisAclUpdateParams setPermissions(String permissions) {
+        super.setPermissions(permissions);
+        return this;
+    }
+
+    public ClinicalAnalysisAclUpdateParams setAction(Action action) {
+        super.setAction(action);
+        return this;
+    }
+
 }
