@@ -62,7 +62,7 @@ public class VariantSolrExternalResource extends ExternalResource {
 
         Path rootDir = getTmpRootDir();
 
-        String configSet = "OpenCGAConfigSet-2.0.0-dev";
+        String configSet = "opencga-variant-configset-2.0.0-dev";
 
         // Copy configuration
         getResourceUri("configsets/variantsCollection/solrconfig.xml", "configsets/" + configSet + "/solrconfig.xml");
