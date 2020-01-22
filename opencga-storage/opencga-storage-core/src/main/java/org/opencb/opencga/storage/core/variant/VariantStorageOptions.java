@@ -19,7 +19,7 @@ public enum VariantStorageOptions implements ConfigurationOption {
     TRANSFORM_BATCH_SIZE("transform.batchSize", 200),
     TRANSFORM_THREADS("transform.numThreads", 4),
     TRANSFORM_FORMAT("transform.format", "avro"),
-    TRANSFORM_FAIL_ON_MALFORMED_VARIANT("transform.failOnMalformed", false),
+    TRANSFORM_FAIL_ON_MALFORMED_VARIANT("transform.failOnMalformed", true),
     TRANSFORM_COMPRESSION("transform.compression", "gzip"),
     TRANSFORM_ISOLATE("transform.isolate", false), // Do not store file in metadata
 

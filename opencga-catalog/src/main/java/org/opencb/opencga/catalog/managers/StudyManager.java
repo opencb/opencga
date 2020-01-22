@@ -314,9 +314,9 @@ public class StudyManager extends AbstractManager {
             files.add(rootFile);
             files.add(jobsFile);
 
-            Study study = new Study(id, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
-                    0, cipher, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)),
-                    new Group(ADMINS, Collections.emptyList())), null, files, null, null, null, null, null, null, null, null,
+            Study study = new Study(id, name, alias, type, creationDate, description, status,
+                    0, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)),
+                    new Group(ADMINS, Collections.emptyList())), files, null, null, null, null, null, null, null, null,
                     datastores, project.getCurrentRelease(), stats, attributes);
 
             /* CreateStudy */
@@ -755,11 +755,9 @@ public class StudyManager extends AbstractManager {
         StudySummary studySummary = new StudySummary()
                 .setAlias(study.getId())
                 .setAttributes(study.getAttributes())
-                .setCipher(study.getCipher())
                 .setCreationDate(study.getCreationDate())
                 .setDescription(study.getDescription())
                 .setDiskUsage(study.getSize())
-                .setExperiments(study.getExperiments())
                 .setGroups(study.getGroups())
                 .setName(study.getName())
                 .setStats(study.getStats())

@@ -78,7 +78,7 @@ variant:
     transform.numThreads: 4
     transform.format: "avro"
     transform.compression: "gzip"
-    transform.failOnMalformed: false
+    transform.failOnMalformed: true
 
     load.batchSize: 100
     load.numThreads: 6

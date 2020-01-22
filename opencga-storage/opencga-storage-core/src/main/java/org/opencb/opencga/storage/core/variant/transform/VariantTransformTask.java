@@ -37,6 +37,7 @@ import org.opencb.biodata.tools.variant.VariantSorterTask;
 import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.biodata.tools.variant.stats.VariantSetStatsCalculator;
 import org.opencb.commons.run.Task;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +69,7 @@ public class VariantTransformTask implements Task<String, Variant> {
     protected final AtomicLong biodataConvertTime = new AtomicLong(0);
     protected final AtomicLong normTime = new AtomicLong(0);
     protected final List<BiConsumer<String, RuntimeException>> errorHandlers = new ArrayList<>();
-    protected boolean failOnError = false;
+    protected boolean failOnError = true;
     private VariantStudyMetadata metadata;
 
     public VariantTransformTask(VariantFactory factory,
@@ -214,11 +215,12 @@ public class VariantTransformTask implements Task<String, Variant> {
     }
 
     private void onError(RuntimeException e, String line) {
-        logger.error("Error parsing line: {}", line);
+        logger.error("Error '{}' parsing line: {}", e.getMessage(), line);
         for (BiConsumer<String, RuntimeException> handler : errorHandlers) {
             handler.accept(line, e);
         }
         if (failOnError) {
+            logger.info("To ignore parsing errors add '" + VariantStorageOptions.TRANSFORM_FAIL_ON_MALFORMED_VARIANT + "=true'");
             throw e;
         }
     }

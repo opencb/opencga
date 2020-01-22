@@ -204,8 +204,6 @@ public interface StudyDBAdaptor extends Iterable<Study> {
 
     OpenCGAResult<Study> get(long studyId, QueryOptions options) throws CatalogDBException;
 
-    OpenCGAResult<Study> updateStudyLastModified(long studyId) throws CatalogDBException;
-
     long getId(long projectId, String studyAlias) throws CatalogDBException;
 
     long getProjectUidByStudyUid(long studyUid) throws CatalogDBException;
@@ -416,12 +414,10 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
         DESCRIPTION("description", TEXT, ""),
-        CIPHER("cipher", TEXT, ""),
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),
         DATASTORES("dataStores", TEXT_ARRAY, ""),
         SIZE("size", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
@@ -444,16 +440,6 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         GROUP_SYNCED_FROM_REMOTE_GROUP("groups.syncedFrom.remoteGroup", TEXT, ""),
 
         PERMISSION_RULES("permissionRules", TEXT_ARRAY, ""),
-
-        EXPERIMENT_ID("experiments.id", INTEGER_ARRAY, ""),
-        EXPERIMENT_NAME("experiments.name", TEXT_ARRAY, ""),
-        EXPERIMENT_TYPE("experiment.type", TEXT_ARRAY, ""),
-        EXPERIMENT_PLATFORM("experiments.platform", TEXT_ARRAY, ""),
-        EXPERIMENT_MANUFACTURER("experiments.manufacturer", TEXT_ARRAY, ""),
-        EXPERIMENT_DATE("experiments.date", TEXT_ARRAY, ""),
-        EXPERIMENT_LAB("experiments.lab", TEXT_ARRAY, ""),
-        EXPERIMENT_CENTER("experiments.center", TEXT_ARRAY, ""),
-        EXPERIMENT_RESPONSIBLE("experiments.responsible", TEXT_ARRAY, ""),
 
         OWNER("_ownerId", TEXT, ""),
         COHORTS("cohorts", TEXT_ARRAY, ""),
