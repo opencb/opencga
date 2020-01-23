@@ -40,7 +40,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/secondaryIndex")
-    @ApiOperation(value = VariantSecondaryIndexOperationTool.DESCRIPTION)
+    @ApiOperation(value = VariantSecondaryIndexOperationTool.DESCRIPTION, response = Job.class)
     public Response secondaryIndex(
             @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -53,7 +53,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @DELETE
     @Path("/variant/secondaryIndex/delete")
-    @ApiOperation(value = VariantSecondaryIndexSamplesDeleteOperationTool.DESCRIPTION)
+    @ApiOperation(value = VariantSecondaryIndexSamplesDeleteOperationTool.DESCRIPTION, response = Job.class)
     public Response secondaryIndex(
             @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -81,7 +81,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @DELETE
     @Path("/variant/annotation/delete")
-    @ApiOperation(value = VariantAnnotationDeleteOperationTool.DESCRIPTION)
+    @ApiOperation(value = VariantAnnotationDeleteOperationTool.DESCRIPTION, response = Job.class)
     public Response annotationDelete(
             @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -97,7 +97,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/annotation/save")
-    @ApiOperation(value = VariantAnnotationSaveOperationTool.DESCRIPTION)
+    @ApiOperation(value = VariantAnnotationSaveOperationTool.DESCRIPTION, response = Job.class)
     public Response annotationSave(
             @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -109,7 +109,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/score/index")
-    @ApiOperation(value = VariantScoreIndexOperationTool.DESCRIPTION)
+    @ApiOperation(value = VariantScoreIndexOperationTool.DESCRIPTION, response = Job.class)
     public Response scoreIndex(
             @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -121,7 +121,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @DELETE
     @Path("/variant/score/delete")
-    @ApiOperation(value = VariantScoreDeleteParams.DESCRIPTION)
+    @ApiOperation(value = VariantScoreDeleteParams.DESCRIPTION, response = Job.class)
     public Response scoreDelete(
             @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -165,7 +165,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/family/aggregate")
-    @ApiOperation(value = VariantAggregateFamilyOperationTool.DESCRIPTION)
+    @ApiOperation(value = VariantAggregateFamilyOperationTool.DESCRIPTION, response = Job.class)
     public Response aggregateFamily(
             @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
@@ -177,7 +177,7 @@ public class VariantOperationWebService extends OpenCGAWSServer {
 
     @POST
     @Path("/variant/aggregate")
-    @ApiOperation(value = VariantAggregateOperationTool.DESCRIPTION)
+    @ApiOperation(value = VariantAggregateOperationTool.DESCRIPTION, response = Job.class)
     public Response aggregate(
             @ApiParam(value = ParamConstants.JOB_NAME_DESCRIPTION) @QueryParam(ParamConstants.JOB_NAME) String jobName,
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,

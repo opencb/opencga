@@ -73,7 +73,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private RestResponse<ObjectMap> variantSecondaryIndex() throws ClientException {
+    private RestResponse<Job> variantSecondaryIndex() throws ClientException {
         OperationsCommandOptions.VariantSecondaryIndexCommandOptions cliOptions = operationsCommandOptions.variantSecondaryIndex;
 
         ObjectMap params = new ObjectMap(cliOptions.commonOptions.params)
@@ -196,7 +196,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 ), params);
     }
 
-    private RestResponse<ObjectMap> variantAggregate() throws ClientException {
+    private RestResponse<Job> variantAggregate() throws ClientException {
         OperationsCommandOptions.VariantAggregateCommandOptions cliOptions = operationsCommandOptions.variantAggregate;
 
         ObjectMap params = new ObjectMap(cliOptions.commonOptions.params)
@@ -209,7 +209,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 ), params);
     }
 
-    private RestResponse<ObjectMap> variantAggregateFamily() throws ClientException {
+    private RestResponse<Job> variantAggregateFamily() throws ClientException {
         OperationsCommandOptions.VariantFamilyAggregateCommandOptions cliOptions = operationsCommandOptions.variantAggregateFamily;
 
         ObjectMap params = new ObjectMap(cliOptions.commonOptions.params)

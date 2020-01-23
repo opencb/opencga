@@ -62,10 +62,10 @@ public class OperationClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ObjectMap> aggregateVariant(VariantAggregateParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> aggregateVariant(VariantAggregateParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("operation", null, "variant", null, "aggregate", params, POST, ObjectMap.class);
+        return execute("operation", null, "variant", null, "aggregate", params, POST, Job.class);
     }
 
     /**
@@ -74,9 +74,9 @@ public class OperationClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ObjectMap> deleteVariantSecondaryIndex(ObjectMap params) throws ClientException {
+    public RestResponse<Job> deleteVariantSecondaryIndex(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("operation", null, "variant/secondaryIndex", null, "delete", params, DELETE, ObjectMap.class);
+        return execute("operation", null, "variant/secondaryIndex", null, "delete", params, DELETE, Job.class);
     }
 
     /**
@@ -86,10 +86,10 @@ public class OperationClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ObjectMap> secondaryIndexVariant(VariantSecondaryIndexParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> secondaryIndexVariant(VariantSecondaryIndexParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("operation", null, "variant", null, "secondaryIndex", params, POST, ObjectMap.class);
+        return execute("operation", null, "variant", null, "secondaryIndex", params, POST, Job.class);
     }
 
     /**
@@ -112,10 +112,10 @@ public class OperationClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ObjectMap> saveVariantAnnotation(VariantAnnotationSaveParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> saveVariantAnnotation(VariantAnnotationSaveParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("operation", null, "variant/annotation", null, "save", params, POST, ObjectMap.class);
+        return execute("operation", null, "variant/annotation", null, "save", params, POST, Job.class);
     }
 
     /**
@@ -125,10 +125,10 @@ public class OperationClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ObjectMap> aggregateVariantFamily(VariantAggregateFamilyParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> aggregateVariantFamily(VariantAggregateFamilyParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("operation", null, "variant/family", null, "aggregate", params, POST, ObjectMap.class);
+        return execute("operation", null, "variant/family", null, "aggregate", params, POST, Job.class);
     }
 
     /**
@@ -137,9 +137,9 @@ public class OperationClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ObjectMap> deleteVariantAnnotation(ObjectMap params) throws ClientException {
+    public RestResponse<Job> deleteVariantAnnotation(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("operation", null, "variant/annotation", null, "delete", params, DELETE, ObjectMap.class);
+        return execute("operation", null, "variant/annotation", null, "delete", params, DELETE, Job.class);
     }
 
     /**
@@ -148,9 +148,9 @@ public class OperationClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ObjectMap> deleteVariantScore(ObjectMap params) throws ClientException {
+    public RestResponse<Job> deleteVariantScore(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("operation", null, "variant/score", null, "delete", params, DELETE, ObjectMap.class);
+        return execute("operation", null, "variant/score", null, "delete", params, DELETE, Job.class);
     }
 
     /**
@@ -180,9 +180,9 @@ public class OperationClient extends AbstractParentClient {
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ObjectMap> indexVariantScore(VariantScoreIndexParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> indexVariantScore(VariantScoreIndexParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("operation", null, "variant/score", null, "index", params, POST, ObjectMap.class);
+        return execute("operation", null, "variant/score", null, "index", params, POST, Job.class);
     }
 }
