@@ -46,11 +46,11 @@ public class PrivateJobUpdateParamsTest extends AbstractManagerTest {
     @Test
     public void updateJobInformation() throws CatalogException {
         OpenCGAResult<Job> jobResult = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.HIGH,
-                new HashMap<>(), sessionIdUser);
+                new HashMap<>(), token);
 
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setCommandLine("myCommandLine");
-        catalogManager.getJobManager().update(studyFqn, jobResult.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
-        jobResult = catalogManager.getJobManager().get(studyFqn, jobResult.first().getId(), QueryOptions.empty(), sessionIdUser);
+        catalogManager.getJobManager().update(studyFqn, jobResult.first().getId(), updateParams, QueryOptions.empty(), token);
+        jobResult = catalogManager.getJobManager().get(studyFqn, jobResult.first().getId(), QueryOptions.empty(), token);
 
         assertEquals("myCommandLine", jobResult.first().getCommandLine());
 
@@ -58,8 +58,8 @@ public class PrivateJobUpdateParamsTest extends AbstractManagerTest {
                 .setUid(1)
                 .setPath("/tmp/path")
                 .setId("myJobId"));
-        catalogManager.getJobManager().update(studyFqn, jobResult.first().getId(), updateParams, QueryOptions.empty(), sessionIdUser);
-        jobResult = catalogManager.getJobManager().get(studyFqn, jobResult.first().getId(), QueryOptions.empty(), sessionIdUser);
+        catalogManager.getJobManager().update(studyFqn, jobResult.first().getId(), updateParams, QueryOptions.empty(), token);
+        jobResult = catalogManager.getJobManager().get(studyFqn, jobResult.first().getId(), QueryOptions.empty(), token);
         System.out.println(jobResult);
     }
 

@@ -200,13 +200,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkUpdateGroupPermissions(long studyId, String userId, String group, GroupParams params) throws CatalogException {
+    public void checkUpdateGroupPermissions(long studyId, String userId, String group, ParamUtils.UpdateAction action)
+            throws CatalogException {
         String ownerId = studyDBAdaptor.getOwnerId(studyId);
 
         if (userId.equals(ownerId)) {
             // Granted permission but check it is a valid action
-            if (group.equals(MEMBERS_GROUP)
-                    && (params.getAction() != GroupParams.Action.ADD && params.getAction() != GroupParams.Action.REMOVE)) {
+            if (group.equals(MEMBERS_GROUP) && (action != ParamUtils.UpdateAction.ADD && action != ParamUtils.UpdateAction.REMOVE)) {
                 throw new CatalogAuthorizationException("Only ADD or REMOVE actions are accepted for @members group.");
             }
             return;
@@ -221,8 +221,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         // Check it is a valid action
-        if (group.equals(MEMBERS_GROUP)
-                && (params.getAction() != GroupParams.Action.ADD && params.getAction() != GroupParams.Action.REMOVE)) {
+        if (group.equals(MEMBERS_GROUP) && (action != ParamUtils.UpdateAction.ADD && action != ParamUtils.UpdateAction.REMOVE)) {
             throw new CatalogAuthorizationException("Only ADD or REMOVE actions are accepted for @members group.");
         }
     }

@@ -323,7 +323,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
 
             User user = new User(id, name, mail, "", "", new Account().setType(Account.Type.GUEST).
                     setAuthentication(new Account.AuthenticationOrigin(originId, false)),
-                    User.UserStatus.READY, "", -1, -1, Collections.emptyList(), Collections.emptyList(), Collections.emptyMap(),
+                    User.UserStatus.READY, "", -1, -1, Collections.emptyList(), Collections.emptyMap(),
                     attributes);
 
             userList.add(user);

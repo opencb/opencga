@@ -28,6 +28,22 @@ public class SampleUpdateParams {
     public SampleUpdateParams() {
     }
 
+    public SampleUpdateParams(String id, String description, String type, String individualId, SampleProcessing processing,
+                              SampleCollection collection, String source, Boolean somatic, List<Phenotype> phenotypes,
+                              List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+        this.id = id;
+        this.description = description;
+        this.type = type;
+        this.individualId = individualId;
+        this.processing = processing;
+        this.collection = collection;
+        this.source = source;
+        this.somatic = somatic;
+        this.phenotypes = phenotypes;
+        this.annotationSets = annotationSets;
+        this.attributes = attributes;
+    }
+
     @JsonIgnore
     public ObjectMap getUpdateMap() throws JsonProcessingException {
         List<AnnotationSet> annotationSetList = this.annotationSets;

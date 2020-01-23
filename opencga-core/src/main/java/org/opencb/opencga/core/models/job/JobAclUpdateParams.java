@@ -9,6 +9,11 @@ public class JobAclUpdateParams extends AclParams {
     public JobAclUpdateParams() {
     }
 
+    public JobAclUpdateParams(String permissions, Action action, String job) {
+        super(permissions, action);
+        this.job = job;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("JobAclUpdateParams{");

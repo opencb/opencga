@@ -689,26 +689,32 @@ public class OpenCGAWSServer {
         }
     }
 
-    public Response submitJob(String toolId, String study, ToolParams bodyParams, String jobName, String jobDescription,
-                              String jobTagsStr) {
+    public Response submitJob(String toolId, String study, ToolParams bodyParams, String jobId, String jobDescription,
+                              String jobDependsOnStr, String jobTagsStr) {
         return run(() -> {
             List<String> jobTags;
             if (StringUtils.isNotEmpty(jobTagsStr)) {
                 jobTags = Arrays.asList(jobTagsStr.split(","));
             } else {
                 jobTags = Collections.emptyList();
+            }
+            List<String> jobDependsOn;
+            if (StringUtils.isNotEmpty(jobDependsOnStr)) {
+                jobDependsOn = Arrays.asList(jobDependsOnStr.split(","));
+            } else {
+                jobDependsOn = Collections.emptyList();
             }
             Map<String, Object> paramsMap = bodyParams.toParams();
             if (StringUtils.isNotEmpty(study)) {
                 paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
             }
             return catalogManager.getJobManager()
-                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, null, jobName, jobDescription, jobTags, token);
+                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, token);
         });
     }
 
-    public Response submitJob(String toolId, String study, Map<String, Object> paramsMap, String jobName,
-                              String jobDescription, String jobTagsStr) {
+    public Response submitJob(String toolId, String study, Map<String, Object> paramsMap, String jobId, String jobDescription,
+                              String jobDependsOnStr, String jobTagsStr) {
         return run(() -> {
             List<String> jobTags;
             if (StringUtils.isNotEmpty(jobTagsStr)) {
@@ -716,8 +722,14 @@ public class OpenCGAWSServer {
             } else {
                 jobTags = Collections.emptyList();
             }
+            List<String> jobDependsOn;
+            if (StringUtils.isNotEmpty(jobDependsOnStr)) {
+                jobDependsOn = Arrays.asList(jobDependsOnStr.split(","));
+            } else {
+                jobDependsOn = Collections.emptyList();
+            }
             return catalogManager.getJobManager()
-                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, null, jobName, jobDescription, jobTags, token);
+                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, token);
         });
 
     }

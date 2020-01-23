@@ -512,6 +512,19 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             int maxIndexJobs = catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().getMaxConcurrentJobs();
             return canBeQueued("variant-index", maxIndexJobs);
         }
+
+        if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
+            for (Job tmpJob : job.getDependsOn()) {
+                if (!Enums.ExecutionStatus.DONE.equals(tmpJob.getStatus().getName())) {
+                    if (Enums.ExecutionStatus.ABORTED.equals(tmpJob.getStatus().getName())
+                            || Enums.ExecutionStatus.ERROR.equals(tmpJob.getStatus().getName())) {
+                        abortJob(job, "Job '" + tmpJob.getId() + "' it depended on did not finish successfully");
+                    }
+                    return false;
+                }
+            }
+        }
+
         return true;
     }
 

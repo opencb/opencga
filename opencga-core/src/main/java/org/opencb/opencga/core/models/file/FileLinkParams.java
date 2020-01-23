@@ -3,15 +3,31 @@ package org.opencb.opencga.core.models.file;
 import org.opencb.commons.utils.ListUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class FileLinkParams {
     private String uri;
     private String path;
     private String description;
-    private List<FileLinkRelatedFileParams> relatedFiles;
+    private List<SmallRelatedFileParams> relatedFiles;
 
     public FileLinkParams() {
+    }
+
+    public FileLinkParams(String uri, String path, String description, List<SmallRelatedFileParams> relatedFiles) {
+        this.uri = uri;
+        this.path = path;
+        this.description = description;
+        this.relatedFiles = relatedFiles;
+    }
+
+    public static FileLinkParams of(File file) {
+        return new FileLinkParams(file.getUri().toString(), file.getPath(), file.getDescription(),
+                file.getRelatedFiles() != null
+                        ? file.getRelatedFiles().stream().map(SmallRelatedFileParams::of).collect(Collectors.toList())
+                        : Collections.emptyList());
     }
 
     @Override
@@ -30,7 +46,7 @@ public class FileLinkParams {
             return null;
         }
         List<File.RelatedFile> relatedFileList = new ArrayList<>(relatedFiles.size());
-        for (FileLinkRelatedFileParams relatedFile : relatedFiles) {
+        for (SmallRelatedFileParams relatedFile : relatedFiles) {
             relatedFileList.add(new File.RelatedFile(new File().setId(relatedFile.getFile()), relatedFile.getRelation()));
         }
         return relatedFileList;
@@ -63,7 +79,7 @@ public class FileLinkParams {
         return this;
     }
 
-    public FileLinkParams setRelatedFiles(List<FileLinkRelatedFileParams> relatedFiles) {
+    public FileLinkParams setRelatedFiles(List<SmallRelatedFileParams> relatedFiles) {
         this.relatedFiles = relatedFiles;
         return this;
     }

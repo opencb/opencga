@@ -14,6 +14,20 @@ public class ProjectCreateParams {
     public ProjectCreateParams() {
     }
 
+    public ProjectCreateParams(String id, String alias, String name, String description, String organization, Project.Organism organism) {
+        this.id = id;
+        this.alias = alias;
+        this.name = name;
+        this.description = description;
+        this.organization = organization;
+        this.organism = organism;
+    }
+
+    public static ProjectCreateParams of(Project project) {
+        return new ProjectCreateParams(project.getId(), project.getAlias(), project.getName(), project.getDescription(),
+                project.getOrganization(), project.getOrganism());
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ProjectCreateParams{");

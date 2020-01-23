@@ -24,6 +24,7 @@ import java.util.Map;
 /**
  * Created by imedina on 24/11/14.
  */
+@Deprecated
 public class Dataset {
 
     private long id;

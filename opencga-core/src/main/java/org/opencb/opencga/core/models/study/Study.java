@@ -24,7 +24,6 @@ import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.file.Experiment;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
@@ -49,17 +48,10 @@ public class Study extends PrivateFields {
     private String modificationDate;
     private String description;
     private Status status;
-    @Deprecated
-    private String lastModified;
     private long size;
-    @Deprecated
-    private String cipher;
     private String fqn;
 
     private List<Group> groups;
-
-    @Deprecated
-    private List<Experiment> experiments;
 
     private List<File> files;
     private List<Job> jobs;
@@ -88,18 +80,17 @@ public class Study extends PrivateFields {
     }
 
     public Study(String name, String alias, Type type, String description, Status status, URI uri, int release) {
-        this(alias, name, alias, type, TimeUtils.getTime(), description, status, null, 0, "",
-                new ArrayList<>(), new ArrayList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+        this(alias, name, alias, type, TimeUtils.getTime(), description, status, 0,
+                new ArrayList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                 new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), new HashMap<>(),
                 uri, new HashMap<>(), release, new HashMap<>(), new HashMap<>());
     }
 
-    public Study(String id, String name, String alias, Type type, String creationDate, String description, Status status,
-                 String lastModified, long size, String cipher, List<Group> groups, List<Experiment> experiments, List<File> files,
-                 List<Job> jobs, List<Individual> individuals, List<Sample> samples, List<Cohort> cohorts,
-                 List<Panel> panels, List<VariableSet> variableSets, Map<Entity, List<PermissionRule>> permissionRules,
-                 URI uri, Map<File.Bioformat, DataStore> dataStores, int release, Map<String, Object> stats,
-                 Map<String, Object> attributes) {
+    public Study(String id, String name, String alias, Type type, String creationDate, String description, Status status, long size,
+                 List<Group> groups, List<File> files, List<Job> jobs, List<Individual> individuals, List<Sample> samples,
+                 List<Cohort> cohorts, List<Panel> panels, List<VariableSet> variableSets,
+                 Map<Entity, List<PermissionRule>> permissionRules, URI uri, Map<File.Bioformat, DataStore> dataStores, int release,
+                 Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
@@ -107,11 +98,8 @@ public class Study extends PrivateFields {
         this.creationDate = creationDate;
         this.description = description;
         this.status = status;
-        this.lastModified = lastModified;
         this.size = size;
-        this.cipher = cipher;
         this.groups = ObjectUtils.defaultIfNull(groups, new ArrayList<>());
-        this.experiments = ObjectUtils.defaultIfNull(experiments, new ArrayList<>());
         this.files = ObjectUtils.defaultIfNull(files, new ArrayList<>());
         this.jobs = ObjectUtils.defaultIfNull(jobs, new ArrayList<>());
         this.individuals = ObjectUtils.defaultIfNull(individuals, new ArrayList<>());
@@ -173,12 +161,9 @@ public class Study extends PrivateFields {
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", status=").append(status);
-        sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append(", size=").append(size);
-        sb.append(", cipher='").append(cipher).append('\'');
         sb.append(", fqn='").append(fqn).append('\'');
         sb.append(", groups=").append(groups);
-        sb.append(", experiments=").append(experiments);
         sb.append(", files=").append(files);
         sb.append(", jobs=").append(jobs);
         sb.append(", individuals=").append(individuals);
@@ -283,15 +268,6 @@ public class Study extends PrivateFields {
         return this;
     }
 
-    public String getLastModified() {
-        return lastModified;
-    }
-
-    public Study setLastModified(String lastModified) {
-        this.lastModified = lastModified;
-        return this;
-    }
-
     public long getSize() {
         return size;
     }
@@ -301,30 +277,12 @@ public class Study extends PrivateFields {
         return this;
     }
 
-    public String getCipher() {
-        return cipher;
-    }
-
-    public Study setCipher(String cipher) {
-        this.cipher = cipher;
-        return this;
-    }
-
     public List<Group> getGroups() {
         return groups;
     }
 
     public Study setGroups(List<Group> groups) {
         this.groups = groups;
-        return this;
-    }
-
-    public List<Experiment> getExperiments() {
-        return experiments;
-    }
-
-    public Study setExperiments(List<Experiment> experiments) {
-        this.experiments = experiments;
         return this;
     }
 

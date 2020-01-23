@@ -40,6 +40,33 @@ public class IndividualUpdateParams {
     public IndividualUpdateParams() {
     }
 
+    public IndividualUpdateParams(String id, String name, String father, String mother, Boolean parentalConsanguinity, Multiples multiples,
+                                  Location location, IndividualProperty.Sex sex, String ethnicity, Individual.Population population,
+                                  String dateOfBirth, IndividualProperty.KaryotypicSex karyotypicSex,
+                                  IndividualProperty.LifeStatus lifeStatus, IndividualProperty.AffectationStatus affectationStatus,
+                                  List<String> samples, List<AnnotationSet> annotationSets, List<Phenotype> phenotypes,
+                                  List<Disorder> disorders, Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.father = father;
+        this.mother = mother;
+        this.parentalConsanguinity = parentalConsanguinity;
+        this.multiples = multiples;
+        this.location = location;
+        this.sex = sex;
+        this.ethnicity = ethnicity;
+        this.population = population;
+        this.dateOfBirth = dateOfBirth;
+        this.karyotypicSex = karyotypicSex;
+        this.lifeStatus = lifeStatus;
+        this.affectationStatus = affectationStatus;
+        this.samples = samples;
+        this.annotationSets = annotationSets;
+        this.phenotypes = phenotypes;
+        this.disorders = disorders;
+        this.attributes = attributes;
+    }
+
     @JsonIgnore
     public ObjectMap getUpdateMap() throws JsonProcessingException {
         List<AnnotationSet> annotationSetList = this.annotationSets;

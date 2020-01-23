@@ -1,9 +1,11 @@
 package org.opencb.opencga.core.models.job;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,12 +33,42 @@ public class JobCreateParams {
 
     private ExecutionResult result;
 
-    private TinyFile log;
-    private TinyFile errorLog;
+    private TinyFile stdout;
+    private TinyFile stderr;
 
     private Map<String, Object> attributes;
 
     public JobCreateParams() {
+    }
+
+    public JobCreateParams(String id, String description, ToolInfo tool, Enums.Priority priority, String commandLine,
+                           Map<String, Object> params, String creationDate, Enums.ExecutionStatus status, TinyFile outDir,
+                           List<TinyFile> input, List<TinyFile> output, List<String> tags, ExecutionResult result, TinyFile stdout,
+                           TinyFile stderr, Map<String, Object> attributes) {
+        this.id = id;
+        this.description = description;
+        this.tool = tool;
+        this.priority = priority;
+        this.commandLine = commandLine;
+        this.params = params;
+        this.creationDate = creationDate;
+        this.status = status;
+        this.outDir = outDir;
+        this.input = input;
+        this.output = output;
+        this.tags = tags;
+        this.result = result;
+        this.stdout = stdout;
+        this.stderr = stderr;
+        this.attributes = attributes;
+    }
+
+    public static JobCreateParams of(Job job) {
+        return new JobCreateParams(job.getId(), job.getDescription(), job.getTool(), job.getPriority(), job.getCommandLine(),
+                job.getParams(), job.getCreationDate(), job.getStatus(), TinyFile.of(job.getOutDir()),
+                job.getInput() != null ? job.getInput().stream().map(TinyFile::of).collect(Collectors.toList()) : Collections.emptyList(),
+                job.getOutput() != null ? job.getOutput().stream().map(TinyFile::of).collect(Collectors.toList()) : Collections.emptyList(),
+                job.getTags(), job.getExecution(), TinyFile.of(job.getStdout()), TinyFile.of(job.getStderr()), job.getAttributes());
     }
 
     @Override
@@ -55,8 +87,8 @@ public class JobCreateParams {
         sb.append(", output=").append(output);
         sb.append(", tags=").append(tags);
         sb.append(", result=").append(result);
-        sb.append(", log=").append(log);
-        sb.append(", errorLog=").append(errorLog);
+        sb.append(", log=").append(stdout);
+        sb.append(", errorLog=").append(stderr);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -180,21 +212,21 @@ public class JobCreateParams {
         return this;
     }
 
-    public TinyFile getLog() {
-        return log;
+    public TinyFile getStdout() {
+        return stdout;
     }
 
-    public JobCreateParams setLog(TinyFile log) {
-        this.log = log;
+    public JobCreateParams setStdout(TinyFile stdout) {
+        this.stdout = stdout;
         return this;
     }
 
-    public TinyFile getErrorLog() {
-        return errorLog;
+    public TinyFile getStderr() {
+        return stderr;
     }
 
-    public JobCreateParams setErrorLog(TinyFile errorLog) {
-        this.errorLog = errorLog;
+    public JobCreateParams setStderr(TinyFile stderr) {
+        this.stderr = stderr;
         return this;
     }
 
@@ -208,17 +240,28 @@ public class JobCreateParams {
     }
 
     public Job toJob() {
-        return new Job(id, null, id, description, tool, null, commandLine, params, creationDate, null, priority, status,
+        return new Job(id, null, description, tool, null, commandLine, params, creationDate, null, priority, status,
                 outDir != null ? outDir.toFile() : null,
                 getInput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
-                getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()),
-                tags, result, false, log != null ? log.toFile() : null, errorLog != null ? errorLog.toFile() : null, 1, null, attributes);
+                getOutput().stream().map(TinyFile::toFile).collect(Collectors.toList()), Collections.emptyList(),
+                tags, result, false, stdout != null ? stdout.toFile() : null, stderr != null ? stderr.toFile() : null, 1, null, attributes);
     }
 
     public static class TinyFile {
         private String path;
 
         public TinyFile() {
+        }
+
+        public TinyFile(String path) {
+            this.path = path;
+        }
+
+        public static TinyFile of(File file) {
+            if (file != null && StringUtils.isNotEmpty(file.getPath())) {
+                return new TinyFile(file.getPath());
+            }
+            return null;
         }
 
         public TinyFile setPath(String path) {

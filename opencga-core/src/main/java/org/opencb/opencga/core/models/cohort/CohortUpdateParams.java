@@ -21,6 +21,15 @@ public class CohortUpdateParams {
     public CohortUpdateParams() {
     }
 
+    public CohortUpdateParams(String id, String description, List<String> samples, List<AnnotationSet> annotationSets,
+                              Map<String, Object> attributes) {
+        this.id = id;
+        this.description = description;
+        this.samples = samples;
+        this.annotationSets = annotationSets;
+        this.attributes = attributes;
+    }
+
     @JsonIgnore
     public ObjectMap getUpdateMap() throws JsonProcessingException {
         List<AnnotationSet> annotationSetList = this.annotationSets;

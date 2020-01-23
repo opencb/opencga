@@ -43,18 +43,13 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.HookConfiguration;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.file.Experiment;
-import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.file.FileAclEntry;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileIndex;
-import org.opencb.opencga.core.models.file.FileTree;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -1962,7 +1957,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
         if (parameters.containsKey(FileDBAdaptor.QueryParams.RELATED_FILES.key())) {
             List<File.RelatedFile> relatedFileList = new ArrayList<>();
-            for (FileUpdateParams.RelatedFile relatedFile : updateParams.getRelatedFiles()) {
+            for (SmallRelatedFileParams relatedFile : updateParams.getRelatedFiles()) {
                 if (StringUtils.isEmpty(relatedFile.getFile()) || relatedFile.getRelation() == null) {
                     throw new CatalogException("Missing file or relation in relatedFiles list");
                 }
