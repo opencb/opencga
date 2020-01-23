@@ -3,13 +3,20 @@ package org.opencb.opencga.analysis.variant.samples;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class TreeQuery {
+    public static final String AND = "AND";
+    public static final String OR = "OR";
+    public static final String NOT = "NOT";
+
     private Node root;
 
     public TreeQuery(String q) {
@@ -34,6 +41,20 @@ public class TreeQuery {
         return s;
     }
 
+    public String toTreeString() {
+        StringBuilder sb = new StringBuilder();
+        root.toTreeString(sb, " ");
+        return sb.toString();
+    }
+
+    public void log() {
+        Logger logger = LoggerFactory.getLogger(this.getClass());
+        logger.info(toString());
+        for (String s : toTreeString().split("\n")) {
+            logger.info(s);
+        }
+    }
+
     private static Node parse(String q) {
         q = StringUtils.trim(q);
         int open = StringUtils.countMatches(q, "(");
@@ -42,12 +63,12 @@ public class TreeQuery {
             throw new IllegalArgumentException("Malformed query '" + q + "'");
         }
         if (open == 0) {
-            if (q.startsWith("NOT")) {
-                return new ComplementNode(parse(q.replaceFirst("NOT", "")));
+            if (q.startsWith(NOT)) {
+                return new ComplementNode(parse(q.replaceFirst(NOT, "")));
             }
 
             Query query = new Query();
-            for (String token : q.split(" AND ")) {
+            for (String token : q.split(" " + AND + " ")) {
                 token = token.replace(" ", "");
 
 //                String[] split = token.split(":", 2);
@@ -94,7 +115,7 @@ public class TreeQuery {
             }
             if (level == 0 && c == ' ') {
                 String subQuery = q.substring(beginIndex, endIndex > 0 ? endIndex : i);
-                if (subQuery.equals("NOT")) {
+                if (subQuery.equals(NOT)) {
                     complement = true;
                     continue;
                 }
@@ -111,23 +132,23 @@ public class TreeQuery {
                     break;
                 }
                 String operator = q.substring(i, nextOpen).toUpperCase();
-                if (operator.contains("OR")) {
+                if (operator.contains(OR)) {
                     if (type == null) {
                         type = Node.Type.UNION;
                     } else if (type != Node.Type.UNION) {
                         throw new IllegalArgumentException("Unable to mix OR and AND in the same statement: " + q);
                     }
-                    if (operator.contains("NOT")) {
+                    if (operator.contains(NOT)) {
                         complement = true;
                     }
                 }
-                if (operator.contains("AND")) {
+                if (operator.contains(AND)) {
                     if (type == null) {
                         type = Node.Type.INTERSECTION;
                     } else if (type != Node.Type.INTERSECTION) {
                         throw new IllegalArgumentException("Unable to mix OR and AND in the same statement: " + q);
                     }
-                    if (operator.contains("NOT")) {
+                    if (operator.contains(NOT)) {
                         complement = true;
                     }
                 }
@@ -155,7 +176,7 @@ public class TreeQuery {
             QUERY,
             COMPLEMENT,
             INTERSECTION,
-            UNION
+            UNION;
         }
 
         Node.Type getType();
@@ -167,6 +188,8 @@ public class TreeQuery {
         default List<Node> getNodes() {
             return null;
         }
+
+        void toTreeString(StringBuilder sb, String indent);
     }
 
     public static class QueryNode implements Node {
@@ -198,7 +221,27 @@ public class TreeQuery {
                         boolean withOperator = StringUtils.startsWithAny(e.getValue().toString(), "=", ">", "<", "!", "~");
                         return e.getKey() + (withOperator ? "" : "=") + e.getValue();
                     })
-                    .collect(Collectors.joining(" AND ", "(", ")"));
+                    .collect(Collectors.joining(" " + AND + " ", "(", ")"));
+        }
+
+        @Override
+        public void toTreeString(StringBuilder sb, String indent) {
+            sb.append("QUERY").append("\n");
+            for (Iterator<String> iterator = getQuery().keySet().iterator(); iterator.hasNext();) {
+                String key = iterator.next();
+                String value = query.getString(key);
+                boolean withOperator = StringUtils.startsWithAny(value.toString(), "=", ">", "<", "!", "~");
+                sb.append(indent).append(iterator.hasNext() ? "├──" : "└──").append(key);
+                if (!withOperator) {
+                    sb.append("=");
+                }
+                if (value.length() > 40) {
+                    sb.append(value, 0, 37).append("...");
+                } else {
+                    sb.append(value);
+                }
+                sb.append("\n");
+            }
         }
     }
 
@@ -226,7 +269,17 @@ public class TreeQuery {
         }
         @Override
         public String toString() {
-            return "(NOT " + node.toString() + ")";
+            return "(" + NOT + " " + node.toString() + ")";
+        }
+
+        @Override
+        public void toTreeString(StringBuilder sb, String indent) {
+            sb.append(NOT).append("\n");
+            for (Iterator<Node> iterator = getNodes().iterator(); iterator.hasNext();) {
+                Node node = iterator.next();
+                sb.append(indent).append(iterator.hasNext() ? "├──" : "└──");
+                node.toTreeString(sb, indent + (iterator.hasNext() ? "│   " : "    "));
+            }
         }
     }
 
@@ -252,7 +305,17 @@ public class TreeQuery {
 
         @Override
         public String toString() {
-            return nodes.stream().map(Object::toString).collect(Collectors.joining(" AND ", "(", ")"));
+            return nodes.stream().map(Object::toString).collect(Collectors.joining(" " + AND + " ", "(", ")"));
+        }
+
+        @Override
+        public void toTreeString(StringBuilder sb, String indent) {
+            sb.append(AND).append("\n");
+            for (Iterator<Node> iterator = getNodes().iterator(); iterator.hasNext();) {
+                Node node = iterator.next();
+                sb.append(indent).append(iterator.hasNext() ? "├──" : "└──");
+                node.toTreeString(sb, indent + (iterator.hasNext() ? "│   " : "    "));
+            }
         }
     }
 
@@ -278,7 +341,17 @@ public class TreeQuery {
 
         @Override
         public String toString() {
-            return nodes.stream().map(Object::toString).collect(Collectors.joining(" OR ", "(", ")"));
+            return nodes.stream().map(Object::toString).collect(Collectors.joining(" " + OR + " ", "(", ")"));
+        }
+
+        @Override
+        public void toTreeString(StringBuilder sb, String indent) {
+            sb.append(OR).append("\n");
+            for (Iterator<Node> iterator = getNodes().iterator(); iterator.hasNext();) {
+                Node node = iterator.next();
+                sb.append(indent).append(iterator.hasNext() ? "├──" : "└──");
+                node.toTreeString(sb, indent + (iterator.hasNext() ? "│   " : "    "));
+            }
         }
     }
 

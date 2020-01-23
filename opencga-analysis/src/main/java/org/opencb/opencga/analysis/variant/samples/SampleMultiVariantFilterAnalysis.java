@@ -43,6 +43,7 @@ public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
         addAttribute("query", treeQuery.getRoot().toString());
 
         VariantQueryOptimizer.optimize(treeQuery);
+        treeQuery.log();
 
 //        steps = new LinkedList<>();
 //        if (multiQuery.getTree().getType().equals(MultiQuery.Node.Type.QUERY)) {
