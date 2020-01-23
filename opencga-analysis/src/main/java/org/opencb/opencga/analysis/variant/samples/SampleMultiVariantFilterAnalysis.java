@@ -6,9 +6,13 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
@@ -21,11 +25,11 @@ import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Tool(id="sample-multi-query", resource = Enums.Resource.VARIANT)
 public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
 
-    public static final String INDENT_INCREMENT = "==";
     private SampleMultiVariantFilterAnalysisParams analysisParams = new SampleMultiVariantFilterAnalysisParams();
     private TreeQuery treeQuery;
 //    private LinkedList<String> steps;
@@ -126,31 +130,26 @@ public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
     }
 
     private List<String> resolveNode(TreeQuery.Node node, Query baseQuery, List<String> includeSamples)
-            throws CatalogException, IOException, StorageEngineException {
-        return resolveNode(node, baseQuery, includeSamples, 0, "");
-    }
-
-    private List<String> resolveNode(TreeQuery.Node node, Query baseQuery, List<String> includeSamples, int level, String indent)
             throws CatalogException, StorageEngineException, IOException {
         switch (node.getType()) {
             case QUERY:
-                return resolveQuery(((TreeQuery.QueryNode) node), baseQuery, includeSamples, level, indent);
+                return resolveQuery(((TreeQuery.QueryNode) node), baseQuery, includeSamples);
             case COMPLEMENT:
-                return resolveComplementQuery(((TreeQuery.ComplementNode) node), baseQuery, includeSamples, level, indent);
+                return resolveComplementQuery(((TreeQuery.ComplementNode) node), baseQuery, includeSamples);
             case INTERSECTION:
-                return resolveIntersectNode(((TreeQuery.IntersectionNode) node), baseQuery, includeSamples, level, indent);
+                return resolveIntersectNode(((TreeQuery.IntersectionNode) node), baseQuery, includeSamples);
             case UNION:
-                return resolveUnionNode(((TreeQuery.UnionNode) node), baseQuery, includeSamples, level, indent);
+                return resolveUnionNode(((TreeQuery.UnionNode) node), baseQuery, includeSamples);
             default:
                 throw new IllegalArgumentException("Unknown node type " + node.getType());
         }
     }
 
-    private List<String> resolveUnionNode(TreeQuery.UnionNode node, Query baseQuery, List<String> includeSamples, int level, String indent)
+    private List<String> resolveUnionNode(TreeQuery.UnionNode node, Query baseQuery, List<String> includeSamples)
             throws CatalogException, StorageEngineException, IOException {
 
-        logger.info("{}- Execute union-node with {} children at lvl-{} for {} samples",
-                indent, node.getNodes().size(), level, includeSamples.size());
+        logger.info("Execute union-node with {} children for {} samples",
+                node.getNodes().size(), includeSamples.size());
 
         includeSamples = new ArrayList<>(includeSamples);
         Set<String> result = new HashSet<>();
@@ -159,7 +158,7 @@ public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
             if (includeSamples.isEmpty()) {
                 logger.info("Skip node '{}'. All samples found", subNode);
             } else {
-                List<String> thisNodeResult = resolveNode(subNode, baseQuery, includeSamples, level + 1, indent + INDENT_INCREMENT);
+                List<String> thisNodeResult = resolveNode(subNode, baseQuery, includeSamples);
                 includeSamples.removeAll(thisNodeResult);
                 result.addAll(thisNodeResult);
             }
@@ -168,40 +167,98 @@ public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
         return new ArrayList<>(result);
     }
 
-    private List<String> resolveIntersectNode(TreeQuery.IntersectionNode node, Query baseQuery, List<String> includeSamples,
-                                              int level, String indent)
+    private List<String> resolveIntersectNode(TreeQuery.IntersectionNode node, Query baseQuery, List<String> includeSamples)
             throws CatalogException, StorageEngineException, IOException {
 
-        logger.info("{}- Execute intersect-node with {} children at lvl-{} for {} samples",
-                indent, node.getNodes().size(), level, includeSamples.size());
+        logger.info("Execute intersect-node with {} children at for {} samples",
+                node.getNodes().size(), includeSamples.size());
 
         node.getNodes().sort(COMPARATOR.reversed());
         for (TreeQuery.Node subNode : node.getNodes()) {
             if (includeSamples.isEmpty()) {
                 logger.info("Skip node '{}'", subNode);
             } else {
-                includeSamples = resolveNode(subNode, baseQuery, includeSamples, level + 1, indent + INDENT_INCREMENT);
+                includeSamples = resolveNode(subNode, baseQuery, includeSamples);
             }
         }
 
         return includeSamples;
     }
 
-    private List<String> resolveComplementQuery(TreeQuery.ComplementNode node, Query baseQuery, List<String> includeSamples,
-                                                int level, String indent)
+    private List<String> resolveComplementQuery(TreeQuery.ComplementNode node, Query baseQuery, List<String> includeSamples)
             throws CatalogException, IOException, StorageEngineException {
-        logger.info("{}- Execute complement-node at lvl-{} for {} samples", indent, level, includeSamples.size());
-        List<String> subSamples = resolveNode(node.getNodes().get(0), baseQuery, includeSamples, level + 1, indent + INDENT_INCREMENT);
-        logger.info("{}- Discard {} of {} samples", indent, subSamples.size(), includeSamples.size());
+        logger.info("Execute complement-node for {} samples", includeSamples.size());
+        List<String> subSamples = resolveNode(node.getNodes().get(0), baseQuery, includeSamples);
+        logger.info("Discard {} of {} samples", subSamples.size(), includeSamples.size());
 
         includeSamples = new LinkedList<>(includeSamples);
         includeSamples.removeAll(subSamples);
         return includeSamples;
     }
 
-    private List<String> resolveQuery(TreeQuery.QueryNode node, Query baseQuery, List<String> includeSamples, int level, String indent)
+    private List<String> resolveQuery(TreeQuery.QueryNode node, Query baseQuery, List<String> includeSamples)
             throws CatalogException, StorageEngineException, IOException {
-        logger.info("{}- Execute leaf-node '{}' lvl-{} for {} samples", indent, node, level, includeSamples.size());
+        logger.info("Execute leaf-node '{}' for {} samples", node, includeSamples.size());
+
+        Query variantsQuery = node.getQuery();
+        Query sampleQuery = new Query();
+        Query individualQuery = new Query();
+        for (String key : new HashSet<>(variantsQuery.keySet())) {
+            if (key.startsWith("sample.")) {
+                sampleQuery.put(key.replaceFirst("sample\\.", ""), variantsQuery.getString(key));
+                variantsQuery.remove(key);
+            }
+            if (key.startsWith("individual.")) {
+                sampleQuery.put(key.replaceFirst("individual\\.", ""), variantsQuery.getString(key));
+                variantsQuery.remove(key);
+            }
+        }
+        if (!sampleQuery.isEmpty()) {
+            int inputSampleSize = includeSamples.size();
+            if (sampleQuery.containsKey(SampleDBAdaptor.QueryParams.ID.key())) {
+                // Remove samples not in the query
+                Set<String> samplesFromQuery = new HashSet<>(sampleQuery.getAsStringList(SampleDBAdaptor.QueryParams.ID.key()));
+                includeSamples = new LinkedList<>(includeSamples);
+                includeSamples.removeIf(s -> !samplesFromQuery.contains(s));
+            }
+            if (!includeSamples.isEmpty()) {
+                sampleQuery.put(SampleDBAdaptor.QueryParams.ID.key(), includeSamples);
+                includeSamples = getCatalogManager().getSampleManager()
+                        .search(studyFqn, sampleQuery, new QueryOptions(QueryOptions.INCLUDE, "id"), getToken())
+                        .getResults()
+                        .stream()
+                        .map(Sample::getId)
+                        .collect(Collectors.toList());
+            }
+
+            logger.info("Filter samples with catalog samples metadata. Found {} samples out of {}",
+                    includeSamples.size(), inputSampleSize);
+            if (includeSamples.isEmpty()) {
+                logger.info("Skip query leaf no sample passed the catalog sample filter.");
+                return Collections.emptyList();
+            }
+        }
+
+        if (!individualQuery.isEmpty()) {
+            int inputSampleSize = includeSamples.size();
+            individualQuery.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), includeSamples);
+            includeSamples = getCatalogManager().getIndividualManager()
+                    .search(studyFqn, individualQuery, new QueryOptions(QueryOptions.INCLUDE, "id"), getToken())
+                    .getResults()
+                    .stream()
+                    .map(Individual::getSamples)
+                    .flatMap(Collection::stream)
+                    .map(Sample::getId)
+                    .filter(new HashSet<>(includeSamples)::contains)
+                    .collect(Collectors.toList());
+
+            logger.info("Filter samples with catalog individuals metadata. Found {} samples out of {}",
+                    includeSamples.size(), inputSampleSize);
+            if (includeSamples.isEmpty()) {
+                logger.info("Skip query leaf no sample passed the catalog individual filter.");
+                return Collections.emptyList();
+            }
+        }
 
         Set<String> samples;
         if (params.getBoolean("direct")) {
@@ -210,7 +267,7 @@ public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
             samples = resolveQuerySamplesData(node, baseQuery, includeSamples);
         }
 
-        logger.info("{}- Found {} sample in leaf '{}' lvl-{}", indent, samples.size(), node, level);
+        logger.info("Found {} sample in leaf '{}'", samples.size(), node);
         return new ArrayList<>(samples);
     }
 

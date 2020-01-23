@@ -231,7 +231,7 @@ public class TreeQuery {
                 String key = iterator.next();
                 String value = query.getString(key);
                 boolean withOperator = StringUtils.startsWithAny(value.toString(), "=", ">", "<", "!", "~");
-                sb.append(indent).append(iterator.hasNext() ? "├──" : "└──").append(key);
+                sb.append(indent).append(iterator.hasNext() ? "├──" : "└──").append(key).append(" ");
                 if (!withOperator) {
                     sb.append("=");
                 }
