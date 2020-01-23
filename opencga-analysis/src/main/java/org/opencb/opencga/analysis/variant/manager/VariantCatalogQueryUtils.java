@@ -137,6 +137,14 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         cohortFilterValidator = new CohortFilterValidator();
     }
 
+    public static QueryParam valueOf(String param) {
+        QueryParam queryParam = VariantQueryParam.valueOf(param);
+        if (queryParam == null) {
+            queryParam = VARIANT_CATALOG_QUERY_PARAMS.stream().filter(q -> q.key().equals(param)).findFirst().orElse(null);
+        }
+        return queryParam;
+    }
+
     public static VariantQueryException wrongReleaseException(VariantQueryParam param, String value, int release) {
         return new VariantQueryException("Unable to have '" + value + "' within '" + param.key() + "' filter. "
                 + "Not part of release " + release);

@@ -62,6 +62,7 @@ import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
@@ -550,8 +551,26 @@ public class VariantStorageManager extends StorageManager {
         });
     }
 
+    public StudyMetadata getStudyMetadata(String study, String token)
+            throws CatalogException, StorageEngineException {
+        String studyFqn = getStudyFqn(study, token);
+        Query query = new Query(STUDY.key(), studyFqn)
+                .append(INCLUDE_SAMPLE.key(), VariantQueryUtils.NONE)
+                .append(INCLUDE_FILE.key(), VariantQueryUtils.NONE);
+
+        return secure(query, new QueryOptions(), token, engine -> {
+            VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
+            StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyFqn);
+            if (studyMetadata == null) {
+                // Sample does not exist in storage!
+                throw VariantQueryException.studyNotFound(studyFqn);
+            }
+            return studyMetadata;
+        });
+    }
+
     public SampleMetadata getSampleMetadata(String study, String sample, String token)
-            throws CatalogException, IOException, StorageEngineException {
+            throws CatalogException, StorageEngineException {
         Query query = new Query(STUDY.key(), study)
                 .append(SAMPLE.key(), sample)
                 .append(INCLUDE_FILE.key(), VariantQueryUtils.NONE);

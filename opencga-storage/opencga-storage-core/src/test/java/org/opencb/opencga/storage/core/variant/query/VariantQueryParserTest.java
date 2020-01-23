@@ -35,9 +35,8 @@ public class VariantQueryParserTest {
     }
 
     protected String preProcessGenotypesFilter(String genotypeFilter, List<String> loadedGenotypes) {
-        VariantQueryParser parser = new VariantQueryParser(null, null);
         Map<Object, List<String>> map = new LinkedHashMap<>();
         VariantQueryUtils.QueryOperation op = parseGenotypeFilter(genotypeFilter, map);
-        return parser.preProcessGenotypesFilter(map, op, loadedGenotypes);
+        return VariantQueryParser.preProcessGenotypesFilter(map, op, loadedGenotypes);
     }
 }

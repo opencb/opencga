@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class TreeQuery {
@@ -32,6 +33,26 @@ public class TreeQuery {
         return this;
     }
 
+    public void forEachQuery(Consumer<Query> queryConsumer) {
+        forEachNode(node -> {
+            if (node.getQuery() != null) {
+                queryConsumer.accept(node.getQuery());
+            }
+        });
+    }
+
+    public void forEachNode(Consumer<Node> nodeConsumer) {
+        forEachNode(root, nodeConsumer);
+    }
+
+    private void forEachNode(Node node, Consumer<Node> nodeConsumer) {
+        nodeConsumer.accept(node);
+        if (node.getNodes() != null) {
+            for (Node subNode : node.getNodes()) {
+                forEachNode(subNode, nodeConsumer);
+            }
+        }
+    }
     @Override
     public String toString() {
         String s = root.toString();
@@ -231,7 +252,7 @@ public class TreeQuery {
                 String key = iterator.next();
                 String value = query.getString(key);
                 boolean withOperator = StringUtils.startsWithAny(value.toString(), "=", ">", "<", "!", "~");
-                sb.append(indent).append(iterator.hasNext() ? "├──" : "└──").append(key).append(" ");
+                sb.append(indent).append(iterator.hasNext() ? "├──" : "└──").append(key);
                 if (!withOperator) {
                     sb.append("=");
                 }

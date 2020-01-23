@@ -5,37 +5,60 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
+import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.query.VariantQueryParser;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Tool(id="sample-multi-query", resource = Enums.Resource.VARIANT)
 public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
 
+    public static final String SAMPLE_PREFIX = "sample.";
+    public static final String INDIVIDUAL_PREFIX = "individual.";
     private SampleMultiVariantFilterAnalysisParams analysisParams = new SampleMultiVariantFilterAnalysisParams();
     private TreeQuery treeQuery;
+    private String studyFqn;
 //    private LinkedList<String> steps;
 
     private final static Comparator<TreeQuery.Node> COMPARATOR = Comparator.comparing(SampleMultiVariantFilterAnalysis::toQueryValue);
-    private String studyFqn;
+    private static final Set<QueryParam> INVALID_QUERY_PARAMS;
+
+    static {
+        INVALID_QUERY_PARAMS = new HashSet<>();
+        INVALID_QUERY_PARAMS.addAll(VariantQueryUtils.MODIFIER_QUERY_PARAMS);
+//        INVALID_QUERY_PARAMS.add(VariantQueryParam.SAMPLE);
+        INVALID_QUERY_PARAMS.add(VariantQueryParam.FILE);
+        INVALID_QUERY_PARAMS.add(VariantQueryParam.STUDY);
+        INVALID_QUERY_PARAMS.add(VariantQueryParam.FORMAT);
+        INVALID_QUERY_PARAMS.add(VariantQueryParam.FILTER);
+        INVALID_QUERY_PARAMS.add(VariantQueryParam.QUAL);
+        INVALID_QUERY_PARAMS.add(VariantCatalogQueryUtils.FAMILY);
+        INVALID_QUERY_PARAMS.add(VariantCatalogQueryUtils.PROJECT);
+        INVALID_QUERY_PARAMS.add(VariantCatalogQueryUtils.FAMILY_DISORDER);
+        INVALID_QUERY_PARAMS.add(VariantCatalogQueryUtils.FAMILY_MEMBERS);
+        INVALID_QUERY_PARAMS.add(VariantCatalogQueryUtils.FAMILY_PROBAND);
+        INVALID_QUERY_PARAMS.add(VariantCatalogQueryUtils.FAMILY_SEGREGATION);
+        INVALID_QUERY_PARAMS.add(VariantCatalogQueryUtils.SAMPLE_ANNOTATION);
+    }
 
     @Override
     protected void check() throws Exception {
@@ -47,6 +70,9 @@ public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
         addAttribute("query", treeQuery.getRoot().toString());
 
         VariantQueryOptimizer.optimize(treeQuery);
+
+        checkValidQueryFilters(treeQuery);
+
         treeQuery.log();
 
 //        steps = new LinkedList<>();
@@ -58,6 +84,38 @@ public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
 //            }
 //        }
 //        steps.add("join-results");
+    }
+
+    protected static void checkValidQueryFilters(TreeQuery treeQuery) throws ToolException {
+        Set<String> invalidParams = new LinkedHashSet<>();
+        treeQuery.forEachQuery(query -> {
+            for (QueryParam invalidParam : INVALID_QUERY_PARAMS) {
+                if (VariantQueryUtils.isValidParam(query, invalidParam)) {
+                    invalidParams.add(invalidParam.key());
+                }
+            }
+            if (VariantQueryUtils.isValidParam(query, VariantQueryParam.GENOTYPE)) {
+                String genotype = query.getString(VariantQueryParam.GENOTYPE.key());
+                if (genotype.contains(":") && !genotype.startsWith("*:")) {
+                    invalidParams.add(VariantQueryParam.GENOTYPE.key());
+                }
+            }
+            if (VariantQueryUtils.isValidParam(query, VariantQueryParam.SAMPLE)) {
+                Object sample = query.remove(VariantQueryParam.SAMPLE.key());
+                query.put(SAMPLE_PREFIX + SampleDBAdaptor.QueryParams.ID.key(), sample);
+            }
+            for (String param : query.keySet()) {
+                if (!param.startsWith(SAMPLE_PREFIX) && !param.startsWith(INDIVIDUAL_PREFIX)) {
+                    if (VariantCatalogQueryUtils.valueOf(param) == null) {
+                        // Unknown Param
+                        invalidParams.add(param);
+                    }
+                }
+            }
+        });
+        if (!invalidParams.isEmpty()) {
+            throw new ToolException("Invalid sample query. Unable to filter by params " + invalidParams);
+        }
     }
 
 //    @Override
@@ -204,12 +262,12 @@ public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
         Query sampleQuery = new Query();
         Query individualQuery = new Query();
         for (String key : new HashSet<>(variantsQuery.keySet())) {
-            if (key.startsWith("sample.")) {
-                sampleQuery.put(key.replaceFirst("sample\\.", ""), variantsQuery.getString(key));
+            if (key.startsWith(SAMPLE_PREFIX)) {
+                sampleQuery.put(key.substring(SAMPLE_PREFIX.length()), variantsQuery.getString(key));
                 variantsQuery.remove(key);
             }
-            if (key.startsWith("individual.")) {
-                sampleQuery.put(key.replaceFirst("individual\\.", ""), variantsQuery.getString(key));
+            if (key.startsWith(INDIVIDUAL_PREFIX)) {
+                sampleQuery.put(key.substring(INDIVIDUAL_PREFIX.length()), variantsQuery.getString(key));
                 variantsQuery.remove(key);
             }
         }
@@ -275,11 +333,20 @@ public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
             throws CatalogException, StorageEngineException, IOException {
         Query query = new Query(baseQuery);
         query.putAll(node.getQuery());
+        String genotypes = null;
+        if (VariantQueryUtils.isValidParam(query, VariantQueryParam.GENOTYPE)) {
+            genotypes = query.getString(VariantQueryParam.GENOTYPE.key());
+            query.remove(VariantQueryParam.GENOTYPE.key());
+            if (genotypes.startsWith("*:")) {
+                genotypes = genotypes.substring(2);
+            }
+        }
         Set<String> samples = new HashSet<>();
         includeSamples = new LinkedList<>(includeSamples);
 
         List<String> thisVariantSamples = new ArrayList<>(includeSamples.size());
-        VariantDBIterator iterator = getVariantStorageManager().iterator(query, new QueryOptions(VariantField.SUMMARY, true), getToken());
+        VariantDBIterator iterator = getVariantStorageManager()
+                .iterator(new Query(query), new QueryOptions(VariantField.SUMMARY, true), getToken());
         while (iterator.hasNext()) {
             Variant next = iterator.next();
             StopWatch stopWatch = StopWatch.createStarted();
@@ -299,6 +366,7 @@ public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
                 queryOptions.put(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSamples);
                 queryOptions.put(QueryOptions.LIMIT, limit);
                 queryOptions.put(QueryOptions.SKIP, skip);
+                queryOptions.put(VariantQueryParam.GENOTYPE.key(), genotypes);
 
                 Variant variant = getVariantStorageManager()
                         .getSampleData(next.toString(), studyFqn, queryOptions, getToken()).first();
@@ -320,6 +388,11 @@ public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
             logger.debug("[{}] found {} samples in {}", next, thisVariantSamples.size(), TimeUtils.durationToString(stopWatch));
             thisVariantSamples.clear();
         }
+        try {
+            iterator.close();
+        } catch (Exception e) {
+            throw VariantQueryException.internalException(e);
+        }
         return samples;
     }
 
@@ -329,16 +402,34 @@ public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
         query.putAll(node.getQuery());
         query.put(VariantQueryParam.INCLUDE_SAMPLE.key(), includeSamples);
         query.put(VariantQueryParam.INCLUDE_FORMAT.key(), "GT," + VariantQueryParser.SAMPLE_ID);
+        Predicate<String> genotypeFilter = GenotypeClass.MAIN_ALT;
+        if (VariantQueryUtils.isValidParam(query, VariantQueryParam.GENOTYPE)) {
+            String genotypes = query.getString(VariantQueryParam.GENOTYPE.key());
+            query.remove(VariantQueryParam.GENOTYPE.key());
+            if (genotypes.startsWith("*:")) {
+                genotypes = genotypes.substring(2);
+            }
+            List<String> loadedGenotypes = getVariantStorageManager()
+                    .getStudyMetadata(studyFqn, getToken()).getAttributes().getAsStringList(VariantStorageOptions.LOADED_GENOTYPES.key());
+            List<String> genotypesList = VariantQueryParser.preProcessGenotypesFilter(Arrays.asList(genotypes.split(",")), loadedGenotypes);
+            genotypeFilter = new HashSet<>(genotypesList)::contains;
+        }
         Set<String> samples = new HashSet<>();
 
         VariantDBIterator iterator = getVariantStorageManager().iterator(query, new QueryOptions(), getToken());
         while (iterator.hasNext()) {
             Variant next = iterator.next();
             for (List<String> samplesDatum : next.getStudies().get(0).getSamplesData()) {
-                if (GenotypeClass.MAIN_ALT.test(samplesDatum.get(0))) {
+                String genotype = samplesDatum.get(0);
+                if (GenotypeClass.MAIN_ALT.test(genotype) && genotypeFilter.test(genotype)) {
                     samples.add(samplesDatum.get(1));
                 }
             }
+        }
+        try {
+            iterator.close();
+        } catch (Exception e) {
+            throw VariantQueryException.internalException(e);
         }
         return samples;
     }
