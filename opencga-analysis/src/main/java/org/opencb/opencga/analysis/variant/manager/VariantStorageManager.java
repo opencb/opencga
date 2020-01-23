@@ -19,7 +19,6 @@ package org.opencb.opencga.analysis.variant.manager;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.solr.client.solrj.request.SolrPing;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -72,7 +71,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 import java.io.IOException;
 import java.net.URI;
@@ -812,7 +810,7 @@ public class VariantStorageManager extends StorageManager {
         }
     }
 
-    private Map<String, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, String token)
+    private Map<String, List<String>> checkSamplesPermissions(Query query, QueryOptions queryOptions, String token)
             throws CatalogException, StorageEngineException, IOException {
         String study = catalogUtils.getAnyStudy(query, token);
         DataStore dataStore = getDataStore(study, token);
@@ -821,10 +819,10 @@ public class VariantStorageManager extends StorageManager {
     }
 
     // package protected for test visibility
-    Map<String, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, VariantStorageMetadataManager mm,
+    Map<String, List<String>> checkSamplesPermissions(Query query, QueryOptions queryOptions, VariantStorageMetadataManager mm,
                                                       String token)
             throws CatalogException {
-        final Map<String, List<Sample>> samplesMap = new HashMap<>();
+        final Map<String, List<String>> samplesMap = new HashMap<>();
         Set<VariantField> returnedFields = VariantField.getIncludeFields(queryOptions);
         if (!returnedFields.contains(VariantField.STUDIES)) {
             // FIXME: What if filtering by fields with no permissions?
@@ -836,13 +834,15 @@ public class VariantStorageManager extends StorageManager {
             for (Map.Entry<String, List<String>> entry : samplesToReturn.entrySet()) {
                 String studyId = entry.getKey();
                 if (!entry.getValue().isEmpty()) {
-                    DataResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(studyId, entry.getValue(),
-                            new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), token);
-                    if (samplesQueryResult.getNumResults() != entry.getValue().size()) {
+//                    DataResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(studyId, entry.getValue(),
+//                            new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), token);
+                    long numMatches = catalogManager.getSampleManager()
+                            .count(studyId, new Query(SampleDBAdaptor.QueryParams.ID.key(), entry.getValue()), token).getNumMatches();
+                    if (numMatches != entry.getValue().size()) {
                         throw new CatalogAuthorizationException("Permission denied. User "
                                 + catalogManager.getUserManager().getUserId(token) + " can't read all the requested samples");
                     }
-                    samplesMap.put(studyId, samplesQueryResult.getResults());
+                    samplesMap.put(studyId, entry.getValue());
                 } else {
                     samplesMap.put(studyId, Collections.emptyList());
                 }
@@ -865,7 +865,6 @@ public class VariantStorageManager extends StorageManager {
                     DataResult<Sample> samplesQueryResult = catalogManager.getSampleManager().search(study.getFqn(), new Query(),
                             new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()).append("lazy", true), token);
                     samplesQueryResult.getResults().sort(Comparator.comparing(Sample::getId));
-                    samplesMap.put(study.getFqn(), samplesQueryResult.getResults());
                     int studyId = mm.getStudyId(study.getFqn());
                     for (Iterator<Sample> iterator = samplesQueryResult.getResults().iterator(); iterator.hasNext();) {
                         Sample sample = iterator.next();
@@ -875,6 +874,10 @@ public class VariantStorageManager extends StorageManager {
                             iterator.remove();
                         }
                     }
+                    samplesMap.put(study.getFqn(), samplesQueryResult.getResults()
+                            .stream()
+                            .map(Sample::getId)
+                            .collect(Collectors.toList()));
                 }
                 if (includeSamples.isEmpty()) {
                     query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), NONE);

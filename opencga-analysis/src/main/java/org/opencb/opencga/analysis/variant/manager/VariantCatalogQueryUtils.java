@@ -916,8 +916,14 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         protected List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
                                         String sessionId) throws CatalogException {
             if (release == null) {
-                DataResult<Sample> samples = catalogManager.getSampleManager().get(defaultStudyStr, values,
+//                DataResult<Sample> samples = catalogManager.getSampleManager().get(defaultStudyStr, values,
+//                        SampleManager.INCLUDE_SAMPLE_IDS, sessionId);
+                DataResult<Sample> samples = catalogManager.getSampleManager().search(defaultStudyStr,
+                        new Query(SampleDBAdaptor.QueryParams.ID.key(), values),
                         SampleManager.INCLUDE_SAMPLE_IDS, sessionId);
+                if (samples.getResults().size() != values.size()) {
+                    throw new CatalogException("Some samples not found");
+                }
                 return samples.getResults().stream().map(Sample::getId).collect(Collectors.toList());
             } else {
                 return validate(defaultStudyStr, values, release, param, catalogManager.getSampleManager(),
