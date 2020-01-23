@@ -20,8 +20,8 @@ import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.analysis.variant.samples.SampleMultiVariantFilterAnalysis;
-import org.opencb.opencga.analysis.variant.samples.SampleMultiVariantFilterAnalysisParams;
+import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
+import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
@@ -514,10 +514,10 @@ public class VariantAnalysisTest {
     public void testSampleMultiVariantFilterAnalysis() throws Exception {
         Path outDir = Paths.get(opencga.createTmpOutdir("_SampleMultiVariantFilterAnalysis"));
         System.out.println("outDir = " + outDir);
-        SampleMultiVariantFilterAnalysisParams params = new SampleMultiVariantFilterAnalysisParams();
+        SampleEligibilityAnalysisParams params = new SampleEligibilityAnalysisParams();
         params.setQuery("(biotype=protein_coding AND ct=missense_variant AND gene=BRCA2) OR (gene=BTN3A2)");
 
-        ExecutionResult er = toolRunner.execute(SampleMultiVariantFilterAnalysis.class, params.toObjectMap(), outDir, token);
+        ExecutionResult er = toolRunner.execute(SampleEligibilityAnalysis.class, params.toObjectMap(), outDir, token);
 //        checkExecutionResult(er, false);
     }
 

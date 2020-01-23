@@ -5,9 +5,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.opencga.core.exceptions.ToolException;
 
-import static org.junit.Assert.*;
-
-public class SampleMultiVariantFilterAnalysisTest {
+public class SampleEligibilityAnalysisTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -17,13 +15,13 @@ public class SampleMultiVariantFilterAnalysisTest {
     public void checkValidQueryFilters1() throws ToolException {
         thrown.expectMessage("includeSample");
         thrown.expectMessage("includeFormat");
-        SampleMultiVariantFilterAnalysis.checkValidQueryFilters(new TreeQuery("includeSample=s1,s2,s3 AND includeFormat=DP"));
+        SampleEligibilityAnalysis.checkValidQueryFilters(new TreeQuery("includeSample=s1,s2,s3 AND includeFormat=DP"));
     }
 
     @Test
     public void checkValidQueryFilters2() throws ToolException {
         thrown.expectMessage("genotype");
-        SampleMultiVariantFilterAnalysis.checkValidQueryFilters(new TreeQuery("genotype=s1:1/2"));
+        SampleEligibilityAnalysis.checkValidQueryFilters(new TreeQuery("genotype=s1:1/2"));
     }
 
     @Test
@@ -31,6 +29,6 @@ public class SampleMultiVariantFilterAnalysisTest {
         thrown.expectMessage("unknownFilter");
         TreeQuery treeQuery = new TreeQuery("(biotype=pritein_coding) OR ( NOT ( (gene = BRCA2) AND (ct=missense AND unknownFilter=anything) )) ");
 //        treeQuery.log();
-        SampleMultiVariantFilterAnalysis.checkValidQueryFilters(treeQuery);
+        SampleEligibilityAnalysis.checkValidQueryFilters(treeQuery);
     }
 }

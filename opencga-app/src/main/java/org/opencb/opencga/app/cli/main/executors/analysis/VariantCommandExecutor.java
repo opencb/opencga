@@ -62,6 +62,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsQueryCommandOptions.SAMPLE_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSampleQueryCommandOptions.SAMPLE_QUERY_COMMAND;
@@ -136,6 +137,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND:
                 queryResponse = knockout();
+                break;
+            case SAMPLE_ELIGIBILITY_RUN_COMMAND:
+                queryResponse = sampleEligibility();
                 break;
 //            case "family-stats":
 //                queryResponse = familyStats();
@@ -251,6 +255,14 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.knockoutCommandOptions.filter,
                         variantCommandOptions.knockoutCommandOptions.qual,
                         variantCommandOptions.knockoutCommandOptions.outdir));
+    }
+
+    private RestResponse<Job> sampleEligibility() throws ClientException {
+        return openCGAClient.getVariantClient().sampleEligibilityRun(variantCommandOptions.sampleEligibilityCommandOptions.study,
+                new SampleEligibilityAnalysisParams(
+                        variantCommandOptions.sampleEligibilityCommandOptions.query,
+                        variantCommandOptions.sampleEligibilityCommandOptions.index,
+                        variantCommandOptions.sampleEligibilityCommandOptions.cohortId));
     }
 
 //    private RestResponse<Job> familyStats() {

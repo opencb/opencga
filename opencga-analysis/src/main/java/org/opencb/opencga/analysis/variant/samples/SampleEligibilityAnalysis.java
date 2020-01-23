@@ -1,6 +1,7 @@
 package org.opencb.opencga.analysis.variant.samples;
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
@@ -8,14 +9,17 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.analysis.tools.OpenCgaToolScopeStudy;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -29,17 +33,22 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-@Tool(id="sample-multi-query", resource = Enums.Resource.VARIANT)
-public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
+import static org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis.DESCRIPTION;
+
+@Tool(id= SampleEligibilityAnalysis.ID, resource = Enums.Resource.VARIANT, description = DESCRIPTION)
+public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
+
+    public static final String ID = "sample-eligibility";
+    public static final String DESCRIPTION = "Filter samples by a complex query involving metadata and variants data";
 
     public static final String SAMPLE_PREFIX = "sample.";
     public static final String INDIVIDUAL_PREFIX = "individual.";
-    private SampleMultiVariantFilterAnalysisParams analysisParams = new SampleMultiVariantFilterAnalysisParams();
+    private SampleEligibilityAnalysisParams analysisParams = new SampleEligibilityAnalysisParams();
     private TreeQuery treeQuery;
     private String studyFqn;
 //    private LinkedList<String> steps;
 
-    private final static Comparator<TreeQuery.Node> COMPARATOR = Comparator.comparing(SampleMultiVariantFilterAnalysis::toQueryValue);
+    private final static Comparator<TreeQuery.Node> COMPARATOR = Comparator.comparing(SampleEligibilityAnalysis::toQueryValue);
     private static final Set<QueryParam> INVALID_QUERY_PARAMS;
 
     static {
@@ -66,6 +75,20 @@ public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
         analysisParams.updateParams(params);
         studyFqn = getStudyFqn();
 
+        if (analysisParams.isIndex()) {
+            if (StringUtils.isEmpty(analysisParams.getCohortId())) {
+                throw new IllegalArgumentException("Missing cohort-id");
+            }
+            Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), analysisParams.getCohortId());
+            if (catalogManager.getCohortManager().count(studyFqn, query, getToken()).getNumResults() > 0) {
+                throw new IllegalArgumentException("Unable to index result. Cohort '" + analysisParams.getCohortId() + "' already exists");
+            }
+        } else {
+            if (StringUtils.isNotEmpty(analysisParams.getCohortId())) {
+                throw new IllegalArgumentException("Found cohort-id, but index was not required.");
+            }
+        }
+
         treeQuery = new TreeQuery(analysisParams.getQuery());
         addAttribute("query", treeQuery.getRoot().toString());
 
@@ -74,16 +97,6 @@ public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
         checkValidQueryFilters(treeQuery);
 
         treeQuery.log();
-
-//        steps = new LinkedList<>();
-//        if (multiQuery.getTree().getType().equals(MultiQuery.Node.Type.QUERY)) {
-//            int i = 0;
-//            for (MultiQuery.Node node : multiQuery.getTree().getNodes()) {
-//                steps.add("node-" + node.getType() + "-" + i);
-//                i++;
-//            }
-//        }
-//        steps.add("join-results");
     }
 
     protected static void checkValidQueryFilters(TreeQuery treeQuery) throws ToolException {
@@ -118,29 +131,44 @@ public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
         }
     }
 
-//    @Override
-//    protected List<String> getSteps() {
-//        return steps;
-//    }
+    @Override
+    protected List<String> getSteps() {
+        if (analysisParams.isIndex()) {
+            return Arrays.asList(getId(), "index");
+        } else {
+            return super.getSteps();
+        }
+    }
 
     @Override
     protected void run() throws Exception {
-        List<String> inputSamples = new ArrayList<>(getVariantStorageManager().getIndexedSamples(studyFqn, getToken()));
-        Query baseQuery = new Query();
-        baseQuery.put(VariantQueryParam.STUDY.key(), studyFqn);
+        List<String> samplesResult = new ArrayList<>();
+        step(() -> {
+            List<String> inputSamples = new ArrayList<>(getVariantStorageManager().getIndexedSamples(studyFqn, getToken()));
+            Query baseQuery = new Query();
+            baseQuery.put(VariantQueryParam.STUDY.key(), studyFqn);
 
-        List<String> samplesResult = resolveNode(treeQuery.getRoot(), baseQuery, inputSamples);
+            samplesResult.addAll(resolveNode(treeQuery.getRoot(), baseQuery, inputSamples));
 
-        addAttribute("numSamples", samplesResult.size());
-        logger.info("Found {} samples", samplesResult.size());
+            addAttribute("numSamples", samplesResult.size());
+            logger.info("Found {} samples", samplesResult.size());
 
-        try (PrintStream out = new PrintStream(getOutDir().resolve("samples.tsv").toFile())) {
-            out.println("##num_samples=" + samplesResult.size());
-            out.println("#SAMPLE");
-            for (String s : samplesResult) {
-                out.println(s);
+            try (PrintStream out = new PrintStream(getOutDir().resolve("samples.tsv").toFile())) {
+                out.println("##num_samples=" + samplesResult.size());
+                out.println("#SAMPLE");
+                for (String s : samplesResult) {
+                    out.println(s);
+                }
             }
-        }
+        });
+
+        step("index", () -> {
+            Cohort cohort = new Cohort()
+                    .setId(analysisParams.getCohortId())
+                    .setSamples(samplesResult.stream().map(s -> new Sample().setId(s)).collect(Collectors.toList()))
+                    .setDescription("Result of analysis '" + getId() + "' after executing query " + analysisParams.getQuery());
+            getCatalogManager().getCohortManager().create(studyFqn, cohort, new QueryOptions(), getToken());
+        });
     }
 
     // Return a value that will depend on the likely of the node to return a large or small number of samples
@@ -178,9 +206,9 @@ public class SampleMultiVariantFilterAnalysis extends OpenCgaToolScopeStudy {
             case COMPLEMENT:
                 return 1000 - toQueryValue(node.getNodes().get(0));
             case UNION:
-                return node.getNodes().stream().mapToInt(SampleMultiVariantFilterAnalysis::toQueryValue).max().orElse(0);
+                return node.getNodes().stream().mapToInt(SampleEligibilityAnalysis::toQueryValue).max().orElse(0);
             case INTERSECTION:
-                return node.getNodes().stream().mapToInt(SampleMultiVariantFilterAnalysis::toQueryValue).min().orElse(0);
+                return node.getNodes().stream().mapToInt(SampleEligibilityAnalysis::toQueryValue).min().orElse(0);
             default:
                 throw new IllegalArgumentException("Unknown node type " + node.getType());
         }

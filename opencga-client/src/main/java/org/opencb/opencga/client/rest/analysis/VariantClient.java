@@ -30,9 +30,8 @@ import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.variant.VariantFileDeleteParams;
-import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.core.tools.ToolParams;
@@ -190,6 +189,10 @@ public class VariantClient extends AbstractParentClient {
 
     public RestResponse<Job> knockoutRun(String study, KnockoutAnalysisParams body) throws ClientException {
         return execute(VARIANT_URL, "/knockout/run", buildRestPOSTParams(null, study, body), POST, Job.class);
+    }
+
+    public RestResponse<Job> sampleEligibilityRun(String study, SampleEligibilityAnalysisParams body) throws ClientException {
+        return execute(VARIANT_URL, "/sample/eligibility/run", buildRestPOSTParams(null, study, body), POST, Job.class);
     }
 //        return execute(VARIANT_URL, "/hw/run", new ObjectMap("body", params), POST, Job.class);
 //    }

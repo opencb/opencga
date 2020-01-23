@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @Tool(id= KnockoutAnalysis.ID, description = KnockoutAnalysis.DESCRIPTION, resource = Enums.Resource.VARIANT)
 public class KnockoutAnalysis extends OpenCgaToolScopeStudy {
     public static final String ID = "knockout";
-    public static final String DESCRIPTION = "";
+    public static final String DESCRIPTION = "Obtains the list of knocked out genes for each sample.";
 
     private KnockoutAnalysisParams analysisParams = new KnockoutAnalysisParams();
     private String studyFqn;

@@ -40,6 +40,8 @@ import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.operations.*;
+import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
+import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
 import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -197,6 +199,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 gwas();
             case KNOCKOUT_RUN_COMMAND:
                 knockout();
+                break;
+            case VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND:
+                sampleEligibility();
                 break;
             case PLINK_RUN_COMMAND:
                 plink();
@@ -675,6 +680,19 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
         toolRunner.execute(KnockoutAnalysis.class, params, Paths.get(cliOptions.outdir), token);
+    }
+
+    private void sampleEligibility() throws Exception {
+        VariantCommandOptions.SampleEligibilityCommandOptions cliOptions = variantCommandOptions.sampleEligibilityCommandOptions;
+
+        ObjectMap params = new SampleEligibilityAnalysisParams(
+                cliOptions.query,
+                cliOptions.index,
+                cliOptions.cohortId)
+                .toObjectMap(cliOptions.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(SampleEligibilityAnalysis.class, params, Paths.get(cliOptions.outdir), token);
     }
 
     private void sampleStats() throws Exception {

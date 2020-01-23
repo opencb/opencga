@@ -25,6 +25,7 @@ import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantFamilyIndexOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
+import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.wrappers.GatkWrapperAnalysis;
@@ -107,6 +108,7 @@ public class VariantCommandOptions {
     public final CohortVariantStatsCommandOptions cohortVariantStatsCommandOptions;
     public final CohortVariantStatsQueryCommandOptions cohortVariantStatsQueryCommandOptions;
     public final KnockoutCommandOptions knockoutCommandOptions;
+    public final SampleEligibilityCommandOptions sampleEligibilityCommandOptions;
 
     // Wrappers
     public final PlinkCommandOptions plinkCommandOptions;
@@ -155,6 +157,7 @@ public class VariantCommandOptions {
         this.cohortVariantStatsCommandOptions = new CohortVariantStatsCommandOptions();
         this.cohortVariantStatsQueryCommandOptions = new CohortVariantStatsQueryCommandOptions();
         this.knockoutCommandOptions = new KnockoutCommandOptions();
+        this.sampleEligibilityCommandOptions = new SampleEligibilityCommandOptions();
         this.plinkCommandOptions = new PlinkCommandOptions();
         this.rvtestsCommandOptions = new RvtestsCommandOptions();
         this.gatkCommandOptions = new GatkCommandOptions();
@@ -963,6 +966,29 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--qual"}, description = VariantQueryParam.QUAL_DESCR)
         public String qual;
+    }
+
+    @Parameters(commandNames = SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND, commandDescription = SampleEligibilityAnalysis.DESCRIPTION)
+    public class SampleEligibilityCommandOptions {
+        public static final String SAMPLE_ELIGIBILITY_RUN_COMMAND = "sample-eligibility-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = ParamConstants.STUDY_DESCRIPTION)
+        public String study;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        public String outdir;
+
+        @Parameter(names = {"--query"}, description = "Election query. e.g. ((gene=A AND ct=lof) AND (NOT (gene=B AND ct=lof)))")
+        public String query;
+
+        @Parameter(names = {"--index"}, description = "Create a cohort with the resulting set of samples (if any)")
+        public boolean index;
+
+        @Parameter(names = {"--cohort-id"}, description = "The name of the cohort to be created")
+        public String cohortId;
     }
 
     @Parameters(commandNames = PlinkCommandOptions.PLINK_RUN_COMMAND, commandDescription = PlinkWrapperAnalysis.DESCRIPTION)
