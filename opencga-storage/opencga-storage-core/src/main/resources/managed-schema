@@ -613,7 +613,7 @@
     <field name="other" type="string" indexed="false" stored="true" multiValued="true"/>
     <dynamicField name="stats_*" type="float" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="score_*" type="float" indexed="true" stored="true" multiValued="false"/>
-    <dynamicField name="pValue_*" type="float" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="scorePValue_*" type="float" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="popFreq_*" type="float" indexed="true" stored="true" multiValued="false"/>
 
     <!-- These fields are only present when indexing one individual or a family -->

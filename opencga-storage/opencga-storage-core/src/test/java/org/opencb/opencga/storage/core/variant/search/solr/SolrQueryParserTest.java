@@ -121,7 +121,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+start:17700)", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+end:[17700+TO+*]+AND+start:[*+TO+17700])", solrQuery.toString());
     }
 
     @Test
@@ -160,7 +160,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=(((chromosome:\"1\"+AND+start:17700))+AND+(geneToSoAcc:\"protein_coding_1792\"))+OR+(geneToSoAcc:\"WASH7P_protein_coding_1792\")", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(((chromosome:\"1\"+AND+end:[17700+TO+*]+AND+start:[*+TO+17700]))+AND+(geneToSoAcc:\"protein_coding_1792\"))+OR+(geneToSoAcc:\"WASH7P_protein_coding_1792\")", solrQuery.toString());
     }
 
     @Test
@@ -512,7 +512,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+start:66381)+OR+(chromosome:\"1\"+AND+start:98769)", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+end:[66381+TO+*]+AND+start:[*+TO+66381])+OR+(chromosome:\"1\"+AND+end:[98769+TO+*]+AND+start:[*+TO+98769])", solrQuery.toString());
     }
 
     @Test
@@ -524,7 +524,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+start:[66381+TO+*]+AND+end:[*+TO+76381])+OR+(chromosome:\"1\"+AND+start:[98766+TO+*]+AND+end:[*+TO+117987])", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+end:[66381+TO+*]+AND+start:[*+TO+76381])+OR+(chromosome:\"1\"+AND+end:[98766+TO+*]+AND+start:[*+TO+117987])", solrQuery.toString());
     }
 
     @Test
@@ -706,7 +706,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=score__platinum__score2:[3.2+TO+*]&fq=pvalue__platinum__score3:{-100.0+TO+0.02}", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=score__platinum__score2:[3.2+TO+*]&fq=scorePValue__platinum__score3:{-100.0+TO+0.02}", solrQuery.toString());
     }
 
     @Test
@@ -719,7 +719,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=score__platinum__score4:[3.2+TO+*]+OR+pvalue__platinum__score2:{-100.0+TO+0.001}", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=score__platinum__score4:[3.2+TO+*]+OR+scorePValue__platinum__score2:{-100.0+TO+0.001}", solrQuery.toString());
     }
 
 

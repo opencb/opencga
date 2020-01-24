@@ -303,7 +303,7 @@ public class SolrQueryParser {
 
         // Variant score
         // In the model: "score__1kg_phase3__gwas1>3.12"
-        //               "pvalue__1kg_phase3__gwas1<=0.002"
+        //               "scorePValue__1kg_phase3__gwas1<=0.002"
         // where "1kg_phase3" is the study ID, and "gwas1" is the score ID
         key = SCORE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
@@ -413,8 +413,6 @@ public class SolrQueryParser {
             StringBuilder filter = new StringBuilder();
             for (int i = 0; i < scores.length; i++) {
                 filter.append(parseVariantScore(scores[i], defaultStudyName));
-//                sb.append("fileInfo").append(FIELD_SEPARATOR)
-//                        .append(studies[0]).append(FIELD_SEPARATOR).append(files[i]).append(": [* TO *]");
                 if (i < scores.length - 1) {
                     filter.append(" OR ");
                 }
@@ -424,64 +422,8 @@ public class SolrQueryParser {
             // AND
             for (String score : scores) {
                 filters.add(parseVariantScore(score, defaultStudyName));
-//                filterList.add("fileInfo" + FIELD_SEPARATOR
-//                        + studies[0] + FIELD_SEPARATOR + file + ": [* TO *]");
             }
         }
-//        }
-//        if (files == null) {
-//            List<String> includeFiles = getIncludeFilesList(query);
-//            if (includeFiles != null) {
-//                files = includeFiles.toArray(new String[0]);
-//            }
-//        }
-//
-//        // QUAL
-//        key = QUAL.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            if (files == null) {
-//                throw VariantQueryException.malformedParam(FILE, "", "Missing file parameter when "
-//                        + " filtering with QUAL.");
-//            }
-//            String qual = query.getString(key);
-//            if (fileQueryOp == QueryOperation.OR) {
-//                StringBuilder sb = new StringBuilder();
-//                for (int i = 0; i < files.length; i++) {
-//                    sb.append(parseNumericValue("qual" + FIELD_SEPARATOR + studies[0]
-//                            + FIELD_SEPARATOR + files[i], qual));
-//                    if (i < files.length - 1) {
-//                        sb.append(" OR ");
-//                    }
-//                }
-//                filterList.add(sb.toString());
-//            } else {
-//                for (String file: files) {
-//                    filterList.add(parseNumericValue("qual" + FIELD_SEPARATOR + studies[0]
-//                            + FIELD_SEPARATOR + file, qual));
-//                }
-//            }
-//        }
-//
-//
-//
-//        String filter = "";
-//        String[] split = splitOperator(queryValue);
-//        if (split.length != 3) {
-//            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid Solr variant score query: " + query.getString(key));
-//        }
-//        String name;
-//        if (split[0].contains(STUDY_POP_FREQ_SEPARATOR)) {
-//            name = "score" + FIELD_SEPARATOR + split[0].replace(Character.toString(STUDY_RESOURCE_SEPARATOR), FIELD_SEPARATOR);
-//        } else {
-//            // Missing study in variant score param
-//            if (StringUtils.isEmpty(defaultStudyName)) {
-//                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing study in Solr variant score query: "
-//                        + query.getString(key));
-//            }
-//            name = "score" + FIELD_SEPARATOR + defaultStudyName + FIELD_SEPARATOR + split[0];
-//        }
-//        String value = split[1] + split[2];
-//        filter = parseNumericValue(name, value);
         return filters;
     }
 
@@ -500,6 +442,9 @@ public class SolrQueryParser {
             case 2:
                 if ("score".equals(fields[1]) || "pvalue".equals(fields[1])) {
                     checkMissingStudy(defaultStudyName, "variant score", score);
+                    if ("pvalue".equals(fields[1])) {
+                        fields[1] = "scorePValue";
+                    }
                     name = fields[1] + FIELD_SEPARATOR + defaultStudyName + FIELD_SEPARATOR + fields[0];
                 } else {
                     name = "score" + FIELD_SEPARATOR + fields[0] + FIELD_SEPARATOR + fields[1];
@@ -507,6 +452,9 @@ public class SolrQueryParser {
                 break;
             case 3:
                 if ("score".equals(fields[2]) || "pvalue".equals(fields[2])) {
+                    if ("pvalue".equals(fields[2])) {
+                        fields[2] = "scorePValue";
+                    }
                     name = fields[2] + FIELD_SEPARATOR + fields[0] + FIELD_SEPARATOR + fields[1];
                 } else {
                     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid Solr variant score query: " + score);
@@ -1093,7 +1041,7 @@ public class SolrQueryParser {
                 matcher = SCORE_PATTERN.matcher(value);
                 if (matcher.find()) {
                     // concat expression, e.g.: value:[0 TO 12]
-                    checkParamSource(param, matcher.group(1));
+                    checkRangeParams(param, matcher.group(1), matcher.group(3));
                     sb.append(getRange("", matcher.group(1), matcher.group(2), matcher.group(3)));
                 } else {
                     throw new IllegalArgumentException("Invalid expression " +  value);
@@ -1121,7 +1069,7 @@ public class SolrQueryParser {
                             throw VariantQueryException.malformedParam(param, value);
                         }
 
-                        checkParamSource(param, filterName);
+                        checkRangeParams(param, filterName, filterValue);
                         list.add(getRange("", filterName, filterOp, filterValue));
                     } else {
                         throw new IllegalArgumentException("Invalid expression " +  value);
@@ -1133,7 +1081,7 @@ public class SolrQueryParser {
         return sb.toString();
     }
 
-    private void checkParamSource(VariantQueryParam param, String source) {
+    private void checkRangeParams(VariantQueryParam param, String source, String value) {
         if (param == ANNOT_PROTEIN_SUBSTITUTION) {
             if (!"polyphen".equals(source) && !"sift".equals(source)) {
                 throw new IllegalArgumentException("Invalid source '" + source + "' for " + ANNOT_PROTEIN_SUBSTITUTION.key() + ", valid "
@@ -1149,6 +1097,10 @@ public class SolrQueryParser {
                 throw new IllegalArgumentException("Invalid source '" + source + "' for " + ANNOT_PROTEIN_SUBSTITUTION.key() + ", valid "
                         + "values are: phastCons, phylop, gerp");
             }
+        }
+
+        if (param != ANNOT_PROTEIN_SUBSTITUTION && !NumberUtils.isNumber(value)) {
+            throw new IllegalArgumentException("Invalid expression: value '" +  value + "' must be numeric.");
         }
     }
 
@@ -1356,9 +1308,6 @@ public class SolrQueryParser {
     }
 
     public String getRange(String prefix, String name, String op, String value, boolean addOr) {
-        if (!NumberUtils.isNumber(value)) {
-            throw new IllegalArgumentException("Invalid expression: value '" +  value + "' must be numeric.");
-        }
         StringBuilder sb = new StringBuilder();
         switch (op) {
             case "=":

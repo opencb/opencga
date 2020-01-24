@@ -42,7 +42,7 @@ import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.GROUP_NAME;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantField.AdditionalAttributes.RELEASE;
-import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.*;
+import static org.opencb.opencga.storage.core.variant.search.VariantSearchUtils.FIELD_SEPARATOR;
 
 /**
  * Created by imedina on 14/11/16.
@@ -1085,7 +1085,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
             // VariantScore: score and p-value are stored and indexed in two different maps:
             //   - score__STUDY_ID__SCORE_ID
-            //   - pValue__STUDY_ID__SCORE_ID
+            //   - scorePValue__STUDY_ID__SCORE_ID
             // and the score, pValue, cohort1 and cohort2 into the Other list (not indexed)
             if (CollectionUtils.isNotEmpty(studyEntry.getScores())) {
                 for (VariantScore score : studyEntry.getScores()) {
@@ -1094,7 +1094,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     variantSearchModel.getScore().put("score" + suffix, score.getScore());
 
                     // pValue (indexed)
-                    variantSearchModel.getPValue().put("pValue" + suffix, score.getPValue());
+                    variantSearchModel.getScorePValue().put("scorePValue" + suffix, score.getPValue());
 
                     // and save score, pValue, cohort1 and cohort2 into the Other list (not indexed)
                     other.add("SC" + FIELD_SEP + studyId + FIELD_SEP + score.getId() + FIELD_SEP + score.getScore() + FIELD_SEP
