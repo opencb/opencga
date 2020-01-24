@@ -194,7 +194,7 @@ public class SampleManagerTest extends AbstractManagerTest {
     @Test
     public void testAnnotate() throws CatalogException {
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("NAME", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
         variables.add(new Variable("AGE", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
@@ -352,7 +352,7 @@ public class SampleManagerTest extends AbstractManagerTest {
     @Test
     public void testDeleteAnnotationset() throws CatalogException, JsonProcessingException {
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("var_name", "", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("var_name", "", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
         variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
@@ -391,7 +391,7 @@ public class SampleManagerTest extends AbstractManagerTest {
     @Test
     public void testSearchAnnotation() throws CatalogException, JsonProcessingException {
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("var_name", "", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("var_name", "", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
         variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
@@ -479,7 +479,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 token).first().getId();
 
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
@@ -514,7 +514,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 token).first().getId();
 
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", true, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), token).first();
@@ -544,7 +544,7 @@ public class SampleManagerTest extends AbstractManagerTest {
                 new QueryOptions(), token).first().getId();
 
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("NAME", "NAME", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
         VariableSet vs1 = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", true, false, "", null, variables,
                 Collections.singletonList(VariableSet.AnnotableDataModels.INDIVIDUAL), token).first();

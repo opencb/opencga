@@ -82,6 +82,10 @@ public class AnnotationUtils {
             throw new CatalogException("Only variables with type \"OBJECT\" can define an internal variableSet");
         }
 
+        if (variable.getType() == Variable.VariableType.TEXT) {
+            variable.setType(Variable.VariableType.STRING);
+        }
+
         //Check default values
         switch (variable.getType()) {
             case BOOLEAN:
@@ -115,7 +119,7 @@ public class AnnotationUtils {
                 }
                 break;
             }
-            case TEXT:
+            case STRING:
                 break;
             case OBJECT:
                 if (variable.getVariableSet() != null) {
@@ -270,7 +274,7 @@ public class AnnotationUtils {
                 }
                 break;
             case CATEGORICAL:
-            case TEXT:
+            case STRING:
                 String stringValue = getStringValue(defaultValue);
                 if (stringValue != null) {
                     annotation.put(variable.getId(), stringValue);
@@ -382,7 +386,7 @@ public class AnnotationUtils {
                     //If there is no "allowedValues", accept any number
                 }
                 break;
-            case TEXT: {
+            case STRING: {
                 //Check regex?
                 return;
             }
@@ -476,7 +480,7 @@ public class AnnotationUtils {
         switch (variableType) {
             case BOOLEAN:
                 return getBooleanValue(value);
-            case TEXT:
+            case STRING:
             case CATEGORICAL:
                 return getStringValue(value);
             case DOUBLE:
@@ -903,7 +907,7 @@ public class AnnotationUtils {
                         }
                         break;
                     case CATEGORICAL:
-                    case TEXT:
+                    case STRING:
                     case MAP_STRING:
                         if (variable.isMultiValue()) {
                             type = QueryParam.Type.TEXT_ARRAY;

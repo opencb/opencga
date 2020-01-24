@@ -72,7 +72,7 @@ public class AnnotationConverter {
                 case CATEGORICAL:
                 case INTEGER:
                 case DOUBLE:
-                case TEXT:
+                case STRING:
                     Document document = createAnnotationDocument(variableLevel, annotations);
                     addDocumentIfNotEmpty(variableSet, annotationSetName, variableLevel, document, documentList);
                     break;

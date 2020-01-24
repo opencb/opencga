@@ -85,7 +85,9 @@ public class Variable {
         CATEGORICAL,
         INTEGER,
         DOUBLE,
+        @Deprecated
         TEXT,
+        STRING,
         OBJECT,
         MAP_BOOLEAN,
         MAP_INTEGER,

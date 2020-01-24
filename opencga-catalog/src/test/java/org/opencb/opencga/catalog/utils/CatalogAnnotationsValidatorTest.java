@@ -33,11 +33,11 @@ import java.util.*;
 public class CatalogAnnotationsValidatorTest {
 
     public static final Variable string = new Variable(
-            "string", "", Variable.VariableType.TEXT, null, true, false, null, 0, null, null, null, null);
+            "string", "", Variable.VariableType.STRING, null, true, false, null, 0, null, null, null, null);
     public static final Variable stringNoRequired = new Variable(
-            "string", "", Variable.VariableType.TEXT, null, false, false, null, 0, null, null, null, null);
+            "string", "", Variable.VariableType.STRING, null, false, false, null, 0, null, null, null, null);
     public static final Variable stringList = new Variable(
-            "stringList", "", Variable.VariableType.TEXT, null, true, true, null, 0, null, null, null, null);
+            "stringList", "", Variable.VariableType.STRING, null, true, true, null, 0, null, null, null, null);
     public static final Variable numberList = new Variable(
             "numberList", "", Variable.VariableType.DOUBLE, null, true, true, null, 0, null, null, null, null);
     public static final Variable object = new Variable(
