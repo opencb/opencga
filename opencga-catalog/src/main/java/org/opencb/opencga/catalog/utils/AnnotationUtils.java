@@ -22,14 +22,15 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -77,7 +78,7 @@ public class AnnotationUtils {
         if (variable.getType() == null) {
             throw new CatalogException("VariableType is null");
         }
-        if (variable.getVariableSet() != null && variable.getType() != Variable.VariableType.OBJECT) {
+        if (ListUtils.isNotEmpty(variable.getVariableSet()) && variable.getType() != Variable.VariableType.OBJECT) {
             throw new CatalogException("Only variables with type \"OBJECT\" can define an internal variableSet");
         }
 
@@ -121,6 +122,15 @@ public class AnnotationUtils {
                     for (Variable v : variable.getVariableSet()) {
                         checkVariable(v);
                     }
+                }
+                break;
+            case MAP_BOOLEAN:
+            case MAP_INTEGER:
+            case MAP_DOUBLE:
+            case MAP_STRING:
+                if (variable.getVariableSet() != null && !variable.getVariableSet().isEmpty()) {
+                    throw new CatalogException("Variable " + variable.getId() + " of type " + variable.getType().name() + " cannot "
+                            + "have an internal array of VariableSets");
                 }
                 break;
             default:
@@ -268,6 +278,10 @@ public class AnnotationUtils {
                 }
                 break;
             case OBJECT:
+            case MAP_BOOLEAN:
+            case MAP_INTEGER:
+            case MAP_DOUBLE:
+            case MAP_STRING:
                 if (variable.getDefaultValue() != null) {
                     annotation.put(variable.getId(), variable.getDefaultValue());
                     return true;
@@ -297,6 +311,17 @@ public class AnnotationUtils {
             }
         } else {
             listValues = Collections.singletonList(realValue);
+        }
+
+        if (listValues.isEmpty()) {
+            // Check if variable has any children with required params
+            if (variable.getVariableSet() != null) {
+                for (Variable tmpVariable : variable.getVariableSet()) {
+                    if (tmpVariable.isRequired()) {
+                        throw new CatalogException("Missing required variable " + tmpVariable.getId());
+                    }
+                }
+            }
         }
 
         switch (variable.getType()) {
@@ -373,6 +398,66 @@ public class AnnotationUtils {
                 }
                 break;
             }
+            case MAP_BOOLEAN:
+                // Check types
+                for (Object object : listValues) {
+                    if (!(object instanceof Map)) {
+                        throw new CatalogException("Expected a boolean map for variable " + variable.getId());
+                    }
+                    Map<String, Object> objectMap = (Map<String, Object>) object;
+                    for (Map.Entry<String, Object> entry : objectMap.entrySet()) {
+                        if (!(entry.getValue() instanceof Boolean)) {
+                            throw new CatalogException(entry.getKey() + " does not seem to be boolean. Expected a boolean map for variable "
+                                    + variable.getId());
+                        }
+                    }
+                }
+                break;
+            case MAP_INTEGER:
+                // Check types
+                for (Object object : listValues) {
+                    if (!(object instanceof Map)) {
+                        throw new CatalogException("Expected an integer map for variable " + variable.getId());
+                    }
+                    Map<String, Object> objectMap = (Map<String, Object>) object;
+                    for (Map.Entry<String, Object> entry : objectMap.entrySet()) {
+                        if (!(entry.getValue() instanceof Integer)) {
+                            throw new CatalogException(entry.getKey() + " does not seem to be integer. Expected an integer map for "
+                                    + "variable " + variable.getId());
+                        }
+                    }
+                }
+                break;
+            case MAP_DOUBLE:
+                // Check types
+                for (Object object : listValues) {
+                    if (!(object instanceof Map)) {
+                        throw new CatalogException("Expected a double map for variable " + variable.getId());
+                    }
+                    Map<String, Object> objectMap = (Map<String, Object>) object;
+                    for (Map.Entry<String, Object> entry : objectMap.entrySet()) {
+                        if (!(entry.getValue() instanceof Double)) {
+                            throw new CatalogException(entry.getKey() + " does not seem to be double. Expected a double map for variable "
+                                    + variable.getId());
+                        }
+                    }
+                }
+                break;
+            case MAP_STRING:
+                // Check types
+                for (Object object : listValues) {
+                    if (!(object instanceof Map)) {
+                        throw new CatalogException("Expected a text map for variable " + variable.getId());
+                    }
+                    Map<String, Object> objectMap = (Map<String, Object>) object;
+                    for (Map.Entry<String, Object> entry : objectMap.entrySet()) {
+                        if (!(entry.getValue() instanceof String)) {
+                            throw new CatalogException(entry.getKey() + " does not seem to be text. Expected a text map for variable "
+                                    + variable.getId());
+                        }
+                    }
+                }
+                break;
             default:
                 throw new CatalogException("Unknown VariableType " + variable.getType().name());
         }
@@ -399,6 +484,10 @@ public class AnnotationUtils {
             case INTEGER:
                 return getIntegerValue(value);
             case OBJECT:
+            case MAP_BOOLEAN:
+            case MAP_INTEGER:
+            case MAP_DOUBLE:
+            case MAP_STRING:
                 return getMapValue(value);
             default:
                 throw new CatalogException("Unknown VariableType " + variableType.name());
@@ -733,6 +822,25 @@ public class AnnotationUtils {
                     throw new CatalogException("Found more than one Variable Set for the variable " + variableKey);
                 }
             }
+
+            Map<String, QueryParam.Type> dynamicTypes = new HashMap<>();
+            for (String key : variableMap.keySet()) {
+                if (key.endsWith(".*")) {
+                    // It is a dynamic map
+                    if (variableKey.contains(key.substring(0, key.length() - 1))) {
+                        // We update the variable map so it associated the current dynamic query with the expected type
+                        dynamicTypes.put(variableKey, variableMap.get(key));
+
+                        if (variableId == null) {
+                            variableId = variableTypeMapEntry.getKey();
+                        } else {
+                            throw new CatalogException("Found more than one Variable Set for the variable " + variableKey);
+                        }
+                    }
+                }
+            }
+            // We add any dynamic types we might have found
+            variableMap.putAll(dynamicTypes);
         }
 
         if (variableId == null) {
@@ -787,6 +895,7 @@ public class AnnotationUtils {
                 QueryParam.Type type;
                 switch (variable.getType()) {
                     case BOOLEAN:
+                    case MAP_BOOLEAN:
                         if (variable.isMultiValue()) {
                             type = QueryParam.Type.BOOLEAN_ARRAY;
                         } else {
@@ -795,6 +904,7 @@ public class AnnotationUtils {
                         break;
                     case CATEGORICAL:
                     case TEXT:
+                    case MAP_STRING:
                         if (variable.isMultiValue()) {
                             type = QueryParam.Type.TEXT_ARRAY;
                         } else {
@@ -802,6 +912,7 @@ public class AnnotationUtils {
                         }
                         break;
                     case INTEGER:
+                    case MAP_INTEGER:
                         if (variable.isMultiValue()) {
                             type = QueryParam.Type.INTEGER_ARRAY;
                         } else {
@@ -809,6 +920,7 @@ public class AnnotationUtils {
                         }
                         break;
                     case DOUBLE:
+                    case MAP_DOUBLE:
                         if (variable.isMultiValue()) {
                             type = QueryParam.Type.DECIMAL_ARRAY;
                         } else {
@@ -821,6 +933,12 @@ public class AnnotationUtils {
                 }
                 List<String> keys = new ArrayList<>(variableDepthMap.getKeys());
                 keys.add(variable.getId());
+                if (variable.getType() == Variable.VariableType.MAP_BOOLEAN
+                        || variable.getType() == Variable.VariableType.MAP_INTEGER
+                        || variable.getType() == Variable.VariableType.MAP_DOUBLE
+                        || variable.getType() == Variable.VariableType.MAP_STRING) {
+                    keys.add("*");
+                }
                 variableTypeMap.put(StringUtils.join(keys, "."), type);
             }
         }

@@ -86,7 +86,11 @@ public class Variable {
         INTEGER,
         DOUBLE,
         TEXT,
-        OBJECT
+        OBJECT,
+        MAP_BOOLEAN,
+        MAP_INTEGER,
+        MAP_DOUBLE,
+        MAP_STRING
     }
 
     @Override
