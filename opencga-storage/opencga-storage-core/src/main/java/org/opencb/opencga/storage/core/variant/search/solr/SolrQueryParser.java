@@ -1515,11 +1515,13 @@ public class SolrQueryParser {
                     if (region.getStart() == 0 && region.getEnd() == Integer.MAX_VALUE) {
                         sb.append("chromosome:\"").append(chrom).append("\"");
                     } else if (region.getEnd() == Integer.MAX_VALUE) {
-                        sb.append("chromosome:\"").append(chrom).append("\" AND start:").append(region.getStart());
+                        sb.append("chromosome:\"").append(chrom)
+                                .append("\" AND end:[").append(region.getStart()).append(" TO *]")
+                                .append(" AND start:[* TO ").append(region.getStart()).append("]");
                     } else {
                         sb.append("chromosome:\"").append(chrom)
-                                .append("\" AND start:[").append(region.getStart()).append(" TO *]")
-                                .append(" AND end:[* TO ").append(region.getEnd()).append("]");
+                                .append("\" AND end:[").append(region.getStart()).append(" TO *]")
+                                .append(" AND start:[* TO ").append(region.getEnd()).append("]");
                     }
                     sb.append(")");
                 }
