@@ -39,6 +39,18 @@ public class IndividualClient extends AbstractParentClient {
     }
 
     /**
+     * Delete existing individuals.
+     * @param individuals Comma separated list of individual ids.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Individual> delete(String individuals, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("individuals", individuals, null, null, "delete", params, DELETE, Individual.class);
+    }
+
+    /**
      * Update some individual attributes.
      * @param individuals Comma separated list of individual ids.
      * @param data params.
@@ -50,24 +62,6 @@ public class IndividualClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("individuals", individuals, null, null, "update", params, POST, Individual.class);
-    }
-
-    /**
-     * Update annotations from an annotationSet.
-     * @param individual Individual ID or name.
-     * @param annotationSet AnnotationSet id to be updated.
-     * @param data Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key 'remove'
-     *     containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset'
-     *     containing the comma separated variables that will be set to the default value when the action is RESET.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Individual> updateAnnotations(String individual, String annotationSet, ObjectMap data, ObjectMap params)
-            throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("individuals", individual, "annotationSets", annotationSet, "annotations/update", params, POST, Individual.class);
     }
 
     /**
@@ -121,19 +115,6 @@ public class IndividualClient extends AbstractParentClient {
     }
 
     /**
-     * Create individual.
-     * @param data JSON containing individual information.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Individual> create(IndividualCreateParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("individuals", null, null, null, "create", params, POST, Individual.class);
-    }
-
-    /**
      * Search for individuals.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
@@ -145,14 +126,33 @@ public class IndividualClient extends AbstractParentClient {
     }
 
     /**
-     * Delete existing individuals.
-     * @param individuals Comma separated list of individual ids.
+     * Update annotations from an annotationSet.
+     * @param individual Individual ID or name.
+     * @param annotationSet AnnotationSet id to be updated.
+     * @param data Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key 'remove'
+     *     containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset'
+     *     containing the comma separated variables that will be set to the default value when the action is RESET.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Individual> delete(String individuals, ObjectMap params) throws ClientException {
+    public RestResponse<Individual> updateAnnotations(String individual, String annotationSet, ObjectMap data, ObjectMap params)
+            throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("individuals", individuals, null, null, "delete", params, DELETE, Individual.class);
+        params.put("body", data);
+        return execute("individuals", individual, "annotationSets", annotationSet, "annotations/update", params, POST, Individual.class);
+    }
+
+    /**
+     * Create individual.
+     * @param data JSON containing individual information.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Individual> create(IndividualCreateParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("individuals", null, null, null, "create", params, POST, Individual.class);
     }
 }

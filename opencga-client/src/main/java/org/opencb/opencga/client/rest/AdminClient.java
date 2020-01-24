@@ -43,6 +43,18 @@ public class AdminClient extends AbstractParentClient {
     }
 
     /**
+     * Create a new user.
+     * @param data JSON containing the parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<User> createUsers(UserCreateParams data) throws ClientException {
+        ObjectMap params = new ObjectMap();
+        params.put("body", data);
+        return execute("admin", null, "users", null, "create", params, POST, User.class);
+    }
+
+    /**
      * Install OpenCGA database.
      * @param data JSON containing the mandatory parameters.
      * @return a RestResponse object.
@@ -126,17 +138,5 @@ public class AdminClient extends AbstractParentClient {
         ObjectMap params = new ObjectMap();
         params.put("body", data);
         return execute("admin", null, "catalog", null, "jwt", params, POST, ObjectMap.class);
-    }
-
-    /**
-     * Create a new user.
-     * @param data JSON containing the parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<User> createUsers(UserCreateParams data) throws ClientException {
-        ObjectMap params = new ObjectMap();
-        params.put("body", data);
-        return execute("admin", null, "users", null, "create", params, POST, User.class);
     }
 }

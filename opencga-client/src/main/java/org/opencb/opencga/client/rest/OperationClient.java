@@ -93,16 +93,14 @@ public class OperationClient extends AbstractParentClient {
     }
 
     /**
-     * Build and annotate the sample index.
-     * @param data Variant sample index params.
+     * Deletes a saved copy of variant annotation.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Job> indexSampleGenotype(VariantSampleIndexParams data, ObjectMap params) throws ClientException {
+    public RestResponse<Job> deleteVariantAnnotation(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("operation", null, "variant/sample/genotype", null, "index", params, POST, Job.class);
+        return execute("operation", null, "variant/annotation", null, "delete", params, DELETE, Job.class);
     }
 
     /**
@@ -116,54 +114,6 @@ public class OperationClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("operation", null, "variant/annotation", null, "save", params, POST, Job.class);
-    }
-
-    /**
-     * Find variants where not all the samples are present, and fill the empty values.
-     * @param data Variant aggregate family params.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Job> aggregateVariantFamily(VariantAggregateFamilyParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("operation", null, "variant/family", null, "aggregate", params, POST, Job.class);
-    }
-
-    /**
-     * Deletes a saved copy of variant annotation.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Job> deleteVariantAnnotation(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("operation", null, "variant/annotation", null, "delete", params, DELETE, Job.class);
-    }
-
-    /**
-     * Remove a variant score in the database.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Job> deleteVariantScore(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("operation", null, "variant/score", null, "delete", params, DELETE, Job.class);
-    }
-
-    /**
-     * Build the family index.
-     * @param data Variant family index params.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Job> indexFamilyGenotype(VariantFamilyIndexParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("operation", null, "variant/family/genotype", null, "index", params, POST, Job.class);
     }
 
     /**
@@ -184,5 +134,55 @@ public class OperationClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("operation", null, "variant/score", null, "index", params, POST, Job.class);
+    }
+
+    /**
+     * Remove a variant score in the database.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> deleteVariantScore(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("operation", null, "variant/score", null, "delete", params, DELETE, Job.class);
+    }
+
+    /**
+     * Build and annotate the sample index.
+     * @param data Variant sample index params.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> indexSampleGenotype(VariantSampleIndexParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("operation", null, "variant/sample/genotype", null, "index", params, POST, Job.class);
+    }
+
+    /**
+     * Build the family index.
+     * @param data Variant family index params.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> indexFamilyGenotype(VariantFamilyIndexParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("operation", null, "variant/family/genotype", null, "index", params, POST, Job.class);
+    }
+
+    /**
+     * Find variants where not all the samples are present, and fill the empty values.
+     * @param data Variant aggregate family params.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> aggregateVariantFamily(VariantAggregateFamilyParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("operation", null, "variant/family", null, "aggregate", params, POST, Job.class);
     }
 }

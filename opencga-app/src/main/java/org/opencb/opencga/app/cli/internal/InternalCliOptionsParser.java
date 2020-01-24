@@ -87,7 +87,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         dataModelOptions = new GeneralCliOptions.DataModelOptions();
         numericOptions = new GeneralCliOptions.NumericOptions();
 
-        variantQueryCommandOptions = new VariantCommandOptions(commonCommandOptions, dataModelOptions, numericOptions, jCommander)
+        variantQueryCommandOptions = new VariantCommandOptions(commonCommandOptions, dataModelOptions, numericOptions, jCommander, false)
                 .new VariantQueryCommandOptions();
 
         expressionCommandOptions = new ExpressionCommandOptions();
@@ -103,7 +103,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         usersSubCommands.addCommand("gene-set", functionalCommandOptions.genesetFunctionalCommandOptions);
 
         variantCommandOptions = new org.opencb.opencga.app.cli.internal.options.VariantCommandOptions(commonCommandOptions,
-                dataModelOptions, numericOptions, jCommander);
+                dataModelOptions, numericOptions, jCommander, false);
         jCommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);

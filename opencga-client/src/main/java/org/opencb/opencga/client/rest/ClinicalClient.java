@@ -44,6 +44,84 @@ public class ClinicalClient extends AbstractParentClient {
     }
 
     /**
+     * Index clinical analysis interpretations in the clinical variant database.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> indexInterpretation(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("analysis/clinical", null, "interpretation", null, "index", params, GET, ObjectMap.class);
+    }
+
+    /**
+     * Update clinical analysis attributes.
+     * @param clinicalAnalyses Comma separated list of clinical analysis ids.
+     * @param data JSON containing clinical analysis information.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ClinicalAnalysis> update(String clinicalAnalyses, ClinicalUpdateParams data, ObjectMap params)
+            throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("analysis/clinical", clinicalAnalyses, null, null, "update", params, POST, ClinicalAnalysis.class);
+    }
+
+    /**
+     * Update Interpretation fields.
+     * @param clinicalAnalysis Clinical analysis id.
+     * @param interpretation Interpretation id.
+     * @param data JSON containing clinical interpretation information.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Interpretation> updateInterpretation(String clinicalAnalysis, String interpretation, InterpretationUpdateParams
+        data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("analysis/clinical", clinicalAnalysis, "interpretations", interpretation, "update", params, POST,
+                Interpretation.class);
+    }
+
+    /**
+     * Create a new clinical analysis.
+     * @param data JSON containing clinical analysis information.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ClinicalAnalysis> create(ClinicalAnalysisCreateParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("analysis/clinical", null, null, null, "create", params, POST, ClinicalAnalysis.class);
+    }
+
+    /**
+     * Query for reported variants.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> queryInterpretation(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("analysis/clinical", null, "interpretation", null, "query", params, GET, ObjectMap.class);
+    }
+
+    /**
+     * Clinical analysis search.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ClinicalAnalysis> search(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("analysis/clinical", null, null, null, "search", params, GET, ClinicalAnalysis.class);
+    }
+
+    /**
      * Clinical interpretation analysis.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
@@ -206,83 +284,5 @@ public class ClinicalClient extends AbstractParentClient {
     public RestResponse<ReportedVariant> secondaryFindingsInterpretation(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("analysis/clinical", null, "interpretation", null, "secondaryFindings", params, GET, ReportedVariant.class);
-    }
-
-    /**
-     * Index clinical analysis interpretations in the clinical variant database.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ObjectMap> indexInterpretation(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("analysis/clinical", null, "interpretation", null, "index", params, GET, ObjectMap.class);
-    }
-
-    /**
-     * Update clinical analysis attributes.
-     * @param clinicalAnalyses Comma separated list of clinical analysis ids.
-     * @param data JSON containing clinical analysis information.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ClinicalAnalysis> update(String clinicalAnalyses, ClinicalUpdateParams data, ObjectMap params)
-            throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("analysis/clinical", clinicalAnalyses, null, null, "update", params, POST, ClinicalAnalysis.class);
-    }
-
-    /**
-     * Update Interpretation fields.
-     * @param clinicalAnalysis Clinical analysis id.
-     * @param interpretation Interpretation id.
-     * @param data JSON containing clinical interpretation information.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Interpretation> updateInterpretation(String clinicalAnalysis, String interpretation, InterpretationUpdateParams
-        data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("analysis/clinical", clinicalAnalysis, "interpretations", interpretation, "update", params, POST,
-                Interpretation.class);
-    }
-
-    /**
-     * Create a new clinical analysis.
-     * @param data JSON containing clinical analysis information.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ClinicalAnalysis> create(ClinicalAnalysisCreateParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("analysis/clinical", null, null, null, "create", params, POST, ClinicalAnalysis.class);
-    }
-
-    /**
-     * Query for reported variants.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ObjectMap> queryInterpretation(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("analysis/clinical", null, "interpretation", null, "query", params, GET, ObjectMap.class);
-    }
-
-    /**
-     * Clinical analysis search.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ClinicalAnalysis> search(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("analysis/clinical", null, null, null, "search", params, GET, ClinicalAnalysis.class);
     }
 }

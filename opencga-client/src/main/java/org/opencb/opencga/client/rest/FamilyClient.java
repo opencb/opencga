@@ -39,6 +39,29 @@ public class FamilyClient extends AbstractParentClient {
     }
 
     /**
+     * Delete existing families.
+     * @param families Comma separated list of family ids.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Family> delete(String families, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("families", families, null, null, "delete", params, DELETE, Family.class);
+    }
+
+    /**
+     * Search families.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Family> search(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("families", null, null, null, "search", params, GET, Family.class);
+    }
+
+    /**
      * Update some family attributes.
      * @param families Comma separated list of family ids.
      * @param data params.
@@ -53,24 +76,6 @@ public class FamilyClient extends AbstractParentClient {
     }
 
     /**
-     * Update annotations from an annotationSet.
-     * @param family Family id.
-     * @param annotationSet AnnotationSet id to be updated.
-     * @param data Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key 'remove'
-     *     containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset'
-     *     containing the comma separated variables that will be set to the default value when the action is RESET.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Family> updateAnnotations(String family, String annotationSet, ObjectMap data, ObjectMap params)
-            throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("families", family, "annotationSets", annotationSet, "annotations/update", params, POST, Family.class);
-    }
-
-    /**
      * Create family and the individual objects if they do not exist.
      * @param data JSON containing family information.
      * @param params Map containing any additional optional parameters.
@@ -81,18 +86,6 @@ public class FamilyClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("families", null, null, null, "create", params, POST, Family.class);
-    }
-
-    /**
-     * Get family information.
-     * @param families Comma separated list of family IDs or names up to a maximum of 100.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Family> info(String families, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("families", families, null, null, "info", params, GET, Family.class);
     }
 
     /**
@@ -133,25 +126,32 @@ public class FamilyClient extends AbstractParentClient {
     }
 
     /**
-     * Delete existing families.
-     * @param families Comma separated list of family ids.
+     * Get family information.
+     * @param families Comma separated list of family IDs or names up to a maximum of 100.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Family> delete(String families, ObjectMap params) throws ClientException {
+    public RestResponse<Family> info(String families, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("families", families, null, null, "delete", params, DELETE, Family.class);
+        return execute("families", families, null, null, "info", params, GET, Family.class);
     }
 
     /**
-     * Search families.
+     * Update annotations from an annotationSet.
+     * @param family Family id.
+     * @param annotationSet AnnotationSet id to be updated.
+     * @param data Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key 'remove'
+     *     containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset'
+     *     containing the comma separated variables that will be set to the default value when the action is RESET.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Family> search(ObjectMap params) throws ClientException {
+    public RestResponse<Family> updateAnnotations(String family, String annotationSet, ObjectMap data, ObjectMap params)
+            throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("families", null, null, null, "search", params, GET, Family.class);
+        params.put("body", data);
+        return execute("families", family, "annotationSets", annotationSet, "annotations/update", params, POST, Family.class);
     }
 }

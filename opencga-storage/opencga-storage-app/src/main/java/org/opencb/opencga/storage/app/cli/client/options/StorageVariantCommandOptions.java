@@ -263,9 +263,11 @@ public class StorageVariantCommandOptions {
      */
     public static class GenericVariantQueryOptions extends BasicVariantQueryOptions {
 
+        @Deprecated
         @Parameter(names = {"--group-by"}, description = "Group by gene, ensembl gene or consequence_type")
         public String groupBy;
 
+        @Deprecated
         @Parameter(names = {"--rank"}, description = "Rank variants by gene, ensemblGene or consequence_type")
         public String rank;
 

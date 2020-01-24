@@ -53,24 +53,6 @@ public class CohortClient extends AbstractParentClient {
     }
 
     /**
-     * Update annotations from an annotationSet.
-     * @param cohort Cohort id.
-     * @param annotationSet AnnotationSet id to be updated.
-     * @param data Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key 'remove'
-     *     containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset'
-     *     containing the comma separated variables that will be set to the default value when the action is RESET.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Cohort> updateAnnotations(String cohort, String annotationSet, ObjectMap data, ObjectMap params)
-            throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("cohorts", cohort, "annotationSets", annotationSet, "annotations/update", params, POST, Cohort.class);
-    }
-
-    /**
      * Return the acl of the cohort. If member is provided, it will only return the acl for the member.
      * @param cohorts Comma separated list of cohort names or ids up to a maximum of 100.
      * @param params Map containing any additional optional parameters.
@@ -108,15 +90,33 @@ public class CohortClient extends AbstractParentClient {
     }
 
     /**
-     * Get cohort information.
-     * @param cohorts Comma separated list of cohort names or ids up to a maximum of 100.
+     * Update annotations from an annotationSet.
+     * @param cohort Cohort id.
+     * @param annotationSet AnnotationSet id to be updated.
+     * @param data Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key 'remove'
+     *     containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset'
+     *     containing the comma separated variables that will be set to the default value when the action is RESET.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Cohort> info(String cohorts, ObjectMap params) throws ClientException {
+    public RestResponse<Cohort> updateAnnotations(String cohort, String annotationSet, ObjectMap data, ObjectMap params)
+            throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("cohorts", cohorts, null, null, "info", params, GET, Cohort.class);
+        params.put("body", data);
+        return execute("cohorts", cohort, "annotationSets", annotationSet, "annotations/update", params, POST, Cohort.class);
+    }
+
+    /**
+     * Delete cohorts.
+     * @param cohorts Comma separated list of cohort ids.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Cohort> delete(String cohorts, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("cohorts", cohorts, null, null, "delete", params, DELETE, Cohort.class);
     }
 
     /**
@@ -144,14 +144,14 @@ public class CohortClient extends AbstractParentClient {
     }
 
     /**
-     * Delete cohorts.
-     * @param cohorts Comma separated list of cohort ids.
+     * Get cohort information.
+     * @param cohorts Comma separated list of cohort names or ids up to a maximum of 100.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Cohort> delete(String cohorts, ObjectMap params) throws ClientException {
+    public RestResponse<Cohort> info(String cohorts, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("cohorts", cohorts, null, null, "delete", params, DELETE, Cohort.class);
+        return execute("cohorts", cohorts, null, null, "info", params, GET, Cohort.class);
     }
 }

@@ -76,17 +76,6 @@ public class ProjectClient extends AbstractParentClient {
     }
 
     /**
-     * Search projects.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Project> search(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("projects", null, null, null, "search", params, GET, Project.class);
-    }
-
-    /**
      * Create a new project.
      * @param data JSON containing the mandatory parameters.
      * @return a RestResponse object.
@@ -96,6 +85,17 @@ public class ProjectClient extends AbstractParentClient {
         ObjectMap params = new ObjectMap();
         params.put("body", data);
         return execute("projects", null, null, null, "create", params, POST, Project.class);
+    }
+
+    /**
+     * Search projects.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Project> search(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("projects", null, null, null, "search", params, GET, Project.class);
     }
 
     /**

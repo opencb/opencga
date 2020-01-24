@@ -119,12 +119,16 @@ public class VariantCommandOptions {
     public final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
     public final DataModelOptions commonDataModelOptions;
     public final NumericOptions commonNumericOptions;
+    public final GeneralCliOptions.JobOptions commonJobOptions;
+    private final Object commonJobOptionsObject;
 
     public VariantCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions,
-                                 NumericOptions numericOptions, JCommander jCommander) {
+                                 NumericOptions numericOptions, JCommander jCommander, boolean withJobParams) {
         this.commonCommandOptions = commonCommandOptions;
         this.commonDataModelOptions = dataModelOptions;
         this.commonNumericOptions = numericOptions;
+        this.commonJobOptions = new GeneralCliOptions.JobOptions();
+        this.commonJobOptionsObject = withJobParams ? commonJobOptions : new Object();
         this.jCommander = jCommander;
 
         this.indexVariantCommandOptions = new VariantIndexCommandOptions();
@@ -172,6 +176,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
         @Parameter(names = {"--file"}, description = "List of files to be indexed.", required = true, arity = 1)
         public String fileId = null;
 
@@ -195,6 +202,9 @@ public class VariantCommandOptions {
         public static final String SECONDARY_INDEX_COMMAND = "secondary-index";
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
 
         @Parameter(names = {"-p", "--project"}, description = "Project to index.", arity = 1)
         public String project;
@@ -220,6 +230,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
         @Parameter(names = {"--sample"}, description = "Samples to remove. Needs to provide all the samples in the secondary index.",
                 required = true, arity = 1)
         public String sample;
@@ -238,6 +251,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = true, arity = 1)
         public String outdir = null;
     }
@@ -255,6 +271,9 @@ public class VariantCommandOptions {
 
     @Parameters(commandNames = {"export"}, commandDescription = VariantExportTool.DESCRIPTION)
     public class VariantExportCommandOptions extends AbstractVariantQueryCommandOptions {
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1)
         public String outdir;
@@ -319,6 +338,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
         @Parameter(names = {"--cohort"}, description = "Cohort Ids for the cohorts to be calculated.")
         public List<String> cohort;
 
@@ -345,6 +367,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.StudyOption study = new GeneralCliOptions.StudyOption();
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir = null;
     }
@@ -357,6 +382,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.StudyOption study = new GeneralCliOptions.StudyOption();
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = false, arity = 1)
         public String outdir = null;
     }
@@ -368,6 +396,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
 
         @Parameter(names = {"--sample"}, required = true, description = "Samples to include in the index. " +
                 "Use \"" + VariantQueryUtils.ALL + "\" to annotate the index for all samples in the study.")
@@ -390,6 +421,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
 
         @Parameter(names = {"--family"}, required = true, description = "Families to index. " +
                 "Use \"" + VariantQueryUtils.ALL + "\" to index all families in the study.")
@@ -415,6 +449,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
         @Parameter(names = {"-p", "--project-id"}, description = "Project to annotate.", arity = 1)
         public String project;
 
@@ -431,6 +468,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
         @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
         public String project;
 
@@ -443,6 +483,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
 
         @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
         public String project;
@@ -491,6 +534,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GenericAggregateFamilyOptions genericAggregateFamilyOptions = new GenericAggregateFamilyOptions();
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
     }
 
     @Parameters(commandNames = {AGGREGATE_COMMAND}, commandDescription = AGGREGATE_COMMAND_DESCRIPTION)
@@ -505,6 +551,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GenericAggregateCommandOptions aggregateCommandOptions = new GenericAggregateCommandOptions();
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
     }
 
     @Parameters(commandNames = {"export-frequencies"}, commandDescription = "Export calculated variant stats and frequencies")
@@ -515,6 +564,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
 
 //        @ParametersDelegate
 //        public QueryCommandOptions queryOptions = new QueryCommandOptions();
@@ -551,6 +603,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
         @Parameter(names = {"-s", "--study"}, description = "Study where to load the variants", required = true)
         public String study;
 
@@ -564,6 +619,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
 
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
         public String study;
@@ -584,6 +642,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public SampleVariantFilterParamsAnnotated toolParams = new SampleVariantFilterParamsAnnotated();
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.")
         public String outdir;
@@ -799,6 +860,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
         public String study;
 
@@ -853,6 +917,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
         public String study;
 
@@ -882,10 +949,13 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
         public String study;
 
-        @Parameter(names = {"--sample"}, description = "List of samples.")
+        @Parameter(names = {"--sample"}, description = "List of samples.", required = true)
         public List<String> sample;
     }
 
@@ -895,6 +965,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
 
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
         public String study;
@@ -925,10 +998,13 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
         @Parameter(names = {"--study"}, description = "Study where all the samples belong to")
         public String study;
 
-        @Parameter(names = {"--cohort"}, description = "List of cohorts.")
+        @Parameter(names = {"--cohort"}, description = "List of cohorts.", required = true)
         public List<String> cohort;
     }
 
@@ -938,6 +1014,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
 
         @Parameter(names = {"--study"}, description = ParamConstants.STUDY_DESCRIPTION)
         public String study;
@@ -975,6 +1054,9 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
         @Parameter(names = {"--study"}, description = ParamConstants.STUDY_DESCRIPTION)
         public String study;
 
@@ -999,6 +1081,9 @@ public class VariantCommandOptions {
         //public GeneralCliOptions.CommonCommandOptions commonOptions = commonOptions;
         public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
+
         @Parameter(names = {"--study"}, description = "Study.")
         public String study;
 
@@ -1021,6 +1106,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
 
         @Parameter(names = {"--study"}, description = "Study.")
         public String study;
@@ -1053,6 +1141,9 @@ public class VariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions basicOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public Object jobOptions = commonJobOptionsObject;
 
         @Parameter(names = {"--study"}, description = "Study.")
         public String study;

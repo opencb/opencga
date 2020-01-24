@@ -33,6 +33,7 @@ import org.opencb.opencga.core.models.variant.GwasAnalysisParams;
 import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import org.opencb.opencga.core.models.variant.PlinkRunParams;
 import org.opencb.opencga.core.models.variant.RvtestsRunParams;
+import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
 import org.opencb.opencga.core.models.variant.SampleVariantFilterParams;
 import org.opencb.opencga.core.models.variant.SampleVariantStatsAnalysisParams;
 import org.opencb.opencga.core.models.variant.VariantExportParams;
@@ -50,6 +51,28 @@ public class VariantClient extends AbstractParentClient {
 
     public VariantClient(String token, ClientConfiguration configuration) {
         super(token, configuration);
+    }
+
+    /**
+     * Query variant annotations from any saved versions.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<VariantAnnotation> queryAnnotation(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("analysis/variant", null, "annotation", null, "query", params, GET, VariantAnnotation.class);
+    }
+
+    /**
+     * Filter and fetch variants from indexed VCF files in the variant storage.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Variant> query(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("analysis/variant", null, null, null, "query", params, GET, Variant.class);
     }
 
     /**
@@ -88,6 +111,17 @@ public class VariantClient extends AbstractParentClient {
     }
 
     /**
+     * Read variant annotations metadata from any saved versions.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> metadataAnnotation(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("analysis/variant", null, "annotation", null, "metadata", params, GET, ObjectMap.class);
+    }
+
+    /**
      * Compute variant stats for any cohort and any set of variants. Optionally, index the result in the variant storage database.
      * @param data Variant stats params.
      * @param params Map containing any additional optional parameters.
@@ -98,28 +132,6 @@ public class VariantClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("analysis/variant", null, "stats", null, "run", params, POST, Job.class);
-    }
-
-    /**
-     * Remove variant files from the variant storage.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Job> deleteFile(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("analysis/variant", null, "file", null, "delete", params, DELETE, Job.class);
-    }
-
-    /**
-     * Read variant annotations metadata from any saved versions.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<VariantAnnotation> metadataAnnotation(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("analysis/variant", null, "annotation", null, "metadata", params, GET, VariantAnnotation.class);
     }
 
     /**
@@ -162,6 +174,19 @@ public class VariantClient extends AbstractParentClient {
     }
 
     /**
+     * Filter samples by a complex query involving metadata and variants data.
+     * @param data .
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> runSampleEligibility(SampleEligibilityAnalysisParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("analysis/variant", null, "sample/eligibility", null, "run", params, POST, Job.class);
+    }
+
+    /**
      * Get sample data of a given variant.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
@@ -187,12 +212,14 @@ public class VariantClient extends AbstractParentClient {
 
     /**
      * Read sample variant stats from list of samples.
+     * @param sample Comma separated list sample IDs or UUIDs up to a maximum of 100.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<SampleVariantStats> infoSampleStats(ObjectMap params) throws ClientException {
+    public RestResponse<SampleVariantStats> infoSampleStats(String sample, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
+        params.putIfNotNull("sample", sample);
         return execute("analysis/variant", null, "sample/stats", null, "info", params, GET, SampleVariantStats.class);
     }
 
@@ -222,12 +249,14 @@ public class VariantClient extends AbstractParentClient {
 
     /**
      * Read cohort variant stats from list of cohorts.
+     * @param cohort Comma separated list of cohort names or ids up to a maximum of 100.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<VariantSetStats> infoCohortStats(ObjectMap params) throws ClientException {
+    public RestResponse<VariantSetStats> infoCohortStats(String cohort, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
+        params.putIfNotNull("cohort", cohort);
         return execute("analysis/variant", null, "cohort/stats", null, "info", params, GET, VariantSetStats.class);
     }
 
@@ -295,19 +324,6 @@ public class VariantClient extends AbstractParentClient {
     }
 
     /**
-     * .
-     * @param data Gene knockout analysis params.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Job> runKnockout(KnockoutAnalysisParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("analysis/variant", null, "knockout", null, "run", params, POST, Job.class);
-    }
-
-    /**
      * Index variant files into the variant storage.
      * @param data Variant index params.
      * @param params Map containing any additional optional parameters.
@@ -321,24 +337,26 @@ public class VariantClient extends AbstractParentClient {
     }
 
     /**
-     * Query variant annotations from any saved versions.
+     * Remove variant files from the variant storage.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<VariantAnnotation> queryAnnotation(ObjectMap params) throws ClientException {
+    public RestResponse<Job> deleteFile(ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis/variant", null, "annotation", null, "query", params, GET, VariantAnnotation.class);
+        return execute("analysis/variant", null, "file", null, "delete", params, DELETE, Job.class);
     }
 
     /**
-     * Filter and fetch variants from indexed VCF files in the variant storage.
+     * Obtains the list of knocked out genes for each sample.
+     * @param data Gene knockout analysis params.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<Variant> query(ObjectMap params) throws ClientException {
+    public RestResponse<Job> runKnockout(KnockoutAnalysisParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
-        return execute("analysis/variant", null, null, null, "query", params, GET, Variant.class);
+        params.put("body", data);
+        return execute("analysis/variant", null, "knockout", null, "run", params, POST, Job.class);
     }
 }

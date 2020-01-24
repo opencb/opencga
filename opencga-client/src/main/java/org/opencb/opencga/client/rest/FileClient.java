@@ -43,28 +43,6 @@ public class FileClient extends AbstractParentClient {
     }
 
     /**
-     * Unlink linked files and folders.
-     * @param files Comma separated list of file ids, names or paths.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Job> unlink(String files, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("files", files, null, null, "unlink", params, DELETE, Job.class);
-    }
-
-    /**
-     * List of accepted file formats.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<File.Format> formats() throws ClientException {
-        ObjectMap params = new ObjectMap();
-        return execute("files", null, null, null, "formats", params, GET, File.Format.class);
-    }
-
-    /**
      * Link an external file into catalog.
      * @param data File parameters.
      * @param params Map containing any additional optional parameters.
@@ -78,6 +56,16 @@ public class FileClient extends AbstractParentClient {
     }
 
     /**
+     * List of accepted file formats.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<File.Format> formats() throws ClientException {
+        ObjectMap params = new ObjectMap();
+        return execute("files", null, null, null, "formats", params, GET, File.Format.class);
+    }
+
+    /**
      * Refresh metadata from the selected file or folder. Return updated files.
      * @param file File id, name or path. Paths must be separated by : instead of /.
      * @param params Map containing any additional optional parameters.
@@ -87,6 +75,53 @@ public class FileClient extends AbstractParentClient {
     public RestResponse<File> refresh(String file, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("files", file, null, null, "refresh", params, GET, File.class);
+    }
+
+    /**
+     * Delete existing files and folders.
+     * @param files Comma separated list of file ids, names or paths.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> delete(String files, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("files", files, null, null, "delete", params, DELETE, Job.class);
+    }
+
+    /**
+     * List all the files inside the folder.
+     * @param folder Folder id, name or path.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<File> list(String folder, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("files", folder, null, null, "list", params, GET, File.class);
+    }
+
+    /**
+     * File search method.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<File> search(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("files", null, null, null, "search", params, GET, File.class);
+    }
+
+    /**
+     * Unlink linked files and folders.
+     * @param files Comma separated list of file ids, names or paths.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> unlink(String files, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("files", files, null, null, "unlink", params, DELETE, Job.class);
     }
 
     /**
@@ -114,21 +149,79 @@ public class FileClient extends AbstractParentClient {
     }
 
     /**
-     * Update annotations from an annotationSet.
-     * @param file File id, name or path. Paths must be separated by : instead of /.
-     * @param annotationSet AnnotationSet id to be updated.
-     * @param data Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key 'remove'
-     *     containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset'
-     *     containing the comma separated variables that will be set to the default value when the action is RESET.
+     * Obtain a tree view of the files and folders within a folder.
+     * @param folder Folder id, name or path. Paths must be separated by : instead of /.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<File> updateAnnotations(String file, String annotationSet, ObjectMap data, ObjectMap params)
-            throws ClientException {
+    public RestResponse<FileTree> tree(String folder, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("files", folder, null, null, "tree", params, GET, FileTree.class);
+    }
+
+    /**
+     * Update some file attributes.
+     * @param files Comma separated list of file ids, names or paths. Paths must be separated by : instead of /.
+     * @param data Parameters to modify.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<File> update(String files, FileUpdateParams data, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("files", file, "annotationSets", annotationSet, "annotations/update", params, POST, File.class);
+        return execute("files", files, null, null, "update", params, POST, File.class);
+    }
+
+    /**
+     * Return the acl defined for the file or folder. If member is provided, it will only return the acl for the member.
+     * @param files Comma separated list of file ids or names up to a maximum of 100.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> acl(String files, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("files", files, null, null, "acl", params, GET, ObjectMap.class);
+    }
+
+    /**
+     * Update the set of permissions granted for the member.
+     * @param members Comma separated list of user or group ids.
+     * @param data JSON containing the parameters to add ACLs.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> updateAcl(String members, FileAclUpdateParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("files", members, null, null, "update", params, POST, ObjectMap.class);
+    }
+
+    /**
+     * Fetch catalog file stats.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<FacetField> aggregationStats(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("files", null, null, null, "aggregationStats", params, GET, FacetField.class);
+    }
+
+    /**
+     * Create file or folder.
+     * @param data File parameters.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<File> create(FileCreateParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("files", null, null, null, "create", params, POST, File.class);
     }
 
     /**
@@ -188,113 +281,20 @@ public class FileClient extends AbstractParentClient {
     }
 
     /**
-     * Obtain a tree view of the files and folders within a folder.
-     * @param folder Folder id, name or path. Paths must be separated by : instead of /.
+     * Update annotations from an annotationSet.
+     * @param file File id, name or path. Paths must be separated by : instead of /.
+     * @param annotationSet AnnotationSet id to be updated.
+     * @param data Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key 'remove'
+     *     containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset'
+     *     containing the comma separated variables that will be set to the default value when the action is RESET.
      * @param params Map containing any additional optional parameters.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<FileTree> tree(String folder, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("files", folder, null, null, "tree", params, GET, FileTree.class);
-    }
-
-    /**
-     * Update some file attributes.
-     * @param files Comma separated list of file ids, names or paths. Paths must be separated by : instead of /.
-     * @param data Parameters to modify.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<File> update(String files, FileUpdateParams data, ObjectMap params) throws ClientException {
+    public RestResponse<File> updateAnnotations(String file, String annotationSet, ObjectMap data, ObjectMap params)
+            throws ClientException {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
-        return execute("files", files, null, null, "update", params, POST, File.class);
-    }
-
-    /**
-     * Create file or folder.
-     * @param data File parameters.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<File> create(FileCreateParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("files", null, null, null, "create", params, POST, File.class);
-    }
-
-    /**
-     * Return the acl defined for the file or folder. If member is provided, it will only return the acl for the member.
-     * @param files Comma separated list of file ids or names up to a maximum of 100.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ObjectMap> acl(String files, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("files", files, null, null, "acl", params, GET, ObjectMap.class);
-    }
-
-    /**
-     * Update the set of permissions granted for the member.
-     * @param members Comma separated list of user or group ids.
-     * @param data JSON containing the parameters to add ACLs.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ObjectMap> updateAcl(String members, FileAclUpdateParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("files", members, null, null, "update", params, POST, ObjectMap.class);
-    }
-
-    /**
-     * Fetch catalog file stats.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<FacetField> aggregationStats(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("files", null, null, null, "aggregationStats", params, GET, FacetField.class);
-    }
-
-    /**
-     * Delete existing files and folders.
-     * @param files Comma separated list of file ids, names or paths.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Job> delete(String files, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("files", files, null, null, "delete", params, DELETE, Job.class);
-    }
-
-    /**
-     * List all the files inside the folder.
-     * @param folder Folder id, name or path.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<File> list(String folder, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("files", folder, null, null, "list", params, GET, File.class);
-    }
-
-    /**
-     * File search method.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<File> search(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("files", null, null, null, "search", params, GET, File.class);
+        return execute("files", file, "annotationSets", annotationSet, "annotations/update", params, POST, File.class);
     }
 }

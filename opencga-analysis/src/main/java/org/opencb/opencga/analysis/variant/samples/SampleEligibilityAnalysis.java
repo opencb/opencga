@@ -162,13 +162,15 @@ public class SampleEligibilityAnalysis extends OpenCgaToolScopeStudy {
             }
         });
 
-        step("index", () -> {
-            Cohort cohort = new Cohort()
-                    .setId(analysisParams.getCohortId())
-                    .setSamples(samplesResult.stream().map(s -> new Sample().setId(s)).collect(Collectors.toList()))
-                    .setDescription("Result of analysis '" + getId() + "' after executing query " + analysisParams.getQuery());
-            getCatalogManager().getCohortManager().create(studyFqn, cohort, new QueryOptions(), getToken());
-        });
+        if (analysisParams.isIndex()) {
+            step("index", () -> {
+                Cohort cohort = new Cohort()
+                        .setId(analysisParams.getCohortId())
+                        .setSamples(samplesResult.stream().map(s -> new Sample().setId(s)).collect(Collectors.toList()))
+                        .setDescription("Result of analysis '" + getId() + "' after executing query " + analysisParams.getQuery());
+                getCatalogManager().getCohortManager().create(studyFqn, cohort, new QueryOptions(), getToken());
+            });
+        }
     }
 
     // Return a value that will depend on the likely of the node to return a large or small number of samples

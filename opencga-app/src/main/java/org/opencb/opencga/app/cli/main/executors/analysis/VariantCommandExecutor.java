@@ -27,7 +27,6 @@ import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
 import org.opencb.biodata.models.variant.metadata.VariantMetadata;
 import org.opencb.biodata.models.variant.metadata.VariantSetStats;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
-import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -40,9 +39,9 @@ import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.io.VcfOutputWriter;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.variant.*;
-import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.server.grpc.AdminServiceGrpc;
@@ -172,7 +171,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private RestResponse stats() throws ClientException {
-        return openCGAClient.getVariantClient().statsRun(variantCommandOptions.statsVariantCommandOptions.study,
+        return openCGAClient.getVariantClient().runStats(
                 new VariantStatsAnalysisParams(
                         variantCommandOptions.statsVariantCommandOptions.cohort,
                         variantCommandOptions.statsVariantCommandOptions.samples,
@@ -186,66 +185,64 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.resume,
                         variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.aggregated,
                         variantCommandOptions.statsVariantCommandOptions.genericVariantStatsOptions.aggregationMappingFile
-                ));
+                ), getParams(variantCommandOptions.statsVariantCommandOptions.study));
     }
 
     private RestResponse<Job> sampleRun() throws ClientException {
-        return openCGAClient.getVariantClient().sampleRun(
-                variantCommandOptions.samplesFilterCommandOptions.toolParams.getStudy(),
-                variantCommandOptions.samplesFilterCommandOptions.toolParams
+        return openCGAClient.getVariantClient().runSample(
+                variantCommandOptions.samplesFilterCommandOptions.toolParams,
+                getParams(variantCommandOptions.samplesFilterCommandOptions.toolParams.getStudy())
         );
     }
 
     private RestResponse<Variant> sampleQuery() throws ClientException {
-        QueryOptions options = new QueryOptions();
-        options.putAll(variantCommandOptions.sampleQueryCommandOptions.commonOptions.params);
+        ObjectMap options = getParams(variantCommandOptions.sampleQueryCommandOptions.study)
+                .append("variant", variantCommandOptions.sampleQueryCommandOptions.variant)
+                .append("genotype", variantCommandOptions.sampleQueryCommandOptions.genotype)
+                .append(QueryOptions.LIMIT, variantCommandOptions.sampleQueryCommandOptions.numericOptions.limit)
+                .append(QueryOptions.SKIP, variantCommandOptions.sampleQueryCommandOptions.numericOptions.skip);
 
-        return openCGAClient.getVariantClient().sampleQuery(
-                variantCommandOptions.sampleQueryCommandOptions.variant,
-                variantCommandOptions.sampleQueryCommandOptions.study,
-                variantCommandOptions.sampleQueryCommandOptions.genotype,
-                variantCommandOptions.sampleQueryCommandOptions.numericOptions.limit,
-                variantCommandOptions.sampleQueryCommandOptions.numericOptions.skip,
-                options);
+        return openCGAClient.getVariantClient().querySample(options);
     }
 
     private RestResponse<Job> sampleStats() throws ClientException {
-        return openCGAClient.getVariantClient().sampleStatsRun(variantCommandOptions.sampleVariantStatsCommandOptions.study,
+        return openCGAClient.getVariantClient().runSampleStats(
                 new SampleVariantStatsAnalysisParams(
                         variantCommandOptions.sampleVariantStatsCommandOptions.sample,
                         variantCommandOptions.sampleVariantStatsCommandOptions.family,
                         variantCommandOptions.sampleVariantStatsCommandOptions.index,
                         variantCommandOptions.sampleVariantStatsCommandOptions.samplesAnnotation,
                         variantCommandOptions.sampleVariantStatsCommandOptions.outdir
-                ));
+                ), getParams(variantCommandOptions.sampleVariantStatsCommandOptions.study));
     }
 
     private RestResponse<SampleVariantStats> sampleStatsQuery() throws ClientException {
         return openCGAClient.getVariantClient()
-                .sampleStatsInfo(variantCommandOptions.sampleVariantStatsQueryCommandOptions.study,
-                        variantCommandOptions.sampleVariantStatsQueryCommandOptions.sample);
+                .infoSampleStats(String.join(",", variantCommandOptions.sampleVariantStatsQueryCommandOptions.sample),
+                        getParams(variantCommandOptions.sampleVariantStatsQueryCommandOptions.study));
     }
 
     private RestResponse<Job> cohortStats() throws ClientException {
-        return openCGAClient.getVariantClient().cohortStatsRun(variantCommandOptions.cohortVariantStatsCommandOptions.study,
+        return openCGAClient.getVariantClient().runCohortStats(
                 new CohortVariantStatsAnalysisParams(
                         variantCommandOptions.cohortVariantStatsCommandOptions.cohort,
                         variantCommandOptions.cohortVariantStatsCommandOptions.samples,
                         variantCommandOptions.cohortVariantStatsCommandOptions.index,
                         variantCommandOptions.cohortVariantStatsCommandOptions.samplesAnnotation,
                         variantCommandOptions.cohortVariantStatsCommandOptions.outdir
-                ));
+                ),
+                getParams(variantCommandOptions.cohortVariantStatsCommandOptions.study));
     }
 
     private RestResponse<VariantSetStats> cohortStatsQuery() throws ClientException {
-        return openCGAClient.getVariantClient().cohortStatsInfo(
-                variantCommandOptions.cohortVariantStatsQueryCommandOptions.study,
-                variantCommandOptions.cohortVariantStatsQueryCommandOptions.cohort
+        return openCGAClient.getVariantClient().infoCohortStats(
+                String.join(",",variantCommandOptions.cohortVariantStatsQueryCommandOptions.cohort),
+                getParams(variantCommandOptions.cohortVariantStatsQueryCommandOptions.study)
         );
     }
 
     private RestResponse<Job> knockout() throws ClientException {
-        return openCGAClient.getVariantClient().knockoutRun(variantCommandOptions.knockoutCommandOptions.study,
+        return openCGAClient.getVariantClient().runKnockout(
                 new KnockoutAnalysisParams(
                         variantCommandOptions.knockoutCommandOptions.sample,
                         variantCommandOptions.knockoutCommandOptions.gene,
@@ -254,15 +251,19 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.knockoutCommandOptions.consequenceType,
                         variantCommandOptions.knockoutCommandOptions.filter,
                         variantCommandOptions.knockoutCommandOptions.qual,
-                        variantCommandOptions.knockoutCommandOptions.outdir));
+                        variantCommandOptions.knockoutCommandOptions.outdir),
+                getParams(variantCommandOptions.knockoutCommandOptions.study)
+        );
     }
 
     private RestResponse<Job> sampleEligibility() throws ClientException {
-        return openCGAClient.getVariantClient().sampleEligibilityRun(variantCommandOptions.sampleEligibilityCommandOptions.study,
+        return openCGAClient.getVariantClient().runSampleEligibility(
                 new SampleEligibilityAnalysisParams(
                         variantCommandOptions.sampleEligibilityCommandOptions.query,
                         variantCommandOptions.sampleEligibilityCommandOptions.index,
-                        variantCommandOptions.sampleEligibilityCommandOptions.cohortId));
+                        variantCommandOptions.sampleEligibilityCommandOptions.cohortId),
+                getParams(variantCommandOptions.sampleEligibilityCommandOptions.study)
+        );
     }
 
 //    private RestResponse<Job> familyStats() {
@@ -274,7 +275,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 //    }
 
     private RestResponse<Job> gwas() throws ClientException {
-        return openCGAClient.getVariantClient().gwasRun(variantCommandOptions.gwasCommandOptions.study,
+        return openCGAClient.getVariantClient().runGwas(
                 new GwasAnalysisParams(
                         variantCommandOptions.gwasCommandOptions.phenotype,
                         variantCommandOptions.gwasCommandOptions.index,
@@ -288,7 +289,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.gwasCommandOptions.controlCohortSamplesAnnotation,
                         variantCommandOptions.gwasCommandOptions.controlCohortSamples,
                         variantCommandOptions.gwasCommandOptions.outdir
-                ));
+                ), getParams(variantCommandOptions.gwasCommandOptions.study));
     }
 
     private List<String> asList(String s) {
@@ -310,13 +311,20 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         Query query = VariantQueryCommandUtils.parseQuery(c, studies, clientConfiguration);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(c);
         String study = query.getString(VariantQueryParam.STUDY.key());
+
         return openCGAClient.getVariantClient()
-                .export(study, query, options, c.outdir, c.outputFileName, c.commonOptions.outputFormat, c.compress);
+                .export(new VariantExportParams(
+                        query,
+                        c.outdir,
+                        c.outputFileName,
+                        c.commonOptions.outputFormat,
+                        c.compress,
+                        c.variantsFile), getParams(study).appendAll(options));
     }
 
     private RestResponse<Job> index() throws ClientException {
         VariantCommandOptions.VariantIndexCommandOptions variantIndex = variantCommandOptions.indexVariantCommandOptions;
-        return openCGAClient.getVariantClient().index(variantIndex.study,
+        return openCGAClient.getVariantClient().index(
                 new VariantIndexParams(
                         variantIndex.fileId,
                         variantIndex.genericVariantIndexOptions.resume,
@@ -336,17 +344,18 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantIndex.genericVariantIndexOptions.annotator,
                         variantIndex.genericVariantIndexOptions.overwriteAnnotations,
                         variantIndex.genericVariantIndexOptions.indexSearch
-                ));
+                ),
+                getParams(variantIndex.study));
     }
 
     private RestResponse<Job> fileDelete() throws ClientException {
         VariantCommandOptions.VariantDeleteCommandOptions cliOptions = variantCommandOptions.variantDeleteCommandOptions;
 
-        return openCGAClient.getVariantClient().fileDelete(
-                cliOptions.study,
+        return openCGAClient.getVariantClient().deleteFile(
                 new VariantFileDeleteParams(
                         cliOptions.genericVariantDeleteOptions.file,
-                        cliOptions.genericVariantDeleteOptions.resume));
+                        cliOptions.genericVariantDeleteOptions.resume).toObjectMap()
+                        .appendAll(getParams(cliOptions.study)));
     }
 
     private RestResponse query() throws CatalogException, ClientException, InterruptedException, IOException {
@@ -378,42 +387,36 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 //        Logger.getLogger(ManagedChannelImpl.class.getName()).setLevel(java.util.logging.Level.WARNING);
 
 
-        ObjectMap params = new ObjectMap(query);
         QueryOptions metadataQueryOptions = new QueryOptions(options);
+        metadataQueryOptions.putAll(query);
         metadataQueryOptions.addToListOption(QueryOptions.EXCLUDE, "files");
         metadataQueryOptions.append("basic", true);
-        VariantMetadata metadata = openCGAClient.getVariantClient().metadata(params, metadataQueryOptions).firstResult();
+        VariantMetadata metadata = openCGAClient.getVariantClient().metadata(metadataQueryOptions).firstResult();
         VcfOutputWriter vcfOutputWriter = new VcfOutputWriter(metadata, annotations, System.out);
 
+        ObjectMap params = new ObjectMap(query);
+        params.putAll(options);
         boolean grpc = usingGrpcMode(queryCommandOptions.mode);
         if (!grpc) {
 
-            if (queryCommandOptions.numericOptions.count) {
-                return openCGAClient.getVariantClient().count(params, options);
-            } else if (StringUtils.isNoneEmpty(queryCommandOptions.genericVariantQueryOptions.groupBy)
-                    || queryCommandOptions.genericVariantQueryOptions.histogram
-                    || StringUtils.isNoneEmpty(queryCommandOptions.genericVariantQueryOptions.rank)) {
-                return openCGAClient.getVariantClient().genericQuery(params, options);
-            } else {
-                options.put(QueryOptions.SKIP_COUNT, true);
-                params.put(VariantQueryParam.SAMPLE_METADATA.key(), true);
-                if (queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("vcf")
-                        || queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("text")) {
-                    RestResponse<Variant> queryResponse = openCGAClient.getVariantClient().query(params, options);
+            options.put(QueryOptions.SKIP_COUNT, true);
+            params.put(VariantQueryParam.SAMPLE_METADATA.key(), true);
+            if (queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("vcf")
+                    || queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("text")) {
+                RestResponse<Variant> queryResponse = openCGAClient.getVariantClient().query(params);
 
-                    vcfOutputWriter.print(queryResponse);
-                    return null;
-                } else {
-                    return openCGAClient.getVariantClient().query(params, options);
-                }
+                vcfOutputWriter.print(queryResponse);
+                return null;
+            } else {
+                return openCGAClient.getVariantClient().query(params);
             }
+
         } else {
             ManagedChannel channel = getManagedChannel();
 
             // We use a blocking stub to execute the query to gRPC
             VariantServiceGrpc.VariantServiceBlockingStub variantServiceBlockingStub = VariantServiceGrpc.newBlockingStub(channel);
 
-            params.putAll(options);
             query = VariantStorageManager.getVariantQuery(params);
             Map<String, String> queryMap = new HashMap<>();
             Map<String, String> queryOptionsMap = new HashMap<>();
@@ -432,43 +435,26 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                     .setSessionId(token == null ? "" : token)
                     .build();
 
-            RestResponse queryResponse = null;
-            if (queryCommandOptions.numericOptions.count) {
-                ServiceTypesModel.LongResponse countResponse = variantServiceBlockingStub.count(request);
-                ServiceTypesModel.Response response = countResponse.getResponse();
-                List<Event> events = new ArrayList<>();
-                if (StringUtils.isNotEmpty(response.getWarning())) {
-                    events.add(new Event(Event.Type.WARNING, response.getWarning()));
-                }
-                if (StringUtils.isNotEmpty(response.getError())) {
-                    events.add(new Event(Event.Type.ERROR, response.getError()));
-                }
-                queryResponse = new RestResponse<>("", 0, events, new ObjectMap(params), Collections.singletonList(
-                                new OpenCGAResult<>(0, Collections.emptyList(), 1, Collections.singletonList(countResponse.getValue()), 1)));
-                return queryResponse;
-            } else if (queryCommandOptions.genericVariantQueryOptions.samplesMetadata || StringUtils.isNoneEmpty(queryCommandOptions.genericVariantQueryOptions.groupBy) || queryCommandOptions.genericVariantQueryOptions.histogram) {
-                queryResponse = openCGAClient.getVariantClient().genericQuery(params, options);
-            } else {
-                Iterator<VariantProto.Variant> variantIterator = variantServiceBlockingStub.get(request);
-                if (queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("vcf")
-                        || queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("text")) {
-                    options.put(QueryOptions.SKIP_COUNT, true);
-                    options.put(QueryOptions.LIMIT, 1);
 
-                    vcfOutputWriter.print(variantIterator);
-                } else {
-                    JsonFormat.Printer printer = JsonFormat.printer();
-                    try (PrintStream printStream = new PrintStream(System.out)) {
-                        while (variantIterator.hasNext()) {
-                            VariantProto.Variant next = variantIterator.next();
-                            printStream.println(printer.print(next));
-                        }
+            Iterator<VariantProto.Variant> variantIterator = variantServiceBlockingStub.get(request);
+            if (queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("vcf")
+                    || queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("text")) {
+                options.put(QueryOptions.SKIP_COUNT, true);
+                options.put(QueryOptions.LIMIT, 1);
+
+                vcfOutputWriter.print(variantIterator);
+            } else {
+                JsonFormat.Printer printer = JsonFormat.printer();
+                try (PrintStream printStream = new PrintStream(System.out)) {
+                    while (variantIterator.hasNext()) {
+                        VariantProto.Variant next = variantIterator.next();
+                        printStream.println(printer.print(next));
                     }
-                    queryResponse = null;
                 }
             }
+
             channel.shutdown().awaitTermination(2, TimeUnit.SECONDS);
-            return queryResponse;
+            return null;
         }
     }
 
@@ -611,7 +597,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         options.put(QueryOptions.SKIP, cliOptions.skip);
         options.put(QueryOptions.INCLUDE, cliOptions.dataModelOptions.include);
         options.put(QueryOptions.EXCLUDE, cliOptions.dataModelOptions.exclude);
-        options.put(QueryOptions.SKIP, cliOptions.skip);
         options.putAll(cliOptions.commonOptions.params);
 
         Query query = new Query();
@@ -619,33 +604,31 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         query.put(VariantQueryParam.REGION.key(), cliOptions.region);
         query.put(VariantQueryParam.ID.key(), cliOptions.id);
 
-        return openCGAClient.getVariantClient().annotationQuery(cliOptions.annotationId, query, options);
+        return openCGAClient.getVariantClient().queryAnnotation(options.appendAll(query).append("annotationId", cliOptions.annotationId));
     }
 
     public RestResponse<ObjectMap> annotationMetadata() throws ClientException {
         VariantCommandOptions.AnnotationMetadataCommandOptions cliOptions = variantCommandOptions.annotationMetadataCommandOptions;
 
-        QueryOptions options = new QueryOptions();
-        options.putAll(cliOptions.commonOptions.params);
 
-        return openCGAClient.getVariantClient().annotationMetadata(cliOptions.annotationId, cliOptions.project, options);
+        return openCGAClient.getVariantClient().metadataAnnotation(getParams(cliOptions.project, null).append("annotationId", cliOptions.annotationId));
     }
 
     // Wrappers
 
     private RestResponse<Job> plink() throws ClientException {
-        return openCGAClient.getVariantClient().plinkRun(variantCommandOptions.plinkCommandOptions.study,
+        return openCGAClient.getVariantClient().runPlink(
                 new PlinkRunParams(
                         variantCommandOptions.plinkCommandOptions.tpedFile,
                         variantCommandOptions.plinkCommandOptions.tfamFile,
                         variantCommandOptions.plinkCommandOptions.covarFile,
                         variantCommandOptions.plinkCommandOptions.outdir,
                         variantCommandOptions.plinkCommandOptions.basicOptions.params
-                ));
+                ), getParams(variantCommandOptions.plinkCommandOptions.study));
     }
 
     private RestResponse<Job> rvtests() throws ClientException {
-        return openCGAClient.getVariantClient().rvtestsRun(variantCommandOptions.rvtestsCommandOptions.study,
+        return openCGAClient.getVariantClient().runRvtests(
                 new RvtestsRunParams(
                         variantCommandOptions.rvtestsCommandOptions.executable,
                         variantCommandOptions.rvtestsCommandOptions.vcfFile,
@@ -655,12 +638,12 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.rvtestsCommandOptions.covarFile,
                         variantCommandOptions.rvtestsCommandOptions.outdir,
                         variantCommandOptions.rvtestsCommandOptions.basicOptions.params
-                ));
+                ), getParams(variantCommandOptions.rvtestsCommandOptions.study));
     }
 
 
     private RestResponse<Job> gatk() throws ClientException {
-        return openCGAClient.getVariantClient().gatkRun(variantCommandOptions.gatkCommandOptions.study,
+        return openCGAClient.getVariantClient().runGatk(
                 new GatkRunParams(
                         variantCommandOptions.gatkCommandOptions.command,
                         variantCommandOptions.gatkCommandOptions.fastaFile,
@@ -668,6 +651,31 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.gatkCommandOptions.vcfFilename,
                         variantCommandOptions.gatkCommandOptions.outdir,
                         variantCommandOptions.gatkCommandOptions.basicOptions.params
-                ));
+                ), getParams(variantCommandOptions.gatkCommandOptions.study));
     }
+
+    private ObjectMap getParams(String study) {
+        return getParams(null, study);
+    }
+
+    private ObjectMap getParams(String project, String study) {
+        ObjectMap params = new ObjectMap(variantCommandOptions.commonCommandOptions.params);
+        params.putIfNotEmpty(ParamConstants.PROJECT_PARAM, project);
+        params.putIfNotEmpty(ParamConstants.STUDY_PARAM, study);
+        params.putIfNotEmpty(ParamConstants.JOB_ID, variantCommandOptions.commonJobOptions.jobId);
+        params.putIfNotEmpty(ParamConstants.JOB_DESCRIPTION, variantCommandOptions.commonJobOptions.jobDescription);
+        params.putIfNotNull(ParamConstants.JOB_DEPENDS_ON, variantCommandOptions.commonJobOptions.jobDependsOn);
+        params.putIfNotNull(ParamConstants.JOB_TAGS, variantCommandOptions.commonJobOptions.jobTags);
+        if (variantCommandOptions.commonNumericOptions.limit > 0) {
+            params.put(QueryOptions.LIMIT, variantCommandOptions.commonNumericOptions.limit);
+        }
+        if (variantCommandOptions.commonNumericOptions.skip > 0) {
+            params.put(QueryOptions.SKIP, variantCommandOptions.commonNumericOptions.skip);
+        }
+        if (variantCommandOptions.commonNumericOptions.count) {
+            params.put(QueryOptions.COUNT, variantCommandOptions.commonNumericOptions.count);
+        }
+        return params;
+    }
+
 }

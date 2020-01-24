@@ -39,6 +39,29 @@ public class SampleClient extends AbstractParentClient {
     }
 
     /**
+     * Delete samples.
+     * @param samples Comma separated list sample IDs or UUIDs up to a maximum of 100.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Sample> delete(String samples, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("samples", samples, null, null, "delete", params, DELETE, Sample.class);
+    }
+
+    /**
+     * Sample search method.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Sample> search(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("samples", null, null, null, "search", params, GET, Sample.class);
+    }
+
+    /**
      * Update some sample attributes.
      * @param samples Comma separated list sample IDs or UUIDs up to a maximum of 100.
      * @param data params.
@@ -50,24 +73,6 @@ public class SampleClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("samples", samples, null, null, "update", params, POST, Sample.class);
-    }
-
-    /**
-     * Update annotations from an annotationSet.
-     * @param sample Sample id.
-     * @param annotationSet AnnotationSet id to be updated.
-     * @param data Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key 'remove'
-     *     containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset'
-     *     containing the comma separated variables that will be set to the default value when the action is RESET.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Sample> updateAnnotations(String sample, String annotationSet, ObjectMap data, ObjectMap params)
-            throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("samples", sample, "annotationSets", annotationSet, "annotations/update", params, POST, Sample.class);
     }
 
     /**
@@ -109,6 +114,36 @@ public class SampleClient extends AbstractParentClient {
     }
 
     /**
+     * Update annotations from an annotationSet.
+     * @param sample Sample id.
+     * @param annotationSet AnnotationSet id to be updated.
+     * @param data Json containing the map of annotations when the action is ADD, SET or REPLACE, a json with only the key 'remove'
+     *     containing the comma separated variables to be removed as a value when the action is REMOVE or a json with only the key 'reset'
+     *     containing the comma separated variables that will be set to the default value when the action is RESET.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Sample> updateAnnotations(String sample, String annotationSet, ObjectMap data, ObjectMap params)
+            throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("samples", sample, "annotationSets", annotationSet, "annotations/update", params, POST, Sample.class);
+    }
+
+    /**
+     * Get sample information.
+     * @param samples Comma separated list sample IDs or UUIDs up to a maximum of 100.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Sample> info(String samples, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("samples", samples, null, null, "info", params, GET, Sample.class);
+    }
+
+    /**
      * Create sample.
      * @param data JSON containing sample information.
      * @param params Map containing any additional optional parameters.
@@ -132,40 +167,5 @@ public class SampleClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.putIfNotNull("file", file);
         return execute("samples", null, null, null, "load", params, GET, Sample.class);
-    }
-
-    /**
-     * Get sample information.
-     * @param samples Comma separated list sample IDs or UUIDs up to a maximum of 100.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Sample> info(String samples, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("samples", samples, null, null, "info", params, GET, Sample.class);
-    }
-
-    /**
-     * Delete samples.
-     * @param samples Comma separated list sample IDs or UUIDs up to a maximum of 100.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Sample> delete(String samples, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("samples", samples, null, null, "delete", params, DELETE, Sample.class);
-    }
-
-    /**
-     * Sample search method.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Sample> search(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("samples", null, null, null, "search", params, GET, Sample.class);
     }
 }

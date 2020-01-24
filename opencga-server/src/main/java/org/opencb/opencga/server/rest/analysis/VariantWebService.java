@@ -397,7 +397,7 @@ public class VariantWebService extends AnalysisWebService {
 
     @GET
     @Path("/annotation/metadata")
-    @ApiOperation(value = "Read variant annotations metadata from any saved versions", response = VariantAnnotation.class)
+    @ApiOperation(value = "Read variant annotations metadata from any saved versions")
     public Response getAnnotationMetadata(@ApiParam(value = "Annotation identifier") @QueryParam("annotationId") String annotationId,
                                           @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project) {
         return run(() -> variantManager.getAnnotationMetadata(annotationId, project, token));
@@ -533,7 +533,7 @@ public class VariantWebService extends AnalysisWebService {
     }
 
     @POST
-    @Path("/sample/eligibility")
+    @Path("/sample/eligibility/run")
     @ApiOperation(value = SampleEligibilityAnalysis.DESCRIPTION, response = Job.class)
     public Response sampleEligibility(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
@@ -541,7 +541,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
             @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
             @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
-            @ApiParam(value = SampleEligibilityAnalysisParams.DESCRIPTION) SampleVariantFilterParams params) {
+            @ApiParam(value = SampleEligibilityAnalysisParams.DESCRIPTION) SampleEligibilityAnalysisParams params) {
         return submitJob(SampleEligibilityAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
@@ -591,7 +591,7 @@ public class VariantWebService extends AnalysisWebService {
     @Path("/sample/stats/info")
     @ApiOperation(value = "Read sample variant stats from list of samples.", response = SampleVariantStats.class)
     public Response sampleStatsInfo(@ApiParam(value = "Study where all the samples belong to") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                     @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("sample") String sample) {
+                                     @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION, required = true) @QueryParam("sample") String sample) {
         return run(() -> {
             ParamUtils.checkParameter(sample, "sample");
             ParamUtils.checkParameter(studyStr, ParamConstants.STUDY_PARAM);
@@ -643,7 +643,7 @@ public class VariantWebService extends AnalysisWebService {
     @Path("/cohort/stats/info")
     @ApiOperation(value = "Read cohort variant stats from list of cohorts.", response = VariantSetStats.class)
     public Response cohortStatsQuery(@ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                     @ApiParam(value = ParamConstants.COHORTS_DESCRIPTION) @QueryParam("cohort") String cohort) {
+                                     @ApiParam(value = ParamConstants.COHORTS_DESCRIPTION, required = true) @QueryParam("cohort") String cohort) {
         return run(() -> {
             ParamUtils.checkParameter(cohort, "cohort");
             ParamUtils.checkParameter(studyStr, ParamConstants.STUDY_PARAM);

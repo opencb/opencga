@@ -42,18 +42,6 @@ public class UserClient extends AbstractParentClient {
     }
 
     /**
-     * Fetch a user configuration.
-     * @param user User id.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ObjectMap> configs(String user, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("users", user, null, null, "configs", params, GET, ObjectMap.class);
-    }
-
-    /**
      * Return the user information including its projects and studies.
      * @param user User id.
      * @param params Map containing any additional optional parameters.
@@ -66,6 +54,18 @@ public class UserClient extends AbstractParentClient {
     }
 
     /**
+     * Fetch a user configuration.
+     * @param user User id.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> configs(String user, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("users", user, null, null, "configs", params, GET, ObjectMap.class);
+    }
+
+    /**
      * Fetch user filters.
      * @param user User id.
      * @param params Map containing any additional optional parameters.
@@ -75,6 +75,45 @@ public class UserClient extends AbstractParentClient {
     public RestResponse<User.Filter> filtersConfigs(String user, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("users", user, "configs", null, "filters", params, GET, User.Filter.class);
+    }
+
+    /**
+     * Get identified and gain access to the system.
+     * @param user User id.
+     * @param data JSON containing the parameter 'password'.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> login(String user, LoginParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("users", user, null, null, "login", params, POST, ObjectMap.class);
+    }
+
+    /**
+     * Change the password of a user.
+     * @param user User id.
+     * @param data JSON containing the params 'password' (old password) and 'newPassword' (new password).
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<User> password(String user, PasswordChangeParams data) throws ClientException {
+        ObjectMap params = new ObjectMap();
+        params.put("body", data);
+        return execute("users", user, null, null, "password", params, POST, User.class);
+    }
+
+    /**
+     * Retrieve the projects of the user.
+     * @param user User id.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Project> projects(String user, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("users", user, null, null, "projects", params, GET, Project.class);
     }
 
     /**
@@ -91,30 +130,6 @@ public class UserClient extends AbstractParentClient {
     }
 
     /**
-     * Create a new user.
-     * @param data JSON containing the parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<User> create(UserCreateParams data) throws ClientException {
-        ObjectMap params = new ObjectMap();
-        params.put("body", data);
-        return execute("users", null, null, null, "create", params, POST, User.class);
-    }
-
-    /**
-     * Retrieve the projects of the user.
-     * @param user User id.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Project> projects(String user, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("users", user, null, null, "projects", params, GET, Project.class);
-    }
-
-    /**
      * Add or remove a custom user configuration.
      * @param user User id.
      * @param data JSON containing anything useful for the application such as user or default preferences. When removing, only the id will
@@ -127,6 +142,18 @@ public class UserClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("users", user, "configs", null, "update", params, POST, ObjectMap.class);
+    }
+
+    /**
+     * Create a new user.
+     * @param data JSON containing the parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<User> create(UserCreateParams data) throws ClientException {
+        ObjectMap params = new ObjectMap();
+        params.put("body", data);
+        return execute("users", null, null, null, "create", params, POST, User.class);
     }
 
     /**
@@ -155,32 +182,5 @@ public class UserClient extends AbstractParentClient {
         ObjectMap params = new ObjectMap();
         params.put("body", data);
         return execute("users", user, "configs/filters", name, "update", params, POST, User.Filter.class);
-    }
-
-    /**
-     * Get identified and gain access to the system.
-     * @param user User id.
-     * @param data JSON containing the parameter 'password'.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ObjectMap> login(String user, LoginParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("users", user, null, null, "login", params, POST, ObjectMap.class);
-    }
-
-    /**
-     * Change the password of a user.
-     * @param user User id.
-     * @param data JSON containing the params 'password' (old password) and 'newPassword' (new password).
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<User> password(String user, PasswordChangeParams data) throws ClientException {
-        ObjectMap params = new ObjectMap();
-        params.put("body", data);
-        return execute("users", user, null, null, "password", params, POST, User.class);
     }
 }

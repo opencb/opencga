@@ -34,6 +34,17 @@ public class MetaClient extends AbstractParentClient {
     }
 
     /**
+     * API.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> api(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("meta", null, null, null, "api", params, GET, ObjectMap.class);
+    }
+
+    /**
      * Ping Opencga webservices.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
@@ -44,14 +55,13 @@ public class MetaClient extends AbstractParentClient {
     }
 
     /**
-     * API.
-     * @param params Map containing any additional optional parameters.
+     * Database status.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */
-    public RestResponse<ObjectMap> api(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("meta", null, null, null, "api", params, GET, ObjectMap.class);
+    public RestResponse<ObjectMap> status() throws ClientException {
+        ObjectMap params = new ObjectMap();
+        return execute("meta", null, null, null, "status", params, GET, ObjectMap.class);
     }
 
     /**
@@ -72,15 +82,5 @@ public class MetaClient extends AbstractParentClient {
     public RestResponse<ObjectMap> ping() throws ClientException {
         ObjectMap params = new ObjectMap();
         return execute("meta", null, null, null, "ping", params, GET, ObjectMap.class);
-    }
-
-    /**
-     * Database status.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ObjectMap> status() throws ClientException {
-        ObjectMap params = new ObjectMap();
-        return execute("meta", null, null, null, "status", params, GET, ObjectMap.class);
     }
 }

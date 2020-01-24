@@ -38,6 +38,29 @@ public class JobClient extends AbstractParentClient {
     }
 
     /**
+     * Delete existing jobs.
+     * @param jobs Comma separated list of job ids.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> delete(String jobs, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("jobs", jobs, null, null, "delete", params, DELETE, Job.class);
+    }
+
+    /**
+     * Job search method.
+     * @param params Map containing any additional optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> search(ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("jobs", null, null, null, "search", params, GET, Job.class);
+    }
+
+    /**
      * Get job information.
      * @param jobs Comma separated list of job IDs or UUIDs up to a maximum of 100.
      * @param params Map containing any additional optional parameters.
@@ -99,28 +122,5 @@ public class JobClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("jobs", null, null, null, "create", params, POST, Job.class);
-    }
-
-    /**
-     * Delete existing jobs.
-     * @param jobs Comma separated list of job ids.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Job> delete(String jobs, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("jobs", jobs, null, null, "delete", params, DELETE, Job.class);
-    }
-
-    /**
-     * Job search method.
-     * @param params Map containing any additional optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Job> search(ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("jobs", null, null, null, "search", params, GET, Job.class);
     }
 }
