@@ -25,7 +25,7 @@ public class FileUpdateParams {
     private List<String> tags;
     private File.FileStatus status;
 
-    private List<RelatedFile> relatedFiles;
+    private List<SmallRelatedFileParams> relatedFiles;
 
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> stats;
@@ -34,45 +34,23 @@ public class FileUpdateParams {
     public FileUpdateParams() {
     }
 
-
-    public static class RelatedFile {
-        private String file;
-        private File.RelatedFile.Relation relation;
-
-        public RelatedFile() {
-        }
-
-        public RelatedFile(String file, File.RelatedFile.Relation relation) {
-            this.file = file;
-            this.relation = relation;
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("RelatedFile{");
-            sb.append("file='").append(file).append('\'');
-            sb.append(", relation=").append(relation);
-            sb.append('}');
-            return sb.toString();
-        }
-
-        public String getFile() {
-            return file;
-        }
-
-        public RelatedFile setFile(String file) {
-            this.file = file;
-            return this;
-        }
-
-        public File.RelatedFile.Relation getRelation() {
-            return relation;
-        }
-
-        public RelatedFile setRelation(File.RelatedFile.Relation relation) {
-            this.relation = relation;
-            return this;
-        }
+    public FileUpdateParams(String name, String description, List<String> samples, String checksum, File.Format format,
+                            File.Bioformat bioformat, Software software, List<String> tags, File.FileStatus status,
+                            List<SmallRelatedFileParams> relatedFiles, List<AnnotationSet> annotationSets, Map<String, Object> stats,
+                            Map<String, Object> attributes) {
+        this.name = name;
+        this.description = description;
+        this.samples = samples;
+        this.checksum = checksum;
+        this.format = format;
+        this.bioformat = bioformat;
+        this.software = software;
+        this.tags = tags;
+        this.status = status;
+        this.relatedFiles = relatedFiles;
+        this.annotationSets = annotationSets;
+        this.stats = stats;
+        this.attributes = attributes;
     }
 
     @JsonIgnore
@@ -192,11 +170,11 @@ public class FileUpdateParams {
         return this;
     }
 
-    public List<RelatedFile> getRelatedFiles() {
+    public List<SmallRelatedFileParams> getRelatedFiles() {
         return relatedFiles;
     }
 
-    public FileUpdateParams setRelatedFiles(List<RelatedFile> relatedFiles) {
+    public FileUpdateParams setRelatedFiles(List<SmallRelatedFileParams> relatedFiles) {
         this.relatedFiles = relatedFiles;
         return this;
     }

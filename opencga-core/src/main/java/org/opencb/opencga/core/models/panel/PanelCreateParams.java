@@ -31,6 +31,33 @@ public class PanelCreateParams {
     public PanelCreateParams() {
     }
 
+    public PanelCreateParams(String id, String name, String description, String author, DiseasePanel.SourcePanel source,
+                             List<DiseasePanel.PanelCategory> categories, List<String> tags, List<Phenotype> phenotypes,
+                             List<DiseasePanel.VariantPanel> variants, List<DiseasePanel.GenePanel> genes,
+                             List<DiseasePanel.RegionPanel> regions, List<DiseasePanel.STR> strs, Map<String, Integer> stats,
+                             Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.author = author;
+        this.source = source;
+        this.categories = categories;
+        this.tags = tags;
+        this.phenotypes = phenotypes;
+        this.variants = variants;
+        this.genes = genes;
+        this.regions = regions;
+        this.strs = strs;
+        this.stats = stats;
+        this.attributes = attributes;
+    }
+
+    public static PanelCreateParams of(Panel panel) {
+        return new PanelCreateParams(panel.getId(), panel.getName(), panel.getDescription(), panel.getAuthor(), panel.getSource(),
+                panel.getCategories(), panel.getTags(), panel.getPhenotypes(), panel.getVariants(), panel.getGenes(), panel.getRegions(),
+                panel.getStrs(), panel.getStats(), panel.getAttributes());
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("PanelCreateParams{");

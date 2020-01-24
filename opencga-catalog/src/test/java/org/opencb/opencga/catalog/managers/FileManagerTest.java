@@ -29,20 +29,16 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.models.AclParams;
-import org.opencb.opencga.core.models.file.FileAclEntry;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.file.FileIndex;
-import org.opencb.opencga.core.models.file.FileTree;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.models.study.GroupParams;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.Variable;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -135,7 +131,7 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testUpdateRelatedFiles() throws CatalogException {
         FileUpdateParams updateParams = new FileUpdateParams()
-                .setRelatedFiles(Collections.singletonList(new FileUpdateParams.RelatedFile(testFile2, File.RelatedFile.Relation.PRODUCED_FROM)));
+                .setRelatedFiles(Collections.singletonList(new SmallRelatedFileParams(testFile2, File.RelatedFile.Relation.PRODUCED_FROM)));
         fileManager.update(studyFqn, testFile1, updateParams, QueryOptions.empty(), token);
 
         File file = fileManager.get(studyFqn, testFile1, QueryOptions.empty(), token).first();
@@ -147,7 +143,7 @@ public class FileManagerTest extends AbstractManagerTest {
         actionMap.put(FileDBAdaptor.QueryParams.RELATED_FILES.key(), ParamUtils.UpdateAction.SET.name());
 
         updateParams = new FileUpdateParams()
-                .setRelatedFiles(Collections.singletonList(new FileUpdateParams.RelatedFile(testFile2, File.RelatedFile.Relation.PART_OF_PAIR)));
+                .setRelatedFiles(Collections.singletonList(new SmallRelatedFileParams(testFile2, File.RelatedFile.Relation.PART_OF_PAIR)));
         fileManager.update(studyFqn, testFile1, updateParams, new QueryOptions(Constants.ACTIONS, actionMap), token);
         file = fileManager.get(studyFqn, testFile1, QueryOptions.empty(), token).first();
         assertEquals(1, file.getRelatedFiles().size());
@@ -161,7 +157,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // We add it again
         updateParams = new FileUpdateParams()
-                .setRelatedFiles(Collections.singletonList(new FileUpdateParams.RelatedFile(testFile2, File.RelatedFile.Relation.PRODUCED_FROM)));
+                .setRelatedFiles(Collections.singletonList(new SmallRelatedFileParams(testFile2, File.RelatedFile.Relation.PRODUCED_FROM)));
         fileManager.update(studyFqn, testFile1, updateParams, QueryOptions.empty(), token);
 
         // And now we will update with an empty list
@@ -531,7 +527,7 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testAnnotationWrongEntity() throws CatalogException, JsonProcessingException {
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("var_name", "", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("var_name", "", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
         variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
@@ -556,7 +552,7 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testAnnotationForAnyEntity() throws CatalogException, JsonProcessingException {
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("var_name", "", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("var_name", "", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
         variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
@@ -583,7 +579,7 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void testAnnotations() throws CatalogException, JsonProcessingException {
         List<Variable> variables = new ArrayList<>();
-        variables.add(new Variable("var_name", "", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "",
+        variables.add(new Variable("var_name", "", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
         variables.add(new Variable("AGE", "", "", Variable.VariableType.INTEGER, "", false, false, Collections.emptyList(), 0, "", "",
                 null, Collections.emptyMap()));
@@ -1580,6 +1576,9 @@ public class FileManagerTest extends AbstractManagerTest {
         if (Files.notExists(copy)) {
             Files.copy(sourcePath, copy);
         }
+        if (Files.exists(Paths.get("/tmp/other"))) {
+            catalogManager.getCatalogIOManagerFactory().getDefault().deleteDirectory(Paths.get("/tmp/other").toUri());
+        }
 
         Study study = catalogManager.getStudyManager().resolveId(studyFqn, "user");
 
@@ -1646,7 +1645,8 @@ public class FileManagerTest extends AbstractManagerTest {
         }
 
         // Now we add user2 to admins group
-        catalogManager.getStudyManager().updateGroup(studyFqn, "admins", new GroupParams("user2", GroupParams.Action.ADD), token);
+        catalogManager.getStudyManager().updateGroup(studyFqn, "admins", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("user2")), token);
 
         // and try the same action again
         result = fileManager.moveAndRegister(studyFqn, copy, Paths.get("/tmp/other/"), "a/b/c/", sessionIdUser2);

@@ -19,6 +19,14 @@ public class UserImportParams {
     public UserImportParams() {
     }
 
+    public UserImportParams(String authenticationOriginId, List<String> id, ResourceType resourceType, String study, String studyGroup) {
+        this.authenticationOriginId = authenticationOriginId;
+        this.id = id;
+        this.resourceType = resourceType;
+        this.study = study;
+        this.studyGroup = studyGroup;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("UserImportParams{");

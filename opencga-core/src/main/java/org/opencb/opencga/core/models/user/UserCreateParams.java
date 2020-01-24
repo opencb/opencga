@@ -18,6 +18,18 @@ public class UserCreateParams {
     public UserCreateParams() {
     }
 
+    public UserCreateParams(String id, String name, String email, String password, String organization) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.organization = organization;
+    }
+
+    public static UserCreateParams of(User user) {
+        return new UserCreateParams(user.getId(), user.getName(), user.getEmail(), user.getPassword(), user.getOrganization());
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("UserCreateParams{");

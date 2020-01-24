@@ -148,7 +148,7 @@ public class AbstractManagerTest extends GenericTest {
 
         List<Variable> variables = new ArrayList<>();
         variables.addAll(Arrays.asList(
-                new Variable("NAME", "", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
+                new Variable("NAME", "", "", Variable.VariableType.STRING, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
                         Collections.<String, Object>emptyMap()),
                 new Variable("AGE", "", "", Variable.VariableType.INTEGER, null, true, false, Collections.singletonList("0:130"), 1, "", "",
                         null, Collections.<String, Object>emptyMap()),
@@ -158,7 +158,7 @@ public class AbstractManagerTest extends GenericTest {
                         null, Collections.<String, Object>emptyMap()),
                 new Variable("PHEN", "", "", Variable.VariableType.CATEGORICAL, "CASE", true, false, Arrays.asList("CASE", "CONTROL"), 4,
                         "", "", null, Collections.<String, Object>emptyMap()),
-                new Variable("EXTRA", "", "", Variable.VariableType.TEXT, "", false, false, Collections.emptyList(), 5, "", "", null,
+                new Variable("EXTRA", "", "", Variable.VariableType.STRING, "", false, false, Collections.emptyList(), 5, "", "", null,
                         Collections.<String, Object>emptyMap())
         ));
         VariableSet vs = catalogManager.getStudyManager().createVariableSet(studyFqn, "vs", "vs", true, false, "", null, variables,

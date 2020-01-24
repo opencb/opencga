@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.variant.search.solr;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -227,19 +228,31 @@ public class SolrQueryParser {
         // protein-substitution
         key = ANNOT_PROTEIN_SUBSTITUTION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseScoreValue(ANNOT_PROTEIN_SUBSTITUTION, query.getString(key)));
+            try {
+                filterList.add(parseScoreValue(ANNOT_PROTEIN_SUBSTITUTION, query.getString(key)));
+            } catch (Exception e) {
+                throw VariantQueryException.malformedParam(ANNOT_PROTEIN_SUBSTITUTION, query.getString(key));
+            }
         }
 
         // conservation
         key = ANNOT_CONSERVATION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseScoreValue(ANNOT_CONSERVATION, query.getString(key)));
+            try {
+                filterList.add(parseScoreValue(ANNOT_CONSERVATION, query.getString(key)));
+            } catch (Exception e) {
+                throw VariantQueryException.malformedParam(ANNOT_CONSERVATION, query.getString(key));
+            }
         }
 
         // cadd, functional score
         key = ANNOT_FUNCTIONAL_SCORE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseScoreValue(ANNOT_FUNCTIONAL_SCORE, query.getString(key)));
+            try {
+                filterList.add(parseScoreValue(ANNOT_FUNCTIONAL_SCORE, query.getString(key)));
+            } catch (Exception e) {
+                throw VariantQueryException.malformedParam(ANNOT_FUNCTIONAL_SCORE, query.getString(key));
+            }
         }
 
         // ALT population frequency
@@ -1080,9 +1093,9 @@ public class SolrQueryParser {
                 matcher = SCORE_PATTERN.matcher(value);
                 if (matcher.find()) {
                     // concat expression, e.g.: value:[0 TO 12]
+                    checkParamSource(param, matcher.group(1));
                     sb.append(getRange("", matcher.group(1), matcher.group(2), matcher.group(3)));
                 } else {
-                    logger.debug("Invalid expression: {}", value);
                     throw new IllegalArgumentException("Invalid expression " +  value);
                 }
             } else {
@@ -1108,6 +1121,7 @@ public class SolrQueryParser {
                             throw VariantQueryException.malformedParam(param, value);
                         }
 
+                        checkParamSource(param, filterName);
                         list.add(getRange("", filterName, filterOp, filterValue));
                     } else {
                         throw new IllegalArgumentException("Invalid expression " +  value);
@@ -1117,6 +1131,25 @@ public class SolrQueryParser {
             }
         }
         return sb.toString();
+    }
+
+    private void checkParamSource(VariantQueryParam param, String source) {
+        if (param == ANNOT_PROTEIN_SUBSTITUTION) {
+            if (!"polyphen".equals(source) && !"sift".equals(source)) {
+                throw new IllegalArgumentException("Invalid source '" + source + "' for " + ANNOT_PROTEIN_SUBSTITUTION.key() + ", valid "
+                        + "values are: polyphen, sift");
+            }
+        } else if (param == ANNOT_FUNCTIONAL_SCORE) {
+            if (!"cadd_scaled".equals(source) && !"cadd_raw".equals(source)) {
+                throw new IllegalArgumentException("Invalid source '" + source + "' for " + ANNOT_PROTEIN_SUBSTITUTION.key() + ", valid "
+                        + "values are: cadd_scaled, cadd_raw");
+            }
+        } else if (param == ANNOT_CONSERVATION) {
+            if (!"phastCons".equals(source) && !"phylop".equals(source) && !"gerp".equals(source)) {
+                throw new IllegalArgumentException("Invalid source '" + source + "' for " + ANNOT_PROTEIN_SUBSTITUTION.key() + ", valid "
+                        + "values are: phastCons, phylop, gerp");
+            }
+        }
     }
 
     /**
@@ -1323,6 +1356,9 @@ public class SolrQueryParser {
     }
 
     public String getRange(String prefix, String name, String op, String value, boolean addOr) {
+        if (!NumberUtils.isNumber(value)) {
+            throw new IllegalArgumentException("Invalid expression: value '" +  value + "' must be numeric.");
+        }
         StringBuilder sb = new StringBuilder();
         switch (op) {
             case "=":
@@ -1479,11 +1515,13 @@ public class SolrQueryParser {
                     if (region.getStart() == 0 && region.getEnd() == Integer.MAX_VALUE) {
                         sb.append("chromosome:\"").append(chrom).append("\"");
                     } else if (region.getEnd() == Integer.MAX_VALUE) {
-                        sb.append("chromosome:\"").append(chrom).append("\" AND start:").append(region.getStart());
+                        sb.append("chromosome:\"").append(chrom)
+                                .append("\" AND end:[").append(region.getStart()).append(" TO *]")
+                                .append(" AND start:[* TO ").append(region.getStart()).append("]");
                     } else {
                         sb.append("chromosome:\"").append(chrom)
-                                .append("\" AND start:[").append(region.getStart()).append(" TO *]")
-                                .append(" AND end:[* TO ").append(region.getEnd()).append("]");
+                                .append("\" AND end:[").append(region.getStart()).append(" TO *]")
+                                .append(" AND start:[* TO ").append(region.getEnd()).append("]");
                     }
                     sb.append(")");
                 }

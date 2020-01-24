@@ -10,6 +10,11 @@ public class ConfigUpdateParams {
     public ConfigUpdateParams() {
     }
 
+    public ConfigUpdateParams(String id, Map<String, Object> configuration) {
+        this.id = id;
+        this.configuration = configuration;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ConfigUpdateParams{");

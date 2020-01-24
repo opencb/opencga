@@ -314,9 +314,9 @@ public class StudyManager extends AbstractManager {
             files.add(rootFile);
             files.add(jobsFile);
 
-            Study study = new Study(id, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
-                    0, cipher, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)),
-                    new Group(ADMINS, Collections.emptyList())), null, files, null, null, null, null, null, null, null, null,
+            Study study = new Study(id, name, alias, type, creationDate, description, status,
+                    0, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)),
+                    new Group(ADMINS, Collections.emptyList())), files, null, null, null, null, null, null, null, null,
                     datastores, project.getCurrentRelease(), stats, attributes);
 
             /* CreateStudy */
@@ -755,11 +755,9 @@ public class StudyManager extends AbstractManager {
         StudySummary studySummary = new StudySummary()
                 .setAlias(study.getId())
                 .setAttributes(study.getAttributes())
-                .setCipher(study.getCipher())
                 .setCreationDate(study.getCreationDate())
                 .setDescription(study.getDescription())
                 .setDiskUsage(study.getSize())
-                .setExperiments(study.getExperiments())
                 .setGroups(study.getGroups())
                 .setName(study.getName())
                 .setStats(study.getStats())
@@ -811,13 +809,12 @@ public class StudyManager extends AbstractManager {
         return results;
     }
 
-    public OpenCGAResult<Group> createGroup(String studyStr, String groupId, String groupName, String users, String sessionId)
+    public OpenCGAResult<Group> createGroup(String studyStr, String groupId, String groupName, List<String> users, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(groupId, "group id");
         String name = StringUtils.isEmpty(groupName) ? groupId : groupName;
 
-        List<String> userList = StringUtils.isNotEmpty(users) ? Arrays.asList(users.split(",")) : Collections.emptyList();
-        return createGroup(studyStr, new Group(groupId, name, userList, null), sessionId);
+        return createGroup(studyStr, new Group(groupId, name, users, null), sessionId);
     }
 
     public OpenCGAResult<Group> createGroup(String studyId, Group group, String token) throws CatalogException {
@@ -908,75 +905,74 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<Group> updateGroup(String studyId, String groupId, GroupParams groupParams, String token)
-            throws CatalogException {
+    public OpenCGAResult<Group> updateGroup(String studyId, String groupId, ParamUtils.UpdateAction action, GroupUpdateParams updateParams,
+                                            String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyId, userId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
                 .append("groupId", groupId)
-                .append("groupParams", groupParams)
+                .append("action", action)
+                .append("updateParams", updateParams)
                 .append("token", token);
         try {
-            ParamUtils.checkObj(groupParams, "Group parameters");
+            ParamUtils.checkObj(updateParams, "Group parameters");
             ParamUtils.checkParameter(groupId, "Group name");
-            ParamUtils.checkObj(groupParams.getAction(), "Action");
+            ParamUtils.checkObj(action, "Action");
 
             // Fix the group name
             if (!groupId.startsWith("@")) {
                 groupId = "@" + groupId;
             }
 
-            authorizationManager.checkUpdateGroupPermissions(study.getUid(), userId, groupId, groupParams);
+            authorizationManager.checkUpdateGroupPermissions(study.getUid(), userId, groupId, action);
 
-            List<String> users;
-            if (StringUtils.isNotEmpty(groupParams.getUsers())) {
-                users = Arrays.asList(groupParams.getUsers().split(","));
-                List<String> tmpUsers = users;
+            if (ListUtils.isNotEmpty(updateParams.getUsers())) {
+                List<String> tmpUsers = updateParams.getUsers();
                 if (groupId.equals(MEMBERS) || groupId.equals(ADMINS)) {
                     // Remove anonymous user if present for the checks.
                     // Anonymous user is only allowed in MEMBERS group, otherwise we keep it as if it is present it should fail.
-                    tmpUsers = users.stream().filter(user -> !user.equals(ANONYMOUS)).collect(Collectors.toList());
+                    tmpUsers = updateParams.getUsers().stream().filter(user -> !user.equals(ANONYMOUS)).collect(Collectors.toList());
                 }
                 if (tmpUsers.size() > 0) {
                     userDBAdaptor.checkIds(tmpUsers);
                 }
             } else {
-                users = Collections.emptyList();
+                updateParams.setUsers(Collections.emptyList());
             }
 
-            switch (groupParams.getAction()) {
+            switch (action) {
                 case SET:
                     if (MEMBERS.equals(groupId)) {
                         throw new CatalogException("Operation not valid. Valid actions over the '@members' group are ADD or REMOVE.");
                     }
-                    studyDBAdaptor.setUsersToGroup(study.getUid(), groupId, users);
-                    studyDBAdaptor.addUsersToGroup(study.getUid(), MEMBERS, users);
+                    studyDBAdaptor.setUsersToGroup(study.getUid(), groupId, updateParams.getUsers());
+                    studyDBAdaptor.addUsersToGroup(study.getUid(), MEMBERS, updateParams.getUsers());
                     break;
                 case ADD:
-                    studyDBAdaptor.addUsersToGroup(study.getUid(), groupId, users);
+                    studyDBAdaptor.addUsersToGroup(study.getUid(), groupId, updateParams.getUsers());
                     if (!MEMBERS.equals(groupId)) {
-                        studyDBAdaptor.addUsersToGroup(study.getUid(), MEMBERS, users);
+                        studyDBAdaptor.addUsersToGroup(study.getUid(), MEMBERS, updateParams.getUsers());
                     }
                     break;
                 case REMOVE:
                     if (MEMBERS.equals(groupId)) {
                         // Check we are not trying to remove the owner of the study from the group
                         String owner = getOwner(study);
-                        if (users.contains(owner)) {
+                        if (updateParams.getUsers().contains(owner)) {
                             throw new CatalogException("Cannot remove owner of the study from the '@members' group");
                         }
 
                         // We remove the users from all the groups and acls
-                        authorizationManager.resetPermissionsFromAllEntities(study.getUid(), users);
-                        studyDBAdaptor.removeUsersFromAllGroups(study.getUid(), users);
+                        authorizationManager.resetPermissionsFromAllEntities(study.getUid(), updateParams.getUsers());
+                        studyDBAdaptor.removeUsersFromAllGroups(study.getUid(), updateParams.getUsers());
                     } else {
-                        studyDBAdaptor.removeUsersFromGroup(study.getUid(), groupId, users);
+                        studyDBAdaptor.removeUsersFromGroup(study.getUid(), groupId, updateParams.getUsers());
                     }
                     break;
                 default:
-                    throw new CatalogException("Unknown action " + groupParams.getAction() + " found.");
+                    throw new CatalogException("Unknown action " + action + " found.");
             }
 
             auditManager.audit(userId, Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP, Enums.Resource.STUDY, study.getId(),

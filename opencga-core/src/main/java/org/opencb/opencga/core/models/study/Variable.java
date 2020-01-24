@@ -85,8 +85,14 @@ public class Variable {
         CATEGORICAL,
         INTEGER,
         DOUBLE,
+        @Deprecated
         TEXT,
-        OBJECT
+        STRING,
+        OBJECT,
+        MAP_BOOLEAN,
+        MAP_INTEGER,
+        MAP_DOUBLE,
+        MAP_STRING
     }
 
     @Override

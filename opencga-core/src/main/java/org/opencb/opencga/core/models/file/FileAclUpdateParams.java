@@ -10,6 +10,12 @@ public class FileAclUpdateParams extends AclParams {
     public FileAclUpdateParams() {
     }
 
+    public FileAclUpdateParams(String permissions, Action action, String file, String sample) {
+        super(permissions, action);
+        this.file = file;
+        this.sample = sample;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FileAclUpdateParams{");

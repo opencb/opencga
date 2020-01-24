@@ -23,7 +23,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.Tool;
 import org.opencb.opencga.core.models.file.File;
 
 import java.io.IOException;
@@ -53,8 +52,6 @@ public class User {
     private long quota;
 
     private List<Project> projects;
-    @Deprecated
-    private List<Tool> tools;
 
     private UserConfiguration configs;
     private Map<String, Object> attributes;
@@ -201,17 +198,17 @@ public class User {
     }
 
     public User(String id, Account account) {
-        this(id, id, null, null, null, account, Status.READY, "", -1, -1, Collections.emptyList(), Collections.emptyList(),
+        this(id, id, null, null, null, account, Status.READY, "", -1, -1, Collections.emptyList(),
                 Collections.emptyMap(), Collections.emptyMap());
     }
 
     public User(String id, String name, String email, String password, String organization, String status) {
         this(id, name, email, password, organization, null, status, "", -1, -1, new ArrayList<>(),
-                new ArrayList<>(0), new HashMap<>(), new HashMap<>());
+                new HashMap<>(), new HashMap<>());
     }
 
     public User(String id, String name, String email, String password, String organization, Account account, String status,
-                String lastModified, long size, long quota, List<Project> projects, List<Tool> tools, Map<String, Object> configs,
+                String lastModified, long size, long quota, List<Project> projects, Map<String, Object> configs,
                 Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -225,7 +222,6 @@ public class User {
         this.size = size;
         this.quota = quota;
         this.projects = projects;
-        this.tools = tools;
         if (configs == null) {
             this.configs = new UserConfiguration();
         } else {
@@ -247,7 +243,6 @@ public class User {
         sb.append(", size=").append(size);
         sb.append(", quota=").append(quota);
         sb.append(", projects=").append(projects);
-        sb.append(", tools=").append(tools);
         sb.append(", configs=").append(configs);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -384,15 +379,6 @@ public class User {
 
     public User setProjects(List<Project> projects) {
         this.projects = projects;
-        return this;
-    }
-
-    public List<Tool> getTools() {
-        return tools;
-    }
-
-    public User setTools(List<Tool> tools) {
-        this.tools = tools;
         return this;
     }
 
