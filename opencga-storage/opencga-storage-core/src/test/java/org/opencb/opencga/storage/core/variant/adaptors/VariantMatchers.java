@@ -164,6 +164,20 @@ public class VariantMatchers {
         };
     }
 
+    public static Matcher<VariantAnnotation> withClinicalSignificance(Matcher<Iterable<? super ClinicalSignificance>> subMatcher) {
+        return with("clinicalSignificance",
+                va -> va == null || va.getTraitAssociation() == null
+                        ? Collections.emptyList()
+                        : va.getTraitAssociation()
+                        .stream()
+                        .map(EvidenceEntry::getVariantClassification)
+                        .filter(Objects::nonNull)
+                        .map(VariantClassification::getClinicalSignificance)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList()),
+                subMatcher);
+    }
+
     public static Matcher<VariantAnnotation> at(final String variant) {
         Variant v = new Variant(variant);
         return allOf(with("chromosome", VariantAnnotation::getChromosome, is(v.getChromosome())),
