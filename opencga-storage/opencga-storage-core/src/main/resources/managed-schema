@@ -589,28 +589,49 @@
     <field name="biotypes" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="soAcc" type="int" indexed="true" stored="true" multiValued="true"/>
     <field name="geneToSoAcc" type="string" indexed="true" stored="true" multiValued="true"/>
+
+    <!--
+       The field 'traits' contains info about Clinvar (CV), COSMIC (CN), HPOs (HP), protein features (PD), protein keywords (KW):
+            CV -- accession1 -- trait1 -- cs:clinicalSignificance1
+            CV -- accession2 -- trait2 -- cs:clinicalSignificance2
+            ...
+            CM -- mutationID1 -- primaryHistology1 -- HistologySubtype1
+            CM -- mutationID2 -- primaryHistology2 -- HistologySubtype2
+            ...
+            HP -- HPO1 -- trait1 -- name1
+            HP -- HPO2 -- trait2 -- name2
+            ...
+            PD -- ID1 -- description1
+            PD -- ID2 -- description2
+            ...
+            KW -- uniprotAccession1 -- keyword1
+            KW -- uniprotAccession2 -- keyword2
+            ...
+    -->
     <field name="traits" type="text_en" indexed="true" stored="true" multiValued="true"/>
+
     <!--
        The field 'other' contains info about display consequence type, HGVS, cytobands, repeats, score and trancripts:
-            DCT - displayConsequenceType
-            HGVS - hgvs1
-            HGVS - hgvs2
+            DCT -- displayConsequenceType
+            HGVS -- hgvs1
+            HGVS -- hgvs2
             ...
-            CB - cytobandName1 - stain1 - start1 - end1
-            CB - cytobandName2 - stain2 - start2 - end2
+            CB -- cytobandName1 -- stain1 -- start1 -- end1
+            CB -- cytobandName2 -- stain2 -- start2 -- end2
             ...
-            RP - repeatName1 - id1 - source1 - copyNumber1 - percentageMatch1 - start1 - end1
-            RP - repeatName2 - id2 - source2 - copyNumber2 - percentageMatch2 - start2 - end2
+            RP -- repeatName1 -- id1 -- source1 -- copyNumber1 -- percentageMatch1 -- start1 -- end1
+            RP -- repeatName2 -- id2 -- source2 -- copyNumber2 -- percentageMatch2 -- start2 -- end2
             ...
-            SC - studyId - scoreId - score - pvalue - cohort1 - cohort2
-            SC - studyId - scoreId - score - pvalue - cohort1 - cohort2
+            SC -- studyId -- scoreId -- score -- pvalue -- cohort1 -- cohort2
+            SC -- studyId -- scoreId -- score -- pvalue -- cohort1 -- cohort2
             ...
-            TRANS - transcriptId1 - biotype1 - cdnaPostion1 - cdsPosition1 - codon1 - uniprotAccession1 - uniprotAccession1 - uniprotVariantId1 - annotationFlags1 - position1 - aaChange1 - siftScore1 - siftDescr1 - poliphenScore1 - poliphenDescr1
-            TRANS - transcriptId2 - biotype2 - cdnaPostion2 - cdsPosition2 - codon2 - uniprotAccession2 - uniprotAccession2 - uniprotVariantId2 - annotationFlags2 - position2 - aaChange2 - siftScore2 - siftDescr2 - poliphenScore2 - poliphenDescr2
+            TRANS -- transcriptId1 -- biotype1 -- cdnaPostion1 -- cdsPosition1 -- codon1 -- uniprotAccession1 -- uniprotAccession1 -- uniprotVariantId1 -- annotationFlags1 -- position1 -- aaChange1 -- siftScore1 -- siftDescr1 -- poliphenScore1 -- poliphenDescr1
+            TRANS -- transcriptId2 -- biotype2 -- cdnaPostion2 -- cdsPosition2 -- codon2 -- uniprotAccession2 -- uniprotAccession2 -- uniprotVariantId2 -- annotationFlags2 -- position2 -- aaChange2 -- siftScore2 -- siftDescr2 -- poliphenScore2 -- poliphenDescr2
             ...
-       Transcript annotation flags are separated by , (e.g.: CCDS,basic)
+       For TRANS, transcript annotation flags are separated by , (e.g.: CCDS,basic)
     -->
     <field name="other" type="string" indexed="false" stored="true" multiValued="true"/>
+
     <dynamicField name="stats_*" type="float" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="score_*" type="float" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="scorePValue_*" type="float" indexed="true" stored="true" multiValued="false"/>
