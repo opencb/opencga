@@ -307,7 +307,7 @@ public class CatalogSolrQueryParser {
                         variableMap.put(fullVariablePath, auxVariableMap);
                         break;
                     case CATEGORICAL:
-                    case TEXT:
+                    case STRING:
                         auxVariableMap.put("type", isParentArray || variable.isMultiValue()
                                 ? QueryParam.Type.TEXT_ARRAY
                                 : QueryParam.Type.TEXT);
