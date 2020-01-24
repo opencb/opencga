@@ -496,17 +496,51 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             if (entry.getValue() instanceof Map) {
                 Map<String, String> dynamicParams = (Map<String, String>) entry.getValue();
                 for (Map.Entry<String, String> dynamicEntry : dynamicParams.entrySet()) {
-                    cliBuilder
-                            .append(" ").append("-D").append(dynamicEntry.getKey())
-                            .append("=").append(dynamicEntry.getValue());
+                    cliBuilder.append(" ").append("-D");
+                    escapeCliArg(cliBuilder, dynamicEntry.getKey());
+                    cliBuilder.append("=");
+                    escapeCliArg(cliBuilder, dynamicEntry.getValue());
                 }
             } else {
+                String key = entry.getKey();
+                if (!StringUtils.isAlphanumeric(StringUtils.replaceChars(key, "-_", ""))) {
+                    // This should never happen
+                    throw new IllegalArgumentException("Invalid job param key '" + key + "'");
+                }
                 cliBuilder
-                        .append(" --").append(CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, entry.getKey()))
-                        .append(" ").append(entry.getValue());
+                        .append(" --").append(CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, key))
+                        .append(" ");
+                escapeCliArg(cliBuilder, entry.getValue().toString());
             }
         }
         return cliBuilder.toString();
+    }
+
+    /**
+     * Escape args if needed.
+     *
+     * Surround with single quotes. ('value')
+     * Detect if the value had any single quote, and escape them with double quotes ("'")
+     *
+     *   --description It's true
+     *   --description 'It'"'"'s true'
+     *
+     * 'It'
+     * "'"
+     * 's true'
+     *
+     * @param cliBuilder CommandLine StringBuilder
+     * @param value value to escape
+     */
+    public static void escapeCliArg(StringBuilder cliBuilder, String value) {
+        if (StringUtils.isAlphanumeric(value) || StringUtils.isEmpty(value)) {
+            cliBuilder.append(value);
+        } else {
+            if (value.contains("'")) {
+                value = value.replace("'", "'\"'\"'");
+            }
+            cliBuilder.append("'").append(value).append("'");
+        }
     }
 
     private boolean canBeQueued(Job job) {
