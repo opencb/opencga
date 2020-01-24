@@ -373,11 +373,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         Query query = VariantQueryCommandUtils.parseQuery(queryCommandOptions, studies, clientConfiguration);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(queryCommandOptions);
 
-        options.putIfNotEmpty("groupBy", queryCommandOptions.genericVariantQueryOptions.groupBy);
-        options.put("histogram", queryCommandOptions.genericVariantQueryOptions.histogram);
-        options.put("interval", queryCommandOptions.genericVariantQueryOptions.interval);
-        options.put("rank", queryCommandOptions.genericVariantQueryOptions.rank);
-
         List<String> annotations = queryCommandOptions.genericVariantQueryOptions.annotations == null
                 ? Collections.singletonList("gene")
                 : Arrays.asList(queryCommandOptions.genericVariantQueryOptions.annotations.split(","));

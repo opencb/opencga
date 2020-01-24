@@ -297,28 +297,13 @@ public class VariantWebService extends AnalysisWebService {
 //            @ApiImplicitParam(name = "annot-functional-score", value = DEPRECATED + "Use 'functionalScore' instead", dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "traits", value = DEPRECATED + "Use 'trait' instead", dataType = "string", paramType = "query"),
     })
-    public Response getVariants(@ApiParam(value = "Group variants by: [ct, gene, ensemblGene]") @DefaultValue("") @QueryParam("groupBy") String groupBy,
-                                @ApiParam(value = "Calculate histogram. Requires one region.") @DefaultValue("false") @QueryParam("histogram") boolean histogram,
-                                @ApiParam(value = "Histogram interval size") @DefaultValue("2000") @QueryParam("interval") int interval,
-                                @ApiParam(value = "Ranks different entities with the most number of variants. Rank by: [ct, gene, ensemblGene]") @QueryParam("rank") String rank
-                                // @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge
-    ) {
+    public Response getVariants() {
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
 
-            if (count) {
-                return variantManager.count(query, token);
-            } else if (histogram) {
-                return variantManager.getFrequency(query, interval, token);
-            } else if (StringUtils.isNotEmpty(groupBy)) {
-                return variantManager.groupBy(groupBy, query, queryOptions, token);
-            } else if (StringUtils.isNotEmpty(rank)) {
-                return variantManager.rank(query, rank, limit, true, token);
-            } else {
-                return variantManager.get(query, queryOptions, token);
-            }
+            return variantManager.get(query, queryOptions, token);
         });
     }
 

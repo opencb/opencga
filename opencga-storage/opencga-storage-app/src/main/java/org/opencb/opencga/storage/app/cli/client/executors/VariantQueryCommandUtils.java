@@ -155,11 +155,7 @@ public class VariantQueryCommandUtils {
         addParam(query, MISSING_ALLELES, queryVariantsOptions.missingAlleleCount);
         addParam(query, MISSING_GENOTYPES, queryVariantsOptions.missingGenotypeCount);
 
-
-        boolean returnVariants = !count && StringUtils.isEmpty(queryVariantsOptions.groupBy)
-                && StringUtils.isEmpty(queryVariantsOptions.rank);
-
-        if (returnVariants && !of.isMultiStudyOutput()) {
+        if (!of.isMultiStudyOutput()) {
             if (VariantQueryUtils.isOutputMultiStudy(query, null, allStudyNames)) {
                 String availableStudies = allStudyNames == null || allStudyNames.isEmpty()
                         ? ""
