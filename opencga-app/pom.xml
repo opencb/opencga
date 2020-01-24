@@ -33,7 +33,6 @@
     <properties>
         <build.dir>${project.basedir}/../build</build.dir>
         <app.dir>${project.basedir}/app</app.dir>
-        <solr.configset.name>OpenCGAConfigSet</solr.configset.name>
         <sonar.skip>true</sonar.skip>
     </properties>
 
