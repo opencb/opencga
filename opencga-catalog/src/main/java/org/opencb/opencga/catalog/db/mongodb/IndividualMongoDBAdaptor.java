@@ -448,10 +448,8 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
                     // Update the list of disorders and phenotypes
                     ObjectMap params = new ObjectMap()
-                            .append(FamilyDBAdaptor.QueryParams.DISORDERS.key(),
-                                    familyDBAdaptor.getAllDisorders(family.getMembers()))
-                            .append(FamilyDBAdaptor.QueryParams.PHENOTYPES.key(),
-                                    familyDBAdaptor.getAllPhenotypes(family.getMembers()));
+                            .append(FamilyDBAdaptor.QueryParams.DISORDERS.key(), familyDBAdaptor.getAllDisorders(family.getMembers()))
+                            .append(FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), familyDBAdaptor.getAllPhenotypes(family.getMembers()));
 
                     Bson bsonQuery = familyDBAdaptor.parseQuery(new Query(FamilyDBAdaptor.QueryParams.UID.key(), family.getUid()));
                     Document update = familyDBAdaptor.parseAndValidateUpdateParams(clientSession, params, null)
