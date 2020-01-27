@@ -1,0 +1,17 @@
+---
+id: study1
+samples:
+  - id: sample1
+    individualId: individual1
+individuals:
+  - id: individual1
+    samples:
+      - id: sample1
+cohorts:
+  - id: cohort1
+    samples:
+      - id: sample1
+    family:
+      id: family1
+#      members:
+#          - individualId: individual1

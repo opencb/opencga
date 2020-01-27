@@ -63,10 +63,8 @@ public class DemoCommandExecutor extends CommandExecutor {
 
         AdminCliOptionsParser.LoadDemoCommandOptions loadDemoCommandOptions = demoCommandOptions.loadDemoCommandOptions;
 
-        System.out.println(loadDemoCommandOptions.study);
-
-        DemoConfiguration demoConfiguration = DemoConfiguration.load(Paths.get(""));
-        DemoManager demoManager = new DemoManager(demoConfiguration);
+        DemoConfiguration demoConfiguration = DemoConfiguration.load(Paths.get("build/conf/demo-configuration.yml"));
+        DemoManager demoManager = new DemoManager(demoConfiguration, clientConfiguration);
 
     }
 

@@ -19,7 +19,6 @@ package org.opencb.opencga.app.demo.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.User;
@@ -36,8 +35,7 @@ import java.util.Map;
 
 public class DemoConfiguration {
 
-    private String url;
-
+    private Configuration configuration;
     private List<User> users;
 
     private static final String DEFAULT_CONFIGURATION_FORMAT = "yml";
@@ -69,12 +67,12 @@ public class DemoConfiguration {
                     for (Project project : user.getProjects()) {
                         studies.put(project.getId(), new ArrayList<>());
                         for (Study study : project.getStudies()) {
-                            studies.get(project.getId()).add(objectMapper.readValue(new File(study.getId() + ".yml"), Study.class));
+                            studies.get(project.getId()).add(objectMapper.readValue(new File("build/conf/" + study.getId() + ".yml"), Study.class));
                         }
                     }
                 }
 
-                // Set sutdies
+                // Set studies
                 for (User user : demoConfiguration.getUsers()) {
                     for (Project project : user.getProjects()) {
                         project.setStudies(studies.get(project.getId()));
@@ -93,10 +91,30 @@ public class DemoConfiguration {
 
     @Override
     public String toString() {
-        return "DemoConfiguration{" +
-                "url='" + url + '\'' +
-                '}';
+        return "DemoConfiguration{}";
     }
+
+    public List<User> getUsers() {
+        return users;
+    }
+
+    public void setUsers(List<User> users) {
+        this.users = users;
+    }
+
+    public Configuration getConfiguration() {
+        return configuration;
+    }
+
+    public void setConfiguration(Configuration configuration) {
+        this.configuration = configuration;
+    }
+}
+
+
+class Configuration {
+    private String url;
+    private List<StudyConfiguration> studies;
 
     public String getUrl() {
         return url;
@@ -106,11 +124,51 @@ public class DemoConfiguration {
         this.url = url;
     }
 
-    public List<User> getUsers() {
-        return users;
+    public List<StudyConfiguration> getStudies() {
+        return studies;
     }
 
-    public void setUsers(List<User> users) {
-        DemoConfiguration.users = users;
+    public void setStudies(List<StudyConfiguration> studies) {
+        this.studies = studies;
+    }
+}
+
+class StudyConfiguration {
+
+    private String id;
+    private String index;
+    private String urlBase;
+    private String active;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getIndex() {
+        return index;
+    }
+
+    public void setIndex(String index) {
+        this.index = index;
+    }
+
+    public String getUrlBase() {
+        return urlBase;
+    }
+
+    public void setUrlBase(String urlBase) {
+        this.urlBase = urlBase;
+    }
+
+    public String getActive() {
+        return active;
+    }
+
+    public void setActive(String active) {
+        this.active = active;
     }
 }

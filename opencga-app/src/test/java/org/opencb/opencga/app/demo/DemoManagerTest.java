@@ -17,15 +17,16 @@
 package org.opencb.opencga.app.demo;
 
 import org.junit.Test;
+import org.opencb.opencga.client.exceptions.ClientException;
 
 import static org.junit.Assert.*;
 
 public class DemoManagerTest {
 
     @Test
-    public void execute() {
+    public void execute() throws ClientException {
 
-        DemoManager demoManager = new DemoManager(null);
+        DemoManager demoManager = new DemoManager();
         demoManager.execute();
 
     }
