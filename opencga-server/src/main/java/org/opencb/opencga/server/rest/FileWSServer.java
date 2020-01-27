@@ -358,7 +358,7 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
                             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                             @ApiParam(value = "start") @QueryParam("start") @DefaultValue("-1") int start,
-                            @ApiParam(value = QueryOptions.LIMIT) @QueryParam(QueryOptions.LIMIT) @DefaultValue("-1") int limit) {
+                            @ApiParam(value = QueryOptions.LIMIT) @QueryParam(QueryOptions.LIMIT) int limit) {
         try {
             ParamUtils.checkIsSingleID(fileIdStr);
             String userId = catalogManager.getUserManager().getUserId(token);

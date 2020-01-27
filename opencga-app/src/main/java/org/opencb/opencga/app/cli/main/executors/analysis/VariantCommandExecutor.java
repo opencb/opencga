@@ -393,8 +393,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         params.putAll(options);
         boolean grpc = usingGrpcMode(queryCommandOptions.mode);
         if (!grpc) {
-
-            options.put(QueryOptions.SKIP_COUNT, true);
             params.put(VariantQueryParam.SAMPLE_METADATA.key(), true);
             if (queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("vcf")
                     || queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("text")) {
@@ -434,7 +432,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             Iterator<VariantProto.Variant> variantIterator = variantServiceBlockingStub.get(request);
             if (queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("vcf")
                     || queryCommandOptions.commonOptions.outputFormat.equalsIgnoreCase("text")) {
-                options.put(QueryOptions.SKIP_COUNT, true);
                 options.put(QueryOptions.LIMIT, 1);
 
                 vcfOutputWriter.print(variantIterator);

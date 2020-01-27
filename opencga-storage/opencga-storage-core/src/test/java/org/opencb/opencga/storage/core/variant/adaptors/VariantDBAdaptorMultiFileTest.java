@@ -1198,4 +1198,67 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
         assertEquals(0, variant.getStudies().get(0).getFiles().size());
     }
 
+
+    @Test
+    public void testCount() throws StorageEngineException {
+        checkCount(new Query(STUDY.key(), study1));
+        checkCount(new Query(STUDY.key(), study1).append(SAMPLE.key(), sampleNA12877));
+    }
+
+    @Test
+    public void testCount1() throws StorageEngineException {
+        checkCount(new Query(STUDY.key(), study1));
+    }
+
+    @Test
+    public void testCount2() throws StorageEngineException {
+        checkCount(new Query(STUDY.key(), study1).append(SAMPLE.key(), sampleNA12877));
+    }
+
+    public void checkCount(Query query) throws StorageEngineException {
+        long expected = variantStorageEngine.count(query).first();
+
+        VariantQueryResult<Variant> result;
+        result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.COUNT, false).append(QueryOptions.LIMIT, 1));
+        System.out.println(query.toJson());
+        System.out.println("source = " + result.getSource());
+        assertEquals(1, result.getNumResults());
+        assertEquals(1, result.getResults().size());
+        assertEquals(-1, result.getNumMatches());
+
+        result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.COUNT, true).append(QueryOptions.LIMIT, 1));
+        System.out.println(query.toJson());
+        System.out.println("source = " + result.getSource());
+        assertEquals(1, result.getNumResults());
+        assertEquals(1, result.getResults().size());
+        assertEquals(expected, result.getNumMatches());
+
+        result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.COUNT, true).append(QueryOptions.LIMIT, 0));
+        System.out.println(query.toJson());
+        System.out.println("source = " + result.getSource());
+        assertEquals(0, result.getNumResults());
+        assertEquals(0, result.getResults().size());
+        assertEquals(expected, result.getNumMatches());
+
+        result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.COUNT, true)
+                .append(VariantStorageOptions.APPROXIMATE_COUNT.key(), true)
+                .append(VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), 1000)
+                .append(QueryOptions.LIMIT, 1));
+        System.out.println(query.toJson());
+        System.out.println("source = " + result.getSource());
+        assertEquals(1, result.getNumResults());
+        assertEquals(1, result.getResults().size());
+        assertEquals(expected, result.getNumMatches());
+
+        result = variantStorageEngine.get(query, new QueryOptions(QueryOptions.COUNT, true)
+                .append(VariantStorageOptions.APPROXIMATE_COUNT.key(), true)
+                .append(VariantStorageOptions.APPROXIMATE_COUNT_SAMPLING_SIZE.key(), 1000)
+                .append(QueryOptions.LIMIT, 0));
+        System.out.println(query.toJson());
+        System.out.println("source = " + result.getSource());
+        assertEquals(0, result.getNumResults());
+        assertEquals(0, result.getResults().size());
+        assertEquals(expected, result.getNumMatches());
+    }
+
 }
