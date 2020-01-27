@@ -512,11 +512,11 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         geneTraitAssociationList.add(geneTraitAssociation);
                         break;
                     case "CV":
-                        // Variant trait: CV -- accession -- trait
+                        // Variant trait: CV -- accession -- trait -- clinicalSignificance
                         if (!clinVarMap.containsKey(fields[1])) {
                             String clinicalSignificance = "";
-                            if (fields.length > 3 && fields[3].length() > 3) {
-                                clinicalSignificance = fields[3].substring(3);
+                            if (fields.length > 3 && StringUtils.isNotEmpty(fields[3])) {
+                                clinicalSignificance = fields[3];
                             }
                             ClinVar clinVar = new ClinVar(fields[1], clinicalSignificance, new ArrayList<>(), new ArrayList<>(), "");
                             clinVarMap.put(fields[1], clinVar);
@@ -935,27 +935,35 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
 
             // Set variant traits: ClinVar, Cosmic, HPO, ...
-            if (variantAnnotation.getVariantTraitAssociation() != null) {
-                // FIXME: We are storing raw ClinicalSignificance values
-                //   We should use the enum {@link org.opencb.biodata.models.variant.avro.ClinicalSignificance}
-                //   variantAnnotation.getTraitAssociation().get(*).getVariantClassification().getClinicalSignificance()
-                if (variantAnnotation.getVariantTraitAssociation().getClinvar() != null) {
-                    variantAnnotation.getVariantTraitAssociation().getClinvar()
-                            .forEach(cv -> {
-                                xrefs.add(cv.getAccession());
-                                cv.getTraits().forEach(cvt -> traits.add("CV" + FIELD_SEP + cv.getAccession()
-                                        + FIELD_SEP + cvt + FIELD_SEP + "cs:"
-                                        + cv.getClinicalSignificance()));
-                            });
+            if (CollectionUtils.isNotEmpty(variantAnnotation.getTraitAssociation())) {
+                Set<String> clinSigSet = new HashSet<>();
+                for (EvidenceEntry ev : variantAnnotation.getTraitAssociation()) {
+                    if (ev.getSource() != null && StringUtils.isNotEmpty(ev.getSource().getName())) {
+                        if (StringUtils.isNotEmpty(ev.getId())) {
+                            xrefs.add(ev.getId());
+                        }
+                        if ("clinvar".equalsIgnoreCase(ev.getSource().getName())) {
+                            String clinSigSuffix = "";
+                            if (ev.getVariantClassification() != null
+                                    && ev.getVariantClassification().getClinicalSignificance() != null) {
+                                clinSigSuffix = FIELD_SEP + ev.getVariantClassification().getClinicalSignificance().name();
+                                clinSigSet.add(ev.getVariantClassification().getClinicalSignificance().name());
+                            }
+                            if (CollectionUtils.isNotEmpty(ev.getHeritableTraits())) {
+                                for (HeritableTrait trait : ev.getHeritableTraits()) {
+                                    traits.add("CV" + FIELD_SEP + ev.getId() + FIELD_SEP + trait + clinSigSuffix);
+                                }
+                            }
+                        } else if ("cosmic".equalsIgnoreCase(ev.getSource().getName())) {
+                            if (ev.getSomaticInformation() != null) {
+                                traits.add("CM" + FIELD_SEP + ev.getId() + FIELD_SEP + ev.getSomaticInformation().getHistologySubtype()
+                                        + FIELD_SEP + ev.getSomaticInformation().getHistologySubtype());
+                            }
+                        }
+                    }
                 }
-                if (variantAnnotation.getVariantTraitAssociation().getCosmic() != null) {
-                    variantAnnotation.getVariantTraitAssociation().getCosmic()
-                            .forEach(cosmic -> {
-                                xrefs.add(cosmic.getMutationId());
-                                traits.add("CM" + FIELD_SEP + cosmic.getMutationId() + FIELD_SEP
-                                        + cosmic.getPrimaryHistology() + FIELD_SEP
-                                        + cosmic.getHistologySubtype());
-                            });
+                if (CollectionUtils.isNotEmpty(clinSigSet)) {
+                    variantSearchModel.setClinicalSig(new ArrayList<>(clinSigSet));
                 }
             }
             if (variantAnnotation.getGeneTraitAssociation() != null
@@ -963,8 +971,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 for (GeneTraitAssociation geneTraitAssociation : variantAnnotation.getGeneTraitAssociation()) {
                     switch (geneTraitAssociation.getSource().toLowerCase()) {
                         case "hpo":
-                            traits.add("HP" + FIELD_SEP + geneTraitAssociation.getHpo() + FIELD_SEP
-                                    + geneTraitAssociation.getId() + " -- " + geneTraitAssociation.getName());
+                            traits.add("HP" + FIELD_SEP + geneTraitAssociation.getHpo() + FIELD_SEP + geneTraitAssociation.getId()
+                                    + FIELD_SEP + geneTraitAssociation.getName());
                             break;
 //                        case "disgenet":
 //                            traits.add("DG -- " + geneTraitAssociation.getId() + " -- " + geneTraitAssociation.getName());

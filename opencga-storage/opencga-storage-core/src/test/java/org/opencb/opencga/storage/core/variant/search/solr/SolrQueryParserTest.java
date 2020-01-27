@@ -819,6 +819,30 @@ public class SolrQueryParserTest {
         assertEquals("json.facet={\"score__1kG_phase3__score2___avg___0\":\"avg(score__1kG_phase3__score2)\"}&rows=0&start=0&q=*:*", solrQuery.toString());
     }
 
+    @Test
+    public void parseClinicalSignificanceAND() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign;likely_benign");
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(flDefault1 + "&q=*:*&fq=(clinicalSig:\"benign\"+AND+clinicalSig:\"likely_benign\")", solrQuery.toString());
+    }
+
+    @Test
+    public void parseClinicalSignificanceOR() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign,likely_benign");
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(flDefault1 + "&q=*:*&fq=(clinicalSig:\"benign\"+OR+clinicalSig:\"likely_benign\")", solrQuery.toString());
+    }
+
     //-------------------------------------------------------------------------
 
     private void display(Query query, QueryOptions queryOptions, SolrQuery solrQuery) {
