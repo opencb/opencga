@@ -70,9 +70,9 @@ public abstract class AbstractTwoPhasedVariantQueryExecutor extends VariantQuery
                                             int numVariantsFromPrimary, int numResults) {
         // TODO: Allow exact count with "approximateCount=false"
         if (shouldGetApproximateCount(options)) {
-            int limit = options.getInt(QueryOptions.LIMIT, 0);
+            int limit = options.getInt(QueryOptions.LIMIT, -1);
             int skip = options.getInt(QueryOptions.SKIP, 0);
-            if (limit > 0 && limit > numResults) {
+            if (limit >= 0 && limit > numResults) {
                 if (skip > 0 && numResults == 0) {
                     // Skip could be greater than numTotalResults. Approximate count
                     result.setApproximateCount(true);

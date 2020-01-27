@@ -57,7 +57,17 @@ public class VariantQueryParser {
 
         preProcessAnnotationParams(query);
 
-        preProcessStudyParams(options, query);
+        preProcessStudyParams(query, options);
+
+        if (options.getLong(QueryOptions.LIMIT) < 0) {
+            throw VariantQueryException.malformedParam(QueryOptions.LIMIT, options.getString(QueryOptions.LIMIT),
+                    "Invalid negative limit");
+        }
+
+        if (options.getLong(QueryOptions.SKIP) < 0) {
+            throw VariantQueryException.malformedParam(QueryOptions.SKIP, options.getString(QueryOptions.SKIP),
+                    "Invalid negative skip");
+        }
 
         return query;
     }
@@ -183,7 +193,7 @@ public class VariantQueryParser {
         }
     }
 
-    protected void preProcessStudyParams(QueryOptions options, Query query) {
+    protected void preProcessStudyParams(Query query, QueryOptions options) {
         StudyMetadata defaultStudy = getDefaultStudy(query, options, metadataManager);
         QueryOperation formatOperator = null;
         if (isValidParam(query, FORMAT)) {

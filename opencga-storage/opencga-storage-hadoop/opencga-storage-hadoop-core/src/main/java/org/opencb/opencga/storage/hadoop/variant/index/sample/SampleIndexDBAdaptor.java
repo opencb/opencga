@@ -146,7 +146,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         if (skip > 0) {
             Iterators.advance(iterator, skip);
         }
-        if (limit > 0) {
+        if (limit >= 0) {
             Iterator<Variant> it = Iterators.limit(iterator, limit);
             return VariantDBIterator.wrapper(it).addCloseable(iterator);
         } else {

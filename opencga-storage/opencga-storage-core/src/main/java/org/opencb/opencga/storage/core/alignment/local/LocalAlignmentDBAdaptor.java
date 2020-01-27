@@ -311,7 +311,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             }
 
             int limit = options.getInt(QueryOptions.LIMIT);
-            if (limit > 0) {
+            if (limit >= 0) {
                 alignmentOptions.setLimit(limit);
             }
         }
