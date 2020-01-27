@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
@@ -361,7 +362,6 @@ public class SolrQueryParser {
         // clinical significance
         key = ANNOT_CLINICAL_SIGNIFICANCE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-//            filterList.add(parseCategoryTermValue("traits", query.getString(key), "cs\\:", true));
             Pair<QueryOperation, List<String>> pair = splitValue(query.getString(key));
             List<String> clinSig = pair.getRight();
             StringBuilder sb = new StringBuilder();
@@ -370,12 +370,7 @@ public class SolrQueryParser {
                 if (i > 0) {
                     sb.append(QueryOperation.OR.equals(pair.getLeft()) ? " OR " : " AND ");
                 }
-                // FIXME:
-                //   We are storing raw ClinicalSignificance values
-                //   We should use the enum {@link org.opencb.biodata.models.variant.avro.ClinicalSignificance}
-                //   Replace "_" with " " works to search by "Likely benign" instead of "likely_benign"
-                String value = clinSig.get(i).replace("_", " ");
-                sb.append("traits:\"*cs\\:").append(value).append("*\"");
+                sb.append("clinicalSig:\"").append(ClinicalSignificance.valueOf(clinSig.get(i)).name()).append("\"");
             }
             sb.append(")");
             filterList.add(sb.toString());
