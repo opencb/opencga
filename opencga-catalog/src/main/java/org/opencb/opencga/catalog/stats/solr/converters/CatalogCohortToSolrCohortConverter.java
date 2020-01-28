@@ -7,8 +7,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.stats.solr.CohortSolrModel;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.study.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +51,7 @@ public class CatalogCohortToSolrCohortConverter implements ComplexTypeConverter<
     public CohortSolrModel convertToStorageType(Cohort cohort) {
         CohortSolrModel cohortSolrModel = new CohortSolrModel();
 
+        cohortSolrModel.setId(cohort.getId());
         cohortSolrModel.setUid(cohort.getUid());
         cohortSolrModel.setStudyId(study.getFqn().replace(":", "__"));
         cohortSolrModel.setType(cohort.getType().name());
