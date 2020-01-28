@@ -507,7 +507,7 @@ class MongoDBUtils {
                             variableType = variable.getType();
                         }
                     } else {
-                        variableType = Variable.VariableType.TEXT;
+                        variableType = Variable.VariableType.STRING;
                         break;
                     }
                 }
@@ -575,7 +575,7 @@ class MongoDBUtils {
                                 variableType = variable.getType();
                             }
                         } else {
-                            variableType = Variable.VariableType.TEXT;
+                            variableType = Variable.VariableType.STRING;
                             break;
                         }
                     }

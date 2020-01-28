@@ -59,6 +59,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.*;
@@ -1918,17 +1919,37 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             Query query = new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificance);
             queryResult = query(query, new QueryOptions());
             System.out.println(clinicalSignificance + " --> " + queryResult.getNumResults());
-            assertThat(queryResult, everyResult(allVariants, hasAnnotation(with("clinicalSignificance",
-                    va -> va == null || va.getTraitAssociation() == null
-                            ? Collections.emptyList()
-                            : va.getTraitAssociation()
-                            .stream()
-                            .map(EvidenceEntry::getVariantClassification)
-                            .filter(Objects::nonNull)
-                            .map(VariantClassification::getClinicalSignificance)
-                            .filter(Objects::nonNull)
-                            .collect(Collectors.toList()),
-                    hasItem(clinicalSignificance)))));
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(withClinicalSignificance(hasItem(clinicalSignificance)))));
+
+            if (clinicalSignificance != ClinicalSignificance.pathogenic) {
+                query = new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificance + OR + ClinicalSignificance.pathogenic);
+                queryResult = query(query, new QueryOptions());
+                System.out.println(query.toJson() + " --> " + queryResult.getNumResults());
+                assertThat(queryResult, everyResult(allVariants,
+                        hasAnnotation(
+                                withClinicalSignificance(
+                                        anyOf(
+                                                hasItem(clinicalSignificance),
+                                                hasItem(ClinicalSignificance.pathogenic)
+                                        )
+                                )
+                        )
+                ));
+
+                query = new Query(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificance + AND + ClinicalSignificance.pathogenic);
+                queryResult = query(query, new QueryOptions());
+                System.out.println(query.toJson() + " --> " + queryResult.getNumResults());
+                assertThat(queryResult, everyResult(allVariants,
+                        hasAnnotation(
+                                withClinicalSignificance(
+                                        allOf(
+                                                hasItem(clinicalSignificance),
+                                                hasItem(ClinicalSignificance.pathogenic)
+                                        )
+                                )
+                        )
+                ));
+            }
         }
     }
 

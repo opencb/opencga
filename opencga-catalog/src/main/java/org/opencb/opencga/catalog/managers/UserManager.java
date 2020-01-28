@@ -119,9 +119,9 @@ public class UserManager extends AbstractManager {
         }
     }
 
-    static void checkEmail(String email) throws CatalogException {
+    static void checkEmail(String email) throws CatalogParameterException {
         if (email == null || !EMAILPATTERN.matcher(email).matches()) {
-            throw new CatalogException("Email '" + email + "' not valid");
+            throw new CatalogParameterException("Email '" + email + "' not valid");
         }
     }
 
@@ -299,12 +299,20 @@ public class UserManager extends AbstractManager {
                             new GroupUpdateParams(Collections.emptyList()), token);
                     continue;
                 }
-                for (User user : userList) {
+                Iterator<User> iterator = userList.iterator();
+                while (iterator.hasNext()) {
+                    User user = iterator.next();
                     try {
                         create(user, token);
-                        logger.info("User '{}' successfully created", user.getId());
+                        logger.info("User '{}' ({}) successfully created", user.getId(), user.getName());
+                    } catch (CatalogParameterException e) {
+                        logger.warn("Could not create user '{}' ({}). {}", user.getId(), user.getName(), e.getMessage());
+                        iterator.remove();
                     } catch (CatalogException e) {
-                        logger.warn("{}", e.getMessage());
+                        if (!e.getMessage().contains("already exists")) {
+                            logger.warn("Could not create user '{}' ({}). {}", user.getId(), user.getName(), e.getMessage());
+                            iterator.remove();
+                        }
                     }
                 }
 

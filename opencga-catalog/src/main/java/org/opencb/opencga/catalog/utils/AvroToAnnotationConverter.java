@@ -74,7 +74,7 @@ public class AvroToAnnotationConverter {
             case STRING:
             case BYTES:
             case FIXED:
-                return new Variable(field.name(), field.name(), "", Variable.VariableType.TEXT,
+                return new Variable(field.name(), field.name(), "", Variable.VariableType.STRING,
                         field.defaultValue(), defaultRequired, false, null, field.pos(), null, field.doc(), null, null);
             case INT:
             case LONG:

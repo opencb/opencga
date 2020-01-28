@@ -129,16 +129,16 @@ public class AnnotableConverterTest {
         //                      ab3: [{ ab3c1: [{ ab3c1d1: [string], ab3c1d2: number }] }] }
         Set<Variable> ab1Set = new HashSet<>();
         ab1Set.add(new Variable().setId("ab1c1").setMultiValue(true).setType(Variable.VariableType.BOOLEAN));
-        ab1Set.add(new Variable().setId("ab1c2").setType(Variable.VariableType.TEXT));
+        ab1Set.add(new Variable().setId("ab1c2").setType(Variable.VariableType.STRING));
 
         Set<Variable> ab2c1Set = new HashSet<>();
         ab2c1Set.add(new Variable().setId("ab2c1d1").setMultiValue(true).setType(Variable.VariableType.INTEGER));
-        ab2c1Set.add(new Variable().setId("ab2c1d2").setType(Variable.VariableType.TEXT));
+        ab2c1Set.add(new Variable().setId("ab2c1d2").setType(Variable.VariableType.STRING));
         Set<Variable> ab2Set = new HashSet<>();
         ab2Set.add(new Variable().setId("ab2c1").setType(Variable.VariableType.OBJECT).setVariableSet(ab2c1Set));
 
         Set<Variable> ab3c1Set = new HashSet<>();
-        ab3c1Set.add(new Variable().setId("ab3c1d1").setMultiValue(true).setType(Variable.VariableType.TEXT));
+        ab3c1Set.add(new Variable().setId("ab3c1d1").setMultiValue(true).setType(Variable.VariableType.STRING));
         ab3c1Set.add(new Variable().setId("ab3c1d2").setType(Variable.VariableType.DOUBLE));
         Set<Variable> ab3Set = new HashSet<>();
         ab3Set.add(new Variable().setId("ab3c1").setType(Variable.VariableType.OBJECT).setMultiValue(true).setVariableSet(ab3c1Set));

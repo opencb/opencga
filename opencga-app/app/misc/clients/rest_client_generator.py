@@ -85,6 +85,14 @@ class RestClientGenerator(ABC):
     def get_parameter_type_class(self, parameter):
         return self.parameters[parameter]['typeClass']
 
+    @staticmethod
+    def get_optional_parameters(endpoint):
+        params = []
+        for parameter in endpoint['parameters']:
+            if parameter['required'] is False and parameter['name'] != 'body':
+                params.append(parameter['name'])
+        return params
+
     def get_parameter_description(self, parameter):
         return self.parameters[parameter]['description'] if self.parameters[parameter]['description'].endswith(".") \
             else self.parameters[parameter]['description'] + "."

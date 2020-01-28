@@ -74,7 +74,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
     private DataResult<VariableSet> createExampleVariableSet(String name, boolean confidential) throws CatalogDBException {
         Set<Variable> variables = new HashSet<>();
         variables.addAll(Arrays.asList(
-                new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "", null,
+                new Variable("NAME", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "", null,
                         Collections.emptyMap()),
                 new Variable("AGE", "", Variable.VariableType.DOUBLE, null, true, false, Collections.singletonList("0:99"), 1, "", "",
                         null, Collections.emptyMap()),
@@ -155,7 +155,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void addFieldToVariableSetTest1() throws CatalogDBException, CatalogAuthorizationException {
         createExampleVariableSet("VARSET_1", false);
         createExampleVariableSet("VARSET_2", true);
-        Variable variable = new Variable("NAM", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "", null,
+        Variable variable = new Variable("NAM", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "", null,
                 Collections.emptyMap());
         DataResult result = catalogStudyDBAdaptor.addFieldToVariableSet(18, variable, user3.getId());
         assertEquals(1, result.getNumUpdated());
@@ -178,7 +178,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
      */
     @Test
     public void addFieldToVariableSetTest2() throws CatalogDBException, CatalogAuthorizationException {
-        Variable variable = new Variable("NAM", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "", null,
+        Variable variable = new Variable("NAM", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "", null,
                 Collections.emptyMap());
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("not found");
