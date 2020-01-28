@@ -24,7 +24,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.SolrVariantDBIterator;
 import org.opencb.opencga.storage.core.variant.solr.VariantSolrExternalResource;
 
 import java.io.IOException;
@@ -232,7 +232,7 @@ public abstract class SearchIndexSamplesTest extends VariantStorageBaseTest {
         assertEquals(expectedCount, variantSearchManager.query(collection, new Query(), new QueryOptions()).getNumTotalResults());
 
 
-        VariantSolrIterator solrIterator = variantSearchManager.iterator(collection, new Query(), new QueryOptions(QueryOptions.SORT, true));
+        SolrVariantDBIterator solrIterator = variantSearchManager.iterator(collection, new Query(), new QueryOptions(QueryOptions.SORT, true));
 
 //        int i = 0;
         while (solrIterator.hasNext()) {
