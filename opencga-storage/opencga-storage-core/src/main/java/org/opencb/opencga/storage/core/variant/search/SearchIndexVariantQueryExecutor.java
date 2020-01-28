@@ -14,7 +14,7 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchSolrIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.SolrNativeIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -284,7 +284,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                         .map(VariantSearchModel::getId)
                         .iterator();
             } else {
-                VariantSearchSolrIterator nativeIterator = searchManager.nativeIterator(dbName, query, queryOptions);
+                SolrNativeIterator nativeIterator = searchManager.nativeIterator(dbName, query, queryOptions);
                 if (numTotalResults != null) {
                     numTotalResults.set(nativeIterator.getNumFound());
                 }

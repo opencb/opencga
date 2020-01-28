@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.search.solr;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.opencb.commons.datastore.core.DataResult;
 
 /**
  * Created on 23/04/18.

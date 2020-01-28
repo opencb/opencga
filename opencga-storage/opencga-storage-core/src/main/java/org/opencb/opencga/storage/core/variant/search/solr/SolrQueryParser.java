@@ -1185,8 +1185,7 @@ public class SolrQueryParser {
                 }
 
                 if (name.equals("popFreq")) {
-                    if ((study.equals("1kG_phase3") || study.equals("GNOMAD_GENOMES") || study.equals("GNOMAD_EXOMES"))
-                            && pop.equals("ALL")) {
+                    if ((study.equals("1kG_phase3") || study.equals("GNOMAD_GENOMES")) && pop.equals("ALL")) {
                         addOr = false;
                     } else {
                         addOr = true;

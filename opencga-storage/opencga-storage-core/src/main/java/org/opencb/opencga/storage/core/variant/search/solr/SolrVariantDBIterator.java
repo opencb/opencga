@@ -23,32 +23,30 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.search.VariantSearchToVariantConverter;
 
-import java.io.IOException;
-
 /**
  * Created by jtarraga on 01/03/17.
  */
-public class VariantSolrIterator extends VariantDBIterator {
+public class SolrVariantDBIterator extends VariantDBIterator {
 
-    private VariantSearchSolrIterator variantSearchSolrIterator;
+    private SolrNativeIterator solrNativeIterator;
     private VariantSearchToVariantConverter variantSearchToVariantConverter;
     private int count = 0;
 
-    public VariantSolrIterator(SolrClient solrClient, String collection, SolrQuery solrQuery, VariantSearchToVariantConverter converter)
-            throws IOException, SolrServerException {
-        variantSearchSolrIterator = new VariantSearchSolrIterator(solrClient, collection, solrQuery);
+    public SolrVariantDBIterator(SolrClient solrClient, String collection, SolrQuery solrQuery, VariantSearchToVariantConverter converter)
+            throws SolrServerException {
+        solrNativeIterator = new SolrNativeIterator(solrClient, collection, solrQuery);
         this.variantSearchToVariantConverter = converter;
     }
 
     @Override
     public boolean hasNext() {
-        return variantSearchSolrIterator.hasNext();
+        return solrNativeIterator.hasNext();
     }
 
     @Override
     public Variant next() {
         count++;
-        return variantSearchToVariantConverter.convertToDataModelType(variantSearchSolrIterator.next());
+        return variantSearchToVariantConverter.convertToDataModelType(solrNativeIterator.next());
     }
 
     @Override
@@ -62,7 +60,7 @@ public class VariantSolrIterator extends VariantDBIterator {
     }
 
     public long getNumFound() {
-        return variantSearchSolrIterator.getNumFound();
+        return solrNativeIterator.getNumFound();
     }
 
 }
