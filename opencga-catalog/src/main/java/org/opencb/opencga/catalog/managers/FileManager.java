@@ -1350,6 +1350,7 @@ public class FileManager extends AnnotationSetManager<File> {
         Set<String> processedPaths = new HashSet<>();
         boolean physicalDelete = params.getBoolean(Constants.SKIP_TRASH, false);
 
+        auditManager.initAuditBatch(operationUuid);
         OpenCGAResult<File> result = OpenCGAResult.empty();
         for (String id : fileIds) {
             String fileId = id;
@@ -1389,6 +1390,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationUuid);
 
         return endResult(result, ignoreException);
     }
@@ -1440,6 +1442,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
         long numMatches = 0;
 
+        auditManager.initAuditBatch(operationUuid);
         while (fileIterator.hasNext()) {
             File file = fileIterator.next();
 
@@ -1474,6 +1477,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationUuid);
 
         dataResult.setTime((int) watch.getTime(TimeUnit.MILLISECONDS));
         dataResult.setNumMatches(dataResult.getNumMatches() + numMatches);
@@ -1770,6 +1774,7 @@ public class FileManager extends AnnotationSetManager<File> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<File> result = OpenCGAResult.empty();
         while (iterator.hasNext()) {
             File file = iterator.next();
@@ -1777,8 +1782,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 OpenCGAResult<File> updateResult = update(study, file, updateParams, options, userId, token);
                 result.append(updateResult);
 
-                auditManager.auditUpdate(userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
-                        auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, file.getId(), e.getMessage());
                 result.getEvents().add(event);
@@ -1788,6 +1793,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         String ownerId = studyDBAdaptor.getOwnerId(study.getUid());
         userDBAdaptor.updateUserLastModified(ownerId);
@@ -1889,6 +1895,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("options", options)
                 .append("token", token);
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<File> result = OpenCGAResult.empty();
         for (String id : fileIds) {
             String fileId = id;
@@ -1919,6 +1926,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         String ownerId = studyDBAdaptor.getOwnerId(study.getUid());
         userDBAdaptor.updateUserLastModified(ownerId);

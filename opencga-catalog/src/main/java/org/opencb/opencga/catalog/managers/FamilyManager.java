@@ -425,6 +425,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationUuid);
         OpenCGAResult result = OpenCGAResult.empty();
         for (String id : familyIds) {
             String familyId = id;
@@ -462,6 +463,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationUuid);
 
         return endResult(result, ignoreException);
     }
@@ -510,6 +512,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationUuid);
         while (iterator.hasNext()) {
             Family family = iterator.next();
 
@@ -535,10 +538,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 logger.error(errorMsg, e);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-
-                throw new CatalogException(errorMsg, e.getCause());
             }
         }
+        auditManager.finishAuditBatch(operationUuid);
 
         return endResult(result, ignoreException);
     }
@@ -691,6 +693,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Family> result = OpenCGAResult.empty();
         while (iterator.hasNext()) {
             Family family = iterator.next();
@@ -709,6 +712,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }
@@ -805,6 +809,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 .append("options", options)
                 .append("token", token);
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Family> result = OpenCGAResult.empty();
         for (String id : familyIds) {
             String familyId = id;
@@ -835,6 +840,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }

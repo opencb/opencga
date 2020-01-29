@@ -584,6 +584,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<ClinicalAnalysis> result = OpenCGAResult.empty();
         while (iterator.hasNext()) {
             ClinicalAnalysis clinicalAnalysis = iterator.next();
@@ -604,6 +605,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }
@@ -702,6 +704,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
 
         OpenCGAResult<ClinicalAnalysis> result = OpenCGAResult.empty();
 
+        auditManager.initAuditBatch(operationId);
         for (String id : clinicalIds) {
             String clinicalAnalysisId = id;
             String clinicalAnalysisUuid = "";
@@ -731,6 +734,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }

@@ -36,9 +36,7 @@ import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created on 18/08/15.
@@ -53,11 +51,15 @@ public class AuditManager {
     private final AuthorizationManager authorizationManager;
     private final AuditDBAdaptor auditDBAdaptor;
 
+    private final Map<String, List<AuditRecord>> auditRecordMap;
+    private static final int MAX_BATCH_SIZE = 100;
+
     public AuditManager(AuthorizationManager authorizationManager, CatalogManager catalogManager, DBAdaptorFactory catalogDBAdaptorFactory,
                         Configuration configuration) {
         this.catalogManager = catalogManager;
         this.authorizationManager = authorizationManager;
         this.auditDBAdaptor = catalogDBAdaptorFactory.getCatalogAuditDbAdaptor();
+        this.auditRecordMap = new HashMap<>();
     }
 
     public void audit(AuditRecord auditRecord) throws CatalogException {
@@ -67,6 +69,25 @@ public class AuditManager {
     public void audit(List<AuditRecord> auditRecordList) throws CatalogException {
         for (AuditRecord auditRecord : auditRecordList) {
             auditDBAdaptor.insertAuditRecord(auditRecord);
+        }
+    }
+
+    public void initAuditBatch(String operationId) {
+        this.auditRecordMap.put(operationId, new LinkedList<>());
+    }
+
+    public void finishAuditBatch(String operationId) throws CatalogException {
+        if (!this.auditRecordMap.containsKey(operationId)) {
+            throw new CatalogException("Cannot audit. Operation id '" + operationId + "' not found.");
+        }
+        try {
+            if (!this.auditRecordMap.get(operationId).isEmpty()) {
+                auditDBAdaptor.insertAuditRecords(this.auditRecordMap.get(operationId));
+            }
+        } catch (CatalogDBException e) {
+            logger.error("Could not audit operation '{}' -> Error: {}", operationId, e.getMessage(), e);
+        } finally {
+            this.auditRecordMap.remove(operationId);
         }
     }
 
@@ -158,10 +179,25 @@ public class AuditManager {
 
         AuditRecord auditRecord = new AuditRecord(auditId, operationId, userId, apiVersion, action, resource, resourceId, resourceUuid,
                 studyId, studyUuid, params, status, date, attributes);
-        try {
-            auditDBAdaptor.insertAuditRecord(auditRecord);
-        } catch (CatalogDBException e) {
-            logger.error("Could not audit '{}' -> Error: {}", auditRecord, e.getMessage(), e);
+
+        if (this.auditRecordMap.containsKey(operationId)) {
+            this.auditRecordMap.get(operationId).add(auditRecord);
+
+            if (this.auditRecordMap.size() == MAX_BATCH_SIZE) {
+                try {
+                    auditDBAdaptor.insertAuditRecords(this.auditRecordMap.get(operationId));
+                } catch (CatalogDBException e) {
+                    logger.error("Could not audit operation '{}' -> Error: {}", operationId, e.getMessage(), e);
+                } finally {
+                    this.auditRecordMap.get(operationId).clear();
+                }
+            }
+        } else {
+            try {
+                auditDBAdaptor.insertAuditRecord(auditRecord);
+            } catch (CatalogDBException e) {
+                logger.error("Could not audit '{}' -> Error: {}", auditRecord, e.getMessage(), e);
+            }
         }
     }
 

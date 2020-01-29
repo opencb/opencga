@@ -40,18 +40,18 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.sample.SampleAclEntry;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -402,6 +402,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult result = OpenCGAResult.empty();
         for (String id : sampleIds) {
             String sampleId = id;
@@ -440,6 +441,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }
@@ -501,6 +503,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationUuid);
         while (iterator.hasNext()) {
             Sample sample = iterator.next();
 
@@ -528,6 +531,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationUuid);
 
         return endResult(result, ignoreException);
     }
@@ -722,6 +726,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Sample> result = OpenCGAResult.empty();
         while (iterator.hasNext()) {
             Sample sample = iterator.next();
@@ -740,6 +745,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }
@@ -835,6 +841,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                 .append("options", options)
                 .append("token", token);
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Sample> result = OpenCGAResult.empty();
         for (String id : sampleIds) {
             String sampleId = id;
@@ -865,6 +872,8 @@ public class SampleManager extends AnnotationSetManager<Sample> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
+
         return endResult(result, ignoreException);
     }
 
