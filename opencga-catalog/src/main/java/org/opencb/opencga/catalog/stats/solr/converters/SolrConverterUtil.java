@@ -62,6 +62,54 @@ public class SolrConverterUtil {
         }
     }
 
+    /*
+    * public static String type(Object value) {
+        if (value instanceof List) {
+            switch (getType(((List) value).get(0))) {
+                case STRING:
+                    return "__sm__";
+                case INTEGER:
+                    return "__im__";
+                case DOUBLE:
+                    return "__dm__";
+                case BOOLEAN:
+                    return "__bm__";
+                case OBJECT:
+                default:
+                    return "__o__";
+            }
+        } else {
+            switch (getType(value)) {
+                case STRING:
+                    return "__s__";
+                case INTEGER:
+                    return "__i__";
+                case DOUBLE:
+                    return "__d__";
+                case BOOLEAN:
+                    return "__b__";
+                case OBJECT:
+                default:
+                    return "__o__";
+            }
+        }
+    }
+
+    public static QueryParam.Type getType(Object value) {
+        if (value instanceof Boolean) {
+            return QueryParam.Type.BOOLEAN;
+        } else if (value instanceof Double) {
+            return QueryParam.Type.DOUBLE;
+        } else if (value instanceof Integer) {
+            return QueryParam.Type.INTEGER;
+        } else if (value instanceof String) {
+            return QueryParam.Type.STRING;
+        } else {
+            return QueryParam.Type.OBJECT;
+        }
+    }
+    * */
+
     public static Map<String, Set<String>> parseInternalOpenCGAAcls(List<Map<String, Object>> internalPermissions) {
         if (internalPermissions == null) {
             return new HashMap<>();

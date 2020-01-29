@@ -55,7 +55,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSolrIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.SolrVariantDBIterator;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
 import java.io.*;
@@ -776,7 +776,7 @@ public class VariantCommandExecutor extends CommandExecutor {
                     queryOptions.put(QueryOptions.LIMIT, Integer.MAX_VALUE);
                     queryOptions.put(QueryOptions.SKIP, 0);
 
-                    VariantSolrIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
+                    SolrVariantDBIterator iterator = variantSearchManager.iterator(dbName, query, queryOptions);
                     System.out.print("[");
                     while (iterator.hasNext()) {
                         Variant variant = iterator.next();

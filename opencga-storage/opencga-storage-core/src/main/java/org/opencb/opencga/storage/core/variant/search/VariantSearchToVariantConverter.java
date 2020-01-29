@@ -890,8 +890,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             }
             // Add 0.0 for mot commonly used populations, this will allow to skip a NON EXIST query and improve performance
             populationFrequencies.putIfAbsent("popFreq" + FIELD_SEPARATOR + "1kG_phase3__ALL", 0.0f);
-            populationFrequencies.putIfAbsent("popFreq" + FIELD_SEPARATOR + "GNOMAD_EXOMES__ALL", 0.0f);
             populationFrequencies.putIfAbsent("popFreq" + FIELD_SEPARATOR + "GNOMAD_GENOMES__ALL", 0.0f);
+//            populationFrequencies.putIfAbsent("popFreq" + FIELD_SEPARATOR + "GNOMAD_EXOMES__ALL", 0.0f);
             // Set population frequencies into the model
             variantSearchModel.setPopFreq(populationFrequencies);
 

@@ -75,6 +75,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1610,7 +1611,13 @@ public class StudyManager extends AbstractManager {
                 threadPool.submit(() -> indexSample(catalogSolrManager, study));
             }
 
+
             threadPool.shutdown();
+            try {
+                threadPool.awaitTermination(10, TimeUnit.MINUTES);
+            } catch (InterruptedException e) {
+                throw new CatalogException(e);
+            }
             return true;
         }
         throw new CatalogException("Only the " + OPENCGA + " user can index in Solr");
@@ -1644,6 +1651,8 @@ public class StudyManager extends AbstractManager {
     private Boolean indexCohort(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
         ObjectMap auditParams = new ObjectMap("study", study.getFqn());
         try {
+            logger.info("Indexing cohorts of study {}", study.getFqn());
+
             Query query = new Query()
                     .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             QueryOptions cohortQueryOptions = new QueryOptions()
@@ -1663,6 +1672,7 @@ public class StudyManager extends AbstractManager {
         } catch (CatalogException e) {
             auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.COHORT, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            logger.error("Could not index cohorts: {}", e.getMessage());
             throw e;
         }
     }
@@ -1671,6 +1681,8 @@ public class StudyManager extends AbstractManager {
         ObjectMap auditParams = new ObjectMap("study", study.getFqn());
 
         try {
+            logger.info("Indexing files of study {}", study.getFqn());
+
             Query query = new Query()
                     .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             QueryOptions fileQueryOptions = new QueryOptions()
@@ -1694,6 +1706,7 @@ public class StudyManager extends AbstractManager {
         } catch (CatalogException e) {
             auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.FILE, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            logger.error("Could not index files: {}", e.getMessage());
             throw e;
         }
     }
@@ -1703,6 +1716,8 @@ public class StudyManager extends AbstractManager {
         ObjectMap auditParams = new ObjectMap("study", study.getFqn());
 
         try {
+            logger.info("Indexing families of study {}", study.getFqn());
+
             Query query = new Query()
                     .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             QueryOptions familyQueryOptions = new QueryOptions()
@@ -1723,6 +1738,7 @@ public class StudyManager extends AbstractManager {
         } catch (CatalogException e) {
             auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            logger.error("Could not index families: {}", e.getMessage());
             throw e;
         }
     }
@@ -1732,6 +1748,8 @@ public class StudyManager extends AbstractManager {
         ObjectMap auditParams = new ObjectMap("study", study.getFqn());
 
         try {
+            logger.info("Indexing individuals of study {}", study.getFqn());
+
             Query query = new Query()
                     .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             QueryOptions individualQueryOptions = new QueryOptions()
@@ -1757,6 +1775,7 @@ public class StudyManager extends AbstractManager {
         } catch (CatalogException e) {
             auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.INDIVIDUAL, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            logger.error("Could not index individuals: {}", e.getMessage());
             throw e;
         }
     }
@@ -1765,6 +1784,8 @@ public class StudyManager extends AbstractManager {
         ObjectMap auditParams = new ObjectMap("study", study.getFqn());
 
         try {
+            logger.info("Indexing samples of study {}", study.getFqn());
+
             Query query = new Query()
                     .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             QueryOptions sampleQueryOptions = new QueryOptions()
@@ -1779,14 +1800,15 @@ public class StudyManager extends AbstractManager {
                     .append(DBAdaptor.INCLUDE_ACLS, true)
                     .append(Constants.FLATTENED_ANNOTATIONS, true);
 
-            catalogSolrManager.insertCatalogCollection(this.sampleDBAdaptor.iterator(query,
-                    sampleQueryOptions), new CatalogSampleToSolrSampleConverter(study), CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
+            catalogSolrManager.insertCatalogCollection(this.sampleDBAdaptor.iterator(query, sampleQueryOptions),
+                    new CatalogSampleToSolrSampleConverter(study), CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
             auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return true;
         } catch (CatalogException e) {
             auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            logger.error("Could not index samples: {}", e.getMessage());
             throw e;
         }
     }
