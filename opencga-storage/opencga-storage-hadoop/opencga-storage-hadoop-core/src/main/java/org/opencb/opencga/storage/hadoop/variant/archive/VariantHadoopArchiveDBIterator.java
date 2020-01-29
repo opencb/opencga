@@ -200,7 +200,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
     }
 
     protected VariantHadoopArchiveDBIterator setLimit(long limit) {
-        this.limit = limit <= 0 ? Long.MAX_VALUE : limit;
+        this.limit = limit < 0 ? Long.MAX_VALUE : limit;
         return this;
     }
 

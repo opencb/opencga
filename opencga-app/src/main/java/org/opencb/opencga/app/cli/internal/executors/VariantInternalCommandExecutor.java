@@ -40,6 +40,8 @@ import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.operations.*;
+import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
+import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
 import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -198,6 +200,9 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
             case KNOCKOUT_RUN_COMMAND:
                 knockout();
                 break;
+            case VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND:
+                sampleEligibility();
+                break;
             case PLINK_RUN_COMMAND:
                 plink();
                 break;
@@ -296,15 +301,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         if (cliOptions.numericOptions.count) {
             DataResult<Long> result = variantManager.count(query, token);
             System.out.println("Num. results\t" + result.getResults().get(0));
-        } else if (StringUtils.isNotEmpty(cliOptions.genericVariantQueryOptions.groupBy)) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            DataResult groupBy = variantManager.groupBy(cliOptions.genericVariantQueryOptions.groupBy, query, queryOptions, token);
-            System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(groupBy));
-        } else if (StringUtils.isNotEmpty(cliOptions.genericVariantQueryOptions.rank)) {
-            ObjectMapper objectMapper = new ObjectMapper();
-
-            DataResult rank = variantManager.rank(query, cliOptions.genericVariantQueryOptions.rank, 10, true, token);
-            System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));
         } else {
             queryOptions.putIfNotEmpty("annotations", cliOptions.genericVariantQueryOptions.annotations);
 
@@ -675,6 +671,19 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
         toolRunner.execute(KnockoutAnalysis.class, params, Paths.get(cliOptions.outdir), token);
+    }
+
+    private void sampleEligibility() throws Exception {
+        VariantCommandOptions.SampleEligibilityCommandOptions cliOptions = variantCommandOptions.sampleEligibilityCommandOptions;
+
+        ObjectMap params = new SampleEligibilityAnalysisParams(
+                cliOptions.query,
+                cliOptions.index,
+                cliOptions.cohortId)
+                .toObjectMap(cliOptions.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(SampleEligibilityAnalysis.class, params, Paths.get(cliOptions.outdir), token);
     }
 
     private void sampleStats() throws Exception {

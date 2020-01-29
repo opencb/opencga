@@ -335,12 +335,6 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (variantQueryCommandOptions.commonQueryOptions.count) {
             DataResult<Long> result = variantStorageEngine.count(query);
             System.out.println("Num. results\t" + result.getResults().get(0));
-        } else if (StringUtils.isNotEmpty(variantQueryCommandOptions.rank)) {
-            executeRank(query, variantStorageEngine, variantQueryCommandOptions);
-        } else if (StringUtils.isNotEmpty(variantQueryCommandOptions.groupBy)) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            DataResult groupBy = variantStorageEngine.groupBy(query, variantQueryCommandOptions.groupBy, options);
-            System.out.println("groupBy = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(groupBy));
         } else {
             URI uri = StringUtils.isEmpty(variantQueryCommandOptions.commonQueryOptions.output)
                     ? null
@@ -801,13 +795,12 @@ public class VariantCommandExecutor extends CommandExecutor {
     }
 
     private void executeRank(Query query, VariantStorageEngine variantStorageEngine,
-                             StorageVariantCommandOptions.VariantQueryCommandOptions variantQueryCommandOptions)
+                             StorageVariantCommandOptions.VariantQueryCommandOptions variantQueryCommandOptions, String field)
             throws JsonProcessingException, StorageEngineException {
         ObjectMapper objectMapper = new ObjectMapper();
-        String field = variantQueryCommandOptions.rank;
         boolean asc = false;
-        if (variantQueryCommandOptions.rank.contains(":")) {  //  eg. gene:-1
-            String[] arr = variantQueryCommandOptions.rank.split(":");
+        if (field.contains(":")) {  //  eg. gene:-1
+            String[] arr = field.split(":");
             field = arr[0];
             if (arr[1].endsWith("-1")) {
                 asc = true;

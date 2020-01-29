@@ -36,7 +36,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Created on 16/12/16.
@@ -90,9 +89,9 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         Query query = new Query();
 
         // Without studies
-        Map<String, List<Sample>> map = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
+        Map<String, List<String>> map = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
         Assert.assertEquals(Collections.singleton(studyFqn), map.keySet());
-        Assert.assertEquals(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"), map.get(studyFqn).stream().map(Sample::getId).collect(Collectors.toList()));
+        Assert.assertEquals(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"), map.get(studyFqn));
 
         catalogManager.getSampleManager().create(studyFqn, new Sample().setId("newSample"), new QueryOptions(), sessionId);
 
@@ -101,7 +100,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
         map = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
         Assert.assertEquals(Collections.singleton(studyFqn), map.keySet());
-        Assert.assertEquals(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"), map.get(studyFqn).stream().map(Sample::getId).collect(Collectors.toList()));
+        Assert.assertEquals(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"), map.get(studyFqn));
     }
 
     @Test
@@ -110,7 +109,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         Query query = new Query();
 
         // Without studies
-        Map<String, List<Sample>> longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
+        Map<String, List<String>> longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
         Assert.assertEquals(Collections.singletonMap(studyFqn, Collections.emptyList()), longListMap);
 
         // With studies
@@ -124,7 +123,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
         QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES);
 
-        Map<String, List<Sample>> longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
+        Map<String, List<String>> longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
         Assert.assertEquals(Collections.emptyMap(), longListMap);
     }
 

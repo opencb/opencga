@@ -169,15 +169,15 @@ public class VariantSqlQueryParser {
 
         if (clientSideSkip) {
             int skip = Math.max(0, options.getInt(QueryOptions.SKIP));
-            if (options.getInt(QueryOptions.LIMIT) > 0) {
+            if (options.getInt(QueryOptions.LIMIT, -1) >= 0) {
                 sb.append(" LIMIT ").append(skip + options.getInt(QueryOptions.LIMIT));
             }
         } else {
-            if (options.getInt(QueryOptions.LIMIT) > 0) {
+            if (options.getInt(QueryOptions.LIMIT, -1) >= 0) {
                 sb.append(" LIMIT ").append(options.getInt(QueryOptions.LIMIT));
             }
 
-            if (options.getInt(QueryOptions.SKIP) > 0) {
+            if (options.getInt(QueryOptions.SKIP, -1) >= 0) {
                 sb.append(" OFFSET ").append(options.getInt(QueryOptions.SKIP));
             }
         }

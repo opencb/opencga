@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public enum GenotypeClass {
+public enum GenotypeClass implements Predicate<String> {
     /**
      * Homozygous reference.
      * <p>
@@ -208,6 +208,7 @@ public enum GenotypeClass {
         return predicate;
     }
 
+    @Override
     public boolean test(String genotype) {
         return predicate.test(genotype);
     }

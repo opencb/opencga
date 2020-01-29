@@ -38,6 +38,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSampleQueryCommandOptions.SAMPLE_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.VariantSamplesFilterCommandOptions.SAMPLE_RUN_COMMAND;
@@ -249,7 +250,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         alignmentSubCommands.addCommand(DEEPTOOLS_RUN_COMMAND, alignmentCommandOptions.deeptoolsCommandOptions);
         alignmentSubCommands.addCommand(FASTQC_RUN_COMMAND, alignmentCommandOptions.fastqcCommandOptions);
 
-        variantCommandOptions = new VariantCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
+        variantCommandOptions = new VariantCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander, true);
         jCommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);
@@ -265,6 +266,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(COHORT_VARIANT_STATS_RUN_COMMAND, variantCommandOptions.cohortVariantStatsCommandOptions);
         variantSubCommands.addCommand(GWAS_RUN_COMMAND, variantCommandOptions.gwasCommandOptions);
         variantSubCommands.addCommand(KNOCKOUT_RUN_COMMAND, variantCommandOptions.knockoutCommandOptions);
+        variantSubCommands.addCommand(SAMPLE_ELIGIBILITY_RUN_COMMAND, variantCommandOptions.sampleEligibilityCommandOptions);
         variantSubCommands.addCommand(PLINK_RUN_COMMAND, variantCommandOptions.plinkCommandOptions);
         variantSubCommands.addCommand(RVTEST_RUN_COMMAND, variantCommandOptions.rvtestsCommandOptions);
         variantSubCommands.addCommand(GATK_RUN_COMMAND, variantCommandOptions.gatkCommandOptions);

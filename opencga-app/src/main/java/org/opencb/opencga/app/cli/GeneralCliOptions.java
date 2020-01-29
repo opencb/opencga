@@ -19,8 +19,10 @@ package org.opencb.opencga.app.cli;
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import org.opencb.opencga.core.api.ParamConstants;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -129,6 +131,20 @@ public class GeneralCliOptions {
         @Parameter(names = {"--count"}, description = "Total number of results. Default = false", arity = 0)
         public boolean count;
 
+    }
+
+    public static class JobOptions {
+        @Parameter(names = {"--job-id"}, description = ParamConstants.JOB_ID_DESCRIPTION, arity = 1)
+        public String jobId;
+
+        @Parameter(names = {"--job-description"}, description = ParamConstants.JOB_DESCRIPTION_DESCRIPTION, arity = 1)
+        public String jobDescription;
+
+        @Parameter(names = {"--job-depends-on"}, description = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION, arity = 1)
+        public List<String> jobDependsOn;
+
+        @Parameter(names = {"--job-tags"}, description = ParamConstants.JOB_TAGS_DESCRIPTION, arity = 1)
+        public List<String> jobTags;
     }
 
 }

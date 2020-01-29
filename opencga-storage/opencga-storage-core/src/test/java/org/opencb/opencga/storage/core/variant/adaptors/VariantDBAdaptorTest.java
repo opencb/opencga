@@ -319,6 +319,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             assertEquals(numVariants, variantStr.size());
             assertEquals(expected.getResults().stream().map(Object::toString).collect(Collectors.toSet()), variantStr);
         }
+        assertEquals(0, query(query, new QueryOptions(options).append(QueryOptions.LIMIT, 0)).getNumResults());
     }
 
     @Test

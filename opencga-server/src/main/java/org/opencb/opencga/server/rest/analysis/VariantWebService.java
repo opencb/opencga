@@ -34,6 +34,8 @@ import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.operations.VariantFileDeleteOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
+import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
+import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
 import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -177,7 +179,6 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = QueryOptions.LIMIT, value = ParamConstants.LIMIT_DESCRIPTION, dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SKIP, value = ParamConstants.SKIP_DESCRIPTION, dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.COUNT, value = ParamConstants.COUNT_DESCRIPTION, dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.SKIP_COUNT, value = "Do not count total number of results", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.SORT, value = "Sort the results", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = VariantField.SUMMARY, value = "Fast fetch of main variant parameters", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "approximateCount", value = "Get an approximate count, instead of an exact total count. Reduces execution time", dataType = "boolean", paramType = "query"),
@@ -295,28 +296,13 @@ public class VariantWebService extends AnalysisWebService {
 //            @ApiImplicitParam(name = "annot-functional-score", value = DEPRECATED + "Use 'functionalScore' instead", dataType = "string", paramType = "query"),
 //            @ApiImplicitParam(name = "traits", value = DEPRECATED + "Use 'trait' instead", dataType = "string", paramType = "query"),
     })
-    public Response getVariants(@ApiParam(value = "Group variants by: [ct, gene, ensemblGene]") @DefaultValue("") @QueryParam("groupBy") String groupBy,
-                                @ApiParam(value = "Calculate histogram. Requires one region.") @DefaultValue("false") @QueryParam("histogram") boolean histogram,
-                                @ApiParam(value = "Histogram interval size") @DefaultValue("2000") @QueryParam("interval") int interval,
-                                @ApiParam(value = "Ranks different entities with the most number of variants. Rank by: [ct, gene, ensemblGene]") @QueryParam("rank") String rank
-                                // @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge
-    ) {
+    public Response getVariants() {
         return run(() -> {
             // Get all query options
             QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             Query query = getVariantQuery(queryOptions);
 
-            if (count) {
-                return variantManager.count(query, token);
-            } else if (histogram) {
-                return variantManager.getFrequency(query, interval, token);
-            } else if (StringUtils.isNotEmpty(groupBy)) {
-                return variantManager.groupBy(groupBy, query, queryOptions, token);
-            } else if (StringUtils.isNotEmpty(rank)) {
-                return variantManager.rank(query, rank, limit, true, token);
-            } else {
-                return variantManager.get(query, queryOptions, token);
-            }
+            return variantManager.get(query, queryOptions, token);
         });
     }
 
@@ -395,7 +381,7 @@ public class VariantWebService extends AnalysisWebService {
 
     @GET
     @Path("/annotation/metadata")
-    @ApiOperation(value = "Read variant annotations metadata from any saved versions", response = VariantAnnotation.class)
+    @ApiOperation(value = "Read variant annotations metadata from any saved versions")
     public Response getAnnotationMetadata(@ApiParam(value = "Annotation identifier") @QueryParam("annotationId") String annotationId,
                                           @ApiParam(value = VariantCatalogQueryUtils.PROJECT_DESC) @QueryParam(ParamConstants.PROJECT_PARAM) String project) {
         return run(() -> variantManager.getAnnotationMetadata(annotationId, project, token));
@@ -530,6 +516,19 @@ public class VariantWebService extends AnalysisWebService {
         return submitJob(SampleVariantFilterAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
     }
 
+    @POST
+    @Path("/sample/eligibility/run")
+    @ApiOperation(value = SampleEligibilityAnalysis.DESCRIPTION, response = Job.class)
+    public Response sampleEligibility(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = ParamConstants.JOB_ID_DESCRIPTION) @QueryParam(ParamConstants.JOB_ID) String jobName,
+            @ApiParam(value = ParamConstants.JOB_DESCRIPTION_DESCRIPTION) @QueryParam(ParamConstants.JOB_DESCRIPTION) String jobDescription,
+            @ApiParam(value = ParamConstants.JOB_DEPENDS_ON_DESCRIPTION) @QueryParam(JOB_DEPENDS_ON) String dependsOn,
+            @ApiParam(value = ParamConstants.JOB_TAGS_DESCRIPTION) @QueryParam(ParamConstants.JOB_TAGS) String jobTags,
+            @ApiParam(value = SampleEligibilityAnalysisParams.DESCRIPTION) SampleEligibilityAnalysisParams params) {
+        return submitJob(SampleEligibilityAnalysis.ID, study, params, jobName, jobDescription, dependsOn, jobTags);
+    }
+
     @Deprecated
     @GET
     @Path("/{variant}/sampleData")
@@ -576,7 +575,7 @@ public class VariantWebService extends AnalysisWebService {
     @Path("/sample/stats/info")
     @ApiOperation(value = "Read sample variant stats from list of samples.", response = SampleVariantStats.class)
     public Response sampleStatsInfo(@ApiParam(value = "Study where all the samples belong to") @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                     @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION) @QueryParam("sample") String sample) {
+                                     @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION, required = true) @QueryParam("sample") String sample) {
         return run(() -> {
             ParamUtils.checkParameter(sample, "sample");
             ParamUtils.checkParameter(studyStr, ParamConstants.STUDY_PARAM);
@@ -628,7 +627,7 @@ public class VariantWebService extends AnalysisWebService {
     @Path("/cohort/stats/info")
     @ApiOperation(value = "Read cohort variant stats from list of cohorts.", response = VariantSetStats.class)
     public Response cohortStatsQuery(@ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                     @ApiParam(value = ParamConstants.COHORTS_DESCRIPTION) @QueryParam("cohort") String cohort) {
+                                     @ApiParam(value = ParamConstants.COHORTS_DESCRIPTION, required = true) @QueryParam("cohort") String cohort) {
         return run(() -> {
             ParamUtils.checkParameter(cohort, "cohort");
             ParamUtils.checkParameter(studyStr, ParamConstants.STUDY_PARAM);

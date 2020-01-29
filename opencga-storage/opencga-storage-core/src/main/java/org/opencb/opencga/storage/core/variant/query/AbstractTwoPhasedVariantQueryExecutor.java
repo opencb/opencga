@@ -70,9 +70,9 @@ public abstract class AbstractTwoPhasedVariantQueryExecutor extends VariantQuery
                                             int numVariantsFromPrimary, int numResults) {
         // TODO: Allow exact count with "approximateCount=false"
         if (shouldGetApproximateCount(options)) {
-            int limit = options.getInt(QueryOptions.LIMIT, 0);
+            int limit = options.getInt(QueryOptions.LIMIT, -1);
             int skip = options.getInt(QueryOptions.SKIP, 0);
-            if (limit > 0 && limit > numResults) {
+            if (limit >= 0 && limit > numResults) {
                 if (skip > 0 && numResults == 0) {
                     // Skip could be greater than numTotalResults. Approximate count
                     result.setApproximateCount(true);
@@ -80,7 +80,7 @@ public abstract class AbstractTwoPhasedVariantQueryExecutor extends VariantQuery
                     // Less results than limit. Count is not approximated
                     result.setApproximateCount(false);
                 }
-                result.setNumTotalResults(numResults + skip);
+                result.setNumMatches(numResults + skip);
                 return;
             }
 
@@ -123,11 +123,15 @@ public abstract class AbstractTwoPhasedVariantQueryExecutor extends VariantQuery
     }
 
     protected boolean shouldGetApproximateCount(QueryOptions options, boolean iterator) {
-        return !iterator && (!options.getBoolean(QueryOptions.SKIP_COUNT, true) || options.getBoolean(APPROXIMATE_COUNT.key(), false));
+        return !iterator && (options.getBoolean(QueryOptions.COUNT, false) || options.getBoolean(APPROXIMATE_COUNT.key(), false));
+    }
+
+    protected final boolean shouldGetExactCount(QueryOptions options) {
+        return options.getBoolean(QueryOptions.COUNT, false) && !options.getBoolean(VariantStorageOptions.APPROXIMATE_COUNT.key(), false);
     }
 
     protected int getLimit(QueryOptions options) {
-        return Math.max(0, options.getInt(QueryOptions.LIMIT));
+        return options.getInt(QueryOptions.LIMIT);
     }
 
     protected int getSkip(QueryOptions options) {

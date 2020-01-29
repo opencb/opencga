@@ -17,28 +17,30 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.ToolRunner;
-import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
-import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
+import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
+import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.family.Family;
-import org.opencb.opencga.core.models.sample.SampleUpdateParams;
-import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
-import org.opencb.opencga.core.models.variant.VariantExportParams;
-import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
+import org.opencb.opencga.core.models.variant.VariantExportParams;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -506,6 +508,17 @@ public class VariantAnalysisTest {
 
         ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, token);
         checkExecutionResult(er, false);
+    }
+
+    @Test
+    public void testSampleMultiVariantFilterAnalysis() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_SampleMultiVariantFilterAnalysis"));
+        System.out.println("outDir = " + outDir);
+        SampleEligibilityAnalysisParams params = new SampleEligibilityAnalysisParams();
+        params.setQuery("(biotype=protein_coding AND ct=missense_variant AND gene=BRCA2) OR (gene=BTN3A2)");
+
+        ExecutionResult er = toolRunner.execute(SampleEligibilityAnalysis.class, params.toObjectMap(), outDir, token);
+//        checkExecutionResult(er, false);
     }
 
     public void checkExecutionResult(ExecutionResult er) {
