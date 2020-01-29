@@ -12,6 +12,7 @@ import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.study.Study;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,7 +27,8 @@ public class CatalogSampleToSolrSampleConverterTest {
     @Test
     public void SampleToSolrTest() {
 
-        Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>());
+        Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>())
+                .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
         Individual individual = new Individual();
         individual.setUuid("uuid").setEthnicity("spanish").setKaryotypicSex(IndividualProperty.KaryotypicSex.XX).
                 setPopulation(new Individual.Population("valencian", "", ""));
@@ -55,7 +57,7 @@ public class CatalogSampleToSolrSampleConverterTest {
         assertEquals(Arrays.asList(true, false, false), sampleSolrModel.getAnnotations().get("annotations__bm__vsId.a.ab1.ab1c1"));
         assertEquals("hello world", sampleSolrModel.getAnnotations().get("annotations__s__vsId.a.ab1.ab1c2"));
         assertEquals(Arrays.asList("hello ab2c1d2 1", "hello ab2c1d2 2"), sampleSolrModel.getAnnotations().get("annotations__sm__vsId.a.ab2.ab2c1.ab2c1d2"));
-        assertEquals(Arrays.asList(Arrays.asList("hello"), Arrays.asList("hello2", "bye2"), Arrays.asList("byeee2", "hellooo2")), sampleSolrModel.getAnnotations().get("annotations__o__vsId.a.ab3.ab3c1.ab3c1d1"));
+        assertEquals(Arrays.asList(Arrays.asList("hello"), Arrays.asList("hello2", "bye2"), Arrays.asList("byeee2", "hellooo2")), sampleSolrModel.getAnnotations().get("annotations__sm__vsId.a.ab3.ab3c1.ab3c1d1"));
         assertEquals(Arrays.asList(2.0, 4.0, 24.0), sampleSolrModel.getAnnotations().get("annotations__dm__vsId.a.ab3.ab3c1.ab3c1d2"));
         assertNull(sampleSolrModel.getAnnotations().get("nothing"));
         assertEquals(sampleSolrModel.getAnnotations().keySet().size(), 6);

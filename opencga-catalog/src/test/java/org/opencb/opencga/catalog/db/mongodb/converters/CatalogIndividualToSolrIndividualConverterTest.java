@@ -14,6 +14,7 @@ import org.opencb.opencga.core.models.study.Study;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 
@@ -27,7 +28,8 @@ public class CatalogIndividualToSolrIndividualConverterTest {
 
     @Test
     public void IndividualToSolrTest() {
-        Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>());
+        Study study = new Study().setFqn("user@project:study").setAttributes(new HashMap<>())
+                .setVariableSets(Collections.singletonList(AnnotationHelper.createVariableSet()));
         Individual individual = new Individual("Id", "individual", IndividualProperty.Sex.MALE, "Spanish",
                 new Individual.Population("valencian", "", ""), 2, AnnotationHelper.createAnnotation(), null);
 
@@ -66,7 +68,7 @@ public class CatalogIndividualToSolrIndividualConverterTest {
         assertEquals(Arrays.asList(true, false, false), individualSolrModel.getAnnotations().get("annotations__bm__vsId.a.ab1.ab1c1"));
         assertEquals("hello world", individualSolrModel.getAnnotations().get("annotations__s__vsId.a.ab1.ab1c2"));
         assertEquals(Arrays.asList("hello ab2c1d2 1", "hello ab2c1d2 2"), individualSolrModel.getAnnotations().get("annotations__sm__vsId.a.ab2.ab2c1.ab2c1d2"));
-        assertEquals(Arrays.asList(Arrays.asList("hello"), Arrays.asList("hello2", "bye2"), Arrays.asList("byeee2", "hellooo2")), individualSolrModel.getAnnotations().get("annotations__o__vsId.a.ab3.ab3c1.ab3c1d1"));
+        assertEquals(Arrays.asList(Arrays.asList("hello"), Arrays.asList("hello2", "bye2"), Arrays.asList("byeee2", "hellooo2")), individualSolrModel.getAnnotations().get("annotations__sm__vsId.a.ab3.ab3c1.ab3c1d1"));
         assertEquals(Arrays.asList(2.0, 4.0, 24.0), individualSolrModel.getAnnotations().get("annotations__dm__vsId.a.ab3.ab3c1.ab3c1d2"));
         assertNull(individualSolrModel.getAnnotations().get("nothing"));
         assertEquals(individualSolrModel.getAnnotations().keySet().size(), 6);
