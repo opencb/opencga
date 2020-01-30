@@ -198,6 +198,9 @@ public class VariantClient extends AbstractParentClient {
 //        return execute(VARIANT_URL, "/ibs/run", new ObjectMap("body", params), POST, Job.class);
 //    }
 
+    public RestResponse<Job> mutationalSignatureRun(String study, MutationalSignatureAnalysisParams body) throws ClientException {
+        return execute(VARIANT_URL, "/mutationalSignature/run", buildRestPOSTParams(null, study, body), POST, Job.class);
+    }
 
     // Wrappers
 
