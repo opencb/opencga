@@ -59,6 +59,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsQueryCommandOptions.COHORT_VARIANT_STATS_QUERY_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND;
@@ -149,6 +150,11 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             case GWAS_RUN_COMMAND:
                 queryResponse = gwas();
                 break;
+
+            case MUTATIONAL_SIGNATURE_RUN_COMMAND:
+                queryResponse = mutationalSignature();
+                break;
+
             case PLINK_RUN_COMMAND:
                 queryResponse = plink();
                 break;
@@ -273,6 +279,16 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 //    private RestResponse<Job> familyStatsQuery() {
 //        openCGAClient.getVariantClient().familyStatsQuery()
 //    }
+
+    private RestResponse<Job> mutationalSignature() throws ClientException {
+        return openCGAClient.getVariantClient().runMutationalSignature(
+                new MutationalSignatureAnalysisParams(
+                        variantCommandOptions.mutationalSignatureCommandOptions.sample,
+                        variantCommandOptions.mutationalSignatureCommandOptions.outdir
+                ),
+                getParams(variantCommandOptions.mutationalSignatureCommandOptions.study)
+        );
+    }
 
     private RestResponse<Job> gwas() throws ClientException {
         return openCGAClient.getVariantClient().runGwas(

@@ -23,6 +23,7 @@ import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
+import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantFamilyIndexOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
@@ -109,6 +110,7 @@ public class VariantCommandOptions {
     public final CohortVariantStatsQueryCommandOptions cohortVariantStatsQueryCommandOptions;
     public final KnockoutCommandOptions knockoutCommandOptions;
     public final SampleEligibilityCommandOptions sampleEligibilityCommandOptions;
+    public final MutationalSignatureCommandOptions mutationalSignatureCommandOptions;
 
     // Wrappers
     public final PlinkCommandOptions plinkCommandOptions;
@@ -162,6 +164,7 @@ public class VariantCommandOptions {
         this.cohortVariantStatsQueryCommandOptions = new CohortVariantStatsQueryCommandOptions();
         this.knockoutCommandOptions = new KnockoutCommandOptions();
         this.sampleEligibilityCommandOptions = new SampleEligibilityCommandOptions();
+        this.mutationalSignatureCommandOptions = new MutationalSignatureCommandOptions();
         this.plinkCommandOptions = new PlinkCommandOptions();
         this.rvtestsCommandOptions = new RvtestsCommandOptions();
         this.gatkCommandOptions = new GatkCommandOptions();
@@ -1071,6 +1074,23 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--cohort-id"}, description = "The name of the cohort to be created")
         public String cohortId;
+    }
+
+    @Parameters(commandNames = MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND, commandDescription = MutationalSignatureAnalysis.DESCRIPTION)
+    public class MutationalSignatureCommandOptions {
+        public static final String MUTATIONAL_SIGNATURE_RUN_COMMAND = "mutational-signature-run";
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--study"}, description = "Study where all the samples belong to.")
+        public String study;
+
+        @Parameter(names = {"--sample"}, description = "Sample name.")
+        public String sample;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1, required = false)
+        public String outdir;
     }
 
     @Parameters(commandNames = PlinkCommandOptions.PLINK_RUN_COMMAND, commandDescription = PlinkWrapperAnalysis.DESCRIPTION)

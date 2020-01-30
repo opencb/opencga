@@ -39,6 +39,7 @@ import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
@@ -81,6 +82,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
@@ -202,6 +204,8 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 break;
             case VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND:
                 sampleEligibility();
+            case MUTATIONAL_SIGNATURE_RUN_COMMAND:
+                mutationalSignature();
                 break;
             case PLINK_RUN_COMMAND:
                 plink();
@@ -222,7 +226,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 logger.error("Subcommand not valid");
                 break;
         }
-
     }
 
     private void ibs() throws CatalogException, AnalysisExecutionException {
@@ -730,6 +733,18 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .setIndexResults(cliOptions.index)
                 .setSamplesQuery(query)
                 .setSampleNames(sampleNames)
+                .start();
+    }
+
+    private void mutationalSignature() throws Exception {
+        VariantCommandOptions.MutationalSignatureCommandOptions cliOptions = variantCommandOptions.mutationalSignatureCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        MutationalSignatureAnalysis mutationalSignatureAnalysis = new MutationalSignatureAnalysis();
+        mutationalSignatureAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        mutationalSignatureAnalysis.setStudy(cliOptions.study)
+                .setSampleName(cliOptions.sample)
                 .start();
     }
 
