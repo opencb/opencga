@@ -12,6 +12,7 @@ import org.opencb.opencga.catalog.db.mongodb.SampleMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.common.Annotable;
@@ -149,11 +150,12 @@ public class FileMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             List<Document> sampleList;
             try {
                 if (user != null) {
+                    query.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
                     sampleList = sampleDBAdaptor.nativeGet(clientSession, studyUid, query, sampleQueryOptions, user).getResults();
                 } else {
                     sampleList = sampleDBAdaptor.nativeGet(clientSession, query, sampleQueryOptions).getResults();
                 }
-            } catch (CatalogDBException | CatalogAuthorizationException e) {
+            } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
                 logger.warn("Could not obtain the samples associated to the files: {}", e.getMessage(), e);
                 return;
             }
@@ -191,11 +193,12 @@ public class FileMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             List<Document> fileList;
             try {
                 if (user != null) {
+                    query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
                     fileList = fileDBAdaptor.nativeGet(clientSession, studyUid, query, fileQueryOptions, user).getResults();
                 } else {
                     fileList = fileDBAdaptor.nativeGet(clientSession, query, fileQueryOptions).getResults();
                 }
-            } catch (CatalogDBException | CatalogAuthorizationException e) {
+            } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
                 logger.warn("Could not obtain the list of related files: {}", e.getMessage(), e);
                 return;
             }

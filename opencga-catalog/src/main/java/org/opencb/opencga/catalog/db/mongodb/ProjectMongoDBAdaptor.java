@@ -39,6 +39,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.project.Project;
@@ -579,7 +580,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     @Override
     public OpenCGAResult<Project> get(Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
         List<Project> documentList = new ArrayList<>();
         OpenCGAResult<Project> queryResult;

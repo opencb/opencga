@@ -1248,8 +1248,7 @@ public class FileManager extends AnnotationSetManager<File> {
             Future<OpenCGAResult<Long>> countFuture = null;
             if (options.getBoolean(QueryOptions.COUNT)) {
                 ExecutorService executor = Executors.newSingleThreadExecutor();
-                countFuture = executor.submit(() -> fileDBAdaptor.count(study.getUid(), finalQuery, userId,
-                        StudyAclEntry.StudyPermissions.VIEW_FILES));
+                countFuture = executor.submit(() -> fileDBAdaptor.count(finalQuery, userId));
             }
             OpenCGAResult<File> queryResult = OpenCGAResult.empty();
             if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
@@ -1311,8 +1310,7 @@ public class FileManager extends AnnotationSetManager<File> {
             fixQueryObject(study, query, userId);
 
             query.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Long> queryResultAux = fileDBAdaptor.count(study.getUid(), query, userId,
-                    StudyAclEntry.StudyPermissions.VIEW_FILES);
+            OpenCGAResult<Long> queryResultAux = fileDBAdaptor.count(query, userId);
 
             auditManager.auditCount(userId, Enums.Resource.FILE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -2173,7 +2171,7 @@ public class FileManager extends AnnotationSetManager<File> {
         query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
         // We do not need to check for permissions when we show the count of files
-        OpenCGAResult queryResult = fileDBAdaptor.groupBy(study.getUid(), query, fields, options, userId);
+        OpenCGAResult queryResult = fileDBAdaptor.groupBy(query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }

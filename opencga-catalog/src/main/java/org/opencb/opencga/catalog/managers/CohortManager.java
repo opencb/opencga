@@ -328,8 +328,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             if (options.getBoolean(QueryOptions.COUNT)) {
                 ExecutorService executor = Executors.newSingleThreadExecutor();
                 Query finalQuery = query;
-                countFuture = executor.submit(() -> cohortDBAdaptor.count(study.getUid(), finalQuery, userId,
-                        StudyAclEntry.StudyPermissions.VIEW_COHORTS));
+                countFuture = executor.submit(() -> cohortDBAdaptor.count(finalQuery, userId));
             }
             OpenCGAResult<Cohort> queryResult = OpenCGAResult.empty();
             if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
@@ -393,8 +392,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             fixQueryObject(study, query, userId);
 
             query.append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Long> queryResultAux = cohortDBAdaptor.count(study.getUid(), query, userId,
-                    StudyAclEntry.StudyPermissions.VIEW_COHORTS);
+            OpenCGAResult<Long> queryResultAux = cohortDBAdaptor.count(query, userId);
 
             auditManager.auditCount(userId, Enums.Resource.COHORT, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -933,7 +931,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         // Add study id to the query
         query.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        OpenCGAResult queryResult = cohortDBAdaptor.groupBy(study.getUid(), query, fields, options, userId);
+        OpenCGAResult queryResult = cohortDBAdaptor.groupBy(query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }

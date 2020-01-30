@@ -29,21 +29,21 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.JobMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobAclEntry;
 import org.opencb.opencga.core.models.job.ToolInfo;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -191,22 +191,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
 
     @Override
-    public OpenCGAResult<Long> count(long studyUid, Query query, String user, StudyAclEntry.StudyPermissions studyPermissions)
-            throws CatalogDBException, CatalogAuthorizationException {
-        StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
-                ? StudyAclEntry.StudyPermissions.VIEW_JOBS : studyPermissions);
-
-        // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), studyUid);
-        OpenCGAResult queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
-        if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + studyUid + " not found");
-        }
-
-        // Get the document query needed to check the permissions as well
-        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries((Document) queryResult.first(), user,
-                studyPermission.name(), studyPermission.getJobPermission().name(), Enums.Resource.JOB.name());
-        Bson bson = parseQuery(query, queryForAuthorisedEntries);
+    public OpenCGAResult<Long> count(Query query, String user) throws CatalogDBException {
+        Bson bson = parseQuery(query, user);
         logger.debug("Job count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return new OpenCGAResult<>(jobCollection.count(bson));
     }
@@ -495,10 +481,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public OpenCGAResult<Job> get(long studyUid, Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
         List<Job> documentList = new ArrayList<>();
-        OpenCGAResult<Job> queryResult;
         try (DBIterator<Job> dbIterator = iterator(studyUid, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -535,10 +520,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public OpenCGAResult nativeGet(long studyUid, Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        OpenCGAResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(studyUid, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -564,44 +548,30 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public DBIterator<Job> iterator(long studyUid, Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         Document studyDocument = getStudyDocument(null, studyUid);
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, studyDocument, user);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, user);
         return new JobMongoDBIterator(mongoCursor, null, jobConverter, this, dbAdaptorFactory.getCatalogFileDBAdaptor(), options, studyUid,
                 user);
     }
 
     @Override
     public DBIterator nativeIterator(long studyUid, Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
         Document studyDocument = getStudyDocument(null, studyUid);
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, studyDocument, user);
+        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, user);
         return new JobMongoDBIterator(mongoCursor, null, null, this, dbAdaptorFactory.getCatalogFileDBAdaptor(), options, studyUid, user);
     }
 
     private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
-        MongoCursor<Document> documentMongoCursor;
-        try {
-            documentMongoCursor = getMongoCursor(query, options, null, null);
-        } catch (CatalogAuthorizationException e) {
-            throw new CatalogDBException(e);
-        }
-        return documentMongoCursor;
+        return getMongoCursor(query, options, null);
     }
 
-    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options, Document studyDocument, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
-        Document queryForAuthorisedEntries = null;
-        if (studyDocument != null && user != null) {
-            // Get the document query needed to check the permissions as well
-            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                    StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name(), Enums.Resource.JOB.name());
-        }
-
-        Bson bson = parseQuery(query, queryForAuthorisedEntries);
+    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options, String user) throws CatalogDBException {
+        Bson bson = parseQuery(query, user);
         QueryOptions qOptions;
         if (options != null) {
             qOptions = new QueryOptions(options);
@@ -665,22 +635,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public OpenCGAResult groupBy(long studyUid, Query query, String field, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
-        Document studyDocument = getStudyDocument(null, studyUid);
-        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name(), Enums.Resource.JOB.name());
-        Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
-        return groupBy(jobCollection, bsonQuery, field, QueryParams.ID.key(), fixOptions(options));
-    }
-
-    @Override
-    public OpenCGAResult groupBy(long studyUid, Query query, List<String> fields, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
-        Document studyDocument = getStudyDocument(null, studyUid);
-        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                StudyAclEntry.StudyPermissions.VIEW_JOBS.name(), JobAclEntry.JobPermissions.VIEW.name(), Enums.Resource.JOB.name());
-        Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
+        Bson bsonQuery = parseQuery(query, user);
         return groupBy(jobCollection, bsonQuery, fields, QueryParams.ID.key(), fixOptions(options));
     }
 
@@ -747,11 +704,40 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {
-        return parseQuery(query, null);
+        return parseQuery(query, null, null);
     }
 
-    protected Bson parseQuery(Query query, Document authorisation) throws CatalogDBException {
+    private Bson parseQuery(Query query, String user) throws CatalogDBException {
+        return parseQuery(query, null, user);
+    }
+
+    protected Bson parseQuery(Query query, Document extraQuery) throws CatalogDBException {
+        return parseQuery(query, extraQuery, null);
+    }
+
+    private Bson parseQuery(Query query, Document extraQuery, String user) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
+
+        if (query.containsKey(QueryParams.STUDY_UID.key())
+                && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
+            Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
+
+            // Get the document query needed to check the permissions as well
+            try {
+                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, JobAclEntry.JobPermissions.VIEW.name(),
+                        Enums.Resource.JOB));
+            } catch (CatalogAuthorizationException | CatalogParameterException e) {
+                throw new CatalogDBException("Could not create ACL query");
+            }
+
+            try {
+                andBsonList.addAll(AuthorizationMongoDBUtils.parseQuery(studyDocument, query, Enums.Resource.JOB));
+            } catch (CatalogAuthorizationException | CatalogParameterException e) {
+                throw new CatalogDBException("Could not create ACL query");
+            }
+
+            query.remove(ParamConstants.ACL_PARAM);
+        }
 
         Query queryCopy = new Query(query);
         queryCopy.remove(QueryParams.DELETED.key());
@@ -847,8 +833,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             }
         }
 
-        if (authorisation != null && authorisation.size() > 0) {
-            andBsonList.add(authorisation);
+        if (extraQuery != null && extraQuery.size() > 0) {
+            andBsonList.add(extraQuery);
         }
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

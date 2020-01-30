@@ -24,7 +24,6 @@ import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -125,7 +124,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public OpenCGAResult<Long> count(long studyUid, Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+    public OpenCGAResult<Long> count(Query query, String user)
             throws CatalogDBException {
         return count(query);
     }
@@ -400,13 +399,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     }
 
     @Override
-    public OpenCGAResult groupBy(long studyUid, Query query, String field, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
-        return null;
-    }
-
-    @Override
-    public OpenCGAResult groupBy(long studyUid, Query query, List<String> fields, QueryOptions options, String user)
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }
@@ -427,7 +420,6 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         fixComplexQueryParam(QueryParams.ATTRIBUTES.key(), query);
         fixComplexQueryParam(QueryParams.BATTRIBUTES.key(), query);
         fixComplexQueryParam(QueryParams.NATTRIBUTES.key(), query);
-
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

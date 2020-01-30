@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.StudyMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
@@ -1105,12 +1106,13 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     private void joinFields(Study study, QueryOptions options) throws CatalogDBException {
         try {
             joinFields(study, options, null);
-        } catch (CatalogAuthorizationException e) {
+        } catch (CatalogAuthorizationException | CatalogParameterException e) {
             throw new CatalogDBException(e);
         }
     }
 
-    private void joinFields(Study study, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+    private void joinFields(Study study, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long studyId = study.getUid();
         if (studyId <= 0 || options == null) {
             return;
@@ -1541,7 +1543,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public OpenCGAResult<Study> get(Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
         List<Study> documentList = new ArrayList<>();
         OpenCGAResult<Study> studyDataResult;

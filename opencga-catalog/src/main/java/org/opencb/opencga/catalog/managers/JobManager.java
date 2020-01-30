@@ -506,8 +506,7 @@ public class JobManager extends ResourceManager<Job> {
             if (options.getBoolean(QueryOptions.COUNT)) {
                 ExecutorService executor = Executors.newSingleThreadExecutor();
                 Query finalQuery = query;
-                countFuture = executor.submit(() -> jobDBAdaptor.count(study.getUid(), finalQuery, userId,
-                        StudyAclEntry.StudyPermissions.VIEW_JOBS));
+                countFuture = executor.submit(() -> jobDBAdaptor.count(finalQuery, userId));
             }
             OpenCGAResult<Job> queryResult = OpenCGAResult.empty();
             if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
@@ -561,8 +560,7 @@ public class JobManager extends ResourceManager<Job> {
             fixQueryObject(study, query, userId);
 
             query.append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Long> queryResultAux = jobDBAdaptor.count(study.getUid(), query, userId,
-                    StudyAclEntry.StudyPermissions.VIEW_JOBS);
+            OpenCGAResult<Long> queryResultAux = jobDBAdaptor.count(query, userId);
 
             auditManager.auditCount(userId, Enums.Resource.JOB, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1253,7 +1251,7 @@ public class JobManager extends ResourceManager<Job> {
         // Add study id to the query
         query.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        OpenCGAResult queryResult = jobDBAdaptor.groupBy(study.getUid(), query, fields, options, userId);
+        OpenCGAResult queryResult = jobDBAdaptor.groupBy(query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }

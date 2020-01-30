@@ -289,8 +289,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             if (options.getBoolean(QueryOptions.COUNT)) {
                 ExecutorService executor = Executors.newSingleThreadExecutor();
                 Query myQuery = finalQuery;
-                countFuture = executor.submit(() -> familyDBAdaptor.count(study.getUid(), myQuery, userId,
-                        StudyAclEntry.StudyPermissions.VIEW_FAMILIES));
+                countFuture = executor.submit(() -> familyDBAdaptor.count(myQuery, userId));
             }
             OpenCGAResult<Family> queryResult = OpenCGAResult.empty();
             if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
@@ -380,8 +379,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             fixQueryObject(study, finalQuery, token);
 
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Long> queryResultAux = familyDBAdaptor.count(study.getUid(), finalQuery, userId,
-                    StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
+            OpenCGAResult<Long> queryResultAux = familyDBAdaptor.count(finalQuery, userId);
 
             auditManager.auditCount(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -573,7 +571,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // Add study id to the query
         finalQuery.put(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        OpenCGAResult queryResult = familyDBAdaptor.groupBy(study.getUid(), finalQuery, fields, options, userId);
+        OpenCGAResult queryResult = familyDBAdaptor.groupBy(finalQuery, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }

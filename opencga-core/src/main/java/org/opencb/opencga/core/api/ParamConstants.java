@@ -21,6 +21,12 @@ public class ParamConstants {
     public static final String RELEASE_PARAM = "release";
     public static final String RELEASE_DESCRIPTION = "Release when it was created";
 
+    public static final String ACL_PARAM = "acl";
+    public static final String ACL_FORMAT = "Format: acl={user}:{permissions}. Example: acl=pfurio:WRITE,WRITE_ANNOTATIONS would return "
+            + "all entries for which user pfurio has both WRITE and WRITE_ANNOTATIONS permissions. Only study owners or administrators "
+            + "can query by this field. ";
+    public static final String ACL_DESCRIPTION = "Look for all entries for which a user has X permissions. " + ACL_FORMAT;
+
     // ---------------------------------------------
 
     public static final String USER_DESCRIPTION = "User id";

@@ -914,8 +914,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 if (options.getBoolean(QueryOptions.COUNT)) {
                     ExecutorService executor = Executors.newSingleThreadExecutor();
                     Query finalQuery = query;
-                    countFuture = executor.submit(() -> panelDBAdaptor.count(study.getUid(), finalQuery, userId,
-                            StudyAclEntry.StudyPermissions.VIEW_PANELS));
+                    countFuture = executor.submit(() -> panelDBAdaptor.count(finalQuery, userId));
                 }
                 if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
                     // Here permissions will be checked
@@ -969,7 +968,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
                 // Here view permissions will be checked
-                queryResultAux = panelDBAdaptor.count(study.getUid(), query, userId, StudyAclEntry.StudyPermissions.VIEW_PANELS);
+                queryResultAux = panelDBAdaptor.count(query, userId);
             }
 
             auditManager.auditCount(userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
@@ -1174,7 +1173,7 @@ public class PanelManager extends ResourceManager<Panel> {
         // Add study id to the query
         query.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        OpenCGAResult queryResult = sampleDBAdaptor.groupBy(study.getUid(), query, fields, options, userId);
+        OpenCGAResult queryResult = sampleDBAdaptor.groupBy(query, fields, options, userId);
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }
 

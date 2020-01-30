@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -170,7 +171,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
     OpenCGAResult<Project> get(Query query, QueryOptions options) throws CatalogDBException;
 
     OpenCGAResult<Project> get(Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException;
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
     default List<OpenCGAResult<Project>> get(List<Query> queries, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(queries);

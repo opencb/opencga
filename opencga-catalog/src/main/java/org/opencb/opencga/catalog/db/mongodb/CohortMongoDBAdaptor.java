@@ -30,26 +30,27 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.CohortConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.CohortMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.cohort.CohortAclEntry;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortAclEntry;
 import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -191,25 +192,12 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     }
 
     @Override
-    public OpenCGAResult<Long> count(long studyUid, final Query query, final String user,
-                                     final StudyAclEntry.StudyPermissions studyPermissions)
-            throws CatalogDBException, CatalogAuthorizationException {
-        return count(null, studyUid, query, user, studyPermissions);
+    public OpenCGAResult<Long> count(final Query query, final String user) throws CatalogDBException {
+        return count(null, query, user);
     }
 
-    private OpenCGAResult<Long> count(ClientSession clientSession, long studyUid, final Query query, final String user,
-                                   final StudyAclEntry.StudyPermissions studyPermissions)
-            throws CatalogDBException, CatalogAuthorizationException {
-        StudyAclEntry.StudyPermissions studyPermission = (studyPermissions == null
-                ? StudyAclEntry.StudyPermissions.VIEW_COHORTS : studyPermissions);
-
-        // Get the study document
-        Document studyDocument = getStudyDocument(studyUid);
-
-        // Get the document query needed to check the permissions as well
-        Document queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user, studyPermission.name(),
-                studyPermission.getCohortPermission().name(), Enums.Resource.COHORT.name());
-        Bson bson = parseQuery(query, queryForAuthorisedEntries);
+    private OpenCGAResult<Long> count(ClientSession clientSession, final Query query, final String user) throws CatalogDBException {
+        Bson bson = parseQuery(query, user);
         logger.debug("Cohort count: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return new OpenCGAResult<>(cohortCollection.count(clientSession, bson));
     }
@@ -287,7 +275,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     }
 
     private OpenCGAResult<Object> privateUpdate(ClientSession clientSession, Cohort cohort, ObjectMap parameters,
-                                             List<VariableSet> variableSetList, QueryOptions queryOptions) throws CatalogDBException {
+                                                List<VariableSet> variableSetList, QueryOptions queryOptions) throws CatalogDBException {
         long tmpStartTime = startQuery();
         Query tmpQuery = new Query()
                 .append(QueryParams.STUDY_UID.key(), cohort.getStudyUid())
@@ -523,12 +511,12 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     @Override
     public OpenCGAResult<Cohort> get(long studyUid, Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         return get(null, studyUid, query, options, user);
     }
 
     OpenCGAResult<Cohort> get(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
         List<Cohort> documentList = new ArrayList<>();
         OpenCGAResult<Cohort> queryResult;
@@ -571,10 +559,9 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     @Override
     public OpenCGAResult nativeGet(long studyUid, Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        OpenCGAResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(studyUid, query, options, user)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -605,14 +592,14 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     @Override
     public DBIterator<Cohort> iterator(long studyUid, Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         return iterator(null, studyUid, query, options, user);
     }
 
     DBIterator<Cohort> iterator(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
-        Document studyDocument = getStudyDocument(studyUid);
-        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, options, studyDocument, user);
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
+        Document studyDocument = getStudyDocument(clientSession, studyUid);
+        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, options, user);
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.name(), CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name());
 
@@ -622,12 +609,12 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     @Override
     public DBIterator nativeIterator(long studyUid, Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        Document studyDocument = getStudyDocument(studyUid);
-        MongoCursor<Document> mongoCursor = getMongoCursor(null, query, queryOptions, studyDocument, user);
+        Document studyDocument = getStudyDocument(null, studyUid);
+        MongoCursor<Document> mongoCursor = getMongoCursor(null, query, queryOptions, user);
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.name(), CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name());
 
@@ -636,26 +623,12 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     }
 
     private MongoCursor<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
-        MongoCursor<Document> documentMongoCursor;
-        try {
-            documentMongoCursor = getMongoCursor(clientSession, query, options, null, null);
-        } catch (CatalogAuthorizationException e) {
-            throw new CatalogDBException(e);
-        }
-        return documentMongoCursor;
+        return getMongoCursor(clientSession, query, options, null);
     }
 
-    private MongoCursor<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, Document studyDocument,
-                                                 String user) throws CatalogDBException, CatalogAuthorizationException {
-        Document queryForAuthorisedEntries = null;
-        if (studyDocument != null && user != null) {
-            // Get the document query needed to check the permissions as well
-            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                    StudyAclEntry.StudyPermissions.VIEW_COHORTS.name(), CohortAclEntry.CohortPermissions.VIEW.name(),
-                    Enums.Resource.COHORT.name());
-        }
-
-        Bson bson = parseQuery(query, queryForAuthorisedEntries);
+    private MongoCursor<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)
+            throws CatalogDBException {
+        Bson bson = parseQuery(query, user);
 
         QueryOptions qOptions;
         if (options != null) {
@@ -673,16 +646,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         } else {
             return deletedCohortCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
         }
-    }
-
-    private Document getStudyDocument(long studyUid) throws CatalogDBException {
-        // Get the study document
-        Query studyQuery = new Query(StudyDBAdaptor.QueryParams.UID.key(), studyUid);
-        DataResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().nativeGet(studyQuery, QueryOptions.empty());
-        if (queryResult.getNumResults() == 0) {
-            throw new CatalogDBException("Study " + studyUid + " not found");
-        }
-        return queryResult.first();
     }
 
     @Override
@@ -704,38 +667,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     }
 
     @Override
-    public OpenCGAResult groupBy(long studyUid, Query query, String field, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
-        Document studyDocument = getStudyDocument(studyUid);
-        Document queryForAuthorisedEntries;
-        if (containsAnnotationQuery(query)) {
-            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                    StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.name(),
-                    CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.COHORT.name());
-        } else {
-            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                    StudyAclEntry.StudyPermissions.VIEW_COHORTS.name(), CohortAclEntry.CohortPermissions.VIEW.name(),
-                    Enums.Resource.COHORT.name());
-        }
-        Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
-        return groupBy(cohortCollection, bsonQuery, field, QueryParams.ID.key(), options);
-    }
-
-    @Override
-    public OpenCGAResult groupBy(long studyUid, Query query, List<String> fields, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
-        Document studyDocument = getStudyDocument(studyUid);
-        Document queryForAuthorisedEntries;
-        if (containsAnnotationQuery(query)) {
-            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                    StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.name(),
-                    CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.COHORT.name());
-        } else {
-            queryForAuthorisedEntries = getQueryForAuthorisedEntries(studyDocument, user,
-                    StudyAclEntry.StudyPermissions.VIEW_COHORTS.name(), CohortAclEntry.CohortPermissions.VIEW.name(),
-                    Enums.Resource.COHORT.name());
-        }
-        Bson bsonQuery = parseQuery(query, queryForAuthorisedEntries);
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user) throws CatalogDBException {
+        Bson bsonQuery = parseQuery(query, user);
         return groupBy(cohortCollection, bsonQuery, fields, QueryParams.ID.key(), options);
     }
 
@@ -758,12 +691,44 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {
-        return parseQuery(query, null);
+        return parseQuery(query, null, null);
     }
 
-    protected Bson parseQuery(Query query, Document authorisation) throws CatalogDBException {
+    private Bson parseQuery(Query query, String user) throws CatalogDBException {
+        return parseQuery(query, null, user);
+    }
+
+    protected Bson parseQuery(Query query, Document extraQuery) throws CatalogDBException {
+        return parseQuery(query, extraQuery, null);
+    }
+
+    private Bson parseQuery(Query query, Document extraQuery, String user) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
         Document annotationDocument = null;
+
+        if (query.containsKey(QueryParams.STUDY_UID.key())
+                && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
+            Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
+            try {
+                if (containsAnnotationQuery(query)) {
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
+                            CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.COHORT));
+                } else {
+                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, CohortAclEntry.CohortPermissions.VIEW.name(),
+                            Enums.Resource.COHORT));
+                }
+            } catch (CatalogParameterException | CatalogAuthorizationException e) {
+                throw new CatalogDBException("Could not create ACL query");
+            }
+
+            try {
+                andBsonList.addAll(AuthorizationMongoDBUtils.parseQuery(studyDocument, query, Enums.Resource.COHORT));
+            } catch (CatalogAuthorizationException | CatalogParameterException e) {
+                throw new CatalogDBException("Could not create ACL query");
+            }
+
+            query.remove(ParamConstants.ACL_PARAM);
+        }
 
         Query finalQuery = new Query(query);
         finalQuery.remove(QueryParams.DELETED.key());
@@ -850,8 +815,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         if (annotationDocument != null && !annotationDocument.isEmpty()) {
             andBsonList.add(annotationDocument);
         }
-        if (authorisation != null && authorisation.size() > 0) {
-            andBsonList.add(authorisation);
+        if (extraQuery != null && extraQuery.size() > 0) {
+            andBsonList.add(extraQuery);
         }
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);

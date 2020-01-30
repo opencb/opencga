@@ -40,7 +40,6 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -278,7 +277,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public OpenCGAResult<Long> count(long studyUid, Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+    public OpenCGAResult<Long> count(Query query, String user)
             throws CatalogDBException {
         throw new NotImplementedException("Count not implemented for users");
     }
@@ -570,13 +569,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public OpenCGAResult groupBy(long studyUid, Query query, String field, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
-        return null;
-    }
-
-    @Override
-    public OpenCGAResult groupBy(long studyUid, Query query, List<String> fields, QueryOptions options, String user)
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }
