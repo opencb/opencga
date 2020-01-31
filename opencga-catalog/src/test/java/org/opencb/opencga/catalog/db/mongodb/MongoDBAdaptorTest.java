@@ -32,8 +32,10 @@ import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.File;
@@ -132,14 +134,14 @@ public class MongoDBAdaptorTest extends GenericTest {
         return catalogDBAdaptor.getCatalogSampleDBAdaptor().get(query, QueryOptions.empty()).first();
     }
 
-    Individual getIndividual(long studyUid, String individualId) throws CatalogDBException {
+    Individual getIndividual(long studyUid, String individualId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(IndividualDBAdaptor.QueryParams.ID.key(), individualId);
         return catalogIndividualDBAdaptor.get(query, QueryOptions.empty()).first();
     }
 
-    Job getJob(long studyUid, String jobId) throws CatalogDBException {
+    Job getJob(long studyUid, String jobId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query()
                 .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(JobDBAdaptor.QueryParams.ID.key(), jobId);

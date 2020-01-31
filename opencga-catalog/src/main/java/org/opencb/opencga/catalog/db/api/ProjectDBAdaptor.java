@@ -132,7 +132,8 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
 
     OpenCGAResult nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(Project project, String userId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(Project project, String userId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Project> get(String userId, QueryOptions options) throws CatalogDBException;
 
@@ -196,11 +197,12 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         return queryResults;
     }
 
-    OpenCGAResult<Project> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
+    OpenCGAResult<Project> update(long id, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
 
-    OpenCGAResult delete(Project project) throws CatalogDBException;
+    OpenCGAResult delete(Project project) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult delete(Query query) throws CatalogDBException;
 
@@ -223,7 +225,8 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         throw new NotImplementedException("");
     }
 
-    OpenCGAResult<Project> restore(long id, QueryOptions queryOptions) throws CatalogDBException;
+    OpenCGAResult<Project> restore(long id, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException;
 

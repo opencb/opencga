@@ -1055,7 +1055,7 @@ public class ProjectManager extends AbstractManager {
     }
 
     // Return true if currentRelease is found in any entry
-    private boolean checkCurrentReleaseInUse(List<Study> allStudiesInProject, int currentRelease) throws CatalogDBException {
+    private boolean checkCurrentReleaseInUse(List<Study> allStudiesInProject, int currentRelease) throws CatalogException {
         for (Study study : allStudiesInProject) {
             if (study.getRelease() == currentRelease) {
                 return true;

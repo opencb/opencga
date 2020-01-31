@@ -45,19 +45,20 @@ public interface DBAdaptor<T> extends Iterable<T> {
     @Deprecated
     String FORCE = "force";
 
-    default OpenCGAResult<Long> count() throws CatalogDBException {
+    default OpenCGAResult<Long> count() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query());
     }
 
-    OpenCGAResult<Long> count(Query query) throws CatalogDBException;
+    OpenCGAResult<Long> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<Long> count(Query query, String user) throws CatalogDBException;
+    OpenCGAResult<Long> count(Query query, String user) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    default OpenCGAResult<T> distinct(String field) throws CatalogDBException {
+    default OpenCGAResult<T> distinct(String field) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return distinct(new Query(), field);
     }
 
-    OpenCGAResult<T> distinct(Query query, String field) throws CatalogDBException;
+    OpenCGAResult<T> distinct(Query query, String field)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
 
     default OpenCGAResult<T> stats() {
@@ -67,17 +68,20 @@ public interface DBAdaptor<T> extends Iterable<T> {
     OpenCGAResult<T> stats(Query query);
 
 
-    OpenCGAResult<T> get(Query query, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<T> get(Query query, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<T> get(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
-    OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult nativeGet(Query query, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult nativeGet(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
-    default List<OpenCGAResult> nativeGet(List<Query> queries, QueryOptions options) throws CatalogDBException {
+    default List<OpenCGAResult> nativeGet(List<Query> queries, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Objects.requireNonNull(queries);
         List<OpenCGAResult> queryResults = new ArrayList<>(queries.size());
         for (Query query : queries) {
@@ -86,13 +90,15 @@ public interface DBAdaptor<T> extends Iterable<T> {
         return queryResults;
     }
 
-    OpenCGAResult<T> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
+    OpenCGAResult<T> update(long id, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<T> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
+    OpenCGAResult<T> update(Query query, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<T> delete(T id) throws CatalogDBException;
+    OpenCGAResult<T> delete(T id) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<T> delete(Query query) throws CatalogDBException;
+    OpenCGAResult<T> delete(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     default OpenCGAResult<T> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("");
@@ -125,18 +131,20 @@ public interface DBAdaptor<T> extends Iterable<T> {
     default DBIterator<T> iterator() {
         try {
             return iterator(new Query(), new QueryOptions());
-        } catch (CatalogDBException e) {
+        } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
             throw new RuntimeException(e);
         }
     }
 
-    DBIterator<T> iterator(Query query, QueryOptions options) throws CatalogDBException;
+    DBIterator<T> iterator(Query query, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    default DBIterator nativeIterator() throws CatalogDBException {
+    default DBIterator nativeIterator() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return nativeIterator(new Query(), new QueryOptions());
     }
 
-    DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException;
+    DBIterator nativeIterator(Query query, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     DBIterator<T> iterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
@@ -146,11 +154,14 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
 //    OpenCGAResult<T> get(Query query, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException;
 
-    OpenCGAResult<T> rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException;
+    OpenCGAResult<T> rank(Query query, String field, int numResults, boolean asc)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<T> groupBy(Query query, String field, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<T> groupBy(Query query, String field, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<T> groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<T> groupBy(Query query, List<String> fields, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<T> groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
@@ -160,11 +171,12 @@ public interface DBAdaptor<T> extends Iterable<T> {
     default void forEach(Consumer action) {
         try {
             forEach(new Query(), action, new QueryOptions());
-        } catch (CatalogDBException e) {
+        } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
             throw new RuntimeException(e);
         }
     }
 
-    void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException;
+    void forEach(Query query, Consumer<? super Object> action, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
 }

@@ -306,7 +306,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "File", fileId, null);
     }
 
-    private boolean checkUserPermission(String userId, Query query, DBAdaptor dbAdaptor) throws CatalogDBException {
+    private boolean checkUserPermission(String userId, Query query, DBAdaptor dbAdaptor) throws CatalogException {
         if (OPENCGA.equals(userId)) {
             return true;
         } else {

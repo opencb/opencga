@@ -40,16 +40,16 @@ import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.common.AnnotationSet;
-import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.individual.IndividualAclEntry;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualAclEntry;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.individual.Location;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -198,7 +198,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
         }
     }
 
-    private OpenCGAResult<Individual> getIndividual(long studyUid, String individualUuid, QueryOptions options) throws CatalogDBException {
+    private OpenCGAResult<Individual> getIndividual(long studyUid, String individualUuid, QueryOptions options) throws CatalogException {
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(IndividualDBAdaptor.QueryParams.UUID.key(), individualUuid);
@@ -1325,7 +1325,7 @@ public class IndividualManager extends AnnotationSetManager<Individual> {
 
     // **************************   Private methods  ******************************** //
 
-    private List<Long> getSampleUidsFromIndividuals(long studyUid, List<Long> individualUidList) throws CatalogDBException {
+    private List<Long> getSampleUidsFromIndividuals(long studyUid, List<Long> individualUidList) throws CatalogException {
         // Look for all the samples belonging to the individual
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)

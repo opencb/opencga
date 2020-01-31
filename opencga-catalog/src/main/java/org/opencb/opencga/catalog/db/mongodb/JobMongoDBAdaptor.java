@@ -81,7 +81,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         return jobCollection;
     }
 
-    public boolean exists(ClientSession clientSession, long jobUid) throws CatalogDBException {
+    public boolean exists(ClientSession clientSession, long jobUid)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(clientSession, new Query(QueryParams.UID.key(), jobUid)).getNumMatches() > 0;
     }
 
@@ -92,7 +93,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public OpenCGAResult insert(long studyId, Job job, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult insert(long studyId, Job job, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             return runTransaction(clientSession -> {
                 long tmpStartTime = startQuery();
@@ -146,7 +148,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public OpenCGAResult<Job> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Job> getAllInStudy(long studyId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         // Check the studyId first and throw an Exception is not found
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
 
@@ -161,7 +164,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public long getStudyId(long jobId) throws CatalogDBException {
+    public long getStudyId(long jobId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query(QueryParams.UID.key(), jobId);
         QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_UID);
         OpenCGAResult<Document> queryResult = nativeGet(query, queryOptions);
@@ -180,25 +183,28 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public OpenCGAResult<Long> count(Query query) throws CatalogDBException {
+    public OpenCGAResult<Long> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(null, query);
     }
 
-    OpenCGAResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
+    OpenCGAResult<Long> count(ClientSession clientSession, Query query)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bsonDocument = parseQuery(query);
         return new OpenCGAResult<>(jobCollection.count(clientSession, bsonDocument));
     }
 
 
     @Override
-    public OpenCGAResult<Long> count(Query query, String user) throws CatalogDBException {
+    public OpenCGAResult<Long> count(Query query, String user)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
         logger.debug("Job count: query : {}, dbTime: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         return new OpenCGAResult<>(jobCollection.count(bson));
     }
 
     @Override
-    public OpenCGAResult distinct(Query query, String field) throws CatalogDBException {
+    public OpenCGAResult distinct(Query query, String field)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bsonDocument = parseQuery(query);
         return new OpenCGAResult(jobCollection.distinct(field, bsonDocument));
     }
@@ -209,7 +215,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public OpenCGAResult update(long jobUid, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult update(long jobUid, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.STUDY_UID.key()));
         OpenCGAResult<Job> dataResult = get(jobUid, options);
@@ -227,7 +234,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (parameters.containsKey(QueryParams.ID.key())) {
             // We need to check that the update is only performed over 1 single job
             if (count(query).getNumMatches() != 1) {
@@ -245,7 +253,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             Job job = iterator.next();
             try {
                 result.append(runTransaction(session -> privateUpdate(session, job, parameters)));
-            } catch (CatalogDBException e) {
+            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
                 logger.error("Could not update job {}: {}", job.getId(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, job.getId(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -254,7 +262,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         return result;
     }
 
-    OpenCGAResult<Object> privateUpdate(ClientSession clientSession, Job job, ObjectMap parameters) throws CatalogDBException {
+    OpenCGAResult<Object> privateUpdate(ClientSession clientSession, Job job, ObjectMap parameters)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
 
         Document jobParameters = getValidatedUpdateParams(parameters);
@@ -288,7 +297,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public OpenCGAResult delete(Job job) throws CatalogDBException {
+    public OpenCGAResult delete(Job job) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             Query query = new Query()
                     .append(QueryParams.UID.key(), job.getUid())
@@ -305,7 +314,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public OpenCGAResult delete(Query query) throws CatalogDBException {
+    public OpenCGAResult delete(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         DBIterator<Document> iterator = nativeIterator(query, QueryOptions.empty());
 
         OpenCGAResult<Job> result = OpenCGAResult.empty();
@@ -314,7 +323,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             String jobId = job.getString(QueryParams.ID.key());
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, job)));
-            } catch (CatalogDBException e) {
+            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
                 logger.error("Could not delete job {}: {}", jobId, e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, jobId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -433,7 +442,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         return jobParameters;
     }
 
-    public OpenCGAResult clean(int id) throws CatalogDBException {
+    public OpenCGAResult clean(int id) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query(QueryParams.UID.key(), id);
         OpenCGAResult<Job> jobDataResult = get(query, null);
         if (jobDataResult.getResults().size() == 1) {
@@ -472,7 +481,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
      * At the moment it does not clean external references to itself.
      */
     @Override
-    public OpenCGAResult<Job> get(long jobId, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Job> get(long jobId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         checkId(jobId);
         Query query = new Query(QueryParams.UID.key(), jobId)
                 .append(QueryParams.STUDY_UID.key(), getStudyId(jobId));
@@ -493,10 +503,10 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public OpenCGAResult<Job> get(Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Job> get(Query query, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Job> documentList = new ArrayList<>();
-        OpenCGAResult<Job> queryResult;
         try (DBIterator<Job> dbIterator = iterator(query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -506,10 +516,10 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult nativeGet(Query query, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
         List<Document> documentList = new ArrayList<>();
-        OpenCGAResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
             while (dbIterator.hasNext()) {
                 documentList.add(dbIterator.next());
@@ -532,13 +542,15 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public DBIterator<Job> iterator(Query query, QueryOptions options) throws CatalogDBException {
+    public DBIterator<Job> iterator(Query query, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
         return new JobMongoDBIterator(mongoCursor, null, jobConverter, this, dbAdaptorFactory.getCatalogFileDBAdaptor(), options);
     }
 
     @Override
-    public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
+    public DBIterator nativeIterator(Query query, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
@@ -549,7 +561,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public DBIterator<Job> iterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
-        Document studyDocument = getStudyDocument(null, studyUid);
+        query.put(PRIVATE_STUDY_UID, studyUid);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, options, user);
         return new JobMongoDBIterator(mongoCursor, null, jobConverter, this, dbAdaptorFactory.getCatalogFileDBAdaptor(), options, studyUid,
                 user);
@@ -561,16 +573,18 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        Document studyDocument = getStudyDocument(null, studyUid);
+        query.put(PRIVATE_STUDY_UID, studyUid);
         MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, user);
         return new JobMongoDBIterator(mongoCursor, null, null, this, dbAdaptorFactory.getCatalogFileDBAdaptor(), options, studyUid, user);
     }
 
-    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options) throws CatalogDBException {
+    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return getMongoCursor(query, options, null);
     }
 
-    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options, String user) throws CatalogDBException {
+    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options, String user)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
         QueryOptions qOptions;
         if (options != null) {
@@ -617,19 +631,22 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public OpenCGAResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
+    public OpenCGAResult rank(Query query, String field, int numResults, boolean asc)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bsonQuery = parseQuery(query);
         return rank(jobCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
-    public OpenCGAResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult groupBy(Query query, String field, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bsonQuery = parseQuery(query);
         return groupBy(jobCollection, bsonQuery, field, "name", fixOptions(options));
     }
 
     @Override
-    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bsonQuery = parseQuery(query);
         return groupBy(jobCollection, bsonQuery, fields, "name", fixOptions(options));
     }
@@ -642,7 +659,8 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
-    public void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException {
+    public void forEach(Query query, Consumer<? super Object> action, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Objects.requireNonNull(action);
         try (DBIterator<Job> catalogDBIterator = iterator(query, options)) {
             while (catalogDBIterator.hasNext()) {
@@ -703,19 +721,21 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         logger.debug("File '{}' removed from {} jobs", fileUid, result.getNumUpdated());
     }
 
-    private Bson parseQuery(Query query) throws CatalogDBException {
+    private Bson parseQuery(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return parseQuery(query, null, null);
     }
 
-    private Bson parseQuery(Query query, String user) throws CatalogDBException {
+    private Bson parseQuery(Query query, String user) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return parseQuery(query, null, user);
     }
 
-    protected Bson parseQuery(Query query, Document extraQuery) throws CatalogDBException {
+    protected Bson parseQuery(Query query, Document extraQuery)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return parseQuery(query, extraQuery, null);
     }
 
-    private Bson parseQuery(Query query, Document extraQuery, String user) throws CatalogDBException {
+    private Bson parseQuery(Query query, Document extraQuery, String user)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         List<Bson> andBsonList = new ArrayList<>();
 
         if (query.containsKey(QueryParams.STUDY_UID.key())
@@ -723,18 +743,10 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
 
             // Get the document query needed to check the permissions as well
-            try {
-                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, JobAclEntry.JobPermissions.VIEW.name(),
-                        Enums.Resource.JOB));
-            } catch (CatalogAuthorizationException | CatalogParameterException e) {
-                throw new CatalogDBException("Could not create ACL query");
-            }
+            andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, JobAclEntry.JobPermissions.VIEW.name(),
+                    Enums.Resource.JOB));
 
-            try {
-                andBsonList.addAll(AuthorizationMongoDBUtils.parseQuery(studyDocument, query, Enums.Resource.JOB));
-            } catch (CatalogAuthorizationException | CatalogParameterException e) {
-                throw new CatalogDBException("Could not create ACL query");
-            }
+            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.JOB, user));
 
             query.remove(ParamConstants.ACL_PARAM);
         }

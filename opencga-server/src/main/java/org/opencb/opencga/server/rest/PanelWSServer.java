@@ -168,6 +168,7 @@ public class PanelWSServer extends OpenCGAWSServer {
             @QueryParam("creationDate") String creationDate,
             @ApiParam(value = ParamConstants.MODIFICATION_DATE_DESCRIPTION)
             @QueryParam("modificationDate") String modificationDate,
+            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
             @ApiParam(value = "Boolean indicating which panels are queried (installation or study specific panels)",
                     defaultValue = "false") @QueryParam("global") boolean global,
             @ApiParam(value = "Release value (Current release from the moment the samples were first created)")

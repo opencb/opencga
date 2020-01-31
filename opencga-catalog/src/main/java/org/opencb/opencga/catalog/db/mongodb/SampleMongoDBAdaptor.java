@@ -101,7 +101,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
      * ***************************
      */
 
-    public boolean exists(ClientSession clientSession, long sampleUid) throws CatalogDBException {
+    public boolean exists(ClientSession clientSession, long sampleUid)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(clientSession, new Query(QueryParams.UID.key(), sampleUid)).getNumMatches() > 0;
     }
 
@@ -111,7 +112,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return new OpenCGAResult(sampleCollection.insert(sampleDocument, null));
     }
 
-    Sample insert(ClientSession clientSession, long studyId, Sample sample, List<VariableSet> variableSetList) throws CatalogDBException {
+    Sample insert(ClientSession clientSession, long studyId, Sample sample, List<VariableSet> variableSetList)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
 
         if (StringUtils.isEmpty(sample.getId())) {
@@ -180,7 +182,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
     @Override
     public OpenCGAResult insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException {
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting sample insert transaction for sample id '{}'", sample.getId());
@@ -200,7 +202,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
+    public OpenCGAResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         QueryOptions queryOptions = new QueryOptions();
         List<String> includeList = new ArrayList<>();
 
@@ -222,13 +225,14 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult update(long id, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return update(id, parameters, Collections.emptyList(), queryOptions);
     }
 
     @Override
     public OpenCGAResult update(long uid, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
-            throws CatalogDBException {
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query(QueryParams.UID.key(), uid);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.VERSION.key(), QueryParams.STUDY_UID.key(),
@@ -249,13 +253,14 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult update(Query query, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return update(query, parameters, Collections.emptyList(), queryOptions);
     }
 
     @Override
     public OpenCGAResult update(Query query, ObjectMap parameters, List<VariableSet> variableSetList, QueryOptions queryOptions)
-            throws CatalogDBException {
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (parameters.containsKey(QueryParams.ID.key())) {
             // We need to check that the update is only performed over 1 single sample
             if (count(query).getNumMatches() != 1) {
@@ -276,7 +281,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
             try {
                 result.append(runTransaction(clientSession -> privateUpdate(clientSession, sampleDocument, parameters, variableSetList,
                         queryOptions)));
-            } catch (CatalogDBException e) {
+            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
                 logger.error("Could not update sample {}: {}", sampleId, e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, sampleId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -287,7 +292,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     OpenCGAResult<Object> privateUpdate(ClientSession clientSession, Document sampleDocument, ObjectMap parameters,
-                                     List<VariableSet> variableSetList, QueryOptions queryOptions) throws CatalogDBException {
+                                        List<VariableSet> variableSetList, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
         String sampleId = sampleDocument.getString(QueryParams.ID.key());
         long sampleUid = sampleDocument.getLong(QueryParams.UID.key());
@@ -357,7 +363,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     private void updateSampleFromIndividualCollection(ClientSession clientSession, Sample sample, long individualUid,
-                                                      ParamUtils.UpdateAction updateAction) throws CatalogDBException {
+                                                      ParamUtils.UpdateAction updateAction)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         // Update individual information
         ObjectMap params = new ObjectMap(IndividualDBAdaptor.QueryParams.SAMPLES.key(), Collections.singletonList(sample));
 
@@ -388,7 +395,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         createNewVersion(clientSession, sampleCollection, queryResult.first());
     }
 
-    UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, Query query, ObjectMap parameters) throws CatalogDBException {
+    UpdateDocument parseAndValidateUpdateParams(ClientSession clientSession, Query query, ObjectMap parameters)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         UpdateDocument document = new UpdateDocument();
 
         final String[] acceptedBooleanParams = {QueryParams.SOMATIC.key()};
@@ -489,7 +497,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult updateProjectRelease(long studyId, int release) throws CatalogDBException {
+    public OpenCGAResult updateProjectRelease(long studyId, int release)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query()
                 .append(QueryParams.STUDY_UID.key(), studyId)
                 .append(QueryParams.SNAPSHOT.key(), release - 1);
@@ -509,7 +518,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Deprecated
-    public void checkInUse(long sampleId) throws CatalogDBException {
+    public void checkInUse(long sampleId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long studyId = getStudyId(sampleId);
 
         Query query = new Query(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleId);
@@ -538,35 +547,21 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
     }
 
-    /**
-     * To be able to delete a sample, the sample does not have to be part of any cohort.
-     *
-     * @param sampleId sample id.
-     * @throws CatalogDBException if the sampleId is used on any cohort.
-     */
-    private void checkCanDelete(long sampleId) throws CatalogDBException {
-        Query query = new Query(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId);
-        if (dbAdaptorFactory.getCatalogCohortDBAdaptor().count(query).getNumMatches() > 0) {
-            List<Cohort> cohorts = dbAdaptorFactory.getCatalogCohortDBAdaptor()
-                    .get(query, new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.UID.key())).getResults();
-            throw new CatalogDBException("The sample {" + sampleId + "} cannot be deleted/removed. It is being used in "
-                    + cohorts.size() + " cohorts: [" + cohorts.stream().map(Cohort::getUid).collect(Collectors.toList()).toString() + "]");
-        }
-    }
-
     @Override
-    public OpenCGAResult<Long> count(Query query) throws CatalogDBException {
+    public OpenCGAResult<Long> count(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(null, query);
     }
 
-    OpenCGAResult<Long> count(ClientSession clientSession, Query query) throws CatalogDBException {
+    OpenCGAResult<Long> count(ClientSession clientSession, Query query)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query);
         return new OpenCGAResult<>(sampleCollection.count(clientSession, bson));
     }
 
 
     @Override
-    public OpenCGAResult<Long> count(Query query, String user) throws CatalogDBException {
+    public OpenCGAResult<Long> count(Query query, String user)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = new Query(query);
 
         // Just in case the parameter is in the query object, we attempt to remove it from the query map
@@ -604,7 +599,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult distinct(Query query, String field) throws CatalogDBException {
+    public OpenCGAResult distinct(Query query, String field)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query);
         return new OpenCGAResult(sampleCollection.distinct(field, bson));
     }
@@ -615,7 +611,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult delete(Sample sample) throws CatalogDBException {
+    public OpenCGAResult delete(Sample sample) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             Query query = new Query()
                     .append(QueryParams.UID.key(), sample.getUid())
@@ -642,7 +638,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, sample)));
-            } catch (CatalogDBException e) {
+            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
                 logger.error("Could not delete sample {}: {}", sampleId, e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, sampleId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -652,7 +648,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return result;
     }
 
-    OpenCGAResult<Object> privateDelete(ClientSession clientSession, Document sampleDocument) throws CatalogDBException {
+    OpenCGAResult<Object> privateDelete(ClientSession clientSession, Document sampleDocument)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
 
         String sampleId = sampleDocument.getString(QueryParams.ID.key());
@@ -707,7 +704,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         return endWrite(tmpStartTime, 1, 0, 0, 1, Collections.emptyList());
     }
 
-    private void removeSampleReferences(ClientSession clientSession, long studyUid, long sampleUid) throws CatalogDBException {
+    private void removeSampleReferences(ClientSession clientSession, long studyUid, long sampleUid)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         dbAdaptorFactory.getCatalogFileDBAdaptor().removeSampleReferences(clientSession, studyUid, sampleUid);
         dbAdaptorFactory.getCatalogCohortDBAdaptor().removeSampleReferences(clientSession, studyUid, sampleUid);
         individualDBAdaptor.removeSampleReferences(clientSession, studyUid, sampleUid);
@@ -729,7 +727,8 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult<Sample> get(long sampleId, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult<Sample> get(long sampleId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         checkId(sampleId);
         Query query = new Query(QueryParams.UID.key(), sampleId)
                 .append(QueryParams.STUDY_UID.key(), getStudyId(sampleId));
@@ -824,8 +823,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     @Override
     public DBIterator<Sample> iterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
-        Document studyDocument = getStudyDocument(null, studyUid);
+        query.put(PRIVATE_STUDY_UID, studyUid);
         MongoCursor<Document> mongoCursor = getMongoCursor(null, query, options, user);
+        Document studyDocument = getStudyDocument(null, studyUid);
         Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
@@ -844,8 +844,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        Document studyDocument = getStudyDocument(clientSession, studyUid);
+        query.put(PRIVATE_STUDY_UID, studyUid);
         MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
+        Document studyDocument = getStudyDocument(clientSession, studyUid);
         Function<Document, Document> iteratorFilter = (d) ->  filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS.name(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name());
@@ -945,19 +946,22 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
     }
 
     @Override
-    public OpenCGAResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
+    public OpenCGAResult rank(Query query, String field, int numResults, boolean asc)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bsonQuery = parseQuery(query);
         return rank(sampleCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
-    public OpenCGAResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult groupBy(Query query, String field, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bsonQuery = parseQuery(query);
         return groupBy(sampleCollection, bsonQuery, field, "name", options);
     }
 
     @Override
-    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bsonQuery = parseQuery(query);
         return groupBy(sampleCollection, bsonQuery, fields, "name", options);
     }
@@ -979,42 +983,37 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         }
     }
 
-    private Bson parseQuery(Query query) throws CatalogDBException {
+    private Bson parseQuery(Query query) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return parseQuery(query, null, null);
     }
 
-    private Bson parseQuery(Query query, String user) throws CatalogDBException {
+    private Bson parseQuery(Query query, String user) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return parseQuery(query, null, user);
     }
 
-    protected Bson parseQuery(Query query, Document extraQuery) throws CatalogDBException {
+    protected Bson parseQuery(Query query, Document extraQuery)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return parseQuery(query, extraQuery, null);
     }
 
-    private Bson parseQuery(Query query, Document extraQuery, String user) throws CatalogDBException {
+    private Bson parseQuery(Query query, Document extraQuery, String user)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         List<Bson> andBsonList = new ArrayList<>();
         Document annotationDocument = null;
 
         if (query.containsKey(QueryParams.STUDY_UID.key())
                 && (StringUtils.isNotEmpty(user) || query.containsKey(ParamConstants.ACL_PARAM))) {
             Document studyDocument = getStudyDocument(null, query.getLong(QueryParams.STUDY_UID.key()));
-            try {
-                if (containsAnnotationQuery(query)) {
-                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
-                            SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.SAMPLE));
-                } else {
-                    andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, SampleAclEntry.SamplePermissions.VIEW.name(),
-                            Enums.Resource.SAMPLE));
-                }
-            } catch (CatalogParameterException | CatalogAuthorizationException e) {
-                throw new CatalogDBException("Could not create ACL query");
+
+            if (containsAnnotationQuery(query)) {
+                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user,
+                        SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name(), Enums.Resource.SAMPLE));
+            } else {
+                andBsonList.add(getQueryForAuthorisedEntries(studyDocument, user, SampleAclEntry.SamplePermissions.VIEW.name(),
+                        Enums.Resource.SAMPLE));
             }
 
-            try {
-                andBsonList.addAll(AuthorizationMongoDBUtils.parseQuery(studyDocument, query, Enums.Resource.SAMPLE));
-            } catch (CatalogAuthorizationException | CatalogParameterException e) {
-                throw new CatalogDBException("Could not create ACL query");
-            }
+            andBsonList.addAll(AuthorizationMongoDBUtils.parseAclQuery(studyDocument, query, Enums.Resource.SAMPLE, user));
 
             query.remove(ParamConstants.ACL_PARAM);
         }

@@ -95,11 +95,12 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         return queryResults;
     }
 
-    OpenCGAResult<Study> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
+    OpenCGAResult<Study> update(long id, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
 
-    OpenCGAResult delete(Study study) throws CatalogDBException;
+    OpenCGAResult delete(Study study) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult delete(Query query) throws CatalogDBException;
 
@@ -234,8 +235,11 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      * @param members new list of users that will compose the group.
      * @return OpenCGAResult object.
      * @throws CatalogDBException when any of the members do not exist.
+     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
-    OpenCGAResult<Group> setUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+    OpenCGAResult<Group> setUsersToGroup(long studyId, String groupId, List<String> members)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /**
      * Adds the list of members to the groupId. If the groupId did not already existed, it creates it.
@@ -259,7 +263,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
      */
     OpenCGAResult<Group> removeUsersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
-    OpenCGAResult<Group> removeUsersFromAllGroups(long studyId, List<String> users) throws CatalogDBException;
+    OpenCGAResult<Group> removeUsersFromAllGroups(long studyId, List<String> users)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /**
      * Delete a group.
@@ -399,7 +404,7 @@ public interface StudyDBAdaptor extends Iterable<Study> {
             throws CatalogDBException, CatalogAuthorizationException;
 
     OpenCGAResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String user)
-            throws CatalogDBException, CatalogAuthorizationException;
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
     long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
 

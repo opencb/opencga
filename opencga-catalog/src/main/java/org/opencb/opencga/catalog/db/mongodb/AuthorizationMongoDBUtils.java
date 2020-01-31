@@ -172,7 +172,19 @@ public class AuthorizationMongoDBUtils {
         }
     }
 
-    public static List<Document> parseQuery(Document study, Query query, Enums.Resource resource)
+    /**
+     * If query contains {@link ParamConstants#ACL_PARAM}, it will parse the value to generate the corresponding mongo query documents.
+     *
+     * @param study Queried study document.
+     * @param query Original query.
+     * @param resource Affected resource.
+     * @param user User performing the query.
+     * @return A list of documents to satisfy the ACL query.
+     * @throws CatalogDBException when there is a DB error.
+     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
+     */
+    public static List<Document> parseAclQuery(Document study, Query query, Enums.Resource resource, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         List<Document> aclDocuments = new LinkedList<>();
         if (!query.containsKey(ParamConstants.ACL_PARAM)) {
@@ -187,23 +199,28 @@ public class AuthorizationMongoDBUtils {
         if (userPermission.length != 2) {
             throw new CatalogParameterException("Unexpected format for '" + ParamConstants.ACL_PARAM + "'. " + ParamConstants.ACL_FORMAT);
         }
-        String user = userPermission[0];
+        String affectedUser = userPermission[0];
         List<String> permissions = Arrays.asList(userPermission[1].split(","));
 
+        // If user is not checking its own permissions and it is not the owner or admin of the study, we fail
+        if (!user.equals(affectedUser) && !study.getString(PRIVATE_OWNER_ID).equals(user) && !getAdminUsers(study).contains(user)) {
+            throw new CatalogAuthorizationException("Only study owners or admins are authorised to see other user's permissions.");
+        }
+
         // 0. If the user is the admin or corresponds with the owner, we don't have to check anything else
-        if (study.getString(PRIVATE_OWNER_ID).equals(user)) {
+        if (study.getString(PRIVATE_OWNER_ID).equals(affectedUser)) {
             return aclDocuments;
         }
-        if (OPENCGA.equals(user)) {
+        if (OPENCGA.equals(affectedUser)) {
             return aclDocuments;
         }
-        if (getAdminUsers(study).contains(user)) {
+        if (getAdminUsers(study).contains(affectedUser)) {
             return aclDocuments;
         }
 
         // If user does not exist in the members group, the user will not have any permission
-        if (!isUserInMembers(study, user)) {
-            throw new CatalogAuthorizationException("User " + user + " does not have any permissions in study "
+        if (!isUserInMembers(study, affectedUser)) {
+            throw new CatalogAuthorizationException("User " + affectedUser + " does not have any permissions in study "
                     + study.getString(StudyDBAdaptor.QueryParams.ID.key()));
         }
 
@@ -211,12 +228,12 @@ public class AuthorizationMongoDBUtils {
         List<String> groups;
         boolean hasStudyPermissions;
 
-        if (!user.equals(ANONYMOUS)) {
+        if (!affectedUser.equals(ANONYMOUS)) {
             // 0. Check if anonymous has any permission defined (just for performance)
             isAnonymousPresent = isUserInMembers(study, ANONYMOUS);
 
             // 1. We obtain the groups of the user
-            groups = getGroups(study, user);
+            groups = getGroups(study, affectedUser);
         } else {
             // 1. Anonymous user will not belong to any group
             groups = Collections.emptyList();
@@ -225,24 +242,24 @@ public class AuthorizationMongoDBUtils {
         for (String permission : permissions) {
             String studyPermission = StudyAclEntry.StudyPermissions.getStudyPermission(permission, getPermissionType(resource)).name();
 
-            if (!user.equals(ANONYMOUS)) {
+            if (!affectedUser.equals(ANONYMOUS)) {
                 // We check if the study contains the studies expected for the user
-                hasStudyPermissions = checkUserHasPermission(study, user, groups, studyPermission, false);
+                hasStudyPermissions = checkUserHasPermission(study, affectedUser, groups, studyPermission, false);
             } else {
                 // 2. We check if the study contains the studies expected for the user
                 hasStudyPermissions = checkAnonymousHasPermission(study, studyPermission);
             }
 
-            if (hasStudyPermissions && !hasInternalPermissions(study, user, groups, resource.name())) {
+            if (hasStudyPermissions && !hasInternalPermissions(study, affectedUser, groups, resource.name())) {
                 break;
             }
 
-            Document queryDocument = getAuthorisedEntries(user, groups, permission, isAnonymousPresent);
+            Document queryDocument = getAuthorisedEntries(affectedUser, groups, permission, isAnonymousPresent);
             if (hasStudyPermissions) {
                 // The user has permissions defined globally, so we also have to check the entries where the user/groups/members/* have no
                 // permissions defined as the user will also be allowed to see them
                 queryDocument = new Document("$or", Arrays.asList(
-                        getNoPermissionsDefined(user, groups),
+                        getNoPermissionsDefined(affectedUser, groups),
                         queryDocument
                 ));
             }
