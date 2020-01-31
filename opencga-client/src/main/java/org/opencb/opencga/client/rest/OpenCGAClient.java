@@ -136,7 +136,7 @@ public class OpenCGAClient {
     public String login(String user, String password) throws ClientException {
         RestResponse<ObjectMap> login = getUserClient().login(user, new LoginParams().setPassword(password), null);
         updateTokenFromClients(login);
-        setUserId(userId);
+        setUserId(user);
         return login.firstResult().getString("token");
     }
 
