@@ -12,6 +12,7 @@ import org.opencb.opencga.catalog.db.mongodb.JobMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.models.job.Job;
 import org.slf4j.Logger;
@@ -78,9 +79,10 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
                 if (user == null) {
                     fileDocuments = fileDBAdaptor.nativeGet(query, fileQueryOptions).getResults();
                 } else {
+                    query.put(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
                     fileDocuments = fileDBAdaptor.nativeGet(studyUid, query, fileQueryOptions, user).getResults();
                 }
-            } catch (CatalogDBException | CatalogAuthorizationException e) {
+            } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
                 logger.warn("Could not obtain the files associated to the jobs: {}", e.getMessage(), e);
                 return;
             }
@@ -106,9 +108,10 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
                 if (user == null) {
                     jobDocuments = jobDBAdaptor.nativeGet(query, jobQueryOptions).getResults();
                 } else {
+                    query.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
                     jobDocuments = jobDBAdaptor.nativeGet(studyUid, query, jobQueryOptions, user).getResults();
                 }
-            } catch (CatalogDBException | CatalogAuthorizationException e) {
+            } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
                 logger.warn("Could not obtain the jobs the original jobs depend on: {}", e.getMessage(), e);
                 return;
             }

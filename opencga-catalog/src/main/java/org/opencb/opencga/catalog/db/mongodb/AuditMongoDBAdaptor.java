@@ -59,6 +59,17 @@ public class AuditMongoDBAdaptor extends MongoDBAdaptor implements AuditDBAdapto
     }
 
     @Override
+    public OpenCGAResult<AuditRecord> insertAuditRecords(List<AuditRecord> auditRecords) throws CatalogDBException {
+        List<Document> auditRecordDbObjects = new ArrayList<>(auditRecords.size());
+        for (AuditRecord auditRecord : auditRecords) {
+            auditRecordDbObjects.add(MongoDBUtils.getMongoDBDocument(auditRecord, "AuditRecord"));
+        }
+
+        return new OpenCGAResult<AuditRecord>(auditCollection.insert(auditRecordDbObjects, new QueryOptions()))
+                .setResults(auditRecords);
+    }
+
+    @Override
     public OpenCGAResult<AuditRecord> get(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 

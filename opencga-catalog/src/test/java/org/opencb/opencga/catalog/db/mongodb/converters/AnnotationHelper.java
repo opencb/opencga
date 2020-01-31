@@ -15,7 +15,7 @@ import java.util.*;
  */
 public class AnnotationHelper {
 
-    public static List<AnnotationSet> createAnnotation() {
+    public static VariableSet createVariableSet() {
         // Variable set:   a: { ab1: {ab1c1: [boolean], ab1c2: string }, ab2: [{ ab2c1: { ab2c1d1: [numbers], ab2c1d2: string  } }],
         //                      ab3: [{ ab3c1: [{ ab3c1d1: [string], ab3c1d2: number }] }] }
         Set<Variable> ab1Set = new HashSet<>();
@@ -42,7 +42,11 @@ public class AnnotationHelper {
         Set<Variable> rootSet = new HashSet<>();
         rootSet.add(new Variable().setId("a").setType(Variable.VariableType.OBJECT).setVariableSet(aSet));
 
-        VariableSet vs = new VariableSet().setVariables(rootSet).setUid(1).setId("vsId");
+        return new VariableSet().setVariables(rootSet).setUid(1).setId("vsId");
+    }
+
+    public static List<AnnotationSet> createAnnotation() {
+        VariableSet vs = createVariableSet();
 
         // We create a dummy full annotation for the variable set we just created
         Map<String, Object> myMap = new HashMap<>();

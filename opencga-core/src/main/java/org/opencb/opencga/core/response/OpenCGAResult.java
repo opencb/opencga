@@ -103,6 +103,7 @@ public class OpenCGAResult<T> extends DataResult<T> {
 
     public OpenCGAResult<T> setResults(List<T> results) {
         this.results = results;
+        this.setNumResults(results.size());
         return this;
     }
 

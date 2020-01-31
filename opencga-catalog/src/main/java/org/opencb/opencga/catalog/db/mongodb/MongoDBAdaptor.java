@@ -26,8 +26,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBRuntimeException;
+import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -82,30 +81,47 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     }
 
     public interface TransactionBodyWithException<T> {
-        T execute(ClientSession session) throws CatalogDBException;
+        T execute(ClientSession session) throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
     }
 
-    protected <T> T runTransaction(TransactionBodyWithException<T> body) throws CatalogDBException {
+    protected <T> T runTransaction(TransactionBodyWithException<T> body)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction(body, null);
     }
 
-    protected <T> T runTransaction(TransactionBodyWithException<T> body, Consumer<CatalogDBException> onException)
-            throws CatalogDBException {
+    protected <T> T runTransaction(TransactionBodyWithException<T> body, Consumer<CatalogException> onException)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         ClientSession session = dbAdaptorFactory.getMongoDataStore().startSession();
         try {
             return session.withTransaction(() -> {
                 try {
                     return body.execute(session);
-                } catch (CatalogDBException e) {
+                } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
                     throw new CatalogDBRuntimeException(e);
                 }
             });
         } catch (CatalogDBRuntimeException e) {
-            CatalogDBException cause = (CatalogDBException) e.getCause();
-            if (onException != null) {
-                onException.accept(cause);
+            if (e.getCause() instanceof CatalogDBException) {
+                CatalogDBException cause = (CatalogDBException) e.getCause();
+                if (onException != null) {
+                    onException.accept(cause);
+                }
+                throw cause;
+            } else if (e.getCause() instanceof CatalogAuthorizationException) {
+                CatalogAuthorizationException cause = (CatalogAuthorizationException) e.getCause();
+                if (onException != null) {
+                    onException.accept(cause);
+                }
+                throw cause;
+            } else if (e.getCause() instanceof CatalogParameterException) {
+                CatalogParameterException cause = (CatalogParameterException) e.getCause();
+                if (onException != null) {
+                    onException.accept(cause);
+                }
+                throw cause;
+            } else {
+                throw e;
             }
-            throw cause;
         } finally {
             session.close();
         }
