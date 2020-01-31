@@ -65,7 +65,9 @@ public class DatabaseCredentials {
     }
 
     public void setHosts(List<String> hosts) {
-        this.hosts = hosts;
+        this.hosts = hosts == null
+                ? java.util.Collections.emptyList()
+                : hosts.stream().flatMap(s -> java.util.Arrays.stream(s.split(","))).collect(java.util.stream.Collectors.toList());
     }
 
     public String getUser() {

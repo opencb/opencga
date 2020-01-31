@@ -44,8 +44,6 @@ public abstract class AuthenticationManager {
     }
 
     Key converStringToKeyObject(String keyString, String jcaAlgorithm) {
-        logger.info(keyString);
-        logger.info(jcaAlgorithm);
         return new SecretKeySpec(keyString.getBytes(), jcaAlgorithm);
     }
 
