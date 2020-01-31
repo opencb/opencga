@@ -13,6 +13,9 @@ import java.util.Map;
 public class FileSolrModel {
 
     @Field
+    private String id;
+
+    @Field
     private long uid;
 
     @Field
@@ -83,7 +86,8 @@ public class FileSolrModel {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FileSolrModel{");
-        sb.append("uid=").append(uid);
+        sb.append("id='").append(id).append('\'');
+        sb.append(", uid=").append(uid);
         sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", type='").append(type).append('\'');
@@ -106,6 +110,15 @@ public class FileSolrModel {
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public FileSolrModel setId(String id) {
+        this.id = id;
+        return this;
     }
 
     public long getUid() {

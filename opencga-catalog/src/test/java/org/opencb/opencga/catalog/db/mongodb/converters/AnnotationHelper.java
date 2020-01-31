@@ -15,21 +15,21 @@ import java.util.*;
  */
 public class AnnotationHelper {
 
-    public static List<AnnotationSet> createAnnotation() {
+    public static VariableSet createVariableSet() {
         // Variable set:   a: { ab1: {ab1c1: [boolean], ab1c2: string }, ab2: [{ ab2c1: { ab2c1d1: [numbers], ab2c1d2: string  } }],
         //                      ab3: [{ ab3c1: [{ ab3c1d1: [string], ab3c1d2: number }] }] }
         Set<Variable> ab1Set = new HashSet<>();
         ab1Set.add(new Variable().setId("ab1c1").setMultiValue(true).setType(Variable.VariableType.BOOLEAN));
-        ab1Set.add(new Variable().setId("ab1c2").setType(Variable.VariableType.TEXT));
+        ab1Set.add(new Variable().setId("ab1c2").setType(Variable.VariableType.STRING));
 
         Set<Variable> ab2c1Set = new HashSet<>();
         ab2c1Set.add(new Variable().setId("ab2c1d1").setMultiValue(true).setType(Variable.VariableType.INTEGER));
-        ab2c1Set.add(new Variable().setId("ab2c1d2").setType(Variable.VariableType.TEXT));
+        ab2c1Set.add(new Variable().setId("ab2c1d2").setType(Variable.VariableType.STRING));
         Set<Variable> ab2Set = new HashSet<>();
         ab2Set.add(new Variable().setId("ab2c1").setType(Variable.VariableType.OBJECT).setVariableSet(ab2c1Set));
 
         Set<Variable> ab3c1Set = new HashSet<>();
-        ab3c1Set.add(new Variable().setId("ab3c1d1").setMultiValue(true).setType(Variable.VariableType.TEXT));
+        ab3c1Set.add(new Variable().setId("ab3c1d1").setMultiValue(true).setType(Variable.VariableType.STRING));
         ab3c1Set.add(new Variable().setId("ab3c1d2").setType(Variable.VariableType.DOUBLE));
         Set<Variable> ab3Set = new HashSet<>();
         ab3Set.add(new Variable().setId("ab3c1").setType(Variable.VariableType.OBJECT).setMultiValue(true).setVariableSet(ab3c1Set));
@@ -42,7 +42,11 @@ public class AnnotationHelper {
         Set<Variable> rootSet = new HashSet<>();
         rootSet.add(new Variable().setId("a").setType(Variable.VariableType.OBJECT).setVariableSet(aSet));
 
-        VariableSet vs = new VariableSet().setVariables(rootSet).setUid(1).setId("vsId");
+        return new VariableSet().setVariables(rootSet).setUid(1).setId("vsId");
+    }
+
+    public static List<AnnotationSet> createAnnotation() {
+        VariableSet vs = createVariableSet();
 
         // We create a dummy full annotation for the variable set we just created
         Map<String, Object> myMap = new HashMap<>();

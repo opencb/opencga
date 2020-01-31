@@ -13,6 +13,7 @@ import org.opencb.opencga.catalog.db.mongodb.FileMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogCohortToSolrCohortConverter;
+import org.opencb.opencga.catalog.stats.solr.converters.CatalogFileToSolrFileConverter;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampleConverter;
 import org.opencb.opencga.catalog.stats.solr.converters.SolrConverterUtil;
 import org.opencb.opencga.catalog.utils.Constants;

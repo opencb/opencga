@@ -662,6 +662,7 @@ public class PanelManager extends ResourceManager<Panel> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Panel> result = OpenCGAResult.empty();
         while (iterator.hasNext()) {
             Panel panel = iterator.next();
@@ -680,6 +681,7 @@ public class PanelManager extends ResourceManager<Panel> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }
@@ -775,6 +777,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 .append("options", options)
                 .append("token", token);
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Panel> result = OpenCGAResult.empty();
         for (String id : panelIds) {
             String panelId = id;
@@ -805,6 +808,7 @@ public class PanelManager extends ResourceManager<Panel> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }
@@ -1013,6 +1017,7 @@ public class PanelManager extends ResourceManager<Panel> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Panel> result = OpenCGAResult.empty();
         for (String id : panelIds) {
 
@@ -1051,6 +1056,7 @@ public class PanelManager extends ResourceManager<Panel> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }
@@ -1095,6 +1101,7 @@ public class PanelManager extends ResourceManager<Panel> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationId);
         while (iterator.hasNext()) {
             Panel panel = iterator.next();
 
@@ -1123,6 +1130,7 @@ public class PanelManager extends ResourceManager<Panel> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }

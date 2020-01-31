@@ -31,7 +31,9 @@ import org.opencb.opencga.analysis.file.FileDeleteTask;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
+import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
+import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -143,6 +145,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(VariantAnnotationSaveOperationTool.ID, "variant annotation-save");
             put(SampleVariantFilterAnalysis.ID, "variant sample-run");
             put(KnockoutAnalysis.ID, "variant knockout-run");
+            put(SampleEligibilityAnalysis.ID, "variant " + SampleEligibilityAnalysis.ID + "-run");
+            put(MutationalSignatureAnalysis.ID, "variant mutational-signature-run");
 
             put(TeamInterpretationAnalysis.ID, "interpretation " + TeamInterpretationAnalysis.ID);
             put(TieringInterpretationAnalysis.ID, "interpretation " + TieringInterpretationAnalysis.ID);
@@ -494,17 +498,51 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             if (entry.getValue() instanceof Map) {
                 Map<String, String> dynamicParams = (Map<String, String>) entry.getValue();
                 for (Map.Entry<String, String> dynamicEntry : dynamicParams.entrySet()) {
-                    cliBuilder
-                            .append(" ").append("-D").append(dynamicEntry.getKey())
-                            .append("=").append(dynamicEntry.getValue());
+                    cliBuilder.append(" ").append("-D");
+                    escapeCliArg(cliBuilder, dynamicEntry.getKey());
+                    cliBuilder.append("=");
+                    escapeCliArg(cliBuilder, dynamicEntry.getValue());
                 }
             } else {
+                String key = entry.getKey();
+                if (!StringUtils.isAlphanumeric(StringUtils.replaceChars(key, "-_", ""))) {
+                    // This should never happen
+                    throw new IllegalArgumentException("Invalid job param key '" + key + "'");
+                }
                 cliBuilder
-                        .append(" --").append(CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, entry.getKey()))
-                        .append(" ").append(entry.getValue());
+                        .append(" --").append(CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, key))
+                        .append(" ");
+                escapeCliArg(cliBuilder, entry.getValue().toString());
             }
         }
         return cliBuilder.toString();
+    }
+
+    /**
+     * Escape args if needed.
+     *
+     * Surround with single quotes. ('value')
+     * Detect if the value had any single quote, and escape them with double quotes ("'")
+     *
+     *   --description It's true
+     *   --description 'It'"'"'s true'
+     *
+     * 'It'
+     * "'"
+     * 's true'
+     *
+     * @param cliBuilder CommandLine StringBuilder
+     * @param value value to escape
+     */
+    public static void escapeCliArg(StringBuilder cliBuilder, String value) {
+        if (StringUtils.isAlphanumeric(value) || StringUtils.isEmpty(value)) {
+            cliBuilder.append(value);
+        } else {
+            if (value.contains("'")) {
+                value = value.replace("'", "'\"'\"'");
+            }
+            cliBuilder.append("'").append(value).append("'");
+        }
     }
 
     private boolean canBeQueued(Job job) {

@@ -130,7 +130,7 @@ public final class VariantQueryUtils {
             SAMPLE_LIMIT,
             SAMPLE_SKIP
     )));
-    public static final boolean DEFAULT_SKIP_COUNT = true;
+
     public static final String SKIP_MISSING_GENES = "skipMissingGenes";
 
     private static Logger logger = LoggerFactory.getLogger(VariantQueryUtils.class);
@@ -1633,7 +1633,7 @@ public final class VariantQueryUtils {
 //            logger.info("Unable to return more than {} variants. Change limit from {} to {}", limitMax, limit, limitMax);
             throw VariantQueryException.maxLimitReached(elementName, limit, limitMax);
         }
-        limit = (limit > 0) ? Math.min(limit, limitMax) : limitDefault;
+        limit = (limit >= 0) ? limit : limitDefault;
         objectMap.put(limitKey,  limit);
         return objectMap;
     }

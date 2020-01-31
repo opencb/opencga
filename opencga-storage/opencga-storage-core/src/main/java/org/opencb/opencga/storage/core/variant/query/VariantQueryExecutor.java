@@ -12,6 +12,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 
+import java.util.Collections;
+
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.QUERY_DEFAULT_TIMEOUT;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.QUERY_MAX_TIMEOUT;
 
@@ -75,7 +77,16 @@ public abstract class VariantQueryExecutor implements VariantIterable {
      */
     public abstract boolean canUseThisExecutor(Query query, QueryOptions options) throws StorageEngineException;
 
-    public abstract DataResult<Long> count(Query query);
+    public DataResult<Long> count(Query query) {
+        VariantQueryResult<Variant> result = get(query, new QueryOptions(QueryOptions.COUNT, true).append(QueryOptions.LIMIT, 0));
+        return new DataResult<>(
+                result.getTime(),
+                result.getEvents(),
+                1,
+                Collections.singletonList(result.getNumMatches()),
+                result.getNumMatches(),
+                result.getAttributes());
+    }
 
     public VariantQueryResult<Long> approximateCount(Query query, QueryOptions options) {
         return new VariantQueryResult<>(count(query), null);

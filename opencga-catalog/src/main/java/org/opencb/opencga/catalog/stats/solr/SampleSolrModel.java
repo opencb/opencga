@@ -13,6 +13,9 @@ import java.util.Map;
 public class SampleSolrModel {
 
     @Field
+    private String id;
+
+    @Field
     private long uid;
 
     @Field
@@ -90,7 +93,8 @@ public class SampleSolrModel {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("SampleSolrModel{");
-        sb.append("uid=").append(uid);
+        sb.append("id='").append(id).append('\'');
+        sb.append(", uid=").append(uid);
         sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", source='").append(source).append('\'');
         sb.append(", release=").append(release);
@@ -132,6 +136,15 @@ public class SampleSolrModel {
 
     public SampleSolrModel setStudyId(String studyId) {
         this.studyId = studyId;
+        return this;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public SampleSolrModel setId(String id) {
+        this.id = id;
         return this;
     }
 

@@ -30,7 +30,10 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.DBIterator;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -44,7 +47,6 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.config.HookConfiguration;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
-import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.*;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -92,9 +94,6 @@ public class FileManager extends AnnotationSetManager<File> {
     private FileMetadataReader fileMetadataReader;
     private UserManager userManager;
     private StudyManager studyManager;
-
-    public static final String GET_NON_DELETED_FILES = Status.READY + "," + File.FileStatus.TRASHED + "," + File.FileStatus.STAGE + ","
-            + File.FileStatus.MISSING;
 
     private final String defaultFacet = "creationYear>>creationMonth;format;bioformat;format>>bioformat;status;"
             + "size[0..214748364800]:10737418240;numSamples[0..10]:1";
@@ -690,18 +689,14 @@ public class FileManager extends AnnotationSetManager<File> {
             // Check if it already exists
             Query query = new Query()
                     .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                    .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath())
-                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + File.FileStatus.DELETED
-                            + ";!=" + File.FileStatus.DELETING + ";!=" + File.FileStatus.PENDING_DELETE + ";!=" + File.FileStatus.REMOVED);
+                    .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath());
             if (fileDBAdaptor.count(query).getNumMatches() > 0) {
                 logger.warn("The file '{}' already exists in catalog", file.getPath());
                 throw new CatalogException("The file '" + file.getPath() + "' already exists in catalog");
             }
             query = new Query()
                     .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                    .append(FileDBAdaptor.QueryParams.URI.key(), uri)
-                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + File.FileStatus.DELETED
-                            + ";!=" + File.FileStatus.DELETING + ";!=" + File.FileStatus.PENDING_DELETE + ";!=" + File.FileStatus.REMOVED);
+                    .append(FileDBAdaptor.QueryParams.URI.key(), uri);
             OpenCGAResult<File> fileResult = fileDBAdaptor.get(query,
                     new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.PATH.key()));
             if (fileResult.getNumResults() > 0) {
@@ -1355,6 +1350,7 @@ public class FileManager extends AnnotationSetManager<File> {
         Set<String> processedPaths = new HashSet<>();
         boolean physicalDelete = params.getBoolean(Constants.SKIP_TRASH, false);
 
+        auditManager.initAuditBatch(operationUuid);
         OpenCGAResult<File> result = OpenCGAResult.empty();
         for (String id : fileIds) {
             String fileId = id;
@@ -1394,6 +1390,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationUuid);
 
         return endResult(result, ignoreException);
     }
@@ -1445,6 +1442,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
         long numMatches = 0;
 
+        auditManager.initAuditBatch(operationUuid);
         while (fileIterator.hasNext()) {
             File file = fileIterator.next();
 
@@ -1479,6 +1477,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationUuid);
 
         dataResult.setTime((int) watch.getTime(TimeUnit.MILLISECONDS));
         dataResult.setNumMatches(dataResult.getNumMatches() + numMatches);
@@ -1775,6 +1774,7 @@ public class FileManager extends AnnotationSetManager<File> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<File> result = OpenCGAResult.empty();
         while (iterator.hasNext()) {
             File file = iterator.next();
@@ -1782,8 +1782,8 @@ public class FileManager extends AnnotationSetManager<File> {
                 OpenCGAResult<File> updateResult = update(study, file, updateParams, options, userId, token);
                 result.append(updateResult);
 
-                auditManager.auditUpdate(userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
-                        auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+                auditManager.auditUpdate(operationId, userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
+                        study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             } catch (CatalogException e) {
                 Event event = new Event(Event.Type.ERROR, file.getId(), e.getMessage());
                 result.getEvents().add(event);
@@ -1793,6 +1793,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         String ownerId = studyDBAdaptor.getOwnerId(study.getUid());
         userDBAdaptor.updateUserLastModified(ownerId);
@@ -1894,6 +1895,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("options", options)
                 .append("token", token);
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<File> result = OpenCGAResult.empty();
         for (String id : fileIds) {
             String fileId = id;
@@ -1924,6 +1926,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         String ownerId = studyDBAdaptor.getOwnerId(study.getUid());
         userDBAdaptor.updateUserLastModified(ownerId);
@@ -2091,199 +2094,6 @@ public class FileManager extends AnnotationSetManager<File> {
         OpenCGAResult<File> queryResult = fileDBAdaptor.get(file.getUid(), options);
         userDBAdaptor.updateUserLastModified(ownerId);
         return queryResult;
-    }
-
-    private void removeJobReferences(long studyUid, List<File> files) throws CatalogException {
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.INPUT.key(), JobDBAdaptor.QueryParams.OUTPUT.key(),
-                JobDBAdaptor.QueryParams.OUT_DIR.key(), JobDBAdaptor.QueryParams.ATTRIBUTES.key()));
-
-        List<Long> resourceList = files.stream().map(File::getUid).collect(Collectors.toList());
-
-        // Find all the jobs containing references to any of the files to be deleted
-        Query query = new Query()
-                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(JobDBAdaptor.QueryParams.INPUT_UID.key(), resourceList);
-        OpenCGAResult<Job> jobInputFiles = jobDBAdaptor.get(query, options);
-
-        query = new Query()
-                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(JobDBAdaptor.QueryParams.OUTPUT_UID.key(), resourceList);
-        OpenCGAResult<Job> jobOutputFiles = jobDBAdaptor.get(query, options);
-
-        query = new Query()
-                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(JobDBAdaptor.QueryParams.OUT_DIR_UID.key(), resourceList);
-        OpenCGAResult<Job> jobOutDirFolders = jobDBAdaptor.get(query, options);
-
-        // We create a job map that will contain all the changes done so far to avoid performing more queries
-        Map<Long, Job> jobMap = new HashMap<>();
-        Set<Long> fileIdsReferencedInJobs = new HashSet<>();
-        for (Job job : jobInputFiles.getResults()) {
-            fileIdsReferencedInJobs.addAll(job.getInput().stream().map(File::getUid).collect(Collectors.toList()));
-            jobMap.put(job.getUid(), job);
-        }
-        for (Job job : jobOutputFiles.getResults()) {
-            fileIdsReferencedInJobs.addAll(job.getOutput().stream().map(File::getUid).collect(Collectors.toList()));
-            jobMap.put(job.getUid(), job);
-        }
-        for (Job job : jobOutDirFolders.getResults()) {
-            fileIdsReferencedInJobs.add(job.getOutDir().getUid());
-            jobMap.put(job.getUid(), job);
-        }
-
-        if (fileIdsReferencedInJobs.isEmpty()) {
-            logger.info("No associated jobs found for the files to be deleted.");
-            return;
-        }
-
-        // We create a map with the files that are related to jobs that are going to be deleted
-        Map<Long, File> relatedFileMap = new HashMap<>();
-        for (Long fileId : resourceList) {
-            if (fileIdsReferencedInJobs.contains(fileId)) {
-                relatedFileMap.put(fileId, null);
-            }
-        }
-
-        if (relatedFileMap.isEmpty()) {
-            logger.error("Unexpected error: None of the matching jobs seem to be related to any of the files to be deleted");
-            throw new CatalogException("Internal error. Please, report to the OpenCGA administrators.");
-        }
-
-        // We obtain the current information of those files
-        query = new Query()
-                .append(FileDBAdaptor.QueryParams.UID.key(), relatedFileMap.keySet())
-                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), GET_NON_DELETED_FILES);
-        OpenCGAResult<File> fileDataResult = fileDBAdaptor.get(query, QueryOptions.empty());
-
-        if (fileDataResult.getNumResults() < relatedFileMap.size()) {
-            logger.error("Unexpected error: The number of files fetched does not match the number of files looked for.");
-            throw new CatalogException("Internal error. Please, report to the OpenCGA administrators.");
-        }
-
-        relatedFileMap = new HashMap<>();
-        for (File file : fileDataResult.getResults()) {
-            relatedFileMap.put(file.getUid(), file);
-        }
-
-        // We update the input files from the jobs
-        for (Job jobAux : jobInputFiles.getResults()) {
-            Job job = jobMap.get(jobAux.getUid());
-
-            List<File> inputFiles = new ArrayList<>(job.getInput().size());
-            List<File> attributeFiles = new ArrayList<>(job.getInput().size());
-            for (File file : job.getInput()) {
-                if (relatedFileMap.containsKey(file.getUid())) {
-                    attributeFiles.add(relatedFileMap.get(file.getUid()));
-                } else {
-                    inputFiles.add(file);
-                }
-            }
-
-            if (attributeFiles.isEmpty()) {
-                logger.error("Unexpected error: Deleted file was apparently not found in the map of job associated files");
-                throw new CatalogException("Internal error. Please, report to the OpenCGA administrators.");
-            }
-
-            Map<String, Object> attributes = job.getAttributes();
-            ObjectMap opencgaAttributes;
-            if (!attributes.containsKey(Constants.PRIVATE_OPENCGA_ATTRIBUTES)) {
-                opencgaAttributes = new ObjectMap();
-                attributes.put(Constants.PRIVATE_OPENCGA_ATTRIBUTES, opencgaAttributes);
-            } else {
-                opencgaAttributes = (ObjectMap) attributes.get(Constants.PRIVATE_OPENCGA_ATTRIBUTES);
-            }
-
-            List<Object> fileList = opencgaAttributes.getAsList(Constants.JOB_DELETED_INPUT_FILES);
-            if (fileList == null || fileList.isEmpty()) {
-                fileList = new ArrayList<>(attributeFiles);
-            } else {
-                fileList = new ArrayList<>(fileList);
-                fileList.addAll(attributeFiles);
-            }
-            opencgaAttributes.put(Constants.JOB_DELETED_INPUT_FILES, fileList);
-
-            ObjectMap params = new ObjectMap()
-                    .append(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes)
-                    .append(JobDBAdaptor.QueryParams.INPUT.key(), inputFiles);
-            jobDBAdaptor.update(job.getUid(), params, QueryOptions.empty());
-        }
-
-        // We update the output files from the jobs
-        for (Job jobAux : jobOutputFiles.getResults()) {
-            Job job = jobMap.get(jobAux.getUid());
-
-            List<File> outputFiles = new ArrayList<>(job.getOutput().size());
-            List<File> attributeFiles = new ArrayList<>(job.getOutput().size());
-            for (File file : job.getOutput()) {
-                if (relatedFileMap.containsKey(file.getUid())) {
-                    attributeFiles.add(relatedFileMap.get(file.getUid()));
-                } else {
-                    outputFiles.add(file);
-                }
-            }
-
-            if (attributeFiles.isEmpty()) {
-                logger.error("Unexpected error: Deleted file was apparently not found in the map of job associated files");
-                throw new CatalogException("Internal error. Please, report to the OpenCGA administrators.");
-            }
-
-            Map<String, Object> attributes = job.getAttributes();
-            ObjectMap opencgaAttributes;
-            if (!attributes.containsKey(Constants.PRIVATE_OPENCGA_ATTRIBUTES)) {
-                opencgaAttributes = new ObjectMap();
-                attributes.put(Constants.PRIVATE_OPENCGA_ATTRIBUTES, opencgaAttributes);
-            } else {
-                opencgaAttributes = (ObjectMap) attributes.get(Constants.PRIVATE_OPENCGA_ATTRIBUTES);
-            }
-
-            List<Object> fileList = opencgaAttributes.getAsList(Constants.JOB_DELETED_OUTPUT_FILES);
-            if (fileList == null || fileList.isEmpty()) {
-                fileList = new ArrayList<>(attributeFiles);
-            } else {
-                fileList = new ArrayList<>(fileList);
-                fileList.addAll(attributeFiles);
-            }
-            opencgaAttributes.put(Constants.JOB_DELETED_OUTPUT_FILES, fileList);
-
-            ObjectMap params = new ObjectMap()
-                    .append(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes)
-                    .append(JobDBAdaptor.QueryParams.OUTPUT.key(), outputFiles);
-            jobDBAdaptor.update(job.getUid(), params, QueryOptions.empty());
-        }
-
-        // We update the outdir file from the jobs
-        for (Job jobAux : jobOutDirFolders.getResults()) {
-            Job job = jobMap.get(jobAux.getUid());
-
-            File outDir = job.getOutDir();
-            if (outDir == null || outDir.getUid() <= 0) {
-                logger.error("Unexpected error: Output directory from job not found?");
-                throw new CatalogException("Internal error. Please, report to the OpenCGA administrators.");
-            }
-            if (!relatedFileMap.containsKey(job.getOutDir().getUid())) {
-                logger.error("Unexpected error: Deleted output directory was apparently not found in the map of job associated files");
-                throw new CatalogException("Internal error. Please, report to the OpenCGA administrators.");
-            }
-            // We get the whole file entry
-            outDir = relatedFileMap.get(outDir.getUid());
-
-            Map<String, Object> attributes = job.getAttributes();
-            ObjectMap opencgaAttributes;
-            if (!attributes.containsKey(Constants.PRIVATE_OPENCGA_ATTRIBUTES)) {
-                opencgaAttributes = new ObjectMap();
-                attributes.put(Constants.PRIVATE_OPENCGA_ATTRIBUTES, opencgaAttributes);
-            } else {
-                opencgaAttributes = (ObjectMap) attributes.get(Constants.PRIVATE_OPENCGA_ATTRIBUTES);
-            }
-            opencgaAttributes.put(Constants.JOB_DELETED_OUTPUT_DIRECTORY, outDir);
-
-            ObjectMap params = new ObjectMap()
-                    .append(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes)
-                    .append(JobDBAdaptor.QueryParams.OUT_DIR.key(), -1L);
-            jobDBAdaptor.update(job.getUid(), params, QueryOptions.empty());
-        }
     }
 
     public OpenCGAResult<File> link(String studyStr, URI uriOrigin, String pathDestiny, ObjectMap params, String token)
@@ -3507,8 +3317,6 @@ public class FileManager extends AnnotationSetManager<File> {
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.URI.key(), "~^" + normalizedUri)
                 .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid())
-                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!=" + Status.DELETED + ";!="
-                        + File.FileStatus.REMOVED)
                 .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true);
 
         // Limit the number of results and only some fields

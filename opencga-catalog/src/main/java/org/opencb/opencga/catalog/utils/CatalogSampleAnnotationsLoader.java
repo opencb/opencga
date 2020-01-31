@@ -238,19 +238,19 @@ public class CatalogSampleAnnotationsLoader {
         List<Variable> variableList = new LinkedList<>();
 
         String category = "PEDIGREE";
-        variableList.add(new Variable("family", category, Variable.VariableType.TEXT, null, true,
+        variableList.add(new Variable("family", category, Variable.VariableType.STRING, null, true,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("id", category, Variable.VariableType.DOUBLE, null, true,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
-        variableList.add(new Variable("name", category, Variable.VariableType.TEXT, null, true,
+        variableList.add(new Variable("name", category, Variable.VariableType.STRING, null, true,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("fatherId", category, Variable.VariableType.DOUBLE, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
-        variableList.add(new Variable("fatherName", category, Variable.VariableType.TEXT, null, false,
+        variableList.add(new Variable("fatherName", category, Variable.VariableType.STRING, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("motherId", category, Variable.VariableType.DOUBLE, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
-        variableList.add(new Variable("motherName", category, Variable.VariableType.TEXT, null, false,
+        variableList.add(new Variable("motherName", category, Variable.VariableType.STRING, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
 
         Set<String> allowedSexValues = new HashSet<>();
@@ -298,14 +298,14 @@ public class CatalogSampleAnnotationsLoader {
                     if (isNumerical) {
                         type = Variable.VariableType.DOUBLE;
                     } else {
-                        type = Variable.VariableType.TEXT;
+                        type = Variable.VariableType.STRING;
                     }
                 }
             } else {
                 if (isNumerical) {
                     type = Variable.VariableType.DOUBLE;
                 } else {
-                    type = Variable.VariableType.TEXT;
+                    type = Variable.VariableType.STRING;
                 }
             }
 

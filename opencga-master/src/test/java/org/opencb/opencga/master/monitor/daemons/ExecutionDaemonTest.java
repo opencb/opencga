@@ -7,8 +7,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
@@ -56,9 +56,26 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         params.put("flag", "");
         params.put("boolean", "true");
         params.put("outdir", "/tmp/folder");
-        params.put("other", Collections.singletonMap("dynamic", "true"));
+        params.put("paramWithSpaces", "This could be a description");
+        params.put("paramWithSingleQuotes", "This could 'be' a description");
+        params.put("paramWithDoubleQuotes", "This could \"be\" a description");
+        Map<String, String> dynamic = new LinkedHashMap<>();
+        dynamic.put("dynamic", "It's true");
+        dynamic.put("param with spaces", "Fuc*!");
+
+        params.put("other", dynamic);
         String cli = ExecutionDaemon.buildCli("opencga-internal.sh", "variant-index", params);
-        assertEquals("opencga-internal.sh variant index --key value --camel-case-key value --flag  --boolean true --outdir /tmp/folder -Ddynamic=true", cli);
+        assertEquals("opencga-internal.sh variant index "
+                + "--key value "
+                + "--camel-case-key value "
+                + "--flag  "
+                + "--boolean true "
+                + "--outdir '/tmp/folder' "
+                + "--param-with-spaces 'This could be a description' "
+                + "--param-with-single-quotes 'This could '\"'\"'be'\"'\"' a description' "
+                + "--param-with-double-quotes 'This could \"be\" a description' "
+                + "-Ddynamic='It'\"'\"'s true' "
+                + "-D'param with spaces'='Fuc*!'", cli);
     }
 
     @Test

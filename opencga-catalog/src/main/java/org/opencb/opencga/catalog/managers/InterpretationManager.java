@@ -279,6 +279,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Interpretation> result = OpenCGAResult.empty();
         while (iterator.hasNext()) {
             Interpretation interpretation = iterator.next();
@@ -299,6 +300,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }
@@ -399,6 +401,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                 .append("options", options)
                 .append("token", token);
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Interpretation> result = OpenCGAResult.empty();
         for (String id : interpretationIds) {
             String interpretationId = id;
@@ -430,6 +433,7 @@ public class InterpretationManager extends ResourceManager<Interpretation> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }

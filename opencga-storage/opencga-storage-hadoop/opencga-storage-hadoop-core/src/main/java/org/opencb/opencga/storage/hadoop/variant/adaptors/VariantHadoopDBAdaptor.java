@@ -249,11 +249,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         if (options == null) {
             numTotalResults = variants.size();
         } else {
-            if (options.getInt(QueryOptions.LIMIT, -1) > 0) {
-                if (options.getBoolean(QueryOptions.SKIP_COUNT, DEFAULT_SKIP_COUNT)) {
-                    numTotalResults = -1;
-                } else {
+            if (options.getInt(QueryOptions.LIMIT, -1) >= 0) {
+                if (options.getBoolean(QueryOptions.COUNT, false)) {
                     numTotalResults = count(query).first();
+                } else {
+                    numTotalResults = -1;
                 }
             } else {
                 // There are no limit. Do not count.
@@ -330,7 +330,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             Iterators.advance(iterator, skip);
         }
         int limit = options.getInt(QueryOptions.LIMIT);
-        if (limit > 0) {
+        if (limit >= 0) {
             iterator = Iterators.limit(iterator, limit);
         }
         return Iterators.transform(iterator, converter::convert);

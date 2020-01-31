@@ -61,5 +61,39 @@ if (user === null) {
     db.getCollection("metadata").update({}, {"$unset": {"admin.email": "", "admin.password": ""}})
 }
 
+// Remove experiments,lastModified, cipher and tools from studies and users documents
+db.getCollection("study").update({}, {"$unset": {"experiments": "", "lastModified": "", "cipher": ""}}, {"multi": true});
+db.getCollection("user").update({}, {"$unset": {"tools": ""}}, {"multi": true});
+
+// Ticket #1479 - TEXT -> STRING
+function changeVariableType(variables) {
+    for (var i in variables) {
+        var variable = variables[i];
+        if (variable["type"] === "TEXT") {
+            variable["type"] = "STRING";
+        }
+        if (isNotUndefinedOrNull(variable.variableSet) && variable.variableSet.length > 0) {
+            changeVariableType(variable.variableSet);
+        }
+    }
+}
+
+// Ticket #1479 - TEXT -> STRING
+migrateCollection("study", {"variableSets" : { $exists: true, $ne: [] } }, {"variableSets": 1}, function(bulk, doc) {
+    var setChanges = {};
+
+    // Check variableSets
+    if (isNotUndefinedOrNull(doc.variableSets) && doc.variableSets.length > 0) {
+        for (var i in doc.variableSets) {
+            changeVariableType(doc.variableSets[i].variables);
+        }
+        setChanges["variableSets"] = doc.variableSets;
+    }
+
+    if (Object.keys(setChanges).length > 0) {
+        bulk.find({"_id": doc._id}).updateOne({"$set": setChanges});
+    }
+});
+
 
 // TODO: Add indexes for new "deleted" collections

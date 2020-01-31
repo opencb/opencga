@@ -51,6 +51,7 @@ public class CatalogIndividualToSolrIndividualConverter implements ComplexTypeCo
     public IndividualSolrModel convertToStorageType(Individual individual) {
         IndividualSolrModel individualSolrModel = new IndividualSolrModel();
 
+        individualSolrModel.setId(individual.getId());
         individualSolrModel.setUid(individual.getUid());
         individualSolrModel.setStudyId(study.getFqn().replace(":", "__"));
 

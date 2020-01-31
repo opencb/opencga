@@ -137,6 +137,14 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         cohortFilterValidator = new CohortFilterValidator();
     }
 
+    public static QueryParam valueOf(String param) {
+        QueryParam queryParam = VariantQueryParam.valueOf(param);
+        if (queryParam == null) {
+            queryParam = VARIANT_CATALOG_QUERY_PARAMS.stream().filter(q -> q.key().equals(param)).findFirst().orElse(null);
+        }
+        return queryParam;
+    }
+
     public static VariantQueryException wrongReleaseException(VariantQueryParam param, String value, int release) {
         return new VariantQueryException("Unable to have '" + value + "' within '" + param.key() + "' filter. "
                 + "Not part of release " + release);
@@ -916,8 +924,14 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         protected List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
                                         String sessionId) throws CatalogException {
             if (release == null) {
-                DataResult<Sample> samples = catalogManager.getSampleManager().get(defaultStudyStr, values,
+//                DataResult<Sample> samples = catalogManager.getSampleManager().get(defaultStudyStr, values,
+//                        SampleManager.INCLUDE_SAMPLE_IDS, sessionId);
+                DataResult<Sample> samples = catalogManager.getSampleManager().search(defaultStudyStr,
+                        new Query(SampleDBAdaptor.QueryParams.ID.key(), values),
                         SampleManager.INCLUDE_SAMPLE_IDS, sessionId);
+                if (samples.getResults().size() != values.size()) {
+                    throw new CatalogException("Some samples not found");
+                }
                 return samples.getResults().stream().map(Sample::getId).collect(Collectors.toList());
             } else {
                 return validate(defaultStudyStr, values, release, param, catalogManager.getSampleManager(),

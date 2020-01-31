@@ -81,8 +81,7 @@ public class FileRestWebService extends GenericRestWebService {
             switch (bioformat) {
                 case "vcf":
                     queryOptions.add(VariantQueryParam.FILE.key(), fileId);
-                    return createOkResponse(VariantRestWebService.VariantFetcher.getVariants(storageEngine, dbName, histogram, interval,
-                            queryOptions));
+                    return createOkResponse(VariantRestWebService.VariantFetcher.getVariants(storageEngine, dbName, queryOptions));
                 case "bam":
                     AlignmentStorageEngine sm = StorageEngineFactory.get().getAlignmentStorageEngine(dbName);
                     ObjectMap params = new ObjectMap();

@@ -59,7 +59,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
 
     @Override
     public boolean canUseThisExecutor(Query query, QueryOptions options) throws StorageEngineException {
-        return !options.getBoolean(QueryOptions.COUNT, false) // count is not supported
+        return !shouldGetExactCount(options) // exact count is not supported
                 && isValidParam(query, VariantQueryUtils.SAMPLE_COMPOUND_HETEROZYGOUS);
     }
 
@@ -165,7 +165,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
                     .toDataResult(Collections.singletonMap(study, includeSample));
             if ((limit + skip) < samplingSize && compoundHeterozygous.size() < samplingSize) {
                 result.setApproximateCount(false);
-                result.setNumTotalResults(compoundHeterozygous.size());
+                result.setNumMatches(compoundHeterozygous.size());
             } else {
                 setNumTotalResults(unfilteredIterator, result, query, inputOptions,
                         unfilteredIterator.getCount(),
@@ -196,7 +196,7 @@ public class CompoundHeterozygousQueryExecutor extends AbstractTwoPhasedVariantQ
         options.remove(QueryOptions.LIMIT);
         options.remove(QueryOptions.SKIP);
 
-        options.put(QueryOptions.SKIP_COUNT, true);
+        options.put(QueryOptions.COUNT, false);
         options.put(VariantStorageOptions.APPROXIMATE_COUNT.key(), false);
         return options;
     }

@@ -53,6 +53,7 @@ public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<
 
         SampleSolrModel sampleSolrModel = new SampleSolrModel();
 
+        sampleSolrModel.setId(sample.getId());
         sampleSolrModel.setUid(sample.getUid());
         sampleSolrModel.setSource(sample.getSource());
         sampleSolrModel.setStudyId(study.getFqn().replace(":", "__"));

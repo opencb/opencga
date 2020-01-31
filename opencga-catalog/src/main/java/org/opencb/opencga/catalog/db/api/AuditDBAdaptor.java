@@ -89,6 +89,8 @@ public interface AuditDBAdaptor {
 
     OpenCGAResult<AuditRecord> insertAuditRecord(AuditRecord auditRecord) throws CatalogDBException;
 
+    OpenCGAResult<AuditRecord> insertAuditRecords(List<AuditRecord> auditRecords) throws CatalogDBException;
+
     OpenCGAResult<AuditRecord> get(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
     OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException;

@@ -477,12 +477,22 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
         if (options == null) {
             options = new QueryOptions();
+        } else {
+            options = new QueryOptions(options);
         }
+        if (options.getBoolean(QueryOptions.COUNT) && options.getInt(QueryOptions.LIMIT, -1) == 0) {
+            DataResult<Long> count = count(query);
+            DataResult<Variant> result = new DataResult<>(count.getTime(), count.getEvents(), 0, Collections.emptyList(), count.first());
+            return addSamplesMetadataIfRequested(result, query, options, getMetadataManager());
+        } else if (!options.getBoolean(QueryOptions.COUNT) && options.getInt(QueryOptions.LIMIT, -1) == 0) {
+            DataResult<Variant> result = new DataResult<>(0, Collections.emptyList(), 0, Collections.emptyList(), -1);
+            return addSamplesMetadataIfRequested(result, query, options, getMetadataManager());
+        }
+        options.put(QueryOptions.SKIP_COUNT, !options.getBoolean(QueryOptions.COUNT));
 
         VariantQueryFields selectVariantElements = VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager);
         Document mongoQuery = queryParser.parseQuery(query);
         Document projection = queryParser.createProjection(query, options, selectVariantElements);
-        options.putIfAbsent(QueryOptions.SKIP_COUNT, DEFAULT_SKIP_COUNT);
 
         if (options.getBoolean("explain", false)) {
             Document explain = variantsCollection.nativeQuery()

@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -135,8 +134,8 @@ public class CatalogSolrManager {
         }
     }
 
-    public <T> void insertCatalogCollection(DBIterator<T> iterator, ComplexTypeConverter converter,
-                                            String collectionName) throws CatalogException {
+    public <T> void insertCatalogCollection(DBIterator<T> iterator, ComplexTypeConverter converter, String collectionName)
+            throws CatalogException {
 
         int count = 0;
         List<T> records = new ArrayList<>(insertBatchSize);
@@ -155,8 +154,8 @@ public class CatalogSolrManager {
         }
     }
 
-    public <T, M> void insertCatalogCollection(List<T> records, ComplexTypeConverter converter,
-                                               String collectionName) throws CatalogException {
+    public <T, M> void insertCatalogCollection(List<T> records, ComplexTypeConverter converter, String collectionName)
+            throws CatalogException {
         List<M> solrModels = new ArrayList<>();
 
         for (T record : records) {
@@ -168,6 +167,8 @@ public class CatalogSolrManager {
             updateResponse = solrManager.getSolrClient().addBeans(DATABASE_PREFIX + collectionName, solrModels);
             if (updateResponse.getStatus() == 0) {
                 solrManager.getSolrClient().commit(DATABASE_PREFIX + collectionName);
+            } else {
+                throw new CatalogException(updateResponse.getException());
             }
         } catch (IOException | SolrServerException e) {
             throw new CatalogException(e.getMessage(), e);
@@ -212,8 +213,6 @@ public class CatalogSolrManager {
      */
     public DataResult<FacetField> facetedQuery(Study study, String collection, Query query, QueryOptions queryOptions, String userId)
             throws CatalogException {
-        StopWatch stopWatch = StopWatch.createStarted();
-
         Query queryCopy = query == null ? new Query() : new Query(query);
         QueryOptions queryOptionsCopy = queryOptions == null ? new QueryOptions() : new QueryOptions(queryOptions);
 

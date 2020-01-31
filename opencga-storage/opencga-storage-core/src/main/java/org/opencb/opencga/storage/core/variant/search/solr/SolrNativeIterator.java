@@ -30,7 +30,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 
-public class VariantSearchSolrIterator implements Iterator<VariantSearchModel>, AutoCloseable {
+public class SolrNativeIterator implements Iterator<VariantSearchModel>, AutoCloseable {
 
     private SolrClient solrClient;
     private String collection;
@@ -46,11 +46,11 @@ public class VariantSearchSolrIterator implements Iterator<VariantSearchModel>, 
     private static final int BATCH_SIZE = 100;
 
     @Deprecated
-    public VariantSearchSolrIterator(Iterator<VariantSearchModel> solrIterator) {
+    public SolrNativeIterator(Iterator<VariantSearchModel> solrIterator) {
         this.solrIterator = solrIterator;
     }
 
-    public VariantSearchSolrIterator(SolrClient solrClient, String collection, SolrQuery solrQuery) throws SolrServerException {
+    public SolrNativeIterator(SolrClient solrClient, String collection, SolrQuery solrQuery) throws SolrServerException {
         this.solrClient = solrClient;
         this.collection = collection;
         this.solrQuery = solrQuery;

@@ -538,9 +538,9 @@ public class VariantHBaseQueryParser {
 //                    columnPrefixes.toArray(new byte[columnPrefixes.size()][]));
 //            filters.addFilter(columnPrefixFilter);
 //        }
-        int limit = options.getInt(QueryOptions.LIMIT);
+        int limit = options.getInt(QueryOptions.LIMIT, -1);
         int skip = options.getInt(QueryOptions.SKIP);
-        if (limit > 0) {
+        if (limit >= 0) {
             if (skip > 0) {
                 limit += skip;
             }
@@ -549,7 +549,6 @@ public class VariantHBaseQueryParser {
         if (!filters.getFilters().isEmpty()) {
             scan.setFilter(filters);
         }
-//        scan.setMaxResultSize(limit);
         scan.setReversed(options.getString(QueryOptions.ORDER, QueryOptions.ASCENDING).equals(QueryOptions.DESCENDING));
 
         logger.info("----------------------------");

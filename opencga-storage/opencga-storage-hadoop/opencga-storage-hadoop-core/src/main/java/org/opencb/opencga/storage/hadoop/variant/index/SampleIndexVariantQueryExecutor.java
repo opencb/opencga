@@ -61,8 +61,8 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
     @Override
     public boolean canUseThisExecutor(Query query, QueryOptions options) {
         if (options.getBoolean(SAMPLE_INDEX_INTERSECT, true)) {
-            if (options.getBoolean(QueryOptions.COUNT, false)) {
-                // TODO: Support count
+            if (shouldGetExactCount(options)) {
+                // TODO: Support exact count
                 return false;
             } else {
                 return SampleIndexQueryParser.validSampleIndexQuery(query);
@@ -137,9 +137,9 @@ public class SampleIndexVariantQueryExecutor extends AbstractTwoPhasedVariantQue
             asyncCountFuture = null;
         }
 
-        QueryOptions limitLessOptions = new QueryOptions(inputOptions)
-                .append(QueryOptions.LIMIT, -1)
-                .append(QueryOptions.SKIP, -1);
+        QueryOptions limitLessOptions = new QueryOptions(inputOptions);
+        limitLessOptions.remove(QueryOptions.LIMIT);
+        limitLessOptions.remove(QueryOptions.SKIP);
         VariantDBIteratorWithCounts variants = new VariantDBIteratorWithCounts(
                 sampleIndexDBAdaptor.iterator(sampleIndexQuery, limitLessOptions));
 

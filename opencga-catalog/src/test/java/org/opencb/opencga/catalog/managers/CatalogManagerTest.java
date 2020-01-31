@@ -873,7 +873,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         List<Variable> variables = new ArrayList<>();
         variables.addAll(Arrays.asList(
-                new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
+                new Variable("NAME", "", Variable.VariableType.STRING, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
                         Collections.<String, Object>emptyMap()),
                 new Variable("AGE", "", Variable.VariableType.DOUBLE, null, true, false, Collections.singletonList("0:99"), 1, "", "",
                         null, Collections.<String, Object>emptyMap()),
@@ -898,7 +898,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Study study = catalogManager.getStudyManager().get("user@1000G:phase1", null, token).first();
 
         List<Variable> variables = Arrays.asList(
-                new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
+                new Variable("NAME", "", Variable.VariableType.STRING, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
                         Collections.<String, Object>emptyMap()),
                 new Variable("NAME", "", Variable.VariableType.BOOLEAN, "", true, false, Collections.<String>emptyList(), 3, "", "",
                         null, Collections.<String, Object>emptyMap()),
@@ -919,7 +919,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Study study = catalogManager.getStudyManager().resolveId("1000G:phase1", "user");
 
         List<Variable> variables = Arrays.asList(
-                new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
+                new Variable("NAME", "", Variable.VariableType.STRING, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
                         Collections.<String, Object>emptyMap()),
                 new Variable("AGE", "", Variable.VariableType.DOUBLE, null, true, false, Collections.singletonList("0:99"), 1, "", "",
                         null, Collections.<String, Object>emptyMap())
@@ -940,7 +940,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Study study = catalogManager.getStudyManager().resolveId("1000G:phase1", "user");
 
         List<Variable> variables = Arrays.asList(
-                new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
+                new Variable("NAME", "", Variable.VariableType.STRING, "", true, false, Collections.<String>emptyList(), 0, "", "", null,
                         Collections.<String, Object>emptyMap()),
                 new Variable("AGE", "", Variable.VariableType.DOUBLE, null, true, false, Collections.singletonList("0:99"), 1, "", "",
                         null, Collections.<String, Object>emptyMap())
@@ -985,7 +985,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         String sampleId1 = catalogManager.getSampleManager().create(studyFqn, new Sample().setId("SAMPLE_1"),
                 new QueryOptions(), token).first().getId();
         List<Variable> variables = Arrays.asList(
-                new Variable("NAME", "", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "", null,
+                new Variable("NAME", "", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "", null,
                         Collections.emptyMap()),
                 new Variable("AGE", "", "", Variable.VariableType.DOUBLE, null, false, false, Collections.singletonList("0:99"), 1, "", "",
                         null, Collections.emptyMap())

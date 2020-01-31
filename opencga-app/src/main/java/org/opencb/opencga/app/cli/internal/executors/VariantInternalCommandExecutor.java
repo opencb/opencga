@@ -39,7 +39,10 @@ import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
+import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
+import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
 import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -79,6 +82,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
@@ -198,6 +202,11 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
             case KNOCKOUT_RUN_COMMAND:
                 knockout();
                 break;
+            case VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND:
+                sampleEligibility();
+            case MUTATIONAL_SIGNATURE_RUN_COMMAND:
+                mutationalSignature();
+                break;
             case PLINK_RUN_COMMAND:
                 plink();
                 break;
@@ -217,7 +226,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 logger.error("Subcommand not valid");
                 break;
         }
-
     }
 
     private void ibs() throws CatalogException, AnalysisExecutionException {
@@ -296,15 +304,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         if (cliOptions.numericOptions.count) {
             DataResult<Long> result = variantManager.count(query, token);
             System.out.println("Num. results\t" + result.getResults().get(0));
-        } else if (StringUtils.isNotEmpty(cliOptions.genericVariantQueryOptions.groupBy)) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            DataResult groupBy = variantManager.groupBy(cliOptions.genericVariantQueryOptions.groupBy, query, queryOptions, token);
-            System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(groupBy));
-        } else if (StringUtils.isNotEmpty(cliOptions.genericVariantQueryOptions.rank)) {
-            ObjectMapper objectMapper = new ObjectMapper();
-
-            DataResult rank = variantManager.rank(query, cliOptions.genericVariantQueryOptions.rank, 10, true, token);
-            System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));
         } else {
             queryOptions.putIfNotEmpty("annotations", cliOptions.genericVariantQueryOptions.annotations);
 
@@ -677,6 +676,19 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         toolRunner.execute(KnockoutAnalysis.class, params, Paths.get(cliOptions.outdir), token);
     }
 
+    private void sampleEligibility() throws Exception {
+        VariantCommandOptions.SampleEligibilityCommandOptions cliOptions = variantCommandOptions.sampleEligibilityCommandOptions;
+
+        ObjectMap params = new SampleEligibilityAnalysisParams(
+                cliOptions.query,
+                cliOptions.index,
+                cliOptions.cohortId)
+                .toObjectMap(cliOptions.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(SampleEligibilityAnalysis.class, params, Paths.get(cliOptions.outdir), token);
+    }
+
     private void sampleStats() throws Exception {
         VariantCommandOptions.SampleVariantStatsCommandOptions cliOptions = variantCommandOptions.sampleVariantStatsCommandOptions;
         ObjectMap params = new ObjectMap();
@@ -721,6 +733,18 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .setIndexResults(cliOptions.index)
                 .setSamplesQuery(query)
                 .setSampleNames(sampleNames)
+                .start();
+    }
+
+    private void mutationalSignature() throws Exception {
+        VariantCommandOptions.MutationalSignatureCommandOptions cliOptions = variantCommandOptions.mutationalSignatureCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        MutationalSignatureAnalysis mutationalSignatureAnalysis = new MutationalSignatureAnalysis();
+        mutationalSignatureAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        mutationalSignatureAnalysis.setStudy(cliOptions.study)
+                .setSampleName(cliOptions.sample)
                 .start();
     }
 

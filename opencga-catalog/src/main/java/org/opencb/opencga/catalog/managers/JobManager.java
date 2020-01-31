@@ -605,6 +605,7 @@ public class JobManager extends ResourceManager<Job> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationUuid);
         OpenCGAResult<Job> result = OpenCGAResult.empty();
         for (String id : jobIds) {
             String jobId = id;
@@ -641,6 +642,7 @@ public class JobManager extends ResourceManager<Job> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationUuid);
 
         return endResult(result, ignoreException);
     }
@@ -686,6 +688,7 @@ public class JobManager extends ResourceManager<Job> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationUuid);
         while (iterator.hasNext()) {
             Job job = iterator.next();
 
@@ -712,6 +715,7 @@ public class JobManager extends ResourceManager<Job> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationUuid);
 
         return endResult(result, ignoreException);
     }
@@ -771,6 +775,7 @@ public class JobManager extends ResourceManager<Job> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Job> result = OpenCGAResult.empty();
         while (iterator.hasNext()) {
             Job job = iterator.next();
@@ -789,6 +794,7 @@ public class JobManager extends ResourceManager<Job> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }
@@ -832,6 +838,7 @@ public class JobManager extends ResourceManager<Job> {
                 .append("options", options)
                 .append("token", token);
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Job> result = OpenCGAResult.empty();
         for (String id : jobIds) {
             String jobId = id;
@@ -862,6 +869,8 @@ public class JobManager extends ResourceManager<Job> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
+
         return endResult(result, ignoreException);
     }
 

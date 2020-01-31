@@ -443,6 +443,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
         }
 
         OpenCGAResult result = OpenCGAResult.empty();
+        auditManager.initAuditBatch(operationId);
         for (String id : cohortIds) {
 
             String cohortId = id;
@@ -476,6 +477,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }
@@ -523,6 +525,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationUuid);
         while (iterator.hasNext()) {
             Cohort cohort = iterator.next();
             try {
@@ -544,6 +547,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationUuid);
 
         return endResult(result, ignoreException);
     }
@@ -721,6 +725,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                 .append("options", options)
                 .append("token", token);
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Cohort> result = OpenCGAResult.empty();
         for (String id : cohortIds) {
             String cohortId = id;
@@ -751,6 +756,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }
@@ -809,6 +815,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Cohort> result = OpenCGAResult.empty();
         while (iterator.hasNext()) {
             Cohort cohort = iterator.next();
@@ -827,6 +834,7 @@ public class CohortManager extends AnnotationSetManager<Cohort> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }

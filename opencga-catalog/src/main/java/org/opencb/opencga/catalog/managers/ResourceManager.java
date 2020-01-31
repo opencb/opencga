@@ -119,6 +119,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
                 .append("ignoreException", ignoreException)
                 .append("token", token);
         String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        auditManager.initAuditBatch(operationUuid);
 
         try {
             OpenCGAResult<R> result = OpenCGAResult.empty();
@@ -159,6 +160,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
             throw e;
+        } finally {
+            auditManager.finishAuditBatch(operationUuid);
         }
     }
 
