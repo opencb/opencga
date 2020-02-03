@@ -38,8 +38,15 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.File;
@@ -691,7 +698,7 @@ public class ProjectManager extends AbstractManager {
                     List cohortList = null;
 
                     Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), "file://" + vcfFile);
-                    OpenCGAResult<org.opencb.opencga.core.models.File> fileDataResult = catalogManager.getFileManager()
+                    OpenCGAResult<org.opencb.opencga.core.models.file.File> fileDataResult = catalogManager.getFileManager()
                             .search(studyStr, query, skipCount, ownerToken);
                     if (fileDataResult.getNumResults() == 0) {
                         logger.error("File " + vcfFile + " not found. Skipping...");
@@ -708,12 +715,12 @@ public class ProjectManager extends AbstractManager {
                         query = new Query()
                                 .append(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleUids)
                                 .append(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(
-                                        org.opencb.opencga.core.models.File.Format.BAM,
-                                        org.opencb.opencga.core.models.File.Format.BAI,
+                                        org.opencb.opencga.core.models.file.File.Format.BAM,
+                                        org.opencb.opencga.core.models.file.File.Format.BAI,
                                         // TODO: I think I will need to perform the query some other way to capture bigwigs...
-                                        org.opencb.opencga.core.models.File.Format.BIGWIG));
+                                        org.opencb.opencga.core.models.file.File.Format.BIGWIG));
 
-                        OpenCGAResult<org.opencb.opencga.core.models.File> otherFiles = catalogManager.getFileManager()
+                        OpenCGAResult<org.opencb.opencga.core.models.file.File> otherFiles = catalogManager.getFileManager()
                                 .search(studyStr, query, skipCount, ownerToken);
                         if (otherFiles.getNumResults() > 0) {
                             fileList.addAll(otherFiles.getResults());
@@ -1048,7 +1055,7 @@ public class ProjectManager extends AbstractManager {
     }
 
     // Return true if currentRelease is found in any entry
-    private boolean checkCurrentReleaseInUse(List<Study> allStudiesInProject, int currentRelease) throws CatalogDBException {
+    private boolean checkCurrentReleaseInUse(List<Study> allStudiesInProject, int currentRelease) throws CatalogException {
         for (Study study : allStudiesInProject) {
             if (study.getRelease() == currentRelease) {
                 return true;

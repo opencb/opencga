@@ -35,11 +35,9 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
-import org.opencb.opencga.catalog.models.update.FamilyUpdateParams;
 import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
@@ -47,11 +45,17 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.models.acls.permissions.FamilyAclEntry;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyAclEntry;
+import org.opencb.opencga.core.models.family.FamilyUpdateParams;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -178,7 +182,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         }
     }
 
-    private OpenCGAResult<Family> getFamily(long studyUid, String familyUuid, QueryOptions options) throws CatalogDBException {
+    private OpenCGAResult<Family> getFamily(long studyUid, String familyUuid, QueryOptions options) throws CatalogException {
         Query query = new Query()
                 .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(FamilyDBAdaptor.QueryParams.UUID.key(), familyUuid);
@@ -284,8 +288,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             if (options.getBoolean(QueryOptions.COUNT)) {
                 ExecutorService executor = Executors.newSingleThreadExecutor();
                 Query myQuery = finalQuery;
-                countFuture = executor.submit(() -> familyDBAdaptor.count(study.getUid(), myQuery, userId,
-                        StudyAclEntry.StudyPermissions.VIEW_FAMILIES));
+                countFuture = executor.submit(() -> familyDBAdaptor.count(myQuery, userId));
             }
             OpenCGAResult<Family> queryResult = OpenCGAResult.empty();
             if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
@@ -375,8 +378,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             fixQueryObject(study, finalQuery, token);
 
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Long> queryResultAux = familyDBAdaptor.count(study.getUid(), finalQuery, userId,
-                    StudyAclEntry.StudyPermissions.VIEW_FAMILIES);
+            OpenCGAResult<Long> queryResultAux = familyDBAdaptor.count(finalQuery, userId);
 
             auditManager.auditCount(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -420,6 +422,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationUuid);
         OpenCGAResult result = OpenCGAResult.empty();
         for (String id : familyIds) {
             String familyId = id;
@@ -457,6 +460,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationUuid);
 
         return endResult(result, ignoreException);
     }
@@ -505,6 +509,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationUuid);
         while (iterator.hasNext()) {
             Family family = iterator.next();
 
@@ -530,10 +535,9 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 logger.error(errorMsg, e);
                 auditManager.auditDelete(operationUuid, userId, Enums.Resource.FAMILY, family.getId(), family.getUuid(),
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-
-                throw new CatalogException(errorMsg, e.getCause());
             }
         }
+        auditManager.finishAuditBatch(operationUuid);
 
         return endResult(result, ignoreException);
     }
@@ -566,7 +570,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         // Add study id to the query
         finalQuery.put(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        OpenCGAResult queryResult = familyDBAdaptor.groupBy(study.getUid(), finalQuery, fields, options, userId);
+        OpenCGAResult queryResult = familyDBAdaptor.groupBy(finalQuery, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }
@@ -653,10 +657,17 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse FamilyUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("query", query)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
@@ -679,6 +690,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Family> result = OpenCGAResult.empty();
         while (iterator.hasNext()) {
             Family family = iterator.next();
@@ -697,6 +709,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }
@@ -708,10 +721,17 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse FamilyUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("familyId", familyId)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("options", options)
                 .append("token", token);
 
@@ -771,14 +791,22 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse FamilyUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("familyIds", familyIds)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Family> result = OpenCGAResult.empty();
         for (String id : familyIds) {
             String familyId = id;
@@ -809,6 +837,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }
@@ -819,7 +848,11 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
         ObjectMap parameters = new ObjectMap();
         if (updateParams != null) {
-            parameters = updateParams.getUpdateMap();
+            try {
+                parameters = updateParams.getUpdateMap();
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Could not parse FamilyUpdateParams object: " + e.getMessage(), e);
+            }
         }
 
         if (parameters.isEmpty() && !options.getBoolean(Constants.INCREMENT_VERSION, false)) {

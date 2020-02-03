@@ -26,8 +26,7 @@ import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.StudyOption;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.file.File;
 
 import java.util.List;
 
@@ -52,10 +51,10 @@ public class FileCommandOptions {
     public UploadCommandOptions uploadCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
     public LinkCommandOptions linkCommandOptions;
-    public RelinkCommandOptions relinkCommandOptions;
+//    public RelinkCommandOptions relinkCommandOptions;
     public UnlinkCommandOptions unlinkCommandOptions;
     public RefreshCommandOptions refreshCommandOptions;
-    public GroupByCommandOptions groupByCommandOptions;
+//    public GroupByCommandOptions groupByCommandOptions;
     public StatsCommandOptions statsCommandOptions;
 //    public VariantsCommandOptions variantsCommandOptions;
 
@@ -89,13 +88,11 @@ public class FileCommandOptions {
         this.contentCommandOptions = new ContentCommandOptions();
 //        this.fetchCommandOptions = new FetchCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
-        this.relinkCommandOptions = new RelinkCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.refreshCommandOptions = new RefreshCommandOptions();
         this.unlinkCommandOptions = new UnlinkCommandOptions();
         this.linkCommandOptions = new LinkCommandOptions();
         this.uploadCommandOptions = new UploadCommandOptions();
-        this.groupByCommandOptions = new GroupByCommandOptions();
         this.statsCommandOptions = new StatsCommandOptions();
 //        this.variantsCommandOptions = new VariantsCommandOptions();
 
@@ -370,35 +367,6 @@ public class FileCommandOptions {
 
     }
 
-    @Deprecated
-    @Parameters(commandNames = {"fetch"}, commandDescription = "File fetch")
-    public class FetchCommandOptions extends BaseFileCommand {
-
-        @Parameter(names = {"--region"}, description = "Region", required = true, arity = 1)
-        public String region;
-
-        @Parameter(names = {"--view-as-pairs"}, description = "View_as_pairs", required = false, arity = 0)
-        public boolean viewAsPairs;
-
-        @Parameter(names = {"--include-coverage"}, description = "Include_coverage. Default: true", required = false, arity = 0)
-        public boolean includeCoverage = true;
-
-        @Parameter(names = {"--process-differences"}, description = "Process_differences Default: true", required = false, arity = 0)
-        public boolean processDifferences = true;
-
-        @Parameter(names = {"--histogram"}, description = "Histogram", required = false, arity = 0)
-        public boolean histogram;
-
-        @Parameter(names = {"--group-by"}, description = "GroupBy: [ct, gene, ensemblGene]", required = false, arity = 1)
-        public String groupBy;
-
-        @Parameter(names = {"--variant-source"}, description = "Variant Source", required = false, arity = 0)
-        public boolean variantSource;
-
-        @Parameter(names = {"--interval"}, description = "Interval", required = false, arity = 1)
-        public String interval;
-    }
-
     @Parameters(commandNames = {"update"}, commandDescription = "Modify file")
     public class UpdateCommandOptions extends BaseFileCommand {
 
@@ -407,11 +375,11 @@ public class FileCommandOptions {
 
         @Parameter(names = {"--format"}, description = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)",
                 required = false, arity = 1)
-        public String format;
+        public File.Format format;
 
         @Parameter(names = {"--bioformat"}, description = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)",
                 required = false, arity = 1)
-        public String bioformat;
+        public File.Bioformat bioformat;
 
         @Parameter(names = {"--description"}, description = "Description of the file", required = false, arity = 1)
         public String description;
@@ -423,29 +391,18 @@ public class FileCommandOptions {
         public String stats;
 
         @Parameter(names = {"--samples"}, description = "Comma separated list of sample names or ids", required = false, arity = 1)
-        public String sampleIds;
-
-        @Parameter(names = {"--job-id"}, description = "Job id", required = false, arity = 1)
-        public String jobId;
-
-        @Parameter(names = {"--path"}, description = "Path", required = false, arity = 1)
-        public String path;
-
-        @Parameter(names = {"--annotation-sets-action"}, description = "Action to be performed if the array of annotationSets is being updated. (ADD, SET, REMOVE)",
-                arity = 1)
-        public ParamUtils.UpdateAction annotationSetsAction;
-
+        public List<String> sampleIds;
     }
 
-    @Parameters(commandNames = {"relink"}, commandDescription = "Change location of linked or STAGED file.")
-    public class RelinkCommandOptions extends BaseFileCommand {
-
-        @Parameter(names = {"--uri"}, description = "New URI", required = true, arity = 1)
-        public String uri;
-
-        @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
-        public boolean calculateChecksum;
-    }
+//    @Parameters(commandNames = {"relink"}, commandDescription = "Change location of linked or STAGED file.")
+//    public class RelinkCommandOptions extends BaseFileCommand {
+//
+//        @Parameter(names = {"--uri"}, description = "New URI", required = true, arity = 1)
+//        public String uri;
+//
+//        @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
+//        public boolean calculateChecksum;
+//    }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete file")
     public class DeleteCommandOptions extends BaseFileCommand {
@@ -550,235 +507,6 @@ public class FileCommandOptions {
 
         @Parameter(names = {"-ch", "--checksum"}, description = "[PENDING] Calculate checksum", required = false, arity = 0)
         public boolean calculateChecksum;
-    }
-
-    @Parameters(commandNames = {"group-by"}, commandDescription = "Group by fields in file")
-    public class GroupByCommandOptions extends StudyOption {
-
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
-        public String fields;
-
-        @Deprecated
-        @Parameter(names = {"--file"}, description = "Comma separated list of ids, names or paths.", required = false, arity = 1)
-        public String id;
-
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
-        public String name;
-
-        @Parameter(names = {"--path"}, description = "Path.", required = false, arity = 1)
-        public String path;
-
-        @Parameter(names = {"--type"}, description = "Comma separated Type values.", required = false, arity = 1)
-        public String type;
-
-        @Parameter(names = {"--bioformat"}, description = "Comma separated bioformat values.", required = false, arity = 1)
-        public String bioformat;
-
-        @Parameter(names = {"--format"}, description = "Comma separated Format values.", required = false, arity = 1)
-        public String format;
-
-        @Parameter(names = {"--status"}, description = "Status.", required = false, arity = 1)
-        public String status;
-
-        @Parameter(names = {"--directory"}, description = "Directory.", required = false, arity = 1)
-        public String directory;
-
-        @Parameter(names = {"--owner-id"}, description = "Owner id.", required = false, arity = 1)
-        public String ownerId;
-
-        @Parameter(names = {"--creation-date"}, description = "Creation date.", required = false, arity = 1)
-        public String creationDate;
-
-        @Parameter(names = {"--modification-date"}, description = "Modification date.", required = false, arity = 1)
-        public String modificationDate;
-
-        @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
-        public String description;
-
-        @Parameter(names = {"--size"}, description = "Filter by size", required = false, arity = 1)
-        public String size;
-
-        @Parameter(names = {"--samples"}, description = "Comma separated list of sample ids or names", required = false, arity = 1)
-        public String sampleIds;
-
-        @Parameter(names = {"--job"}, description = "Job id", required = false, arity = 1)
-        public String job;
-
-        @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
-        public String attributes;
-
-        @Parameter(names = {"--nattributes"}, description = "numerical attributes", required = false, arity = 1)
-        public String nattributes;
-    }
-
-    @Deprecated
-    @Parameters(commandNames = {"variants"}, commandDescription = "Fetch variants from a VCF/gVCF file")
-    public class VariantsCommandOptions extends BaseFileCommand {
-
-        @Parameter(names = {"--variant-ids"}, description = "List of variant ids", arity = 1)
-        public String ids;
-
-        @Parameter(names = {"--region"}, description = "List of regions: {chr}:{start}-{end}", arity = 1)
-        public String region;
-
-        @Parameter(names = {"--chromosome"}, description = "List of chromosomes", arity = 1)
-        public String chromosome;
-
-        @Parameter(names = {"--gene"}, description = "List of genes", arity = 1)
-        public String gene;
-
-        @Parameter(names = {"--type"}, description = "Variant type: [SNV, MNV, INDEL, SV, CNV]", arity = 1)
-        public String type;
-
-        @Parameter(names = {"--reference"}, description = "Reference allele", arity = 1)
-        public String reference;
-
-        @Parameter(names = {"--alternate"}, description = "Main alternate allele", arity = 1)
-        public String alternate;
-
-        @Parameter(names = {"--returned-studies"}, description = "List of studies to be returned", arity = 1)
-        public String returnedStudies;
-
-        @Parameter(names = {"--returned-samples"}, description = "List of samples to be returned", arity = 1)
-        public String returnedSamples;
-
-        @Parameter(names = {"--returned-files"}, description = "List of files to be returned.", arity = 1)
-        public String returnedFiles;
-
-        @Parameter(names = {"--files"}, description = "Variants in specific files", arity = 1)
-        public String files;
-
-        @Parameter(names = {"--maf"}, description = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}",
-                arity = 1)
-        public String maf;
-
-        @Parameter(names = {"--mgf"}, description = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}",
-                arity = 1)
-        public String mgf;
-
-        @Parameter(names = {"--missing-alleles"}, description = "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}",
-                arity = 1)
-        public String missingAlleles;
-
-        @Parameter(names = {"--missing-genotypes"}, description = "Number of missing genotypes: [{study:}]{cohort}[<|>|<=|>=]{number}",
-                arity = 1)
-        public String missingGenotypes;
-
-//        @Parameter(names = {"--annotation-exists"}, description = "Specify if the variant annotation must exists.",
-//                arity = 0)
-//        public boolean annotationExists;
-
-        @Parameter(names = {"--genotype"}, description = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}"
-                + "(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1", arity = 1)
-        public String genotype;
-
-        @Parameter(names = {"--annot-ct"}, description = "Consequence type SO term list. e.g. missense_variant,stop_lost or SO:0001583,SO:0001578",
-                arity = 1)
-        public String annot_ct;
-
-        @Parameter(names = {"--annot-xref"}, description = "XRef", arity = 1)
-        public String annot_xref;
-
-        @Parameter(names = {"--annot-biotype"}, description = "Biotype", arity = 1)
-        public String annot_biotype;
-
-        @Parameter(names = {"--polyphen"}, description = "Polyphen, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description}"
-                + " e.g. <=0.9 , =benign", arity = 1)
-        public String polyphen;
-
-        @Parameter(names = {"--sift"}, description = "Sift, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} "
-                + "e.g. >0.1 , ~=tolerant", arity = 1)
-        public String sift;
-
-        @Parameter(names = {"--conservation"}, description = "VConservation score: {conservation_score}[<|>|<=|>=]{number} "
-                + "e.g. phastCons>0.5,phylop<0.1,gerp>0.1", arity = 1)
-        public String conservation;
-
-        @Parameter(names = {"--annot-population-maf"}, description = "Population minor allele frequency: "
-                + "{study}:{population}[<|>|<=|>=]{number}", arity = 1)
-        public String annotPopulationMaf;
-
-        @Parameter(names = {"--alternate-frequency"}, description = "Alternate Population Frequency: "
-                + "{study}:{population}[<|>|<=|>=]{number}", arity = 1)
-        public String alternate_frequency;
-
-        @Parameter(names = {"--reference-frequency"}, description = "Reference Population Frequency:"
-                + " {study}:{population}[<|>|<=|>=]{number}", arity = 1)
-        public String reference_frequency;
-
-        @Parameter(names = {"--annot-transcription-flags"}, description = "List of transcript annotation flags. "
-                + "e.g. CCDS, basic, cds_end_NF, mRNA_end_NF, cds_start_NF, mRNA_start_NF, seleno", arity = 1)
-        public String transcriptionFlags;
-
-        @Parameter(names = {"--annot-gene-trait-id"}, description = "List of gene trait association id. e.g. \"umls:C0007222\" , "
-                + "\"OMIM:269600\"", arity = 1)
-        public String geneTraitId;
-
-        @Parameter(names = {"--annot-gene-trait-name"}, description = "List of gene trait association names. "
-                + "e.g. \"Cardiovascular Diseases\"", arity = 1)
-        public String geneTraitName;
-
-        @Parameter(names = {"--annot-hpo"}, description = "List of HPO terms. e.g. \"HP:0000545\"", arity = 1)
-        public String hpo;
-
-        @Parameter(names = {"--annot-go"}, description = "List of GO (Genome Ontology) terms. e.g. \"GO:0002020\"", arity = 1)
-        public String go;
-
-        @Parameter(names = {"--annot-expression"}, description = "List of tissues of interest. e.g. \"tongue\"", arity = 1)
-        public String expression;
-
-        @Parameter(names = {"--annot-protein-keywords"}, description = "List of protein variant annotation keywords",
-                arity = 1)
-        public String proteinKeyword;
-
-        @Parameter(names = {"--annot-drug"}, description = "List of drug names", arity = 1)
-        public String drug;
-
-        @Parameter(names = {"--annot-functional-score"}, description = "Functional score: {functional_score}[<|>|<=|>=]{number} "
-                + "e.g. cadd_scaled>5.2 , cadd_raw<=0.3", arity = 1)
-        public String functionalScore;
-
-        @Parameter(names = {"--unknown-genotype"}, description = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]",
-                arity = 1)
-        public String unknownGenotype;
-
-        @Parameter(names = {"--samples-metadata"}, description = "Returns the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.",
-                arity = 0)
-        public boolean samplesMetadata;
-
-        @Parameter(names = {"--sort"}, description = "Sort the results", arity = 0)
-        public boolean sort;
-
-        @Parameter(names = {"--group-by"}, description = "Group variants by: [ct, gene, ensemblGene]", arity = 1)
-        public String groupBy;
-
-        @Parameter(names = {"--histogram"}, description = "Calculate histogram. Requires one region.", arity = 1)
-        public boolean histogram;
-
-        @Parameter(names = {"--interval"}, description = "Histogram interval size. Default:2000", arity = 1)
-        public String interval;
-
-        @Parameter(names = {"--merge"}, description = "Merge results", arity = 1)
-        public String merge;
-
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
-
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
-
-        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
-        public String skip;
-
-        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
-        public String limit;
-
-        @Parameter(names = {"--count"}, description = "Total number of results.", arity = 0)
-        public boolean count;
-
     }
 
     public class FileAclCommandOptions extends AclCommandOptions {

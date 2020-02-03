@@ -22,11 +22,11 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Variable;
-import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageMetadataDBAdaptorFactory;
@@ -58,9 +58,9 @@ public class VariantImportTest extends AbstractVariantOperationManagerTest {
         indexFile(getSmallFile(), new QueryOptions(VariantStorageOptions.STATS_CALCULATE.key(), true), outputId);
 
         catalogManager.getStudyManager().createVariableSet(studyFqn, "vs1", "vs1", false, false, "", null, Arrays.asList(
-                new Variable("name", "", "", Variable.VariableType.TEXT, null, true, false, null, 0, null, null, null, null),
+                new Variable("name", "", "", Variable.VariableType.STRING, null, true, false, null, 0, null, null, null, null),
                 new Variable("age", "", "", Variable.VariableType.INTEGER, null, true, false, null, 0, null, null, null, null),
-                new Variable("other", "", "", Variable.VariableType.TEXT, "unknown", false, false, null, 0, null, null, null, null)),
+                new Variable("other", "", "", Variable.VariableType.STRING, "unknown", false, false, null, 0, null, null, null, null)),
                 Collections.singletonList(VariableSet.AnnotableDataModels.SAMPLE), sessionId);
 
         catalogManager.getSampleManager().update(studyId, "NA19600", new SampleUpdateParams()

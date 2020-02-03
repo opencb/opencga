@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.variant.search.solr;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -25,6 +26,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrException;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.ClinicalSignificance;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.solr.FacetQueryParser;
@@ -64,6 +66,12 @@ public class SolrQueryParser {
     private static final Pattern STUDY_PATTERN = Pattern.compile("^([^=<>!]+):([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
     private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>!]+)(!=?|<=?|>=?|<<=?|>>=?|==?|=?)([^=<>!]+.*)$");
     private static final Pattern NUMERIC_PATTERN = Pattern.compile("(!=?|<=?|>=?|=?)([^=<>!]+.*)$");
+
+    private static final Pattern FACET_RANGE_PATTERN = Pattern.compile("([_a-zA-Z]+)\\[([_a-zA-Z]+):([.a-zA-Z0-9]+)\\]:([.0-9]+)$");
+    private static final Pattern FACET_RANGE_STUDY_PATTERN = Pattern.compile("([_a-zA-Z]+)\\[([_a-zA-Z0-9]+):([_a-zA-Z0-9]+):"
+            + "([.a-zA-Z0-9]+)\\]:([.0-9]+)$");
+    private static final Pattern FACET_FUNCTION_STUDY_PATTERN = Pattern.compile("([_a-zA-Z]+)\\(([a-zA-Z]+)\\[([_a-zA-Z0-9]+):"
+            + "([_a-zA-Z0-9]+)\\]\\)$");
 
     protected static Logger logger = LoggerFactory.getLogger(SolrQueryParser.class);
 
@@ -118,11 +126,8 @@ public class SolrQueryParser {
         if (queryOptions.containsKey(QueryOptions.FACET) && StringUtils.isNotEmpty(queryOptions.getString(QueryOptions.FACET))) {
             try {
                 FacetQueryParser facetQueryParser = new FacetQueryParser();
-                String facetQuery = queryOptions.getString(QueryOptions.FACET);
 
-                if (facetQuery.contains(CHROM_DENSITY)) {
-                    facetQuery = parseFacet(facetQuery);
-                }
+                String facetQuery = parseFacet(queryOptions.getString(QueryOptions.FACET));
                 String jsonFacet = facetQueryParser.parse(facetQuery);
 
                 solrQuery.set("json.facet", jsonFacet);
@@ -224,19 +229,31 @@ public class SolrQueryParser {
         // protein-substitution
         key = ANNOT_PROTEIN_SUBSTITUTION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseScoreValue(ANNOT_PROTEIN_SUBSTITUTION, query.getString(key)));
+            try {
+                filterList.add(parseScoreValue(ANNOT_PROTEIN_SUBSTITUTION, query.getString(key)));
+            } catch (Exception e) {
+                throw VariantQueryException.malformedParam(ANNOT_PROTEIN_SUBSTITUTION, query.getString(key));
+            }
         }
 
         // conservation
         key = ANNOT_CONSERVATION.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseScoreValue(ANNOT_CONSERVATION, query.getString(key)));
+            try {
+                filterList.add(parseScoreValue(ANNOT_CONSERVATION, query.getString(key)));
+            } catch (Exception e) {
+                throw VariantQueryException.malformedParam(ANNOT_CONSERVATION, query.getString(key));
+            }
         }
 
         // cadd, functional score
         key = ANNOT_FUNCTIONAL_SCORE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-            filterList.add(parseScoreValue(ANNOT_FUNCTIONAL_SCORE, query.getString(key)));
+            try {
+                filterList.add(parseScoreValue(ANNOT_FUNCTIONAL_SCORE, query.getString(key)));
+            } catch (Exception e) {
+                throw VariantQueryException.malformedParam(ANNOT_FUNCTIONAL_SCORE, query.getString(key));
+            }
         }
 
         // ALT population frequency
@@ -287,7 +304,7 @@ public class SolrQueryParser {
 
         // Variant score
         // In the model: "score__1kg_phase3__gwas1>3.12"
-        //               "pvalue__1kg_phase3__gwas1<=0.002"
+        //               "scorePValue__1kg_phase3__gwas1<=0.002"
         // where "1kg_phase3" is the study ID, and "gwas1" is the score ID
         key = SCORE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
@@ -345,20 +362,15 @@ public class SolrQueryParser {
         // clinical significance
         key = ANNOT_CLINICAL_SIGNIFICANCE.key();
         if (StringUtils.isNotEmpty(query.getString(key))) {
-//            filterList.add(parseCategoryTermValue("traits", query.getString(key), "cs\\:", true));
-            String[] clinSig = query.getString(key).split("[,;]");
+            Pair<QueryOperation, List<String>> pair = splitValue(query.getString(key));
+            List<String> clinSig = pair.getRight();
             StringBuilder sb = new StringBuilder();
             sb.append("(");
-            for (int i = 0; i < clinSig.length; i++) {
+            for (int i = 0; i < clinSig.size(); i++) {
                 if (i > 0) {
-                    sb.append(" OR ");
+                    sb.append(QueryOperation.OR.equals(pair.getLeft()) ? " OR " : " AND ");
                 }
-                // FIXME:
-                //   We are storing raw ClinicalSignificance values
-                //   We should use the enum {@link org.opencb.biodata.models.variant.avro.ClinicalSignificance}
-                //   Replace "_" with " " works to search by "Likely benign" instead of "likely_benign"
-                String value = clinSig[i].replace("_", " ");
-                sb.append("traits:\"*cs\\:").append(value).append("*\"");
+                sb.append("clinicalSig:\"").append(ClinicalSignificance.valueOf(clinSig.get(i)).name()).append("\"");
             }
             sb.append(")");
             filterList.add(sb.toString());
@@ -397,8 +409,6 @@ public class SolrQueryParser {
             StringBuilder filter = new StringBuilder();
             for (int i = 0; i < scores.length; i++) {
                 filter.append(parseVariantScore(scores[i], defaultStudyName));
-//                sb.append("fileInfo").append(FIELD_SEPARATOR)
-//                        .append(studies[0]).append(FIELD_SEPARATOR).append(files[i]).append(": [* TO *]");
                 if (i < scores.length - 1) {
                     filter.append(" OR ");
                 }
@@ -408,64 +418,8 @@ public class SolrQueryParser {
             // AND
             for (String score : scores) {
                 filters.add(parseVariantScore(score, defaultStudyName));
-//                filterList.add("fileInfo" + FIELD_SEPARATOR
-//                        + studies[0] + FIELD_SEPARATOR + file + ": [* TO *]");
             }
         }
-//        }
-//        if (files == null) {
-//            List<String> includeFiles = getIncludeFilesList(query);
-//            if (includeFiles != null) {
-//                files = includeFiles.toArray(new String[0]);
-//            }
-//        }
-//
-//        // QUAL
-//        key = QUAL.key();
-//        if (StringUtils.isNotEmpty(query.getString(key))) {
-//            if (files == null) {
-//                throw VariantQueryException.malformedParam(FILE, "", "Missing file parameter when "
-//                        + " filtering with QUAL.");
-//            }
-//            String qual = query.getString(key);
-//            if (fileQueryOp == QueryOperation.OR) {
-//                StringBuilder sb = new StringBuilder();
-//                for (int i = 0; i < files.length; i++) {
-//                    sb.append(parseNumericValue("qual" + FIELD_SEPARATOR + studies[0]
-//                            + FIELD_SEPARATOR + files[i], qual));
-//                    if (i < files.length - 1) {
-//                        sb.append(" OR ");
-//                    }
-//                }
-//                filterList.add(sb.toString());
-//            } else {
-//                for (String file: files) {
-//                    filterList.add(parseNumericValue("qual" + FIELD_SEPARATOR + studies[0]
-//                            + FIELD_SEPARATOR + file, qual));
-//                }
-//            }
-//        }
-//
-//
-//
-//        String filter = "";
-//        String[] split = splitOperator(queryValue);
-//        if (split.length != 3) {
-//            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid Solr variant score query: " + query.getString(key));
-//        }
-//        String name;
-//        if (split[0].contains(STUDY_POP_FREQ_SEPARATOR)) {
-//            name = "score" + FIELD_SEPARATOR + split[0].replace(Character.toString(STUDY_RESOURCE_SEPARATOR), FIELD_SEPARATOR);
-//        } else {
-//            // Missing study in variant score param
-//            if (StringUtils.isEmpty(defaultStudyName)) {
-//                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing study in Solr variant score query: "
-//                        + query.getString(key));
-//            }
-//            name = "score" + FIELD_SEPARATOR + defaultStudyName + FIELD_SEPARATOR + split[0];
-//        }
-//        String value = split[1] + split[2];
-//        filter = parseNumericValue(name, value);
         return filters;
     }
 
@@ -484,6 +438,9 @@ public class SolrQueryParser {
             case 2:
                 if ("score".equals(fields[1]) || "pvalue".equals(fields[1])) {
                     checkMissingStudy(defaultStudyName, "variant score", score);
+                    if ("pvalue".equals(fields[1])) {
+                        fields[1] = "scorePValue";
+                    }
                     name = fields[1] + FIELD_SEPARATOR + defaultStudyName + FIELD_SEPARATOR + fields[0];
                 } else {
                     name = "score" + FIELD_SEPARATOR + fields[0] + FIELD_SEPARATOR + fields[1];
@@ -491,6 +448,9 @@ public class SolrQueryParser {
                 break;
             case 3:
                 if ("score".equals(fields[2]) || "pvalue".equals(fields[2])) {
+                    if ("pvalue".equals(fields[2])) {
+                        fields[2] = "scorePValue";
+                    }
                     name = fields[2] + FIELD_SEPARATOR + fields[0] + FIELD_SEPARATOR + fields[1];
                 } else {
                     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid Solr variant score query: " + score);
@@ -624,62 +584,136 @@ public class SolrQueryParser {
                 return "((" + regionXrefPart + ") AND (" + combinationPart + ")) OR (" + geneCombinationPart + ")";
             }
         }
-
     }
 
     private String parseFacet(String facetQuery) {
+        StringBuilder sb = new StringBuilder();
         List<String> facetList = new ArrayList<>();
         String[] facets = facetQuery.split(FacetQueryParser.FACET_SEPARATOR);
-        for (String facet: facets) {
-            if (facet.contains(CHROM_DENSITY)) {
-                // Categorical...
-                Matcher matcher = FacetQueryParser.CATEGORICAL_PATTERN.matcher(facet);
-                if (matcher.find()) {
-                    if (matcher.group(1).equals(CHROM_DENSITY)) {
-                        // Step management
-                        int step = 1000000;
-                        if (StringUtils.isNotEmpty(matcher.group(3))) {
-                            step = Integer.parseInt(matcher.group(3).substring(1));
-                        }
-                        int maxLength = 0;
-                        // Include management
-                        List<String> chromList;
-                        String include = matcher.group(2);
-                        if (StringUtils.isNotEmpty(include)) {
-                            chromList = new ArrayList<>();
-                            include = include.replace("]", "").replace("[", "");
-                            for (String value: include.split(FacetQueryParser.INCLUDE_SEPARATOR)) {
-                                chromList.add(value);
-                            }
-                        } else {
-                            chromList = new ArrayList<>(chromosomeMap.keySet());
-                        }
 
-                        List<String> chromQueryList = new ArrayList<>();
-                        for (String chrom: chromList) {
-                            if (chromosomeMap.get(chrom) > maxLength) {
-                                maxLength = chromosomeMap.get(chrom);
-                            }
-                            chromQueryList.add("chromosome:" + chrom);
-                        }
-                        facetList.add("start[1.." + maxLength + "]:" + step + ":chromDensity"
-                                + FacetQueryParser.LABEL_SEPARATOR + "chromosome:"
-                                + StringUtils.join(chromQueryList, " OR "));
-//                        for (String chr: chromosomes) {
-//                            facetList.add("start[1.." + chromosomeMap.get(chr) + "]:" + step + ":chromDensity." + chr
-//                                    + ":chromosome:" + chr);
-//                        }
-                    } else {
-                        throw VariantQueryException.malformedParam(null, CHROM_DENSITY, "Invalid syntax: " + facet);
-                    }
-                } else {
-                    throw VariantQueryException.malformedParam(null, CHROM_DENSITY, "Invalid syntax: " + facet);
+        for (int i = 0; i < facets.length; i++) {
+            if (i > 0) {
+                sb.append(FacetQueryParser.FACET_SEPARATOR);
+            }
+            String[] nestedFacets = facets[i].split(FacetQueryParser.NESTED_FACET_SEPARATOR);
+            for (int j = 0; j < nestedFacets.length; j++) {
+                if (j > 0) {
+                    sb.append(FacetQueryParser.NESTED_FACET_SEPARATOR);
                 }
-            } else {
-                facetList.add(facet);
+                String[] nestedSubfacets = nestedFacets[j].split(FacetQueryParser.NESTED_SUBFACET_SEPARATOR);
+                for (int k = 0; k < nestedSubfacets.length; k++) {
+                    if (k > 0) {
+                        sb.append(FacetQueryParser.NESTED_SUBFACET_SEPARATOR);
+                    }
+                    // Convert to Solr schema fields, if necessary
+                    sb.append(toSolrSchemaFields(nestedSubfacets[k]));
+                }
             }
         }
-        return StringUtils.join(facetList, FacetQueryParser.FACET_SEPARATOR);
+
+        return sb.toString();
+    }
+
+    private String toSolrSchemaFields(String facet) {
+        if (facet.contains(CHROM_DENSITY)) {
+            return parseChromDensity(facet);
+        } else if (facet.contains(ANNOT_FUNCTIONAL_SCORE.key())) {
+            return parseFacet(facet, ANNOT_FUNCTIONAL_SCORE.key());
+        } else if (facet.contains(ANNOT_CONSERVATION.key())) {
+            return parseFacet(facet, ANNOT_CONSERVATION.key());
+        } else if (facet.contains(ANNOT_PROTEIN_SUBSTITUTION.key())) {
+            return parseFacet(facet, ANNOT_PROTEIN_SUBSTITUTION.key());
+        } else if (facet.contains(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key())) {
+            return parseFacetWithStudy(facet, "popFreq");
+        } else if (facet.contains(STATS_ALT.key())) {
+            return parseFacetWithStudy(facet, "stats");
+        } else if (facet.contains(SCORE.key())) {
+            return parseFacetWithStudy(facet, SCORE.key());
+        } else {
+            return facet;
+        }
+    }
+
+    private String parseFacet(String facet, String categoryName) {
+        if (facet.contains("(")) {
+            // Aggregation function
+            return facet.replace(categoryName, "").replace("[", "").replace("]", "");
+        } else if (facet.contains("..")) {
+            // Range
+            Matcher matcher = FACET_RANGE_PATTERN.matcher(facet);
+            if (matcher.find()) {
+                return matcher.group(2) + "[" + matcher.group(3) + "]:" + matcher.group(4);
+            } else {
+                throw VariantQueryException.malformedParam(categoryName, facet, "Invalid syntax for facet range.");
+            }
+        }
+        // Nothing to do
+        return facet;
+    }
+
+    private String parseFacetWithStudy(String facet, String categoryName) {
+        if (facet.contains("(")) {
+            // Aggregation function
+            Matcher matcher = FACET_FUNCTION_STUDY_PATTERN.matcher(facet);
+            if (matcher.find()) {
+                return matcher.group(1) + "(" + categoryName + FIELD_SEPARATOR + matcher.group(3) + FIELD_SEPARATOR + matcher.group(4)
+                        + ")";
+            } else {
+                throw VariantQueryException.malformedParam(categoryName, facet, "Invalid syntax for facet function.");
+            }
+        } else if (facet.contains("..")) {
+            // Range
+            Matcher matcher = FACET_RANGE_STUDY_PATTERN.matcher(facet);
+            if (matcher.find()) {
+                return categoryName + FIELD_SEPARATOR + matcher.group(2) + FIELD_SEPARATOR + matcher.group(3) + "[" + matcher.group(4)
+                        + "]:" + matcher.group(5);
+            } else {
+                throw VariantQueryException.malformedParam(categoryName, facet, "Invalid syntax for facet range.");
+            }
+        }
+        // Nothing to do
+        return facet;
+    }
+
+    private String parseChromDensity(String facet) {
+        // Categorical...
+        Matcher matcher = FacetQueryParser.CATEGORICAL_PATTERN.matcher(facet);
+        if (matcher.find()) {
+            if (matcher.group(1).equals(CHROM_DENSITY)) {
+                // Step management
+                int step = 1000000;
+                if (StringUtils.isNotEmpty(matcher.group(3))) {
+                    step = Integer.parseInt(matcher.group(3).substring(1));
+                }
+                int maxLength = 0;
+                // Include management
+                List<String> chromList;
+                String include = matcher.group(2);
+                if (StringUtils.isNotEmpty(include)) {
+                    chromList = new ArrayList<>();
+                    include = include.replace("]", "").replace("[", "");
+                    for (String value : include.split(FacetQueryParser.INCLUDE_SEPARATOR)) {
+                        chromList.add(value);
+                    }
+                } else {
+                    chromList = new ArrayList<>(chromosomeMap.keySet());
+                }
+
+                List<String> chromQueryList = new ArrayList<>();
+                for (String chrom : chromList) {
+                    if (chromosomeMap.get(chrom) > maxLength) {
+                        maxLength = chromosomeMap.get(chrom);
+                    }
+                    chromQueryList.add("chromosome:" + chrom);
+                }
+                return "start[1.." + maxLength + "]:" + step + ":chromDensity" + FacetQueryParser.LABEL_SEPARATOR + "chromosome:"
+                        + StringUtils.join(chromQueryList, " OR ");
+            } else {
+                throw VariantQueryException.malformedParam(CHROM_DENSITY, facet, "Invalid syntax.");
+            }
+        } else {
+            throw VariantQueryException.malformedParam(CHROM_DENSITY, facet, "Invalid syntax.");
+        }
     }
 
     /**
@@ -1003,9 +1037,9 @@ public class SolrQueryParser {
                 matcher = SCORE_PATTERN.matcher(value);
                 if (matcher.find()) {
                     // concat expression, e.g.: value:[0 TO 12]
+                    checkRangeParams(param, matcher.group(1), matcher.group(3));
                     sb.append(getRange("", matcher.group(1), matcher.group(2), matcher.group(3)));
                 } else {
-                    logger.debug("Invalid expression: {}", value);
                     throw new IllegalArgumentException("Invalid expression " +  value);
                 }
             } else {
@@ -1031,6 +1065,7 @@ public class SolrQueryParser {
                             throw VariantQueryException.malformedParam(param, value);
                         }
 
+                        checkRangeParams(param, filterName, filterValue);
                         list.add(getRange("", filterName, filterOp, filterValue));
                     } else {
                         throw new IllegalArgumentException("Invalid expression " +  value);
@@ -1040,6 +1075,29 @@ public class SolrQueryParser {
             }
         }
         return sb.toString();
+    }
+
+    private void checkRangeParams(VariantQueryParam param, String source, String value) {
+        if (param == ANNOT_PROTEIN_SUBSTITUTION) {
+            if (!"polyphen".equals(source) && !"sift".equals(source)) {
+                throw new IllegalArgumentException("Invalid source '" + source + "' for " + ANNOT_PROTEIN_SUBSTITUTION.key() + ", valid "
+                        + "values are: polyphen, sift");
+            }
+        } else if (param == ANNOT_FUNCTIONAL_SCORE) {
+            if (!"cadd_scaled".equals(source) && !"cadd_raw".equals(source)) {
+                throw new IllegalArgumentException("Invalid source '" + source + "' for " + ANNOT_PROTEIN_SUBSTITUTION.key() + ", valid "
+                        + "values are: cadd_scaled, cadd_raw");
+            }
+        } else if (param == ANNOT_CONSERVATION) {
+            if (!"phastCons".equals(source) && !"phylop".equals(source) && !"gerp".equals(source)) {
+                throw new IllegalArgumentException("Invalid source '" + source + "' for " + ANNOT_PROTEIN_SUBSTITUTION.key() + ", valid "
+                        + "values are: phastCons, phylop, gerp");
+            }
+        }
+
+        if (param != ANNOT_PROTEIN_SUBSTITUTION && !NumberUtils.isNumber(value)) {
+            throw new IllegalArgumentException("Invalid expression: value '" +  value + "' must be numeric.");
+        }
     }
 
     /**
@@ -1127,8 +1185,7 @@ public class SolrQueryParser {
                 }
 
                 if (name.equals("popFreq")) {
-                    if ((study.equals("1kG_phase3") || study.equals("GNOMAD_GENOMES") || study.equals("GNOMAD_EXOMES"))
-                            && pop.equals("ALL")) {
+                    if ((study.equals("1kG_phase3") || study.equals("GNOMAD_GENOMES")) && pop.equals("ALL")) {
                         addOr = false;
                     } else {
                         addOr = true;
@@ -1402,11 +1459,13 @@ public class SolrQueryParser {
                     if (region.getStart() == 0 && region.getEnd() == Integer.MAX_VALUE) {
                         sb.append("chromosome:\"").append(chrom).append("\"");
                     } else if (region.getEnd() == Integer.MAX_VALUE) {
-                        sb.append("chromosome:\"").append(chrom).append("\" AND start:").append(region.getStart());
+                        sb.append("chromosome:\"").append(chrom)
+                                .append("\" AND end:[").append(region.getStart()).append(" TO *]")
+                                .append(" AND start:[* TO ").append(region.getStart()).append("]");
                     } else {
                         sb.append("chromosome:\"").append(chrom)
-                                .append("\" AND start:[").append(region.getStart()).append(" TO *]")
-                                .append(" AND end:[* TO ").append(region.getEnd()).append("]");
+                                .append("\" AND end:[").append(region.getStart()).append(" TO *]")
+                                .append(" AND start:[* TO ").append(region.getEnd()).append("]");
                     }
                     sb.append(")");
                 }

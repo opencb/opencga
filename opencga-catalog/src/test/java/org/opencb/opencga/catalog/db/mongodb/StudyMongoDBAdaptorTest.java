@@ -24,7 +24,12 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.study.VariableSet;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -70,7 +75,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
     private DataResult<VariableSet> createExampleVariableSet(String name, boolean confidential) throws CatalogDBException {
         Set<Variable> variables = new HashSet<>();
         variables.addAll(Arrays.asList(
-                new Variable("NAME", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "", null,
+                new Variable("NAME", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "", null,
                         Collections.emptyMap()),
                 new Variable("AGE", "", Variable.VariableType.DOUBLE, null, true, false, Collections.singletonList("0:99"), 1, "", "",
                         null, Collections.emptyMap()),
@@ -151,7 +156,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void addFieldToVariableSetTest1() throws CatalogDBException, CatalogAuthorizationException {
         createExampleVariableSet("VARSET_1", false);
         createExampleVariableSet("VARSET_2", true);
-        Variable variable = new Variable("NAM", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "", null,
+        Variable variable = new Variable("NAM", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "", null,
                 Collections.emptyMap());
         DataResult result = catalogStudyDBAdaptor.addFieldToVariableSet(18, variable, user3.getId());
         assertEquals(1, result.getNumUpdated());
@@ -174,7 +179,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
      */
     @Test
     public void addFieldToVariableSetTest2() throws CatalogDBException, CatalogAuthorizationException {
-        Variable variable = new Variable("NAM", "", Variable.VariableType.TEXT, "", true, false, Collections.emptyList(), 0, "", "", null,
+        Variable variable = new Variable("NAM", "", Variable.VariableType.STRING, "", true, false, Collections.emptyList(), 0, "", "", null,
                 Collections.emptyMap());
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("not found");
@@ -190,7 +195,7 @@ public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void removeUsersFromAllGroups() throws CatalogDBException {
+    public void removeUsersFromAllGroups() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         catalogStudyDBAdaptor.createGroup(5L, new Group("name1", Arrays.asList("user1", "user2")));
         catalogStudyDBAdaptor.createGroup(5L, new Group("name2", Arrays.asList("user1", "user2", "user3")));
         catalogStudyDBAdaptor.createGroup(5L, new Group("name3", Arrays.asList("user1", "user3")));

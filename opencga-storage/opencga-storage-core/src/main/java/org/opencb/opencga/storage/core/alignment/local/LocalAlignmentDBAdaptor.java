@@ -34,7 +34,7 @@ import org.opencb.biodata.tools.feature.WigUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
@@ -311,7 +311,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             }
 
             int limit = options.getInt(QueryOptions.LIMIT);
-            if (limit > 0) {
+            if (limit >= 0) {
                 alignmentOptions.setLimit(limit);
             }
         }

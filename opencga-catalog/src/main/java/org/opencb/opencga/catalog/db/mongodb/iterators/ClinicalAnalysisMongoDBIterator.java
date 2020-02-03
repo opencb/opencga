@@ -12,6 +12,7 @@ import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.InterpretationDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,11 +119,12 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
             List<Document> interpretationList;
             try {
                 if (user != null) {
+                    query.put(InterpretationDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
                     interpretationList = interpretationDBAdaptor.nativeGet(studyUid, query, interpretationQueryOptions, user).getResults();
                 } else {
                     interpretationList = interpretationDBAdaptor.nativeGet(query, interpretationQueryOptions).getResults();
                 }
-            } catch (CatalogDBException | CatalogAuthorizationException e) {
+            } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
                 logger.warn("Could not obtain the interpretations associated to the clinical analyses: {}", e.getMessage(), e);
                 return;
             }

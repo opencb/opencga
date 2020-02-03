@@ -28,10 +28,13 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileUtils;
-import org.opencb.opencga.catalog.models.update.FileUpdateParams;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.Account;
 
 import java.io.*;
 import java.net.URI;

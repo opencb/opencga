@@ -20,9 +20,9 @@ import org.bson.Document;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
-import org.opencb.opencga.core.models.Family;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.study.VariableSet;
 
 import java.util.HashMap;
 import java.util.List;

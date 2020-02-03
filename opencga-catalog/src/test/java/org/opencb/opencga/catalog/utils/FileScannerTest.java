@@ -30,7 +30,10 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.CatalogManagerTest;
 import org.opencb.opencga.core.common.IOUtils;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.Account;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;

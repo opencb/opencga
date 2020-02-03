@@ -2,14 +2,14 @@ package org.opencb.opencga.storage.hadoop.variant.analysis.gwas;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.tools.variant.GwasAnalysisExecutor;
-import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.core.exception.ToolExecutorException;
+import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.exceptions.ToolExecutorException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.analysis.HadoopVariantStorageToolExecutor;
-import org.opencb.opencga.core.annotations.ToolExecutor;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.oskar.analysis.variant.gwas.GwasConfiguration;
 
 import java.util.List;

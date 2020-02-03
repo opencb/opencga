@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.core.metadata.adaptors;
 
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
-import org.opencb.opencga.storage.core.metadata.models.Locked;
+import org.opencb.opencga.storage.core.metadata.models.Lock;
 
 import java.util.Iterator;
 
@@ -21,5 +21,5 @@ public interface CohortMetadataDBAdaptor {
 
     void removeCohort(int studyId, int cohortId);
 
-    Locked lock(int studyId, int id, long lockDuration, long timeout) throws StorageEngineException;
+    Lock lock(int studyId, int id, long lockDuration, long timeout) throws StorageEngineException;
 }

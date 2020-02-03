@@ -16,9 +16,13 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Event;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.result.Error;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
@@ -27,20 +31,23 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
-import org.opencb.opencga.catalog.models.update.JobUpdateParams;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.models.acls.permissions.JobAclEntry;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.JobsTop;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobAclEntry;
+import org.opencb.opencga.core.models.job.JobUpdateParams;
+import org.opencb.opencga.core.models.job.ToolInfo;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -159,7 +166,7 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
-    private OpenCGAResult<Job> getJob(long studyUid, String jobUuid, QueryOptions options) throws CatalogDBException {
+    private OpenCGAResult<Job> getJob(long studyUid, String jobUuid, QueryOptions options) throws CatalogException {
         Query query = new Query()
                 .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(JobDBAdaptor.QueryParams.UUID.key(), jobUuid);
@@ -229,7 +236,6 @@ public class JobManager extends ResourceManager<Job> {
 
             ParamUtils.checkObj(job, "Job");
             ParamUtils.checkAlias(job.getId(), "job id");
-            job.setName(ParamUtils.defaultString(job.getName(), ""));
             job.setDescription(ParamUtils.defaultString(job.getDescription(), ""));
             job.setCommandLine(ParamUtils.defaultString(job.getCommandLine(), ""));
             job.setCreationDate(ParamUtils.defaultString(job.getCreationDate(), TimeUtils.getTime()));
@@ -360,6 +366,17 @@ public class JobManager extends ResourceManager<Job> {
         }
         job.setInput(inputFiles);
 
+        if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
+            try {
+                InternalGetDataResult<Job> dependsOnResult = internalGet(study.getUid(),
+                        job.getDependsOn().stream().map(Job::getId).collect(Collectors.toList()), null, INCLUDE_JOB_IDS, job.getUserId(),
+                        false);
+                job.setDependsOn(dependsOnResult.getResults());
+            } catch (CatalogException e) {
+                throw new CatalogException("Unable to find jobs the job depends on. " + e.getMessage(), e);
+            }
+        }
+
         job.setAttributes(ParamUtils.defaultObject(job.getAttributes(), HashMap::new));
     }
 
@@ -369,7 +386,8 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     public OpenCGAResult<Job> submit(String studyStr, String toolId, Enums.Priority priority, Map<String, Object> params, String jobId,
-                                     String jobName, String jobDescription, List<String> jobTags, String token) throws CatalogException {
+                                     String jobDescription, List<String> jobDependsOn, List<String> jobTags, String token)
+            throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
 
@@ -378,11 +396,14 @@ public class JobManager extends ResourceManager<Job> {
                 .append("toolId", toolId)
                 .append("priority", priority)
                 .append("params", params)
+                .append("jobId", jobId)
+                .append("jobDescription", jobDescription)
+                .append("jobDependsOn", jobDependsOn)
+                .append("jobTags", jobTags)
                 .append("token", token);
 
         Job job = new Job();
         job.setId(jobId);
-        job.setName(jobName);
         job.setDescription(jobDescription);
         job.setTool(new ToolInfo().setId(toolId));
         job.setTags(jobTags);
@@ -394,6 +415,9 @@ public class JobManager extends ResourceManager<Job> {
             job.setUserId(userId);
             job.setParams(params);
             job.setPriority(priority);
+            job.setDependsOn(jobDependsOn != null
+                    ? jobDependsOn.stream().map(j -> new Job().setId(j)).collect(Collectors.toList())
+                    : Collections.emptyList());
 
             autoCompleteNewJob(study, job, token);
 
@@ -484,8 +508,7 @@ public class JobManager extends ResourceManager<Job> {
             if (options.getBoolean(QueryOptions.COUNT)) {
                 ExecutorService executor = Executors.newSingleThreadExecutor();
                 Query finalQuery = query;
-                countFuture = executor.submit(() -> jobDBAdaptor.count(study.getUid(), finalQuery, userId,
-                        StudyAclEntry.StudyPermissions.VIEW_JOBS));
+                countFuture = executor.submit(() -> jobDBAdaptor.count(finalQuery, userId));
             }
             OpenCGAResult<Job> queryResult = OpenCGAResult.empty();
             if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
@@ -539,8 +562,7 @@ public class JobManager extends ResourceManager<Job> {
             fixQueryObject(study, query, userId);
 
             query.append(JobDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            OpenCGAResult<Long> queryResultAux = jobDBAdaptor.count(study.getUid(), query, userId,
-                    StudyAclEntry.StudyPermissions.VIEW_JOBS);
+            OpenCGAResult<Long> queryResultAux = jobDBAdaptor.count(query, userId);
 
             auditManager.auditCount(userId, Enums.Resource.JOB, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -583,6 +605,7 @@ public class JobManager extends ResourceManager<Job> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationUuid);
         OpenCGAResult<Job> result = OpenCGAResult.empty();
         for (String id : jobIds) {
             String jobId = id;
@@ -619,6 +642,7 @@ public class JobManager extends ResourceManager<Job> {
                         study.getId(), study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationUuid);
 
         return endResult(result, ignoreException);
     }
@@ -664,6 +688,7 @@ public class JobManager extends ResourceManager<Job> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationUuid);
         while (iterator.hasNext()) {
             Job job = iterator.next();
 
@@ -690,6 +715,7 @@ public class JobManager extends ResourceManager<Job> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationUuid);
 
         return endResult(result, ignoreException);
     }
@@ -722,10 +748,17 @@ public class JobManager extends ResourceManager<Job> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse JobUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("query", query)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
@@ -742,6 +775,7 @@ public class JobManager extends ResourceManager<Job> {
             throw e;
         }
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Job> result = OpenCGAResult.empty();
         while (iterator.hasNext()) {
             Job job = iterator.next();
@@ -760,6 +794,7 @@ public class JobManager extends ResourceManager<Job> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
 
         return endResult(result, ignoreException);
     }
@@ -788,14 +823,22 @@ public class JobManager extends ResourceManager<Job> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse JobUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("jobIds", jobIds)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("ignoreException", ignoreException)
                 .append("options", options)
                 .append("token", token);
 
+        auditManager.initAuditBatch(operationId);
         OpenCGAResult<Job> result = OpenCGAResult.empty();
         for (String id : jobIds) {
             String jobId = id;
@@ -826,6 +869,8 @@ public class JobManager extends ResourceManager<Job> {
                         study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
         }
+        auditManager.finishAuditBatch(operationId);
+
         return endResult(result, ignoreException);
     }
 
@@ -836,10 +881,17 @@ public class JobManager extends ResourceManager<Job> {
 
         String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
 
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams != null ? updateParams.getUpdateMap() : null;
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse JobUpdateParams object: " + e.getMessage(), e);
+        }
+
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
                 .append("jobId", jobId)
-                .append("updateParams", updateParams != null ? updateParams.getUpdateMap() : null)
+                .append("updateParams", updateMap)
                 .append("options", options)
                 .append("token", token);
 
@@ -879,7 +931,14 @@ public class JobManager extends ResourceManager<Job> {
         if (updateParams == null) {
             throw new CatalogException("Missing parameters to update");
         }
-        if (updateParams.getUpdateMap().isEmpty()) {
+
+        ObjectMap updateMap;
+        try {
+            updateMap = updateParams.getUpdateMap();
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Could not parse JobUpdateParams object: " + e.getMessage(), e);
+        }
+        if (updateMap.isEmpty()) {
             throw new CatalogException("Missing parameters to update");
         }
 
@@ -926,7 +985,7 @@ public class JobManager extends ResourceManager<Job> {
 //            updateParams.setErrorLog(getFile(study.getUid(), updateParams.getErrorLog().getPath(), userId));
 //        }
 
-        return jobDBAdaptor.update(job.getUid(), updateParams.getUpdateMap(), options);
+        return jobDBAdaptor.update(job.getUid(), updateMap, options);
     }
 
     private File getFile(long studyUid, String path, String userId) throws CatalogException {
@@ -1213,8 +1272,8 @@ public class JobManager extends ResourceManager<Job> {
         allJobs.addAll(pending.getResults());
         Map<String, Long> jobStatusCount = new HashMap<>();
 
-        OpenCGAResult result = catalogManager.getJobManager().groupBy(study, new Query(baseQuery), JobDBAdaptor.QueryParams.STATUS_NAME.key(),
-                new QueryOptions(QueryOptions.COUNT, true), token);
+        OpenCGAResult result = catalogManager.getJobManager().groupBy(study, new Query(baseQuery),
+                JobDBAdaptor.QueryParams.STATUS_NAME.key(), new QueryOptions(QueryOptions.COUNT, true), token);
         for (Object o : result.getResults()) {
             String status = ((Map) ((Map) o).get("_id")).get("status.name").toString();
             long count = ((Number) ((Map) o).get("count")).longValue();
@@ -1263,7 +1322,7 @@ public class JobManager extends ResourceManager<Job> {
         // Add study id to the query
         query.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        OpenCGAResult queryResult = jobDBAdaptor.groupBy(study.getUid(), query, fields, options, userId);
+        OpenCGAResult queryResult = jobDBAdaptor.groupBy(query, fields, options, userId);
 
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }

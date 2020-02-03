@@ -24,12 +24,14 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Status;
-import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.file.FileAclEntry;
 
 import java.io.IOException;
 import java.util.*;
@@ -82,7 +84,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void getFileTest() throws CatalogDBException {
+    public void getFileTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
         DataResult<File> fileDataResult = catalogFileDBAdaptor.get(file.getUid(), null);
         System.out.println(fileDataResult);
@@ -95,21 +97,21 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void getAllFilesStudyNotValidTest() throws CatalogDBException {
+    public void getAllFilesStudyNotValidTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("not valid");
         catalogFileDBAdaptor.getAllInStudy(-1, null);
     }
 
     @Test
-    public void getAllFilesStudyNotExistsTest() throws CatalogDBException {
+    public void getAllFilesStudyNotExistsTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("not exist");
         catalogFileDBAdaptor.getAllInStudy(216544, null);
     }
 
     @Test
-    public void getAllFilesTest() throws CatalogDBException {
+    public void getAllFilesTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         DataResult<File> allFiles = catalogFileDBAdaptor.getAllInStudy(studyId, null);
         List<File> files = allFiles.getResults();
@@ -155,7 +157,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 //    }
 
     @Test
-    public void modifyFileTest() throws CatalogDBException, IOException {
+    public void modifyFileTest() throws CatalogDBException, IOException, CatalogParameterException, CatalogAuthorizationException {
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
         long fileId = file.getUid();
 
@@ -179,7 +181,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void renameFileTest() throws CatalogDBException {
+    public void renameFileTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         String newName = "newFile.bam";
         String parentPath = "data/";
         long fileId = catalogFileDBAdaptor.getId(user3.getProjects().get(0).getStudies().get(0).getUid(), "data/file.vcf");
@@ -203,7 +205,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void includeFields() throws CatalogDBException {
+    public void includeFields() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         DataResult<File> fileDataResult = catalogFileDBAdaptor.get(7,
                 new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.PATH.key()));
         List<File> files = fileDataResult.getResults();

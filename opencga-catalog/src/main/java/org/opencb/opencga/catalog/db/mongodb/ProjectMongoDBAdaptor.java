@@ -39,13 +39,14 @@ import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.Project;
-import org.opencb.opencga.core.models.Status;
-import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -94,7 +95,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public OpenCGAResult insert(Project project, String userId, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult insert(Project project, String userId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
             logger.debug("Starting project insert transaction for project id '{}'", project.getId());
@@ -104,7 +106,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         }, e -> logger.error("Could not create project {}: {}", project.getId(), e.getMessage()));
     }
 
-    Project insert(ClientSession clientSession, Project project, String userId) throws CatalogDBException {
+    Project insert(ClientSession clientSession, Project project, String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         List<Study> studies = project.getStudies();
         if (studies == null) {
             studies = Collections.emptyList();
@@ -252,7 +255,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public OpenCGAResult update(long projectUid, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult update(long projectUid, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(),
                 QueryParams.FQN.key()));
         OpenCGAResult<Project> projectDataResult = get(projectUid, options);
@@ -282,7 +286,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             Project project = iterator.next();
             try {
                 result.append(runTransaction(clientSession -> privateUpdate(clientSession, project, parameters)));
-            } catch (CatalogDBException e) {
+            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
                 logger.error("Could not update project {}: {}", project.getId(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, project.getId(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -405,7 +409,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public OpenCGAResult delete(Project project) throws CatalogDBException {
+    public OpenCGAResult delete(Project project) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             return runTransaction(clientSession -> privateDelete(clientSession, project));
         } catch (CatalogDBException e) {
@@ -437,7 +441,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, project)));
-            } catch (CatalogDBException e) {
+            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
                 logger.error("Could not delete project {}: {}", project.getId(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, project.getId(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -494,7 +498,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
-    private OpenCGAResult setStatus(long projectId, String status) throws CatalogDBException {
+    private OpenCGAResult setStatus(long projectId, String status)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return update(projectId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
@@ -515,7 +520,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     }
 
     @Override
-    public OpenCGAResult restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult restore(long id, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
 
         checkId(id);
         // Check if the cohort is active
@@ -579,7 +585,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     @Override
     public OpenCGAResult<Project> get(Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
         List<Project> documentList = new ArrayList<>();
         OpenCGAResult<Project> queryResult;

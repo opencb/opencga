@@ -36,7 +36,17 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.PrivateStudyUid;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
@@ -125,6 +135,14 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         sampleFilterValidator = new SampleFilterValidator();
         genotypeFilterValidator = new GenotypeFilterValidator();
         cohortFilterValidator = new CohortFilterValidator();
+    }
+
+    public static QueryParam valueOf(String param) {
+        QueryParam queryParam = VariantQueryParam.valueOf(param);
+        if (queryParam == null) {
+            queryParam = VARIANT_CATALOG_QUERY_PARAMS.stream().filter(q -> q.key().equals(param)).findFirst().orElse(null);
+        }
+        return queryParam;
     }
 
     public static VariantQueryException wrongReleaseException(VariantQueryParam param, String value, int release) {
@@ -906,8 +924,14 @@ public class VariantCatalogQueryUtils extends CatalogUtils {
         protected List<String> validate(String defaultStudyStr, List<String> values, Integer release, VariantQueryParam param,
                                         String sessionId) throws CatalogException {
             if (release == null) {
-                DataResult<Sample> samples = catalogManager.getSampleManager().get(defaultStudyStr, values,
+//                DataResult<Sample> samples = catalogManager.getSampleManager().get(defaultStudyStr, values,
+//                        SampleManager.INCLUDE_SAMPLE_IDS, sessionId);
+                DataResult<Sample> samples = catalogManager.getSampleManager().search(defaultStudyStr,
+                        new Query(SampleDBAdaptor.QueryParams.ID.key(), values),
                         SampleManager.INCLUDE_SAMPLE_IDS, sessionId);
+                if (samples.getResults().size() != values.size()) {
+                    throw new CatalogException("Some samples not found");
+                }
                 return samples.getResults().stream().map(Sample::getId).collect(Collectors.toList());
             } else {
                 return validate(defaultStudyStr, values, release, param, catalogManager.getSampleManager(),

@@ -20,9 +20,11 @@ import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.ClinicalAnalysis;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.Map;
@@ -120,11 +122,11 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
         }
     }
 
-    default boolean exists(long clinicalAnalysisId) throws CatalogDBException {
+    default boolean exists(long clinicalAnalysisId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query(QueryParams.UID.key(), clinicalAnalysisId)).getNumMatches() > 0;
     }
 
-    default void checkId(long clinicalAnalysisId) throws CatalogDBException {
+    default void checkId(long clinicalAnalysisId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (clinicalAnalysisId < 0) {
             throw CatalogDBException.newInstance("Clinical analysis id '{}' is not valid: ", clinicalAnalysisId);
         }
@@ -138,9 +140,11 @@ public interface ClinicalAnalysisDBAdaptor extends DBAdaptor<ClinicalAnalysis> {
 
     OpenCGAResult insert(long studyId, ClinicalAnalysis clinicalAnalysis, QueryOptions options) throws CatalogDBException;
 
-    OpenCGAResult<ClinicalAnalysis> get(long clinicalAnalysisUid, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<ClinicalAnalysis> get(long clinicalAnalysisUid, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<ClinicalAnalysis> get(long studyUid, String clinicalAnalysisId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<ClinicalAnalysis> get(long studyUid, String clinicalAnalysisId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     long getStudyId(long clinicalAnalysisId) throws CatalogDBException;
 

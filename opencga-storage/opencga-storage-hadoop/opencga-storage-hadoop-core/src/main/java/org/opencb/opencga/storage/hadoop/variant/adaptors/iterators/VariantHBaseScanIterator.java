@@ -73,7 +73,7 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
                 .setSelectVariantElements(selectElements)
                 .setIncludeIndexStatus(query.getBoolean(VariantQueryUtils.VARIANTS_TO_INDEX.key(), false))
                 .setFormats(formats);
-        setLimit(options.getLong(QueryOptions.LIMIT));
+        setLimit(options.getLong(QueryOptions.LIMIT, Long.MAX_VALUE));
         threadPool = Executors.newFixedThreadPool(POOL_SIZE);
     }
 
@@ -162,7 +162,7 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
     }
 
     protected void setLimit(long limit) {
-        this.limit = limit <= 0 ? Long.MAX_VALUE : limit;
+        this.limit = limit < 0 ? Long.MAX_VALUE : limit;
     }
 
     public void skip(int skip) {

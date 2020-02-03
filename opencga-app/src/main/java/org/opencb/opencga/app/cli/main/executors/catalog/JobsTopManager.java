@@ -1,6 +1,7 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import com.google.common.base.Stopwatch;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.main.io.Table;
@@ -10,9 +11,9 @@ import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.JobsTop;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.ByteArrayOutputStream;
@@ -88,36 +89,36 @@ public class JobsTopManager {
         }
     }
 
-    public void loop() throws IOException {
+    public void loop() throws IOException, ClientException {
         JobsTop top = getJobsTop();
         print(top);
     }
 
-    public JobsTop getJobsTop() throws IOException {
+    public JobsTop getJobsTop() throws IOException, ClientException {
         // TODO: Get JobTop from server
         int jobsLimit = this.jobsLimit;
         OpenCGAResult<Job> running = openCGAClient.getJobClient().search(
-                new Query(baseQuery)
-                        .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING),
-                new QueryOptions(queryOptions)
+                new ObjectMap(baseQuery)
+                        .appendAll(queryOptions)
+                        .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING)
                         .append(QueryOptions.LIMIT, jobsLimit)
                         .append(QueryOptions.SORT, "execution.start")
         ).getResponses().get(0);
         jobsLimit -= running.getResults().size();
 
         OpenCGAResult<Job> queued = openCGAClient.getJobClient().search(
-                new Query(baseQuery)
-                        .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED),
-                new QueryOptions(queryOptions)
+                new ObjectMap(baseQuery)
+                        .appendAll(queryOptions)
+                        .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED)
                         .append(QueryOptions.LIMIT, jobsLimit)
                         .append(QueryOptions.SORT, "creationDate")
         ).getResponses().get(0);
         jobsLimit -= queued.getResults().size();
 
         OpenCGAResult<Job> pending = openCGAClient.getJobClient().search(
-                new Query(baseQuery)
-                        .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.PENDING),
-                new QueryOptions(queryOptions)
+                new ObjectMap(baseQuery)
+                        .appendAll(queryOptions)
+                        .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.PENDING)
                         .append(QueryOptions.LIMIT, jobsLimit)
                         .append(QueryOptions.SORT, "creationDate")
         ).getResponses().get(0);
@@ -125,15 +126,15 @@ public class JobsTopManager {
 
         boolean truncatedJobs = jobsLimit <= 0;
 
-        long doneCount = openCGAClient.getJobClient().search(new Query(baseQuery)
-                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.DONE), countOptions).getResponses().get(0).getNumMatches();
-        long errorCount = openCGAClient.getJobClient().search(new Query(baseQuery)
-                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.ERROR), countOptions).getResponses().get(0).getNumMatches();
+        long doneCount = openCGAClient.getJobClient().search(new ObjectMap(baseQuery).appendAll(countOptions)
+                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.DONE)).getResponses().get(0).getNumMatches();
+        long errorCount = openCGAClient.getJobClient().search(new ObjectMap(baseQuery).appendAll(countOptions)
+                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.ERROR)).getResponses().get(0).getNumMatches();
 
         List<Job> finishedJobs = openCGAClient.getJobClient().search(
-                new Query(baseQuery)
-                        .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.DONE + "," + Enums.ExecutionStatus.ERROR),
-                new QueryOptions(queryOptions)
+                new ObjectMap(baseQuery)
+                        .appendAll(queryOptions)
+                        .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.DONE + "," + Enums.ExecutionStatus.ERROR)
                         .append(QueryOptions.LIMIT, Math.max(1, jobsLimit))
                         .append(QueryOptions.SORT, "execution.end")
                         .append(QueryOptions.ORDER, QueryOptions.DESCENDING) // Get last n elements

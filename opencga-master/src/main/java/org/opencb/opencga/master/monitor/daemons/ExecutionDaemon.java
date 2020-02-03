@@ -30,7 +30,10 @@ import org.opencb.opencga.analysis.file.FetchAndRegisterTask;
 import org.opencb.opencga.analysis.file.FileDeleteTask;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
+import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
+import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
 import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -49,10 +52,10 @@ import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.models.acls.permissions.FileAclEntry;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
@@ -113,10 +116,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put("alignment-index", "alignment index");
             put("alignment-coverage-run", "alignment coverage-run");
             put("alignment-stats-run", "alignment stats-run");
-            put(BwaWrapperAnalysis.ID, "alignment " + BwaWrapperAnalysis.ID);
-            put(SamtoolsWrapperAnalysis.ID, "alignment " + SamtoolsWrapperAnalysis.ID);
-            put(DeeptoolsWrapperAnalysis.ID, "alignment " + DeeptoolsWrapperAnalysis.ID);
-            put(FastqcWrapperAnalysis.ID, "alignment " + FastqcWrapperAnalysis.ID);
+            put(BwaWrapperAnalysis.ID, "alignment " + BwaWrapperAnalysis.ID + "-run");
+            put(SamtoolsWrapperAnalysis.ID, "alignment " + SamtoolsWrapperAnalysis.ID + "-run");
+            put(DeeptoolsWrapperAnalysis.ID, "alignment " + DeeptoolsWrapperAnalysis.ID + "-run");
+            put(FastqcWrapperAnalysis.ID, "alignment " + FastqcWrapperAnalysis.ID + "-run");
 
             put(VariantIndexOperationTool.ID, "variant index");
             put(VariantExportTool.ID, "variant export");
@@ -127,6 +130,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(GwasAnalysis.ID, "variant gwas-run");
             put(PlinkWrapperAnalysis.ID, "variant " + PlinkWrapperAnalysis.ID + "-run");
             put(RvtestsWrapperAnalysis.ID, "variant " + RvtestsWrapperAnalysis.ID + "-run");
+            put(GatkWrapperAnalysis.ID, "variant " + GatkWrapperAnalysis.ID + "-run");
             put(VariantFileDeleteOperationTool.ID, "variant file-delete");
             put(VariantSecondaryIndexOperationTool.ID, "variant secondary-index");
             put(VariantSecondaryIndexSamplesDeleteOperationTool.ID, "variant secondary-index-delete");
@@ -140,6 +144,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(VariantAnnotationDeleteOperationTool.ID, "variant annotation-delete");
             put(VariantAnnotationSaveOperationTool.ID, "variant annotation-save");
             put(SampleVariantFilterAnalysis.ID, "variant sample-run");
+            put(KnockoutAnalysis.ID, "variant knockout-run");
+            put(SampleEligibilityAnalysis.ID, "variant " + SampleEligibilityAnalysis.ID + "-run");
+            put(MutationalSignatureAnalysis.ID, "variant mutational-signature-run");
 
             put(TeamInterpretationAnalysis.ID, "interpretation " + TeamInterpretationAnalysis.ID);
             put(TieringInterpretationAnalysis.ID, "interpretation " + TieringInterpretationAnalysis.ID);
@@ -491,17 +498,51 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             if (entry.getValue() instanceof Map) {
                 Map<String, String> dynamicParams = (Map<String, String>) entry.getValue();
                 for (Map.Entry<String, String> dynamicEntry : dynamicParams.entrySet()) {
-                    cliBuilder
-                            .append(" ").append("-D").append(dynamicEntry.getKey())
-                            .append("=").append(dynamicEntry.getValue());
+                    cliBuilder.append(" ").append("-D");
+                    escapeCliArg(cliBuilder, dynamicEntry.getKey());
+                    cliBuilder.append("=");
+                    escapeCliArg(cliBuilder, dynamicEntry.getValue());
                 }
             } else {
+                String key = entry.getKey();
+                if (!StringUtils.isAlphanumeric(StringUtils.replaceChars(key, "-_", ""))) {
+                    // This should never happen
+                    throw new IllegalArgumentException("Invalid job param key '" + key + "'");
+                }
                 cliBuilder
-                        .append(" --").append(CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, entry.getKey()))
-                        .append(" ").append(entry.getValue());
+                        .append(" --").append(CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_HYPHEN, key))
+                        .append(" ");
+                escapeCliArg(cliBuilder, entry.getValue().toString());
             }
         }
         return cliBuilder.toString();
+    }
+
+    /**
+     * Escape args if needed.
+     *
+     * Surround with single quotes. ('value')
+     * Detect if the value had any single quote, and escape them with double quotes ("'")
+     *
+     *   --description It's true
+     *   --description 'It'"'"'s true'
+     *
+     * 'It'
+     * "'"
+     * 's true'
+     *
+     * @param cliBuilder CommandLine StringBuilder
+     * @param value value to escape
+     */
+    public static void escapeCliArg(StringBuilder cliBuilder, String value) {
+        if (StringUtils.isAlphanumeric(value) || StringUtils.isEmpty(value)) {
+            cliBuilder.append(value);
+        } else {
+            if (value.contains("'")) {
+                value = value.replace("'", "'\"'\"'");
+            }
+            cliBuilder.append("'").append(value).append("'");
+        }
     }
 
     private boolean canBeQueued(Job job) {
@@ -509,6 +550,19 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             int maxIndexJobs = catalogManager.getConfiguration().getAnalysis().getIndex().getVariant().getMaxConcurrentJobs();
             return canBeQueued("variant-index", maxIndexJobs);
         }
+
+        if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
+            for (Job tmpJob : job.getDependsOn()) {
+                if (!Enums.ExecutionStatus.DONE.equals(tmpJob.getStatus().getName())) {
+                    if (Enums.ExecutionStatus.ABORTED.equals(tmpJob.getStatus().getName())
+                            || Enums.ExecutionStatus.ERROR.equals(tmpJob.getStatus().getName())) {
+                        abortJob(job, "Job '" + tmpJob.getId() + "' it depended on did not finish successfully");
+                    }
+                    return false;
+                }
+            }
+        }
+
         return true;
     }
 

@@ -27,14 +27,16 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.PermissionRule;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.models.User;
-import org.opencb.opencga.core.models.acls.permissions.SampleAclEntry;
+import org.opencb.opencga.core.models.study.PermissionRule;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.User;
+import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
 
 import java.io.IOException;
@@ -90,7 +92,7 @@ public class AuthorizationMongoDBAdaptorTest {
         aclDBAdaptor.setAcls(Arrays.asList(s1.getUid()), acls, Enums.Resource.SAMPLE);
     }
 
-    Sample getSample(long studyUid, String sampleId) throws CatalogDBException {
+    Sample getSample(long studyUid, String sampleId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId);

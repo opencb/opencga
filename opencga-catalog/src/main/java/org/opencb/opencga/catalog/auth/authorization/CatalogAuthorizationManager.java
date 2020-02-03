@@ -25,13 +25,21 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.Group;
-import org.opencb.opencga.core.models.GroupParams;
-import org.opencb.opencga.core.models.PermissionRule;
-import org.opencb.opencga.core.models.Study;
-import org.opencb.opencga.core.models.acls.permissions.*;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
+import org.opencb.opencga.core.models.cohort.CohortAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.family.FamilyAclEntry;
+import org.opencb.opencga.core.models.file.FileAclEntry;
+import org.opencb.opencga.core.models.individual.IndividualAclEntry;
+import org.opencb.opencga.core.models.job.JobAclEntry;
+import org.opencb.opencga.core.models.panel.PanelAclEntry;
+import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.study.PermissionRule;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -196,13 +204,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void checkUpdateGroupPermissions(long studyId, String userId, String group, GroupParams params) throws CatalogException {
+    public void checkUpdateGroupPermissions(long studyId, String userId, String group, ParamUtils.UpdateAction action)
+            throws CatalogException {
         String ownerId = studyDBAdaptor.getOwnerId(studyId);
 
         if (userId.equals(ownerId)) {
             // Granted permission but check it is a valid action
-            if (group.equals(MEMBERS_GROUP)
-                    && (params.getAction() != GroupParams.Action.ADD && params.getAction() != GroupParams.Action.REMOVE)) {
+            if (group.equals(MEMBERS_GROUP) && (action != ParamUtils.UpdateAction.ADD && action != ParamUtils.UpdateAction.REMOVE)) {
                 throw new CatalogAuthorizationException("Only ADD or REMOVE actions are accepted for @members group.");
             }
             return;
@@ -217,8 +225,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         // Check it is a valid action
-        if (group.equals(MEMBERS_GROUP)
-                && (params.getAction() != GroupParams.Action.ADD && params.getAction() != GroupParams.Action.REMOVE)) {
+        if (group.equals(MEMBERS_GROUP) && (action != ParamUtils.UpdateAction.ADD && action != ParamUtils.UpdateAction.REMOVE)) {
             throw new CatalogAuthorizationException("Only ADD or REMOVE actions are accepted for @members group.");
         }
     }
@@ -290,55 +297,20 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throws CatalogException {
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.UID.key(), fileId)
-                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        StudyAclEntry.StudyPermissions studyPermission;
-        switch (permission) {
-            case VIEW_HEADER:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS;
-                break;
-            case VIEW_CONTENT:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS;
-                break;
-            case VIEW:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_FILES;
-                break;
-            case WRITE:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_FILES;
-                break;
-            case DELETE:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_FILES;
-                break;
-            case DOWNLOAD:
-                studyPermission = StudyAclEntry.StudyPermissions.DOWNLOAD_FILES;
-                break;
-            case UPLOAD:
-                studyPermission = StudyAclEntry.StudyPermissions.UPLOAD_FILES;
-                break;
-            case VIEW_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_FILE_ANNOTATIONS;
-                break;
-            case WRITE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_FILE_ANNOTATIONS;
-                break;
-            case DELETE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_FILE_ANNOTATIONS;
-                break;
-            default:
-                throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
-        }
+                .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(studyId, userId, query, studyPermission, fileDBAdaptor)) {
+        if (checkUserPermission(userId, query, fileDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "File", fileId, null);
     }
 
-    private boolean checkUserPermission(long studyUid, String userId, Query query, StudyAclEntry.StudyPermissions studyPermission,
-                                        DBAdaptor dbAdaptor) throws CatalogDBException, CatalogAuthorizationException {
+    private boolean checkUserPermission(String userId, Query query, DBAdaptor dbAdaptor) throws CatalogException {
         if (OPENCGA.equals(userId)) {
             return true;
         } else {
-            if (dbAdaptor.count(studyUid, query, userId, studyPermission).getNumMatches() == 1) {
+            if (dbAdaptor.count(query, userId).getNumMatches() == 1) {
                 return true;
             }
         }
@@ -350,32 +322,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throws CatalogException {
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.UID.key(), sampleId)
-                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        StudyAclEntry.StudyPermissions studyPermission;
-        switch (permission) {
-            case VIEW:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_SAMPLES;
-                break;
-            case UPDATE:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_SAMPLES;
-                break;
-            case DELETE:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_SAMPLES;
-                break;
-            case WRITE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_SAMPLE_ANNOTATIONS;
-                break;
-            case VIEW_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS;
-                break;
-            case DELETE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_SAMPLE_ANNOTATIONS;
-                break;
-            default:
-                throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
-        }
+                .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(studyId, userId, query, studyPermission, sampleDBAdaptor)) {
+        if (checkUserPermission(userId, query, sampleDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Sample", sampleId, null);
@@ -386,32 +336,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                                           IndividualAclEntry.IndividualPermissions permission) throws CatalogException {
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.UID.key(), individualId)
-                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        StudyAclEntry.StudyPermissions studyPermission;
-        switch (permission) {
-            case VIEW:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS;
-                break;
-            case UPDATE:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS;
-                break;
-            case DELETE:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_INDIVIDUALS;
-                break;
-            case WRITE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_INDIVIDUAL_ANNOTATIONS;
-                break;
-            case VIEW_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS;
-                break;
-            case DELETE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_INDIVIDUAL_ANNOTATIONS;
-                break;
-            default:
-                throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
-        }
+                .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(studyId, userId, query, studyPermission, individualDBAdaptor)) {
+        if (checkUserPermission(userId, query, individualDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Individual", individualId, null);
@@ -421,23 +349,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void checkJobPermission(long studyId, long jobId, String userId, JobAclEntry.JobPermissions permission) throws CatalogException {
         Query query = new Query()
                 .append(JobDBAdaptor.QueryParams.UID.key(), jobId)
-                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        StudyAclEntry.StudyPermissions studyPermission;
-        switch (permission) {
-            case VIEW:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_JOBS;
-                break;
-            case UPDATE:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_JOBS;
-                break;
-            case DELETE:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_JOBS;
-                break;
-            default:
-                throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
-        }
+                .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(studyId, userId, query, studyPermission, jobDBAdaptor)) {
+        if (checkUserPermission(userId, query, jobDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Job", jobId, null);
@@ -448,32 +363,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throws CatalogException {
         Query query = new Query()
                 .append(CohortDBAdaptor.QueryParams.UID.key(), cohortId)
-                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        StudyAclEntry.StudyPermissions studyPermission;
-        switch (permission) {
-            case VIEW:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_COHORTS;
-                break;
-            case UPDATE:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_COHORTS;
-                break;
-            case DELETE:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_COHORTS;
-                break;
-            case WRITE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_COHORT_ANNOTATIONS;
-                break;
-            case VIEW_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS;
-                break;
-            case DELETE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_COHORT_ANNOTATIONS;
-                break;
-            default:
-                throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
-        }
+                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(studyId, userId, query, studyPermission, cohortDBAdaptor)) {
+        if (checkUserPermission(userId, query, cohortDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Cohort", cohortId, null);
@@ -485,23 +378,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throws CatalogException {
         Query query = new Query()
                 .append(PanelDBAdaptor.QueryParams.UID.key(), panelId)
-                .append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        StudyAclEntry.StudyPermissions studyPermission;
-        switch (permission) {
-            case VIEW:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_PANELS;
-                break;
-            case UPDATE:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_PANELS;
-                break;
-            case DELETE:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_PANELS;
-                break;
-            default:
-                throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
-        }
+                .append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(studyId, userId, query, studyPermission, panelDBAdaptor)) {
+        if (checkUserPermission(userId, query, panelDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Panel", panelId, null);
@@ -512,32 +392,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throws CatalogException {
         Query query = new Query()
                 .append(FamilyDBAdaptor.QueryParams.UID.key(), familyId)
-                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        StudyAclEntry.StudyPermissions studyPermission;
-        switch (permission) {
-            case VIEW:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_FAMILIES;
-                break;
-            case UPDATE:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_FAMILIES;
-                break;
-            case DELETE:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_FAMILIES;
-                break;
-            case WRITE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_FAMILY_ANNOTATIONS;
-                break;
-            case VIEW_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS;
-                break;
-            case DELETE_ANNOTATIONS:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_FAMILY_ANNOTATIONS;
-                break;
-            default:
-                throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
-        }
+                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(studyId, userId, query, studyPermission, familyDBAdaptor)) {
+        if (checkUserPermission(userId, query, familyDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "Family", familyId, null);
@@ -549,23 +407,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                                                 ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions permission) throws CatalogException {
         Query query = new Query()
                 .append(ClinicalAnalysisDBAdaptor.QueryParams.UID.key(), analysisId)
-                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyId);
-        StudyAclEntry.StudyPermissions studyPermission;
-        switch (permission) {
-            case VIEW:
-                studyPermission = StudyAclEntry.StudyPermissions.VIEW_CLINICAL_ANALYSIS;
-                break;
-            case UPDATE:
-                studyPermission = StudyAclEntry.StudyPermissions.WRITE_CLINICAL_ANALYSIS;
-                break;
-            case DELETE:
-                studyPermission = StudyAclEntry.StudyPermissions.DELETE_CLINICAL_ANALYSIS;
-                break;
-            default:
-                throw new CatalogAuthorizationException("Permission " + permission.toString() + " not found");
-        }
+                .append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), studyId)
+                .append(ParamConstants.ACL_PARAM, userId + ":" + permission.name());
 
-        if (checkUserPermission(studyId, userId, query, studyPermission, clinicalAnalysisDBAdaptor)) {
+        if (checkUserPermission(userId, query, clinicalAnalysisDBAdaptor)) {
             return;
         }
         throw CatalogAuthorizationException.deny(userId, permission.toString(), "ClinicalAnalysis", analysisId, null);

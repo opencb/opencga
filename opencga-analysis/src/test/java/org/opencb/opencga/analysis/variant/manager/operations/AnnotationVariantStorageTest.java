@@ -26,7 +26,7 @@ import org.opencb.opencga.analysis.variant.operations.OperationTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;

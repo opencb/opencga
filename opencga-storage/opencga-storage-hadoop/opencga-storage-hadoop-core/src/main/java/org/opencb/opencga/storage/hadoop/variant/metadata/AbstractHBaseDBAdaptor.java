@@ -12,10 +12,10 @@ import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.Locked;
+import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.IteratorWithClosable;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
-import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
+import org.opencb.opencga.storage.hadoop.utils.HBaseLockManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
@@ -44,7 +44,7 @@ public abstract class AbstractHBaseDBAdaptor {
 
     protected final HBaseManager hBaseManager;
     protected final ObjectMapper objectMapper;
-    private final HBaseLock lock;
+    private final HBaseLockManager lock;
     protected final String tableName;
     private Boolean tableExists = null; // unknown
     protected byte[] family;
@@ -68,7 +68,7 @@ public abstract class AbstractHBaseDBAdaptor {
             // Create a new instance of HBaseManager to close only if needed
             this.hBaseManager = new HBaseManager(hBaseManager);
         }
-        lock = new HBaseLock(this.hBaseManager, this.tableName, family, null);
+        lock = new HBaseLockManager(this.hBaseManager, this.tableName, family, null);
     }
 
     protected void ensureTableExists() {
@@ -259,15 +259,15 @@ public abstract class AbstractHBaseDBAdaptor {
         }
     }
 
-    protected Locked lock(byte[] rowKey, long lockDuration, long timeout) throws StorageEngineException {
+    protected Lock lock(byte[] rowKey, long lockDuration, long timeout) throws StorageEngineException {
         return lock(rowKey, getLockColumn(), lockDuration, timeout);
     }
 
-    protected Locked lock(byte[] rowKey, byte[] lockName, long lockDuration, long timeout) throws StorageEngineException {
+    protected Lock lock(byte[] rowKey, byte[] lockName, long lockDuration, long timeout) throws StorageEngineException {
         return lockToken(rowKey, lockName, lockDuration, timeout);
     }
 
-    protected Locked lockToken(byte[] rowKey, byte[] lockName, long lockDuration, long timeout) throws StorageEngineException {
+    protected Lock lockToken(byte[] rowKey, byte[] lockName, long lockDuration, long timeout) throws StorageEngineException {
         try {
             ensureTableExists();
             return this.lock.lock(rowKey, lockName, lockDuration, timeout);

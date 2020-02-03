@@ -13,6 +13,9 @@ import java.util.Map;
 public class CohortSolrModel {
 
     @Field
+    private String id;
+
+    @Field
     private long uid;
 
     @Field
@@ -54,7 +57,8 @@ public class CohortSolrModel {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CohortSolrModel{");
-        sb.append("uid=").append(uid);
+        sb.append("id='").append(id).append('\'');
+        sb.append(", uid=").append(uid);
         sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", type='").append(type).append('\'');
         sb.append(", creationYear=").append(creationYear);
@@ -74,6 +78,15 @@ public class CohortSolrModel {
     public CohortSolrModel() {
         this.annotationSets = new ArrayList<>();
         this.annotations = new HashMap<>();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public CohortSolrModel setId(String id) {
+        this.id = id;
+        return this;
     }
 
     public long getUid() {

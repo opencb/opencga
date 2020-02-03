@@ -3,7 +3,7 @@ package org.opencb.opencga.core.tools.result;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
-import org.opencb.opencga.core.annotations.ToolExecutor;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 
 public class ExecutorInfo {
 

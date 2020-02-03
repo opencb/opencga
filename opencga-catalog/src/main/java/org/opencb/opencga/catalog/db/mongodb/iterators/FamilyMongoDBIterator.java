@@ -13,8 +13,9 @@ import org.opencb.opencga.catalog.db.mongodb.IndividualMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.models.Annotable;
+import org.opencb.opencga.core.models.common.Annotable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,11 +132,12 @@ public class FamilyMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             List<Document> memberList;
             try {
                 if (user != null) {
+                    query.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
                     memberList = individualDBAdaptor.nativeGet(clientSession, studyUid, query, individualQueryOptions, user).getResults();
                 } else {
                     memberList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions).getResults();
                 }
-            } catch (CatalogDBException | CatalogAuthorizationException e) {
+            } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
                 logger.warn("Could not obtain the members associated to the families: {}", e.getMessage(), e);
                 return;
             }

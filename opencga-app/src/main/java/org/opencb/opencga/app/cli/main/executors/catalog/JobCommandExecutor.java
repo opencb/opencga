@@ -19,21 +19,20 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.JobCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobAclUpdateParams;
+import org.opencb.opencga.core.models.job.JobCreateParams;
+import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.response.RestResponse;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by imedina on 03/06/16.
@@ -41,12 +40,10 @@ import java.util.List;
 public class JobCommandExecutor extends OpencgaCommandExecutor {
 
     private JobCommandOptions jobsCommandOptions;
-    private AclCommandExecutor<Job> aclCommandExecutor;
 
     public JobCommandExecutor(JobCommandOptions jobsCommandOptions) {
         super(jobsCommandOptions.commonCommandOptions);
         this.jobsCommandOptions = jobsCommandOptions;
-        this.aclCommandExecutor = new AclCommandExecutor<>();
     }
 
 
@@ -69,17 +66,11 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
             case "top":
                 top();
                 break;
-            case "visit":
-                queryResponse = visit();
-                break;
             case "delete":
                 queryResponse = delete();
                 break;
-            case "group-by":
-                queryResponse = groupBy();
-                break;
             case "acl":
-                queryResponse = aclCommandExecutor.acls(jobsCommandOptions.aclsCommandOptions, openCGAClient.getJobClient());
+                queryResponse = acl();
                 break;
             case "acl-update":
                 queryResponse = updateAcl();
@@ -92,130 +83,112 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
-    private RestResponse<Job> create() throws ClientException, IOException {
+    private RestResponse<Job> create() throws ClientException {
         logger.debug("Creating a new job");
 
-        String studyId = resolveStudy(jobsCommandOptions.createCommandOptions.study);
+        JobCommandOptions.CreateCommandOptions commandOptions = jobsCommandOptions.createCommandOptions;
+
+        JobCreateParams createParams = new JobCreateParams()
+                .setId(commandOptions.id)
+                .setDescription(commandOptions.description)
+                .setCommandLine(commandOptions.commandLine)
+                .setPriority(commandOptions.priority)
+                .setCreationDate(commandOptions.creationDate)
+                .setStatus(commandOptions.executionStatus)
+                .setOutDir(commandOptions.outDir != null ? new JobCreateParams.TinyFile().setPath(commandOptions.outDir) : null)
+                .setInput(commandOptions.input != null
+                        ? commandOptions.input.stream().map(f -> new JobCreateParams.TinyFile().setPath(f)).collect(Collectors.toList())
+                        : null)
+                .setOutput(commandOptions.output != null
+                        ? commandOptions.output.stream().map(f -> new JobCreateParams.TinyFile().setPath(f)).collect(Collectors.toList())
+                        : null)
+                .setTags(commandOptions.tags)
+                .setTool(StringUtils.isNotEmpty(commandOptions.toolId) ? new ToolInfo(commandOptions.toolId, "", null, null, null) : null);
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.NAME.key(), jobsCommandOptions.createCommandOptions.name);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.TOOL_NAME.key(), jobsCommandOptions.createCommandOptions.toolName);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.DESCRIPTION.key(), jobsCommandOptions.createCommandOptions.description);
-        if (jobsCommandOptions.createCommandOptions.startTime > 0) {
-            params.put(JobDBAdaptor.QueryParams.START_TIME.key(), jobsCommandOptions.createCommandOptions.startTime);
-        }
-        if (jobsCommandOptions.createCommandOptions.endTime > 0) {
-            params.put(JobDBAdaptor.QueryParams.END_TIME.key(), jobsCommandOptions.createCommandOptions.endTime);
-        }
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.COMMAND_LINE.key(), jobsCommandOptions.createCommandOptions.commandLine);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.OUT_DIR.key(), jobsCommandOptions.createCommandOptions.outDir);
-        if (StringUtils.isNotEmpty(jobsCommandOptions.createCommandOptions.input)) {
-            List<Long> list = new ArrayList<>();
-            for (String aux : jobsCommandOptions.createCommandOptions.input.split(",")) {
-                list.add(Long.parseLong(aux));
-            }
-            params.put(JobDBAdaptor.QueryParams.INPUT.key(), list);
-        }
-        if (StringUtils.isNotEmpty(jobsCommandOptions.createCommandOptions.output)) {
-            List<Long> list = new ArrayList<>();
-            for (String aux : jobsCommandOptions.createCommandOptions.output.split(",")) {
-                list.add(Long.parseLong(aux));
-            }
-            params.put(JobDBAdaptor.QueryParams.OUTPUT.key(), list);
-        }
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
 
-        return openCGAClient.getJobClient().create(studyId, params);
+        return openCGAClient.getJobClient().create(createParams, params);
     }
 
-    private RestResponse<Job> info() throws CatalogException, IOException {
+    private RestResponse<Job> info() throws ClientException {
         logger.debug("Getting job information");
 
+        JobCommandOptions.InfoCommandOptions commandOptions = jobsCommandOptions.infoCommandOptions;
+
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(jobsCommandOptions.infoCommandOptions.study));
-        params.putIfNotEmpty(QueryOptions.INCLUDE, jobsCommandOptions.infoCommandOptions.dataModelOptions.include);
-        params.putIfNotEmpty(QueryOptions.EXCLUDE, jobsCommandOptions.infoCommandOptions.dataModelOptions.exclude);
-        return openCGAClient.getJobClient().get(jobsCommandOptions.infoCommandOptions.job, params);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotEmpty(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
+        params.putIfNotEmpty(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.exclude);
+
+        return openCGAClient.getJobClient().info(commandOptions.job, params);
     }
 
-    private RestResponse<Job> search() throws CatalogException, IOException {
+    private RestResponse<Job> search() throws ClientException {
         logger.debug("Searching job");
 
-        Query query = new Query();
-        query.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(jobsCommandOptions.searchCommandOptions.study));
-        query.putIfNotEmpty(JobDBAdaptor.QueryParams.NAME.key(), jobsCommandOptions.searchCommandOptions.name);
-        query.putIfNotEmpty(JobDBAdaptor.QueryParams.TOOL_NAME.key(), jobsCommandOptions.searchCommandOptions.toolName);
-        query.putIfNotEmpty(JobDBAdaptor.QueryParams.STATUS_NAME.key(), jobsCommandOptions.searchCommandOptions.status);
-        query.putIfNotEmpty(JobDBAdaptor.QueryParams.USER_ID.key(), jobsCommandOptions.searchCommandOptions.ownerId);
-        query.putIfNotEmpty(JobDBAdaptor.QueryParams.CREATION_DATE.key(), jobsCommandOptions.searchCommandOptions.date);
-        query.putIfNotEmpty(JobDBAdaptor.QueryParams.INPUT.key(), jobsCommandOptions.searchCommandOptions.inputFiles);
-        query.putIfNotEmpty(JobDBAdaptor.QueryParams.OUTPUT.key(), jobsCommandOptions.searchCommandOptions.outputFiles);
-        query.putAll(jobsCommandOptions.searchCommandOptions.commonOptions.params);
+        JobCommandOptions.SearchCommandOptions commandOptions = jobsCommandOptions.searchCommandOptions;
 
-        if (jobsCommandOptions.searchCommandOptions.numericOptions.count) {
-            return openCGAClient.getJobClient().count(query);
-        } else {
-            QueryOptions queryOptions = new QueryOptions();
-            queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, jobsCommandOptions.searchCommandOptions.dataModelOptions.include);
-            queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, jobsCommandOptions.searchCommandOptions.dataModelOptions.exclude);
-            queryOptions.put(QueryOptions.LIMIT, jobsCommandOptions.searchCommandOptions.numericOptions.limit);
-            queryOptions.put(QueryOptions.SKIP, jobsCommandOptions.searchCommandOptions.numericOptions.skip);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.ID.key(), commandOptions.id);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.TOOL_NAME.key(), commandOptions.toolName);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STATUS_NAME.key(), commandOptions.status);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.USER_ID.key(), commandOptions.ownerId);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.CREATION_DATE.key(), commandOptions.date);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.INPUT.key(), commandOptions.inputFiles);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.OUTPUT.key(), commandOptions.outputFiles);
+        params.putAll(commandOptions.commonOptions.params);
 
-            return openCGAClient.getJobClient().search(query, queryOptions);
-        }
+        params.put(QueryOptions.COUNT, commandOptions.numericOptions.count);
+        params.putIfNotEmpty(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
+        params.putIfNotEmpty(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.exclude);
+        params.put(QueryOptions.LIMIT, commandOptions.numericOptions.limit);
+        params.put(QueryOptions.SKIP, commandOptions.numericOptions.skip);
+
+        return openCGAClient.getJobClient().search(params);
     }
 
     private void top() throws Exception {
         JobCommandOptions.TopCommandOptions c = jobsCommandOptions.topCommandOptions;
-        String study = resolveStudy(jobsCommandOptions.searchCommandOptions.study);
+        String study = resolveStudy(c.study);
         new JobsTopManager(openCGAClient, study, c.iterations, c.jobsLimit, c.delay).run();
     }
 
-    private RestResponse<Job> visit() throws CatalogException, IOException {
-        logger.debug("Visiting a job");
-        Query query = new Query();
-        query.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(jobsCommandOptions.visitCommandOptions.study));
-        return openCGAClient.getJobClient().visit(jobsCommandOptions.visitCommandOptions.job, query);
-    }
-
-    private RestResponse<Job> delete() throws CatalogException, IOException {
+    private RestResponse<Job> delete() throws ClientException {
         logger.debug("Deleting job");
 
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(jobsCommandOptions.deleteCommandOptions.study));
-        params.put("deleteFiles", jobsCommandOptions.deleteCommandOptions.deleteFiles);
-        return openCGAClient.getJobClient().delete(jobsCommandOptions.deleteCommandOptions.job, params);
-    }
-
-    private RestResponse<Job> groupBy() throws CatalogException, IOException {
-        logger.debug("Group by job");
+        JobCommandOptions.DeleteCommandOptions commandOptions = jobsCommandOptions.deleteCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(jobsCommandOptions.groupByCommandOptions.study));
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.UID.key(), jobsCommandOptions.groupByCommandOptions.id);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.NAME.key(), jobsCommandOptions.groupByCommandOptions.name);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.OUT_DIR.key(), jobsCommandOptions.groupByCommandOptions.path);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STATUS_NAME.key(), jobsCommandOptions.groupByCommandOptions.status);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.USER_ID.key(), jobsCommandOptions.groupByCommandOptions.ownerId);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.CREATION_DATE.key(), jobsCommandOptions.groupByCommandOptions.creationDate);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.DESCRIPTION.key(), jobsCommandOptions.groupByCommandOptions.description);
-        params.putIfNotEmpty(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), jobsCommandOptions.groupByCommandOptions.attributes);
-
-        return openCGAClient.getJobClient().groupBy(jobsCommandOptions.groupByCommandOptions.study,
-                jobsCommandOptions.groupByCommandOptions.fields,params);
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.put("deleteFiles", commandOptions.deleteFiles);
+        return openCGAClient.getJobClient().delete(commandOptions.job, params);
     }
 
-
-    private RestResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
+    private RestResponse<ObjectMap> updateAcl() throws ClientException, CatalogException {
         AclCommandOptions.AclsUpdateCommandOptions commandOptions = jobsCommandOptions.aclsUpdateCommandOptions;
 
-        ObjectMap queryParams = new ObjectMap();
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
 
-        ObjectMap bodyParams = new ObjectMap();
-        bodyParams.putIfNotNull("permissions", commandOptions.permissions);
-        bodyParams.putIfNotNull("action", commandOptions.action);
-        bodyParams.putIfNotNull("job", extractIdsFromListOrFile(commandOptions.id));
+        JobAclUpdateParams updateParams = new JobAclUpdateParams()
+                .setJob(extractIdsFromListOrFile(commandOptions.id))
+                .setPermissions(commandOptions.permissions)
+                .setAction(commandOptions.action);
 
-        return openCGAClient.getJobClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
+        return openCGAClient.getJobClient().updateAcl(commandOptions.memberId, updateParams);
     }
 
+    private RestResponse<ObjectMap> acl() throws ClientException {
+        AclCommandOptions.AclsCommandOptions commandOptions = jobsCommandOptions.aclsCommandOptions;
+
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty("study", commandOptions.study);
+        params.putIfNotEmpty("member", commandOptions.memberId);
+
+        params.putAll(commandOptions.commonOptions.params);
+
+        return openCGAClient.getJobClient().acl(commandOptions.id, params);
+    }
 }

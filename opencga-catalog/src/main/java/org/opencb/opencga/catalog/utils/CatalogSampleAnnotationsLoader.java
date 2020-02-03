@@ -29,8 +29,13 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AnnotationSetManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileUtils;
-import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -233,19 +238,19 @@ public class CatalogSampleAnnotationsLoader {
         List<Variable> variableList = new LinkedList<>();
 
         String category = "PEDIGREE";
-        variableList.add(new Variable("family", category, Variable.VariableType.TEXT, null, true,
+        variableList.add(new Variable("family", category, Variable.VariableType.STRING, null, true,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("id", category, Variable.VariableType.DOUBLE, null, true,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
-        variableList.add(new Variable("name", category, Variable.VariableType.TEXT, null, true,
+        variableList.add(new Variable("name", category, Variable.VariableType.STRING, null, true,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("fatherId", category, Variable.VariableType.DOUBLE, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
-        variableList.add(new Variable("fatherName", category, Variable.VariableType.TEXT, null, false,
+        variableList.add(new Variable("fatherName", category, Variable.VariableType.STRING, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("motherId", category, Variable.VariableType.DOUBLE, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
-        variableList.add(new Variable("motherName", category, Variable.VariableType.TEXT, null, false,
+        variableList.add(new Variable("motherName", category, Variable.VariableType.STRING, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
 
         Set<String> allowedSexValues = new HashSet<>();
@@ -293,14 +298,14 @@ public class CatalogSampleAnnotationsLoader {
                     if (isNumerical) {
                         type = Variable.VariableType.DOUBLE;
                     } else {
-                        type = Variable.VariableType.TEXT;
+                        type = Variable.VariableType.STRING;
                     }
                 }
             } else {
                 if (isNumerical) {
                     type = Variable.VariableType.DOUBLE;
                 } else {
-                    type = Variable.VariableType.TEXT;
+                    type = Variable.VariableType.STRING;
                 }
             }
 

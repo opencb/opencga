@@ -37,8 +37,14 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.*;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.study.GroupUpdateParams;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,9 +119,9 @@ public class UserManager extends AbstractManager {
         }
     }
 
-    static void checkEmail(String email) throws CatalogException {
+    static void checkEmail(String email) throws CatalogParameterException {
         if (email == null || !EMAILPATTERN.matcher(email).matches()) {
-            throw new CatalogException("Email '" + email + "' not valid");
+            throw new CatalogParameterException("Email '" + email + "' not valid");
         }
     }
 
@@ -289,31 +295,36 @@ public class UserManager extends AbstractManager {
                             group.getId(), group.getSyncedFrom().getAuthOrigin());
                     logger.info("Please, manually remove group '{}' if external group '{}' was removed from the authentication origin",
                             group.getId(), group.getSyncedFrom().getAuthOrigin());
-                    GroupParams groupParams = new GroupParams("", GroupParams.Action.SET);
-                    catalogManager.getStudyManager().updateGroup(study, group.getId(), groupParams, token);
+                    catalogManager.getStudyManager().updateGroup(study, group.getId(), ParamUtils.UpdateAction.SET,
+                            new GroupUpdateParams(Collections.emptyList()), token);
                     continue;
                 }
-                for (User user : userList) {
+                Iterator<User> iterator = userList.iterator();
+                while (iterator.hasNext()) {
+                    User user = iterator.next();
                     try {
                         create(user, token);
-                        logger.info("User '{}' successfully created", user.getId());
+                        logger.info("User '{}' ({}) successfully created", user.getId(), user.getName());
+                    } catch (CatalogParameterException e) {
+                        logger.warn("Could not create user '{}' ({}). {}", user.getId(), user.getName(), e.getMessage());
+                        iterator.remove();
                     } catch (CatalogException e) {
-                        logger.warn("{}", e.getMessage());
+                        if (!e.getMessage().contains("already exists")) {
+                            logger.warn("Could not create user '{}' ({}). {}", user.getId(), user.getName(), e.getMessage());
+                            iterator.remove();
+                        }
                     }
                 }
 
-                GroupParams groupParams;
+                GroupUpdateParams updateParams;
                 if (ListUtils.isEmpty(userList)) {
                     logger.info("No members associated to the external group");
-                    groupParams = new GroupParams("", GroupParams.Action.SET);
+                    updateParams = new GroupUpdateParams(Collections.emptyList());
                 } else {
                     logger.info("Associating members to the internal OpenCGA group");
-                    groupParams = new GroupParams(
-                            userList.stream().map(User::getId)
-                                    .collect(Collectors.toSet()) // Remove possible duplicates
-                                    .stream().collect(Collectors.joining(",")), GroupParams.Action.SET);
+                    updateParams = new GroupUpdateParams(new ArrayList<>(userList.stream().map(User::getId).collect(Collectors.toSet())));
                 }
-                catalogManager.getStudyManager().updateGroup(study, group.getId(), groupParams, token);
+                catalogManager.getStudyManager().updateGroup(study, group.getId(), ParamUtils.UpdateAction.SET, updateParams, token);
             }
         }
         if (!foundAny) {
@@ -473,8 +484,8 @@ public class UserManager extends AbstractManager {
                     OpenCGAResult<Group> group = catalogManager.getStudyManager().getGroup(study, internalGroup, token);
                     if (group.getNumResults() == 1) {
                         // We will add those users to the existing group
-                        catalogManager.getStudyManager().updateGroup(study, internalGroup,
-                                new GroupParams(StringUtils.join(idList, ","), GroupParams.Action.ADD), token);
+                        catalogManager.getStudyManager().updateGroup(study, internalGroup, ParamUtils.UpdateAction.ADD,
+                                new GroupUpdateParams(idList), token);
                         return;
                     }
                 } catch (CatalogException e) {

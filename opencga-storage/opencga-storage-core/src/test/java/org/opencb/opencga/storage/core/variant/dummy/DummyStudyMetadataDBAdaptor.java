@@ -39,7 +39,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
@@ -57,7 +56,7 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
     public static Map<Integer, Map<Integer, CohortMetadata>> COHORT_METADATA_MAP = new ConcurrentHashMap<>();
     public static Map<Integer, Map<Integer, TaskMetadata>> TASK_METADATA_MAP = new ConcurrentHashMap<>();
 
-    private static Map<Integer, Lock> LOCK_STUDIES = new ConcurrentHashMap<>();
+    private static Map<Integer, java.util.concurrent.locks.Lock> LOCK_STUDIES = new ConcurrentHashMap<>();
     private static AtomicInteger NUM_PRINTS = new AtomicInteger();
 
     @Override
@@ -105,13 +104,13 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
     }
 
     @Override
-    public Locked lock(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
+    public Lock lock(int studyId, long lockDuration, long timeout, String lockName) throws StorageEngineException {
         if (!LOCK_STUDIES.containsKey(studyId)) {
             LOCK_STUDIES.put(studyId, new ReentrantLock());
         }
         try {
             LOCK_STUDIES.get(studyId).tryLock(timeout, TimeUnit.MILLISECONDS);
-            return new Locked(studyId) {
+            return new Lock(studyId) {
                 @Override
                 public void unlock0() {
                     LOCK_STUDIES.get(studyId).unlock();
@@ -164,8 +163,8 @@ public class DummyStudyMetadataDBAdaptor implements StudyMetadataDBAdaptor, Samp
     }
 
     @Override
-    public Locked lock(int studyId, int id, long lockDuration, long timeout) {
-        return new Locked(0) {
+    public Lock lock(int studyId, int id, long lockDuration, long timeout) {
+        return new Lock(0) {
             @Override
             public void unlock0() {
 

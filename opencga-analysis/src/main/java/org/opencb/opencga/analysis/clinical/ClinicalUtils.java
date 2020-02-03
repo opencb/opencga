@@ -17,10 +17,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.clinical.ReportedVariantCreator;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.core.models.ClinicalAnalysis;
-import org.opencb.opencga.core.models.Family;
-import org.opencb.opencga.core.models.Individual;
+import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysis;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.individual.Individual;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;

@@ -121,7 +121,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+start:17700)", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+end:[17700+TO+*]+AND+start:[*+TO+17700])", solrQuery.toString());
     }
 
     @Test
@@ -160,7 +160,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=(((chromosome:\"1\"+AND+start:17700))+AND+(geneToSoAcc:\"protein_coding_1792\"))+OR+(geneToSoAcc:\"WASH7P_protein_coding_1792\")", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(((chromosome:\"1\"+AND+end:[17700+TO+*]+AND+start:[*+TO+17700]))+AND+(geneToSoAcc:\"protein_coding_1792\"))+OR+(geneToSoAcc:\"WASH7P_protein_coding_1792\")", solrQuery.toString());
     }
 
     @Test
@@ -512,7 +512,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+start:66381)+OR+(chromosome:\"1\"+AND+start:98769)", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+end:[66381+TO+*]+AND+start:[*+TO+66381])+OR+(chromosome:\"1\"+AND+end:[98769+TO+*]+AND+start:[*+TO+98769])", solrQuery.toString());
     }
 
     @Test
@@ -524,7 +524,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+start:[66381+TO+*]+AND+end:[*+TO+76381])+OR+(chromosome:\"1\"+AND+start:[98766+TO+*]+AND+end:[*+TO+117987])", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=(chromosome:\"1\"+AND+end:[66381+TO+*]+AND+start:[*+TO+76381])+OR+(chromosome:\"1\"+AND+end:[98766+TO+*]+AND+start:[*+TO+117987])", solrQuery.toString());
     }
 
     @Test
@@ -706,7 +706,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=score__platinum__score2:[3.2+TO+*]&fq=pvalue__platinum__score3:{-100.0+TO+0.02}", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=score__platinum__score2:[3.2+TO+*]&fq=scorePValue__platinum__score3:{-100.0+TO+0.02}", solrQuery.toString());
     }
 
     @Test
@@ -715,12 +715,135 @@ public class SolrQueryParserTest {
 
         Query query = new Query();
         //query.put(STUDIES.key(), study);
-        query.put(SCORE.key(), "score>=3.2,score2:pvalue<0.001");
+        query.put(SCORE.key(), "score4>=3.2,score2:pvalue<0.001");
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals(flDefault1 + "&q=*:*&fq=score__platinum__score2:[3.2+TO+*]+OR+pvalue__platinum__score2:{-100.0+TO+0.001}", solrQuery.toString());
+        assertEquals(flDefault1 + "&q=*:*&fq=score__platinum__score4:[3.2+TO+*]+OR+scorePValue__platinum__score2:{-100.0+TO+0.001}", solrQuery.toString());
     }
+
+
+    @Test
+    public void parseFacetAvgProteinSubst() {
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(QueryOptions.FACET, "avg(" + ANNOT_PROTEIN_SUBSTITUTION.key() + "[sift])");
+
+        Query query = new Query();
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals("json.facet={\"sift___avg___0\":\"avg(sift)\"}&rows=0&start=0&q=*:*", solrQuery.toString());
+    }
+
+    @Test
+    public void parseFacetRangeProteinSubst() {
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(QueryOptions.FACET, ANNOT_PROTEIN_SUBSTITUTION.key() + "[sift:0..100]:5");
+
+        Query query = new Query();
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals("json.facet={\"sift___0___100___5___0\":{\"field\":\"sift\",\"start\":0,\"end\":100,\"type\":\"range\",\"gap\":5}}&rows=0&start=0&q=*:*", solrQuery.toString());
+    }
+
+    @Test
+    public void parseFacetRangePopFreqAlt() {
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(QueryOptions.FACET, ANNOT_POPULATION_ALTERNATE_FREQUENCY.key() + "[1kG_phase3:CEU:0..1]:0.2");
+
+        Query query = new Query();
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals("json.facet={\"popFreq__1kG_phase3__CEU___0___1___0.2___0\":{\"field\":\"popFreq__1kG_phase3__CEU\",\"start\":0,\"end\":1,\"type\":\"range\",\"gap\":0.2}}&rows=0&start=0&q=*:*", solrQuery.toString());
+    }
+
+    @Test
+    public void parseFacetAvgPopFreqAlt() {
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(QueryOptions.FACET, "avg(" + ANNOT_POPULATION_ALTERNATE_FREQUENCY.key() + "[1kG_phase3:CEU])");
+
+        Query query = new Query();
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals("json.facet={\"popFreq__1kG_phase3__CEU___avg___0\":\"avg(popFreq__1kG_phase3__CEU)\"}&rows=0&start=0&q=*:*", solrQuery.toString());
+    }
+
+    @Test
+    public void parseFacetPercentilePopFreqAlt() {
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(QueryOptions.FACET, "percentile(" + ANNOT_POPULATION_ALTERNATE_FREQUENCY.key() + "[1kG_phase3:CEU])");
+
+        Query query = new Query();
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals("json.facet={\"popFreq__1kG_phase3__CEU___percentile___0\":\"percentile(popFreq__1kG_phase3__CEU,1,10,25,50,75,90,99)\"}&rows=0&start=0&q=*:*", solrQuery.toString());
+    }
+
+    @Test
+    public void parseFacetRangeCohortStatsFreqAlt() {
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(QueryOptions.FACET, STATS_ALT.key() + "[1kG_phase3:CEU:0..1]:0.2");
+
+        Query query = new Query();
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals("json.facet={\"stats__1kG_phase3__CEU___0___1___0.2___0\":{\"field\":\"stats__1kG_phase3__CEU\",\"start\":0,\"end\":1,\"type\":\"range\",\"gap\":0.2}}&rows=0&start=0&q=*:*", solrQuery.toString());
+    }
+
+    @Test
+    public void parseFacetRangeScore() {
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(QueryOptions.FACET, SCORE.key() + "[1kG_phase3:score2:0..1]:0.2");
+
+        Query query = new Query();
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals("json.facet={\"score__1kG_phase3__score2___0___1___0.2___0\":{\"field\":\"score__1kG_phase3__score2\",\"start\":0,\"end\":1,\"type\":\"range\",\"gap\":0.2}}&rows=0&start=0&q=*:*", solrQuery.toString());
+    }
+
+    @Test
+    public void parseFacetAvgScore() {
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(QueryOptions.FACET, "avg(" + SCORE.key() + "[1kG_phase3:score2])");
+
+        Query query = new Query();
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals("json.facet={\"score__1kG_phase3__score2___avg___0\":\"avg(score__1kG_phase3__score2)\"}&rows=0&start=0&q=*:*", solrQuery.toString());
+    }
+
+    @Test
+    public void parseClinicalSignificanceAND() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign;likely_benign");
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(flDefault1 + "&q=*:*&fq=(clinicalSig:\"benign\"+AND+clinicalSig:\"likely_benign\")", solrQuery.toString());
+    }
+
+    @Test
+    public void parseClinicalSignificanceOR() {
+        QueryOptions queryOptions = new QueryOptions();
+
+        Query query = new Query();
+        query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(), "benign,likely_benign");
+
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
+        assertEquals(flDefault1 + "&q=*:*&fq=(clinicalSig:\"benign\"+OR+clinicalSig:\"likely_benign\")", solrQuery.toString());
+    }
+
+    //-------------------------------------------------------------------------
 
     private void display(Query query, QueryOptions queryOptions, SolrQuery solrQuery) {
         System.out.println("Query        : " + query.toJson());

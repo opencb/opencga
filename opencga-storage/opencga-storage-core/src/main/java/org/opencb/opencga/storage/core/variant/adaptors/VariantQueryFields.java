@@ -84,4 +84,20 @@ public final class VariantQueryFields {
     public Map<Integer, List<Integer>> getCohorts() {
         return cohortIds;
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("VariantQueryFields{");
+        sb.append("fields=").append(fields);
+        sb.append(", studies=").append(studies);
+        sb.append(", studyMetadatas=").append(studyMetadatas);
+        sb.append(", samples=").append(samples);
+        sb.append(", samplePagination=").append(samplePagination);
+        sb.append(", numSamples=").append(numSamples);
+        sb.append(", numTotalSamples=").append(numTotalSamples);
+        sb.append(", files=").append(files);
+        sb.append(", cohortIds=").append(cohortIds);
+        sb.append('}');
+        return sb.toString();
+    }
 }

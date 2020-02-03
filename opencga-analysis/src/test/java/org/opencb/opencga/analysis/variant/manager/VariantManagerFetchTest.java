@@ -24,11 +24,11 @@ import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.operations.AbstractVariantOperationManagerTest;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.core.models.GroupParams;
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.GroupUpdateParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 
@@ -36,7 +36,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Created on 16/12/16.
@@ -90,9 +89,9 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         Query query = new Query();
 
         // Without studies
-        Map<String, List<Sample>> map = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
+        Map<String, List<String>> map = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
         Assert.assertEquals(Collections.singleton(studyFqn), map.keySet());
-        Assert.assertEquals(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"), map.get(studyFqn).stream().map(Sample::getId).collect(Collectors.toList()));
+        Assert.assertEquals(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"), map.get(studyFqn));
 
         catalogManager.getSampleManager().create(studyFqn, new Sample().setId("newSample"), new QueryOptions(), sessionId);
 
@@ -101,7 +100,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
 
         map = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
         Assert.assertEquals(Collections.singleton(studyFqn), map.keySet());
-        Assert.assertEquals(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"), map.get(studyFqn).stream().map(Sample::getId).collect(Collectors.toList()));
+        Assert.assertEquals(Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685"), map.get(studyFqn));
     }
 
     @Test
@@ -110,7 +109,7 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         Query query = new Query();
 
         // Without studies
-        Map<String, List<Sample>> longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
+        Map<String, List<String>> longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
         Assert.assertEquals(Collections.singletonMap(studyFqn, Collections.emptyList()), longListMap);
 
         // With studies
@@ -124,13 +123,14 @@ public class VariantManagerFetchTest extends AbstractVariantOperationManagerTest
         Query query = new Query(VariantQueryParam.STUDY.key(), studyId);
         QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES);
 
-        Map<String, List<Sample>> longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
+        Map<String, List<String>> longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor().getMetadataManager(), sessionId);
         Assert.assertEquals(Collections.emptyMap(), longListMap);
     }
 
     @Test
     public void testQueryAnonymous() throws Exception {
-        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", new GroupParams("*", GroupParams.Action.ADD), sessionId);
+        catalogManager.getStudyManager().updateGroup(studyFqn, "@members", ParamUtils.UpdateAction.ADD,
+                new GroupUpdateParams(Collections.singletonList("*")), sessionId);
 
 //        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), "s1");
 //        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), "p1:s1");

@@ -22,7 +22,9 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.study.Study;
+
+import java.util.List;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
@@ -35,19 +37,13 @@ public class CohortCommandOptions {
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public SearchCommandOptions searchCommandOptions;
-    public SamplesCommandOptions samplesCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
-    public GroupByCommandOptions groupByCommandOptions;
     public StatsCommandOptions statsCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
     public AclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
-    public AnnotationCommandOptions.AnnotationSetsCreateCommandOptions annotationCreateCommandOptions;
-    public AnnotationCommandOptions.AnnotationSetsSearchCommandOptions annotationSearchCommandOptions;
-    public AnnotationCommandOptions.AnnotationSetsDeleteCommandOptions annotationDeleteCommandOptions;
-    public AnnotationCommandOptions.AnnotationSetsInfoCommandOptions annotationInfoCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsUpdateCommandOptions annotationUpdateCommandOptions;
 
     public JCommander jCommander;
@@ -68,17 +64,11 @@ public class CohortCommandOptions {
         this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
-        this.samplesCommandOptions = new SamplesCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
-        this.groupByCommandOptions = new GroupByCommandOptions();
         this.statsCommandOptions = new StatsCommandOptions();
 
         this.annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
-        this.annotationCreateCommandOptions = this.annotationCommandOptions.getCreateCommandOptions();
-        this.annotationSearchCommandOptions = this.annotationCommandOptions.getSearchCommandOptions();
-        this.annotationDeleteCommandOptions = this.annotationCommandOptions.getDeleteCommandOptions();
-        this.annotationInfoCommandOptions = this.annotationCommandOptions.getInfoCommandOptions();
         this.annotationUpdateCommandOptions = this.annotationCommandOptions.getUpdateCommandOptions();
 
         AclCommandOptions aclCommandOptions = new AclCommandOptions(commonCommandOptions);
@@ -105,20 +95,20 @@ public class CohortCommandOptions {
         @Parameter(names = {"-n", "--name"}, description = "Cohort name.", required = true, arity = 1)
         public String name;
 
-        @Parameter(names = {"--type"}, description = "Cohort type", required = false, arity = 1)
+        @Parameter(names = {"--type"}, description = "Cohort type", arity = 1)
         public Study.Type type = Study.Type.COLLECTION;
 
-        @Parameter(names = {"--variable-set"}, description = "Variable set id or name", required = false, arity = 1)
+        @Parameter(names = {"--variable-set"}, description = "Variable set id or name", arity = 1)
         public String variableSetId;
 
-        @Parameter(names = {"-d", "--description"}, description = "cohort description", required = false, arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = "cohort description", arity = 1)
         public String description;
 
-        @Parameter(names = {"--samples"}, description = "Sample ids for the cohort (CSV)", required = false, arity = 1)
-        public String sampleIds;
+        @Parameter(names = {"--samples"}, description = "Comma separated list of sample ids", arity = 1)
+        public List<String> sampleIds;
 
         @Parameter(names = {"--variable"}, description = "Categorical variable name to use to create cohorts, must go together the "
-                + "parameter variable-set", required = false, arity = 1)
+                + "parameter variable-set", arity = 1)
         public String variable;
     }
 
@@ -134,7 +124,7 @@ public class CohortCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--name"}, description = "Comma separated list of file names", required = false, arity = 1)
+        @Parameter(names = {"--name"}, description = "Comma separated list of file names", arity = 1)
         public String name;
 
         @Parameter(names = {"--type"}, description = "Cohort type.", arity = 1)
@@ -156,75 +146,25 @@ public class CohortCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"samples"}, commandDescription = "List samples belonging to a cohort")
-    public class SamplesCommandOptions extends BaseCohortsCommand {
-
-        @ParametersDelegate
-        public DataModelOptions dataModelOptions = commonDataModelOptions;
-
-        @ParametersDelegate
-        public NumericOptions numericOptions = commonNumericOptions;
-
-    }
-
     @Parameters(commandNames = {"update"}, commandDescription = "Update cohort")
     public class UpdateCommandOptions extends BaseCohortsCommand {
 
-        @Parameter(names = {"-n", "--name"}, description = "New cohort name.", required = false, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "New cohort name.", arity = 1)
         public String name;
 
-        @Parameter(names = {"--creation-date"}, description = "Creation date", required = false, arity = 1)
+        @Parameter(names = {"--creation-date"}, description = "Creation date", arity = 1)
         public String creationDate;
 
-        @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = "Description", arity = 1)
         public String description;
 
-        @Parameter(names = {"--samples"}, description = "Comma separated values of sampleIds. Will replace all existing sampleIds",
-                required = false, arity = 0)
-        public String samples;
+        @Parameter(names = {"--samples"}, description = "Comma separated values of sampleIds. Will replace all existing sampleIds", arity = 0)
+        public List<String> samples;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete cohort")
     public class DeleteCommandOptions extends BaseCohortsCommand {
 
-    }
-
-    @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")
-    public class GroupByCommandOptions extends StudyOption {
-
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-f", "--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
-        public String fields;
-
-        @Deprecated
-        @Parameter(names = {"--id"}, description = "[DEPRECATED] Comma separated list of ids.", required = false, arity = 1)
-        public String id;
-
-        @Parameter(names = {"-n", "--name"}, description = "Comma separated list of names.", required = false, arity = 1)
-        public String name;
-
-        @Parameter(names = {"--type"}, description = "Comma separated Type values.", required = false, arity = 1)
-        public String type;
-
-        @Parameter(names = {"--status"}, description = "Status.", required = false, arity = 1)
-        public String status;
-
-        @Parameter(names = {"--creation-date"}, description = "Creation date.", required = false, arity = 1)
-        public String creationDate;
-
-        @Parameter(names = {"--sample-ids"}, description = "Sample ids", required = false, arity = 1)
-        public String sampleIds;
-
-        @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
-        public String description;
-
-        @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
-        public String attributes;
-
-        @Parameter(names = {"--nattributes"}, description = "numerical attributes", required = false, arity = 1)
-        public String nattributes;
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Cohort stats")

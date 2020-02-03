@@ -5,8 +5,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.exec.Command;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.annotations.Tool;
-import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -74,7 +74,7 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                         File coverageFile = new File(getOutDir() + "/" + file.getName() + ".bw");
                         if (coverageFile.exists()) {
                             // Get catalog path
-                            OpenCGAResult<org.opencb.opencga.core.models.File> fileResult;
+                            OpenCGAResult<org.opencb.opencga.core.models.file.File> fileResult;
                             try {
                                 fileResult = catalogManager.getFileManager().get(getStudy(), bamFile, QueryOptions.empty(), token);
                             } catch (CatalogException e) {
@@ -89,7 +89,6 @@ public class DeeptoolsWrapperAnalysis extends OpenCgaWrapperAnalysis {
                             Path src = coverageFile.toPath();
                             Path dest = new File(file.getParent()).toPath();
 
-                            System.out.println("src = " + src + ", dest = " + dest + ", catalog path = " + catalogPath);
                             moveFile(getStudy(), src, dest, catalogPath, token);
 
                             success = true;

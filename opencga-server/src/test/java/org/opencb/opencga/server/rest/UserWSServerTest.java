@@ -19,8 +19,8 @@ package org.opencb.opencga.server.rest;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.core.models.Project;
-import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.user.User;
 
 import javax.ws.rs.client.WebTarget;
 import java.io.IOException;

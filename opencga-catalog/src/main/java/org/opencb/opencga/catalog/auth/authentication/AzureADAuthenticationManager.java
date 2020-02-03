@@ -24,8 +24,8 @@ import org.opencb.opencga.catalog.auth.authentication.azure.AuthenticationProvid
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
-import org.opencb.opencga.core.models.Account;
-import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.io.ByteArrayInputStream;
@@ -323,7 +323,7 @@ public class AzureADAuthenticationManager extends AuthenticationManager {
 
             User user = new User(id, name, mail, "", "", new Account().setType(Account.Type.GUEST).
                     setAuthentication(new Account.AuthenticationOrigin(originId, false)),
-                    User.UserStatus.READY, "", -1, -1, Collections.emptyList(), Collections.emptyList(), Collections.emptyMap(),
+                    User.UserStatus.READY, "", -1, -1, Collections.emptyList(), Collections.emptyMap(),
                     attributes);
 
             userList.add(user);

@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.core.metadata.adaptors;
 
 import com.google.common.collect.Iterators;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.metadata.models.Locked;
+import org.opencb.opencga.storage.core.metadata.models.Lock;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 
 import java.util.Collections;
@@ -25,5 +25,5 @@ public interface TaskMetadataDBAdaptor {
                 t -> t.currentStatus().equals(TaskMetadata.Status.RUNNING));
     }
 
-    Locked lock(int studyId, int id, long lockDuration, long timeout) throws StorageEngineException;
+    Lock lock(int studyId, int id, long lockDuration, long timeout) throws StorageEngineException;
 }

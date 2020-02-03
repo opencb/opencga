@@ -2,8 +2,8 @@ package org.opencb.opencga.analysis.variant.operations;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
-import org.opencb.opencga.core.annotations.Tool;
-import org.opencb.opencga.core.api.operations.variant.VariantAnnotationIndexParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.ToolParams;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;

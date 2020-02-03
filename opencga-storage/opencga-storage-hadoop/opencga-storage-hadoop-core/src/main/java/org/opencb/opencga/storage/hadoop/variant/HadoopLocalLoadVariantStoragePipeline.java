@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.hadoop.conf.Configuration;
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -28,10 +29,12 @@ import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -40,6 +43,7 @@ import org.opencb.opencga.storage.core.variant.transform.DiscardDuplicatedVarian
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHBaseArchiveDataWriter;
+import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.sample.SampleIndexDBLoader;
 import org.opencb.opencga.storage.hadoop.variant.load.VariantHadoopDBWriter;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
@@ -50,13 +54,14 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import static org.opencb.opencga.storage.core.variant.VariantStorageOptions.STDIN;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.*;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.TARGET_VARIANT_TYPE_SET;
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageOptions.*;
 
 /**
@@ -81,9 +86,44 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
     protected void securePreLoad(StudyMetadata studyMetadata, VariantFileMetadata fileMetadata) throws StorageEngineException {
         super.securePreLoad(studyMetadata, fileMetadata);
 
-        if (options.getBoolean(VariantStorageOptions.LOAD_SPLIT_DATA.key(),
-                VariantStorageOptions.LOAD_SPLIT_DATA.defaultValue())) {
-            throw new StorageEngineException("Unable to load split data in " + STORAGE_ENGINE_ID);
+        Set<String> alreadyIndexedSamples = new LinkedHashSet<>();
+        Set<Integer> processedSamples = new LinkedHashSet<>();
+        int studyId = getStudyId();
+        for (String sample : fileMetadata.getSampleIds()) {
+            Integer sampleId = getMetadataManager().getSampleId(studyId, sample);
+            SampleMetadata sampleMetadata = getMetadataManager().getSampleMetadata(studyId, sampleId);
+            for (Integer fileId : sampleMetadata.getFiles()) {
+                if (fileId != getFileId()) {
+                    if (getMetadataManager().getFileMetadata(studyId, fileId).getIndexStatus() != TaskMetadata.Status.NONE) {
+                        alreadyIndexedSamples.add(sample);
+                        if (sampleMetadata.isAnnotated()
+                                || SampleIndexDBAdaptor.getSampleIndexStatus(sampleMetadata) == TaskMetadata.Status.READY
+                                || sampleMetadata.getFamilyIndexStatus() == TaskMetadata.Status.READY
+                                || sampleMetadata.getMendelianErrorStatus() == TaskMetadata.Status.READY) {
+                            processedSamples.add(sampleMetadata.getId());
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!alreadyIndexedSamples.isEmpty()) {
+            if (options.getBoolean(VariantStorageOptions.LOAD_SPLIT_DATA.key(),
+                    VariantStorageOptions.LOAD_SPLIT_DATA.defaultValue())) {
+                logger.info("Loading split data");
+            } else {
+                String fileName = Paths.get(fileMetadata.getPath()).getFileName().toString();
+                throw StorageEngineException.alreadyLoadedSamples(fileName, new ArrayList<>(alreadyIndexedSamples));
+            }
+            for (Integer annotatedSample : processedSamples) {
+                getMetadataManager().updateSampleMetadata(studyId, annotatedSample, sampleMetadata -> {
+                    sampleMetadata.setAnnotationStatus(TaskMetadata.Status.NONE);
+                    SampleIndexDBAdaptor.setSampleIndexStatus(sampleMetadata, TaskMetadata.Status.NONE);
+                    sampleMetadata.setFamilyIndexStatus(TaskMetadata.Status.NONE);
+                    sampleMetadata.setMendelianErrorStatus(TaskMetadata.Status.NONE);
+                    return sampleMetadata;
+                });
+            }
         }
 
         final AtomicInteger ongoingLoads = new AtomicInteger(1); // this
@@ -91,7 +131,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
         List<Integer> fileIds = Collections.singletonList(getFileId());
 
         taskId = getMetadataManager()
-                .addRunningTask(getStudyId(), OPERATION_NAME, fileIds, resume, TaskMetadata.Type.LOAD,
+                .addRunningTask(studyId, OPERATION_NAME, fileIds, resume, TaskMetadata.Type.LOAD,
                 operation -> {
                     if (operation.getName().equals(OPERATION_NAME)) {
                         if (operation.currentStatus().equals(TaskMetadata.Status.ERROR)) {
@@ -132,7 +172,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 //            fileMetadata.setStudyId(Integer.toString(studyId));
 
             ArchiveTableHelper helper = new ArchiveTableHelper(dbAdaptor.getGenomeHelper(), studyId, fileMetadata);
-            long start = System.currentTimeMillis();
+            StopWatch stopWatch = StopWatch.createStarted();
             if (VariantReaderUtils.isProto(fileName)) {
                 ProgressLogger progressLogger = new ProgressLogger("Loaded slices:");
                 if (fileMetadata.getStats() != null) {
@@ -151,8 +191,7 @@ public class HadoopLocalLoadVariantStoragePipeline extends HadoopVariantStorageP
 
                 loadFromAvro(inputUri, table, helper, progressLogger);
             }
-            long end = System.currentTimeMillis();
-            logger.info("end - start = " + (end - start) / 1000.0 + "s");
+            logger.info("File \"{}\" loaded in {}", Paths.get(inputUri).getFileName(), TimeUtils.durationToString(stopWatch));
 
             // Mark file as DONE
             getMetadataManager().setStatus(getStudyId(), taskId, TaskMetadata.Status.DONE);

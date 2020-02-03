@@ -19,37 +19,35 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.DataResult;
+import org.opencb.commons.datastore.core.FacetField;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.managers.SampleManager;
-import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.server.WebServiceException;
+import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleAclUpdateParams;
+import org.opencb.opencga.core.models.sample.SampleCreateParams;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 15/12/14.
  */
 @Path("/{apiVersion}/samples")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Samples", position = 7, description = "Methods for working with 'samples' endpoint")
+@Api(value = "Samples", description = "Methods for working with 'samples' endpoint")
 public class SampleWSServer extends OpenCGAWSServer {
 
     private SampleManager sampleManager;
@@ -61,7 +59,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{samples}/info")
-    @ApiOperation(value = "Get sample information", position = 1, response = Sample.class)
+    @ApiOperation(value = "Get sample information", response = Sample.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -98,9 +96,9 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "DEPRECATED: It should be passed in the body.") @QueryParam("individual") String individual,
-            @ApiParam(value = "JSON containing sample information", required = true) CreateSamplePOST params) {
+            @ApiParam(value = "JSON containing sample information", required = true) SampleCreateParams params) {
         try {
-            params = ObjectUtils.defaultIfNull(params, new CreateSamplePOST());
+            params = ObjectUtils.defaultIfNull(params, new SampleCreateParams());
 
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
@@ -123,21 +121,13 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/load")
-    @ApiOperation(value = "Load samples from a ped file [EXPERIMENTAL]", position = 3)
-    public Response loadSamples(@ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
-                                @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                                @ApiParam(value = "DEPRECATED: use file instead", hidden = true) @QueryParam("fileId") String fileIdStr,
-                                @ApiParam(value = "file", required = true) @QueryParam("file") String fileStr,
-                                @ApiParam(value = "variableSet", required = false) @QueryParam("variableSet") String variableSet) {
+    @ApiOperation(value = "Load samples from a ped file [EXPERIMENTAL]", response = Sample.class)
+    public Response loadSamples(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "file", required = true) @QueryParam("file") String fileStr,
+            @ApiParam(value = "variableSet", required = false) @QueryParam("variableSet") String variableSet) {
         try {
-            if (StringUtils.isNotEmpty(studyIdStr)) {
-                studyStr = studyIdStr;
-            }
-            if (StringUtils.isNotEmpty(fileStr)) {
-                fileIdStr = fileStr;
-            }
-
-            File pedigreeFile = catalogManager.getFileManager().get(studyStr, fileIdStr, null, token).first();
+            File pedigreeFile = catalogManager.getFileManager().get(studyStr, fileStr, null, token).first();
             CatalogSampleAnnotationsLoader loader = new CatalogSampleAnnotationsLoader(catalogManager);
             DataResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedigreeFile, variableSet, token);
             return createOkResponse(sampleQueryResult);
@@ -148,7 +138,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "Sample search method", response = Sample[].class)
+    @ApiOperation(value = "Sample search method", response = Sample.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION, example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = QueryOptions.EXCLUDE, value = ParamConstants.EXCLUDE_DESCRIPTION, example = "id,status", dataType = "string", paramType = "query"),
@@ -161,7 +151,6 @@ public class SampleWSServer extends OpenCGAWSServer {
                     dataType = "boolean", paramType = "query")
     })
     public Response search(
-            @ApiParam(value = "DEPRECATED: use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "DEPRECATED: use /info instead", hidden = true) @QueryParam("id") String id,
             @ApiParam(value = "DEPRECATED: name") @QueryParam("name") String name,
@@ -181,6 +170,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
             @QueryParam("variableSet") String variableSet,
             @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
+            @ApiParam(value = ParamConstants.ACL_DESCRIPTION) @QueryParam(ParamConstants.ACL_PARAM) String acl,
             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
             @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("")
             @QueryParam("nattributes") String nattributes,
@@ -190,10 +180,6 @@ public class SampleWSServer extends OpenCGAWSServer {
                     int snapshot) {
         try {
             query.remove(ParamConstants.STUDY_PARAM);
-
-            if (StringUtils.isNotEmpty(studyIdStr)) {
-                studyStr = studyIdStr;
-            }
 
             List<String> annotationList = new ArrayList<>();
             if (StringUtils.isNotEmpty(annotation)) {
@@ -226,7 +212,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @POST
     @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some sample attributes", hidden = true)
+    @ApiOperation(value = "Update some sample attributes", hidden = true, response = Sample.class)
     public Response updateByPost(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
             @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
@@ -267,7 +253,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{samples}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some sample attributes")
+    @ApiOperation(value = "Update some sample attributes", response = Sample.class)
     public Response updateByPost(
             @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION, required = true) @PathParam("samples") String sampleStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
@@ -293,7 +279,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{sample}/annotationSets/{annotationSet}/annotations/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update annotations from an annotationSet")
+    @ApiOperation(value = "Update annotations from an annotationSet", response = Sample.class)
     public Response updateAnnotations(
             @ApiParam(value = ParamConstants.SAMPLE_ID_DESCRIPTION, required = true) @PathParam("sample") String sampleStr,
             @ApiParam(value = ParamConstants.STUDY_PARAM) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
@@ -316,7 +302,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @DELETE
     @Path("/{samples}/delete")
-    @ApiOperation(value = "Delete samples")
+    @ApiOperation(value = "Delete samples", response = Sample.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = Constants.FORCE, value = "Force the deletion of samples even if they are associated to files, "
                     + "individuals or cohorts.", dataType = "boolean", defaultValue = "false", paramType = "query"),
@@ -341,172 +327,8 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/groupBy")
-    @ApiOperation(value = "Group samples by several fields", position = 10, hidden = true,
-            notes = "Only group by categorical variables. Grouping by continuous variables might cause unexpected behaviour")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = QueryOptions.COUNT, value = "Count the number of elements matching the group", dataType = "boolean",
-                    paramType = "query"),
-            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Maximum number of documents (groups) to be returned", dataType = "integer",
-                    paramType = "query", defaultValue = "50")
-    })
-    public Response groupBy(
-            @ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
-            @QueryParam("fields") String fields,
-            @ApiParam(value = "DEPRECATED: use study instead", hidden = true) @DefaultValue("") @QueryParam("studyId") String studyIdStr,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Comma separated list of ids.") @QueryParam("id") String id,
-            @ApiParam(value = "DEPRECATED: Comma separated list of names.") @QueryParam("name") String name,
-            @ApiParam(value = "source") @QueryParam("source") String source,
-            @ApiParam(value = ParamConstants.INDIVIDUAL_DESCRIPTION, hidden = true) @QueryParam("individual.id") String individualId,
-            @ApiParam(value = ParamConstants.INDIVIDUAL_DESCRIPTION) @QueryParam("individual") String individual,
-            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: annotationSet[=|==|!|!=]{annotationSetName}")
-            @QueryParam("annotationsetName") String annotationsetName,
-            @ApiParam(value = "DEPRECATED: Use annotation queryParam this way: variableSet[=|==|!|!=]{variableSetId}")
-            @QueryParam("variableSet") String variableSet,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-            @ApiParam(value = "Release value (Current release from the moment the families were first created)")
-            @QueryParam("release") String release,
-            @ApiParam(value = "Snapshot value (Latest version of families in the specified release)") @QueryParam("snapshot")
-                    int snapshot) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            query.remove("fields");
-
-            if (StringUtils.isNotEmpty(studyIdStr)) {
-                studyStr = studyIdStr;
-            }
-
-            // TODO: individualId is deprecated. Remember to remove this if after next release
-            if (query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key())) {
-                if (!query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL.key())) {
-                    query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), query.get(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key()));
-                }
-                query.remove(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key());
-            }
-            DataResult result = sampleManager.groupBy(studyStr, query, fields, queryOptions, token);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{sample}/annotationsets/search")
-    @ApiOperation(value = "Search annotation sets [DEPRECATED]", hidden = true, position = 11, notes = "Use /samples/search instead")
-    public Response searchAnnotationSetGET(
-            @ApiParam(value = ParamConstants.SAMPLE_DESCRIPTION, required = true) @PathParam("sample") String sampleStr,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.VARIANBLE_SET_DESCRIPTION) @QueryParam("variableSet") String variableSet,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-            @ApiParam(value = ParamConstants.ANNOTATION_AS_MAP_DESCRIPTION, defaultValue = "false") @QueryParam("asMap") boolean asMap) {
-        try {
-            Sample sample = sampleManager.get(studyStr, sampleStr, SampleManager.INCLUDE_SAMPLE_IDS, token).first();
-            Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(), sample.getUid());
-
-            if (StringUtils.isEmpty(annotation)) {
-                if (StringUtils.isNotEmpty(variableSet)) {
-                    annotation = Constants.VARIABLE_SET + "=" + variableSet;
-                }
-            } else {
-                if (StringUtils.isNotEmpty(variableSet)) {
-                    String[] annotationsSplitted = StringUtils.split(annotation, ",");
-                    List<String> annotationList = new ArrayList<>(annotationsSplitted.length);
-                    for (String auxAnnotation : annotationsSplitted) {
-                        String[] split = StringUtils.split(auxAnnotation, ":");
-                        if (split.length == 1) {
-                            annotationList.add(variableSet + ":" + auxAnnotation);
-                        } else {
-                            annotationList.add(auxAnnotation);
-                        }
-                    }
-                    annotation = StringUtils.join(annotationList, ";");
-                }
-            }
-            query.putIfNotEmpty(Constants.ANNOTATION, annotation);
-
-            DataResult<Sample> search = sampleManager.search(studyStr, query, new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap),
-                    token);
-            if (search.getNumResults() == 1) {
-                return createOkResponse(new DataResult<>(search.getTime(), search.getEvents(), search.first().getAnnotationSets().size(),
-                        search.first().getAnnotationSets(), search.first().getAnnotationSets().size()));
-            } else {
-                return createOkResponse(search);
-            }
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{samples}/annotationsets")
-    @ApiOperation(value = "Return the annotation sets of the sample [DEPRECATED]", hidden = true, position = 12, notes = "Use /samples/search instead")
-    public Response getAnnotationSet(
-            @ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION, required = true) @PathParam("samples") String samplesStr,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.ANNOTATION_AS_MAP_DESCRIPTION, defaultValue = "false") @QueryParam("asMap") boolean asMap,
-            @ApiParam(value = ParamConstants.ANNOTATION_SET_NAME) @QueryParam("name") String annotationsetName,
-            @ApiParam(value = ParamConstants.SILENT_DESCRIPTION, defaultValue = "false")
-            @QueryParam(Constants.SILENT) boolean silent) throws WebServiceException {
-        try {
-            DataResult<Sample> queryResult = sampleManager.get(studyStr, getIdList(samplesStr), null, token);
-
-            Query query = new Query(SampleDBAdaptor.QueryParams.UID.key(),
-                    queryResult.getResults().stream().map(Sample::getUid).collect(Collectors.toList()));
-            QueryOptions queryOptions = new QueryOptions(Constants.FLATTENED_ANNOTATIONS, asMap);
-
-            if (StringUtils.isNotEmpty(annotationsetName)) {
-                query.append(Constants.ANNOTATION, Constants.ANNOTATION_SET_NAME + "=" + annotationsetName);
-                queryOptions.put(QueryOptions.INCLUDE, Constants.ANNOTATION_SET_NAME + "." + annotationsetName);
-            }
-
-            DataResult<Sample> search = sampleManager.search(studyStr, query, queryOptions, token);
-            if (search.getNumResults() == 1) {
-                return createOkResponse(new DataResult<>(search.getTime(), search.getEvents(), search.first().getAnnotationSets().size(),
-                        search.first().getAnnotationSets(), search.first().getAnnotationSets().size()));
-            } else {
-                return createOkResponse(search);
-            }
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @POST
-    @Path("/{sample}/annotationsets/create")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create an annotation set for the sample [DEPRECATED]", hidden = true, position = 13, notes = "Use /{sample}/update instead")
-    public Response annotateSamplePOST(
-            @ApiParam(value = ParamConstants.SAMPLE_DESCRIPTION, required = true) @PathParam("sample") String sampleStr,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = ParamConstants.VARIANBLE_SET_DESCRIPTION, hidden = true) @QueryParam("variableSetId") String variableSetId,
-            @ApiParam(value = ParamConstants.VARIANBLE_SET_DESCRIPTION, required = true) @QueryParam("variableSet") String variableSet,
-            @ApiParam(value = "JSON containing the annotation set name and the array of annotations. The name should be unique for the "
-                    + "sample", required = true) CohortWSServer.AnnotationsetParameters params) {
-        try {
-            if (StringUtils.isNotEmpty(variableSetId)) {
-                variableSet = variableSetId;
-            }
-
-            String annotationSetId = StringUtils.isEmpty(params.id) ? params.name : params.id;
-            sampleManager.update(studyStr, sampleStr, new SampleUpdateParams()
-                    .setAnnotationSets(Collections.singletonList(new AnnotationSet(annotationSetId, variableSet, params.annotations))),
-                    QueryOptions.empty(), token);
-            DataResult<Sample> sampleQueryResult = sampleManager.get(studyStr, sampleStr, new QueryOptions(QueryOptions.INCLUDE,
-                    Constants.ANNOTATION_SET_NAME + "." + annotationSetId), token);
-            List<AnnotationSet> annotationSets = sampleQueryResult.first().getAnnotationSets();
-            DataResult<AnnotationSet> queryResult = new DataResult<>(sampleQueryResult.getTime(), Collections.emptyList(),
-                    annotationSets.size(), annotationSets, annotationSets.size());
-            return createOkResponse(queryResult);
-        } catch (CatalogException e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
     @Path("/{samples}/acl")
-    @ApiOperation(value = "Returns the acl of the samples. If member is provided, it will only return the acl for the member.", position = 18)
+    @ApiOperation(value = "Returns the acl of the samples. If member is provided, it will only return the acl for the member.", response = Map.class)
     public Response getAcls(@ApiParam(value = ParamConstants.SAMPLES_DESCRIPTION, required = true) @PathParam("samples") String sampleIdsStr,
                             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
                             @ApiParam(value = "User or group id") @QueryParam("member") String member,
@@ -520,120 +342,21 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{sample}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member [DEPRECATED]", position = 21, hidden = true,
-            notes = "DEPRECATED: The usage of this webservice is discouraged. A different entrypoint /acl/{members}/update has been added "
-                    + "to also support changing permissions using queries.")
-    public Response updateAclPOST(
-            @ApiParam(value = ParamConstants.SAMPLE_DESCRIPTION, required = true) @PathParam("sample") String sampleIdStr,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
-            @ApiParam(value = "JSON containing one of the keys 'add', 'set' or 'remove'", required = true) StudyWSServer.MemberAclUpdateOld params) {
-        try {
-            Sample.SampleAclParams sampleAclParams = getAclParams(params.add, params.remove, params.set);
-            List<String> idList = StringUtils.isEmpty(sampleIdStr) ? Collections.emptyList() : getIdList(sampleIdStr);
-            return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    // Temporal method used by deprecated methods. This will be removed at some point.
-    @Override
-    protected Sample.SampleAclParams getAclParams(@ApiParam(value = "Comma separated list of permissions to add", required = false)
-                                                  @QueryParam("add") String addPermissions,
-                                                  @ApiParam(value = "Comma separated list of permissions to remove", required = false)
-                                                  @QueryParam("remove") String removePermissions,
-                                                  @ApiParam(value = "Comma separated list of permissions to set", required = false)
-                                                  @QueryParam("set") String setPermissions) throws CatalogException {
-        int count = 0;
-        count += StringUtils.isNotEmpty(setPermissions) ? 1 : 0;
-        count += StringUtils.isNotEmpty(addPermissions) ? 1 : 0;
-        count += StringUtils.isNotEmpty(removePermissions) ? 1 : 0;
-        if (count > 1) {
-            throw new CatalogException("Only one of add, remove or set parameters are allowed.");
-        } else if (count == 0) {
-            throw new CatalogException("One of add, remove or set parameters is expected.");
-        }
-
-        String permissions = null;
-        AclParams.Action action = null;
-        if (StringUtils.isNotEmpty(addPermissions)) {
-            permissions = addPermissions;
-            action = AclParams.Action.ADD;
-        }
-        if (StringUtils.isNotEmpty(setPermissions)) {
-            permissions = setPermissions;
-            action = AclParams.Action.SET;
-        }
-        if (StringUtils.isNotEmpty(removePermissions)) {
-            permissions = removePermissions;
-            action = AclParams.Action.REMOVE;
-        }
-        return new Sample.SampleAclParams(permissions, action, null, null, null);
-    }
-
-    public static class SampleAcl extends AclParams {
-        public String sample;
-        public String individual;
-        public String file;
-        public String cohort;
-
-        public boolean propagate;
-    }
-
-    @POST
     @Path("/acl/{members}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    @ApiOperation(value = "Update the set of permissions granted for the member", response = Map.class)
     public Response updateAcl(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM)
                     String studyStr,
             @ApiParam(value = "Comma separated list of user or group ids", required = true) @PathParam("members") String memberId,
             @ApiParam(value = "JSON containing the parameters to update the permissions. If propagate flag is set to true, it will "
                     + "propagate the permissions defined to the individuals that are associated to the matching samples", required = true)
-                    SampleAcl params) {
+                    SampleAclUpdateParams params) {
         try {
-            params = ObjectUtils.defaultIfNull(params, new SampleAcl());
+            params = ObjectUtils.defaultIfNull(params, new SampleAclUpdateParams());
             Sample.SampleAclParams sampleAclParams = new Sample.SampleAclParams(
-                    params.getPermissions(), params.getAction(), params.individual, params.file, params.cohort, params.propagate);
-            List<String> idList = StringUtils.isEmpty(params.sample) ? Collections.emptyList() : getIdList(params.sample, false);
+                    params.getPermissions(), params.getAction(), params.getIndividual(), params.getFile(), params.getCohort(), params.isPropagate());
+            List<String> idList = StringUtils.isEmpty(params.getSample()) ? Collections.emptyList() : getIdList(params.getSample(), false);
             return createOkResponse(sampleManager.updateAcl(studyStr, idList, memberId, sampleAclParams, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/stats")
-    @ApiOperation(value = "Fetch catalog sample stats", position = 15, hidden = true, response = QueryResponse.class)
-    public Response getStats(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Source") @QueryParam("source") String source,
-            @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
-            @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
-            @ApiParam(value = "Creation day") @QueryParam("creationDay") String creationDay,
-            @ApiParam(value = "Creation day of week (MONDAY, TUESDAY...)") @QueryParam("creationDayOfWeek") String creationDayOfWeek,
-            @ApiParam(value = "Status") @QueryParam("status") String status,
-            @ApiParam(value = "Type") @QueryParam("type") String type,
-            @ApiParam(value = "Phenotypes") @QueryParam("phenotypes") String phenotypes,
-            @ApiParam(value = "Release") @QueryParam("release") String release,
-            @ApiParam(value = "Version") @QueryParam("version") String version,
-            @ApiParam(value = "Somatic") @QueryParam("somatic") Boolean somatic,
-            @ApiParam(value = ParamConstants.ANNOTATION_DESCRIPTION) @QueryParam("annotation") String annotation,
-
-            @ApiParam(value = "Calculate default stats", defaultValue = "false") @QueryParam("default") boolean defaultStats,
-
-            @ApiParam(value = "List of fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: studies>>biotype;type;numSamples[0..10]:1") @QueryParam("field") String facet) {
-        try {
-            query.remove(ParamConstants.STUDY_PARAM);
-            query.remove("field");
-
-            queryOptions.put(QueryOptions.FACET, facet);
-
-            DataResult<FacetField> queryResult = catalogManager.getSampleManager().facet(studyStr, query, queryOptions, defaultStats,
-                    token);
-            return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -641,10 +364,9 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/aggregationStats")
-    @ApiOperation(value = "Fetch catalog sample stats", position = 15, response = QueryResponse.class)
+    @ApiOperation(value = "Fetch catalog sample stats", response = FacetField.class)
     public Response getAggregationStats(
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Source") @QueryParam("source") String source,
             @ApiParam(value = "Creation year") @QueryParam("creationYear") String creationYear,
             @ApiParam(value = "Creation month (JANUARY, FEBRUARY...)") @QueryParam("creationMonth") String creationMonth,
@@ -675,37 +397,4 @@ public class SampleWSServer extends OpenCGAWSServer {
         }
     }
 
-//    private static class SamplePOST {
-//        public String id;
-//        @Deprecated
-//        public String name;
-//        public String description;
-//        public String type;
-//        public String individualId;
-//        public SampleProcessing processing;
-//        public SampleCollection collection;
-//        public String source;
-//        public boolean somatic;
-//        public List<Phenotype> phenotypes;
-//        public List<AnnotationSet> annotationSets;
-//        @Deprecated
-//        public Map<String, Object> stats;
-//        public Map<String, Object> attributes;
-//    }
-
-    public static class CreateSamplePOST extends SampleUpdateParams {
-        @Deprecated
-        public String name;
-        @Deprecated
-        public Map<String, Object> stats;
-
-        public Sample toSample() {
-
-            String sampleId = StringUtils.isEmpty(this.getId()) ? name : this.getId();
-            String sampleName = StringUtils.isEmpty(name) ? sampleId : name;
-            return new Sample(sampleId, getSource(), getIndividualId(), getProcessing(), getCollection(), 1, 1, getDescription(), getType(),
-                    getSomatic(), getPhenotypes(), getAnnotationSets(), getAttributes())
-                    .setName(sampleName).setStats(stats);
-        }
-    }
 }

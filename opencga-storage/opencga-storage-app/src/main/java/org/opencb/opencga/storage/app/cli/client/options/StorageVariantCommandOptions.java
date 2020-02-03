@@ -19,7 +19,7 @@ package org.opencb.opencga.storage.app.cli.client.options;
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
-import org.opencb.opencga.core.api.operations.variant.VariantScoreIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantScoreIndexParams;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -150,7 +150,6 @@ public class StorageVariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.IndexCommandOptions commonIndexOptions = indexCommandOptions;
 
-
         @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", arity = 1)
         public String study;
 
@@ -159,6 +158,12 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--stdout"}, description = "Write the transformed variants file to the standard output")
         public boolean stdout;
+
+        @Parameter(names = {"--species"}, description = "Species. Default hsapiens", arity = 1)
+        public String species = "hsapiens";
+
+        @Parameter(names = {"--assembly"}, description = "Assembly. Default GRch37", arity = 1)
+        public String assembly = "GRCh37";
 
 //        @Deprecated
 //        @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
@@ -257,12 +262,6 @@ public class StorageVariantCommandOptions {
      * @see org.opencb.opencga.storage.app.cli.client.executors.VariantQueryCommandUtils#parseGenericVariantQuery
      */
     public static class GenericVariantQueryOptions extends BasicVariantQueryOptions {
-
-        @Parameter(names = {"--group-by"}, description = "Group by gene, ensembl gene or consequence_type")
-        public String groupBy;
-
-        @Parameter(names = {"--rank"}, description = "Rank variants by gene, ensemblGene or consequence_type")
-        public String rank;
 
 //        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter")
 //        public String study;
@@ -416,18 +415,6 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--unknown-genotype"}, description = UNKNOWN_GENOTYPE_DESCR)
         public String unknownGenotype = "./.";
-
-        @Deprecated
-        @Parameter(names = {"--output-histogram"}, hidden = true, description = DEPRECATED + "use --histogram")
-        void setOutputHistogram(boolean histogram) {
-            this.histogram = histogram;
-        }
-
-        @Parameter(names = {"--histogram"}, description = "Calculate histogram. Requires --region.")
-        public boolean histogram;
-
-        @Parameter(names = {"--histogram-interval"}, description = "Histogram interval size. Default:2000", arity = 1)
-        public int interval;
 
         @Deprecated
         @Parameter(names = {"--hpo"}, hidden = true, description = DEPRECATED + "use --trait", arity = 1)

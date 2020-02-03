@@ -17,28 +17,32 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.pedigree.IndividualProperty;
+import org.opencb.commons.datastore.core.FacetField;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
-import org.opencb.opencga.app.cli.main.executors.catalog.commons.AnnotationCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.IndividualCommandOptions;
+import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
+import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualAclUpdateParams;
+import org.opencb.opencga.core.models.individual.IndividualCreateParams;
+import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleCreateParams;
 import org.opencb.opencga.core.response.RestResponse;
 
+import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Collections;
+import java.util.stream.Collectors;
 
 /**
  * Created by agaor on 6/06/16.
@@ -46,14 +50,10 @@ import java.util.Map;
 public class IndividualCommandExecutor extends OpencgaCommandExecutor {
 
     private IndividualCommandOptions individualsCommandOptions;
-    private AclCommandExecutor<Individual> aclCommandExecutor;
-    private AnnotationCommandExecutor<Individual> annotationCommandExecutor;
 
     public IndividualCommandExecutor(IndividualCommandOptions individualsCommandOptions) {
         super(individualsCommandOptions.commonCommandOptions);
         this.individualsCommandOptions = individualsCommandOptions;
-        this.aclCommandExecutor = new AclCommandExecutor<>();
-        this.annotationCommandExecutor = new AnnotationCommandExecutor<>();
     }
 
 
@@ -79,9 +79,6 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
             case "delete":
                 queryResponse = delete();
                 break;
-            case "group-by":
-                queryResponse = groupBy();
-                break;
             case "stats":
                 queryResponse = stats();
                 break;
@@ -89,30 +86,13 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = getSamples();
                 break;
             case "acl":
-                queryResponse = aclCommandExecutor.acls(individualsCommandOptions.aclsCommandOptions, openCGAClient.getIndividualClient());
+                queryResponse = acl();
                 break;
             case "acl-update":
                 queryResponse = updateAcl();
                 break;
-            case "annotation-sets-create":
-                queryResponse = annotationCommandExecutor.createAnnotationSet(individualsCommandOptions.annotationCreateCommandOptions,
-                        openCGAClient.getIndividualClient());
-                break;
-            case "annotation-sets-search":
-                queryResponse = annotationCommandExecutor.searchAnnotationSets(individualsCommandOptions.annotationSearchCommandOptions,
-                        openCGAClient.getIndividualClient());
-                break;
-            case "annotation-sets-delete":
-                queryResponse = annotationCommandExecutor.deleteAnnotationSet(individualsCommandOptions.annotationDeleteCommandOptions,
-                        openCGAClient.getIndividualClient());
-                break;
-            case "annotation-sets":
-                queryResponse = annotationCommandExecutor.getAnnotationSet(individualsCommandOptions.annotationInfoCommandOptions,
-                        openCGAClient.getIndividualClient());
-                break;
             case "annotation-sets-update":
-                queryResponse = annotationCommandExecutor.updateAnnotationSet(individualsCommandOptions.annotationUpdateCommandOptions,
-                        openCGAClient.getIndividualClient());
+                queryResponse = updateAnnotations();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -122,261 +102,212 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
-    private RestResponse<Individual> create() throws CatalogException, IOException {
+    private RestResponse<Individual> create() throws ClientException {
         logger.debug("Creating individual");
 
         IndividualCommandOptions.CreateCommandOptions commandOptions = individualsCommandOptions.createCommandOptions;
 
+        IndividualCreateParams createParams = new IndividualCreateParams()
+                .setId(commandOptions.id)
+                .setName(commandOptions.name)
+                .setFather(commandOptions.fatherId)
+                .setMother(commandOptions.motherId)
+                .setSex(commandOptions.sex)
+                .setParentalConsanguinity(commandOptions.parentalConsanguinity)
+                .setEthnicity(commandOptions.ethnicity)
+                .setPopulation(new Individual.Population(commandOptions.populationName, commandOptions.populationSubpopulation,
+                        commandOptions.populationDescription))
+                .setKaryotypicSex(commandOptions.karyotypicSex)
+                .setLifeStatus(commandOptions.lifeStatus)
+                .setAffectationStatus(commandOptions.affectationStatus)
+                .setDateOfBirth(commandOptions.dateOfBirth)
+                .setSamples(commandOptions.samples != null
+                        ? commandOptions.samples.stream().map(s -> new SampleCreateParams().setId(s)).collect(Collectors.toList())
+                        : Collections.emptyList());
+
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), commandOptions.id);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.NAME.key(), commandOptions.name);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+
+        return openCGAClient.getIndividualClient().create(createParams, params);
+    }
+
+    private RestResponse<Individual> info() throws ClientException {
+        logger.debug("Getting individual information");
+
+        IndividualCommandOptions.InfoCommandOptions commandOptions = individualsCommandOptions.infoCommandOptions;
+
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotNull(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
+        params.putIfNotNull(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.exclude);
+        params.put("flattenAnnotations", commandOptions.flattenAnnotations);
+
+        return openCGAClient.getIndividualClient().info(commandOptions.individual, params);
+    }
+
+    private RestResponse<Individual> search() throws ClientException {
+        logger.debug("Searching individuals");
+
+        IndividualCommandOptions.SearchCommandOptions commandOptions = individualsCommandOptions.searchCommandOptions;
+
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), commandOptions.name);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER.key(), commandOptions.fatherId);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER.key(), commandOptions.motherId);
-        String sex = commandOptions.sex;
-        if (commandOptions.sex != null) {
-            try {
-                params.put(IndividualDBAdaptor.QueryParams.SEX.key(), IndividualProperty.Sex.valueOf(sex));
-            } catch (IllegalArgumentException e) {
-                logger.error("{} not recognized as a proper individual sex", sex);
-                return null;
-            }
-        }
-
-        params.putIfNotNull(IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(), commandOptions.parentalConsanguinity);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SEX.key(), commandOptions.sex);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), commandOptions.ethnicity);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SAMPLES.key(), commandOptions.samples);
 
-        Individual.Population population = new Individual.Population();
-        if (commandOptions.populationName != null) {
-            population.setName(commandOptions.populationName);
-        }
-        if (commandOptions.populationSubpopulation != null) {
-            population.setSubpopulation(commandOptions.populationSubpopulation);
-        }
-        if (commandOptions.populationDescription != null) {
-            population.setDescription(commandOptions.populationDescription);
-        }
-        params.put("population", population);
-
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(), commandOptions.populationName);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key(), commandOptions.populationSubpopulation);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(), commandOptions.populationDescription);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), commandOptions.karyotypicSex);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(), commandOptions.lifeStatus);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), commandOptions.affectationStatus);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(), commandOptions.dateOfBirth);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ANNOTATION.key(), commandOptions.annotation);
+        params.put("flattenAnnotations", commandOptions.flattenAnnotations);
+        params.putAll(commandOptions.commonOptions.params);
 
-        if (StringUtils.isNotEmpty(commandOptions.samples)) {
-            String[] samples = StringUtils.split(commandOptions.samples, ",");
-            List<Map<String, String>> sampleList = new ArrayList<>(samples.length);
-            for (String sample : samples) {
-                Map<String, String> map = new HashMap<>();
-                map.put("id", sample);
-                sampleList.add(map);
-            }
-            params.put(IndividualDBAdaptor.QueryParams.SAMPLES.key(), sampleList);
-        }
+        params.put(QueryOptions.COUNT, commandOptions.numericOptions.count);
+        params.putIfNotEmpty(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
+        params.putIfNotEmpty(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.exclude);
+        params.put(QueryOptions.SKIP, commandOptions.numericOptions.skip);
+        params.put(QueryOptions.LIMIT, commandOptions.numericOptions.limit);
 
-        return openCGAClient.getIndividualClient().create(resolveStudy(commandOptions.study), params);
-    }
-
-    private RestResponse<Individual> info() throws CatalogException, IOException {
-        logger.debug("Getting individual information");
-
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(individualsCommandOptions.infoCommandOptions.study));
-        params.putIfNotNull(QueryOptions.INCLUDE, individualsCommandOptions.infoCommandOptions.dataModelOptions.include);
-        params.putIfNotNull(QueryOptions.EXCLUDE, individualsCommandOptions.infoCommandOptions.dataModelOptions.exclude);
-        params.put("flattenAnnotations", individualsCommandOptions.searchCommandOptions.flattenAnnotations);
-        return openCGAClient.getIndividualClient().get(individualsCommandOptions.infoCommandOptions.individual, params);
-    }
-
-    private RestResponse<Individual> search() throws CatalogException, IOException {
-        logger.debug("Searching individuals");
-
-        Query query = new Query();
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(),
-                resolveStudy(individualsCommandOptions.searchCommandOptions.study));
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.searchCommandOptions.name);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER.key(), individualsCommandOptions.searchCommandOptions.fatherId);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER.key(), individualsCommandOptions.searchCommandOptions.motherId);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.searchCommandOptions.sex);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.searchCommandOptions.ethnicity);
-        // TODO: Remove these 2 deprecated parameters in future release
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
-                individualsCommandOptions.searchCommandOptions.population);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
-                individualsCommandOptions.searchCommandOptions.populationName);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key(),
-                individualsCommandOptions.searchCommandOptions.populationSubpopulation);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(),
-                individualsCommandOptions.searchCommandOptions.populationDescription);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(),
-                individualsCommandOptions.searchCommandOptions.karyotypicSex);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(), individualsCommandOptions.searchCommandOptions.lifeStatus);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(),
-                individualsCommandOptions.searchCommandOptions.affectationStatus);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ANNOTATION.key(), individualsCommandOptions.searchCommandOptions.annotation);
-        query.put("flattenAnnotations", individualsCommandOptions.searchCommandOptions.flattenAnnotations);
-        query.putAll(individualsCommandOptions.searchCommandOptions.commonOptions.params);
-
-        if (individualsCommandOptions.searchCommandOptions.numericOptions.count) {
-            return openCGAClient.getIndividualClient().count(query);
-        } else {
-            QueryOptions queryOptions = new QueryOptions();
-            queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, individualsCommandOptions.searchCommandOptions.dataModelOptions.include);
-            queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, individualsCommandOptions.searchCommandOptions.dataModelOptions.exclude);
-            queryOptions.put(QueryOptions.SKIP, individualsCommandOptions.searchCommandOptions.numericOptions.skip);
-            queryOptions.put(QueryOptions.LIMIT, individualsCommandOptions.searchCommandOptions.numericOptions.limit);
-
-            return openCGAClient.getIndividualClient().search(query, queryOptions);
-        }
+        return openCGAClient.getIndividualClient().search(params);
     }
 
 
-    private RestResponse<Individual> update() throws CatalogException, IOException {
+    private RestResponse<Individual> update() throws ClientException {
         logger.debug("Updating individual information");
 
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.updateCommandOptions.name);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER.key(), individualsCommandOptions.updateCommandOptions.fatherId);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER.key(), individualsCommandOptions.updateCommandOptions.motherId);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.DATE_OF_BIRTH.key(),
-                individualsCommandOptions.updateCommandOptions.dateOfBirth);
+        IndividualCommandOptions.UpdateCommandOptions commandOptions = individualsCommandOptions.updateCommandOptions;
 
-        String sex = individualsCommandOptions.updateCommandOptions.sex;
-        if (individualsCommandOptions.updateCommandOptions.sex != null) {
-            try {
-                params.put(IndividualDBAdaptor.QueryParams.SEX.key(), IndividualProperty.Sex.valueOf(sex));
-            } catch (IllegalArgumentException e) {
-                logger.error("{} not recognized as a proper individual sex", sex);
-                return null;
-            }
+        IndividualUpdateParams updateParams = new IndividualUpdateParams()
+                .setId(commandOptions.name)
+                .setName(commandOptions.name)
+                .setFather(commandOptions.fatherId)
+                .setMother(commandOptions.motherId)
+                .setDateOfBirth(commandOptions.dateOfBirth)
+                .setSex(commandOptions.sex)
+                .setEthnicity(commandOptions.ethnicity)
+                .setKaryotypicSex(commandOptions.karyotypicSex)
+                .setLifeStatus(commandOptions.lifeStatus)
+                .setAffectationStatus(commandOptions.affectationStatus);
+        if (StringUtils.isNotEmpty(commandOptions.populationDescription) || StringUtils.isNotEmpty(commandOptions.populationName)
+                || StringUtils.isNotEmpty(commandOptions.populationSubpopulation)) {
+            updateParams.setPopulation(new Individual.Population(commandOptions.name, commandOptions.populationSubpopulation,
+                    commandOptions.populationDescription));
         }
 
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.updateCommandOptions.ethnicity);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
-                individualsCommandOptions.updateCommandOptions.populationName);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(),
-                individualsCommandOptions.updateCommandOptions.populationDescription);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key(),
-                individualsCommandOptions.updateCommandOptions.populationSubpopulation);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(),
-                individualsCommandOptions.updateCommandOptions.karyotypicSex);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
-                individualsCommandOptions.updateCommandOptions.lifeStatus);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(),
-                individualsCommandOptions.updateCommandOptions.affectationStatus);
-        params.putIfNotNull("annotationSetsAction", individualsCommandOptions.updateCommandOptions.annotationSetsAction);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
 
-        return openCGAClient.getIndividualClient().update(individualsCommandOptions.updateCommandOptions.individual,
-                resolveStudy(individualsCommandOptions.updateCommandOptions.study), params);
+        return openCGAClient.getIndividualClient().update(commandOptions.individual, updateParams, params);
     }
 
-    private RestResponse<Individual> delete() throws CatalogException, IOException {
+    private RestResponse<Individual> delete() throws ClientException {
         logger.debug("Deleting individual information");
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(individualsCommandOptions.deleteCommandOptions.study));
+
         return openCGAClient.getIndividualClient().delete(individualsCommandOptions.deleteCommandOptions.individual, params);
     }
 
-    private RestResponse<ObjectMap> groupBy() throws CatalogException, IOException {
-        logger.debug("Group by individuals");
-
-        ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), resolveStudy(individualsCommandOptions.groupByCommandOptions.study));
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.UID.key(), individualsCommandOptions.groupByCommandOptions.id);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.groupByCommandOptions.name);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER.key(), individualsCommandOptions.groupByCommandOptions.fatherId);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER.key(), individualsCommandOptions.groupByCommandOptions.motherId);
-        params.put(IndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.groupByCommandOptions.sex);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.groupByCommandOptions.ethnicity);
-        // TODO: Remove this deprecated parameters in future release
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
-                individualsCommandOptions.groupByCommandOptions.population);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
-                individualsCommandOptions.groupByCommandOptions.populationName);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(),
-                individualsCommandOptions.groupByCommandOptions.populationDescription);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key(),
-                individualsCommandOptions.groupByCommandOptions.populationSubpopulation);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(),
-                individualsCommandOptions.groupByCommandOptions.karyotypicSex);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
-                individualsCommandOptions.groupByCommandOptions.lifeStatus);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(),
-                individualsCommandOptions.groupByCommandOptions.affectationStatus);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
-                individualsCommandOptions.groupByCommandOptions.variableSetId);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ANNOTATION.key(),
-                individualsCommandOptions.groupByCommandOptions.annotation);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
-                individualsCommandOptions.groupByCommandOptions.annotationSetName);
-
-        return openCGAClient.getIndividualClient().groupBy(
-                individualsCommandOptions.groupByCommandOptions.study, individualsCommandOptions.groupByCommandOptions.fields, params);
-    }
-
-    private RestResponse<Sample> getSamples() throws CatalogException, IOException {
+    private RestResponse<Sample> getSamples() throws ClientException {
         logger.debug("Getting samples of individual(s)");
 
-        Query query = new Query();
-        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(individualsCommandOptions.sampleCommandOptions.study));
-        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), individualsCommandOptions.sampleCommandOptions.individual);
+        IndividualCommandOptions.SampleCommandOptions commandOptions = individualsCommandOptions.sampleCommandOptions;
 
-        QueryOptions options = new QueryOptions();
-        options.putIfNotNull(QueryOptions.INCLUDE, individualsCommandOptions.sampleCommandOptions.dataModelOptions.include);
-        options.putIfNotNull(QueryOptions.EXCLUDE, individualsCommandOptions.sampleCommandOptions.dataModelOptions.exclude);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
+        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_UID.key(), commandOptions.individual);
 
-        return openCGAClient.getSampleClient().search(query, options);
+        params.putIfNotNull(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
+        params.putIfNotNull(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.exclude);
+
+        return openCGAClient.getSampleClient().search(params);
     }
 
-    private RestResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
+    private RestResponse<ObjectMap> updateAcl() throws CatalogException, ClientException {
         IndividualCommandOptions.IndividualAclCommandOptions.AclsUpdateCommandOptions commandOptions =
                 individualsCommandOptions.aclsUpdateCommandOptions;
 
-        ObjectMap queryParams = new ObjectMap();
-        queryParams.putIfNotNull("study", commandOptions.study);
+        IndividualAclUpdateParams updateParams = new IndividualAclUpdateParams()
+                .setIndividual(extractIdsFromListOrFile(commandOptions.id))
+                .setSample(extractIdsFromListOrFile(commandOptions.sample))
+                .setPermissions(commandOptions.permissions)
+                .setAction(commandOptions.action)
+                .setPropagate(commandOptions.propagate);
 
-        ObjectMap bodyParams = new ObjectMap();
-        bodyParams.putIfNotNull("permissions", commandOptions.permissions);
-        bodyParams.putIfNotNull("action", commandOptions.action);
-        bodyParams.putIfNotNull("propagate", commandOptions.propagate);
-        bodyParams.putIfNotNull("individual", extractIdsFromListOrFile(commandOptions.id));
-        bodyParams.putIfNotNull("sample", extractIdsFromListOrFile(commandOptions.sample));
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull("study", commandOptions.study);
 
-        return openCGAClient.getIndividualClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
+        return openCGAClient.getIndividualClient().updateAcl(commandOptions.memberId, updateParams, params);
     }
 
-    private RestResponse stats() throws IOException {
+    private RestResponse<FacetField> stats() throws ClientException {
         logger.debug("Individual stats");
 
         IndividualCommandOptions.StatsCommandOptions commandOptions = individualsCommandOptions.statsCommandOptions;
 
-        Query query = new Query();
-        query.putIfNotEmpty("creationYear", commandOptions.creationYear);
-        query.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
-        query.putIfNotEmpty("creationDay", commandOptions.creationDay);
-        query.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
-        query.putIfNotEmpty("status", commandOptions.status);
-        query.putIfNotEmpty("lifeStatus", commandOptions.lifeStatus);
-        query.putIfNotEmpty("affectationStatus", commandOptions.affectationStatus);
-        query.putIfNotEmpty("numSamples", commandOptions.numSamples);
-        query.putIfNotEmpty("numMultiples", commandOptions.numMultiples);
-        query.putIfNotEmpty("multiplesType", commandOptions.multiplesType);
-        query.putIfNotEmpty("sex", commandOptions.sex);
-        query.putIfNotEmpty("karyotypicSex", commandOptions.karyotypicSex);
-        query.putIfNotEmpty("ethnicity", commandOptions.ethnicity);
-        query.putIfNotEmpty("population", commandOptions.population);
-        query.putIfNotEmpty("phenotypes", commandOptions.phenotypes);
-        query.putIfNotEmpty("release", commandOptions.release);
-        query.putIfNotEmpty("version", commandOptions.version);
-        query.putIfNotNull("hasFather", commandOptions.hasFather);
-        query.putIfNotNull("hasMother", commandOptions.hasMother);
-        query.putIfNotNull("parentalConsanguinity", commandOptions.parentalConsanguinity);
-        query.putIfNotEmpty(Constants.ANNOTATION, commandOptions.annotation);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
+        params.putIfNotEmpty("creationYear", commandOptions.creationYear);
+        params.putIfNotEmpty("creationMonth", commandOptions.creationMonth);
+        params.putIfNotEmpty("creationDay", commandOptions.creationDay);
+        params.putIfNotEmpty("creationDayOfWeek", commandOptions.creationDayOfWeek);
+        params.putIfNotEmpty("status", commandOptions.status);
+        params.putIfNotEmpty("lifeStatus", commandOptions.lifeStatus);
+        params.putIfNotEmpty("affectationStatus", commandOptions.affectationStatus);
+        params.putIfNotEmpty("numSamples", commandOptions.numSamples);
+        params.putIfNotEmpty("numMultiples", commandOptions.numMultiples);
+        params.putIfNotEmpty("multiplesType", commandOptions.multiplesType);
+        params.putIfNotEmpty("sex", commandOptions.sex);
+        params.putIfNotEmpty("karyotypicSex", commandOptions.karyotypicSex);
+        params.putIfNotEmpty("ethnicity", commandOptions.ethnicity);
+        params.putIfNotEmpty("population", commandOptions.population);
+        params.putIfNotEmpty("phenotypes", commandOptions.phenotypes);
+        params.putIfNotEmpty("release", commandOptions.release);
+        params.putIfNotEmpty("version", commandOptions.version);
+        params.putIfNotNull("hasFather", commandOptions.hasFather);
+        params.putIfNotNull("hasMother", commandOptions.hasMother);
+        params.putIfNotNull("parentalConsanguinity", commandOptions.parentalConsanguinity);
+        params.putIfNotEmpty(Constants.ANNOTATION, commandOptions.annotation);
 
-        QueryOptions options = new QueryOptions();
-        options.put("default", commandOptions.defaultStats);
-        options.putIfNotNull("field", commandOptions.field);
+        params.put("default", commandOptions.defaultStats);
+        params.putIfNotNull("field", commandOptions.field);
 
-        return openCGAClient.getIndividualClient().stats(commandOptions.study, query, options);
+        return openCGAClient.getIndividualClient().aggregationStats(params);
     }
+
+    private RestResponse<Individual> updateAnnotations() throws ClientException, IOException {
+        AnnotationCommandOptions.AnnotationSetsUpdateCommandOptions commandOptions =
+                individualsCommandOptions.annotationUpdateCommandOptions;
+
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectMap annotations = mapper.readValue(new File(commandOptions.annotations), ObjectMap.class);
+
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty("study", commandOptions.study);
+//        queryParams.putIfNotNull("action", updateCommandOptions.action);
+
+        return openCGAClient.getIndividualClient().updateAnnotations(commandOptions.id, commandOptions.annotationSetId, annotations,
+                params);
+    }
+
+    private RestResponse<ObjectMap> acl() throws ClientException {
+        AclCommandOptions.AclsCommandOptions commandOptions = individualsCommandOptions.aclsCommandOptions;
+
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty("study", commandOptions.study);
+        params.putIfNotEmpty("member", commandOptions.memberId);
+
+        params.putAll(commandOptions.commonOptions.params);
+
+        return openCGAClient.getIndividualClient().acl(commandOptions.id, params);
+    }
+
 
 }

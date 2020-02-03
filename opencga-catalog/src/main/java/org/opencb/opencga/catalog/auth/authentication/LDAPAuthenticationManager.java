@@ -20,8 +20,8 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
-import org.opencb.opencga.core.models.Account;
-import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -147,7 +147,7 @@ public class LDAPAuthenticationManager extends AuthenticationManager {
             attributes.put("LDAP_RDN", rdn);
             User user = new User(uid, displayName, mail, "", usersSearch, new Account().setType(Account.Type.GUEST)
                     .setAuthentication(new Account.AuthenticationOrigin(originId, false)),
-                    User.UserStatus.READY, "", -1, -1, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), attributes);
+                    User.UserStatus.READY, "", -1, -1, new ArrayList<>(), new HashMap<>(), attributes);
 
             userList.add(user);
         }

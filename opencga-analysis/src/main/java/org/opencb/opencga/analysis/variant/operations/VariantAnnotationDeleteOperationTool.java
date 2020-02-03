@@ -1,7 +1,7 @@
 package org.opencb.opencga.analysis.variant.operations;
 
-import org.opencb.opencga.core.annotations.Tool;
-import org.opencb.opencga.core.api.operations.variant.VariantAnnotationDeleteParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.models.operations.variant.VariantAnnotationDeleteParams;
 import org.opencb.opencga.core.models.common.Enums;
 
 @Tool(id = VariantAnnotationDeleteOperationTool.ID, description = VariantAnnotationDeleteOperationTool.ID,

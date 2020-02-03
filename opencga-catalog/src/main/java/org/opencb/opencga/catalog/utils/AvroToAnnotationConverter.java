@@ -3,8 +3,8 @@ package org.opencb.opencga.catalog.utils;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Variable;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.study.Variable;
 
 import java.io.IOException;
 import java.util.*;
@@ -74,7 +74,7 @@ public class AvroToAnnotationConverter {
             case STRING:
             case BYTES:
             case FIXED:
-                return new Variable(field.name(), field.name(), "", Variable.VariableType.TEXT,
+                return new Variable(field.name(), field.name(), "", Variable.VariableType.STRING,
                         field.defaultValue(), defaultRequired, false, null, field.pos(), null, field.doc(), null, null);
             case INT:
             case LONG:

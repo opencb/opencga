@@ -20,10 +20,10 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Sample;
-import org.opencb.opencga.core.models.Variable;
-import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.study.VariableSet;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
@@ -84,7 +84,7 @@ public class VariableSetWSServerTest {
     @Test
     public void addFieldToVariableSet() throws Exception {
         objectMapper = new ObjectMapper();
-        Variable variable = new Variable("MY_VARIABLE", "", Variable.VariableType.TEXT, "whatever", true, false, null, 6L, "", "", null,
+        Variable variable = new Variable("MY_VARIABLE", "", Variable.VariableType.STRING, "whatever", true, false, null, 6L, "", "", null,
                 null);
         String json = webTarget.path("variableSet").path(String.valueOf(variableSetId)).path("field").path("add")
                 .queryParam("sid", sessionId).request().post(Entity.json(variable), String.class);

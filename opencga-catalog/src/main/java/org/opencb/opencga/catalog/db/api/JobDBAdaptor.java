@@ -20,9 +20,11 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.HashMap;
@@ -35,11 +37,11 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  */
 public interface JobDBAdaptor extends DBAdaptor<Job> {
 
-    default boolean exists(long jobId) throws CatalogDBException {
+    default boolean exists(long jobId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query(QueryParams.UID.key(), jobId)).getNumMatches() > 0;
     }
 
-    default void checkId(long jobId) throws CatalogDBException {
+    default void checkId(long jobId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (jobId < 0) {
             throw CatalogDBException.newInstance("Job id '{}' is not valid: ", jobId);
         }
@@ -51,22 +53,26 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
 
     OpenCGAResult nativeInsert(Map<String, Object> job, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Job job, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(long studyId, Job job, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     default OpenCGAResult restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         //return updateStatus(query, new Job.JobStatus(Job.JobStatus.PREPARED));
         throw new CatalogDBException("Non implemented action.");
     }
 
-    default OpenCGAResult setStatus(long jobId, String status) throws CatalogDBException {
+    default OpenCGAResult setStatus(long jobId, String status)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return update(jobId, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
-    default OpenCGAResult setStatus(Query query, String status) throws CatalogDBException {
+    default OpenCGAResult setStatus(Query query, String status)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
-    default OpenCGAResult<Job> get(long jobId, QueryOptions options) throws CatalogDBException {
+    default OpenCGAResult<Job> get(long jobId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query(QueryParams.UID.key(), jobId);
         OpenCGAResult<Job> jobDataResult = get(query, options);
         if (jobDataResult == null || jobDataResult.getResults().size() == 0) {
@@ -75,11 +81,12 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         return jobDataResult;
     }
 
-    OpenCGAResult<Job> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Job> getAllInStudy(long studyId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     String getStatus(long jobId, String sessionId) throws CatalogDBException;
 
-    long getStudyId(long jobId) throws CatalogDBException;
+    long getStudyId(long jobId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to
@@ -96,7 +103,6 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         ID("id", TEXT, ""),
         UID("uid", LONG, ""),
         UUID("uuid", TEXT, ""),
-        NAME("name", TEXT, ""),
         USER_ID("userId", TEXT, ""),
         COMMAND_LINE("commandLine", TEXT, ""),
         PARAMS("params", MAP, ""),
@@ -113,6 +119,7 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
 
         INPUT("input", OBJECT, ""),
         OUTPUT("output", OBJECT, ""),
+        DEPENDS_ON("dependsOn", TEXT_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
 
         EXECUTION("execution", OBJECT, ""),

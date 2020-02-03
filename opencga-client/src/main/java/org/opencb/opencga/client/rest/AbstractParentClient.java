@@ -17,6 +17,7 @@
 package org.opencb.opencga.client.rest;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -43,6 +44,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
@@ -59,8 +61,7 @@ public abstract class AbstractParentClient {
 
     protected Client client;
 
-    private String userId;
-    private String sessionId;
+    private String token;
     private ClientConfiguration configuration;
 
     protected ObjectMapper jsonObjectMapper;
@@ -75,9 +76,8 @@ public abstract class AbstractParentClient {
 
     protected Logger logger;
 
-    protected AbstractParentClient(String userId, String sessionId, ClientConfiguration configuration) {
-        this.userId = userId;
-        this.sessionId = sessionId;
+    protected AbstractParentClient(String token, ClientConfiguration configuration) {
+        this.token = token;
         this.configuration = configuration;
 
         init();
@@ -103,23 +103,23 @@ public abstract class AbstractParentClient {
     }
 
     protected <T> VariantQueryResult<T> executeVariantQuery(String category, String action, Map<String, Object> params, String method,
-                                                            Class<T> clazz) throws IOException {
+                                                            Class<T> clazz) throws ClientException {
         RestResponse<T> queryResponse = execute(category, null, action, params, method, clazz);
         return (VariantQueryResult<T>) queryResponse.first();
     }
 
     protected <T> RestResponse<T> execute(String category, String action, Map<String, Object> params, String method, Class<T> clazz)
-            throws IOException {
+            throws ClientException {
         return execute(category, null, action, params, method, clazz);
     }
 
     protected <T> RestResponse<T> execute(String category, String id, String action, Map<String, Object> params, String method,
-                                          Class<T> clazz) throws IOException {
+                                          Class<T> clazz) throws ClientException {
         return execute(category, id, null, null, action, params, method, clazz);
     }
 
     protected <T> RestResponse<T> execute(String category1, String id1, String category2, String id2, String action,
-                                          Map<String, Object> paramsMap, String method, Class<T> clazz) throws IOException {
+                                          Map<String, Object> paramsMap, String method, Class<T> clazz) throws ClientException {
         ObjectMap params;
         if (paramsMap == null) {
             params = new ObjectMap();
@@ -214,9 +214,9 @@ public abstract class AbstractParentClient {
      * @param clazz  Expected return class.
      * @param method Method by which the query will be done (GET or POST).
      * @return A queryResponse object containing the results of the query.
-     * @throws IOException if the path is wrong and cannot be converted to a proper url.
+     * @throws ClientException if the path is wrong and cannot be converted to a proper url.
      */
-    private <T> RestResponse<T> callRest(WebTarget path, Map<String, Object> params, Class clazz, String method) throws IOException {
+    private <T> RestResponse<T> callRest(WebTarget path, Map<String, Object> params, Class clazz, String method) throws ClientException {
 
         String jsonString;
         switch (method) {
@@ -236,8 +236,7 @@ public abstract class AbstractParentClient {
                 }
 
                 Invocation.Builder header = path.request()
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId);
-                logger.debug(method + " URL: {}", path.getUri().toURL());
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token);
                 if (method.equals(GET)) {
                     jsonString = header.get().readEntity(String.class);
                 } else {
@@ -254,16 +253,21 @@ public abstract class AbstractParentClient {
                     }
                 }
 
-                logger.debug("POST URL: {}", path.getUri().toURL());
-                Object paramBody = (params == null ? "" : params.get("body"));
+                Object paramBody = (params.get("body") == null ? "" : params.get("body"));
                 logger.debug("Body {}", paramBody);
                 Response body = path.request()
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)
                         .post(Entity.json(paramBody));
                 jsonString = body.readEntity(String.class);
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported REST method " + method);
+        }
+
+        try {
+            logger.debug(method + " URL: {}", path.getUri().toURL());
+        } catch (MalformedURLException e) {
+            throw new ClientException(e.getMessage(), e);
         }
         return parseResult(jsonString, clazz);
     }
@@ -289,7 +293,7 @@ public abstract class AbstractParentClient {
         }
 
         Response response = path.request()
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)
                 .get();
 
         if (response.getStatus() == Response.Status.OK.getStatusCode()) {
@@ -313,14 +317,15 @@ public abstract class AbstractParentClient {
      * @param params Params to be passed to the WS.
      * @param clazz  Expected return class.
      * @return A queryResponse object containing the results of the query.
-     * @throws IOException if the path is wrong and cannot be converted to a proper url.
+     * @throws ClientException if the path is wrong and cannot be converted to a proper url.
      */
-    private <T> RestResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class<T> clazz) throws IOException {
+    private <T> RestResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class<T> clazz) throws ClientException {
 
         String jsonString;
 
         String filePath = ((String) params.get("file"));
         params.remove("file");
+        params.remove("body");
 
         path.register(MultiPartFeature.class);
 
@@ -333,16 +338,20 @@ public abstract class AbstractParentClient {
         final FormDataMultiPart multipart = (FormDataMultiPart) formDataMultiPart.bodyPart(filePart);
 
         jsonString = path.request()
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.sessionId)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)
                 .post(Entity.entity(multipart, multipart.getMediaType()), String.class);
 
-        formDataMultiPart.close();
-        multipart.close();
+        try {
+            formDataMultiPart.close();
+            multipart.close();
+        } catch (IOException e) {
+            throw new ClientException(e.getMessage(), e);
+        }
 
         return parseResult(jsonString, clazz);
     }
 
-    private <T> RestResponse<T> parseResult(String json, Class<T> clazz) throws IOException {
+    private <T> RestResponse<T> parseResult(String json, Class<T> clazz) throws ClientException {
         if (json != null && !json.isEmpty()) {
             ObjectReader reader = jsonObjectMapper
                     .readerFor(jsonObjectMapper.getTypeFactory().constructParametrizedType(RestResponse.class, DataResult.class, clazz));
@@ -355,62 +364,22 @@ public abstract class AbstractParentClient {
                                 "The server didn't respond in time.")), null, Collections.emptyList());
                     }
                 }
-                throw e;
+                throw new ClientException(e.getMessage(), e);
+            } catch (JsonProcessingException e) {
+                throw new ClientException(e.getMessage(), e);
             }
         } else {
             return new RestResponse<>();
         }
     }
 
-    private ObjectMap createIfNull(ObjectMap objectMap) {
-        if (objectMap == null) {
-            objectMap = new ObjectMap();
-        }
-        return objectMap;
-    }
-
-    protected ObjectMap addParamsToObjectMap(ObjectMap objectMap, String key, Object value, Object... params) {
-        objectMap = createIfNull(objectMap);
-        objectMap.put(key, value);
-        if (params != null && params.length > 0) {
-            for (int i = 0; i < params.length; i += 2) {
-                objectMap.put(params[i].toString(), params[i + 1]);
-            }
-        }
-        return objectMap;
-    }
-
-    public String getSessionId() {
-        return sessionId;
-    }
-
-    public AbstractParentClient setSessionId(String sessionId) {
-        this.sessionId = sessionId;
+    public AbstractParentClient setToken(String token) {
+        this.token = token;
         return this;
-    }
-
-    public ClientConfiguration getConfiguration() {
-        return configuration;
     }
 
     public AbstractParentClient setConfiguration(ClientConfiguration configuration) {
         this.configuration = configuration;
-        return this;
-    }
-
-    public String getUserId(ObjectMap options) throws ClientException {
-        String userId = this.userId;
-        if (options != null && options.containsKey("userId")) {
-            userId = options.getString("userId");
-        }
-        if (userId == null || userId.isEmpty()) {
-            throw new ClientException("Missing user id");
-        }
-        return userId;
-    }
-
-    public AbstractParentClient setUserId(String userId) {
-        this.userId = userId;
         return this;
     }
 }

@@ -27,16 +27,16 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.api.operations.variant.VariantFileDeleteParams;
-import org.opencb.opencga.core.api.variant.*;
-import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.variant.VariantFileDeleteParams;
+import org.opencb.opencga.core.models.variant.*;
+import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.core.tools.ToolParams;
 
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -51,21 +51,21 @@ public class VariantClient extends AbstractParentClient {
         private List<DataResult<T>> response;
     }
 
-    public VariantClient(String userId, String sessionId, ClientConfiguration configuration) {
-        super(userId, sessionId, configuration);
+    public VariantClient(String sessionId, ClientConfiguration configuration) {
+        super(sessionId, configuration);
         jsonObjectMapper.addMixIn(RestResponse.class, RestResponseMixing.class);
     }
 
-    public RestResponse<Job> index(String study, VariantIndexParams body) throws IOException {
+    public RestResponse<Job> index(String study, VariantIndexParams body) throws ClientException {
         return execute(VARIANT_URL, "index", buildRestPOSTParams(null, study, body), POST, Job.class);
     }
 
     public RestResponse<Job> fileDelete(String study, VariantFileDeleteParams deleteParams)
-            throws IOException {
+            throws ClientException {
         return execute(VARIANT_URL, "file/delete", buildRestDELETEParams(null, study, deleteParams), DELETE, Job.class);
     }
 
-    public RestResponse<VariantMetadata> metadata(ObjectMap params, QueryOptions options) throws IOException {
+    public RestResponse<VariantMetadata> metadata(ObjectMap params, QueryOptions options) throws ClientException {
         if (options != null) {
             params = new ObjectMap(params);
             params.putAll(options);
@@ -73,7 +73,7 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "metadata", params, GET, VariantMetadata.class);
     }
 
-    public RestResponse<Variant> query(ObjectMap params, QueryOptions options) throws IOException {
+    public RestResponse<Variant> query(ObjectMap params, QueryOptions options) throws ClientException {
         if (options != null) {
             params = new ObjectMap(params);
             params.putAll(options);
@@ -83,7 +83,7 @@ public class VariantClient extends AbstractParentClient {
 
     public RestResponse<Job> export(String study, Query query, QueryOptions options, String outdir, String outputFileName,
                                     String outputFormat, boolean compress)
-            throws IOException {
+            throws ClientException {
         ObjectMap params = query == null ? new ObjectMap() : new ObjectMap(query);
         params.putAll(options);
         params.put("outdir", outdir);
@@ -94,7 +94,7 @@ public class VariantClient extends AbstractParentClient {
     }
 
     public RestResponse<VariantAnnotation> annotationQuery(String annotationId, ObjectMap params, QueryOptions options)
-            throws IOException {
+            throws ClientException {
         if (options != null) {
             params = new ObjectMap(params);
             params.putAll(options);
@@ -104,7 +104,7 @@ public class VariantClient extends AbstractParentClient {
     }
 
     public RestResponse<ObjectMap> annotationMetadata(String annotationId, String project, QueryOptions options)
-            throws IOException {
+            throws ClientException {
         if (options != null) {
             options = new QueryOptions(options);
         } else {
@@ -115,7 +115,7 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "annotation/metadata", options, GET, ObjectMap.class);
     }
 
-    public VariantQueryResult<Variant> query2(ObjectMap params, QueryOptions options) throws IOException {
+    public VariantQueryResult<Variant> query2(ObjectMap params, QueryOptions options) throws ClientException {
         if (options != null) {
             params = new ObjectMap(params);
             params.putAll(options);
@@ -123,34 +123,34 @@ public class VariantClient extends AbstractParentClient {
         return executeVariantQuery(VARIANT_URL, "query", params, GET, Variant.class);
     }
 
-//    public VariantQueryResult<Variant> queryResult(ObjectMap params, QueryOptions options) throws CatalogException, IOException {
+//    public VariantQueryResult<Variant> queryResult(ObjectMap params, QueryOptions options) throws CatalogException, ClientException {
 //        return ((VariantQueryResult<Variant>) query(params, options).getResponse().get(0));
 //    }
 
-    public RestResponse<Long> count(ObjectMap params, QueryOptions options) throws IOException {
+    public RestResponse<Long> count(ObjectMap params, QueryOptions options) throws ClientException {
         if (options != null) {
             params.putAll(options);
         }
         return execute(VARIANT_URL, "query", params, GET, Long.class);
     }
 
-    public RestResponse<ObjectMap> genericQuery(ObjectMap params, QueryOptions options) throws IOException {
+    public RestResponse<ObjectMap> genericQuery(ObjectMap params, QueryOptions options) throws ClientException {
         if (options != null) {
             params.putAll(options);
         }
         return execute(VARIANT_URL, "query", params, GET, ObjectMap.class);
     }
 
-    public RestResponse<Job> statsRun(String study, VariantStatsAnalysisParams body) throws IOException {
+    public RestResponse<Job> statsRun(String study, VariantStatsAnalysisParams body) throws ClientException {
         return execute(VARIANT_URL, "/stats/run", buildRestPOSTParams(null, study, body), POST, Job.class);
     }
 
-    public RestResponse<Job> sampleRun(String study, SampleVariantFilterParams body) throws IOException {
+    public RestResponse<Job> sampleRun(String study, SampleVariantFilterParams body) throws ClientException {
         return execute(VARIANT_URL, "/sample/run", buildRestPOSTParams(null, study, body), POST, Job.class);
     }
 
     public RestResponse<Variant> sampleQuery(String variant, String study, List<String> genotype, int limit, int skip, QueryOptions options)
-            throws IOException {
+            throws ClientException {
         if (options == null) {
             options = new QueryOptions();
         } else {
@@ -164,47 +164,56 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "/sample/query", options, GET, Variant.class);
     }
 
-    public RestResponse<Job> sampleStatsRun(String study, SampleVariantStatsAnalysisParams body) throws IOException {
+    public RestResponse<Job> sampleStatsRun(String study, SampleVariantStatsAnalysisParams body) throws ClientException {
         return execute(VARIANT_URL, "/sample/stats/run", buildRestPOSTParams(null, study, body), POST, Job.class);
     }
 
-    public RestResponse<SampleVariantStats> sampleStatsInfo(String study, List<String> sample) throws IOException {
+    public RestResponse<SampleVariantStats> sampleStatsInfo(String study, List<String> sample) throws ClientException {
         ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study)
                 .append("sample", String.join(",", sample));
         return execute(VARIANT_URL, "/sample/stats/info", params, GET, SampleVariantStats.class);
     }
 
-    public RestResponse<Job> cohortStatsRun(String study, CohortVariantStatsAnalysisParams body) throws IOException {
+    public RestResponse<Job> cohortStatsRun(String study, CohortVariantStatsAnalysisParams body) throws ClientException {
         return execute(VARIANT_URL, "/cohort/stats/run", buildRestPOSTParams(null, study, body), POST, Job.class);
     }
 
-    public RestResponse<VariantSetStats> cohortStatsInfo(String study, List<String> cohort) throws IOException {
+    public RestResponse<VariantSetStats> cohortStatsInfo(String study, List<String> cohort) throws ClientException {
         ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study)
                 .append("cohort", String.join(",", cohort));
         return execute(VARIANT_URL, "/cohort/stats/info", params, GET, VariantSetStats.class);
     }
 
-    public RestResponse<Job> gwasRun(String study, GwasAnalysisParams body) throws IOException {
+    public RestResponse<Job> gwasRun(String study, GwasAnalysisParams body) throws ClientException {
         return execute(VARIANT_URL, "/gwas/run", buildRestPOSTParams(null, study, body), POST, Job.class);
     }
 
-//    public RestResponse<Job> hwRun(ObjectMap params) throws IOException {
+    public RestResponse<Job> knockoutRun(String study, KnockoutAnalysisParams body) throws ClientException {
+        return execute(VARIANT_URL, "/knockout/run", buildRestPOSTParams(null, study, body), POST, Job.class);
+    }
 //        return execute(VARIANT_URL, "/hw/run", new ObjectMap("body", params), POST, Job.class);
 //    }
 
-//    public RestResponse<Job> ibsRun(ObjectMap params) throws IOException {
+//    public RestResponse<Job> ibsRun(ObjectMap params) throws ClientException {
 //        return execute(VARIANT_URL, "/ibs/run", new ObjectMap("body", params), POST, Job.class);
 //    }
 
+    public RestResponse<Job> mutationalSignatureRun(String study, MutationalSignatureAnalysisParams body) throws ClientException {
+        return execute(VARIANT_URL, "/mutationalSignature/run", buildRestPOSTParams(null, study, body), POST, Job.class);
+    }
 
     // Wrappers
 
-    public RestResponse<Job> plinkRun(String study, PlinkRunParams body) throws IOException {
+    public RestResponse<Job> plinkRun(String study, PlinkRunParams body) throws ClientException {
         return execute(VARIANT_URL, "/plink/run", buildRestPOSTParams(null, study, body), POST, Job.class);
     }
 
-    public RestResponse<Job> rvtestsRun(String study, RvtestsRunParams body) throws IOException {
+    public RestResponse<Job> rvtestsRun(String study, RvtestsRunParams body) throws ClientException {
         return execute(VARIANT_URL, "/rvtests/run", buildRestPOSTParams(null, study, body), POST, Job.class);
+    }
+
+    public RestResponse<Job> gatkRun(String study, GatkRunParams body) throws ClientException {
+        return execute(VARIANT_URL, "/gatk/run", buildRestPOSTParams(null, study, body), POST, Job.class);
     }
 
     private ObjectMap buildRestDELETEParams(String project, String study, ToolParams deleteParams) {

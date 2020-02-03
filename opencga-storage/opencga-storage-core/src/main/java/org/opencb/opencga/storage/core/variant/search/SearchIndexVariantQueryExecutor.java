@@ -14,7 +14,7 @@ import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchSolrIterator;
+import org.opencb.opencga.storage.core.variant.search.solr.SolrNativeIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,9 +86,9 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
         } else {
             // Intersect Solr+Engine
 
-            int limit = options.getInt(QueryOptions.LIMIT, 0);
+            int limit = options.getInt(QueryOptions.LIMIT, Integer.MAX_VALUE);
             int skip = options.getInt(QueryOptions.SKIP, 0);
-            boolean pagination = skip > 0 || limit > 0;
+            boolean pagination = !iterator || skip > 0;
 
             Iterator<?> variantsIterator;
             Number numTotalResults = null;
@@ -106,10 +106,10 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                     searchCount = new AtomicLong();
                     numTotalResults = searchCount;
                     // Skip count in storage. We already know the numTotalResults
-                    options.put(QueryOptions.SKIP_COUNT, true);
+                    options.put(QueryOptions.COUNT, false);
                     approxCount = false;
-                } else if (options.getBoolean(APPROXIMATE_COUNT.key(), APPROXIMATE_COUNT.defaultValue())) {
-                    options.put(QueryOptions.SKIP_COUNT, true);
+                } else if (options.getBoolean(APPROXIMATE_COUNT.key()) || options.getBoolean(QueryOptions.COUNT)) {
+                    options.put(QueryOptions.COUNT, false);
                     VariantQueryResult<Long> result = approximateCount(query, options);
                     numTotalResults = result.first();
                     approxCount = result.getApproximateCount();
@@ -144,7 +144,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                 if (numTotalResults != null) {
                     queryResult.setApproximateCount(approxCount);
                     queryResult.setApproximateCountSamplingSize(approxCountSamplingSize);
-                    queryResult.setNumTotalResults(numTotalResults.longValue());
+                    queryResult.setNumMatches(numTotalResults.longValue());
                 }
                 queryResult.setSource(SEARCH_ENGINE_ID + '+' + getStorageEngineId());
                 return queryResult;
@@ -284,7 +284,7 @@ public class SearchIndexVariantQueryExecutor extends AbstractSearchIndexVariantQ
                         .map(VariantSearchModel::getId)
                         .iterator();
             } else {
-                VariantSearchSolrIterator nativeIterator = searchManager.nativeIterator(dbName, query, queryOptions);
+                SolrNativeIterator nativeIterator = searchManager.nativeIterator(dbName, query, queryOptions);
                 if (numTotalResults != null) {
                     numTotalResults.set(nativeIterator.getNumFound());
                 }

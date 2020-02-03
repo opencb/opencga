@@ -28,7 +28,7 @@ import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
-import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.user.User;
 
 import java.io.IOException;
 import java.util.Arrays;

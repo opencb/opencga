@@ -19,10 +19,12 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.Cohort;
-import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.HashMap;
@@ -115,11 +117,11 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
         }
     }
 
-    default boolean exists(long cohortId) throws CatalogDBException {
+    default boolean exists(long cohortId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query(QueryParams.UID.key(), cohortId)).getNumMatches() > 0;
     }
 
-    default void checkId(long cohortId) throws CatalogDBException {
+    default void checkId(long cohortId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (cohortId < 0) {
             throw CatalogDBException.newInstance("Cohort id '{}' is not valid: ", cohortId);
         }
@@ -131,13 +133,16 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort> {
 
     OpenCGAResult nativeInsert(Map<String, Object> cohort, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(long studyId, Cohort cohort, List<VariableSet> variableSetList, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<Cohort> get(long cohortId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Cohort> get(long cohortId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<Cohort> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Cohort> getAllInStudy(long studyId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    long getStudyId(long cohortId) throws CatalogDBException;
+    long getStudyId(long cohortId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to

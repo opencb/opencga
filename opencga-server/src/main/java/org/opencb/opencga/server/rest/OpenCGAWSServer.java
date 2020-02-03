@@ -44,8 +44,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.acls.AclParams;
+import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -430,39 +429,6 @@ public class OpenCGAWSServer {
         }
     }
 
-    // Temporal method used by deprecated methods. This will be removed at some point.
-    protected AclParams getAclParams(
-            @ApiParam(value = "Comma separated list of permissions to add") @QueryParam("add") String addPermissions,
-            @ApiParam(value = "Comma separated list of permissions to remove") @QueryParam("remove") String removePermissions,
-            @ApiParam(value = "Comma separated list of permissions to set") @QueryParam("set") String setPermissions)
-            throws CatalogException {
-        int count = 0;
-        count += StringUtils.isNotEmpty(setPermissions) ? 1 : 0;
-        count += StringUtils.isNotEmpty(addPermissions) ? 1 : 0;
-        count += StringUtils.isNotEmpty(removePermissions) ? 1 : 0;
-        if (count > 1) {
-            throw new CatalogException("Only one of add, remove or set parameters are allowed.");
-        } else if (count == 0) {
-            throw new CatalogException("One of add, remove or set parameters is expected.");
-        }
-
-        String permissions = null;
-        AclParams.Action action = null;
-        if (StringUtils.isNotEmpty(addPermissions)) {
-            permissions = addPermissions;
-            action = AclParams.Action.ADD;
-        }
-        if (StringUtils.isNotEmpty(setPermissions)) {
-            permissions = setPermissions;
-            action = AclParams.Action.SET;
-        }
-        if (StringUtils.isNotEmpty(removePermissions)) {
-            permissions = removePermissions;
-            action = AclParams.Action.REMOVE;
-        }
-        return new AclParams(permissions, action);
-    }
-
     protected Response createErrorResponse(Throwable e) {
         // First we print the exception in Server logs
         logger.error("Catch error: " + e.getMessage(), e);
@@ -723,26 +689,32 @@ public class OpenCGAWSServer {
         }
     }
 
-    public Response submitJob(String toolId, String study, ToolParams bodyParams, String jobName, String jobDescription,
-                              String jobTagsStr) {
+    public Response submitJob(String toolId, String study, ToolParams bodyParams, String jobId, String jobDescription,
+                              String jobDependsOnStr, String jobTagsStr) {
         return run(() -> {
             List<String> jobTags;
             if (StringUtils.isNotEmpty(jobTagsStr)) {
                 jobTags = Arrays.asList(jobTagsStr.split(","));
             } else {
                 jobTags = Collections.emptyList();
+            }
+            List<String> jobDependsOn;
+            if (StringUtils.isNotEmpty(jobDependsOnStr)) {
+                jobDependsOn = Arrays.asList(jobDependsOnStr.split(","));
+            } else {
+                jobDependsOn = Collections.emptyList();
             }
             Map<String, Object> paramsMap = bodyParams.toParams();
             if (StringUtils.isNotEmpty(study)) {
                 paramsMap.putIfAbsent(ParamConstants.STUDY_PARAM, study);
             }
             return catalogManager.getJobManager()
-                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, null, jobName, jobDescription, jobTags, token);
+                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, token);
         });
     }
 
-    public Response submitJob(String toolId, String study, Map<String, Object> paramsMap, String jobName,
-                              String jobDescription, String jobTagsStr) {
+    public Response submitJob(String toolId, String study, Map<String, Object> paramsMap, String jobId, String jobDescription,
+                              String jobDependsOnStr, String jobTagsStr) {
         return run(() -> {
             List<String> jobTags;
             if (StringUtils.isNotEmpty(jobTagsStr)) {
@@ -750,8 +722,14 @@ public class OpenCGAWSServer {
             } else {
                 jobTags = Collections.emptyList();
             }
+            List<String> jobDependsOn;
+            if (StringUtils.isNotEmpty(jobDependsOnStr)) {
+                jobDependsOn = Arrays.asList(jobDependsOnStr.split(","));
+            } else {
+                jobDependsOn = Collections.emptyList();
+            }
             return catalogManager.getJobManager()
-                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, null, jobName, jobDescription, jobTags, token);
+                    .submit(study, toolId, Enums.Priority.MEDIUM, paramsMap, jobId, jobDescription, jobDependsOn, jobTags, token);
         });
 
     }

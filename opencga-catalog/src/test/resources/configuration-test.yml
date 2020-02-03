@@ -52,7 +52,7 @@ catalog:
     user: ""
     password: ""
     options:
-      mode: "cloud"
+      mode: "core"
       timeout: 30000
       insertBatchSize: 2000
 

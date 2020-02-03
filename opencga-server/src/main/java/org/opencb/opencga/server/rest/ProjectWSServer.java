@@ -24,13 +24,16 @@ import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.core.models.Project;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.exceptions.VersionException;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.project.ProjectCreateParams;
+import org.opencb.opencga.core.models.project.ProjectUpdateParams;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
 import java.util.HashMap;
@@ -42,7 +45,7 @@ import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 @Path("/{apiVersion}/projects")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Projects", position = 2, description = "Methods for working with 'projects' endpoint")
+@Api(value = "Projects", description = "Methods for working with 'projects' endpoint")
 public class ProjectWSServer extends OpenCGAWSServer {
 
     public ProjectWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest, @Context HttpHeaders httpHeaders) throws IOException, VersionException {
@@ -56,14 +59,14 @@ public class ProjectWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(project, new ProjectCreateParams());
 
-            String projectId = StringUtils.isEmpty(project.id) ? project.alias : project.id;
+            String projectId = StringUtils.isEmpty(project.getId()) ? project.getAlias() : project.getId();
 
-            DataResult queryResult = catalogManager.getProjectManager()
-                    .create(projectId, project.name, project.description, project.organization,
-                            project.organism != null ? project.organism.getScientificName() : null,
-                            project.organism != null ? project.organism.getCommonName() : null,
-                            project.organism != null ? Integer.toString(project.organism.getTaxonomyCode()) : null,
-                            project.organism != null ? project.organism.getAssembly() : null, queryOptions, token);
+            OpenCGAResult<Project> queryResult = catalogManager.getProjectManager()
+                    .create(projectId, project.getName(), project.getDescription(), project.getOrganization(),
+                            project.getOrganism() != null ? project.getOrganism().getScientificName() : null,
+                            project.getOrganism() != null ? project.getOrganism().getCommonName() : null,
+                            project.getOrganism() != null ? Integer.toString(project.getOrganism().getTaxonomyCode()) : null,
+                            project.getOrganism() != null ? project.getOrganism().getAssembly() : null, queryOptions, token);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -93,7 +96,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "Search projects", response = Project[].class)
+    @ApiOperation(value = "Search projects", response = Project.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
                     dataType = "string", paramType = "query"),
@@ -131,40 +134,8 @@ public class ProjectWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{projects}/stats")
-    @ApiOperation(value = "Fetch catalog project stats", position = 15, hidden = true, response = QueryResponse.class)
-    public Response getStats(
-            @ApiParam(value = ParamConstants.PROJECTS_DESCRIPTION, required = true) @PathParam("projects") String projects,
-            @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
-            @ApiParam(value = "List of file fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("fileFields") String fileFields,
-            @ApiParam(value = "List of individual fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("individualFields") String individualFields,
-            @ApiParam(value = "List of family fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("familyFields") String familyFields,
-            @ApiParam(value = "List of sample fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("sampleFields") String sampleFields,
-            @ApiParam(value = "List of cohort fields separated by semicolons, e.g.: studies;type. For nested fields use >>, e.g.: "
-                    + "studies>>biotype;type") @QueryParam("cohortFields") String cohortFields) {
-        try {
-            if (defaultStats == null) {
-                defaultStats = true;
-            }
-            List<String> idList = getIdList(projects);
-            Map<String, Object> result = new HashMap<>();
-            for (String project : idList) {
-                result.put(project, catalogManager.getProjectManager().facet(project, fileFields, sampleFields, individualFields,
-                        cohortFields, familyFields, defaultStats, token));
-            }
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
     @Path("/{projects}/aggregationStats")
-    @ApiOperation(value = "Fetch catalog project stats", position = 15, response = QueryResponse.class)
+    @ApiOperation(value = "Fetch catalog project stats", response = FacetField.class)
     public Response getAggregationStats(
             @ApiParam(value = ParamConstants.PROJECTS_DESCRIPTION, required = true) @PathParam("projects") String projects,
             @ApiParam(value = "Calculate default stats", defaultValue = "true") @QueryParam("default") Boolean defaultStats,
@@ -210,7 +181,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{project}/studies")
-    @ApiOperation(value = "Fetch all the studies contained in the project", response = Study[].class)
+    @ApiOperation(value = "Fetch all the studies contained in the project", response = Study.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.INCLUDE, value = ParamConstants.INCLUDE_DESCRIPTION,
                     dataType = "string", paramType = "query"),
@@ -232,26 +203,27 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @Path("/{project}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some project attributes", response = Project.class)
-    public Response updateByPost(@ApiParam(value = ParamConstants.PROJECT_DESCRIPTION, required = true) @PathParam(ParamConstants.PROJECT_PARAM) String projectStr,
-                                 @ApiParam(value = "JSON containing the params to be updated. It will be only possible to update organism "
+    public Response updateByPost(
+            @ApiParam(value = ParamConstants.PROJECT_DESCRIPTION, required = true) @PathParam(ParamConstants.PROJECT_PARAM) String projectStr,
+            @ApiParam(value = "JSON containing the params to be updated. It will be only possible to update organism "
                                          + "fields not previously defined.", required = true) ProjectUpdateParams updateParams) {
         try {
             ObjectUtils.defaultIfNull(updateParams, new ProjectUpdateParams());
 
             ParamUtils.checkIsSingleID(projectStr);
             ObjectMap params = new ObjectMap(getUpdateObjectMapper().writeValueAsString(updateParams));
-            if (updateParams.organism != null) {
-                if (StringUtils.isNotEmpty(updateParams.organism.getAssembly())) {
-                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), updateParams.organism.getAssembly());
+            if (updateParams.getOrganism() != null) {
+                if (StringUtils.isNotEmpty(updateParams.getOrganism().getAssembly())) {
+                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), updateParams.getOrganism().getAssembly());
                 }
-                if (StringUtils.isNotEmpty(updateParams.organism.getCommonName())) {
-                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), updateParams.organism.getCommonName());
+                if (StringUtils.isNotEmpty(updateParams.getOrganism().getCommonName())) {
+                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), updateParams.getOrganism().getCommonName());
                 }
-                if (StringUtils.isNotEmpty(updateParams.organism.getScientificName())) {
-                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(), updateParams.organism.getScientificName());
+                if (StringUtils.isNotEmpty(updateParams.getOrganism().getScientificName())) {
+                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(), updateParams.getOrganism().getScientificName());
                 }
-                if (updateParams.organism.getTaxonomyCode() > 0) {
-                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), updateParams.organism.getTaxonomyCode());
+                if (updateParams.getOrganism().getTaxonomyCode() > 0) {
+                    params.append(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), updateParams.getOrganism().getTaxonomyCode());
                 }
                 params.remove("organism");
             }
@@ -261,23 +233,6 @@ public class ProjectWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-    }
-
-    protected static class ProjectParams {
-        public String name;
-        public String description;
-        public String organization;
-        public Project.Organism organism;
-    }
-
-    protected static class ProjectCreateParams extends ProjectParams {
-        public String id;
-        @Deprecated
-        public String alias;
-    }
-
-    protected static class ProjectUpdateParams extends ProjectParams {
-        public Map<String, Object> attributes;
     }
 
 }

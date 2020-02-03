@@ -18,18 +18,16 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.PanelCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.Panel;
+import org.opencb.opencga.client.exceptions.ClientException;
+import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.panel.PanelAclUpdateParams;
 import org.opencb.opencga.core.response.RestResponse;
-
-import java.io.IOException;
 
 /**
  * Created by sgallego on 6/15/16.
@@ -37,12 +35,10 @@ import java.io.IOException;
 public class PanelCommandExecutor extends OpencgaCommandExecutor {
 
     private PanelCommandOptions panelsCommandOptions;
-    private AclCommandExecutor<Panel> aclCommandExecutor;
 
     public PanelCommandExecutor(PanelCommandOptions panelsCommandOptions) {
         super(panelsCommandOptions.commonCommandOptions);
         this.panelsCommandOptions = panelsCommandOptions;
-        this.aclCommandExecutor = new AclCommandExecutor<>();
     }
 
 
@@ -63,7 +59,7 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = search();
                 break;
             case "acl":
-                queryResponse = aclCommandExecutor.acls(panelsCommandOptions.aclsCommandOptions, openCGAClient.getPanelClient());
+                queryResponse = acl();
                 break;
             case "acl-update":
                 queryResponse = updateAcl();
@@ -91,59 +87,71 @@ public class PanelCommandExecutor extends OpencgaCommandExecutor {
 //        return openCGAClient.getPanelClient().create(resolveStudy(panelsCommandOptions.createCommandOptions.studyId), name, disease, params);
 //    }
 
-    private RestResponse<Panel> info() throws CatalogException, IOException  {
+    private RestResponse<Panel> info() throws ClientException {
         logger.debug("Getting panel information");
 
+        PanelCommandOptions.InfoCommandOptions c = panelsCommandOptions.infoCommandOptions;
+
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull("study", resolveStudy(panelsCommandOptions.infoCommandOptions.study));
-        params.putIfNotEmpty(QueryOptions.INCLUDE, panelsCommandOptions.infoCommandOptions.dataModelOptions.include);
-        params.putIfNotEmpty(QueryOptions.EXCLUDE, panelsCommandOptions.infoCommandOptions.dataModelOptions.exclude);
-        return openCGAClient.getPanelClient().get(panelsCommandOptions.infoCommandOptions.id, params);
+        params.putIfNotNull("study", resolveStudy(c.study));
+        params.putIfNotEmpty(QueryOptions.INCLUDE, c.dataModelOptions.include);
+        params.putIfNotEmpty(QueryOptions.EXCLUDE, c.dataModelOptions.exclude);
+        return openCGAClient.getPanelClient().info(c.id, params);
     }
 
-    private RestResponse<Panel> search() throws CatalogException, IOException  {
+    private RestResponse<Panel> search() throws ClientException  {
         logger.debug("Searching panels");
 
-        Query query = new Query();
-        query.putIfNotNull("study", resolveStudy(panelsCommandOptions.searchCommandOptions.study));
-        query.putIfNotNull(PanelDBAdaptor.QueryParams.NAME.key(), panelsCommandOptions.searchCommandOptions.name);
-        query.putIfNotNull(PanelDBAdaptor.QueryParams.PHENOTYPES.key(), panelsCommandOptions.searchCommandOptions.phenotypes);
-        query.putIfNotNull(PanelDBAdaptor.QueryParams.VARIANTS.key(), panelsCommandOptions.searchCommandOptions.variants);
-        query.putIfNotNull(PanelDBAdaptor.QueryParams.REGIONS.key(), panelsCommandOptions.searchCommandOptions.regions);
-        query.putIfNotNull(PanelDBAdaptor.QueryParams.GENES.key(), panelsCommandOptions.searchCommandOptions.genes);
-        query.putIfNotNull(PanelDBAdaptor.QueryParams.DESCRIPTION.key(), panelsCommandOptions.searchCommandOptions.description);
-        query.putIfNotNull(PanelDBAdaptor.QueryParams.AUTHOR.key(), panelsCommandOptions.searchCommandOptions.author);
-        query.putIfNotNull(PanelDBAdaptor.QueryParams.TAGS.key(), panelsCommandOptions.searchCommandOptions.tags);
-        query.putIfNotNull(PanelDBAdaptor.QueryParams.CATEGORIES.key(), panelsCommandOptions.searchCommandOptions.categories);
-        query.putIfNotNull(PanelDBAdaptor.QueryParams.CREATION_DATE.key(), panelsCommandOptions.searchCommandOptions.creationDate);
-        query.putIfNotNull(PanelDBAdaptor.QueryParams.RELEASE.key(), panelsCommandOptions.searchCommandOptions.release);
-        query.putIfNotNull(PanelDBAdaptor.QueryParams.SNAPSHOT.key(), panelsCommandOptions.searchCommandOptions.snapshot);
+        PanelCommandOptions.SearchCommandOptions c = panelsCommandOptions.searchCommandOptions;
 
-        if (panelsCommandOptions.searchCommandOptions.numericOptions.count) {
-            return openCGAClient.getPanelClient().count(query);
-        } else {
-            QueryOptions queryOptions = new QueryOptions();
-            queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, panelsCommandOptions.searchCommandOptions.dataModelOptions.include);
-            queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, panelsCommandOptions.searchCommandOptions.dataModelOptions.exclude);
-            queryOptions.put(QueryOptions.LIMIT, panelsCommandOptions.searchCommandOptions.numericOptions.limit);
-            queryOptions.put(QueryOptions.SKIP, panelsCommandOptions.searchCommandOptions.numericOptions.skip);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull("study", resolveStudy(c.study));
+        params.putIfNotNull(PanelDBAdaptor.QueryParams.NAME.key(), c.name);
+        params.putIfNotNull(PanelDBAdaptor.QueryParams.PHENOTYPES.key(), c.phenotypes);
+        params.putIfNotNull(PanelDBAdaptor.QueryParams.VARIANTS.key(), c.variants);
+        params.putIfNotNull(PanelDBAdaptor.QueryParams.REGIONS.key(), c.regions);
+        params.putIfNotNull(PanelDBAdaptor.QueryParams.GENES.key(), c.genes);
+        params.putIfNotNull(PanelDBAdaptor.QueryParams.DESCRIPTION.key(), c.description);
+        params.putIfNotNull(PanelDBAdaptor.QueryParams.AUTHOR.key(), c.author);
+        params.putIfNotNull(PanelDBAdaptor.QueryParams.TAGS.key(), c.tags);
+        params.putIfNotNull(PanelDBAdaptor.QueryParams.CATEGORIES.key(), c.categories);
+        params.putIfNotNull(PanelDBAdaptor.QueryParams.CREATION_DATE.key(), c.creationDate);
+        params.putIfNotNull(PanelDBAdaptor.QueryParams.RELEASE.key(), c.release);
+        params.putIfNotNull(PanelDBAdaptor.QueryParams.SNAPSHOT.key(), c.snapshot);
 
-            return openCGAClient.getPanelClient().search(query, queryOptions);
-        }
+        params.put(QueryOptions.COUNT, c.numericOptions.count);
+        params.putIfNotEmpty(QueryOptions.INCLUDE, c.dataModelOptions.include);
+        params.putIfNotEmpty(QueryOptions.EXCLUDE, c.dataModelOptions.exclude);
+        params.put(QueryOptions.LIMIT, c.numericOptions.limit);
+        params.put(QueryOptions.SKIP, c.numericOptions.skip);
+
+        return openCGAClient.getPanelClient().search(params);
     }
 
 
-    private RestResponse<ObjectMap> updateAcl() throws IOException, CatalogException {
+    private RestResponse<ObjectMap> updateAcl() throws ClientException, CatalogException {
         AclCommandOptions.AclsUpdateCommandOptions commandOptions = panelsCommandOptions.aclsUpdateCommandOptions;
 
         ObjectMap queryParams = new ObjectMap();
         queryParams.putIfNotNull("study", commandOptions.study);
 
-        ObjectMap bodyParams = new ObjectMap();
-        bodyParams.putIfNotNull("permissions", commandOptions.permissions);
-        bodyParams.putIfNotNull("action", commandOptions.action);
-        bodyParams.putIfNotNull("panel", extractIdsFromListOrFile(commandOptions.id));
+        PanelAclUpdateParams aclUpdateParams = new PanelAclUpdateParams()
+                .setPanel(extractIdsFromListOrFile(commandOptions.id))
+                .setPermissions(commandOptions.permissions)
+                .setAction(commandOptions.action);
 
-        return openCGAClient.getPanelClient().updateAcl(commandOptions.memberId, queryParams, bodyParams);
+        return openCGAClient.getPanelClient().updateAcl(commandOptions.memberId, aclUpdateParams, queryParams);
+    }
+
+    private RestResponse<ObjectMap> acl() throws ClientException {
+        AclCommandOptions.AclsCommandOptions commandOptions = panelsCommandOptions.aclsCommandOptions;
+
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty("study", commandOptions.study);
+        params.putIfNotEmpty("member", commandOptions.memberId);
+
+        params.putAll(commandOptions.commonOptions.params);
+
+        return openCGAClient.getPanelClient().acl(commandOptions.id, params);
     }
 }

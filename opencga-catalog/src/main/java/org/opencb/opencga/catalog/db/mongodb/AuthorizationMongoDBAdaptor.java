@@ -36,10 +36,12 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.core.models.PermissionRule;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.models.study.PermissionRule;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -322,7 +324,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     @Override
     public OpenCGAResult setToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
                                       List<String> permissionList, Enums.Resource resource, Enums.Resource resource2)
-            throws CatalogDBException {
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction(clientSession -> {
             long startTime = startQuery();
             // We obtain which of those members are actually users to add them to the @members group automatically
@@ -342,7 +344,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public OpenCGAResult setToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException {
+    public OpenCGAResult setToMembers(List<Long> studyIds, List<String> members, List<String> permissions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction(clientSession -> {
             long startTime = startQuery();
             for (Long studyId : studyIds) {
@@ -401,7 +404,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     @Override
     public OpenCGAResult addToMembers(long studyId, List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
                                       List<String> permissionList, Enums.Resource resource, Enums.Resource resource2)
-            throws CatalogDBException {
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction(clientSession -> {
             long startTime = startQuery();
             addToMembersGroupInStudy(studyId, members, clientSession);
@@ -448,7 +451,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public OpenCGAResult addToMembers(List<Long> studyIds, List<String> members, List<String> permissions) throws CatalogDBException {
+    public OpenCGAResult addToMembers(List<Long> studyIds, List<String> members, List<String> permissions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction((clientSession) -> {
             long startTime = startQuery();
             for (Long studyId : studyIds) {
@@ -476,7 +480,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     @Override
     public OpenCGAResult removeFromMembers(List<Long> resourceIds, List<Long> resourceIds2, List<String> members,
                                            List<String> permissionList, Enums.Resource resource, Enums.Resource resource2)
-            throws CatalogDBException {
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (members == null || members.isEmpty()) {
             throw new CatalogDBException("Missing members list");
         }
@@ -526,7 +530,8 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public OpenCGAResult resetMembersFromAllEntries(long studyId, List<String> members) throws CatalogDBException {
+    public OpenCGAResult resetMembersFromAllEntries(long studyId, List<String> members)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (members == null || members.isEmpty()) {
             throw new CatalogDBException("Missing 'members' array.");
         }

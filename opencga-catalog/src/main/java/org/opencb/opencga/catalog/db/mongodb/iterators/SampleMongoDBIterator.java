@@ -11,8 +11,9 @@ import org.opencb.opencga.catalog.db.mongodb.IndividualMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.models.Annotable;
+import org.opencb.opencga.core.models.common.Annotable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,7 +115,7 @@ public class SampleMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
                 } else {
                     individualList = individualDBAdaptor.nativeGet(clientSession, query, individualQueryOptions).getResults();
                 }
-            } catch (CatalogDBException | CatalogAuthorizationException e) {
+            } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
                 logger.warn("Could not obtain the individuals containing the samples: {}", e.getMessage(), e);
                 return;
             }

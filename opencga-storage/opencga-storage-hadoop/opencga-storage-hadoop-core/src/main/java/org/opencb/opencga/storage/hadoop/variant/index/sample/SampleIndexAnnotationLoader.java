@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutionException;
  */
 public class SampleIndexAnnotationLoader {
 
+    public static final String OVERWRITE = "sampleIndex.overwrite";
     public static final String SAMPLE_INDEX_STATUS = "sampleIndex";
     private final HBaseManager hBaseManager;
     private final HBaseVariantTableNameGenerator tableNameGenerator;
@@ -55,20 +56,54 @@ public class SampleIndexAnnotationLoader {
         family = GenomeHelper.COLUMN_FAMILY_BYTES;
     }
 
-    public void updateSampleAnnotation(int studyId, List<Integer> samples, ObjectMap options) throws IOException, StorageEngineException {
-        samples = new ArrayList<>(samples);
-        samples.removeIf(sampleId -> {
-            SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
-            if (!sampleMetadata.isAnnotated()) {
-                logger.info("Unable to update sample index from sample '" + sampleMetadata.getName() + "'");
-                return true;
-            } else {
-                return false;
-            }
-        });
+    public void updateSampleAnnotation(int studyId, List<Integer> samples, ObjectMap options)
+            throws IOException, StorageEngineException {
+        updateSampleAnnotation(studyId, samples, options, options.getBoolean(OVERWRITE, false));
+    }
 
-//        updateSampleAnnotationBatchMultiThread(studyId, samples);
-        updateSampleAnnotationBatchMapreduce(studyId, samples, options);
+    public void updateSampleAnnotation(int studyId, List<Integer> samples, ObjectMap options, boolean overwrite)
+            throws IOException, StorageEngineException {
+        List<Integer> finalSamplesList = new ArrayList<>(samples.size());
+        List<String> nonAnnotated = new LinkedList<>();
+        List<String> alreadyAnnotated = new LinkedList<>();
+        for (Integer sampleId : samples) {
+            SampleMetadata sampleMetadata = metadataManager.getSampleMetadata(studyId, sampleId);
+            if (sampleMetadata.isAnnotated()) {
+                if (sampleMetadata.isReady(SAMPLE_INDEX_STATUS) && !overwrite) {
+                    // SamplesIndex already annotated
+                    alreadyAnnotated.add(sampleMetadata.getName());
+                } else {
+                    finalSamplesList.add(sampleId);
+                }
+            } else {
+                // Discard non-annotated samples
+                nonAnnotated.add(sampleMetadata.getName());
+            }
+        }
+        if (!nonAnnotated.isEmpty()) {
+            if (nonAnnotated.size() < 20) {
+                logger.warn("Unable to update sample index from samples " + nonAnnotated + ". Samples not fully annotated.");
+            } else {
+                logger.warn("Unable to update sample index from " + nonAnnotated.size() + " samples. Samples not fully annotated.");
+            }
+        }
+        if (!alreadyAnnotated.isEmpty()) {
+            logger.info("Skip sample index annotation for " + alreadyAnnotated.size() + " samples."
+                    + " Add " + OVERWRITE + "=true to overwrite existing sample index annotation on all samples");
+        }
+
+        if (finalSamplesList.isEmpty()) {
+            logger.info("Skip sample index annotation. Nothing to do!");
+            return;
+        }
+        if (finalSamplesList.size() < 20) {
+            logger.info("Run sample index annotation on samples " + finalSamplesList);
+        } else {
+            logger.info("Run sample index annotation on " + finalSamplesList.size() + " samples");
+        }
+
+//        updateSampleAnnotationBatchMultiThread(studyId, finalSamplesList);
+        updateSampleAnnotationBatchMapreduce(studyId, finalSamplesList, options);
     }
 
     private void updateSampleAnnotationBatchMapreduce(int studyId, List<Integer> samples, ObjectMap options)
@@ -273,8 +308,7 @@ public class SampleIndexAnnotationLoader {
             throws StorageEngineException {
         for (Integer sampleId : samples) {
             metadataManager.updateSampleMetadata(studyId, sampleId, sampleMetadata -> {
-                sampleMetadata.setStatus(SAMPLE_INDEX_STATUS, TaskMetadata.Status.READY);
-                return sampleMetadata;
+                return SampleIndexDBAdaptor.setSampleIndexStatus(sampleMetadata, TaskMetadata.Status.READY);
             });
         }
     }

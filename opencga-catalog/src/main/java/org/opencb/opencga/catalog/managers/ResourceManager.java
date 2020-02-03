@@ -18,7 +18,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -119,6 +119,7 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
                 .append("ignoreException", ignoreException)
                 .append("token", token);
         String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        auditManager.initAuditBatch(operationUuid);
 
         try {
             OpenCGAResult<R> result = OpenCGAResult.empty();
@@ -159,6 +160,8 @@ public abstract class ResourceManager<R extends IPrivateStudyUid> extends Abstra
                         new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             }
             throw e;
+        } finally {
+            auditManager.finishAuditBatch(operationUuid);
         }
     }
 

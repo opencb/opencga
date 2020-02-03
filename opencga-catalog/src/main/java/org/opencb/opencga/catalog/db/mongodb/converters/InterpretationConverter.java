@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.Interpretation;
+import org.opencb.opencga.core.models.clinical.Interpretation;
 
 import java.io.UncheckedIOException;
 

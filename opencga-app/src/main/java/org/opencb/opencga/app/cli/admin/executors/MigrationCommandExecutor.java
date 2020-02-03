@@ -14,12 +14,11 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.StudyManager;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.FileIndex;
-import org.opencb.opencga.core.models.Job;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.file.FileIndex;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.study.Study;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -79,10 +78,10 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             setCatalogDatabaseCredentials(options, options.commonOptions);
 
             try (CatalogManager catalogManager = new CatalogManager(configuration)) {
-                String sessionId = catalogManager.getUserManager().login("admin", options.commonOptions.adminPassword);
+                String sessionId = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword);
 
                 // Catalog
-                String basePath = appHome + "/scripts/migration/v1.3.0/";
+                String basePath = appHome + "/misc/migration/v1.3.0/";
 
                 String authentication = "";
                 if (StringUtils.isNotEmpty(configuration.getCatalog().getDatabase().getUser())
@@ -150,13 +149,13 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             // We get a non-expiring token
-            String token = catalogManager.getUserManager().login("admin", options.commonOptions.adminPassword);
-            String nonExpiringToken = catalogManager.getUserManager().getNonExpiringToken("admin", token);
+            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword);
+            String nonExpiringToken = catalogManager.getUserManager().getAdminNonExpiringToken(token);
 
             // Catalog
             if (!skipCatalogJS) {
                 logger.info("Starting Catalog migration for 1.4.0");
-                runMigration(catalogManager, appHome + "/scripts/migration/v1.4.0/", "opencga_catalog_v1.3.x_to_1.4.0.js");
+                runMigration(catalogManager, appHome + "/misc/migration/v1.4.0/", "opencga_catalog_v1.3.x_to_1.4.0.js");
             }
 
             if (!skipAnnotations) {
@@ -185,7 +184,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             // 1. Catalog Javascript migration
             logger.info("Starting Catalog migration for 2.0.0");
-            runMigration(catalogManager, appHome + "/scripts/migration/v2.0.0/", "opencga_catalog_v1.4.2_to_v.2.0.0.js");
+            runMigration(catalogManager, appHome + "/misc/migration/v2.0.0/", "opencga_catalog_v1.4.2_to_v.2.0.0.js");
 
             // Create default JOBS folder for analysis
             MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration);
@@ -201,12 +200,12 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                     logger.info("Creating JOBS/ folder for study {}", study.getFqn());
 
                     // JOBS folder does not exist
-                    org.opencb.opencga.core.models.File file = new org.opencb.opencga.core.models.File("JOBS",
-                            org.opencb.opencga.core.models.File.Type.DIRECTORY, org.opencb.opencga.core.models.File.Format.UNKNOWN,
-                            org.opencb.opencga.core.models.File.Bioformat.UNKNOWN,
+                    org.opencb.opencga.core.models.file.File file = new org.opencb.opencga.core.models.file.File("JOBS",
+                            org.opencb.opencga.core.models.file.File.Type.DIRECTORY, org.opencb.opencga.core.models.file.File.Format.UNKNOWN,
+                            org.opencb.opencga.core.models.file.File.Bioformat.UNKNOWN,
                             Paths.get(options.jobFolder).normalize().toAbsolutePath().resolve("JOBS").toUri(),
                             "JOBS/", null, TimeUtils.getTime(), TimeUtils.getTime(), "Default jobs folder",
-                            new org.opencb.opencga.core.models.File.FileStatus(), false, 0, null, null, Collections.emptyList(), new Job(),
+                            new org.opencb.opencga.core.models.file.File.FileStatus(), false, 0, null, null, Collections.emptyList(), new Job(),
                             Collections.emptyList(), new FileIndex(), study.getRelease(), Collections.emptyList(), Collections.emptyMap(),
                             Collections.emptyMap());
                     file.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));

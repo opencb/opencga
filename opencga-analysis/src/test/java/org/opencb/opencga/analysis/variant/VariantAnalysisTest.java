@@ -12,25 +12,35 @@ import org.opencb.biodata.models.pedigree.IndividualProperty;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.metadata.SampleVariantStats;
+import org.opencb.cellbase.core.variant.annotation.VariantAnnotationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.ToolRunner;
-import org.opencb.opencga.analysis.variant.genes.knockout.GeneKnockoutAnalysis;
-import org.opencb.opencga.analysis.variant.genes.knockout.GeneKnockoutAnalysisParams;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
+import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.update.SampleUpdateParams;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
-import org.opencb.opencga.core.api.variant.VariantExportParams;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleUpdateParams;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.Account;
+import org.opencb.opencga.core.models.variant.KnockoutAnalysisParams;
+import org.opencb.opencga.core.models.variant.VariantExportParams;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
@@ -82,9 +92,7 @@ public class VariantAnalysisTest {
     private CatalogManager catalogManager;
     private VariantStorageManager variantStorageManager;
 
-    @ClassRule
     public static OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
-    @ClassRule
     public static HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource = new HadoopVariantStorageTest.HadoopExternalResource();
 
     private static String storageEngine;
@@ -93,13 +101,13 @@ public class VariantAnalysisTest {
     private static File file;
 
     @Before
-    public void setUp() throws Exception {
-        catalogManager = opencga.getCatalogManager();
-        variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
-
+    public void setUp() throws Throwable {
         if (!indexed) {
             indexed = true;
 
+            if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
+                hadoopExternalResource.before();
+            }
             opencga.after();
             opencga.before();
 
@@ -168,7 +176,18 @@ public class VariantAnalysisTest {
                 VariantHbaseTestUtils.printVariants(((VariantHadoopDBAdaptor) engine.getDBAdaptor()), Paths.get(opencga.createTmpOutdir("_hbase_print_variants")).toUri());
             }
         }
+        catalogManager = opencga.getCatalogManager();
+        variantStorageManager = new VariantStorageManager(catalogManager, opencga.getStorageEngineFactory());
+
         toolRunner = new ToolRunner(opencga.getOpencgaHome().toString(), catalogManager, StorageEngineFactory.get(variantStorageManager.getStorageConfiguration()));
+    }
+
+    @AfterClass
+    public static void afterClass() {
+        if (storageEngine.equals(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)) {
+            hadoopExternalResource.after();
+        }
+        opencga.after();
     }
 
     public void setUpCatalogManager() throws IOException, CatalogException {
@@ -176,7 +195,7 @@ public class VariantAnalysisTest {
         token = catalogManager.getUserManager().login("user", PASSWORD);
 
         String projectId = catalogManager.getProjectManager().create(PROJECT, "Project about some genomes", "", "ACME", "Homo sapiens",
-                null, null, "GRCh38", new QueryOptions(), token).first().getId();
+                null, null, "GRCh37", new QueryOptions(), token).first().getId();
         catalogManager.getStudyManager().create(projectId, STUDY, null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null,
                 null, null, null, null, token);
 
@@ -406,11 +425,100 @@ public class VariantAnalysisTest {
     public void testKnockoutGenes() throws Exception {
         Path outDir = Paths.get(opencga.createTmpOutdir("_knockout_genes"));
         System.out.println("outDir = " + outDir);
-        GeneKnockoutAnalysisParams params = new GeneKnockoutAnalysisParams();
+        KnockoutAnalysisParams params = new KnockoutAnalysisParams();
         params.setSample(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
 
-        ExecutionResult er = toolRunner.execute(GeneKnockoutAnalysis.class, params.toObjectMap(), outDir, token);
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, token);
         checkExecutionResult(er, false);
+    }
+
+    @Test
+    public void testKnockoutGenesSpecificGenes() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_knockout_genes_specific_genes"));
+        System.out.println("outDir = " + outDir);
+        KnockoutAnalysisParams params = new KnockoutAnalysisParams();
+        params.setSample(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+        params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
+
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap().append("executionMethod", "byGene"), outDir, token);
+        checkExecutionResult(er, false);
+        Assert.assertEquals(4, er.getAttributes().get("otherGenesCount"));
+        Assert.assertEquals(3, er.getAttributes().get("proteinCodingGenesCount"));
+    }
+
+    @Test
+    public void testKnockoutGenesSpecificGenesAndBiotypeProteinCoding() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_knockout_genes_specific_genes_bt_protein_coding"));
+        System.out.println("outDir = " + outDir);
+        KnockoutAnalysisParams params = new KnockoutAnalysisParams();
+        params.setSample(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+        params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
+        params.setBiotype(VariantAnnotationUtils.PROTEIN_CODING);
+
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, token);
+        checkExecutionResult(er, false);
+        Assert.assertEquals(0, er.getAttributes().get("otherGenesCount"));
+        Assert.assertEquals(3, er.getAttributes().get("proteinCodingGenesCount"));
+    }
+
+    @Test
+    public void testKnockoutGenesSpecificGenesAndBiotypeNMD() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_knockout_genes_specific_genes_bt_NMD"));
+        System.out.println("outDir = " + outDir);
+        KnockoutAnalysisParams params = new KnockoutAnalysisParams();
+        params.setSample(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+        params.setGene(Arrays.asList("MIR1909", "DZIP3", "BTN3A2", "ITIH5"));
+        params.setBiotype("nonsense_mediated_decay");
+
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, token);
+        checkExecutionResult(er, false);
+        Assert.assertEquals(3, er.getAttributes().get("otherGenesCount")); // MIR1909 only has miRNA biotype
+        Assert.assertEquals(0, er.getAttributes().get("proteinCodingGenesCount"));
+    }
+
+    @Test
+    public void testKnockoutGenesByBiotype() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_knockout_genes_by_biotype"));
+        System.out.println("outDir = " + outDir);
+        KnockoutAnalysisParams params = new KnockoutAnalysisParams();
+        params.setSample(file.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+        params.setBiotype("miRNA,rRNA");
+//        params.setBiotype("processed_transcript"
+//                + "," + "processed_pseudogene"
+//                + "," + "transcribed_unprocessed_pseudogene"
+//                + "," + "nonsense_mediated_decay"
+//                + "," + "retained_intron"
+//                + "," + "antisense_RNA"
+//                + "," + "miRNA"
+//                + "," + "misc_RNA"
+//                + "," + "unprocessed_pseudogene"
+//                + "," + "sense_overlapping"
+//                + "," + "lincRNA"
+//                + "," + "rRNA"
+//                + "," + "snRNA"
+//                + "," + "polymorphic_pseudogene"
+//                + "," + "transcribed_processed_pseudogene"
+//                + "," + "transcribed_unitary_pseudogene"
+//                + "," + "snoRNA"
+//                + "," + "TEC"
+//                + "," + "pseudogene"
+//                + "," + "sense_intronic"
+//                + "," + "non_stop_decay"
+//                + "," + "TR_V_gene");
+
+        ExecutionResult er = toolRunner.execute(KnockoutAnalysis.class, params.toObjectMap(), outDir, token);
+        checkExecutionResult(er, false);
+    }
+
+    @Test
+    public void testSampleMultiVariantFilterAnalysis() throws Exception {
+        Path outDir = Paths.get(opencga.createTmpOutdir("_SampleMultiVariantFilterAnalysis"));
+        System.out.println("outDir = " + outDir);
+        SampleEligibilityAnalysisParams params = new SampleEligibilityAnalysisParams();
+        params.setQuery("(biotype=protein_coding AND ct=missense_variant AND gene=BRCA2) OR (gene=BTN3A2)");
+
+        ExecutionResult er = toolRunner.execute(SampleEligibilityAnalysis.class, params.toObjectMap(), outDir, token);
+//        checkExecutionResult(er, false);
     }
 
     public void checkExecutionResult(ExecutionResult er) {

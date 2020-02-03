@@ -20,7 +20,7 @@ import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.MultiPart;
 import org.junit.*;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.models.user.User;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;

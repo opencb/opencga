@@ -57,7 +57,17 @@ public class VariantQueryParser {
 
         preProcessAnnotationParams(query);
 
-        preProcessStudyParams(options, query);
+        preProcessStudyParams(query, options);
+
+        if (options.getLong(QueryOptions.LIMIT) < 0) {
+            throw VariantQueryException.malformedParam(QueryOptions.LIMIT, options.getString(QueryOptions.LIMIT),
+                    "Invalid negative limit");
+        }
+
+        if (options.getLong(QueryOptions.SKIP) < 0) {
+            throw VariantQueryException.malformedParam(QueryOptions.SKIP, options.getString(QueryOptions.SKIP),
+                    "Invalid negative skip");
+        }
 
         return query;
     }
@@ -133,7 +143,8 @@ public class VariantQueryParser {
 
                 clinicalSignificanceList.add(clinicalSignificance);
             }
-            query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(), clinicalSignificanceList);
+            query.put(ANNOT_CLINICAL_SIGNIFICANCE.key(),
+                    String.join(operator == null ? "" : operator.separator(), clinicalSignificanceList));
         }
 
         if (isValidParam(query, ANNOT_SIFT)) {
@@ -183,7 +194,7 @@ public class VariantQueryParser {
         }
     }
 
-    protected void preProcessStudyParams(QueryOptions options, Query query) {
+    protected void preProcessStudyParams(Query query, QueryOptions options) {
         StudyMetadata defaultStudy = getDefaultStudy(query, options, metadataManager);
         QueryOperation formatOperator = null;
         if (isValidParam(query, FORMAT)) {
@@ -437,43 +448,11 @@ public class VariantQueryParser {
         query.remove(INCLUDE_GENOTYPE.key(), formats);
     }
 
-    protected String preProcessGenotypesFilter(Map<Object, List<String>> map, QueryOperation op, List<String> loadedGenotypes) {
+    public static String preProcessGenotypesFilter(Map<Object, List<String>> map, QueryOperation op, List<String> loadedGenotypes) {
         StringBuilder sb = new StringBuilder();
         for (Map.Entry<Object, List<String>> entry : map.entrySet()) {
-//                List<String> genotypes = GenotypeClass.filter(entry.getValue(), loadedGenotypes, defaultGenotypes);
-            List<String> genotypes = new ArrayList<>(entry.getValue());
-            for (String genotypeStr : entry.getValue()) {
-                boolean negated = isNegated(genotypeStr);
-                if (negated) {
-                    removeNegation(genotypeStr);
-                }
-                Genotype genotype = new Genotype(genotypeStr);
-                int[] allelesIdx = genotype.getAllelesIdx();
-                boolean multiallelic = false;
-                for (int i = 0; i < allelesIdx.length; i++) {
-                    if (allelesIdx[i] > 1) {
-                        allelesIdx[i] = 2;
-                        multiallelic = true;
-                    }
-                }
-                if (multiallelic) {
-                    String regex = genotype.toString()
-                            .replace(".", "\\.")
-                            .replace("2", "([2-9]|[0-9][0-9])"); // Replace allele "2" with "any number >= 2")
-                    Pattern pattern = Pattern.compile(regex);
-                    for (String loadedGenotype : loadedGenotypes) {
-                        if (pattern.matcher(loadedGenotype).matches()) {
-                            genotypes.add((negated ? NOT : "") + loadedGenotype);
-                        }
-                    }
-                }
-            }
-            genotypes = GenotypeClass.filter(genotypes, loadedGenotypes);
 
-            if (genotypes.isEmpty()) {
-                // TODO: Do fast fail, NO RESULTS!
-                genotypes = Collections.singletonList(GenotypeClass.NONE_GT_VALUE);
-            }
+            List<String> genotypes = preProcessGenotypesFilter(entry.getValue(), loadedGenotypes);
 
             if (sb.length() > 0) {
                 sb.append(op.separator());
@@ -487,6 +466,50 @@ public class VariantQueryParser {
             }
         }
         return sb.toString();
+    }
+
+    public static List<String> preProcessGenotypesFilter(List<String> genotypesInput, List<String> loadedGenotypes) {
+        List<String> genotypes = new ArrayList<>(genotypesInput);
+
+        // Loop for multi-allelic values genotypes
+        // Iterate on genotypesInput, as this loop may add new values to List<String> genotypes
+        for (String genotypeStr : genotypesInput) {
+            boolean negated = isNegated(genotypeStr);
+            if (negated) {
+                genotypeStr = removeNegation(genotypeStr);
+            }
+            if (GenotypeClass.from(genotypeStr) != null) {
+                // Discard GenotypeClass
+                continue;
+            }
+            Genotype genotype = new Genotype(genotypeStr);
+            int[] allelesIdx = genotype.getAllelesIdx();
+            boolean multiallelic = false;
+            for (int i = 0; i < allelesIdx.length; i++) {
+                if (allelesIdx[i] > 1) {
+                    allelesIdx[i] = 2;
+                    multiallelic = true;
+                }
+            }
+            if (multiallelic) {
+                String regex = genotype.toString()
+                        .replace(".", "\\.")
+                        .replace("2", "([2-9]|[0-9][0-9])"); // Replace allele "2" with "any number >= 2")
+                Pattern pattern = Pattern.compile(regex);
+                for (String loadedGenotype : loadedGenotypes) {
+                    if (pattern.matcher(loadedGenotype).matches()) {
+                        genotypes.add((negated ? NOT : "") + loadedGenotype);
+                    }
+                }
+            }
+        }
+        genotypes = GenotypeClass.filter(genotypes, loadedGenotypes);
+
+        if (genotypes.isEmpty()) {
+            // TODO: Do fast fail, NO RESULTS!
+            genotypes = Collections.singletonList(GenotypeClass.NONE_GT_VALUE);
+        }
+        return genotypes;
     }
 
     /**

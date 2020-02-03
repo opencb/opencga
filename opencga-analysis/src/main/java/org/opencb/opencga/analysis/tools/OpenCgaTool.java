@@ -26,19 +26,17 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.ConfigurationUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
-import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.annotations.Tool;
-import org.opencb.opencga.core.annotations.ToolExecutor;
-import org.opencb.opencga.core.api.ParamConstants;
+import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.core.models.DataStore;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.project.DataStore;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
@@ -247,6 +245,9 @@ public abstract class OpenCgaTool {
             deleteScratchDirectory();
             Runtime.getRuntime().removeShutdownHook(hook);
             result = erm.close(exception);
+
+            privateLogger.info("------- Tool '" + getId() + "' executed in "
+                    + TimeUtils.durationToString(result.getEnd().getTime() - result.getStart().getTime()) + " -------");
         }
         return result;
     }

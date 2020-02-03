@@ -4,10 +4,11 @@ import org.opencb.biodata.tools.alignment.BamManager;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.update.FileUpdateParams;
-import org.opencb.opencga.core.annotations.Tool;
-import org.opencb.opencga.core.exception.ToolException;
-import org.opencb.opencga.core.models.File;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
+import org.opencb.opencga.core.models.file.SmallRelatedFileParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
+import org.opencb.opencga.core.exceptions.ToolException;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -76,7 +77,7 @@ public class AlignmentIndexOperation extends OpenCgaTool {
                         catalogPath + "/" + outputPath.getFileName(), token);
 
                 FileUpdateParams updateParams = new FileUpdateParams()
-                        .setRelatedFiles(Collections.singletonList(new FileUpdateParams.RelatedFile(catalogPath + "/"
+                        .setRelatedFiles(Collections.singletonList(new SmallRelatedFileParams(catalogPath + "/"
                                 + outputPath.getFileName(), File.RelatedFile.Relation.PRODUCED_FROM)));
                 catalogManager.getFileManager().update(study, inputFile, updateParams, QueryOptions.empty(), token);
             }

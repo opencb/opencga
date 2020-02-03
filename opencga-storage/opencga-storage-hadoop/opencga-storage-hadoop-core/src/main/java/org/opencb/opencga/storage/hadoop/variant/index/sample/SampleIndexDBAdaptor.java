@@ -13,6 +13,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
+import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.TaskMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantIterable;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -62,6 +64,14 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         // TODO: Read configuration from metadata manager
         configuration = SampleIndexConfiguration.defaultConfiguration();
         parser = new SampleIndexQueryParser(metadataManager, configuration);
+    }
+
+    public static TaskMetadata.Status getSampleIndexStatus(SampleMetadata sampleMetadata) {
+        return sampleMetadata.getStatus(SampleIndexAnnotationLoader.SAMPLE_INDEX_STATUS);
+    }
+
+    public static SampleMetadata setSampleIndexStatus(SampleMetadata sampleMetadata, TaskMetadata.Status status) {
+        return sampleMetadata.setStatus(SampleIndexAnnotationLoader.SAMPLE_INDEX_STATUS, status);
     }
 
     @Override
@@ -136,7 +146,7 @@ public class SampleIndexDBAdaptor implements VariantIterable {
         if (skip > 0) {
             Iterators.advance(iterator, skip);
         }
-        if (limit > 0) {
+        if (limit >= 0) {
             Iterator<Variant> it = Iterators.limit(iterator, limit);
             return VariantDBIterator.wrapper(it).addCloseable(iterator);
         } else {

@@ -88,7 +88,7 @@ public class StorageEngineException extends Exception {
         if (samples != null && samples.size() == 1) {
             sb.append("Sample '").append(samples.get(0)).append("' is ");
         } else {
-            sb.append("The samples from this file are ");
+            sb.append("Samples from this file are ");
         }
         sb.append("already loaded. "
                 + "This variant storage does not allow to load multiple files from the same sample in the same study. "

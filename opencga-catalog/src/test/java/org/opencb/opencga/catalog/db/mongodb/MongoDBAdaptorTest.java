@@ -32,10 +32,20 @@ import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Group;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.user.User;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -124,14 +134,14 @@ public class MongoDBAdaptorTest extends GenericTest {
         return catalogDBAdaptor.getCatalogSampleDBAdaptor().get(query, QueryOptions.empty()).first();
     }
 
-    Individual getIndividual(long studyUid, String individualId) throws CatalogDBException {
+    Individual getIndividual(long studyUid, String individualId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query()
                 .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(IndividualDBAdaptor.QueryParams.ID.key(), individualId);
         return catalogIndividualDBAdaptor.get(query, QueryOptions.empty()).first();
     }
 
-    Job getJob(long studyUid, String jobId) throws CatalogDBException {
+    Job getJob(long studyUid, String jobId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query()
                 .append(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(JobDBAdaptor.QueryParams.ID.key(), jobId);
@@ -157,7 +167,7 @@ public class MongoDBAdaptorTest extends GenericTest {
         user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", null, User.UserStatus.READY, "", 100, 1000,
                 Arrays.<Project>asList(new Project("P1", "project", "", new Status(), "", null, 1), new Project("P2", "project", "",
                         new Status(), "", null, 1), new Project("P3", "project", "", new Status(), "", null, 1)),
-                Collections.<Tool>emptyList(), new HashMap<>(), new HashMap<>());
+                new HashMap<>(), new HashMap<>());
         catalogUserDBAdaptor.insert(user1, null);
 
         user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "1111", "ACME", User.UserStatus.READY);
@@ -166,25 +176,25 @@ public class MongoDBAdaptorTest extends GenericTest {
         user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", null, User.UserStatus.READY, "", 1222, 122222,
                 Arrays.asList(new Project("pr1", "90 GigaGenomes", null, "very long description", "Spain", null, new Status(), "", 0,
                                 Arrays.asList(new Study("name", "Study name", "ph1", Study.Type.CONTROL_SET, "", "", new Status(),
-                                "", 0, "", Arrays.asList(new Group("@members", Collections.emptyList())), Collections.<Experiment>emptyList(),
-                                Arrays.asList(
+                                        0, Arrays.asList(new Group("@members", Collections.emptyList())),
+                                        Arrays.asList(
                                         new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/", null, "",
                                                 new File.FileStatus(File.FileStatus.READY), 1000, 1),
                                         new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", null, "",
                                                 new File.FileStatus(File.FileStatus.READY), 1000, 1)
-                                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                                         Collections.emptyList(), new LinkedList<>(), null, null, null, 1, Collections.emptyMap(),
                                         Collections.emptyMap()
                         )
                 ), Collections.emptyMap(), Collections.emptyMap(), 1)
-                ), Collections.emptyList(), new HashMap<>(), new HashMap<>());
+                ), new HashMap<>(), new HashMap<>());
         catalogUserDBAdaptor.insert(user3, null);
 
         user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", null, User.UserStatus.READY, "", 0, 50000,
                 Arrays.asList(new Project("pr", "lncRNAs", null, "My description", "My org", null, new Status(), "", 0,
                         Arrays.asList(
-                                new Study("spongeScan", "spongeScan", "sponges", Study.Type.COLLECTION, "", "", new Status(), "", 0, "",
-                                        Arrays.asList(new Group("@members", Collections.emptyList())), null, Arrays.asList(
+                                new Study("spongeScan", "spongeScan", "sponges", Study.Type.COLLECTION, "", "", new Status(), 0,
+                                        Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
                                                 new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
                                                         null, "Description", new File.FileStatus(File.FileStatus.READY), 10, 1),
                                                 new File("file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
@@ -196,12 +206,12 @@ public class MongoDBAdaptorTest extends GenericTest {
                                                 new File("alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
                                                         "data/alignment.bam", null, "Tophat alignment file",
                                                         new File.FileStatus(File.FileStatus.READY), 5000, 1)
-                                                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                                                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
                                         new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null, 1,
                                         Collections.emptyMap(), Collections.emptyMap()
                                 ),
-                                new Study("mineco", "MINECO", "mineco", Study.Type.COLLECTION, "", "", new Status(), "", 0, "",
-                                        Arrays.asList(new Group("@members", Collections.emptyList())), null,
+                                new Study("mineco", "MINECO", "mineco", Study.Type.COLLECTION, "", "", new Status(), 0,
+                                        Arrays.asList(new Group("@members", Collections.emptyList())),
                                         Arrays.asList(
                                                 new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
                                                         null, "Description", new File.FileStatus(File.FileStatus.READY), 10, 1),
@@ -211,12 +221,12 @@ public class MongoDBAdaptorTest extends GenericTest {
                                                 new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
                                                         "data/alignment.bam", null, "Tophat alignment file",
                                                         new File.FileStatus(File.FileStatus.READY), 5000, 1)
-                                        ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                                        ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
                                         new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null, 1,
                                         Collections.emptyMap(), Collections.emptyMap())
                         ), Collections.emptyMap(), Collections.emptyMap(), 1)
                 ),
-                Collections.<Tool>emptyList(), new HashMap<>(), new HashMap<>());
+                new HashMap<>(), new HashMap<>());
 
         catalogUserDBAdaptor.insert(user4, null);
 

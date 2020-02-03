@@ -7,9 +7,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.stats.solr.IndividualSolrModel;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.study.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +51,7 @@ public class CatalogIndividualToSolrIndividualConverter implements ComplexTypeCo
     public IndividualSolrModel convertToStorageType(Individual individual) {
         IndividualSolrModel individualSolrModel = new IndividualSolrModel();
 
+        individualSolrModel.setId(individual.getId());
         individualSolrModel.setUid(individual.getUid());
         individualSolrModel.setStudyId(study.getFqn().replace(":", "__"));
 

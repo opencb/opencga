@@ -36,25 +36,31 @@ import org.opencb.opencga.analysis.old.execution.plugins.ibs.IbsAnalysis;
 import org.opencb.opencga.analysis.tools.ToolRunner;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.*;
+import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
+import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
 import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.VariantStatsAnalysis;
+import org.opencb.opencga.analysis.wrappers.GatkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.PlinkWrapperAnalysis;
 import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.app.cli.internal.options.VariantCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.api.operations.variant.*;
-import org.opencb.opencga.core.api.variant.VariantExportParams;
-import org.opencb.opencga.core.api.variant.VariantIndexParams;
-import org.opencb.opencga.core.api.variant.VariantStatsAnalysisParams;
+import org.opencb.opencga.core.models.operations.variant.*;
+import org.opencb.opencga.core.models.variant.*;
+import org.opencb.opencga.core.models.variant.VariantExportParams;
+import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.exception.ToolException;
+import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.VariantSearchException;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
@@ -73,7 +79,10 @@ import java.util.Map;
 
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.FamilyIndexCommandOptions.FAMILY_INDEX_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleIndexCommandOptions.SAMPLE_INDEX_COMMAND;
@@ -190,12 +199,22 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 break;
             case GWAS_RUN_COMMAND:
                 gwas();
+            case KNOCKOUT_RUN_COMMAND:
+                knockout();
+                break;
+            case VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND:
+                sampleEligibility();
+            case MUTATIONAL_SIGNATURE_RUN_COMMAND:
+                mutationalSignature();
                 break;
             case PLINK_RUN_COMMAND:
                 plink();
                 break;
             case RVTEST_RUN_COMMAND:
                 rvtests();
+                break;
+            case GATK_RUN_COMMAND:
+                gatk();
                 break;
             case SAMPLE_VARIANT_STATS_RUN_COMMAND:
                 sampleStats();
@@ -207,7 +226,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 logger.error("Subcommand not valid");
                 break;
         }
-
     }
 
     private void ibs() throws CatalogException, AnalysisExecutionException {
@@ -286,15 +304,6 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         if (cliOptions.numericOptions.count) {
             DataResult<Long> result = variantManager.count(query, token);
             System.out.println("Num. results\t" + result.getResults().get(0));
-        } else if (StringUtils.isNotEmpty(cliOptions.genericVariantQueryOptions.groupBy)) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            DataResult groupBy = variantManager.groupBy(cliOptions.genericVariantQueryOptions.groupBy, query, queryOptions, token);
-            System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(groupBy));
-        } else if (StringUtils.isNotEmpty(cliOptions.genericVariantQueryOptions.rank)) {
-            ObjectMapper objectMapper = new ObjectMapper();
-
-            DataResult rank = variantManager.rank(query, cliOptions.genericVariantQueryOptions.rank, 10, true, token);
-            System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));
         } else {
             queryOptions.putIfNotEmpty("annotations", cliOptions.genericVariantQueryOptions.annotations);
 
@@ -483,7 +492,7 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 cliOptions.genericVariantAnnotateOptions.create,
                 cliOptions.genericVariantAnnotateOptions.load,
                 cliOptions.genericVariantAnnotateOptions.customName
-                );
+        );
 
         toolRunner.execute(VariantAnnotationIndexOperationTool.class,
                 params.toObjectMap(cliOptions.commonOptions.params)
@@ -649,6 +658,37 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .start();
     }
 
+    private void knockout() throws Exception {
+        VariantCommandOptions.KnockoutCommandOptions cliOptions = variantCommandOptions.knockoutCommandOptions;
+
+        ObjectMap params = new KnockoutAnalysisParams(
+                cliOptions.sample,
+                cliOptions.gene,
+                cliOptions.panel,
+                cliOptions.biotype,
+                cliOptions.consequenceType,
+                cliOptions.filter,
+                cliOptions.qual,
+                cliOptions.outdir)
+                .toObjectMap(cliOptions.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(KnockoutAnalysis.class, params, Paths.get(cliOptions.outdir), token);
+    }
+
+    private void sampleEligibility() throws Exception {
+        VariantCommandOptions.SampleEligibilityCommandOptions cliOptions = variantCommandOptions.sampleEligibilityCommandOptions;
+
+        ObjectMap params = new SampleEligibilityAnalysisParams(
+                cliOptions.query,
+                cliOptions.index,
+                cliOptions.cohortId)
+                .toObjectMap(cliOptions.commonOptions.params)
+                .append(ParamConstants.STUDY_PARAM, cliOptions.study);
+
+        toolRunner.execute(SampleEligibilityAnalysis.class, params, Paths.get(cliOptions.outdir), token);
+    }
+
     private void sampleStats() throws Exception {
         VariantCommandOptions.SampleVariantStatsCommandOptions cliOptions = variantCommandOptions.sampleVariantStatsCommandOptions;
         ObjectMap params = new ObjectMap();
@@ -693,6 +733,18 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
                 .setIndexResults(cliOptions.index)
                 .setSamplesQuery(query)
                 .setSampleNames(sampleNames)
+                .start();
+    }
+
+    private void mutationalSignature() throws Exception {
+        VariantCommandOptions.MutationalSignatureCommandOptions cliOptions = variantCommandOptions.mutationalSignatureCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.commonOptions.params);
+
+        MutationalSignatureAnalysis mutationalSignatureAnalysis = new MutationalSignatureAnalysis();
+        mutationalSignatureAnalysis.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
+        mutationalSignatureAnalysis.setStudy(cliOptions.study)
+                .setSampleName(cliOptions.sample)
                 .start();
     }
 
@@ -745,5 +797,22 @@ public class VariantInternalCommandExecutor extends InternalCommandExecutor {
         rvtests.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), token);
 
         rvtests.start();
+    }
+
+    private void gatk() throws Exception {
+        VariantCommandOptions.GatkCommandOptions cliOptions = variantCommandOptions.gatkCommandOptions;
+        ObjectMap params = new ObjectMap();
+        params.putAll(cliOptions.basicOptions.params);
+
+        GatkWrapperAnalysis gatk = new GatkWrapperAnalysis();
+        gatk.setUp(appHome, catalogManager, storageEngineFactory, params, Paths.get(cliOptions.outdir), cliOptions.basicOptions.token);
+
+        gatk.setStudy(cliOptions.study);
+        gatk.setCommand(cliOptions.command);
+        gatk.setFastaFile(cliOptions.fastaFile);
+        gatk.setBamFile(cliOptions.bamFile);
+        gatk.setVcfFilename(cliOptions.vcfFilename);
+
+        gatk.start();
     }
 }

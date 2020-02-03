@@ -1,13 +1,16 @@
 package org.opencb.opencga.analysis.variant.operations;
 
 import io.jsonwebtoken.lang.Collections;
-import org.opencb.opencga.core.annotations.Tool;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.api.variant.VariantIndexParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
+import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.util.List;
 
 import static org.opencb.opencga.analysis.variant.manager.operations.VariantFileIndexerOperationManager.LOAD;
@@ -47,6 +50,10 @@ public class VariantIndexOperationTool extends OperationTool {
 
         params.put(LOAD, indexParams.isLoad());
         params.put(TRANSFORM, indexParams.isTransform());
+        if (indexParams.isTransform() && !indexParams.isLoad()) {
+            // Ensure keeping intermediate files if only transforming
+            keepIntermediateFiles = true;
+        }
 
         params.put(VariantStorageOptions.MERGE_MODE.key(), indexParams.getMerge());
 
@@ -79,6 +86,17 @@ public class VariantIndexOperationTool extends OperationTool {
             addAttribute("indexedFiles", Collections.size(results));
             if (Collections.isEmpty(results)) {
                 addWarning("Nothing to do!");
+            }
+
+            if (!keepIntermediateFiles) {
+                File[] files = getScratchDir().toFile().listFiles();
+                if (files != null) {
+                    for (File file : files) {
+                        if (file.getName().endsWith(VariantReaderUtils.MALFORMED_FILE + ".txt")) {
+                            Files.move(file.toPath(), getOutDir());
+                        }
+                    }
+                }
             }
         });
     }

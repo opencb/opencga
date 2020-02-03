@@ -22,8 +22,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.models.User;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.HashSet;
@@ -41,11 +43,11 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
     /*
      * User methods
      */
-    default boolean exists(String userId) throws CatalogDBException {
+    default boolean exists(String userId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query(QueryParams.ID.key(), userId)).getNumMatches() > 0;
     }
 
-    default void checkId(String userId) throws CatalogDBException {
+    default void checkId(String userId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (StringUtils.isEmpty(userId)) {
             throw CatalogDBException.newInstance("User id '{}' is not valid: ", userId);
         }
@@ -55,7 +57,7 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         }
     }
 
-    default void checkIds(List<String> userIds) throws CatalogDBException {
+    default void checkIds(List<String> userIds) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (userIds == null || userIds.isEmpty()) {
             throw CatalogDBException.newInstance("No users to be checked.");
         }
@@ -68,27 +70,31 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         }
     }
 
-    OpenCGAResult insert(User user, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(User user, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<User> get(String userId, QueryOptions options, String lastModified) throws CatalogDBException;
+    OpenCGAResult<User> get(String userId, QueryOptions options, String lastModified)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
 //    @Deprecated
 //    default OpenCGAResult<User> modifyUser(String userId, ObjectMap parameters) throws CatalogDBException {
 //        return update(userId, parameters);
 //    }
 
-    OpenCGAResult update(String userId, ObjectMap parameters) throws CatalogDBException;
+    OpenCGAResult update(String userId, ObjectMap parameters)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
 //    @Deprecated
 //    default OpenCGAResult<User> deleteUser(String userId) throws CatalogDBException {
 //        return delete(userId, false);
 //    }
 
-    OpenCGAResult delete(String userId, QueryOptions queryOptions) throws CatalogDBException;
+    OpenCGAResult delete(String userId, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException;
 
-    OpenCGAResult updateUserLastModified(String userId) throws CatalogDBException;
+    OpenCGAResult updateUserLastModified(String userId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException;
 

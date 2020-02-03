@@ -75,7 +75,6 @@
             <version>${opencga.version}</version>
             <!--<type>war</type>-->
         </dependency>
-
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet-core</artifactId>
@@ -102,11 +101,6 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.fusesource.jansi</groupId>
-            <artifactId>jansi-project</artifactId>
-            <version>1.18</version>
-        </dependency>
         <!--Uncomment if hadoop dependencies are provided-->
         <!--<dependency>-->
             <!--<groupId>org.apache.hadoop</groupId>-->
@@ -129,6 +123,11 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.fusesource.jansi</groupId>
+            <artifactId>jansi</artifactId>
+            <version>1.18</version>
         </dependency>
     </dependencies>
 
@@ -263,6 +262,9 @@
                                     <arg value="${build.dir}/clients"/>
                                     <arg value="${build.dir}/conf"/>
                                     <arg value="${build.dir}/test"/>
+                                    <!--
+                                    <arg value="${build.dir}/misc/solr/${solr.configset.name}-${opencga.version}"/>
+                                    -->
                                 </exec>
 
                                 <echo>Copying to ${build.dir}</echo>
@@ -273,7 +275,7 @@
                                     <arg value="${project.basedir}/target/conf"/>
                                     <arg value="${app.dir}/analysis"/>
                                     <arg value="${app.dir}/cloud"/>
-                                    <arg value="${app.dir}/scripts"/>
+                                    <arg value="${app.dir}/misc"/>
                                     <!--<arg value="${project.basedir}/../opencga-storage/build/bin"/>-->
                                     <arg value="${project.basedir}/../LICENSE"/>
                                     <arg value="${project.basedir}/../README.md"/>
@@ -294,7 +296,7 @@
                                 </exec>
 
                                 <exec executable="${project.basedir}/target/appassembler/bin/opencga-clicompletion.sh">
-                                    <arg value="${build.dir}/scripts/completion"/>
+                                    <arg value="${build.dir}/misc/completion"/>
                                 </exec>
 
                                 <echo>Copying Python and R to ${build.dir}/clients</echo>
@@ -320,6 +322,11 @@
                                     <arg value="${project.basedir}/../opencga-storage/opencga-storage-core/target/classes/storage-configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-client/target/classes/client-configuration.yml"/>
                                     <arg value="${build.dir}/conf"/>
+                                </exec>
+
+                                <exec executable="${project.basedir}/app/misc/solr/prepare_configsets.sh">
+                                    <arg value="${project.basedir}/.."/>
+                                    <arg value="${opencga.version}"/>
                                 </exec>
 
                                 <echo>Copying war file</echo>

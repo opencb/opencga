@@ -20,7 +20,7 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.exceptions.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;

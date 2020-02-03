@@ -13,8 +13,9 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.models.Annotable;
+import org.opencb.opencga.core.models.common.Annotable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -139,6 +140,7 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             try {
                 DataResult<Document> individualDataResult;
                 if (user != null) {
+                    query.put(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
                     individualDataResult = individualDBAdaptor.nativeGet(studyUid, query, queryOptions, user);
                 } else {
                     individualDataResult = individualDBAdaptor.nativeGet(query, queryOptions);
@@ -154,7 +156,7 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
                     }
                 }
 
-            } catch (CatalogDBException | CatalogAuthorizationException e) {
+            } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
                 logger.warn("Could not obtain the parents associated to the individuals: {}", e.getMessage(), e);
             }
 
@@ -177,11 +179,12 @@ public class IndividualMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
             List<Document> sampleList;
             try {
                 if (user != null) {
+                    query.put(SampleDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
                     sampleList = sampleDBAdaptor.nativeGet(studyUid, query, sampleQueryOptions, user).getResults();
                 } else {
                     sampleList = sampleDBAdaptor.nativeGet(query, sampleQueryOptions).getResults();
                 }
-            } catch (CatalogDBException | CatalogAuthorizationException e) {
+            } catch (CatalogDBException | CatalogAuthorizationException | CatalogParameterException e) {
                 logger.warn("Could not obtain the samples associated to the individuals: {}", e.getMessage(), e);
                 return;
             }

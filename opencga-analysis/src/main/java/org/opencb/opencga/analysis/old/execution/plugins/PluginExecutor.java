@@ -20,7 +20,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.old.AnalysisExecutionException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

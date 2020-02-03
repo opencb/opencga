@@ -19,8 +19,8 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import org.bson.Document;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.job.Job;
 
 import java.util.*;
 
@@ -44,6 +44,7 @@ public class JobConverter extends GenericDocumentComplexConverter<Job> {
         document.put(JobDBAdaptor.QueryParams.OUTPUT.key(), convertFilesToDocument(object.getOutput()));
         document.put(JobDBAdaptor.QueryParams.STDOUT.key(), convertFileToDocument(object.getStdout()));
         document.put(JobDBAdaptor.QueryParams.STDERR.key(), convertFileToDocument(object.getStderr()));
+        document.put(JobDBAdaptor.QueryParams.DEPENDS_ON.key(), convertJobsToDocument(object.getDependsOn()));
         return document;
     }
 
@@ -73,5 +74,33 @@ public class JobConverter extends GenericDocumentComplexConverter<Job> {
             files.add(convertFileToDocument(file));
         }
         return files;
+    }
+
+    public Document convertJobToDocument(Object job) {
+        if (job == null) {
+            return new Document(JobDBAdaptor.QueryParams.UID.key(), -1L);
+        }
+        if (job instanceof Job) {
+            return new Document(JobDBAdaptor.QueryParams.UID.key(), ((Job) job).getUid());
+        } else if (job instanceof Map) {
+            return new Document(JobDBAdaptor.QueryParams.UID.key(), ((Map) job).get(JobDBAdaptor.QueryParams.UID.key()));
+        } else {
+            return new Document(JobDBAdaptor.QueryParams.UID.key(), -1L);
+        }
+    }
+
+    public List<Document> convertJobsToDocument(Object jobList) {
+        if (!(jobList instanceof Collection)) {
+            return Collections.emptyList();
+        }
+        List<Object> myList = (List<Object>) jobList;
+        if (myList.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Document> jobs = new ArrayList(myList.size());
+        for (Object job : myList) {
+            jobs.add(convertJobToDocument(job));
+        }
+        return jobs;
     }
 }

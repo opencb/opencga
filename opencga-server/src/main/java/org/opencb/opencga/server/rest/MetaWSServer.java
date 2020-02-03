@@ -20,14 +20,14 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.server.rest.admin.AdminWSServer;
-import org.opencb.opencga.server.rest.analysis.AlignmentAnalysisWSService;
-import org.opencb.opencga.server.rest.analysis.ClinicalInterpretationWSService;
-import org.opencb.opencga.server.rest.analysis.VariantAnalysisWSService;
+import org.opencb.opencga.server.rest.analysis.AlignmentWebService;
+import org.opencb.opencga.server.rest.analysis.ClinicalWebService;
+import org.opencb.opencga.server.rest.analysis.VariantWebService;
 import org.opencb.opencga.server.rest.ga4gh.Ga4ghWSServer;
-import org.opencb.opencga.server.rest.operations.OperationsWSService;
+import org.opencb.opencga.server.rest.operations.VariantOperationWebService;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -65,7 +65,7 @@ public class MetaWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/about")
-    @ApiOperation(httpMethod = "GET", value = "Returns info about current OpenCGA code.")
+    @ApiOperation(httpMethod = "GET", value = "Returns info about current OpenCGA code.", response = Map.class)
     public Response getAbout() {
         Map<String, String> info = new HashMap<>(5);
         info.put("Program", "OpenCGA (OpenCB)");
@@ -82,7 +82,7 @@ public class MetaWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/ping")
-    @ApiOperation(httpMethod = "GET", value = "Ping Opencga webservices.")
+    @ApiOperation(httpMethod = "GET", value = "Ping Opencga webservices.", response = Map.class)
     public Response ping() {
 
         OpenCGAResult queryResult = new OpenCGAResult();
@@ -93,14 +93,14 @@ public class MetaWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/fail")
-    @ApiOperation(httpMethod = "GET", value = "Ping Opencga webservices.")
+    @ApiOperation(httpMethod = "GET", value = "Ping Opencga webservices.", response = Map.class)
     public Response fail() {
         throw new RuntimeException("Do fail!");
     }
 
     @GET
     @Path("/status")
-    @ApiOperation(httpMethod = "GET", value = "Database status.")
+    @ApiOperation(httpMethod = "GET", value = "Database status.", response = Map.class)
     public Response status() {
 
         OpenCGAResult queryResult = new OpenCGAResult();
@@ -171,7 +171,7 @@ public class MetaWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/api")
-    @ApiOperation(value = "API")
+    @ApiOperation(value = "API", response = Map.class)
     public Response api(@ApiParam(value = "List of categories to get API from") @QueryParam("category") String categoryStr) {
         List<LinkedHashMap<String, Object>> api = new ArrayList<>(20);
         Map<String, Class> classes = new LinkedHashMap<>();
@@ -185,10 +185,10 @@ public class MetaWSServer extends OpenCGAWSServer {
         classes.put("families", FamilyWSServer.class);
         classes.put("cohorts", CohortWSServer.class);
         classes.put("panels", PanelWSServer.class);
-        classes.put("alignment", AlignmentAnalysisWSService.class);
-        classes.put("variant", VariantAnalysisWSService.class);
-        classes.put("clinical", ClinicalInterpretationWSService.class);
-        classes.put("variantOperations", OperationsWSService.class);
+        classes.put("alignment", AlignmentWebService.class);
+        classes.put("variant", VariantWebService.class);
+        classes.put("clinical", ClinicalWebService.class);
+        classes.put("variantOperations", VariantOperationWebService.class);
         classes.put("meta", MetaWSServer.class);
         classes.put("ga4gh", Ga4ghWSServer.class);
         classes.put("admin", AdminWSServer.class);
@@ -230,6 +230,9 @@ public class MetaWSServer extends OpenCGAWSServer {
                 endpoint.put("path", map.get("path") + pathAnnotation.value());
                 endpoint.put("method", httpMethod);
                 endpoint.put("response", StringUtils.substringAfterLast(apiOperationAnnotation.response().getName().replace("Void", ""), "."));
+
+                String responseClass = apiOperationAnnotation.response().getName().replace("Void", "");
+                endpoint.put("responseClass", responseClass.endsWith(";") ? responseClass : responseClass + ";");
                 endpoint.put("notes", apiOperationAnnotation.notes());
                 endpoint.put("description", apiOperationAnnotation.value());
 
@@ -241,6 +244,7 @@ public class MetaWSServer extends OpenCGAWSServer {
                         parameter.put("name", apiImplicitParam.name());
                         parameter.put("param", apiImplicitParam.paramType());
                         parameter.put("type", apiImplicitParam.dataType());
+                        parameter.put("typeClass", "java.lang." + StringUtils.capitalize(apiImplicitParam.dataType()));
                         parameter.put("allowedValues", apiImplicitParam.allowableValues());
                         parameter.put("required", apiImplicitParam.required());
                         parameter.put("defaultValue", apiImplicitParam.defaultValue());
@@ -253,7 +257,7 @@ public class MetaWSServer extends OpenCGAWSServer {
                 if (methodParameters != null) {
                     for (Parameter methodParameter : methodParameters) {
                         ApiParam apiParam = methodParameter.getAnnotation(ApiParam.class);
-                        if (apiParam!= null && !apiParam.hidden()) {
+                        if (apiParam != null && !apiParam.hidden()) {
                             LinkedHashMap<String, Object> parameter = new LinkedHashMap<>();
                             if (methodParameter.getAnnotation(PathParam.class) != null) {
                                 parameter.put("name", methodParameter.getAnnotation(PathParam.class).value());
@@ -270,8 +274,9 @@ public class MetaWSServer extends OpenCGAWSServer {
 
                             // Get type in lower case except for 'body' param
                             String type = methodParameter.getType().getName();
-                            if (type.contains(".")) {
-                                String[] split = type.split("\\.");
+                            String typeClass = type;
+                            if (typeClass.contains(".")) {
+                                String[] split = typeClass.split("\\.");
                                 type = split[split.length - 1];
                                 if (!parameter.get("param").equals("body")) {
                                     type = type.toLowerCase();
@@ -280,9 +285,12 @@ public class MetaWSServer extends OpenCGAWSServer {
                                     if (type.contains("$")) {
                                         type = "enum";
                                     }
+                                } else {
+                                    type = "object";
                                 }
                             }
                             parameter.put("type", type);
+                            parameter.put("typeClass", typeClass.endsWith(";") ? typeClass : typeClass + ";");
                             parameter.put("allowedValues", apiParam.allowableValues());
                             parameter.put("required", apiParam.required());
                             parameter.put("defaultValue", apiParam.defaultValue());

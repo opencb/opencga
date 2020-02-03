@@ -46,8 +46,14 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.core.models.*;
+import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.project.DataStore;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.response.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
@@ -56,6 +62,7 @@ import org.opencb.opencga.storage.core.metadata.VariantMetadataFactory;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.SampleMetadata;
+import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.metadata.models.VariantScoreMetadata;
 import org.opencb.opencga.storage.core.utils.CellBaseUtils;
 import org.opencb.opencga.storage.core.variant.BeaconResponse;
@@ -65,7 +72,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.score.VariantScoreFormatDescriptor;
 import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchLoadResult;
-import org.opencb.opencga.storage.core.variant.search.solr.VariantSearchManager;
 
 import java.io.IOException;
 import java.net.URI;
@@ -531,11 +537,13 @@ public class VariantStorageManager extends StorageManager {
 
     public DataResult<Variant> getSampleData(String variant, String study, QueryOptions inputOptions, String token)
             throws CatalogException, IOException, StorageEngineException {
-        Query query = new Query(VariantQueryParam.STUDY.key(), study);
         QueryOptions options = inputOptions == null ? new QueryOptions() : new QueryOptions(inputOptions);
         options.remove(QueryOptions.INCLUDE);
         options.remove(QueryOptions.EXCLUDE);
         options.remove(VariantField.SUMMARY);
+        Query query = new Query(options)
+                .append(VariantQueryParam.STUDY.key(), study);
+        query.remove(GENOTYPE.key());
         return secure(query, options, token, Enums.Action.SAMPLE_DATA, engine -> {
             String studyFqn = query.getString(STUDY.key());
             options.putAll(query);
@@ -543,8 +551,26 @@ public class VariantStorageManager extends StorageManager {
         });
     }
 
+    public StudyMetadata getStudyMetadata(String study, String token)
+            throws CatalogException, StorageEngineException {
+        String studyFqn = getStudyFqn(study, token);
+        Query query = new Query(STUDY.key(), studyFqn)
+                .append(INCLUDE_SAMPLE.key(), VariantQueryUtils.NONE)
+                .append(INCLUDE_FILE.key(), VariantQueryUtils.NONE);
+
+        return secure(query, new QueryOptions(), token, engine -> {
+            VariantStorageMetadataManager metadataManager = engine.getMetadataManager();
+            StudyMetadata studyMetadata = metadataManager.getStudyMetadata(studyFqn);
+            if (studyMetadata == null) {
+                // Sample does not exist in storage!
+                throw VariantQueryException.studyNotFound(studyFqn);
+            }
+            return studyMetadata;
+        });
+    }
+
     public SampleMetadata getSampleMetadata(String study, String sample, String token)
-            throws CatalogException, IOException, StorageEngineException {
+            throws CatalogException, StorageEngineException {
         Query query = new Query(STUDY.key(), study)
                 .append(SAMPLE.key(), sample)
                 .append(INCLUDE_FILE.key(), VariantQueryUtils.NONE);
@@ -597,7 +623,7 @@ public class VariantStorageManager extends StorageManager {
                     storageConfiguration.getSearch().getTimeout());
             String collectionName = "test_connection";
             if (!solrManager.exists(collectionName)) {
-                solrManager.create(collectionName, VariantSearchManager.CONF_SET);
+                solrManager.create(collectionName, storageConfiguration.getSearch().getConfigSet());
             }
         } catch (Exception e) {
             logger.warn("Ignore exception checking if Solr is available", e);
@@ -803,7 +829,7 @@ public class VariantStorageManager extends StorageManager {
         }
     }
 
-    private Map<String, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, String token)
+    private Map<String, List<String>> checkSamplesPermissions(Query query, QueryOptions queryOptions, String token)
             throws CatalogException, StorageEngineException, IOException {
         String study = catalogUtils.getAnyStudy(query, token);
         DataStore dataStore = getDataStore(study, token);
@@ -812,10 +838,10 @@ public class VariantStorageManager extends StorageManager {
     }
 
     // package protected for test visibility
-    Map<String, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, VariantStorageMetadataManager mm,
+    Map<String, List<String>> checkSamplesPermissions(Query query, QueryOptions queryOptions, VariantStorageMetadataManager mm,
                                                       String token)
             throws CatalogException {
-        final Map<String, List<Sample>> samplesMap = new HashMap<>();
+        final Map<String, List<String>> samplesMap = new HashMap<>();
         Set<VariantField> returnedFields = VariantField.getIncludeFields(queryOptions);
         if (!returnedFields.contains(VariantField.STUDIES)) {
             // FIXME: What if filtering by fields with no permissions?
@@ -827,13 +853,15 @@ public class VariantStorageManager extends StorageManager {
             for (Map.Entry<String, List<String>> entry : samplesToReturn.entrySet()) {
                 String studyId = entry.getKey();
                 if (!entry.getValue().isEmpty()) {
-                    DataResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(studyId, entry.getValue(),
-                            new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), token);
-                    if (samplesQueryResult.getNumResults() != entry.getValue().size()) {
+//                    DataResult<Sample> samplesQueryResult = catalogManager.getSampleManager().get(studyId, entry.getValue(),
+//                            new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()), token);
+                    long numMatches = catalogManager.getSampleManager()
+                            .count(studyId, new Query(SampleDBAdaptor.QueryParams.ID.key(), entry.getValue()), token).getNumMatches();
+                    if (numMatches != entry.getValue().size()) {
                         throw new CatalogAuthorizationException("Permission denied. User "
                                 + catalogManager.getUserManager().getUserId(token) + " can't read all the requested samples");
                     }
-                    samplesMap.put(studyId, samplesQueryResult.getResults());
+                    samplesMap.put(studyId, entry.getValue());
                 } else {
                     samplesMap.put(studyId, Collections.emptyList());
                 }
@@ -856,7 +884,6 @@ public class VariantStorageManager extends StorageManager {
                     DataResult<Sample> samplesQueryResult = catalogManager.getSampleManager().search(study.getFqn(), new Query(),
                             new QueryOptions(INCLUDE, SampleDBAdaptor.QueryParams.ID.key()).append("lazy", true), token);
                     samplesQueryResult.getResults().sort(Comparator.comparing(Sample::getId));
-                    samplesMap.put(study.getFqn(), samplesQueryResult.getResults());
                     int studyId = mm.getStudyId(study.getFqn());
                     for (Iterator<Sample> iterator = samplesQueryResult.getResults().iterator(); iterator.hasNext();) {
                         Sample sample = iterator.next();
@@ -866,6 +893,10 @@ public class VariantStorageManager extends StorageManager {
                             iterator.remove();
                         }
                     }
+                    samplesMap.put(study.getFqn(), samplesQueryResult.getResults()
+                            .stream()
+                            .map(Sample::getId)
+                            .collect(Collectors.toList()));
                 }
                 if (includeSamples.isEmpty()) {
                     query.append(VariantQueryParam.INCLUDE_SAMPLE.key(), NONE);

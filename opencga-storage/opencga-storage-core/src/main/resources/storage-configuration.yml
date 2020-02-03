@@ -34,6 +34,7 @@ search:
   #    Example for Zookeeper connection:  opencga-zookeeper-01:2181               <-- Recommended for replicated installations
   hosts:
   - ${OPENCGA.STORAGE.SEARCH.HOST}
+  configSet: "${OPENCGA.STORAGE.SEARCH.CONFIG_SET}"
   mode: "cloud"
   timeout: ${OPENCGA.STORAGE.SEARCH.TIMEOUT}
   insertBatchSize: 10000
@@ -77,7 +78,7 @@ variant:
     transform.numThreads: 4
     transform.format: "avro"
     transform.compression: "gzip"
-    transform.failOnMalformed: false
+    transform.failOnMalformed: true
 
     load.batchSize: 100
     load.numThreads: 6

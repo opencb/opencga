@@ -7,9 +7,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.stats.solr.FamilySolrModel;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Family;
-import org.opencb.opencga.core.models.Study;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.study.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +51,7 @@ public class CatalogFamilyToSolrFamilyConverter implements ComplexTypeConverter<
     public FamilySolrModel convertToStorageType(Family family) {
         FamilySolrModel familySolrModel = new FamilySolrModel();
 
+        familySolrModel.setId(family.getId());
         familySolrModel.setUid(family.getUid());
         familySolrModel.setStudyId(study.getFqn().replace(":", "__"));
 

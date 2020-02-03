@@ -12,7 +12,6 @@ import org.opencb.opencga.storage.core.variant.query.DBAdaptorVariantQueryExecut
 import java.util.Set;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam.REGION;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.DEFAULT_SKIP_COUNT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils.MODIFIER_QUERY_PARAMS;
 
 /**
@@ -34,7 +33,7 @@ public class RegionVariantQueryExecutor extends DBAdaptorVariantQueryExecutor {
             // Query search index is mandatory. Can not use this executor.
             return false;
         }
-        if (!options.getBoolean(QueryOptions.SKIP_COUNT, DEFAULT_SKIP_COUNT)) {
+        if (options.getBoolean(QueryOptions.COUNT, false)) {
             // Should not require total count
             return false;
         }

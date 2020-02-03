@@ -5,9 +5,9 @@ import org.bson.Document;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.mongodb.AnnotationMongoDBAdaptor;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.models.AnnotationSet;
-import org.opencb.opencga.core.models.Variable;
-import org.opencb.opencga.core.models.VariableSet;
+import org.opencb.opencga.core.models.common.AnnotationSet;
+import org.opencb.opencga.core.models.study.Variable;
+import org.opencb.opencga.core.models.study.VariableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +72,7 @@ public class AnnotationConverter {
                 case CATEGORICAL:
                 case INTEGER:
                 case DOUBLE:
-                case TEXT:
+                case STRING:
                     Document document = createAnnotationDocument(variableLevel, annotations);
                     addDocumentIfNotEmpty(variableSet, annotationSetName, variableLevel, document, documentList);
                     break;
@@ -102,6 +102,21 @@ public class AnnotationConverter {
                     } else { // It is a free map
                         document = createAnnotationDocument(variableLevel, annotations);
                         addDocumentIfNotEmpty(variableSet, annotationSetName, variableLevel, document, documentList);
+                    }
+                    break;
+                case MAP_BOOLEAN:
+                case MAP_INTEGER:
+                case MAP_DOUBLE:
+                case MAP_STRING:
+                    // Add a document for every key within the object
+                    Map<String, Document> documentMap = createNestedAnnotationDocument(variableLevel, annotations);
+                    for (Map.Entry<String, Document> entry : documentMap.entrySet()) {
+                        List<String> keys = new ArrayList<>(variableLevel.getKeys());
+                        keys.add(entry.getKey());
+
+                        VariableLevel auxVariableLevel = new VariableLevel(variableLevel.getVariable(), keys,
+                                variableLevel.getArrayLevel());
+                        addDocumentIfNotEmpty(variableSet, annotationSetName, auxVariableLevel, entry.getValue(), documentList);
                     }
                     break;
                 default:
@@ -403,6 +418,245 @@ public class AnnotationConverter {
 
         return document;
     }
+
+    private Map<String, Document> createNestedAnnotationDocument(VariableLevel variableLevel, Map<String, Object> annotations) {
+        Map<String, Document> result = new HashMap<>();
+
+//        Document document = new Document();
+        if (annotations == null) {
+            return Collections.emptyMap();
+        }
+        List<String> keys = variableLevel.getKeys();
+        List<Integer> arrayLevel = variableLevel.getArrayLevel();
+        Variable variable = variableLevel.getVariable();
+
+        // There are no arrays in this annotation
+        if (arrayLevel.isEmpty()) {
+            Object annotation = annotations;
+            for (int i = 0; i < keys.size(); i++) {
+                annotation = ((Map<String, Object>) annotation).get(keys.get(i));
+                if (annotation == null) {
+                    return result;
+                }
+            }
+            for (Map.Entry<String, Object> entry : ((Map<String, Object>) annotation).entrySet()) {
+                result.put(entry.getKey(), new Document(VALUE, entry.getValue()));
+            }
+        } else {
+            Object annotation = annotations;
+            for (int i = 0; i < arrayLevel.get(0) + 1; i++) {
+                annotation = ((Map<String, Object>) annotation).get(keys.get(i));
+                if (annotation == null) {
+                    return result;
+                }
+                if (!arrayLevel.isEmpty() && arrayLevel.get(0) <= i) {
+//                            arrayLevel.isEmpty() || arrayLevel.get(0) > i) {
+
+                    // 1st level of the array found
+                    Map<String, List<Object>> values = new HashMap<>();
+                    Map<String, List<Object>> numberElements = new HashMap<>();
+
+                    List<Map<String, Object>> annotationLevel1 = (List) annotation; // a.b[]
+
+                    if (arrayLevel.get(0) + 1 == keys.size()) {
+                        // Set containing all the dynamic keys of the map
+                        Set<String> allKeys = new HashSet<>();
+
+                        // We first iterate to obtain all the possible keys of the map
+                        for (Map<String, Object> map : annotationLevel1) {
+                            allKeys.addAll(map.keySet());
+                        }
+
+                        // Initialise the map
+                        for (String myKey : allKeys) {
+                            values.put(myKey, new ArrayList<>());
+                            numberElements.put(myKey, new ArrayList<>());
+                        }
+
+                        for (Map<String, Object> map : annotationLevel1) {
+                            for (String myKey : allKeys) {
+                                if (map.containsKey(myKey)) {
+                                    // The key exists
+                                    values.get(myKey).add(map.get(myKey));
+                                    numberElements.get(myKey).add(1);
+                                } else {
+                                    // The key does not exist
+                                    numberElements.get(myKey).add(0);
+                                }
+                            }
+                        }
+                    } else {
+                        // It is an array of objects
+
+                        Set<String> allKeys = new HashSet<>();
+                        // First, we extract all the possible keys the dynamic map will have
+                        for (Object annotation1 : annotationLevel1) {
+                            annotation = annotation1;
+                            for (int j = arrayLevel.get(0) + 1;
+                                 j < Math.min(keys.size(), arrayLevel.size() == 1 ? Integer.MAX_VALUE : (arrayLevel.get(1) + 1)); j++) {
+                                annotation = ((Map<String, Object>) annotation).get(keys.get(j));
+                                if (annotation == null) {
+                                    break;
+                                }
+                                if (arrayLevel.size() > 1 && arrayLevel.get(1) <= j) {
+                                    List<Integer> numberElementsLevel2 = new ArrayList<>();
+                                    List<Map<String, Object>> annotationLevel2 = (List) annotation; // a.b.$1.c.d[]
+
+                                    if (arrayLevel.get(1) + 1 == keys.size()) {
+                                        // The last element is an array of the primitive value
+                                        for (Map<String, Object> map : annotationLevel2) {
+                                            allKeys.addAll(map.keySet());
+                                        }
+                                    } else {
+                                        // It is an array of objects
+
+                                        for (Object annotation2 : annotationLevel2) {
+                                            annotation = annotation2;
+
+                                            for (int w = arrayLevel.get(1) + 1; w < keys.size(); w++) {
+                                                annotation = ((Map<String, Object>) annotation).get(keys.get(w));
+                                                if (annotation == null) {
+                                                    numberElementsLevel2.add(0); // No annotation found for the variable inside the array
+                                                    break;
+                                                }
+
+                                                if (w + 1 == keys.size()) {
+                                                    // We found a result
+                                                    allKeys.addAll(((Map<String, Object>) annotation).keySet());
+                                                }
+                                            }
+
+                                        }
+                                    }
+                                } else if (j + 1 == keys.size()) {
+                                    // We found a result
+                                    allKeys.addAll(((Map<String, Object>) annotation).keySet());
+                                }
+                            }
+                        }
+
+                        // Initialise the map
+                        for (String myKey : allKeys) {
+                            values.put(myKey, new ArrayList<>());
+                            numberElements.put(myKey, new ArrayList<>());
+                        }
+
+                        // Fill the values
+                        for (Object annotation1 : annotationLevel1) {
+                            annotation = annotation1;
+                            for (int j = arrayLevel.get(0) + 1;
+                                 j < Math.min(keys.size(), arrayLevel.size() == 1 ? Integer.MAX_VALUE : (arrayLevel.get(1) + 1)); j++) {
+                                annotation = ((Map<String, Object>) annotation).get(keys.get(j));
+                                if (annotation == null) {
+                                    for (String myKey : allKeys) {
+                                        values.get(myKey).add(0); // No annotation found for the variable inside the array
+                                    }
+                                    break;
+                                }
+                                if (arrayLevel.size() > 1 && arrayLevel.get(1) <= j) {
+
+                                    Map<String, List<Integer>> numberElementsLevel2 = new HashMap<>();
+                                    for (String myKey : allKeys) {
+                                        numberElementsLevel2.put(myKey, new ArrayList<>());
+                                    }
+
+                                    List<Map<String, Object>> annotationLevel2 = (List) annotation; // a.b.$1.c.d[]
+
+                                    if (arrayLevel.get(1) + 1 == keys.size()) {
+                                        // The last element is an array of the primitive value
+
+                                        // We initialise the level2Map
+                                        Map<String, List<Object>> level2Map = new HashMap<>();
+                                        for (String myKey : allKeys) {
+                                            level2Map.put(myKey, new ArrayList<>());
+                                        }
+
+                                        for (Map<String, Object> dynamicMap : annotationLevel2) {
+                                            for (String myKey : allKeys) {
+                                                if (dynamicMap.containsKey(myKey)) {
+                                                    level2Map.get(myKey).add(dynamicMap.get(myKey));
+                                                    numberElementsLevel2.get(myKey).add(1);
+                                                } else {
+                                                    numberElementsLevel2.get(myKey).add(0);
+                                                }
+                                            }
+//                                            for (Map.Entry<String, Object> entry : dynamicMap.entrySet()) {
+//                                                level2Map.get(entry.getKey()).add(entry.getValue());
+//                                            }
+                                        }
+
+                                        for (String myKey : allKeys) {
+                                            values.get(myKey).addAll(level2Map.get(myKey));
+//                                            numberElementsLevel2.get(myKey).add(level2Map.get(myKey).size());
+                                        }
+                                    } else {
+                                        // It is an array of objects
+
+                                        for (Object annotation2 : annotationLevel2) {
+                                            annotation = annotation2;
+
+                                            for (int w = arrayLevel.get(1) + 1; w < keys.size(); w++) {
+                                                annotation = ((Map<String, Object>) annotation).get(keys.get(w));
+                                                if (annotation == null) {
+                                                    for (String myKey : allKeys) {
+                                                        // No annotation found for the variable inside the array
+                                                        numberElementsLevel2.get(myKey).add(0);
+                                                    }
+                                                    break;
+                                                }
+
+                                                if (w + 1 == keys.size()) {
+                                                    // We found a result
+                                                    Map<String, Object> annotationMap = (Map<String, Object>) annotation;
+                                                    for (String myKey : allKeys) {
+                                                        if (annotationMap.containsKey(myKey)) {
+                                                            values.get(myKey).add(annotationMap.get(myKey));
+                                                            numberElementsLevel2.get(myKey).add(1);
+                                                        } else {
+                                                            numberElementsLevel2.get(myKey).add(0);
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                        }
+                                    }
+
+                                    for (String myKey : allKeys) {
+                                        numberElements.get(myKey).add(numberElementsLevel2.get(myKey));
+                                    }
+                                } else if (j + 1 == keys.size()) {
+                                    // We found a result
+                                    Map<String, Object> annotationMap = (Map<String, Object>) annotation;
+                                    for (String myKey : allKeys) {
+                                        if (annotationMap.containsKey(myKey)) {
+                                            values.get(myKey).add(annotationMap.get(myKey));
+                                            numberElements.get(myKey).add(1);
+                                        } else {
+                                            numberElements.get(myKey).add(0);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+
+                    for (Map.Entry<String, List<Object>> entry : values.entrySet()) {
+                        if (entry.getValue().size() > 0) {
+                            result.put(entry.getKey(), new Document()
+                                    .append(VALUE, entry.getValue())
+                                    .append(COUNT_ELEMENTS, numberElements.get(entry.getKey())));
+                        }
+                    }
+                }
+            }
+
+        }
+
+        return result;
+    }
+
 
     /**
      * Generates a unique id for the annotation that will be used mainly to be able to perform groupBy operations.

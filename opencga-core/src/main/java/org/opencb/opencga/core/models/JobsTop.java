@@ -1,5 +1,7 @@
 package org.opencb.opencga.core.models;
 
+import org.opencb.opencga.core.models.job.Job;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Map;

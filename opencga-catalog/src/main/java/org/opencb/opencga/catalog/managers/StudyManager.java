@@ -44,10 +44,20 @@ import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.*;
-import org.opencb.opencga.core.models.acls.AclParams;
-import org.opencb.opencga.core.models.acls.permissions.*;
+import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
+import org.opencb.opencga.core.models.cohort.CohortAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.family.FamilyAclEntry;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileAclEntry;
+import org.opencb.opencga.core.models.individual.IndividualAclEntry;
+import org.opencb.opencga.core.models.job.JobAclEntry;
+import org.opencb.opencga.core.models.project.DataStore;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.sample.SampleAclEntry;
+import org.opencb.opencga.core.models.study.*;
 import org.opencb.opencga.core.models.summaries.StudySummary;
 import org.opencb.opencga.core.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.models.summaries.VariableSummary;
@@ -65,6 +75,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -304,9 +315,9 @@ public class StudyManager extends AbstractManager {
             files.add(rootFile);
             files.add(jobsFile);
 
-            Study study = new Study(id, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
-                    0, cipher, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)),
-                    new Group(ADMINS, Collections.emptyList())), null, files, null, null, null, null, null, null, null, null, null,
+            Study study = new Study(id, name, alias, type, creationDate, description, status,
+                    0, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)),
+                    new Group(ADMINS, Collections.emptyList())), files, null, null, null, null, null, null, null, null,
                     datastores, project.getCurrentRelease(), stats, attributes);
 
             /* CreateStudy */
@@ -745,11 +756,9 @@ public class StudyManager extends AbstractManager {
         StudySummary studySummary = new StudySummary()
                 .setAlias(study.getId())
                 .setAttributes(study.getAttributes())
-                .setCipher(study.getCipher())
                 .setCreationDate(study.getCreationDate())
                 .setDescription(study.getDescription())
                 .setDiskUsage(study.getSize())
-                .setExperiments(study.getExperiments())
                 .setGroups(study.getGroups())
                 .setName(study.getName())
                 .setStats(study.getStats())
@@ -801,13 +810,12 @@ public class StudyManager extends AbstractManager {
         return results;
     }
 
-    public OpenCGAResult<Group> createGroup(String studyStr, String groupId, String groupName, String users, String sessionId)
+    public OpenCGAResult<Group> createGroup(String studyStr, String groupId, String groupName, List<String> users, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(groupId, "group id");
         String name = StringUtils.isEmpty(groupName) ? groupId : groupName;
 
-        List<String> userList = StringUtils.isNotEmpty(users) ? Arrays.asList(users.split(",")) : Collections.emptyList();
-        return createGroup(studyStr, new Group(groupId, name, userList, null), sessionId);
+        return createGroup(studyStr, new Group(groupId, name, users, null), sessionId);
     }
 
     public OpenCGAResult<Group> createGroup(String studyId, Group group, String token) throws CatalogException {
@@ -898,75 +906,74 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<Group> updateGroup(String studyId, String groupId, GroupParams groupParams, String token)
-            throws CatalogException {
+    public OpenCGAResult<Group> updateGroup(String studyId, String groupId, ParamUtils.UpdateAction action, GroupUpdateParams updateParams,
+                                            String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyId, userId);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
                 .append("groupId", groupId)
-                .append("groupParams", groupParams)
+                .append("action", action)
+                .append("updateParams", updateParams)
                 .append("token", token);
         try {
-            ParamUtils.checkObj(groupParams, "Group parameters");
+            ParamUtils.checkObj(updateParams, "Group parameters");
             ParamUtils.checkParameter(groupId, "Group name");
-            ParamUtils.checkObj(groupParams.getAction(), "Action");
+            ParamUtils.checkObj(action, "Action");
 
             // Fix the group name
             if (!groupId.startsWith("@")) {
                 groupId = "@" + groupId;
             }
 
-            authorizationManager.checkUpdateGroupPermissions(study.getUid(), userId, groupId, groupParams);
+            authorizationManager.checkUpdateGroupPermissions(study.getUid(), userId, groupId, action);
 
-            List<String> users;
-            if (StringUtils.isNotEmpty(groupParams.getUsers())) {
-                users = Arrays.asList(groupParams.getUsers().split(","));
-                List<String> tmpUsers = users;
+            if (ListUtils.isNotEmpty(updateParams.getUsers())) {
+                List<String> tmpUsers = updateParams.getUsers();
                 if (groupId.equals(MEMBERS) || groupId.equals(ADMINS)) {
                     // Remove anonymous user if present for the checks.
                     // Anonymous user is only allowed in MEMBERS group, otherwise we keep it as if it is present it should fail.
-                    tmpUsers = users.stream().filter(user -> !user.equals(ANONYMOUS)).collect(Collectors.toList());
+                    tmpUsers = updateParams.getUsers().stream().filter(user -> !user.equals(ANONYMOUS)).collect(Collectors.toList());
                 }
                 if (tmpUsers.size() > 0) {
                     userDBAdaptor.checkIds(tmpUsers);
                 }
             } else {
-                users = Collections.emptyList();
+                updateParams.setUsers(Collections.emptyList());
             }
 
-            switch (groupParams.getAction()) {
+            switch (action) {
                 case SET:
                     if (MEMBERS.equals(groupId)) {
                         throw new CatalogException("Operation not valid. Valid actions over the '@members' group are ADD or REMOVE.");
                     }
-                    studyDBAdaptor.setUsersToGroup(study.getUid(), groupId, users);
-                    studyDBAdaptor.addUsersToGroup(study.getUid(), MEMBERS, users);
+                    studyDBAdaptor.setUsersToGroup(study.getUid(), groupId, updateParams.getUsers());
+                    studyDBAdaptor.addUsersToGroup(study.getUid(), MEMBERS, updateParams.getUsers());
                     break;
                 case ADD:
-                    studyDBAdaptor.addUsersToGroup(study.getUid(), groupId, users);
+                    studyDBAdaptor.addUsersToGroup(study.getUid(), groupId, updateParams.getUsers());
                     if (!MEMBERS.equals(groupId)) {
-                        studyDBAdaptor.addUsersToGroup(study.getUid(), MEMBERS, users);
+                        studyDBAdaptor.addUsersToGroup(study.getUid(), MEMBERS, updateParams.getUsers());
                     }
                     break;
                 case REMOVE:
                     if (MEMBERS.equals(groupId)) {
                         // Check we are not trying to remove the owner of the study from the group
                         String owner = getOwner(study);
-                        if (users.contains(owner)) {
+                        if (updateParams.getUsers().contains(owner)) {
                             throw new CatalogException("Cannot remove owner of the study from the '@members' group");
                         }
 
                         // We remove the users from all the groups and acls
-                        authorizationManager.resetPermissionsFromAllEntities(study.getUid(), users);
-                        studyDBAdaptor.removeUsersFromAllGroups(study.getUid(), users);
+                        authorizationManager.resetPermissionsFromAllEntities(study.getUid(), updateParams.getUsers());
+                        studyDBAdaptor.removeUsersFromAllGroups(study.getUid(), updateParams.getUsers());
                     } else {
-                        studyDBAdaptor.removeUsersFromGroup(study.getUid(), groupId, users);
+                        studyDBAdaptor.removeUsersFromGroup(study.getUid(), groupId, updateParams.getUsers());
                     }
                     break;
                 default:
-                    throw new CatalogException("Unknown action " + groupParams.getAction() + " found.");
+                    throw new CatalogException("Unknown action " + action + " found.");
             }
 
             auditManager.audit(userId, Enums.Action.UPDATE_USERS_FROM_STUDY_GROUP, Enums.Resource.STUDY, study.getId(),
@@ -1604,7 +1611,13 @@ public class StudyManager extends AbstractManager {
                 threadPool.submit(() -> indexSample(catalogSolrManager, study));
             }
 
+
             threadPool.shutdown();
+            try {
+                threadPool.awaitTermination(10, TimeUnit.MINUTES);
+            } catch (InterruptedException e) {
+                throw new CatalogException(e);
+            }
             return true;
         }
         throw new CatalogException("Only the " + OPENCGA + " user can index in Solr");
@@ -1638,6 +1651,8 @@ public class StudyManager extends AbstractManager {
     private Boolean indexCohort(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
         ObjectMap auditParams = new ObjectMap("study", study.getFqn());
         try {
+            logger.info("Indexing cohorts of study {}", study.getFqn());
+
             Query query = new Query()
                     .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             QueryOptions cohortQueryOptions = new QueryOptions()
@@ -1657,6 +1672,7 @@ public class StudyManager extends AbstractManager {
         } catch (CatalogException e) {
             auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.COHORT, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            logger.error("Could not index cohorts: {}", e.getMessage());
             throw e;
         }
     }
@@ -1665,6 +1681,8 @@ public class StudyManager extends AbstractManager {
         ObjectMap auditParams = new ObjectMap("study", study.getFqn());
 
         try {
+            logger.info("Indexing files of study {}", study.getFqn());
+
             Query query = new Query()
                     .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             QueryOptions fileQueryOptions = new QueryOptions()
@@ -1688,6 +1706,7 @@ public class StudyManager extends AbstractManager {
         } catch (CatalogException e) {
             auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.FILE, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            logger.error("Could not index files: {}", e.getMessage());
             throw e;
         }
     }
@@ -1697,6 +1716,8 @@ public class StudyManager extends AbstractManager {
         ObjectMap auditParams = new ObjectMap("study", study.getFqn());
 
         try {
+            logger.info("Indexing families of study {}", study.getFqn());
+
             Query query = new Query()
                     .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             QueryOptions familyQueryOptions = new QueryOptions()
@@ -1717,6 +1738,7 @@ public class StudyManager extends AbstractManager {
         } catch (CatalogException e) {
             auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            logger.error("Could not index families: {}", e.getMessage());
             throw e;
         }
     }
@@ -1726,6 +1748,8 @@ public class StudyManager extends AbstractManager {
         ObjectMap auditParams = new ObjectMap("study", study.getFqn());
 
         try {
+            logger.info("Indexing individuals of study {}", study.getFqn());
+
             Query query = new Query()
                     .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             QueryOptions individualQueryOptions = new QueryOptions()
@@ -1751,6 +1775,7 @@ public class StudyManager extends AbstractManager {
         } catch (CatalogException e) {
             auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.INDIVIDUAL, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            logger.error("Could not index individuals: {}", e.getMessage());
             throw e;
         }
     }
@@ -1759,6 +1784,8 @@ public class StudyManager extends AbstractManager {
         ObjectMap auditParams = new ObjectMap("study", study.getFqn());
 
         try {
+            logger.info("Indexing samples of study {}", study.getFqn());
+
             Query query = new Query()
                     .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
             QueryOptions sampleQueryOptions = new QueryOptions()
@@ -1773,14 +1800,15 @@ public class StudyManager extends AbstractManager {
                     .append(DBAdaptor.INCLUDE_ACLS, true)
                     .append(Constants.FLATTENED_ANNOTATIONS, true);
 
-            catalogSolrManager.insertCatalogCollection(this.sampleDBAdaptor.iterator(query,
-                    sampleQueryOptions), new CatalogSampleToSolrSampleConverter(study), CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
+            catalogSolrManager.insertCatalogCollection(this.sampleDBAdaptor.iterator(query, sampleQueryOptions),
+                    new CatalogSampleToSolrSampleConverter(study), CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
             auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
             return true;
         } catch (CatalogException e) {
             auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            logger.error("Could not index samples: {}", e.getMessage());
             throw e;
         }
     }

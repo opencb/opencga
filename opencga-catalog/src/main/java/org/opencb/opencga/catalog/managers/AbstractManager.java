@@ -22,13 +22,15 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.Group;
+import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.IPrivateStudyUid;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
@@ -265,8 +267,11 @@ public abstract class AbstractManager {
          * @param studyId studyId
          * @param members List of members
          * @throws CatalogDBException CatalogDBException
+         * @throws CatalogParameterException if there is any formatting error.
+         * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
          */
-    protected void checkMembers(long studyId, List<String> members) throws CatalogDBException {
+    protected void checkMembers(long studyId, List<String> members)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         for (String member : members) {
             checkMember(studyId, member);
         }
@@ -282,8 +287,11 @@ public abstract class AbstractManager {
      * @param studyId studyId
      * @param member member
      * @throws CatalogDBException CatalogDBException
+     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
-    protected void checkMember(long studyId, String member) throws CatalogDBException {
+    protected void checkMember(long studyId, String member)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (member.equals("*")) {
             return;
         } else if (member.startsWith("@")) {

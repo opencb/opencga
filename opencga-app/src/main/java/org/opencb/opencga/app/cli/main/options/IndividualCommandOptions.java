@@ -26,6 +26,8 @@ import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 
+import java.util.List;
+
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
 /**
@@ -39,17 +41,12 @@ public class IndividualCommandOptions {
     public SearchCommandOptions searchCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
-    public GroupByCommandOptions groupByCommandOptions;
     public SampleCommandOptions sampleCommandOptions;
     public StatsCommandOptions statsCommandOptions;
 
     public IndividualAclCommandOptions.AclsCommandOptions aclsCommandOptions;
     public IndividualAclCommandOptions.AclsUpdateCommandOptions aclsUpdateCommandOptions;
 
-    public AnnotationCommandOptions.AnnotationSetsCreateCommandOptions annotationCreateCommandOptions;
-    public AnnotationCommandOptions.AnnotationSetsSearchCommandOptions annotationSearchCommandOptions;
-    public AnnotationCommandOptions.AnnotationSetsDeleteCommandOptions annotationDeleteCommandOptions;
-    public AnnotationCommandOptions.AnnotationSetsInfoCommandOptions annotationInfoCommandOptions;
     public AnnotationCommandOptions.AnnotationSetsUpdateCommandOptions annotationUpdateCommandOptions;
 
     public JCommander jCommander;
@@ -73,15 +70,10 @@ public class IndividualCommandOptions {
         this.searchCommandOptions = new SearchCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
-        this.groupByCommandOptions = new GroupByCommandOptions();
         this.sampleCommandOptions = new SampleCommandOptions();
         this.statsCommandOptions = new StatsCommandOptions();
 
         AnnotationCommandOptions annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
-        this.annotationCreateCommandOptions = annotationCommandOptions.getCreateCommandOptions();
-        this.annotationSearchCommandOptions = annotationCommandOptions.getSearchCommandOptions();
-        this.annotationDeleteCommandOptions = annotationCommandOptions.getDeleteCommandOptions();
-        this.annotationInfoCommandOptions = annotationCommandOptions.getInfoCommandOptions();
         this.annotationUpdateCommandOptions = annotationCommandOptions.getUpdateCommandOptions();
 
         IndividualAclCommandOptions aclCommandOptions = new IndividualAclCommandOptions(commonCommandOptions);
@@ -118,7 +110,7 @@ public class IndividualCommandOptions {
         public String motherId;
 
         @Parameter(names = {"--sex"}, description = "Sex. (MALE, FEMALE, UNKNOWN, UNDETERMINED). Default: UNKNOWN")
-        public String sex = "UNKNOWN";
+        public IndividualProperty.Sex sex = IndividualProperty.Sex.UNKNOWN;
 
         @Parameter(names = {"--ethnicity"}, description = "Ethnic group", arity = 1)
         public String ethnicity;
@@ -133,19 +125,19 @@ public class IndividualCommandOptions {
         public String populationSubpopulation;
 
         @Parameter(names = {"--karyotypic-sex"}, description = "Karyotypic sex", arity = 1)
-        public String karyotypicSex;
+        public IndividualProperty.KaryotypicSex karyotypicSex = IndividualProperty.KaryotypicSex.UNKNOWN;
 
         @Parameter(names = {"--life-status"}, description = "Life status", arity = 1)
-        public String lifeStatus;
+        public IndividualProperty.LifeStatus lifeStatus = IndividualProperty.LifeStatus.UNKNOWN;
 
         @Parameter(names = {"--affectation-status"}, description = "Affectation status", arity = 1)
-        public String affectationStatus;
+        public IndividualProperty.AffectationStatus affectationStatus = IndividualProperty.AffectationStatus.UNKNOWN;
 
         @Parameter(names = {"--parental-consanguinity"}, description = "Parental consanguinity", arity = 1)
         public Boolean parentalConsanguinity;
 
         @Parameter(names = {"--samples"}, description = "Comma separated list of associated samples", arity = 1)
-        public String samples;
+        public List<String> samples;
 
         @Parameter(names = {"-dob", "--date-of-birth"}, description = "Date of birth. Format: yyyyMMdd", arity = 1)
         public String dateOfBirth;
@@ -185,6 +177,9 @@ public class IndividualCommandOptions {
 
         @Parameter(names = {"--family"}, description = "family", arity = 1)
         public String family;
+
+        @Parameter(names = {"--samples"}, description = "Comma separated list of sample ids", arity = 1)
+        public String samples;
 
         @Parameter(names = {"--sex"}, description = "Sex", arity = 1)
         public String sex;
@@ -240,7 +235,7 @@ public class IndividualCommandOptions {
         public String family;
 
         @Parameter(names = {"--sex"}, description = "Sex")
-        public String sex;
+        public IndividualProperty.Sex sex = IndividualProperty.Sex.UNKNOWN;
 
         @Parameter(names = {"--ethnicity"}, description = "Ethnic group", arity = 1)
         public String ethnicity;
@@ -255,13 +250,13 @@ public class IndividualCommandOptions {
         public String populationSubpopulation;
 
         @Parameter(names = {"--karyotypic-sex"}, description = "Karyotypic sex", arity = 1)
-        public String karyotypicSex;
+        public IndividualProperty.KaryotypicSex karyotypicSex = IndividualProperty.KaryotypicSex.UNKNOWN;
 
         @Parameter(names = {"--life-status"}, description = "Life status", arity = 1)
-        public String lifeStatus;
+        public IndividualProperty.LifeStatus lifeStatus = IndividualProperty.LifeStatus.UNKNOWN;
 
         @Parameter(names = {"--affectation-status"}, description = "Affectation status", arity = 1)
-        public String affectationStatus;
+        public IndividualProperty.AffectationStatus affectationStatus = IndividualProperty.AffectationStatus.UNKNOWN;
 
         @Parameter(names = {"-dob", "--date-of-birth"}, description = "Date of birth. Format: yyyyMMdd", arity = 1)
         public String dateOfBirth;
@@ -274,69 +269,6 @@ public class IndividualCommandOptions {
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete individual information")
     public class DeleteCommandOptions extends BaseIndividualsCommand {
 
-    }
-
-    @Parameters(commandNames = {"group-by"}, commandDescription = "Group individuals by several fields")
-    public class GroupByCommandOptions extends StudyOption {
-
-        @ParametersDelegate
-        CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Deprecated
-        @Parameter(names = {"--ids"}, description = "[DEPRECATED] Comma separated list of ids.", arity = 1)
-        public String id;
-
-        @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
-        public String fields;
-
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.", arity = 0)
-        public String name;
-
-        @Parameter(names = {"--father-id"}, description = "FatherId", arity = 1)
-        public String fatherId;
-
-        @Parameter(names = {"--mother-id"}, description = "MotherId", arity = 1)
-        public String motherId;
-
-        @Parameter(names = {"--family"}, description = "Family", arity = 1)
-        public String family;
-
-        @Parameter(names = {"--sex"}, description = "Sex")
-        public IndividualProperty.Sex sex;
-
-        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", arity = 1)
-        public String ethnicity;
-
-        @Deprecated
-        @Parameter(names = {"--population"}, description = "[DEPRECATED] population", arity = 1)
-        public String population;
-
-        @Parameter(names = {"--population-name"}, description = "Population name", arity = 1)
-        public String populationName;
-
-        @Parameter(names = {"--population-description"}, description = "Description of the population", arity = 1)
-        public String populationDescription;
-
-        @Parameter(names = {"--population-subpopulation"}, description = "Subpopulation name", arity = 1)
-        public String populationSubpopulation;
-
-        @Parameter(names = {"--karyotypic-sex"}, description = "Karyotypic sex", arity = 1)
-        public String karyotypicSex;
-
-        @Parameter(names = {"--life-status"}, description = "Life status", arity = 1)
-        public String lifeStatus;
-
-        @Parameter(names = {"--affectation-status"}, description = "Affectation status", arity = 1)
-        public String affectationStatus;
-
-        @Parameter(names = {"--variable-set"}, description = "Variable set id or name", arity = 1)
-        public String variableSetId;
-
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", arity = 0)
-        public String annotationSetName;
-
-        @Parameter(names = {"--annotation"}, description = "Annotation, e.g: key1=value(,key2=value)", arity = 1)
-        public String annotation;
     }
 
     @Parameters(commandNames = {"samples"}, commandDescription = "Get the samples of a list of individuals.")

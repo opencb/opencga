@@ -391,7 +391,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      */
     protected final VariantAnnotationManager newVariantAnnotationManager(ObjectMap params)
             throws StorageEngineException, VariantAnnotatorException {
-        ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata();
+        ProjectMetadata projectMetadata = getMetadataManager().getProjectMetadata(params);
         VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(
                 configuration, projectMetadata, getMergedOptions(params));
         return newVariantAnnotationManager(annotator);

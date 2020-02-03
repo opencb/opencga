@@ -16,12 +16,15 @@
 
 package org.opencb.opencga.core.models;
 
+import org.opencb.opencga.core.models.common.Status;
+
 import java.util.List;
 import java.util.Map;
 
 /**
  * Created by imedina on 24/11/14.
  */
+@Deprecated
 public class Dataset {
 
     private long id;

@@ -13,13 +13,14 @@ import org.opencb.opencga.catalog.db.mongodb.FileMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogCohortToSolrCohortConverter;
+import org.opencb.opencga.catalog.stats.solr.converters.CatalogFileToSolrFileConverter;
 import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampleConverter;
 import org.opencb.opencga.catalog.stats.solr.converters.SolrConverterUtil;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.core.models.Cohort;
-import org.opencb.opencga.core.models.File;
-import org.opencb.opencga.core.models.Individual;
-import org.opencb.opencga.core.models.Sample;
+import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.sample.Sample;
 
 import java.io.IOException;
 import java.util.Arrays;

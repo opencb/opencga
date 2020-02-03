@@ -2,7 +2,7 @@ package org.opencb.opencga.app.cli.internal.options;
 
 import com.beust.jcommander.*;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.core.annotations.Tool;
+import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.models.common.Enums;
 
 import java.util.HashMap;

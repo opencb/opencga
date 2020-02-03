@@ -23,8 +23,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.core.models.Project;
-import org.opencb.opencga.core.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.models.project.Project;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
 import java.util.*;
@@ -131,7 +132,8 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
 
     OpenCGAResult nativeInsert(Map<String, Object> project, String userId) throws CatalogDBException;
 
-    OpenCGAResult insert(Project project, String userId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(Project project, String userId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Project> get(String userId, QueryOptions options) throws CatalogDBException;
 
@@ -170,7 +172,7 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
     OpenCGAResult<Project> get(Query query, QueryOptions options) throws CatalogDBException;
 
     OpenCGAResult<Project> get(Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException;
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException;
 
     default List<OpenCGAResult<Project>> get(List<Query> queries, QueryOptions options) throws CatalogDBException {
         Objects.requireNonNull(queries);
@@ -195,11 +197,12 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         return queryResults;
     }
 
-    OpenCGAResult<Project> update(long id, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
+    OpenCGAResult<Project> update(long id, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Long> update(Query query, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException;
 
-    OpenCGAResult delete(Project project) throws CatalogDBException;
+    OpenCGAResult delete(Project project) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult delete(Query query) throws CatalogDBException;
 
@@ -222,7 +225,8 @@ public interface ProjectDBAdaptor extends Iterable<Project> {
         throw new NotImplementedException("");
     }
 
-    OpenCGAResult<Project> restore(long id, QueryOptions queryOptions) throws CatalogDBException;
+    OpenCGAResult<Project> restore(long id, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
