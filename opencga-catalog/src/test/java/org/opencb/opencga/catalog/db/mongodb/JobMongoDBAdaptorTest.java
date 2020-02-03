@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -23,19 +24,19 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.response.OpenCGAResult;
 
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
 /**
@@ -252,6 +253,38 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertTrue(Arrays.asList(5L, 6L, 7L).containsAll(queryResult.first().getInput().stream().map(File::getUid).collect(Collectors.toList())));
         assertTrue(Arrays.asList(15L, 16L, 17L)
                 .containsAll(queryResult.first().getOutput().stream().map(File::getUid).collect(Collectors.toList())));
+    }
+
+    @Test
+    public void groupByStatus() throws CatalogDBException, CatalogAuthorizationException {
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
+        for (int i = 0; i < 10; i++) {
+            Enums.ExecutionStatus status = new Enums.ExecutionStatus();
+            if (i < 5) {
+                status.setName(Enums.ExecutionStatus.RUNNING);
+            } else {
+                status.setName(Enums.ExecutionStatus.DONE);
+            }
+            Job job = new Job()
+                    .setId("jobName" + i)
+                    .setOutDir(new File().setUid(5))
+                    .setStatus(status);
+            catalogJobDBAdaptor.insert(studyId, job, null);
+        }
+
+        OpenCGAResult openCGAResult = catalogJobDBAdaptor.groupBy(studyId, new Query(), "status.name", new QueryOptions(QueryOptions.COUNT, true), user3.getId());
+
+        assertEquals(2, openCGAResult.getResults().size());
+        for (Object o : openCGAResult.getResults()) {
+            String status = ((Map) ((Map) o).get("_id")).get("status.name").toString();
+            long count = ((Number) ((Map) o).get("count")).longValue();
+            assertThat(status, anyOf(is(Enums.ExecutionStatus.RUNNING), is(Enums.ExecutionStatus.DONE)));
+            assertEquals(5, count);
+//            System.out.println("status.name = " + status);
+//            System.out.println("count = " + count);
+        }
+
+
     }
 
 }

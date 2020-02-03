@@ -745,6 +745,22 @@ public class CatalogManagerTest extends AbstractManagerTest {
         assertEquals(1, allJobs.getNumResults());
     }
 
+
+    @Test
+    public void testJobsTop() throws CatalogException {
+        Query query = new Query(StudyDBAdaptor.QueryParams.OWNER.key(), "user");
+        String studyId = catalogManager.getStudyManager().get(query, null, sessionIdUser).first().getId();
+
+        catalogManager.getJobManager().create(studyId, new Job().setId("myErrorJob"), null, sessionIdUser);
+
+        DataResult<JobsTop> top = catalogManager.getJobManager().top(studyId, new Query(), 10, sessionIdUser);
+
+        System.out.println("top = " + top);
+
+        assertEquals(1, top.getNumMatches());
+        assertEquals(1, top.getNumResults());
+    }
+
     @Test
     public void submitJobOwner() throws CatalogException {
         OpenCGAResult<Job> job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),

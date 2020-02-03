@@ -19,9 +19,11 @@ package org.opencb.opencga.server.rest;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.models.update.JobUpdateParams;
@@ -30,19 +32,19 @@ import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.core.models.File;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.JobsTop;
 import org.opencb.opencga.core.models.ToolInfo;
 import org.opencb.opencga.core.models.acls.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.time.Instant;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Path("/{apiVersion}/jobs")
@@ -367,17 +369,33 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/top")
+    @ApiOperation(value = "Provide a summary of the running jobs")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Maximum number of jobs to be returned", dataType = "integer",
+                    paramType = "query", defaultValue = "20")
+    })
+    public Response top(
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = false) @PathParam(ParamConstants.STUDY_PARAM) String study,
+            @ApiParam(value = "Job name filter") @PathParam("name") String jobName
+    ) {
+        return run(() -> {
+            Query query = new Query(JobDBAdaptor.QueryParams.NAME.key(), jobName.startsWith("~") ? jobName : "~" + jobName);
+            return catalogManager.getJobManager().top(study, query, limit, token);
+        });
+    }
+
+
+    @GET
     @Path("/{jobs}/acl")
     @ApiOperation(value = "Return the acl of the job. If member is provided, it will only return the acl for the member.", position = 18)
     public Response getAcls(@ApiParam(value = ParamConstants.JOBS_DESCRIPTION, required = true) @PathParam("jobs") String jobIdsStr,
                             @ApiParam(value = "User or group id") @QueryParam("member") String member,
                             @ApiParam(value = ParamConstants.SILENT_DESCRIPTION, defaultValue = "false") @QueryParam(Constants.SILENT) boolean silent) {
-        try {
+        return run(() -> {
             List<String> idList = getIdList(jobIdsStr);
-            return createOkResponse(jobManager.getAcls(null, idList, member, silent, token));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+            return jobManager.getAcls(null, idList, member, silent, token);
+        });
     }
 
     @POST
