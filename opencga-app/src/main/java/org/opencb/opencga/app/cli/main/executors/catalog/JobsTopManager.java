@@ -1,15 +1,17 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import com.google.common.base.Stopwatch;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.app.cli.main.io.Table;
+import org.opencb.opencga.app.cli.main.io.Table.TableColumnSchema;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.Job;
+import org.opencb.opencga.core.models.JobsTop;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -18,26 +20,22 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-public class JobsTop {
+import static java.util.Optional.ofNullable;
+
+public class JobsTopManager {
 
     private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
     private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat(DATE_PATTERN);
-    private static final int STATUS_PAD = 10;
-    private static final int DATE_PAD = DATE_PATTERN.length();
-    private static final int DURATION_PAD = 8;
-    private static final String SEP = " | ";
 
     private final OpenCGAClient openCGAClient;
     private final Query baseQuery;
     private final int iterations;
     private final int jobsLimit;
     private final long delay;
+    // FIXME: Use an intermediate buffer to prepare the table, and print in one system call to avoid flashes
     private final ByteArrayOutputStream buffer;
     private final QueryOptions queryOptions = new QueryOptions()
             .append(QueryOptions.INCLUDE, "id,name,status,execution,creationDate")
@@ -46,8 +44,9 @@ public class JobsTop {
     private final QueryOptions countOptions = new QueryOptions()
             .append(QueryOptions.COUNT, true)
             .append(QueryOptions.LIMIT, 0);
+    private final Table<Job> jobTable;
 
-    public JobsTop(OpenCGAClient openCGAClient, String study, Integer iterations, int jobsLimit, long delay) {
+    public JobsTopManager(OpenCGAClient openCGAClient, String study, Integer iterations, int jobsLimit, long delay) {
         this.openCGAClient = openCGAClient;
         this.baseQuery = new Query();
         baseQuery.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), study);
@@ -55,6 +54,24 @@ public class JobsTop {
         this.jobsLimit = jobsLimit <= 0 ? 20 : jobsLimit;
         this.delay = delay < 0 ? 2 : delay;
         this.buffer = new ByteArrayOutputStream();
+
+        // TODO: Make this configurable
+        List<TableColumnSchema<Job>> columns = new ArrayList<>();
+        columns.add(new TableColumnSchema<>("ID", Job::getId, 50));
+        columns.add(new TableColumnSchema<>("Status", job -> job.getStatus().getName()));
+        columns.add(new TableColumnSchema<>("Creation", Job::getCreationDate));
+        columns.add(new TableColumnSchema<>("Time", JobsTopManager::getDurationString));
+        columns.add(new TableColumnSchema<>("Start", job -> SIMPLE_DATE_FORMAT.format(getStart(job))));
+        columns.add(new TableColumnSchema<>("End", job -> SIMPLE_DATE_FORMAT.format(getEnd(job))));
+
+
+        // TODO: Decide if use Ascii or JAnsi
+        Table.TablePrinter tablePrinter = new Table.AsciiTablePrinter();
+        // TODO: Improve style
+//        Table.TablePrinter tablePrinter = new Table.JAnsiTablePrinter();
+        jobTable = new Table<>(tablePrinter);
+        jobTable.addColumns(columns);
+
     }
 
     public void run() throws ClientException, IOException, InterruptedException {
@@ -72,6 +89,12 @@ public class JobsTop {
     }
 
     public void loop() throws IOException {
+        JobsTop top = getJobsTop();
+        print(top);
+    }
+
+    public JobsTop getJobsTop() throws IOException {
+        // TODO: Get JobTop from server
         int jobsLimit = this.jobsLimit;
         OpenCGAResult<Job> running = openCGAClient.getJobClient().search(
                 new Query(baseQuery)
@@ -123,112 +146,66 @@ public class JobsTop {
         allJobs.addAll(queued.getResults());
         allJobs.addAll(pending.getResults());
 
-        print(running, queued, pending, doneCount, errorCount, allJobs, truncatedJobs);
+        HashMap<String, Long> jobStatusCount = new HashMap<>();
+        jobStatusCount.put(Enums.ExecutionStatus.PENDING, pending.getNumMatches());
+        jobStatusCount.put(Enums.ExecutionStatus.QUEUED, queued.getNumMatches());
+        jobStatusCount.put(Enums.ExecutionStatus.RUNNING, running.getNumMatches());
+        jobStatusCount.put(Enums.ExecutionStatus.DONE, doneCount);
+        jobStatusCount.put(Enums.ExecutionStatus.ERROR, errorCount);
+        return new JobsTop(Date.from(Instant.now()), jobStatusCount, allJobs);
     }
 
-    public void print(OpenCGAResult<Job> running, OpenCGAResult<Job> queued, OpenCGAResult<Job> pending,
-                      long doneCount, long errorCount,
-                      List<Job> allJobs, boolean truncatedJobs) {
+    public void print(JobsTop top) {
         // Reuse buffer to avoid allocate new memory
         buffer.reset();
-        PrintStream out = new PrintStream(buffer);
 
-        int idPad = allJobs.stream().mapToInt(j -> j.getId().length()).max().orElse(10);
-        String line = StringUtils.repeat("-", idPad + SEP.length()
-                + STATUS_PAD + SEP.length()
-                + DURATION_PAD + SEP.length()
-                + DATE_PAD + SEP.length()
-                + DATE_PAD + SEP.length()
-                + DATE_PAD);
+        // FIXME: Use intermediate buffer
+//        PrintStream out = new PrintStream(buffer);
+        PrintStream out = System.out;
 
+        jobTable.printFullLine();
         out.println();
-        out.println();
-        out.println(line);
         out.println("OpenCGA jobs TOP");
         out.println("  Version " + GitRepositoryState.get().getBuildVersion());
         out.println("  " + SIMPLE_DATE_FORMAT.format(Date.from(Instant.now())));
         out.println();
-        out.println("Running: " + running.getNumMatches()
-                + ", Queued: " + queued.getNumMatches()
-                + ", Pending: " + pending.getNumMatches()
-                + ", Done: " + doneCount
-                + ", Error: " + errorCount);
-        out.println(line);
-        out.println(StringUtils.rightPad("ID", idPad) + SEP              // COLUMN - 1
-                + StringUtils.rightPad("Status", STATUS_PAD) + SEP       // COLUMN - 2
-                + StringUtils.rightPad("Creation", DATE_PAD) + SEP       // COLUMN - 3
-                + StringUtils.rightPad("Duration", DURATION_PAD) + SEP   // COLUMN - 4
-                + StringUtils.rightPad("Start", DATE_PAD) + SEP          // COLUMN - 5
-                + StringUtils.rightPad("End", DATE_PAD));                // COLUMN - 6
+        TreeMap<String, Long> counts = new TreeMap<>(top.getJobStatusCount());
+        out.print(Enums.ExecutionStatus.RUNNING + ": " + ofNullable(counts.remove(Enums.ExecutionStatus.RUNNING + ", ")).orElse(0L));
+        out.print(Enums.ExecutionStatus.QUEUED + ": " + ofNullable(counts.remove(Enums.ExecutionStatus.QUEUED + ", ")).orElse(0L));
+        out.print(Enums.ExecutionStatus.PENDING + ": " + ofNullable(counts.remove(Enums.ExecutionStatus.PENDING + ", ")).orElse(0L));
+        out.print(Enums.ExecutionStatus.DONE + ": " + ofNullable(counts.remove(Enums.ExecutionStatus.DONE + ", ")).orElse(0L));
+        out.print(Enums.ExecutionStatus.ERROR + ": " + ofNullable(counts.remove(Enums.ExecutionStatus.ERROR + ", ")).orElse(0L));
+        counts.forEach((status, count) -> {
+            out.print(", " + status + ": " + count);
+        });
+        out.println();
 
-        out.println(StringUtils.rightPad("", idPad, "-") + SEP           // COLUMN - 1
-                + StringUtils.repeat("-", STATUS_PAD) + SEP              // COLUMN - 2
-                + StringUtils.repeat("-", DATE_PAD) + SEP                // COLUMN - 3
-                + StringUtils.repeat("-", DURATION_PAD) + SEP            // COLUMN - 4
-                + StringUtils.repeat("-", DATE_PAD) + SEP                // COLUMN - 5
-                + StringUtils.repeat("-", DATE_PAD));                    // COLUMN - 6
+        jobTable.updateTable(top.getJobs());
+        jobTable.print();
 
-        for (Job job : allJobs) {
-            Date start = job.getExecution() == null ? null : job.getExecution().getStart();
-            Date end = job.getExecution() == null ? null : job.getExecution().getEnd();
-            long durationInMillis = getDurationInMillis(start, end);
-
-            // COLUMN 1 - Job ID
-            out.print(StringUtils.rightPad(job.getId(), idPad));
-            out.print(SEP);
-
-            // COLUMN 2 - Job Status
-            out.print(StringUtils.rightPad(job.getStatus().getName(), STATUS_PAD));
-            out.print(SEP);
-
-            // COLUMN 3 - Creation Date
-            out.print(SIMPLE_DATE_FORMAT.format(TimeUtils.toDate(job.getCreationDate())));
-            out.print(SEP);
-
-            // COLUMN 4 - Duration
-            if (durationInMillis > 0) {
-                out.print(StringUtils.rightPad(TimeUtils.durationToStringSimple(durationInMillis), DURATION_PAD));
-            } else {
-                out.print(StringUtils.repeat(" ", DURATION_PAD));
-            }
-            out.print(SEP);
-
-            // COLUMN 5 - Start Date
-            if (start == null) {
-                out.print(StringUtils.repeat(" ", DATE_PAD));
-            } else {
-                out.print(SIMPLE_DATE_FORMAT.format(start));
-            }
-            out.print(SEP);
-
-            // COLUMN 6 - End Date
-            if (end == null) {
-                out.print(StringUtils.repeat(" ", DATE_PAD));
-            } else {
-                out.print(SIMPLE_DATE_FORMAT.format(end));
-            }
-            out.println();
-        }
-
-        if (truncatedJobs) {
-            out.print("...... skip ");
-            if (running.getNumMatches() != running.getNumResults()) {
-                out.print((running.getNumMatches() - running.getNumResults()) + " running jobs, ");
-            }
-            if (queued.getNumMatches() != queued.getNumResults()) {
-                out.print((queued.getNumMatches() - queued.getNumResults()) + " queued jobs, ");
-            }
-            if (pending.getNumMatches() != pending.getNumResults()) {
-                out.print((pending.getNumMatches() - pending.getNumResults()) + " pending jobs");
-            }
-            out.println();
-        }
-
-        out.flush();
-        System.out.print(buffer);
+        // FIXME: Use intermediate buffer
+//        out.flush();
+//        System.out.print(buffer);
     }
 
-    public long getDurationInMillis(Date start, Date end) {
+    private static Date getStart(Job job) {
+        return job.getExecution() == null ? null : job.getExecution().getStart();
+    }
+
+    private static Date getEnd(Job job) {
+        return job.getExecution() == null ? null : job.getExecution().getEnd();
+    }
+
+    private static String getDurationString(Job job) {
+        long durationInMillis = getDurationInMillis(getStart(job), getEnd(job));
+        if (durationInMillis > 0) {
+            return TimeUtils.durationToStringSimple(durationInMillis);
+        } else {
+            return "";
+        }
+    }
+
+    private static long getDurationInMillis(Date start, Date end) {
         long durationInMillis = -1;
         if (start != null) {
             if (end == null) {

@@ -102,6 +102,11 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.fusesource.jansi</groupId>
+            <artifactId>jansi-project</artifactId>
+            <version>1.18</version>
+        </dependency>
         <!--Uncomment if hadoop dependencies are provided-->
         <!--<dependency>-->
             <!--<groupId>org.apache.hadoop</groupId>-->
