@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.AclParams;
+import org.opencb.opencga.core.models.job.JobsTop;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobAclUpdateParams;
 import org.opencb.opencga.core.models.job.JobCreateParams;
@@ -182,7 +183,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/top")
-    @ApiOperation(value = "Provide a summary of the running jobs")
+    @ApiOperation(value = "Provide a summary of the running jobs", response = JobsTop.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = QueryOptions.LIMIT, value = "Maximum number of jobs to be returned", dataType = "integer",
                     paramType = "query", defaultValue = "20")
