@@ -791,7 +791,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         break;
                     case TOOL:
                     case TOOL_ID:
-                        addAutoOrQuery(QueryParams.TOOL_ID.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        addAutoOrQuery(QueryParams.TOOL_ID.key(), queryParam.key(), queryCopy, QueryParams.TOOL_ID.type(), andBsonList);
                         break;
                     case INPUT:
                     case INPUT_UID:
@@ -807,11 +807,13 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
+                    case STATUS:
                     case STATUS_NAME:
                         // Convert the status to a positive status
                         queryCopy.put(queryParam.key(),
                                 Status.getPositiveStatus(Enums.ExecutionStatus.STATUS_LIST, queryCopy.getString(queryParam.key())));
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), queryCopy, queryParam.type(), andBsonList);
+                        addAutoOrQuery(QueryParams.STATUS_NAME.key(), queryParam.key(), queryCopy, QueryParams.STATUS_NAME.type(),
+                                andBsonList);
                         break;
                     case ID:
                     case UUID:
@@ -826,7 +828,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case COMMAND_LINE:
                     case VISITED:
                     case RELEASE:
-                    case STATUS:
                     case STATUS_MSG:
                     case STATUS_DATE:
                     case SIZE:

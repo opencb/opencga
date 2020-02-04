@@ -44,6 +44,20 @@ public class FileClient extends AbstractParentClient {
     }
 
     /**
+     * Unlink linked files and folders.
+     * @param files Comma separated list of file ids, names or paths.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       files: Comma separated list of file ids, names or paths.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Job> unlink(String files, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        return execute("files", files, null, null, "unlink", params, DELETE, Job.class);
+    }
+
+    /**
      * Link an external file into catalog.
      * @param data File parameters.
      * @param params Map containing any of the following optional parameters.
@@ -56,20 +70,6 @@ public class FileClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("files", null, null, null, "link", params, POST, File.class);
-    }
-
-    /**
-     * Unlink linked files and folders.
-     * @param files Comma separated list of file ids, names or paths.
-     * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
-     *       files: Comma separated list of file ids, names or paths.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Job> unlink(String files, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        return execute("files", files, null, null, "unlink", params, DELETE, Job.class);
     }
 
     /**
@@ -103,16 +103,6 @@ public class FileClient extends AbstractParentClient {
     }
 
     /**
-     * List of accepted file formats.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<File.Format> formats() throws ClientException {
-        ObjectMap params = new ObjectMap();
-        return execute("files", null, null, null, "formats", params, GET, File.Format.class);
-    }
-
-    /**
      * File info.
      * @param files Comma separated list of file ids or names up to a maximum of 100.
      * @param params Map containing any of the following optional parameters.
@@ -129,6 +119,16 @@ public class FileClient extends AbstractParentClient {
     public RestResponse<File> info(String files, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("files", files, null, null, "info", params, GET, File.class);
+    }
+
+    /**
+     * List of accepted file formats.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<File.Format> formats() throws ClientException {
+        ObjectMap params = new ObjectMap();
+        return execute("files", null, null, null, "formats", params, GET, File.Format.class);
     }
 
     /**

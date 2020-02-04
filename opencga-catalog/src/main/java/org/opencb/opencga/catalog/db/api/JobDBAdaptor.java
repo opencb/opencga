@@ -109,7 +109,7 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         CREATION_DATE("creationDate", DATE, ""),
         MODIFICATION_DATE("modificationDate", DATE, ""),
 
-        TOOL("tool", TEXT, ""),
+        TOOL("tool", OBJECT, ""),
         TOOL_ID("tool.id", TEXT, ""),
 
         PRIORITY("priority", TEXT, ""),

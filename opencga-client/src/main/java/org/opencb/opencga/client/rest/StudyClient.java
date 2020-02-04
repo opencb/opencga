@@ -159,6 +159,19 @@ public class StudyClient extends AbstractParentClient {
     }
 
     /**
+     * Fetch permission rules.
+     * @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
+     * @param entity Entity where the permission rules should be applied to.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<PermissionRule> permissionRules(String study, String entity) throws ClientException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull("entity", entity);
+        return execute("studies", study, null, null, "permissionRules", params, GET, PermissionRule.class);
+    }
+
+    /**
      * Return the acl of the study. If member is provided, it will only return the acl for the member.
      * @param studies Comma separated list of Studies [[user@]project:]study where study and project can be either the ID or UUID up to a
      *     maximum of 100.
@@ -219,19 +232,6 @@ public class StudyClient extends AbstractParentClient {
         params = params != null ? params : new ObjectMap();
         params.put("body", data);
         return execute("studies", study, "groups", group, "users/update", params, POST, Group.class);
-    }
-
-    /**
-     * Fetch permission rules.
-     * @param study Study [[user@]project:]study where study and project can be either the ID or UUID.
-     * @param entity Entity where the permission rules should be applied to.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<PermissionRule> permissionRules(String study, String entity) throws ClientException {
-        ObjectMap params = new ObjectMap();
-        params.putIfNotNull("entity", entity);
-        return execute("studies", study, null, null, "permissionRules", params, GET, PermissionRule.class);
     }
 
     /**

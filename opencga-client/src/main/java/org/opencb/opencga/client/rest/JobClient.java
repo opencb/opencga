@@ -19,11 +19,11 @@ package org.opencb.opencga.client.rest;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
-import org.opencb.opencga.core.models.job.JobsTop;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobAclUpdateParams;
 import org.opencb.opencga.core.models.job.JobCreateParams;
 import org.opencb.opencga.core.models.job.JobUpdateParams;
+import org.opencb.opencga.core.models.job.JobsTop;
 import org.opencb.opencga.core.response.RestResponse;
 
 
@@ -44,6 +44,10 @@ public class JobClient extends AbstractParentClient {
      * @param params Map containing any of the following optional parameters.
      *       limit: Maximum number of jobs to be returned.
      *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       status: Job status.
+     *       priority: Priority of the job.
+     *       user: User that created the job.
+     *       tool: Tool executed by the job.
      * @return a RestResponse object.
      * @throws ClientException ClientException if there is any server error.
      */

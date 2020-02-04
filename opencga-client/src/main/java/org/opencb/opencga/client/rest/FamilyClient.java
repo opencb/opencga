@@ -115,6 +115,21 @@ public class FamilyClient extends AbstractParentClient {
     }
 
     /**
+     * Create family and the individual objects if they do not exist.
+     * @param data JSON containing family information.
+     * @param params Map containing any of the following optional parameters.
+     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
+     *       members: Comma separated list of member ids to be associated to the created family.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<Family> create(FamilyCreateParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("families", null, null, null, "create", params, POST, Family.class);
+    }
+
+    /**
      * Get family information.
      * @param families Comma separated list of family IDs or names up to a maximum of 100.
      * @param params Map containing any of the following optional parameters.
@@ -130,21 +145,6 @@ public class FamilyClient extends AbstractParentClient {
     public RestResponse<Family> info(String families, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("families", families, null, null, "info", params, GET, Family.class);
-    }
-
-    /**
-     * Create family and the individual objects if they do not exist.
-     * @param data JSON containing family information.
-     * @param params Map containing any of the following optional parameters.
-     *       study: Study [[user@]project:]study where study and project can be either the ID or UUID.
-     *       members: Comma separated list of member ids to be associated to the created family.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<Family> create(FamilyCreateParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("families", null, null, null, "create", params, POST, Family.class);
     }
 
     /**

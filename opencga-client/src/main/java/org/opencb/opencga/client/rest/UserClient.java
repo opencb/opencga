@@ -70,32 +70,6 @@ public class UserClient extends AbstractParentClient {
     }
 
     /**
-     * Get identified and gain access to the system.
-     * @param user User id.
-     * @param data JSON containing the parameter 'password'.
-     * @param params Map containing any of the following optional parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<ObjectMap> login(String user, LoginParams data, ObjectMap params) throws ClientException {
-        params = params != null ? params : new ObjectMap();
-        params.put("body", data);
-        return execute("users", user, null, null, "login", params, POST, ObjectMap.class);
-    }
-
-    /**
-     * Create a new user.
-     * @param data JSON containing the parameters.
-     * @return a RestResponse object.
-     * @throws ClientException ClientException if there is any server error.
-     */
-    public RestResponse<User> create(UserCreateParams data) throws ClientException {
-        ObjectMap params = new ObjectMap();
-        params.put("body", data);
-        return execute("users", null, null, null, "create", params, POST, User.class);
-    }
-
-    /**
      * Change the password of a user.
      * @param user User id.
      * @param data JSON containing the params 'password' (old password) and 'newPassword' (new password).
@@ -193,5 +167,31 @@ public class UserClient extends AbstractParentClient {
     public RestResponse<User.Filter> filtersConfigs(String user, ObjectMap params) throws ClientException {
         params = params != null ? params : new ObjectMap();
         return execute("users", user, "configs", null, "filters", params, GET, User.Filter.class);
+    }
+
+    /**
+     * Get identified and gain access to the system.
+     * @param user User id.
+     * @param data JSON containing the parameter 'password'.
+     * @param params Map containing any of the following optional parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<ObjectMap> login(String user, LoginParams data, ObjectMap params) throws ClientException {
+        params = params != null ? params : new ObjectMap();
+        params.put("body", data);
+        return execute("users", user, null, null, "login", params, POST, ObjectMap.class);
+    }
+
+    /**
+     * Create a new user.
+     * @param data JSON containing the parameters.
+     * @return a RestResponse object.
+     * @throws ClientException ClientException if there is any server error.
+     */
+    public RestResponse<User> create(UserCreateParams data) throws ClientException {
+        ObjectMap params = new ObjectMap();
+        params.put("body", data);
+        return execute("users", null, null, null, "create", params, POST, User.class);
     }
 }

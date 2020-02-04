@@ -10,16 +10,18 @@ import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.job.JobsTop;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobsTop;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Optional.ofNullable;
@@ -58,7 +60,7 @@ public class JobsTopManager {
         List<TableColumnSchema<Job>> columns = new ArrayList<>();
         columns.add(new TableColumnSchema<>("ID", Job::getId, 50));
         columns.add(new TableColumnSchema<>("Status", job -> job.getStatus().getName()));
-        columns.add(new TableColumnSchema<>("Creation", Job::getCreationDate));
+        columns.add(new TableColumnSchema<>("Submission", Job::getCreationDate));
         columns.add(new TableColumnSchema<>("Time", JobsTopManager::getDurationString));
         columns.add(new TableColumnSchema<>("Start", job -> SIMPLE_DATE_FORMAT.format(getStart(job))));
         columns.add(new TableColumnSchema<>("End", job -> SIMPLE_DATE_FORMAT.format(getEnd(job))));
