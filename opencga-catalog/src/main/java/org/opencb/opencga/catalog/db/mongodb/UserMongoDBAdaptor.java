@@ -90,14 +90,15 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         }, e -> logger.error("Could not create user {}: {}", user.getId(), e.getMessage()));
     }
 
-    private void insert(ClientSession clientSession, User user)
-            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
+    private void insert(ClientSession clientSession, User user) throws CatalogDBException, CatalogParameterException {
         checkParameter(user, "user");
         if (exists(clientSession, user.getId())) {
             throw new CatalogDBException("User {id:\"" + user.getId() + "\"} already exists");
         }
 
-        List<Project> projects = user.getProjects();
+        if (user.getProjects() != null && !user.getProjects().isEmpty()) {
+            throw new CatalogParameterException("Creating user and projects in a single transaction is forbidden");
+        }
         user.setProjects(Collections.emptyList());
 
         user.setLastModified(TimeUtils.getTimeMillis());
@@ -105,12 +106,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         userDocument.append(PRIVATE_ID, user.getId());
 
         userCollection.insert(clientSession, userDocument, null);
-
-        if (projects != null) {
-            for (Project p : projects) {
-                dbAdaptorFactory.getCatalogProjectDbAdaptor().insert(clientSession, p, user.getId());
-            }
-        }
     }
 
     @Override

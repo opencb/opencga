@@ -108,9 +108,8 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 
     Project insert(ClientSession clientSession, Project project, String userId)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        List<Study> studies = project.getStudies();
-        if (studies == null) {
-            studies = Collections.emptyList();
+        if (project.getStudies() != null && !project.getStudies().isEmpty()) {
+            throw new CatalogParameterException("Creating project and studies in a single transaction is forbidden");
         }
         project.setStudies(Collections.emptyList());
 
@@ -144,11 +143,6 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         userCollection.update(clientSession, query, update, null);
-
-        // Create nested studies
-        for (Study study : studies) {
-            dbAdaptorFactory.getCatalogStudyDBAdaptor().insert(clientSession, project, study);
-        }
 
         return project;
     }
