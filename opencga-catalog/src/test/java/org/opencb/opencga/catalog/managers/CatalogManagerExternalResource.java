@@ -66,12 +66,12 @@ public class CatalogManagerExternalResource extends ExternalResource {
         configuration.setWorkspace(opencgaHome.resolve("sessions").toAbsolutePath().toString());
         configuration.setJobDir(opencgaHome.resolve("jobs").toAbsolutePath().toString());
 
+        catalogManager = new CatalogManager(configuration);
         clearCatalog(configuration);
         if (!opencgaHome.toFile().exists()) {
             deleteFolderTree(opencgaHome.toFile());
             Files.createDirectory(opencgaHome);
         }
-        catalogManager = new CatalogManager(configuration);
         catalogManager.installCatalogDB("dummy", "admin", "opencga@admin.com", "");
     }
 

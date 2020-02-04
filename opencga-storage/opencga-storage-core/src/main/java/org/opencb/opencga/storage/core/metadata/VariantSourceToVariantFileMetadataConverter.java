@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.core.metadata;
 import org.opencb.biodata.models.variant.VariantFileMetadata;
 import org.opencb.biodata.models.variant.avro.legacy.VariantSource;
 import org.opencb.biodata.models.variant.avro.legacy.VcfHeader;
-import org.opencb.biodata.models.variant.metadata.ChromosomeStats;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeader;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderComplexLine;
 import org.opencb.biodata.models.variant.metadata.VariantFileHeaderSimpleLine;
@@ -13,7 +12,6 @@ import org.opencb.biodata.tools.Converter;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Created on 07/09/17.
@@ -83,8 +81,7 @@ public class VariantSourceToVariantFileMetadataConverter implements Converter<Va
                 .setVariantTypeCounts(legacyStats.getVariantTypeCounts())
                 .setConsequenceTypesCounts(legacyStats.getConsequenceTypesCount())
                 .setStdDevQuality(0)
-                .setChromosomeStats(legacyStats.getChromosomeCounts().entrySet().stream()
-                        .collect(Collectors.toMap(Map.Entry::getKey, entry -> new ChromosomeStats(entry.getValue(), 0F)))).build());
+                .setChromosomeCounts(legacyStats.getChromosomeCounts()).build());
     }
 
     protected String takeFromMap(Map<String, String> map, String key) {
