@@ -24,17 +24,40 @@ import java.util.Map;
  */
 public class Experiment {
 
+    @Deprecated
     private String type;
-    private String platform;
+    private Technology technology;
+    private Method method;
+    private NucleicAcidType nucleicAcidType;
     private String manufacturer;
+    private String platform;
+    private String library;
     private String date;
-    private String lab;
     private String center;
+    private String lab;
     private String responsible;
     private String description;
 
     private Map<String, Object> attributes;
 
+    enum Technology {
+        SEQUENCING,
+        MICROARRAY
+    }
+
+    enum Method {
+        WHOLE_EXOME_SEQUENCING,
+        WHOLE_GENOME_SEQUENCING,
+        TARGETED_DNA_SEQUENCING,
+        AMPLICON_SEQUENCING,
+        GENOTYPING_MICROARRAY,
+
+    }
+
+    enum NucleicAcidType {
+        DNA,
+        RNA
+    }
 
     public Experiment() {
     }
