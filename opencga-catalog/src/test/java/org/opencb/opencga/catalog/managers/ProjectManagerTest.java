@@ -147,7 +147,7 @@ public class ProjectManagerTest extends GenericTest {
         assertEquals("Homo sapiens", pr.getOrganism().getScientificName());
         assertEquals("", pr.getOrganism().getCommonName());
         assertEquals("GRCh38", pr.getOrganism().getAssembly());
-        assertEquals(-1, pr.getOrganism().getTaxonomyCode());
+        assertEquals(0, pr.getOrganism().getTaxonomyCode());
 
         ObjectMap objectMap = new ObjectMap();
         objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), 55);
