@@ -6,7 +6,10 @@ import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.cellbase.client.rest.GenomicRegionClient;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
@@ -17,7 +20,13 @@ import org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 @ToolExecutor(id="opencga-local", tool = MutationalSignatureAnalysis.ID,
@@ -29,9 +38,11 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
     @Override
     public void run() throws ToolException {
-        Map<String, Map<String, Double>> freqMap = initFreqMap();
+        Map<String, Map<String, Double>> countMap = initFreqMap();
         try {
             VariantStorageManager storageManager = getVariantStorageManager();
+
+            // Compute signature profile: contextual frequencies of each type of base substitution
 
             // TODO fix it using cellbase utils from storage manager
 //            regionClient = storageManager.getCellBaseUtils(getStudy(), getToken()).getCellBaseClient().getGenomicRegionClient();
@@ -54,11 +65,11 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 Variant variant = iterator.next();
                 variant.toStringSimple();
                 String key = variant.getReference() + ">" + variant.getAlternate();
-                if (freqMap.containsKey(key)) {
+                if (countMap.containsKey(key)) {
                     String region = variant.getChromosome() + ":" + (variant.getStart() - 1) + "-" + (variant.getEnd() + 1);
                     regionAlleleMap.put(region, key);
                     if (regionAlleleMap.size() >= BATCH_SIZE) {
-                        updateCounterMap(regionAlleleMap, freqMap);
+                        updateCounterMap(regionAlleleMap, countMap);
                         regionAlleleMap.clear();
 
 
@@ -68,17 +79,23 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 }
             }
             if (regionAlleleMap.size() > 0) {
-                updateCounterMap(regionAlleleMap, freqMap);
+                updateCounterMap(regionAlleleMap, countMap);
             }
+
+            // Write context
+            writeCountMap(countMap, getOutDir().resolve("context.txt").toFile());
+
+            // To compare, download signatures probabilities at
+            String link = "http://bioinfo.hpc.cam.ac.uk/opencb/opencga/analysis/cancer-signature/signatures_probabilities_v2.txt";
+            InputStream in = new URL(link).openStream();
+            Files.copy(in, getOutDir().resolve(Paths.get(new File(link).getName())), StandardCopyOption.REPLACE_EXISTING);
         } catch (Exception e) {
             throw new ToolExecutorException(e);
         }
 
-        normalizeFreqMap(freqMap);
-        writeResult(freqMap);
     }
 
-    private void updateCounterMap(Map<String, String> regionAlleleMap, Map<String, Map<String, Double>> freqMap) throws IOException {
+    private void updateCounterMap(Map<String, String> regionAlleleMap, Map<String, Map<String, Double>> countMap) throws IOException {
         String key;
         QueryResponse<GenomeSequenceFeature> response = regionClient.getSequence(new ArrayList(regionAlleleMap.keySet()),
                 QueryOptions.empty());
@@ -90,8 +107,8 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 if (sequence.length() == 3) {
                     // Remember that GenomeSequenceFeature ID is equal to region
                     key = regionAlleleMap.get(seqFeature.getId());
-                    if (freqMap.get(key).containsKey(sequence)) {
-                        freqMap.get(key).put(sequence, freqMap.get(key).get(sequence) + 1);
+                    if (countMap.get(key).containsKey(sequence)) {
+                        countMap.get(key).put(sequence, countMap.get(key).get(sequence) + 1);
                     } else {
                         System.err.println("Error, key not found " + sequence + " for " + key);
                     }
