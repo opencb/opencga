@@ -58,6 +58,7 @@ public class FileMetadataReader {
     @Deprecated
     public static final String VARIANT_SOURCE = "variantSource";
     public static final String VARIANT_FILE_METADATA = "variantFileMetadata";
+    public static final String VARIANT_FILE_METADATA_VARIABLE_SET = "opencga_variant_file_metadata";
     private static final QueryOptions STUDY_QUERY_OPTIONS =
             new QueryOptions("include", Arrays.asList("projects.studies.id", "projects.studies.name", "projects.studies.alias"));
     private final CatalogManager catalogManager;
