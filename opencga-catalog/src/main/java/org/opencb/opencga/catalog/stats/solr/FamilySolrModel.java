@@ -13,9 +13,6 @@ import java.util.Map;
 public class FamilySolrModel {
 
     @Field
-    private String id;
-
-    @Field
     private long uid;
 
     @Field
@@ -69,8 +66,7 @@ public class FamilySolrModel {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FamilySolrModel{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", uid=").append(uid);
+        sb.append("uid=").append(uid);
         sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", creationYear=").append(creationYear);
         sb.append(", creationMonth='").append(creationMonth).append('\'');
@@ -87,15 +83,6 @@ public class FamilySolrModel {
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public FamilySolrModel setId(String id) {
-        this.id = id;
-        return this;
     }
 
     public long getUid() {

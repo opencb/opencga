@@ -26,8 +26,13 @@ import org.opencb.opencga.analysis.clinical.interpretation.CancerTieringInterpre
 import org.opencb.opencga.analysis.clinical.interpretation.CustomInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.TeamInterpretationAnalysis;
 import org.opencb.opencga.analysis.clinical.interpretation.TieringInterpretationAnalysis;
+import org.opencb.opencga.analysis.cohort.CohortIndexTask;
+import org.opencb.opencga.analysis.family.FamilyIndexTask;
 import org.opencb.opencga.analysis.file.FetchAndRegisterTask;
 import org.opencb.opencga.analysis.file.FileDeleteTask;
+import org.opencb.opencga.analysis.file.FileIndexTask;
+import org.opencb.opencga.analysis.individual.IndividualIndexTask;
+import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
@@ -152,6 +157,12 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(TieringInterpretationAnalysis.ID, "interpretation " + TieringInterpretationAnalysis.ID);
             put(CustomInterpretationAnalysis.ID, "interpretation " + CustomInterpretationAnalysis.ID);
             put(CancerTieringInterpretationAnalysis.ID, "interpretation " + CancerTieringInterpretationAnalysis.ID);
+
+            put(FileIndexTask.ID, "files secondary-index");
+            put(SampleIndexTask.ID, "samples secondary-index");
+            put(IndividualIndexTask.ID, "individuals secondary-index");
+            put(CohortIndexTask.ID, "cohorts secondary-index");
+            put(FamilyIndexTask.ID, "families secondary-index");
         }};
     }
 

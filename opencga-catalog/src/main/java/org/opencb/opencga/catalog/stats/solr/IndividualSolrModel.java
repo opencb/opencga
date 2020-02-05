@@ -13,9 +13,6 @@ import java.util.Map;
 public class IndividualSolrModel {
 
     @Field
-    private String id;
-
-    @Field
     private long uid;
 
     @Field
@@ -99,8 +96,7 @@ public class IndividualSolrModel {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("IndividualSolrModel{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", uid=").append(uid);
+        sb.append("uid=").append(uid);
         sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", hasFather=").append(hasFather);
         sb.append(", hasMother=").append(hasMother);
@@ -127,15 +123,6 @@ public class IndividualSolrModel {
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public IndividualSolrModel setId(String id) {
-        this.id = id;
-        return this;
     }
 
     public long getUid() {

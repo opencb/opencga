@@ -51,7 +51,6 @@ public class CatalogFileToSolrFileConverter implements ComplexTypeConverter<File
     public FileSolrModel convertToStorageType(File file) {
         FileSolrModel fileSolrModel = new FileSolrModel();
 
-        fileSolrModel.setId(file.getId());
         fileSolrModel.setUid(file.getUid());
         fileSolrModel.setName(file.getName());
         fileSolrModel.setStudyId(study.getFqn().replace(":", "__"));

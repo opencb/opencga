@@ -89,6 +89,18 @@ public class InternalMain {
                         case "files":
                             commandExecutor = new FileCommandExecutor(cliOptionsParser.getFileCommandOptions());
                             break;
+                        case "samples":
+                            commandExecutor = new SampleCommandExecutor(cliOptionsParser.getSampleCommandOptions());
+                            break;
+                        case "cohorts":
+                            commandExecutor = new CohortCommandExecutor(cliOptionsParser.getCohortCommandOptions());
+                            break;
+                        case "individuals":
+                            commandExecutor = new IndividualCommandExecutor(cliOptionsParser.getIndividualCommandOptions());
+                            break;
+                        case "families":
+                            commandExecutor = new FamilyCommandExecutor(cliOptionsParser.getFamilyCommandOptions());
+                            break;
                         default:
                             System.err.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
                             break;

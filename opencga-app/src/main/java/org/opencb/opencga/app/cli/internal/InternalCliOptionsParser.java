@@ -25,6 +25,7 @@ import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.options.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.core.models.family.Family;
 
 import java.util.List;
 
@@ -79,6 +80,10 @@ public class InternalCliOptionsParser extends CliOptionsParser {
     private AlignmentCommandOptions alignmentCommandOptions;
     private InterpretationCommandOptions interpretationCommandOptions;
     private FileCommandOptions fileCommandOptions;
+    private SampleCommandOptions sampleCommandOptions;
+    private FamilyCommandOptions familyCommandOptions;
+    private CohortCommandOptions cohortCommandOptions;
+    private IndividualCommandOptions individualCommandOptions;
 
 
     public InternalCliOptionsParser() {
@@ -176,6 +181,27 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
         fileSubCommands.addCommand("unlink", fileCommandOptions.unlinkCommandOptions);
         fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
+        fileSubCommands.addCommand("secondary-index", fileCommandOptions.secondaryIndex);
+
+        sampleCommandOptions = new SampleCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("samples", sampleCommandOptions);
+        JCommander sampleSubCommands = jCommander.getCommands().get("samples");
+        sampleSubCommands.addCommand("secondary-index", sampleCommandOptions.secondaryIndex);
+
+        individualCommandOptions = new IndividualCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("individuals", individualCommandOptions);
+        JCommander individualSubCommands = jCommander.getCommands().get("individuals");
+        individualSubCommands.addCommand("secondary-index", individualCommandOptions.secondaryIndex);
+
+        cohortCommandOptions = new CohortCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("cohorts", cohortCommandOptions);
+        JCommander cohortSubCommands = jCommander.getCommands().get("cohorts");
+        cohortSubCommands.addCommand("secondary-index", cohortCommandOptions.secondaryIndex);
+
+        familyCommandOptions = new FamilyCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("families", familyCommandOptions);
+        JCommander familySubCommands = jCommander.getCommands().get("families");
+        familySubCommands.addCommand("secondary-index", familyCommandOptions.secondaryIndex);
     }
 
     @Override
@@ -412,5 +438,21 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 
     public FileCommandOptions getFileCommandOptions() {
         return fileCommandOptions;
+    }
+
+    public SampleCommandOptions getSampleCommandOptions() {
+        return sampleCommandOptions;
+    }
+
+    public FamilyCommandOptions getFamilyCommandOptions() {
+        return familyCommandOptions;
+    }
+
+    public CohortCommandOptions getCohortCommandOptions() {
+        return cohortCommandOptions;
+    }
+
+    public IndividualCommandOptions getIndividualCommandOptions() {
+        return individualCommandOptions;
     }
 }
