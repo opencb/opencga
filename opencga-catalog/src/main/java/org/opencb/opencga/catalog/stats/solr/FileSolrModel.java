@@ -55,10 +55,16 @@ public class FileSolrModel {
     private long size;
 
     @Field
-    private String software;
+    private String softwareName;
+
+    @Field
+    private String softwareVersion;
 
     @Field
     private String experiment;
+
+    @Field
+    private List<String> tags;
 
     @Field
     private int numSamples;
@@ -97,8 +103,10 @@ public class FileSolrModel {
         sb.append(", status='").append(status).append('\'');
         sb.append(", external=").append(external);
         sb.append(", size=").append(size);
-        sb.append(", software='").append(software).append('\'');
+        sb.append(", softwareName='").append(softwareName).append('\'');
+        sb.append(", softwareVersion='").append(softwareVersion).append('\'');
         sb.append(", experiment='").append(experiment).append('\'');
+        sb.append(", tags=").append(tags);
         sb.append(", numSamples=").append(numSamples);
         sb.append(", numRelatedFiles=").append(numRelatedFiles);
         sb.append(", acl=").append(acl);
@@ -234,12 +242,30 @@ public class FileSolrModel {
         return this;
     }
 
-    public String getSoftware() {
-        return software;
+    public String getSoftwareName() {
+        return softwareName;
     }
 
-    public FileSolrModel setSoftware(String software) {
-        this.software = software;
+    public FileSolrModel setSoftwareName(String softwareName) {
+        this.softwareName = softwareName;
+        return this;
+    }
+
+    public String getSoftwareVersion() {
+        return softwareVersion;
+    }
+
+    public FileSolrModel setSoftwareVersion(String softwareVersion) {
+        this.softwareVersion = softwareVersion;
+        return this;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public FileSolrModel setTags(List<String> tags) {
+        this.tags = tags;
         return this;
     }
 

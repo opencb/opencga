@@ -37,6 +37,9 @@ public class FamilySolrModel {
     private List<String> phenotypes;
 
     @Field
+    private List<String> disorders;
+
+    @Field
     private int numMembers;
 
     @Field
@@ -74,6 +77,7 @@ public class FamilySolrModel {
         sb.append(", creationDayOfWeek='").append(creationDayOfWeek).append('\'');
         sb.append(", status='").append(status).append('\'');
         sb.append(", phenotypes=").append(phenotypes);
+        sb.append(", disorders=").append(disorders);
         sb.append(", numMembers=").append(numMembers);
         sb.append(", expectedSize=").append(expectedSize);
         sb.append(", release=").append(release);
@@ -154,6 +158,15 @@ public class FamilySolrModel {
 
     public FamilySolrModel setPhenotypes(List<String> phenotypes) {
         this.phenotypes = phenotypes;
+        return this;
+    }
+
+    public List<String> getDisorders() {
+        return disorders;
+    }
+
+    public FamilySolrModel setDisorders(List<String> disorders) {
+        this.disorders = disorders;
         return this;
     }
 

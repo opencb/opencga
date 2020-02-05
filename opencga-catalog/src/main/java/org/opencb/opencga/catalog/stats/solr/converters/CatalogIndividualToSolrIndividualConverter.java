@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -96,10 +97,21 @@ public class CatalogIndividualToSolrIndividualConverter implements ComplexTypeCo
         if (individual.getLifeStatus() != null) {
             individualSolrModel.setLifeStatus(individual.getLifeStatus().name());
         }
-        if (individual.getAffectationStatus() != null) {
-            individualSolrModel.setAffectationStatus(individual.getAffectationStatus().name());
+        if (individual.getLocation() != null) {
+            individualSolrModel.setLocationCity(individual.getLocation().getCity());
+            individualSolrModel.setLocationState(individual.getLocation().getState());
+            individualSolrModel.setLocationCountry(individual.getLocation().getCountry());
+        }
+        if (StringUtils.isNotEmpty(individual.getDateOfBirth())) {
+            date = TimeUtils.toDate(individual.getDateOfBirth());
+            localDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+            individualSolrModel.setDayOfBirth(localDate.getDayOfMonth());
+            individualSolrModel.setMonthOfBirth(localDate.getMonth().toString());
+            individualSolrModel.setYearOfBirth(localDate.getYear());
         }
         individualSolrModel.setPhenotypes(SolrConverterUtil.populatePhenotypes(individual.getPhenotypes()));
+        individualSolrModel.setDisorders(SolrConverterUtil.populateDisorders(individual.getDisorders()));
 
         individualSolrModel.setNumSamples(individual.getSamples() != null ? individual.getSamples().size() : 0);
 

@@ -577,7 +577,9 @@
     <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="external" type="boolean" indexed="true" stored="true" multiValued="false"/>
     <field name="size" type="plong" indexed="true" stored="true" multiValued="false"/>
-    <field name="software" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="softwareName" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="softwareVersion" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="tags" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="experiment" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="numSamples" type="pint" indexed="true" stored="true" multiValued="false"/>
     <field name="numRelatedFiles" type="pint" indexed="true" stored="true" multiValued="false"/>

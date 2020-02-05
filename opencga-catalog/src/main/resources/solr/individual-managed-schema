@@ -569,6 +569,12 @@
     <field name="hasFather" type="boolean" indexed="true" stored="true" multiValued="false"/>
     <field name="numMultiples" type="pint" indexed="true" stored="true" multiValued="false"/>
     <field name="multiplesType" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="locationCity" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="locationState" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="locationCountry" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="yearOfBirth" type="pint" indexed="true" stored="true" multiValued="false"/>
+    <field name="monthOfBirth" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="dayOfBirth" type="pint" indexed="true" stored="true" multiValued="false"/>
     <field name="sex" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="karyotypicSex" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="ethnicity" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -581,8 +587,8 @@
     <field name="creationDayOfWeek" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="lifeStatus" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="affectationStatus" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="phenotypes" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="disorders" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="numSamples" type="pint" indexed="true" stored="true" multiValued="false"/>
     <field name="parentalConsanguinity" type="boolean" indexed="true" stored="true" multiValued="false"/>
     <field name="acl" type="string" indexed="true" stored="true" multiValued="true"/>

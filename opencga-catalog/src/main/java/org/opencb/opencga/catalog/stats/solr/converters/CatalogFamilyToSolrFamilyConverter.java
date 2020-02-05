@@ -67,6 +67,7 @@ public class CatalogFamilyToSolrFamilyConverter implements ComplexTypeConverter<
             familySolrModel.setStatus(family.getStatus().getName());
         }
         familySolrModel.setPhenotypes(SolrConverterUtil.populatePhenotypes(family.getPhenotypes()));
+        familySolrModel.setPhenotypes(SolrConverterUtil.populateDisorders(family.getDisorders()));
 
         familySolrModel.setNumMembers(family.getMembers() != null ? family.getMembers().size() : 0);
         familySolrModel.setExpectedSize(family.getExpectedSize());
