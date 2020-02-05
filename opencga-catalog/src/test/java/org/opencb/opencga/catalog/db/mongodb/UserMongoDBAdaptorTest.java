@@ -22,8 +22,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.user.User;
@@ -83,7 +85,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void getUserTest() throws CatalogDBException {
+    public void getUserTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         DataResult<User> user = catalogUserDBAdaptor.get(user1.getId(), null, null);
         assertNotSame(0, user.getResults().size());
 
@@ -111,7 +113,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void modifyUserTest() throws CatalogDBException {
+    public void modifyUserTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         ObjectMap genomeMapsConfig = new ObjectMap("lastPosition", "4:1222222:1333333");
         genomeMapsConfig.put("otherConf", Arrays.asList(1, 2, 3, 4, 5));
         catalogUserDBAdaptor.setConfig(user1.getId(), "genomemaps", genomeMapsConfig);
@@ -124,7 +126,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void addFilterTest() throws CatalogDBException, IOException {
+    public void addFilterTest() throws CatalogDBException, IOException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query("key1", "value1").append("key2", "value2");
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("key1", "key2"));
         User.Filter filter = new User.Filter("filter1", "Description of filter 1", File.Bioformat.ALIGNMENT, query, options);
@@ -142,7 +144,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void updateFilterTest() throws CatalogDBException, IOException {
+    public void updateFilterTest() throws CatalogDBException, IOException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query("key1", "value1").append("key2", "value2");
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("key1", "key2"));
         User.Filter filter = new User.Filter("filter1", "Description of filter 1", File.Bioformat.ALIGNMENT, query, options);
@@ -168,7 +170,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void deleteFilterTest() throws CatalogDBException, IOException {
+    public void deleteFilterTest() throws CatalogDBException, IOException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query("key1", "value1").append("key2", "value2");
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("key1", "key2"));
         User.Filter filter = new User.Filter("filter1", "Description of filter 1", File.Bioformat.ALIGNMENT, query, options);
@@ -183,7 +185,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
 
     @Test
-    public void setConfigTest() throws CatalogDBException, IOException {
+    public void setConfigTest() throws CatalogDBException, IOException, CatalogParameterException, CatalogAuthorizationException {
         ObjectMap objectMap = new ObjectMap()
                 .append("key1", Arrays.asList(1,2,3,4,5))
                 .append("key2", new ObjectMap("key21", 21).append("key22", 22));

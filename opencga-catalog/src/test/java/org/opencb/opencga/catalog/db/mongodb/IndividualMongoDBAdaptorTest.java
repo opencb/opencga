@@ -25,7 +25,9 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.common.Status;
@@ -198,7 +200,7 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void testAvoidDuplicatedSamples() throws CatalogDBException {
+    public void testAvoidDuplicatedSamples() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         catalogDBAdaptor.getCatalogSampleDBAdaptor().insert(studyId, new Sample().setId("sample1").setStatus(new Status()),
                 Collections.emptyList(), QueryOptions.empty());

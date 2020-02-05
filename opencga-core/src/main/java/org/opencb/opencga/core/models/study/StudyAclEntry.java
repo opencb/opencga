@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.core.models.study;
 
+import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.models.AbstractAclEntry;
 import org.opencb.opencga.core.models.clinical.ClinicalAnalysisAclEntry;
@@ -29,6 +30,7 @@ import org.opencb.opencga.core.models.sample.SampleAclEntry;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -64,14 +66,14 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
 
     // Study Permissions
 
-    private static final int FILE = 1;
-    private static final int SAMPLE = 2;
-    private static final int JOB = 3;
-    private static final int COHORT = 4;
-    private static final int INDIVIDUAL = 5;
-    private static final int DISEASE_PANEL = 7;
-    private static final int FAMILY = 8;
-    private static final int CLINICAL_ANALYSIS = 9;
+    public static final int FILE = 1;
+    public static final int SAMPLE = 2;
+    public static final int JOB = 3;
+    public static final int COHORT = 4;
+    public static final int INDIVIDUAL = 5;
+    public static final int DISEASE_PANEL = 7;
+    public static final int FAMILY = 8;
+    public static final int CLINICAL_ANALYSIS = 9;
 
     public enum StudyPermissions {
         CONFIDENTIAL_VARIABLE_SET_ACCESS,
@@ -136,6 +138,14 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         WRITE_CLINICAL_ANALYSIS(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.UPDATE.name(), CLINICAL_ANALYSIS),
         DELETE_CLINICAL_ANALYSIS(ClinicalAnalysisAclEntry.ClinicalAnalysisPermissions.DELETE.name(), CLINICAL_ANALYSIS);
 
+        private static Map<String, StudyPermissions> map;
+        static {
+            map = new LinkedMap();
+            for (StudyPermissions params : StudyPermissions.values()) {
+                map.put(params.permission + "-" + params.type, params);
+            }
+        }
+
         private String permission;
         private int type;
 
@@ -146,6 +156,10 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
 
         StudyPermissions() {
             this(null, -1);
+        }
+
+        public static StudyPermissions getStudyPermission(String permission, int type) {
+            return map.get(permission + "-" + type);
         }
 
         public FileAclEntry.FilePermissions getFilePermission() {

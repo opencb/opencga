@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.StudyMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
@@ -154,7 +155,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 //        }
 //    }
 
-    Study insert(ClientSession clientSession, Project project, Study study) throws CatalogDBException {
+    Study insert(ClientSession clientSession, Project project, Study study)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (project.getUid() < 0) {
             throw CatalogDBException.uidNotFound("Project", project.getUid());
         }
@@ -346,7 +348,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public OpenCGAResult<Group> setUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
+    public OpenCGAResult<Group> setUsersToGroup(long studyId, String groupId, List<String> members)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (members == null) {
             members = Collections.emptyList();
         }
@@ -420,7 +423,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public OpenCGAResult<Group> removeUsersFromAllGroups(long studyId, List<String> users) throws CatalogDBException {
+    public OpenCGAResult<Group> removeUsersFromAllGroups(long studyId, List<String> users)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (users == null || users.size() == 0) {
             throw new CatalogDBException("Unable to remove users from groups. List of users is empty");
         }
@@ -999,7 +1003,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public OpenCGAResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String user)
-            throws CatalogDBException {
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         checkVariableSetInUse(variableSetId);
 
         Bson query = Filters.eq(QueryParams.VARIABLE_SET_UID.key(), variableSetId);
@@ -1012,7 +1016,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         return new OpenCGAResult<>(result);
     }
 
-    public void checkVariableSetInUse(long variableSetId) throws CatalogDBException {
+    public void checkVariableSetInUse(long variableSetId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         OpenCGAResult<Sample> samples = dbAdaptorFactory.getCatalogSampleDBAdaptor().get(
                 new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key(), Constants.VARIABLE_SET + "=" + variableSetId), new QueryOptions());
         if (samples.getNumResults() != 0) {
@@ -1105,12 +1110,13 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     private void joinFields(Study study, QueryOptions options) throws CatalogDBException {
         try {
             joinFields(study, options, null);
-        } catch (CatalogAuthorizationException e) {
+        } catch (CatalogAuthorizationException | CatalogParameterException e) {
             throw new CatalogDBException(e);
         }
     }
 
-    private void joinFields(Study study, QueryOptions options, String user) throws CatalogDBException, CatalogAuthorizationException {
+    private void joinFields(Study study, QueryOptions options, String user)
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long studyId = study.getUid();
         if (studyId <= 0 || options == null) {
             return;
@@ -1204,7 +1210,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public OpenCGAResult update(long studyUid, ObjectMap parameters, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult update(long studyUid, ObjectMap parameters, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ID.key(), QueryParams.UID.key(), QueryParams.PROJECT_UID.key()));
         OpenCGAResult<Study> studyResult = get(studyUid, options);
@@ -1238,7 +1245,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             Study study = iterator.next();
             try {
                 result.append(runTransaction(clientSession -> privateUpdate(clientSession, study, parameters)));
-            } catch (CatalogDBException e) {
+            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
                 logger.error("Could not update study {}: {}", study.getId(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, study.getId(), e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -1382,7 +1389,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public OpenCGAResult delete(Study study) throws CatalogDBException {
+    public OpenCGAResult delete(Study study) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         try {
             Query query = new Query(QueryParams.UID.key(), study.getUid());
             OpenCGAResult<Document> result = nativeGet(query, new QueryOptions());
@@ -1406,7 +1413,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             String studyId = study.getString(QueryParams.ID.key());
             try {
                 result.append(runTransaction(clientSession -> privateDelete(clientSession, study)));
-            } catch (CatalogDBException e) {
+            } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
                 logger.error("Could not delete study {}: {}", studyId, e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, studyId, e.getMessage()));
                 result.setNumMatches(result.getNumMatches() + 1);
@@ -1541,7 +1548,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     @Override
     public OpenCGAResult<Study> get(Query query, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
+            throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
         List<Study> documentList = new ArrayList<>();
         OpenCGAResult<Study> studyDataResult;

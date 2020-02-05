@@ -25,13 +25,16 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.managers.SampleManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -836,6 +839,49 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     }
 
     @Test
+    public void aclQuery() throws CatalogException {
+        SampleManager sampleManager = catalogManager.getSampleManager();
+
+        sampleManager.create(studyFqn, new Sample().setId("s1"), QueryOptions.empty(), ownerSessionId);
+        sampleManager.create(studyFqn, new Sample().setId("s2"), QueryOptions.empty(), ownerSessionId);
+        sampleManager.create(studyFqn, new Sample().setId("s3"), QueryOptions.empty(), ownerSessionId);
+        sampleManager.create(studyFqn, new Sample().setId("s4"), QueryOptions.empty(), ownerSessionId);
+        sampleManager.create(studyFqn, new Sample().setId("s5"), QueryOptions.empty(), ownerSessionId);
+
+        sampleManager.updateAcl(studyFqn, Collections.singletonList("s1"), memberUser, new Sample.SampleAclParams(
+                SampleAclEntry.SamplePermissions.VIEW.name() + "," + SampleAclEntry.SamplePermissions.DELETE.name(), AclParams.Action.SET,
+                null, null, null), ownerSessionId);
+        sampleManager.updateAcl(studyFqn, Collections.singletonList("s2"), memberUser, new Sample.SampleAclParams(
+                SampleAclEntry.SamplePermissions.VIEW.name() + "," + SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name(),
+                AclParams.Action.SET, null, null, null), ownerSessionId);
+        sampleManager.updateAcl(studyFqn, Collections.singletonList("s3"), memberUser, new Sample.SampleAclParams(
+                SampleAclEntry.SamplePermissions.UPDATE.name() + "," + SampleAclEntry.SamplePermissions.DELETE.name(), AclParams.Action.SET,
+                null, null, null), ownerSessionId);
+        sampleManager.updateAcl(studyFqn, Collections.singletonList("s4"), memberUser, new Sample.SampleAclParams(
+                SampleAclEntry.SamplePermissions.VIEW.name(), AclParams.Action.SET, null, null, null), ownerSessionId);
+
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
+
+        // member user wants to know the samples for which he has DELETE permissions
+        Query query = new Query(ParamConstants.ACL_PARAM, memberUser + ":" + SampleAclEntry.SamplePermissions.DELETE.name());
+        List<Sample> results = sampleManager.search(studyFqn, query, options, memberSessionId).getResults();
+        assertEquals(2, results.stream().map(Sample::getId).collect(Collectors.toSet()).size());
+        assertTrue(Arrays.asList("s1", "smp6").containsAll(results.stream().map(Sample::getId).collect(Collectors.toSet())));
+
+        // Owner user wants to know the samples for which member user has DELETE permissions
+        query = new Query(ParamConstants.ACL_PARAM, memberUser + ":" + SampleAclEntry.SamplePermissions.DELETE.name());
+        results = sampleManager.search(studyFqn, query, options, ownerSessionId).getResults();
+        assertEquals(3, results.stream().map(Sample::getId).collect(Collectors.toSet()).size());
+        assertTrue(Arrays.asList("s1", "s3", "smp6").containsAll(results.stream().map(Sample::getId).collect(Collectors.toSet())));
+
+        // member user wants to know the samples for which other user has DELETE permissions
+        query = new Query(ParamConstants.ACL_PARAM, ownerUser + ":" + SampleAclEntry.SamplePermissions.DELETE.name());
+        thrown.expect(CatalogAuthorizationException.class);
+        thrown.expectMessage("Only study owners or admins");
+        sampleManager.search(studyFqn, query, options, memberSessionId);
+    }
+
+    @Test
     public void readCohort() throws CatalogException {
         assertEquals(1, catalogManager.getCohortManager().search(studyFqn, new Query(), null, ownerSessionId).getNumResults());
         assertEquals(0, catalogManager.getCohortManager().search(studyFqn, new Query(), null, externalSessionId).getNumResults());
@@ -867,8 +913,6 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         assertEquals(2, catalogManager.getIndividualManager().search(studyFqn, new Query(), null, studyAdmin1SessionId).getNumResults());
         assertEquals(0, catalogManager.getIndividualManager().search(studyFqn, new Query(), null, externalSessionId).getNumResults());
     }
-
-
 
     /*--------------------------*/
     // Read Jobs

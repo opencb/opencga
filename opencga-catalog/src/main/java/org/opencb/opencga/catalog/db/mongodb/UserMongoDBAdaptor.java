@@ -36,11 +36,11 @@ import org.opencb.opencga.catalog.db.mongodb.converters.UserConverter;
 import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +79,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public OpenCGAResult insert(User user, QueryOptions options) throws CatalogDBException {
+    public OpenCGAResult insert(User user, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return runTransaction(clientSession -> {
             long tmpStartTime = startQuery();
 
@@ -89,13 +90,15 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         }, e -> logger.error("Could not create user {}: {}", user.getId(), e.getMessage()));
     }
 
-    private void insert(ClientSession clientSession, User user) throws CatalogDBException {
+    private void insert(ClientSession clientSession, User user) throws CatalogDBException, CatalogParameterException {
         checkParameter(user, "user");
         if (exists(clientSession, user.getId())) {
             throw new CatalogDBException("User {id:\"" + user.getId() + "\"} already exists");
         }
 
-        List<Project> projects = user.getProjects();
+        if (user.getProjects() != null && !user.getProjects().isEmpty()) {
+            throw new CatalogParameterException("Creating user and projects in a single transaction is forbidden");
+        }
         user.setProjects(Collections.emptyList());
 
         user.setLastModified(TimeUtils.getTimeMillis());
@@ -103,16 +106,11 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         userDocument.append(PRIVATE_ID, user.getId());
 
         userCollection.insert(clientSession, userDocument, null);
-
-        if (projects != null) {
-            for (Project p : projects) {
-                dbAdaptorFactory.getCatalogProjectDbAdaptor().insert(clientSession, p, user.getId());
-            }
-        }
     }
 
     @Override
-    public OpenCGAResult<User> get(String userId, QueryOptions options, String lastModified) throws CatalogDBException {
+    public OpenCGAResult<User> get(String userId, QueryOptions options, String lastModified)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
 
         checkId(userId);
         Query query = new Query(QueryParams.ID.key(), userId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
@@ -138,7 +136,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public OpenCGAResult updateUserLastModified(String userId) throws CatalogDBException {
+    public OpenCGAResult updateUserLastModified(String userId)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return update(userId, new ObjectMap("lastModified", TimeUtils.getTimeMillis()));
     }
 
@@ -278,7 +277,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public OpenCGAResult<Long> count(long studyUid, Query query, String user, StudyAclEntry.StudyPermissions studyPermission)
+    public OpenCGAResult<Long> count(Query query, String user)
             throws CatalogDBException {
         throw new NotImplementedException("Count not implemented for users");
     }
@@ -401,7 +400,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         throw new NotImplementedException("Update user by int id. The id should be a string.");
     }
 
-    public OpenCGAResult update(String userId, ObjectMap parameters) throws CatalogDBException {
+    public OpenCGAResult update(String userId, ObjectMap parameters)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         checkId(userId);
         Query query = new Query(QueryParams.ID.key(), userId);
         OpenCGAResult update = update(query, parameters, QueryOptions.empty());
@@ -415,7 +415,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status), QueryOptions.empty());
     }
 
-    public OpenCGAResult setStatus(String userId, String status) throws CatalogDBException {
+    public OpenCGAResult setStatus(String userId, String status)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return update(userId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
@@ -424,7 +425,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         throw new CatalogDBException("Delete user by int id. The id should be a string.");
     }
 
-    public OpenCGAResult delete(String id, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult delete(String id, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
 
         checkId(id);
@@ -459,7 +461,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
      * @param userId user id.
      * @throws CatalogDBException when the user has active projects. Projects must be deleted first.
      */
-    private void checkCanDelete(String userId) throws CatalogDBException {
+    private void checkCanDelete(String userId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         checkId(userId);
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
                 .append(ProjectDBAdaptor.QueryParams.STATUS_NAME.key(), Status.READY);
@@ -496,7 +498,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         throw new CatalogDBException("Delete user by int id. The id should be a string.");
     }
 
-    public OpenCGAResult restore(String id, QueryOptions queryOptions) throws CatalogDBException {
+    public OpenCGAResult restore(String id, QueryOptions queryOptions)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         checkId(id);
         Query query = new Query(QueryParams.ID.key(), id)
                 .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
@@ -570,13 +573,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public OpenCGAResult groupBy(long studyUid, Query query, String field, QueryOptions options, String user)
-            throws CatalogDBException, CatalogAuthorizationException {
-        return null;
-    }
-
-    @Override
-    public OpenCGAResult groupBy(long studyUid, Query query, List<String> fields, QueryOptions options, String user)
+    public OpenCGAResult groupBy(Query query, List<String> fields, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         return null;
     }

@@ -20,8 +20,10 @@ import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -121,11 +123,11 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
         }
     }
 
-    default boolean exists(long sampleId) throws CatalogDBException {
+    default boolean exists(long sampleId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query(QueryParams.UID.key(), sampleId)).getNumMatches() > 0;
     }
 
-    default void checkId(long sampleId) throws CatalogDBException {
+    default void checkId(long sampleId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (sampleId < 0) {
             throw CatalogDBException.newInstance("Sample id '{}' is not valid: ", sampleId);
         }
@@ -138,15 +140,17 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample> {
     OpenCGAResult nativeInsert(Map<String, Object> sample, String userId) throws CatalogDBException;
 
     OpenCGAResult insert(long studyId, Sample sample, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException;
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<Sample> get(long sampleId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Sample> get(long sampleId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Sample> getAllInStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
     long getStudyId(long sampleId) throws CatalogDBException;
 
-    OpenCGAResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
+    OpenCGAResult updateProjectRelease(long studyId, int release)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to

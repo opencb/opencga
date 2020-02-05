@@ -1,21 +1,26 @@
 package org.opencb.opencga.app.cli.admin.executors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.bson.Document;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.app.cli.admin.executors.migration.AnnotationSetMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.NewVariantMetadataMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.storage.NewProjectMetadataMigration;
 import org.opencb.opencga.app.cli.admin.executors.migration.storage.NewStudyMetadata;
 import org.opencb.opencga.app.cli.admin.options.MigrationCommandOptions;
+import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.FileIndex;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.study.Study;
@@ -181,10 +186,27 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
 
         setCatalogDatabaseCredentials(options, options.commonOptions);
 
+        // Check administrator password
+        MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(configuration);
+        MongoDBCollection metaCollection = factory.getMongoDBCollectionMap().get(MongoDBAdaptorFactory.METADATA_COLLECTION);
+
+        String cypheredPassword = CatalogAuthenticationManager.cypherPassword(options.commonOptions.adminPassword);
+        Document document = new Document("admin.password", cypheredPassword);
+        if (metaCollection.count(document).getNumMatches() == 0) {
+            throw CatalogAuthenticationException.incorrectUserOrPassword();
+        }
+
         try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             // 1. Catalog Javascript migration
             logger.info("Starting Catalog migration for 2.0.0");
             runMigration(catalogManager, appHome + "/misc/migration/v2.0.0/", "opencga_catalog_v1.4.2_to_v.2.0.0.js");
+
+            String token = catalogManager.getUserManager().loginAsAdmin(options.commonOptions.adminPassword);
+
+            // Create default project and study for administrator #1491
+            catalogManager.getProjectManager().create("admin", "admin", "Default project", "", "", "", "", "", null, token);
+            catalogManager.getStudyManager().create("admin", "admin", "admin", "admin", Study.Type.CASE_CONTROL, "", "Default study",
+                    new Status(), "", "", null, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), null, token);
 
             // Create default JOBS folder for analysis
             MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration);

@@ -23,8 +23,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.job.Job;
@@ -44,7 +46,7 @@ import static org.junit.Assert.*;
 public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
-    public void createJobTest() throws CatalogDBException {
+    public void createJobTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Job job = new Job()
                 .setStatus(new Enums.ExecutionStatus());
 
@@ -84,7 +86,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void getAllJobTest() throws CatalogDBException {
+    public void getAllJobTest() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
         DataResult<Job> allJobs = catalogJobDBAdaptor.getAllInStudy(studyId, null);
         System.out.println(allJobs);
@@ -112,7 +114,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void testSortResultsPriorityAndCreationDate() throws CatalogDBException {
+    public void testSortResultsPriorityAndCreationDate() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long studyUid = user3.getProjects().get(0).getStudies().get(0).getUid();
 
         Date startDate = TimeUtils.getDate();
@@ -171,7 +173,7 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 //    }
 
     @Test
-    public void getJobsOrderedByDate() throws CatalogDBException {
+    public void getJobsOrderedByDate() throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
         // Job with current date

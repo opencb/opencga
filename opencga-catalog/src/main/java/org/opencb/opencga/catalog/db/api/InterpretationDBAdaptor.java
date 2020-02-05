@@ -4,7 +4,9 @@ import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -84,11 +86,11 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
         }
     }
 
-    default boolean exists(long interpretationId) throws CatalogDBException {
+    default boolean exists(long interpretationId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query(QueryParams.UID.key(), interpretationId)).getNumMatches() > 0;
     }
 
-    default void checkId(long interpretationId) throws CatalogDBException {
+    default void checkId(long interpretationId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (interpretationId < 0) {
             throw CatalogDBException.newInstance("Interpretation id '{}' is not valid: ", interpretationId);
         }
@@ -102,7 +104,8 @@ public interface InterpretationDBAdaptor extends DBAdaptor<Interpretation> {
 
     OpenCGAResult insert(long studyId, Interpretation interpretation, QueryOptions options) throws CatalogDBException;
 
-    OpenCGAResult<Interpretation> get(long interpretationUid, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Interpretation> get(long interpretationUid, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     OpenCGAResult<Interpretation> get(long studyUid, String interpretationId, QueryOptions options) throws CatalogDBException;
 
