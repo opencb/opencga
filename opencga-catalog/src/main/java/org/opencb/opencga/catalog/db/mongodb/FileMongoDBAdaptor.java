@@ -479,7 +479,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         filterMapParams(parameters, document.getSet(), acceptedMapParams);
         // Fixme: Attributes and stats can be also parsed to numeric or boolean
 
-        String[] acceptedObjectParams = {QueryParams.INDEX.key(), QueryParams.SOFTWARE.key()};
+        String[] acceptedObjectParams = {QueryParams.INDEX.key(), QueryParams.SOFTWARE.key(), QueryParams.EXPERIMENT.key()};
         filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         if (!document.toFinalUpdateDocument().isEmpty()) {
@@ -1113,7 +1113,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
                     case RELATED_FILES:
                     case RELATED_FILES_RELATION:
                     case SIZE:
-                    case EXPERIMENT_UID:
                     case SOFTWARE_NAME:
                     case SOFTWARE_VERSION:
                     case SOFTWARE_COMMIT:

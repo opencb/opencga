@@ -66,7 +66,7 @@ public interface FileDBAdaptor extends AnnotationSetDBAdaptor<File> {
         RELATED_FILES("relatedFiles", TEXT_ARRAY, ""),
         RELATED_FILES_RELATION("relatedFiles.relation", TEXT, ""),
         SIZE("size", INTEGER_ARRAY, ""),
-        EXPERIMENT_UID("experiment.uid", INTEGER_ARRAY, ""),
+        EXPERIMENT("experiment", OBJECT, ""),
         SOFTWARE("software", TEXT_ARRAY, ""),
         SOFTWARE_NAME("software.name", TEXT, ""),
         SOFTWARE_VERSION("software.version", TEXT, ""),
