@@ -119,15 +119,15 @@ public class CatalogManagerExternalResource extends ExternalResource {
         }
         MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
 
-        if (catalogManager == null) {
-            catalogManager = new CatalogManager(configuration);
-        }
+//        if (catalogManager == null) {
+//            catalogManager = new CatalogManager(configuration);
+//        }
 
 //        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
-        MongoDataStore db = mongoManager.get(catalogManager.getCatalogDatabase());
+        MongoDataStore db = mongoManager.get(configuration.getDatabasePrefix() + "_catalog");
         db.getDb().drop();
 //        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
-        mongoManager.close(catalogManager.getCatalogDatabase());
+        mongoManager.close(configuration.getDatabasePrefix() + "_catalog");
 
         Path rootdir = Paths.get(UriUtils.createDirectoryUri(configuration.getWorkspace()));
         deleteFolderTree(rootdir.toFile());
