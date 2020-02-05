@@ -1,0 +1,81 @@
+---
+id: corpasome
+#groups:
+#  - id: demo
+#    userIds: [demo1, demo2]
+#variableSets:
+individuals:
+  - id: ISDBM322015
+    name: ISDBM322015
+    father:
+      - id: ISDBM322016
+    mother:
+      - id: ISDBM322018
+    sex: MALE
+    karyotypicSex: XY
+    lifeStatus: ALIVE
+    phenotypes:
+      - id: HP:0000006
+        name: Autosomal dominant inheritance
+        source: HPO
+        status: OBSERVED
+  - id: ISDBM322017
+    name: ISDBM322017
+    father:
+      - id: ISDBM322016
+    mother:
+      - id: ISDBM322018
+    sex: FEMALE
+    karyotypicSex: XX
+    lifeStatus: ALIVE
+    phenotypes:
+      - id: HP:0000006
+        name: Autosomal dominant inheritance
+        source: HPO
+        status: OBSERVED
+  - id: ISDBM322016
+    name: ISDBM322016
+    sex: MALE
+    karyotypicSex: XY
+    lifeStatus: ALIVE
+    phenotypes:
+      - id: HP:0000275
+        name: Narrow face
+        source: HPO
+        status: OBSERVED
+  - id: ISDBM322018
+    name: ISDBM322018
+    sex: FEMALE
+    karyotypicSex: XX
+    lifeStatus: ALIVE
+    phenotypes:
+      - id: HP:0000006
+        name: Autosomal dominant inheritance
+        source: HPO
+        status: OBSERVED
+samples:
+  - id: ISDBM322015
+    source: quartet.variants.annotated.vcf.gz
+    individualId: ISDBM322015
+  - id: ISDBM322017
+    source: quartet.variants.annotated.vcf.gz
+    individualId: ISDBM322017
+  - id: ISDBM322016
+    source: quartet.variants.annotated.vcf.gz
+    individualId: ISDBM322016
+  - id: ISDBM322018
+    source: quartet.variants.annotated.vcf.gz
+    individualId: ISDBM322018
+cohorts:
+  - id: ALL
+    samples:
+      - id: ISDBM322015
+      - id: ISDBM322017
+      - id: ISDBM322016
+      - id: ISDBM322018
+files:
+  - id: quartet.variants.annotated.vcf.gz
+    path:
+    uri: fileURL
+    bioformat: VARIANT
+    format: VCF

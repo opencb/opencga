@@ -26,7 +26,6 @@ import org.opencb.opencga.core.models.user.User;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,137 +37,59 @@ public class DemoConfiguration {
     private Configuration configuration;
     private List<User> users;
 
-    private static final String DEFAULT_CONFIGURATION_FORMAT = "yml";
 
     public static DemoConfiguration load(Path configurationPath) throws IOException {
-        InputStream inputStream = FileUtils.newInputStream(configurationPath);
-        return load(inputStream, DEFAULT_CONFIGURATION_FORMAT);
-    }
-
-    public static DemoConfiguration load(InputStream configurationInputStream) throws IOException {
-        return load(configurationInputStream, DEFAULT_CONFIGURATION_FORMAT);
-    }
-
-    public static DemoConfiguration load(InputStream configurationInputStream, String format) throws IOException {
-        DemoConfiguration demoConfiguration;
-        ObjectMapper objectMapper;
-        switch (format) {
-            case "json":
-                objectMapper = new ObjectMapper();
-                demoConfiguration = objectMapper.readValue(configurationInputStream, DemoConfiguration.class);
-                break;
-            case "yml":
-            case "yaml":
-            default:
-                objectMapper = new ObjectMapper(new YAMLFactory());
-                demoConfiguration = objectMapper.readValue(configurationInputStream, DemoConfiguration.class);
-                Map<String, List<Study>> studies = new HashMap<>();
-                for (User user : demoConfiguration.getUsers()) {
-                    for (Project project : user.getProjects()) {
-                        studies.put(project.getId(), new ArrayList<>());
-                        for (Study study : project.getStudies()) {
-                            studies.get(project.getId()).add(objectMapper.readValue(new File("build/conf/" + study.getId() + ".yml"), Study.class));
-                        }
-                    }
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+        InputStream inputStream = FileUtils.newInputStream(configurationPath.resolve("main.yml"));
+        DemoConfiguration demoConfiguration = objectMapper.readValue(inputStream, DemoConfiguration.class);
+        Map<String, List<Study>> studies = new HashMap<>();
+        for (User user : demoConfiguration.getUsers()) {
+            for (Project project : user.getProjects()) {
+                studies.put(project.getId(), new ArrayList<>());
+                for (Study study : project.getStudies()) {
+                    File file = configurationPath.resolve(study.getId() + ".yml").toFile();
+                    studies.get(project.getId()).add(objectMapper.readValue(file, Study.class));
                 }
+            }
+        }
 
-                // Set studies
-                for (User user : demoConfiguration.getUsers()) {
-                    for (Project project : user.getProjects()) {
-                        project.setStudies(studies.get(project.getId()));
-                    }
-                }
-
-                break;
+        // Set studies
+        for (User user : demoConfiguration.getUsers()) {
+            for (Project project : user.getProjects()) {
+                project.setStudies(studies.get(project.getId()));
+            }
         }
         return demoConfiguration;
     }
 
-    public void serialize(OutputStream configurationOutputStream) throws IOException {
-        ObjectMapper jsonMapper = new ObjectMapper(new YAMLFactory());
-        jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOutputStream, this);
+    public void serialize(Path configurationPath) throws IOException {
+        System.out.println("Not implemented yet");
     }
 
     @Override
     public String toString() {
-        return "DemoConfiguration{}";
-    }
-
-    public List<User> getUsers() {
-        return users;
-    }
-
-    public void setUsers(List<User> users) {
-        this.users = users;
+        final StringBuilder sb = new StringBuilder("DemoConfiguration{");
+        sb.append("configuration=").append(configuration);
+        sb.append(", users=").append(users);
+        sb.append('}');
+        return sb.toString();
     }
 
     public Configuration getConfiguration() {
         return configuration;
     }
 
-    public void setConfiguration(Configuration configuration) {
+    public DemoConfiguration setConfiguration(Configuration configuration) {
         this.configuration = configuration;
-    }
-}
-
-
-class Configuration {
-    private String url;
-    private List<StudyConfiguration> studies;
-
-    public String getUrl() {
-        return url;
+        return this;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
+    public List<User> getUsers() {
+        return users;
     }
 
-    public List<StudyConfiguration> getStudies() {
-        return studies;
-    }
-
-    public void setStudies(List<StudyConfiguration> studies) {
-        this.studies = studies;
-    }
-}
-
-class StudyConfiguration {
-
-    private String id;
-    private String index;
-    private String urlBase;
-    private String active;
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getIndex() {
-        return index;
-    }
-
-    public void setIndex(String index) {
-        this.index = index;
-    }
-
-    public String getUrlBase() {
-        return urlBase;
-    }
-
-    public void setUrlBase(String urlBase) {
-        this.urlBase = urlBase;
-    }
-
-    public String getActive() {
-        return active;
-    }
-
-    public void setActive(String active) {
-        this.active = active;
+    public DemoConfiguration setUsers(List<User> users) {
+        this.users = users;
+        return this;
     }
 }

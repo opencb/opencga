@@ -16,64 +16,99 @@
 
 package org.opencb.opencga.app.demo;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.demo.config.DemoConfiguration;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.cohort.CohortCreateParams;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.individual.Individual;
+import org.opencb.opencga.core.models.individual.IndividualCreateParams;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
+import org.opencb.opencga.core.models.sample.Sample;
+import org.opencb.opencga.core.models.sample.SampleCreateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyCreateParams;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserCreateParams;
 
-import java.util.ArrayList;
-import java.util.List;
 
 public class DemoManager {
 
     private DemoConfiguration demoConfiguration;
     private OpenCGAClient openCGAClient;
 
+    public DemoManager() {
+    }
+
     public DemoManager(DemoConfiguration demoConfiguration, ClientConfiguration clientConfiguration) {
         this.demoConfiguration = demoConfiguration;
         this.openCGAClient = new OpenCGAClient(clientConfiguration);
     }
 
-    public void load() throws ClientException {
-        List<String> projects = new ArrayList<>();
-        List<String> studies = new ArrayList<>();
-        List<String> users = new ArrayList<>();
+    public void execute() throws ClientException {
+        User mainUser = null;
+        String password = demoConfiguration.getConfiguration().getPassword();
+        openCGAClient.login("opencga", password);
         for (User user : demoConfiguration.getUsers()) {
-            for (Project project : user.getProjects()) {
-                if(!projects.contains(project.getId())) {
-                    projects.add(project.getId());
-                    openCGAClient.getProjectClient().create(ProjectCreateParams.of(project));
-                }
-                for (Study study : project.getStudies()) {
-                    if(!studies.contains(study.getId())) {
-                        studies.add(study.getId());
-                        openCGAClient.getStudyClient().create(
-                                StudyCreateParams.of(study),
-                                (ObjectMap) new ObjectMap().put("project", project.getId())
-                        );
-                    }
-                }
+            if (CollectionUtils.isNotEmpty(user.getProjects())) {
+                mainUser = user;
             }
+            openCGAClient.getUserClient().create(UserCreateParams.of(user));
         }
-        for (User user : demoConfiguration.getUsers()) {
-            if (!users.contains(user.getId())) {
-                users.add(user.getId());
-                openCGAClient.getUserClient().create(UserCreateParams.of(user));
+        openCGAClient.logout();
+
+        openCGAClient.login(mainUser.getId(), mainUser.getPassword());
+        for (Project project : mainUser.getProjects()) {
+            openCGAClient.getProjectClient().create(ProjectCreateParams.of(project));
+            for (Study study : project.getStudies()) {
+                ObjectMap params = new ObjectMap("project", project.getId());
+                openCGAClient.getStudyClient().create(StudyCreateParams.of(study), params);
+                if (CollectionUtils.isNotEmpty(study.getIndividuals())) {
+                    this.createIndividuals(study);
+                }
+                if (CollectionUtils.isNotEmpty(study.getSamples())) {
+                    this.createSamples(study);
+                }
+                if (CollectionUtils.isNotEmpty(study.getCohorts())) {
+                    this.createCohorts(study);
+                }
             }
         }
     }
 
+    private void createIndividuals(Study study) throws ClientException {
+        ObjectMap params = new ObjectMap("study", study.getId());
+        for (Individual individual : study.getIndividuals()) {
+            openCGAClient.getIndividualClient().create(IndividualCreateParams.of(individual), params);
+        }
+    }
 
+    private void createSamples(Study study) throws ClientException {
+        ObjectMap params = new ObjectMap("study", study.getId());
+        for (Sample sample : study.getSamples()) {
+            openCGAClient.getSampleClient().create(SampleCreateParams.of(sample), params);
+        }
+    }
 
-    public void execute() throws ClientException {
-        this.load();
+    private void createCohorts(Study study) throws ClientException {
+        ObjectMap params = new ObjectMap("study", study.getId());
+        for (Cohort cohort : study.getCohorts()) {
+            openCGAClient.getCohortClient().create(CohortCreateParams.of(cohort), params);
+        }
+    }
+
+    private void fetchFiles(Study study) throws ClientException {
+        ObjectMap params = new ObjectMap("study", study.getId());
+        for (File file : study.getFiles()) {
+            params.put("path", file.getPath());
+            params.put("url", file.getUri());
+            openCGAClient.getFileClient().fetch(params);
+        }
     }
 
 }
