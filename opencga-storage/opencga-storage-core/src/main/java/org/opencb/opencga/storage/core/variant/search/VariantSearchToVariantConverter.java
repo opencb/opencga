@@ -167,15 +167,15 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
 
         // Stats management
-        if (MapUtils.isNotEmpty(variantSearchModel.getStats())) {
-            for (String key: variantSearchModel.getStats().keySet()) {
-                // key consists of 'stats' + "__" + studyId + "__" + cohort
+        if (MapUtils.isNotEmpty(variantSearchModel.getAltStats())) {
+            for (String key: variantSearchModel.getAltStats().keySet()) {
+                // key consists of 'altStats' + "__" + studyId + "__" + cohort
                 String[] fields = StringUtils.splitByWholeSeparator(key, FIELD_SEPARATOR);
                 if (studyEntryMap.containsKey(fields[1])) {
                     VariantStats variantStats = new VariantStats();
-                    variantStats.setRefAlleleFreq(1 - variantSearchModel.getStats().get(key));
-                    variantStats.setAltAlleleFreq(variantSearchModel.getStats().get(key));
-                    variantStats.setMaf(Math.min(variantSearchModel.getStats().get(key), 1 - variantSearchModel.getStats().get(key)));
+                    variantStats.setRefAlleleFreq(1 - variantSearchModel.getAltStats().get(key));
+                    variantStats.setAltAlleleFreq(variantSearchModel.getAltStats().get(key));
+                    variantStats.setMaf(Math.min(variantSearchModel.getAltStats().get(key), 1 - variantSearchModel.getAltStats().get(key)));
                     studyEntryMap.get(fields[1]).setStats(fields[2], variantStats);
                 }
             }
@@ -1027,12 +1027,12 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             String studyId = studyIdToSearchModel(studyEntry.getStudyId());
             variantSearchModel.getStudies().add(studyId);
 
-            // We store the cohort stats with the format stats__STUDY__COHORT = value, e.g. stats_1kg_phase3_ALL=0.02
+            // We store the cohort stats with the format altStats__STUDY__COHORT = value, e.g. altStats_1kg_phase3_ALL=0.02
             if (studyEntry.getStats() != null && studyEntry.getStats().size() > 0) {
                 Map<String, VariantStats> studyStats = studyEntry.getStats();
                 for (String key : studyStats.keySet()) {
-                    variantSearchModel.getStats().put("stats" + FIELD_SEPARATOR + studyId
-                            + FIELD_SEPARATOR + key, studyStats.get(key).getAltAlleleFreq());
+                    variantSearchModel.getAltStats().put("altStats" + FIELD_SEPARATOR + studyId + FIELD_SEPARATOR + key,
+                            studyStats.get(key).getAltAlleleFreq());
                 }
             }
 

@@ -40,9 +40,8 @@ public class SolrQueryParserTest {
 
     private String studyName = "platinum";
     private String flBase = "fl=other,geneToSoAcc,traits,type,soAcc,score_*,sift,caddRaw,biotypes,polyphenDesc,studies,end,id,variantId,"
-            + "popFreq_*,caddScaled,genes,stats_*,chromosome,xrefs,start,gerp,polyphen,siftDesc,"
-            + "phastCons,phylop,id,chromosome,start,end,type";
-//    private String flDefault1 = flBase + ",fileInfo__*,qual__*,filter__*,sampleFormat__*__format,sampleFormat__*";
+            + "popFreq_*,caddScaled,genes,chromosome,xrefs,start,gerp,polyphen,siftDesc,"
+            + "phastCons,phylop,altStats_*,id,chromosome,start,end,type";
     private String flDefault1 = flBase + ",fileInfo__*,qual__*,filter__*,sampleFormat__*";
     private String flDefaultStudy = flBase + ",fileInfo__" + studyName + "__*,qual__" + studyName + "__*,"
             + "filter__" + studyName + "__*,sampleFormat__" + studyName + "__*";
@@ -232,7 +231,7 @@ public class SolrQueryParserTest {
         QueryOptions queryOptions = new QueryOptions();
         Query query = new Query();
         query.put(STATS_MAF.key(), "ALL<0.1");
-        String expectedFilter = "&q=*:*&fq=(stats__platinum__ALL:[0+TO+0.1})";
+        String expectedFilter = "&q=*:*&fq=(altStats__platinum__ALL:[0+TO+0.1})";
 
         // Without study
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
@@ -264,9 +263,9 @@ public class SolrQueryParserTest {
         Query query = new Query();
         query.put(STATS_MAF.key(), "ALL<0.1;OTH<0.1");
         String expectedFilter = "&q=*:*&fq="
-                + "((stats__platinum__ALL:[0+TO+0.1})"
+                + "((altStats__platinum__ALL:[0+TO+0.1})"
                 + "+AND+"
-                + "(stats__platinum__OTH:[0+TO+0.1}))";
+                + "(altStats__platinum__OTH:[0+TO+0.1}))";
 
         // Without study
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
@@ -792,7 +791,7 @@ public class SolrQueryParserTest {
 
         SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
         display(query, queryOptions, solrQuery);
-        assertEquals("json.facet={\"stats__1kG_phase3__CEU___0___1___0.2___0\":{\"field\":\"stats__1kG_phase3__CEU\",\"start\":0,\"end\":1,\"type\":\"range\",\"gap\":0.2}}&rows=0&start=0&q=*:*", solrQuery.toString());
+        assertEquals("json.facet={\"altStats__1kG_phase3__CEU___0___1___0.2___0\":{\"field\":\"altStats__1kG_phase3__CEU\",\"start\":0,\"end\":1,\"type\":\"range\",\"gap\":0.2}}&rows=0&start=0&q=*:*", solrQuery.toString());
     }
 
     @Test
