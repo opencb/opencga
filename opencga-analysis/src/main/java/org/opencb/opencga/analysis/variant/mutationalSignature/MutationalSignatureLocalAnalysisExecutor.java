@@ -1,10 +1,9 @@
 package org.opencb.opencga.analysis.variant.mutationalSignature;
 
+import htsjdk.samtools.reference.BlockCompressedIndexedFastaSequenceFile;
 import htsjdk.samtools.reference.FastaSequenceIndex;
-import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequence;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
+import htsjdk.samtools.util.GZIIndex;
 import org.opencb.biodata.models.core.GenomeSequenceFeature;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.cellbase.client.config.ClientConfiguration;
@@ -27,9 +26,10 @@ import org.opencb.opencga.core.tools.variant.MutationalSignatureAnalysisExecutor
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -43,8 +43,6 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     private final static int BATCH_SIZE = 200;
 
     public final static String R_DOCKER_IMAGE = "opencga-r";
-//    public final static String DOCKER_OUTPUT_PATH = "/data/output";
-//    public final static String DOCKER_INPUT_PATH = "/data/input";
 
     @Override
     public void run() throws ToolException {
@@ -57,6 +55,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             Query query = new Query()
                     .append(VariantQueryParam.STUDY.key(), getStudy())
                     .append(VariantQueryParam.SAMPLE.key(), getSampleName())
+                    .append(VariantQueryParam.FILTER.key(), "PASS")
                     .append(VariantQueryParam.TYPE.key(), "SNV");
 
             VariantDBIterator iterator = storageManager.iterator(query, new QueryOptions(), getToken());
@@ -70,6 +69,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             // Write context
             writeCountMap(countMap, getOutDir().resolve("context.txt").toFile());
 
+            // FIXME: create a class ResourceUtils to download files from URLs
             // To compare, download signatures probabilities at
             String link = "http://bioinfo.hpc.cam.ac.uk/opencb/opencga/analysis/cancer-signature/signatures_probabilities_v2.txt";
             InputStream in = new URL(link).openStream();
@@ -80,25 +80,16 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
         // Execute R script
         String commandLine = getCommandLine();
-        System.out.println("Mutational signature command line:" + commandLine);
+        System.out.println("Mutational signature command line:\n" + commandLine);
         try {
-            // Execute command and redirect stdout and stderr to the files: stdout.txt and stderr.txt
-            Command cmd = new Command(commandLine)
-                    .setOutputOutputStream(
-                            new DataOutputStream(new FileOutputStream(getOutDir().resolve(OpenCgaWrapperAnalysis.STDOUT_FILENAME).toFile())))
-                    .setErrorOutputStream(
-                            new DataOutputStream(new FileOutputStream(getOutDir().resolve(OpenCgaWrapperAnalysis.STDERR_FILENAME).toFile())));
-
+            // Execute command
+            Command cmd = new Command(commandLine);
             cmd.run();
 
             // Check errors by reading the stdout and stderr files
             if (!new File(getOutDir() + "/signature_summary.png").exists()
                     || !new File(getOutDir() + "/signature_coefficients.json").exists()) {
-                File file = new File(getOutDir() + "/" + OpenCgaWrapperAnalysis.STDERR_FILENAME);
-                String msg = "Something wrong executing mutational signature:\n";
-                if (file.exists()) {
-                    msg = StringUtils.join(FileUtils.readLines(file, Charset.defaultCharset()), ".\n");
-                }
+                String msg = "Something wrong executing mutational signature.";
                 throw new ToolException(msg);
             }
         } catch (Exception e) {
@@ -106,11 +97,13 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         }
     }
 
-    private void updateCountMapFromFasta(VariantDBIterator iterator, Map<String, Map<String, Double>> countMap) {
-        // FIXME: download fasta and fai files from public URL
-        File fastaFile = new File("~/data150/FASTA/Homo_sapiens.GRCh38.dna.toplevel.fa");
-        File faiFile = new File("~/data150/FASTA/Homo_sapiens.GRCh38.dna.toplevel.fa.fai");
-        IndexedFastaSequenceFile indexed = new IndexedFastaSequenceFile(fastaFile, new FastaSequenceIndex(faiFile));
+    private void updateCountMapFromFasta(VariantDBIterator iterator, Map<String, Map<String, Double>> countMap) throws IOException {
+        // FIXME: download fasta.gz, .fai and .gzi files from public URL
+        File fastaFile = new File("~/data150/FASTA/Homo_sapiens.GRCh38.dna.toplevel.fa.gz");
+        File faiFile = new File("~/data150/FASTA/Homo_sapiens.GRCh38.dna.toplevel.fa.gz.fai");
+        File gziFile = new File("~/data150/FASTA/Homo_sapiens.GRCh38.dna.toplevel.fa.gz.gzi");
+        BlockCompressedIndexedFastaSequenceFile indexed = new BlockCompressedIndexedFastaSequenceFile(fastaFile.toPath(),
+                new FastaSequenceIndex(faiFile), GZIIndex.loadIndex(gziFile.toPath()));
 
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
@@ -134,7 +127,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     private void updateCountMapFromCellBase(VariantDBIterator iterator, Map<String, Map<String, Double>> countMap) throws IOException {
         Map<String, String> regionAlleleMap = new HashMap<>();
 
-        // TODO fix it using cellbase utils from storage manager
+        // FIXME: use cellbase utils from storage manager
 //            regionClient = storageManager.getCellBaseUtils(getStudy(), getToken()).getCellBaseClient().getGenomicRegionClient();
         String assembly = "grch37";
         String species = "hsapiens";
@@ -201,13 +194,13 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
         StringBuilder sb = new StringBuilder("docker run ");
 
         // Mount management
-        String rScriptPath = executorParams.getString("opencgaHome") + "/build/analysis/" + getToolId();
+        String rScriptPath = executorParams.getString("opencgaHome") + "/analysis/R/" + getToolId();
         sb.append("--mount type=bind,source=\"").append(rScriptPath).append("\",target=\"")
                 .append(OpenCgaWrapperAnalysis.DOCKER_INPUT_PATH).append("\" ").append("--mount type=bind,source=\"")
-                .append(getOutDir().toAbsolutePath()).append("\",target=\"").append(OpenCgaWrapperAnalysis.DOCKER_OUTPUT_PATH).append("\" ");
+                .append(getOutDir().toAbsolutePath()).append("\",target=\"").append(OpenCgaWrapperAnalysis.DOCKER_OUTPUT_PATH).append("\"");
 
         // Docker image and version
-        sb.append(R_DOCKER_IMAGE);
+        sb.append(" ").append(R_DOCKER_IMAGE);
 
         // R command and parameters
         sb.append(" R CMD Rscript --vanilla");

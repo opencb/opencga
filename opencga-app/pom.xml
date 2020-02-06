@@ -280,7 +280,7 @@
 
                                 <exec executable="cp">
                                     <arg value="-r"/>
-                                    <arg value="${project.basedir}/../opencga-analysis/src/main/R/*"/>
+                                    <arg value="${project.basedir}/../opencga-analysis/src/main/R/"/>
                                     <arg value="${build.dir}/analysis"/>
                                 </exec>
 
