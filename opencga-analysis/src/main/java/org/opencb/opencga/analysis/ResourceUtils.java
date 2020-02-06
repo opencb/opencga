@@ -10,13 +10,16 @@ import java.nio.file.StandardCopyOption;
 
 public class ResourceUtils {
 
-    public static void download(URL url, Path outDir) throws IOException {
-        InputStream in = url.openStream();
-        Files.copy(in, outDir.resolve(new File(url.getFile()).getName()), StandardCopyOption.REPLACE_EXISTING);
+    public static File download(URL url, Path outDir) throws IOException {
+        return download(url, outDir.resolve(new File(url.getFile()).getName()).toFile());
     }
 
-    public static void download(URL url, File outFile) throws IOException {
+    public static File download(URL url, File outFile) throws IOException {
         InputStream in = url.openStream();
         Files.copy(in, outFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        if (outFile.exists()) {
+            return outFile;
+        }
+        return null;
     }
 }
