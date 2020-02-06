@@ -16,6 +16,7 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.utils.CollectionUtils;
+import org.opencb.opencga.analysis.ResourceUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageToolExecutor;
 import org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis;
@@ -28,11 +29,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 @ToolExecutor(id="opencga-local", tool = MutationalSignatureAnalysis.ID,
@@ -40,9 +37,21 @@ import java.util.*;
 public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatureAnalysisExecutor implements VariantStorageToolExecutor {
 
     private GenomicRegionClient regionClient;
+
+    private File fastaFile;
+    private File faiFile;
+    private File gziFile;
+
+
     private final static int BATCH_SIZE = 200;
 
     public final static String R_DOCKER_IMAGE = "opencga-r";
+
+    public final static String RESOURCES_URL = "http://bioinfo.hpc.cam.ac.uk/opencb/";
+    public final static String SIGNATURES_URL = RESOURCES_URL + "opencga/analysis/mutational-signature/signatures_probabilities_v2.txt";
+    public final static String FASTA_URL = RESOURCES_URL + "commons/reference-genomes/ensembl/Homo_sapiens.GRCh38.dna.toplevel.fa.gz";
+    public final static String FAI_URL = RESOURCES_URL + "commons/reference-genomes/ensembl/Homo_sapiens.GRCh38.dna.toplevel.fa.gz.fai";
+    public final static String GZI_URL = RESOURCES_URL + "commons/reference-genomes/ensembl/Homo_sapiens.GRCh38.dna.toplevel.fa.gz.gzi";
 
     @Override
     public void run() throws ToolException {
@@ -55,25 +64,30 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             Query query = new Query()
                     .append(VariantQueryParam.STUDY.key(), getStudy())
                     .append(VariantQueryParam.SAMPLE.key(), getSampleName())
-                    .append(VariantQueryParam.FILTER.key(), "PASS")
+                    //.append(VariantQueryParam.FILTER.key(), "PASS")
                     .append(VariantQueryParam.TYPE.key(), "SNV");
 
             VariantDBIterator iterator = storageManager.iterator(query, new QueryOptions(), getToken());
 
-            if (false) {
-                updateCountMapFromCellBase(iterator, countMap);
-            } else {
+            // FIXME to make URLs dependent on assembly (and Ensembl/NCBI ?)
+            fastaFile = ResourceUtils.download(new URL(FASTA_URL), getOutDir());
+            faiFile = ResourceUtils.download(new URL(FAI_URL), getOutDir());
+            gziFile = ResourceUtils.download(new URL(GZI_URL), getOutDir());
+
+            if (fastaFile.exists() && faiFile.exists() && gziFile.exists()) {
                 updateCountMapFromFasta(iterator, countMap);
+            } else {
+                updateCountMapFromCellBase(iterator, countMap);
             }
 
             // Write context
             writeCountMap(countMap, getOutDir().resolve("context.txt").toFile());
 
-            // FIXME: create a class ResourceUtils to download files from URLs
             // To compare, download signatures probabilities at
-            String link = "http://bioinfo.hpc.cam.ac.uk/opencb/opencga/analysis/cancer-signature/signatures_probabilities_v2.txt";
-            InputStream in = new URL(link).openStream();
-            Files.copy(in, getOutDir().resolve(Paths.get(new File(link).getName())), StandardCopyOption.REPLACE_EXISTING);
+            File signatureFile = ResourceUtils.download(new URL(SIGNATURES_URL), getOutDir());
+            if (!signatureFile.exists()) {
+                throw new ToolExecutorException("Error downloading mutational signatures file: " + SIGNATURES_URL);
+            }
         } catch (Exception e) {
             throw new ToolExecutorException(e);
         }
@@ -98,16 +112,11 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     }
 
     private void updateCountMapFromFasta(VariantDBIterator iterator, Map<String, Map<String, Double>> countMap) throws IOException {
-        // FIXME: download fasta.gz, .fai and .gzi files from public URL
-        File fastaFile = new File("~/data150/FASTA/Homo_sapiens.GRCh38.dna.toplevel.fa.gz");
-        File faiFile = new File("~/data150/FASTA/Homo_sapiens.GRCh38.dna.toplevel.fa.gz.fai");
-        File gziFile = new File("~/data150/FASTA/Homo_sapiens.GRCh38.dna.toplevel.fa.gz.gzi");
         BlockCompressedIndexedFastaSequenceFile indexed = new BlockCompressedIndexedFastaSequenceFile(fastaFile.toPath(),
                 new FastaSequenceIndex(faiFile), GZIIndex.loadIndex(gziFile.toPath()));
 
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
-            variant.toStringSimple();
             String key = variant.getReference() + ">" + variant.getAlternate();
             if (countMap.containsKey(key)) {
                 try {
@@ -129,7 +138,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
         // FIXME: use cellbase utils from storage manager
 //            regionClient = storageManager.getCellBaseUtils(getStudy(), getToken()).getCellBaseClient().getGenomicRegionClient();
-        String assembly = "grch37";
+        String assembly = "grch38";
         String species = "hsapiens";
 
         CellBaseClient cellBaseClient = new CellBaseClient(species, assembly, new ClientConfiguration().setVersion("v4")
@@ -146,10 +155,6 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
                 if (regionAlleleMap.size() >= BATCH_SIZE) {
                     updateCounterMap(regionAlleleMap, countMap);
                     regionAlleleMap.clear();
-
-
-                    // For testing
-                    break;
                 }
             }
         }
