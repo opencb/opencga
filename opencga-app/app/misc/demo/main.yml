@@ -1,0 +1,46 @@
+---
+configuration:
+  studies:
+    - id: 1000g
+      index: true
+      urlBase: http://bioinfo.hpc.cam.ac.uk/downloads/datasets/1000g/data/
+      active: true
+  #    cohorts:
+  #      - id: ACB
+  #        sample:
+  #          -
+  #        individual:
+  #          - population.name: ACB
+      acl:
+        - userId: demo
+          permission: [SAMPLE_VIEW]
+        - userId: demo2
+          permission: [SAMPLE_VIEW]
+    - id: corpasome
+      index: true
+      urlBase: http://bioinfo.hpc.cam.ac.uk/downloads/datasets/corpasome/data/
+      active: true
+      acl:
+        - userId: demo
+          permission: [SAMPLE_VIEW]
+        - userId: demo2
+          permission: [SAMPLE_VIEW]
+
+projects:
+  - id: population
+    name: Population Studies GRCh38
+    organism:
+      scientificName: hsapiens
+      assembly: GRCh38
+    studies:
+      - id: 1000g
+      - id: uk10k
+  - id: family
+    name: Family Studies GRCh37
+    organism:
+      scientificName: hsapiens
+      assembly: GRCh37
+    studies:
+      - id: platinum
+      - id: corpasome
+      - id: ceph_trio

@@ -35,29 +35,25 @@ import java.util.Map;
 public class DemoConfiguration {
 
     private Configuration configuration;
-    private List<User> users;
+    private List<Project> projects;
 
 
-    public static DemoConfiguration load(Path configurationPath) throws IOException {
+    public static DemoConfiguration load(Path mainConfigurationPath) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-        InputStream inputStream = FileUtils.newInputStream(configurationPath.resolve("main.yml"));
+        InputStream inputStream = FileUtils.newInputStream(mainConfigurationPath);
         DemoConfiguration demoConfiguration = objectMapper.readValue(inputStream, DemoConfiguration.class);
         Map<String, List<Study>> studies = new HashMap<>();
-        for (User user : demoConfiguration.getUsers()) {
-            for (Project project : user.getProjects()) {
-                studies.put(project.getId(), new ArrayList<>());
-                for (Study study : project.getStudies()) {
-                    File file = configurationPath.resolve(study.getId() + ".yml").toFile();
-                    studies.get(project.getId()).add(objectMapper.readValue(file, Study.class));
-                }
+        for (Project project : demoConfiguration.getProjects()) {
+            studies.put(project.getId(), new ArrayList<>());
+            for (Study study : project.getStudies()) {
+                File file = mainConfigurationPath.getParent().resolve(study.getId() + ".yml").toFile();
+                studies.get(project.getId()).add(objectMapper.readValue(file, Study.class));
             }
         }
 
-        // Set studies
-        for (User user : demoConfiguration.getUsers()) {
-            for (Project project : user.getProjects()) {
-                project.setStudies(studies.get(project.getId()));
-            }
+        // Set studies read from files
+        for (Project project : demoConfiguration.getProjects()) {
+            project.setStudies(studies.get(project.getId()));
         }
         return demoConfiguration;
     }
@@ -68,28 +64,25 @@ public class DemoConfiguration {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("DemoConfiguration{");
-        sb.append("configuration=").append(configuration);
-        sb.append(", users=").append(users);
-        sb.append('}');
-        return sb.toString();
+        return "DemoConfiguration{" +
+                "configuration=" + configuration +
+                ", projects=" + projects +
+                '}';
     }
 
     public Configuration getConfiguration() {
         return configuration;
     }
 
-    public DemoConfiguration setConfiguration(Configuration configuration) {
+    public void setConfiguration(Configuration configuration) {
         this.configuration = configuration;
-        return this;
     }
 
-    public List<User> getUsers() {
-        return users;
+    public List<Project> getProjects() {
+        return projects;
     }
 
-    public DemoConfiguration setUsers(List<User> users) {
-        this.users = users;
-        return this;
+    public void setProjects(List<Project> projects) {
+        this.projects = projects;
     }
 }

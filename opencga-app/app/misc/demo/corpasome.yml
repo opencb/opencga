@@ -1,9 +1,19 @@
 ---
+## README
+## Link https://figshare.com/articles/New_draft_item/4595839
+## Father: ISDBM322016
+## Mother: ISDBM322018
+## Son: ISDBM322015
+## Daughter: ISDBM322017
+
 id: corpasome
+name: Corpasome Family
+description: This Study simulates two diseroders and some phenotypes for training purposes
 #groups:
 #  - id: demo
 #    userIds: [demo1, demo2]
 #variableSets:
+
 individuals:
   - id: ISDBM322015
     name: ISDBM322015
@@ -14,11 +24,18 @@ individuals:
     sex: MALE
     karyotypicSex: XY
     lifeStatus: ALIVE
+    annotations:
+      - varaibleSet: tumor
+        values:
     phenotypes:
       - id: HP:0000006
         name: Autosomal dominant inheritance
         source: HPO
         status: OBSERVED
+    disorders:
+      - id: HP:0000006
+        name: Autosomal dominant inheritance
+        source: HPO
   - id: ISDBM322017
     name: ISDBM322017
     father:
@@ -53,28 +70,46 @@ individuals:
         name: Autosomal dominant inheritance
         source: HPO
         status: OBSERVED
+
 samples:
   - id: ISDBM322015
     source: quartet.variants.annotated.vcf.gz
     individualId: ISDBM322015
-  - id: ISDBM322017
-    source: quartet.variants.annotated.vcf.gz
-    individualId: ISDBM322017
   - id: ISDBM322016
     source: quartet.variants.annotated.vcf.gz
     individualId: ISDBM322016
+  - id: ISDBM322017
+    source: quartet.variants.annotated.vcf.gz
+    individualId: ISDBM322017
   - id: ISDBM322018
     source: quartet.variants.annotated.vcf.gz
     individualId: ISDBM322018
-cohorts:
-  - id: ALL
-    samples:
+
+families:
+  - id: corpas
+    name: Corpas
+    members:
       - id: ISDBM322015
-      - id: ISDBM322017
       - id: ISDBM322016
+      - id: ISDBM322017
       - id: ISDBM322018
+
+#clinicalAnalysis:
+#  - id: recesive
+#    proband.id: ISDBM322015
+#    family.id: corpasome
+#    disorder.id: XXX
+
+#cohorts:
+#  - id: ALL
+#    samples:
+#      - id: ISDBM322015
+#      - id: ISDBM322017
+#      - id: ISDBM322016
+#      - id: ISDBM322018
+
 files:
   - id: quartet.variants.annotated.vcf.gz
-    uri: fileURL
+    path: data
     bioformat: VARIANT
     format: VCF
