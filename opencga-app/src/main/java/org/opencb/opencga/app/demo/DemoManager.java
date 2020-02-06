@@ -105,7 +105,6 @@ public class DemoManager {
     private void fetchFiles(Study study) throws ClientException {
         ObjectMap params = new ObjectMap("study", study.getId());
         for (File file : study.getFiles()) {
-            params.put("path", file.getPath());
             params.put("url", file.getUri());
             openCGAClient.getFileClient().fetch(params);
         }

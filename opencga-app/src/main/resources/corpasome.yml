@@ -75,7 +75,6 @@ cohorts:
       - id: ISDBM322018
 files:
   - id: quartet.variants.annotated.vcf.gz
-    path:
     uri: fileURL
     bioformat: VARIANT
     format: VCF

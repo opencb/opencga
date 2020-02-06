@@ -1,6 +1,5 @@
 ---
 configuration:
-  url: http://docs.opencb.org/display/opencga
   studies:
     - id: corpasome
       index: true
