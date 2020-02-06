@@ -12,6 +12,7 @@ import org.opencb.opencga.analysis.family.FamilyIndexTask;
 import org.opencb.opencga.analysis.file.FileDeleteTask;
 import org.opencb.opencga.analysis.file.FileIndexTask;
 import org.opencb.opencga.analysis.individual.IndividualIndexTask;
+import org.opencb.opencga.analysis.job.JobIndexTask;
 import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -186,6 +187,7 @@ public class AdminWSServer extends OpenCGAWSServer {
             results.add(catalogManager.getJobManager().submit("admin", IndividualIndexTask.ID, Enums.Priority.MEDIUM, params, token));
             results.add(catalogManager.getJobManager().submit("admin", FamilyIndexTask.ID, Enums.Priority.MEDIUM, params, token));
             results.add(catalogManager.getJobManager().submit("admin", CohortIndexTask.ID, Enums.Priority.MEDIUM, params, token));
+            results.add(catalogManager.getJobManager().submit("admin", JobIndexTask.ID, Enums.Priority.MEDIUM, params, token));
             return createOkResponse(OpenCGAResult.merge(results));
         } catch (Exception e) {
             return createErrorResponse(e);

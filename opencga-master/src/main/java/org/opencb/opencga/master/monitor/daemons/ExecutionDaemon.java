@@ -32,6 +32,7 @@ import org.opencb.opencga.analysis.file.FetchAndRegisterTask;
 import org.opencb.opencga.analysis.file.FileDeleteTask;
 import org.opencb.opencga.analysis.file.FileIndexTask;
 import org.opencb.opencga.analysis.individual.IndividualIndexTask;
+import org.opencb.opencga.analysis.job.JobIndexTask;
 import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
@@ -163,6 +164,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(IndividualIndexTask.ID, "individuals secondary-index");
             put(CohortIndexTask.ID, "cohorts secondary-index");
             put(FamilyIndexTask.ID, "families secondary-index");
+            put(JobIndexTask.ID, "jobs secondary-index");
         }};
     }
 

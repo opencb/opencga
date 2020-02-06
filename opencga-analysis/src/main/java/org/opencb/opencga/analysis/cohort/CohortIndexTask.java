@@ -64,8 +64,7 @@ public class CohortIndexTask extends OpenCgaTool {
     private void indexCohort(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
         logger.info("Indexing cohorts of study {}", study.getFqn());
 
-        Query query = new Query()
-                .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        Query query = new Query();
         QueryOptions cohortQueryOptions = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.UUID.key(),
                         CohortDBAdaptor.QueryParams.NAME.key(),

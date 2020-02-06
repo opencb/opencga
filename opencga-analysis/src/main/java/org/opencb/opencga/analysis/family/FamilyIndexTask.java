@@ -64,8 +64,7 @@ public class FamilyIndexTask extends OpenCgaTool {
     private void indexFamily(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
         logger.info("Indexing families of study {}", study.getFqn());
 
-        Query query = new Query()
-                .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+        Query query = new Query();
         QueryOptions familyQueryOptions = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(FamilyDBAdaptor.QueryParams.UUID.key(),
                         FamilyDBAdaptor.QueryParams.CREATION_DATE.key(), FamilyDBAdaptor.QueryParams.STATUS.key(),
