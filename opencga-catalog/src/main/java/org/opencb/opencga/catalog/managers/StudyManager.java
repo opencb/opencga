@@ -354,17 +354,21 @@ public class StudyManager extends AbstractManager {
 
             // Read and process installation variable sets
             Set<String> variablesets = new Reflections(new ResourcesScanner(), "variablesets/").getResources(Pattern.compile(".*\\.json"));
-            for (String variableset : variablesets) {
+            for (String variableSetFile : variablesets) {
                 VariableSet vs = null;
                 try {
                     vs = JacksonUtils.getDefaultNonNullObjectMapper().readValue(
-                            getClass().getClassLoader().getResourceAsStream(variableset), VariableSet.class);
+                            getClass().getClassLoader().getResourceAsStream(variableSetFile), VariableSet.class);
                 } catch (IOException e) {
-                    logger.error("Could not parse variable set '{}'", variableset, e);
+                    logger.error("Could not parse variable set '{}'", variableSetFile, e);
                 }
                 if (vs != null) {
+                    if (vs.getAttributes() == null) {
+                        vs.setAttributes(new HashMap<>());
+                    }
+                    vs.getAttributes().put("resource", variableSetFile);
                     createVariableSet(study, vs.getId(), vs.getName(), vs.isUnique(), vs.isConfidential(), vs.getDescription(),
-                            vs.getAttributes(), vs.getVariables().stream().collect(Collectors.toList()), vs.getEntities(), token);
+                            vs.getAttributes(), new ArrayList<>(vs.getVariables()), vs.getEntities(), token);
                 }
             }
 
@@ -1692,7 +1696,7 @@ public class StudyManager extends AbstractManager {
                             FileDBAdaptor.QueryParams.CREATION_DATE.key(), FileDBAdaptor.QueryParams.BIOFORMAT.key(),
                             FileDBAdaptor.QueryParams.RELEASE.key(), FileDBAdaptor.QueryParams.STATUS.key(),
                             FileDBAdaptor.QueryParams.EXTERNAL.key(), FileDBAdaptor.QueryParams.SIZE.key(),
-                            FileDBAdaptor.QueryParams.SOFTWARE.key(), FileDBAdaptor.QueryParams.EXPERIMENT_UID.key(),
+                            FileDBAdaptor.QueryParams.SOFTWARE.key(), FileDBAdaptor.QueryParams.EXPERIMENT.key(),
                             FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(),
                             FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
                     .append(DBAdaptor.INCLUDE_ACLS, true)

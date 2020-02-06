@@ -21,24 +21,23 @@ import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
-import org.opencb.opencga.core.models.panel.PanelUpdateParams;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.core.models.panel.Panel;
-import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.AclParams;
-import org.opencb.opencga.core.models.panel.PanelAclEntry;
-import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.panel.Panel;
+import org.opencb.opencga.core.models.panel.PanelAclEntry;
+import org.opencb.opencga.core.models.panel.PanelUpdateParams;
+import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -161,7 +160,7 @@ public class PanelManager extends ResourceManager<Panel> {
         }
     }
 
-    private OpenCGAResult<Panel> getPanel(long studyUid, String panelUuid, QueryOptions options) throws CatalogDBException {
+    private OpenCGAResult<Panel> getPanel(long studyUid, String panelUuid, QueryOptions options) throws CatalogException {
         Query query = new Query()
                 .append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), studyUid)
                 .append(PanelDBAdaptor.QueryParams.UUID.key(), panelUuid);
@@ -914,8 +913,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 if (options.getBoolean(QueryOptions.COUNT)) {
                     ExecutorService executor = Executors.newSingleThreadExecutor();
                     Query finalQuery = query;
-                    countFuture = executor.submit(() -> panelDBAdaptor.count(study.getUid(), finalQuery, userId,
-                            StudyAclEntry.StudyPermissions.VIEW_PANELS));
+                    countFuture = executor.submit(() -> panelDBAdaptor.count(finalQuery, userId));
                 }
                 if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
                     // Here permissions will be checked
@@ -969,7 +967,7 @@ public class PanelManager extends ResourceManager<Panel> {
                 query.append(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
                 // Here view permissions will be checked
-                queryResultAux = panelDBAdaptor.count(study.getUid(), query, userId, StudyAclEntry.StudyPermissions.VIEW_PANELS);
+                queryResultAux = panelDBAdaptor.count(query, userId);
             }
 
             auditManager.auditCount(userId, Enums.Resource.DISEASE_PANEL, study.getId(), study.getUuid(), auditParams,
@@ -1174,7 +1172,7 @@ public class PanelManager extends ResourceManager<Panel> {
         // Add study id to the query
         query.put(PanelDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        OpenCGAResult queryResult = sampleDBAdaptor.groupBy(study.getUid(), query, fields, options, userId);
+        OpenCGAResult queryResult = sampleDBAdaptor.groupBy(query, fields, options, userId);
         return ParamUtils.defaultObject(queryResult, OpenCGAResult::new);
     }
 

@@ -20,8 +20,10 @@ import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.study.VariableSet;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -133,11 +135,11 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
         }
     }
 
-    default boolean exists(long individualId) throws CatalogDBException {
+    default boolean exists(long individualId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query(QueryParams.UID.key(), individualId)).getNumMatches() > 0;
     }
 
-    default void checkId(long individualId) throws CatalogDBException {
+    default void checkId(long individualId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (individualId < 0) {
             throw CatalogDBException.newInstance("Individual id '{}' is not valid: ", individualId);
         }
@@ -150,13 +152,15 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual> 
     OpenCGAResult nativeInsert(Map<String, Object> individual, String userId) throws CatalogDBException;
 
     OpenCGAResult insert(long studyId, Individual individual, List<VariableSet> variableSetList, QueryOptions options)
-            throws CatalogDBException;
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<Individual> get(long individualId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Individual> get(long individualId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     long getStudyId(long individualId) throws CatalogDBException;
 
-    OpenCGAResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
+    OpenCGAResult updateProjectRelease(long studyId, int release)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to

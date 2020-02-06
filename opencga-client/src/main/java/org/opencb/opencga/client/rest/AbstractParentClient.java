@@ -253,7 +253,7 @@ public abstract class AbstractParentClient {
                     }
                 }
 
-                Object paramBody = (params == null ? "" : params.get("body"));
+                Object paramBody = (params.get("body") == null ? "" : params.get("body"));
                 logger.debug("Body {}", paramBody);
                 Response body = path.request()
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + this.token)

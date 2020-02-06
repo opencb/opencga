@@ -19,8 +19,10 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.models.panel.Panel;
 import org.opencb.opencga.core.response.OpenCGAResult;
 
@@ -129,11 +131,11 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
         }
     }
 
-    default boolean exists(long panelUid) throws CatalogDBException {
+    default boolean exists(long panelUid) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return count(new Query(QueryParams.UID.key(), panelUid)).getNumMatches() > 0;
     }
 
-    default void checkUid(long panelUid) throws CatalogDBException {
+    default void checkUid(long panelUid) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         if (panelUid < 0) {
             throw CatalogDBException.newInstance("Panel uid '{}' is not valid: ", panelUid);
         }
@@ -150,16 +152,22 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
      * @param overwrite Flag to overwrite in case of an ID conflict.
      * @return OpenCGAResult object.
      * @throws CatalogDBException In case of an ID conflict when overwrite is false.
+     * @throws CatalogParameterException if there is any formatting error.
+     * @throws CatalogAuthorizationException if the user is not authorised to perform the query.
      */
-    OpenCGAResult insert(Panel panel, boolean overwrite) throws CatalogDBException;
+    OpenCGAResult insert(Panel panel, boolean overwrite)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult insert(long studyId, Panel panel, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult insert(long studyId, Panel panel, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
-    OpenCGAResult<Panel> get(long panelId, QueryOptions options) throws CatalogDBException;
+    OpenCGAResult<Panel> get(long panelId, QueryOptions options)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     long getStudyId(long panelId) throws CatalogDBException;
 
-    OpenCGAResult updateProjectRelease(long studyId, int release) throws CatalogDBException;
+    OpenCGAResult updateProjectRelease(long studyId, int release)
+            throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException;
 
     /**
      * Removes the mark of the permission rule (if existed) from all the entries from the study to notify that permission rule would need to

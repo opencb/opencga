@@ -222,6 +222,10 @@ public class UserManager extends AbstractManager {
         }
 
         try {
+            if (user.getProjects() != null && !user.getProjects().isEmpty()) {
+                throw new CatalogException("Creating user and projects in a single transaction is forbidden");
+            }
+
             catalogIOManagerFactory.getDefault().createUser(user.getId());
             userDBAdaptor.insert(user, QueryOptions.empty());
 

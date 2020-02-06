@@ -18,6 +18,7 @@ package org.opencb.opencga.core.models.study;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -230,5 +231,35 @@ public class Variable {
     public Variable setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Variable variable = (Variable) o;
+        return required == variable.required
+                && multiValue == variable.multiValue
+                && rank == variable.rank
+                && Objects.equals(id, variable.id)
+                && Objects.equals(name, variable.name)
+                && Objects.equals(category, variable.category)
+                && type == variable.type
+                && Objects.equals(defaultValue, variable.defaultValue)
+                && Objects.equals(allowedValues, variable.allowedValues)
+                && Objects.equals(dependsOn, variable.dependsOn)
+                && Objects.equals(description, variable.description)
+                && Objects.equals(variableSet, variable.variableSet)
+                && Objects.equals(attributes, variable.attributes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, category, type, defaultValue, required, multiValue, allowedValues, rank, dependsOn,
+                description, variableSet, attributes);
     }
 }

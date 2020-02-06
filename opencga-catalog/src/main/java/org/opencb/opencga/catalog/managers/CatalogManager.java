@@ -35,6 +35,8 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.config.Admin;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
 import org.opencb.opencga.core.models.user.User;
 import org.slf4j.Logger;
@@ -43,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -184,6 +187,11 @@ public class CatalogManager implements AutoCloseable {
                 .setOrganization(organization)
                 .setPassword(password);
         userManager.create(user, null);
+
+        String token = userManager.login(OPENCGA, password);
+        projectManager.create("admin", "admin", "Default project", "", "", "", "", "", null, token);
+        studyManager.create("admin", "admin", "admin", "admin", Study.Type.CASE_CONTROL, "", "Default study", new Status(), "", "", null,
+                Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), null, token);
     }
 
     public void installIndexes(String token) throws CatalogException {
