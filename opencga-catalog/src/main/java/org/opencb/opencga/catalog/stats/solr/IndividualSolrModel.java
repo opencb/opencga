@@ -81,6 +81,7 @@ public class IndividualSolrModel extends CatalogSolrModel {
     public IndividualSolrModel() {
         this.annotationSets = new ArrayList<>();
         this.phenotypes = new ArrayList<>();
+        this.disorders = new ArrayList<>();
         this.annotations = new HashMap<>();
     }
 

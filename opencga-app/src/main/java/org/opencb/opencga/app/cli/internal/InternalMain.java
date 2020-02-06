@@ -101,6 +101,9 @@ public class InternalMain {
                         case "families":
                             commandExecutor = new FamilyCommandExecutor(cliOptionsParser.getFamilyCommandOptions());
                             break;
+                        case "jobs":
+                            commandExecutor = new JobCommandExecutor(cliOptionsParser.getJobCommandOptions());
+                            break;
                         default:
                             System.err.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
                             break;

@@ -25,7 +25,6 @@ import org.opencb.opencga.app.cli.CliOptionsParser;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.internal.options.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.core.models.family.Family;
 
 import java.util.List;
 
@@ -84,6 +83,7 @@ public class InternalCliOptionsParser extends CliOptionsParser {
     private FamilyCommandOptions familyCommandOptions;
     private CohortCommandOptions cohortCommandOptions;
     private IndividualCommandOptions individualCommandOptions;
+    private JobCommandOptions jobCommandOptions;
 
 
     public InternalCliOptionsParser() {
@@ -202,6 +202,11 @@ public class InternalCliOptionsParser extends CliOptionsParser {
         jCommander.addCommand("families", familyCommandOptions);
         JCommander familySubCommands = jCommander.getCommands().get("families");
         familySubCommands.addCommand("secondary-index", familyCommandOptions.secondaryIndex);
+
+        jobCommandOptions = new JobCommandOptions(commonCommandOptions, jCommander);
+        jCommander.addCommand("jobs", jobCommandOptions);
+        JCommander jobSubCommands = jCommander.getCommands().get("jobs");
+        jobSubCommands.addCommand("secondary-index", jobCommandOptions.secondaryIndex);
     }
 
     @Override
@@ -454,5 +459,9 @@ public class InternalCliOptionsParser extends CliOptionsParser {
 
     public IndividualCommandOptions getIndividualCommandOptions() {
         return individualCommandOptions;
+    }
+
+    public JobCommandOptions getJobCommandOptions() {
+        return jobCommandOptions;
     }
 }

@@ -35,8 +35,6 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
     private final FileMongoDBAdaptor fileDBAdaptor;
     private final QueryOptions fileQueryOptions = FileManager.INCLUDE_FILE_URI_PATH;
 
-    private final QueryOptions options;
-
     private Logger logger = LoggerFactory.getLogger(JobMongoDBIterator.class);
 
     public JobMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, JobConverter converter, JobMongoDBAdaptor jobDBAdaptor,
@@ -46,12 +44,11 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
 
     public JobMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, JobConverter converter, JobMongoDBAdaptor jobDBAdaptor,
                               FileMongoDBAdaptor fileDBAdaptor, QueryOptions options, long studyUid, String user) {
-        super(mongoCursor, clientSession, converter, null);
+        super(mongoCursor, clientSession, converter, null, options);
         this.fileDBAdaptor = fileDBAdaptor;
         this.jobDBAdaptor = jobDBAdaptor;
         this.user = user;
         this.studyUid = studyUid;
-        this.options = options == null ? QueryOptions.empty() : options;
     }
 
     @Override

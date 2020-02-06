@@ -37,6 +37,7 @@ public class FamilySolrModel extends CatalogSolrModel {
         this.annotationSets = new ArrayList<>();
         this.annotations = new HashMap<>();
         this.phenotypes = new ArrayList<>();
+        this.disorders = new ArrayList<>();
     }
 
     @Override

@@ -24,6 +24,11 @@ public class CohortSolrModel extends CatalogSolrModel {
     @Field("annotations__*")
     private Map<String, Object> annotations;
 
+    public CohortSolrModel() {
+        this.annotationSets = new ArrayList<>();
+        this.annotations = new HashMap<>();
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CohortSolrModel{");
@@ -43,11 +48,6 @@ public class CohortSolrModel extends CatalogSolrModel {
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
-    }
-
-    public CohortSolrModel() {
-        this.annotationSets = new ArrayList<>();
-        this.annotations = new HashMap<>();
     }
 
     public String getType() {

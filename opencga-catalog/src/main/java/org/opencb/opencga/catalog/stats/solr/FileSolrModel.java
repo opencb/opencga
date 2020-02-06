@@ -81,6 +81,7 @@ public class FileSolrModel extends CatalogSolrModel {
     public FileSolrModel() {
         this.annotationSets = new ArrayList<>();
         this.annotations = new HashMap<>();
+        this.tags = new ArrayList<>();
     }
 
     @Override

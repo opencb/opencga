@@ -38,6 +38,7 @@ public class SolrExternalResource extends CatalogManagerExternalResource {
         copyConfiguration("file-managed-schema", CatalogSolrManager.FILE_CONF_SET);
         copyConfiguration("individual-managed-schema", CatalogSolrManager.INDIVIDUAL_CONF_SET);
         copyConfiguration("sample-managed-schema", CatalogSolrManager.SAMPLE_CONF_SET);
+        copyConfiguration("job-managed-schema", CatalogSolrManager.JOB_CONF_SET);
 
         String solrHome = rootDir.resolve("solr").toString();
 
@@ -62,6 +63,10 @@ public class SolrExternalResource extends CatalogManagerExternalResource {
 
         request.setCoreName(getConfiguration().getDatabasePrefix() + "_" + CatalogSolrManager.FAMILY_SOLR_COLLECTION);
         request.setConfigSet(CatalogSolrManager.FAMILY_CONF_SET);
+        request.process(solrClient);
+
+        request.setCoreName(getConfiguration().getDatabasePrefix() + "_" + CatalogSolrManager.JOB_SOLR_COLLECTION);
+        request.setConfigSet(CatalogSolrManager.JOB_CONF_SET);
         request.process(solrClient);
     }
 
