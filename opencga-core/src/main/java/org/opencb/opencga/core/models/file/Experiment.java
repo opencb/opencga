@@ -37,12 +37,12 @@ public class Experiment {
 
     private Map<String, Object> attributes;
 
-    enum Technology {
+    public enum Technology {
         SEQUENCING,
         MICROARRAY
     }
 
-    enum Method {
+    public enum Method {
         WHOLE_EXOME_SEQUENCING,
         WHOLE_GENOME_SEQUENCING,
         TARGETED_DNA_SEQUENCING,
@@ -51,7 +51,7 @@ public class Experiment {
 
     }
 
-    enum NucleicAcidType {
+    public enum NucleicAcidType {
         DNA,
         RNA
     }

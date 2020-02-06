@@ -70,7 +70,7 @@ public class FileIndexTask extends OpenCgaTool {
 
         Query query = new Query();
         QueryOptions fileQueryOptions = new QueryOptions()
-                .append(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
+                .append(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.UUID.key(),
                         FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.TYPE.key(),
                         FileDBAdaptor.QueryParams.FORMAT.key(),
                         FileDBAdaptor.QueryParams.CREATION_DATE.key(), FileDBAdaptor.QueryParams.BIOFORMAT.key(),

@@ -52,6 +52,7 @@ public class CatalogSampleToSolrSampleConverter implements ComplexTypeConverter<
     public SampleSolrModel convertToStorageType(Sample sample) {
         SampleSolrModel sampleSolrModel = new SampleSolrModel();
 
+        sampleSolrModel.setId(sample.getUuid());
         sampleSolrModel.setUid(sample.getUid());
         sampleSolrModel.setSource(sample.getSource());
         sampleSolrModel.setStudyId(study.getFqn().replace(":", "__"));

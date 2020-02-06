@@ -1,9 +1,12 @@
 package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 
@@ -114,8 +117,7 @@ public class SolrExternalResource extends CatalogManagerExternalResource {
      * @return an EmbeddedSolrServer with a core created for the given coreName
      * @throws IOException
      */
-    private SolrClient create(final String solrHome, final String configSetHome)
-            throws IOException {
+    private SolrClient create(final String solrHome, final String configSetHome) {
 
         final File solrHomeDir = new File(solrHome);
         if (!solrHomeDir.exists()) {

@@ -51,6 +51,7 @@ public class CatalogFamilyToSolrFamilyConverter implements ComplexTypeConverter<
     public FamilySolrModel convertToStorageType(Family family) {
         FamilySolrModel familySolrModel = new FamilySolrModel();
 
+        familySolrModel.setId(family.getUuid());
         familySolrModel.setUid(family.getUid());
         familySolrModel.setStudyId(study.getFqn().replace(":", "__"));
 

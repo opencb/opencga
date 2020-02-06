@@ -10,28 +10,7 @@ import java.util.Map;
 /**
  * Created by wasim on 27/06/18.
  */
-public class FamilySolrModel {
-
-    @Field
-    private long uid;
-
-    @Field
-    private String studyId;
-
-    @Field
-    private int creationYear;
-
-    @Field
-    private String creationMonth;
-
-    @Field
-    private int creationDay;
-
-    @Field
-    private String creationDayOfWeek;
-
-    @Field
-    private String status;
+public class FamilySolrModel extends CatalogSolrModel {
 
     @Field
     private List<String> phenotypes;
@@ -46,13 +25,7 @@ public class FamilySolrModel {
     private int expectedSize;
 
     @Field
-    private int release;
-
-    @Field
     private int version;
-
-    @Field
-    private List<String> acl;
 
     @Field
     private List<String> annotationSets;
@@ -69,7 +42,8 @@ public class FamilySolrModel {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("FamilySolrModel{");
-        sb.append("uid=").append(uid);
+        sb.append("id='").append(id).append('\'');
+        sb.append(", uid=").append(uid);
         sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", creationYear=").append(creationYear);
         sb.append(", creationMonth='").append(creationMonth).append('\'');
@@ -87,69 +61,6 @@ public class FamilySolrModel {
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
-    }
-
-    public long getUid() {
-        return uid;
-    }
-
-    public FamilySolrModel setUid(long uid) {
-        this.uid = uid;
-        return this;
-    }
-
-    public String getStudyId() {
-        return studyId;
-    }
-
-    public FamilySolrModel setStudyId(String studyId) {
-        this.studyId = studyId;
-        return this;
-    }
-
-    public int getCreationYear() {
-        return creationYear;
-    }
-
-    public FamilySolrModel setCreationYear(int creationYear) {
-        this.creationYear = creationYear;
-        return this;
-    }
-
-    public String getCreationMonth() {
-        return creationMonth;
-    }
-
-    public FamilySolrModel setCreationMonth(String creationMonth) {
-        this.creationMonth = creationMonth;
-        return this;
-    }
-
-    public int getCreationDay() {
-        return creationDay;
-    }
-
-    public FamilySolrModel setCreationDay(int creationDay) {
-        this.creationDay = creationDay;
-        return this;
-    }
-
-    public String getCreationDayOfWeek() {
-        return creationDayOfWeek;
-    }
-
-    public FamilySolrModel setCreationDayOfWeek(String creationDayOfWeek) {
-        this.creationDayOfWeek = creationDayOfWeek;
-        return this;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public FamilySolrModel setStatus(String status) {
-        this.status = status;
-        return this;
     }
 
     public List<String> getPhenotypes() {
@@ -188,30 +99,12 @@ public class FamilySolrModel {
         return this;
     }
 
-    public int getRelease() {
-        return release;
-    }
-
-    public FamilySolrModel setRelease(int release) {
-        this.release = release;
-        return this;
-    }
-
     public int getVersion() {
         return version;
     }
 
     public FamilySolrModel setVersion(int version) {
         this.version = version;
-        return this;
-    }
-
-    public List<String> getAcl() {
-        return acl;
-    }
-
-    public FamilySolrModel setAcl(List<String> acl) {
-        this.acl = acl;
         return this;
     }
 

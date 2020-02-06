@@ -10,13 +10,7 @@ import java.util.Map;
 /**
  * Created by wasim on 27/06/18.
  */
-public class IndividualSolrModel {
-
-    @Field
-    private long uid;
-
-    @Field
-    private String studyId;
+public class IndividualSolrModel extends CatalogSolrModel {
 
     @Field
     private boolean hasFather;
@@ -61,25 +55,7 @@ public class IndividualSolrModel {
     private String population;
 
     @Field
-    private int release;
-
-    @Field
     private int version;
-
-    @Field
-    private int creationYear;
-
-    @Field
-    private String creationMonth;
-
-    @Field
-    private int creationDay;
-
-    @Field
-    private String creationDayOfWeek;
-
-    @Field
-    private String status;
 
     @Field
     private String lifeStatus;
@@ -97,9 +73,6 @@ public class IndividualSolrModel {
     private boolean parentalConsanguinity;
 
     @Field
-    private List<String> acl;
-
-    @Field
     private List<String> annotationSets;
 
     @Field("annotations__*")
@@ -114,7 +87,8 @@ public class IndividualSolrModel {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("IndividualSolrModel{");
-        sb.append("uid=").append(uid);
+        sb.append("id='").append(id).append('\'');
+        sb.append(", uid=").append(uid);
         sb.append(", studyId='").append(studyId).append('\'');
         sb.append(", hasFather=").append(hasFather);
         sb.append(", hasMother=").append(hasMother);
@@ -147,24 +121,6 @@ public class IndividualSolrModel {
         sb.append(", annotations=").append(annotations);
         sb.append('}');
         return sb.toString();
-    }
-
-    public long getUid() {
-        return uid;
-    }
-
-    public IndividualSolrModel setUid(long uid) {
-        this.uid = uid;
-        return this;
-    }
-
-    public String getStudyId() {
-        return studyId;
-    }
-
-    public IndividualSolrModel setStudyId(String studyId) {
-        this.studyId = studyId;
-        return this;
     }
 
     public boolean isHasFather() {
@@ -293,66 +249,12 @@ public class IndividualSolrModel {
         return this;
     }
 
-    public int getRelease() {
-        return release;
-    }
-
-    public IndividualSolrModel setRelease(int release) {
-        this.release = release;
-        return this;
-    }
-
     public int getVersion() {
         return version;
     }
 
     public IndividualSolrModel setVersion(int version) {
         this.version = version;
-        return this;
-    }
-
-    public int getCreationYear() {
-        return creationYear;
-    }
-
-    public IndividualSolrModel setCreationYear(int creationYear) {
-        this.creationYear = creationYear;
-        return this;
-    }
-
-    public String getCreationMonth() {
-        return creationMonth;
-    }
-
-    public IndividualSolrModel setCreationMonth(String creationMonth) {
-        this.creationMonth = creationMonth;
-        return this;
-    }
-
-    public int getCreationDay() {
-        return creationDay;
-    }
-
-    public IndividualSolrModel setCreationDay(int creationDay) {
-        this.creationDay = creationDay;
-        return this;
-    }
-
-    public String getCreationDayOfWeek() {
-        return creationDayOfWeek;
-    }
-
-    public IndividualSolrModel setCreationDayOfWeek(String creationDayOfWeek) {
-        this.creationDayOfWeek = creationDayOfWeek;
-        return this;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public IndividualSolrModel setStatus(String status) {
-        this.status = status;
         return this;
     }
 
@@ -398,15 +300,6 @@ public class IndividualSolrModel {
 
     public IndividualSolrModel setParentalConsanguinity(boolean parentalConsanguinity) {
         this.parentalConsanguinity = parentalConsanguinity;
-        return this;
-    }
-
-    public List<String> getAcl() {
-        return acl;
-    }
-
-    public IndividualSolrModel setAcl(List<String> acl) {
-        this.acl = acl;
         return this;
     }
 

@@ -67,7 +67,7 @@ public class SampleIndexTask extends OpenCgaTool {
         Query query = new Query()
                 .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
         QueryOptions sampleQueryOptions = new QueryOptions()
-                .append(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(),
+                .append(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.UUID.key(),
                         SampleDBAdaptor.QueryParams.SOURCE.key(),
                         SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
                         SampleDBAdaptor.QueryParams.PROCESSING.key(), SampleDBAdaptor.QueryParams.COLLECTION.key(),
