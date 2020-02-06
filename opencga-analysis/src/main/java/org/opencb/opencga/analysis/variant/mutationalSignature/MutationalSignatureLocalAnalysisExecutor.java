@@ -4,6 +4,8 @@ import htsjdk.samtools.reference.BlockCompressedIndexedFastaSequenceFile;
 import htsjdk.samtools.reference.FastaSequenceIndex;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.GZIIndex;
+import org.apache.commons.io.FileSystemUtils;
+import org.apache.commons.io.FileUtils;
 import org.opencb.biodata.models.core.GenomeSequenceFeature;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.cellbase.client.config.ClientConfiguration;
@@ -30,6 +32,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBItera
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.util.*;
 
 @ToolExecutor(id="opencga-local", tool = MutationalSignatureAnalysis.ID,
@@ -41,7 +44,6 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     private File fastaFile;
     private File faiFile;
     private File gziFile;
-
 
     private final static int BATCH_SIZE = 200;
 
@@ -74,7 +76,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             faiFile = ResourceUtils.download(new URL(FAI_URL), getOutDir());
             gziFile = ResourceUtils.download(new URL(GZI_URL), getOutDir());
 
-            if (fastaFile.exists() && faiFile.exists() && gziFile.exists()) {
+            if (fastaFile != null && faiFile != null && gziFile != null) {
                 updateCountMapFromFasta(iterator, countMap);
             } else {
                 updateCountMapFromCellBase(iterator, countMap);
@@ -85,7 +87,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
             // To compare, download signatures probabilities at
             File signatureFile = ResourceUtils.download(new URL(SIGNATURES_URL), getOutDir());
-            if (!signatureFile.exists()) {
+            if (signatureFile == null) {
                 throw new ToolExecutorException("Error downloading mutational signatures file: " + SIGNATURES_URL);
             }
         } catch (Exception e) {
