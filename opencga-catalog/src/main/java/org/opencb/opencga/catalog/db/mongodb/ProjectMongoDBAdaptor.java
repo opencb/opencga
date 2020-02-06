@@ -415,7 +415,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     @Override
     public OpenCGAResult delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         query.append(QueryParams.STATUS_NAME.key(), Status.READY);
-        OpenCGAResult<Project> projectDataResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.UID.key()));
+        OpenCGAResult<Project> projectDataResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.UID.key()));
         OpenCGAResult writeResult = new OpenCGAResult();
         for (Project project : projectDataResult.getResults()) {
             writeResult.append(delete(project.getUid(), queryOptions));

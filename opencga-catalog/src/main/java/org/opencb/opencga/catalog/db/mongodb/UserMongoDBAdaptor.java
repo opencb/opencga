@@ -435,7 +435,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                 .append(QueryParams.STATUS_NAME.key(), User.UserStatus.READY + "," + User.UserStatus.BANNED);
         if (count(query).getNumMatches() == 0) {
             query.put(QueryParams.STATUS_NAME.key(), User.UserStatus.DELETED);
-            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_NAME.key());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_NAME.key());
             User user = get(query, options).first();
             throw new CatalogDBException("The user {" + id + "} was already " + user.getStatus().getName());
         }

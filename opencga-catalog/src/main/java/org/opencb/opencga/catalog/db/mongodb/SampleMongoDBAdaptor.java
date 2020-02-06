@@ -522,7 +522,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         long studyId = getStudyId(sampleId);
 
         Query query = new Query(FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(), sampleId);
-        QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, Arrays.asList(FILTER_ROUTE_FILES + FileDBAdaptor
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(FILTER_ROUTE_FILES + FileDBAdaptor
                 .QueryParams.UID.key(), FILTER_ROUTE_FILES + FileDBAdaptor.QueryParams.PATH.key()));
         OpenCGAResult<File> fileDataResult = dbAdaptorFactory.getCatalogFileDBAdaptor().get(query, queryOptions);
         if (fileDataResult.getNumResults() != 0) {
@@ -535,7 +535,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
 
 
         queryOptions = new QueryOptions(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId)
-                .append(MongoDBCollection.INCLUDE, Arrays.asList(FILTER_ROUTE_COHORTS + CohortDBAdaptor.QueryParams.UID.key(),
+                .append(QueryOptions.INCLUDE, Arrays.asList(FILTER_ROUTE_COHORTS + CohortDBAdaptor.QueryParams.UID.key(),
                         FILTER_ROUTE_COHORTS + CohortDBAdaptor.QueryParams.ID.key()));
         OpenCGAResult<Cohort> cohortDataResult = dbAdaptorFactory.getCatalogCohortDBAdaptor().getAllInStudy(studyId, queryOptions);
         if (cohortDataResult.getNumResults() != 0) {
