@@ -577,8 +577,18 @@
     <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="external" type="boolean" indexed="true" stored="true" multiValued="false"/>
     <field name="size" type="plong" indexed="true" stored="true" multiValued="false"/>
-    <field name="software" type="string" indexed="true" stored="true" multiValued="false"/>
-    <field name="experiment" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="softwareName" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="softwareVersion" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="tags" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="experimentTechnology" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="experimentMethod" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="experimentNucleicAcidType" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="experimentManufacturer" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="experimentPlatform" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="experimentLibrary" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="experimentCenter" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="experimentLab" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="experimentResponsible" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="numSamples" type="pint" indexed="true" stored="true" multiValued="false"/>
     <field name="numRelatedFiles" type="pint" indexed="true" stored="true" multiValued="false"/>
     <field name="acl" type="string" indexed="true" stored="true" multiValued="true"/>

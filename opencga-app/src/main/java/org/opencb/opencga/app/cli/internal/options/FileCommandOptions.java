@@ -15,6 +15,7 @@ public class FileCommandOptions {
     public DeleteCommandOptions deleteCommandOptions;
     public UnlinkCommandOptions unlinkCommandOptions;
     public FetchCommandOptions fetchCommandOptions;
+    public SecondaryIndex secondaryIndex;
 
     public GeneralCliOptions.CommonCommandOptions fileCommonOptions;
     public JCommander jCommander;
@@ -26,6 +27,7 @@ public class FileCommandOptions {
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.unlinkCommandOptions = new UnlinkCommandOptions();
         this.fetchCommandOptions = new FetchCommandOptions();
+        this.secondaryIndex = new SecondaryIndex();
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete file task")
@@ -83,6 +85,20 @@ public class FileCommandOptions {
         @Parameter(names = {"--url"}, description = "External url where the file to be registered can be downloaded from", required = true,
                 arity = 1)
         public String url;
+
+        @Parameter(names = {"-o", "--" + OUTDIR_PARAM_NAME}, description = "Directory where output files will be saved", required = true,
+                arity = 1)
+        public String outDir;
+    }
+
+    @Parameters(commandNames = {"secondary-index"}, commandDescription = "Creates a secondary index for files using a search engine")
+    public class SecondaryIndex {
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = fileCommonOptions;
+
+        @Parameter(names = {"-s", "--" + ParamConstants.STUDY_PARAM}, description = "Study [[user@]project:]study.", required = false,
+                arity = 1)
+        public String studyId;
 
         @Parameter(names = {"-o", "--" + OUTDIR_PARAM_NAME}, description = "Directory where output files will be saved", required = true,
                 arity = 1)

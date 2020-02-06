@@ -34,10 +34,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
-import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
-import org.opencb.opencga.catalog.stats.solr.converters.*;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
-import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
@@ -73,9 +70,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1581,52 +1575,6 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public boolean indexCatalogIntoSolr(String token) throws CatalogException {
-        String userId = catalogManager.getUserManager().getUserId(token);
-
-        if (authorizationManager.checkIsAdmin(userId)) {
-            // Get all the studies
-            Query query = new Query();
-            QueryOptions options = new QueryOptions()
-                    .append(QueryOptions.INCLUDE, Arrays.asList(StudyDBAdaptor.QueryParams.UID.key(),
-                            StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.FQN.key(),
-                            StudyDBAdaptor.QueryParams.VARIABLE_SET.key()))
-                    .append(DBAdaptor.INCLUDE_ACLS, true);
-            OpenCGAResult<Study> studyDataResult = studyDBAdaptor.get(query, options);
-            if (studyDataResult.getNumResults() == 0) {
-                throw new CatalogException("Could not index catalog into solr. No studies found");
-            }
-
-            CatalogSolrManager catalogSolrManager = new CatalogSolrManager(this.catalogManager);
-            // Create solr collections if they don't exist
-            catalogSolrManager.createSolrCollections();
-
-            ExecutorService threadPool = Executors.newFixedThreadPool(5);
-            for (Study study : studyDataResult.getResults()) {
-                Map<String, Set<String>> studyAcls = SolrConverterUtil
-                        .parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
-                // We replace the current studyAcls for the parsed one
-                study.getAttributes().put("OPENCGA_ACL", studyAcls);
-
-                threadPool.submit(() -> indexCohort(catalogSolrManager, study));
-                threadPool.submit(() -> indexFile(catalogSolrManager, study));
-                threadPool.submit(() -> indexFamily(catalogSolrManager, study));
-                threadPool.submit(() -> indexIndividual(catalogSolrManager, study));
-                threadPool.submit(() -> indexSample(catalogSolrManager, study));
-            }
-
-
-            threadPool.shutdown();
-            try {
-                threadPool.awaitTermination(10, TimeUnit.MINUTES);
-            } catch (InterruptedException e) {
-                throw new CatalogException(e);
-            }
-            return true;
-        }
-        throw new CatalogException("Only the " + OPENCGA + " user can index in Solr");
-    }
-
     public Map<String, Object> facet(String studyStr, String fileFields, String sampleFields, String individualFields, String cohortFields,
                                      String familyFields, boolean defaultStats, String sessionId) throws CatalogException, IOException {
         Map<String, Object> result = new HashMap<>();
@@ -1651,181 +1599,6 @@ public class StudyManager extends AbstractManager {
     }
 
     // **************************   Private methods  ******************************** //
-
-    private Boolean indexCohort(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
-        ObjectMap auditParams = new ObjectMap("study", study.getFqn());
-        try {
-            logger.info("Indexing cohorts of study {}", study.getFqn());
-
-            Query query = new Query()
-                    .append(CohortDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            QueryOptions cohortQueryOptions = new QueryOptions()
-                    .append(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.ID.key(),
-                            CohortDBAdaptor.QueryParams.NAME.key(),
-                            CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.STATUS.key(),
-                            CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
-                            CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), CohortDBAdaptor.QueryParams.TYPE.key()))
-                    .append(DBAdaptor.INCLUDE_ACLS, true)
-                    .append(Constants.FLATTENED_ANNOTATIONS, true);
-
-            catalogSolrManager.insertCatalogCollection(this.cohortDBAdaptor.iterator(query,
-                    cohortQueryOptions), new CatalogCohortToSolrCohortConverter(study), CatalogSolrManager.COHORT_SOLR_COLLECTION);
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.COHORT, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return true;
-        } catch (CatalogException e) {
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.COHORT, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            logger.error("Could not index cohorts: {}", e.getMessage());
-            throw e;
-        }
-    }
-
-    private Boolean indexFile(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
-        ObjectMap auditParams = new ObjectMap("study", study.getFqn());
-
-        try {
-            logger.info("Indexing files of study {}", study.getFqn());
-
-            Query query = new Query()
-                    .append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            QueryOptions fileQueryOptions = new QueryOptions()
-                    .append(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
-                            FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.TYPE.key(),
-                            FileDBAdaptor.QueryParams.FORMAT.key(),
-                            FileDBAdaptor.QueryParams.CREATION_DATE.key(), FileDBAdaptor.QueryParams.BIOFORMAT.key(),
-                            FileDBAdaptor.QueryParams.RELEASE.key(), FileDBAdaptor.QueryParams.STATUS.key(),
-                            FileDBAdaptor.QueryParams.EXTERNAL.key(), FileDBAdaptor.QueryParams.SIZE.key(),
-                            FileDBAdaptor.QueryParams.SOFTWARE.key(), FileDBAdaptor.QueryParams.EXPERIMENT.key(),
-                            FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key(),
-                            FileDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
-                    .append(DBAdaptor.INCLUDE_ACLS, true)
-                    .append(Constants.FLATTENED_ANNOTATIONS, true);
-
-            catalogSolrManager.insertCatalogCollection(this.fileDBAdaptor.iterator(query,
-                    fileQueryOptions), new CatalogFileToSolrFileConverter(study), CatalogSolrManager.FILE_SOLR_COLLECTION);
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.FILE, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return true;
-        } catch (CatalogException e) {
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.FILE, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            logger.error("Could not index files: {}", e.getMessage());
-            throw e;
-        }
-    }
-
-
-    private Boolean indexFamily(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
-        ObjectMap auditParams = new ObjectMap("study", study.getFqn());
-
-        try {
-            logger.info("Indexing families of study {}", study.getFqn());
-
-            Query query = new Query()
-                    .append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            QueryOptions familyQueryOptions = new QueryOptions()
-                    .append(QueryOptions.INCLUDE, Arrays.asList(FamilyDBAdaptor.QueryParams.ID.key(),
-                            FamilyDBAdaptor.QueryParams.CREATION_DATE.key(), FamilyDBAdaptor.QueryParams.STATUS.key(),
-                            FamilyDBAdaptor.QueryParams.MEMBER_UID.key(), FamilyDBAdaptor.QueryParams.RELEASE.key(),
-                            FamilyDBAdaptor.QueryParams.VERSION.key(), FamilyDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
-                            FamilyDBAdaptor.QueryParams.PHENOTYPES.key(), FamilyDBAdaptor.QueryParams.EXPECTED_SIZE.key()))
-                    .append(DBAdaptor.INCLUDE_ACLS, true)
-                    .append(Constants.FLATTENED_ANNOTATIONS, true);
-
-            catalogSolrManager.insertCatalogCollection(this.familyDBAdaptor.iterator(query,
-                    familyQueryOptions), new CatalogFamilyToSolrFamilyConverter(study), CatalogSolrManager.FAMILY_SOLR_COLLECTION);
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-
-            return true;
-        } catch (CatalogException e) {
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.FAMILY, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            logger.error("Could not index families: {}", e.getMessage());
-            throw e;
-        }
-    }
-
-
-    private Boolean indexIndividual(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
-        ObjectMap auditParams = new ObjectMap("study", study.getFqn());
-
-        try {
-            logger.info("Indexing individuals of study {}", study.getFqn());
-
-            Query query = new Query()
-                    .append(IndividualDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            QueryOptions individualQueryOptions = new QueryOptions()
-                    .append(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
-                            IndividualDBAdaptor.QueryParams.FATHER_UID.key(), IndividualDBAdaptor.QueryParams.MOTHER_UID.key(),
-                            IndividualDBAdaptor.QueryParams.MULTIPLES.key(), IndividualDBAdaptor.QueryParams.SEX.key(),
-                            IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
-                            IndividualDBAdaptor.QueryParams.RELEASE.key(), IndividualDBAdaptor.QueryParams.CREATION_DATE.key(),
-                            IndividualDBAdaptor.QueryParams.VERSION.key(),
-                            IndividualDBAdaptor.QueryParams.STATUS.key(), IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
-                            IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
-                            IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
-                            IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()))
-                    .append(DBAdaptor.INCLUDE_ACLS, true)
-                    .append(Constants.FLATTENED_ANNOTATIONS, true);
-
-            catalogSolrManager.insertCatalogCollection(this.individualDBAdaptor.iterator(query,
-                    individualQueryOptions), new CatalogIndividualToSolrIndividualConverter(study),
-                    CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.INDIVIDUAL, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return true;
-        } catch (CatalogException e) {
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.INDIVIDUAL, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            logger.error("Could not index individuals: {}", e.getMessage());
-            throw e;
-        }
-    }
-
-    private Boolean indexSample(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
-        ObjectMap auditParams = new ObjectMap("study", study.getFqn());
-
-        try {
-            logger.info("Indexing samples of study {}", study.getFqn());
-
-            Query query = new Query()
-                    .append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
-            QueryOptions sampleQueryOptions = new QueryOptions()
-                    .append(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(),
-                            SampleDBAdaptor.QueryParams.SOURCE.key(),
-                            SampleDBAdaptor.QueryParams.RELEASE.key(), SampleDBAdaptor.QueryParams.VERSION.key(),
-                            SampleDBAdaptor.QueryParams.PROCESSING.key(), SampleDBAdaptor.QueryParams.COLLECTION.key(),
-                            SampleDBAdaptor.QueryParams.CREATION_DATE.key(), SampleDBAdaptor.QueryParams.STATUS.key(),
-                            SampleDBAdaptor.QueryParams.TYPE.key(), SampleDBAdaptor.QueryParams.SOMATIC.key(),
-                            SampleDBAdaptor.QueryParams.PHENOTYPES.key(), SampleDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
-                            SampleDBAdaptor.QueryParams.UID.key()))
-                    .append(DBAdaptor.INCLUDE_ACLS, true)
-                    .append(Constants.FLATTENED_ANNOTATIONS, true);
-
-            catalogSolrManager.insertCatalogCollection(this.sampleDBAdaptor.iterator(query, sampleQueryOptions),
-                    new CatalogSampleToSolrSampleConverter(study), CatalogSolrManager.SAMPLE_SOLR_COLLECTION);
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
-            return true;
-        } catch (CatalogException e) {
-            auditManager.audit(OPENCGA, Enums.Action.INDEX, Enums.Resource.SAMPLE, "", "", study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
-            logger.error("Could not index samples: {}", e.getMessage());
-            throw e;
-        }
-    }
-
-
-    private int getProjectCurrentRelease(long projectId) throws CatalogException {
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.CURRENT_RELEASE.key());
-        OpenCGAResult<Project> projectDataResult = projectDBAdaptor.get(projectId, options);
-        if (projectDataResult.getNumResults() == 0) {
-            throw new CatalogException("Internal error. Cannot retrieve current release from project");
-        }
-        return projectDataResult.first().getCurrentRelease();
-    }
 
     private boolean existsGroup(long studyId, String groupId) throws CatalogDBException {
         Query query = new Query()

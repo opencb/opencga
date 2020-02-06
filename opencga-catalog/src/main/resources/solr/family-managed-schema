@@ -571,6 +571,7 @@
     <field name="creationDayOfWeek" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="status" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="phenotypes" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="disorders" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="numMembers" type="pint" indexed="true" stored="true" multiValued="false"/>
     <field name="expectedSize" type="pint" indexed="true" stored="true" multiValued="false"/>
     <field name="release" type="pint" indexed="true" stored="true" multiValued="false"/>
