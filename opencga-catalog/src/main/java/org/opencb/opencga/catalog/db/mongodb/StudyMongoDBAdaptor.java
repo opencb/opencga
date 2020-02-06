@@ -253,7 +253,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public long getId(long projectId, String studyAlias) throws CatalogDBException {
         Query query1 = new Query(QueryParams.PROJECT_ID.key(), projectId).append(QueryParams.ID.key(), studyAlias);
-        QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.UID.key());
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.UID.key());
         OpenCGAResult<Study> studyDataResult = get(query1, queryOptions);
         List<Study> studies = studyDataResult.getResults();
         return studies == null || studies.isEmpty() ? -1 : studies.get(0).getUid();

@@ -33,9 +33,7 @@
 
     <properties>
         <opencga-storage-hadoop-deps.artifactId>${artifactId}</opencga-storage-hadoop-deps.artifactId>
-        <!--<hdp.dependencies.version>3.0.1.4-1</hdp.dependencies.version>-->
-        <!--<hdp.dependencies.version>3.0.2.1-8</hdp.dependencies.version>-->
-        <hdp.dependencies.version>3.1.2.1-1</hdp.dependencies.version>
+        <hdp.dependencies.version>3.1.4.27-1</hdp.dependencies.version>
 
         <hadoop.version>3.1.1.${hdp.dependencies.version}</hadoop.version>
         <hbase.version>2.0.2.${hdp.dependencies.version}</hbase.version>
@@ -54,6 +52,8 @@
         <commons-io.version>2.5</commons-io.version>
         <commons-net.version>3.6</commons-net.version>
         <curator.version>2.12.0</curator.version>
+
+        <guava.version>28.0-jre</guava.version>
     </properties>
     <repositories>
         <repository>

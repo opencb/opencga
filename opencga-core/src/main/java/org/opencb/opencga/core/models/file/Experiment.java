@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.core.models.file;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -24,8 +23,6 @@ import java.util.Map;
  */
 public class Experiment {
 
-    @Deprecated
-    private String type;
     private Technology technology;
     private Method method;
     private NucleicAcidType nucleicAcidType;
@@ -62,19 +59,18 @@ public class Experiment {
     public Experiment() {
     }
 
-    public Experiment(String type, String platform, String manufacturer, String date, String lab,
-                      String center, String responsible, String description) {
-        this(type, platform, manufacturer, date, lab, center, responsible, description, new HashMap<>());
-    }
-
-    public Experiment(String type, String platform, String manufacturer, String date,  String lab,
-                      String center, String responsible, String description, Map<String, Object> attributes) {
-        this.type = type;
-        this.platform = platform;
+    public Experiment(Technology technology, Method method, NucleicAcidType nucleicAcidType, String manufacturer, String platform,
+                      String library, String date, String center, String lab, String responsible, String description,
+                      Map<String, Object> attributes) {
+        this.technology = technology;
+        this.method = method;
+        this.nucleicAcidType = nucleicAcidType;
         this.manufacturer = manufacturer;
+        this.platform = platform;
+        this.library = library;
         this.date = date;
-        this.lab = lab;
         this.center = center;
+        this.lab = lab;
         this.responsible = responsible;
         this.description = description;
         this.attributes = attributes;
@@ -83,12 +79,15 @@ public class Experiment {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Experiment{");
-        sb.append("type='").append(type).append('\'');
-        sb.append(", platform='").append(platform).append('\'');
+        sb.append("technology=").append(technology);
+        sb.append(", method=").append(method);
+        sb.append(", nucleicAcidType=").append(nucleicAcidType);
         sb.append(", manufacturer='").append(manufacturer).append('\'');
+        sb.append(", platform='").append(platform).append('\'');
+        sb.append(", library='").append(library).append('\'');
         sb.append(", date='").append(date).append('\'');
-        sb.append(", lab='").append(lab).append('\'');
         sb.append(", center='").append(center).append('\'');
+        sb.append(", lab='").append(lab).append('\'');
         sb.append(", responsible='").append(responsible).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", attributes=").append(attributes);
@@ -96,21 +95,30 @@ public class Experiment {
         return sb.toString();
     }
 
-    public String getType() {
-        return type;
+    public Technology getTechnology() {
+        return technology;
     }
 
-    public Experiment setType(String type) {
-        this.type = type;
+    public Experiment setTechnology(Technology technology) {
+        this.technology = technology;
         return this;
     }
 
-    public String getPlatform() {
-        return platform;
+    public Method getMethod() {
+        return method;
     }
 
-    public Experiment setPlatform(String platform) {
-        this.platform = platform;
+    public Experiment setMethod(Method method) {
+        this.method = method;
+        return this;
+    }
+
+    public NucleicAcidType getNucleicAcidType() {
+        return nucleicAcidType;
+    }
+
+    public Experiment setNucleicAcidType(NucleicAcidType nucleicAcidType) {
+        this.nucleicAcidType = nucleicAcidType;
         return this;
     }
 
@@ -123,6 +131,24 @@ public class Experiment {
         return this;
     }
 
+    public String getPlatform() {
+        return platform;
+    }
+
+    public Experiment setPlatform(String platform) {
+        this.platform = platform;
+        return this;
+    }
+
+    public String getLibrary() {
+        return library;
+    }
+
+    public Experiment setLibrary(String library) {
+        this.library = library;
+        return this;
+    }
+
     public String getDate() {
         return date;
     }
@@ -132,21 +158,21 @@ public class Experiment {
         return this;
     }
 
-    public String getLab() {
-        return lab;
-    }
-
-    public Experiment setLab(String lab) {
-        this.lab = lab;
-        return this;
-    }
-
     public String getCenter() {
         return center;
     }
 
     public Experiment setCenter(String center) {
         this.center = center;
+        return this;
+    }
+
+    public String getLab() {
+        return lab;
+    }
+
+    public Experiment setLab(String lab) {
+        this.lab = lab;
         return this;
     }
 
@@ -176,5 +202,4 @@ public class Experiment {
         this.attributes = attributes;
         return this;
     }
-
 }

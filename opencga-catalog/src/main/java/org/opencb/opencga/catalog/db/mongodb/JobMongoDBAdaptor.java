@@ -166,7 +166,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public long getStudyId(long jobId) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query query = new Query(QueryParams.UID.key(), jobId);
-        QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_UID);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, PRIVATE_STUDY_UID);
         OpenCGAResult<Document> queryResult = nativeGet(query, queryOptions);
 
         if (queryResult.getNumResults() != 0) {

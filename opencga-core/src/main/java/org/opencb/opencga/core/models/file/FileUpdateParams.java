@@ -22,6 +22,7 @@ public class FileUpdateParams {
     private File.Format format;
     private File.Bioformat bioformat;
     private Software software;
+    private Experiment experiment;
     private List<String> tags;
     private File.FileStatus status;
 
@@ -35,7 +36,7 @@ public class FileUpdateParams {
     }
 
     public FileUpdateParams(String name, String description, List<String> samples, String checksum, File.Format format,
-                            File.Bioformat bioformat, Software software, List<String> tags, File.FileStatus status,
+                            File.Bioformat bioformat, Software software, Experiment experiment, List<String> tags, File.FileStatus status,
                             List<SmallRelatedFileParams> relatedFiles, List<AnnotationSet> annotationSets, Map<String, Object> stats,
                             Map<String, Object> attributes) {
         this.name = name;
@@ -45,6 +46,7 @@ public class FileUpdateParams {
         this.format = format;
         this.bioformat = bioformat;
         this.software = software;
+        this.experiment = experiment;
         this.tags = tags;
         this.status = status;
         this.relatedFiles = relatedFiles;
@@ -78,9 +80,10 @@ public class FileUpdateParams {
         sb.append(", checksum='").append(checksum).append('\'');
         sb.append(", format=").append(format);
         sb.append(", bioformat=").append(bioformat);
-        sb.append(", status=").append(status);
         sb.append(", software=").append(software);
+        sb.append(", experiment=").append(experiment);
         sb.append(", tags=").append(tags);
+        sb.append(", status=").append(status);
         sb.append(", relatedFiles=").append(relatedFiles);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", stats=").append(stats);
@@ -167,6 +170,15 @@ public class FileUpdateParams {
 
     public FileUpdateParams setSoftware(Software software) {
         this.software = software;
+        return this;
+    }
+
+    public Experiment getExperiment() {
+        return experiment;
+    }
+
+    public FileUpdateParams setExperiment(Experiment experiment) {
+        this.experiment = experiment;
         return this;
     }
 
