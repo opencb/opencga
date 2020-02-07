@@ -1,5 +1,5 @@
 ---
-## README
+##
 ## Link https://figshare.com/articles/New_draft_item/4595839
 ## Father: ISDBM322016
 ## Mother: ISDBM322018
@@ -7,12 +7,19 @@
 ## Daughter: ISDBM322017
 
 id: corpasome
-name: Corpasome Family
-description: This Study simulates two diseroders and some phenotypes for training purposes
+name: Corpas Family
+description: This study simulates two disorders and some phenotypes in the Corpas family for training purposes
 #groups:
 #  - id: demo
 #    userIds: [demo1, demo2]
 #variableSets:
+#  - id:
+#    name:
+#    variables:
+#      - id:
+#        name:
+#        category:
+#        type: STRING
 
 individuals:
   - id: ISDBM322015
@@ -24,18 +31,22 @@ individuals:
     sex: MALE
     karyotypicSex: XY
     lifeStatus: ALIVE
-    annotations:
-      - varaibleSet: tumor
-        values:
+#    annotations:
+#      - variableSet: tumor
+#        values:
     phenotypes:
-      - id: HP:0000006
-        name: Autosomal dominant inheritance
+      - id: HP:0000519
+        name: Developmental cataract
+        source: HPO
+        status: OBSERVED
+      - id: HP:00005456
+        name: Myopia
         source: HPO
         status: OBSERVED
     disorders:
-      - id: HP:0000006
-        name: Autosomal dominant inheritance
-        source: HPO
+      - id: OMIM:611597
+        name: Cataract, Autosomal Dominant, Multiple Types 1
+        source: OMIM
   - id: ISDBM322017
     name: ISDBM322017
     father:
@@ -46,43 +57,63 @@ individuals:
     karyotypicSex: XX
     lifeStatus: ALIVE
     phenotypes:
-      - id: HP:0000006
-        name: Autosomal dominant inheritance
+      - id: HP:00005456
+        name: Myopia
         source: HPO
         status: OBSERVED
+      - id: HP:0002077
+        name: Migraine with aura
+        source: HPO
+        status: OBSERVED
+    disorders:
+      - id: OMIM:300125
+        name: Migraine, Familial Typical, Susceptibility To, 2
+        source: OMIM
   - id: ISDBM322016
     name: ISDBM322016
     sex: MALE
     karyotypicSex: XY
     lifeStatus: ALIVE
     phenotypes:
-      - id: HP:0000275
-        name: Narrow face
+      - id: HP:00005456
+        name: Myopia
         source: HPO
         status: OBSERVED
+      - id: HP:0000519
+        name: Developmental cataract
+        source: HPO
+        status: OBSERVED
+    disorders:
+      - id: OMIM:611597
+        name: Cataract, Autosomal Dominant, Multiple Types 1
+        source: OMIM
   - id: ISDBM322018
     name: ISDBM322018
     sex: FEMALE
     karyotypicSex: XX
     lifeStatus: ALIVE
     phenotypes:
-      - id: HP:0000006
-        name: Autosomal dominant inheritance
+      - id: HP:0002077
+        name: Migraine with aura
         source: HPO
         status: OBSERVED
+      - id: HP:0000958
+        name: Dry skin
+        source: HPO
+        status: OBSERVED
+    disorders:
+      - id: OMIM:300125
+        name: Migraine, Familial Typical, Susceptibility To, 2
+        source: OMIM
 
 samples:
   - id: ISDBM322015
-    source: quartet.variants.annotated.vcf.gz
     individualId: ISDBM322015
   - id: ISDBM322016
-    source: quartet.variants.annotated.vcf.gz
     individualId: ISDBM322016
   - id: ISDBM322017
-    source: quartet.variants.annotated.vcf.gz
     individualId: ISDBM322017
   - id: ISDBM322018
-    source: quartet.variants.annotated.vcf.gz
     individualId: ISDBM322018
 
 families:
@@ -100,16 +131,6 @@ families:
 #    family.id: corpasome
 #    disorder.id: XXX
 
-#cohorts:
-#  - id: ALL
-#    samples:
-#      - id: ISDBM322015
-#      - id: ISDBM322017
-#      - id: ISDBM322016
-#      - id: ISDBM322018
-
 files:
   - id: quartet.variants.annotated.vcf.gz
-    path: data
-    bioformat: VARIANT
-    format: VCF
+    path: data/

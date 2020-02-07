@@ -763,7 +763,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     /*
      * DEMO SUB-COMMANDS
      */
-    @Parameters(commandNames = {"load"}, commandDescription = "Get clinical analysis information")
+    @Parameters(commandNames = {"load"}, commandDescription = "Load")
     public class LoadDemoCommandOptions {
 
         @ParametersDelegate
@@ -776,7 +776,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public boolean force;
     }
 
-    @Parameters(commandNames = {"add"}, commandDescription = "Get clinical analysis information")
+    @Parameters(commandNames = {"add"}, commandDescription = "Add")
     public class AddDemoCommandOptions {
 
         @ParametersDelegate
@@ -790,7 +790,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public boolean force;
     }
 
-    @Parameters(commandNames = {"delete"}, commandDescription = "Get clinical analysis information")
+    @Parameters(commandNames = {"delete"}, commandDescription = "Delete")
     public class DeleteDemoCommandOptions {
 
         @ParametersDelegate

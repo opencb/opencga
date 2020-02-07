@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.demo;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.demo.config.DemoConfiguration;
 import org.opencb.opencga.client.config.ClientConfiguration;
@@ -27,6 +28,7 @@ import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualCreateParams;
+import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -35,6 +37,8 @@ import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyCreateParams;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.models.user.UserCreateParams;
+
+import java.util.*;
 
 
 public class DemoManager {
@@ -83,8 +87,30 @@ public class DemoManager {
 
     private void createIndividuals(Study study) throws ClientException {
         ObjectMap params = new ObjectMap("study", study.getId());
+        Map<String, Map<String, Object>> relatives = new HashMap<>();
+
+        // Create individuals without parents and siblings
         for (Individual individual : study.getIndividuals()) {
+            relatives.put(individual.getId(), new HashMap<String, Object>(){{
+                put("father", individual.getFather());
+                put("mother", individual.getMother());
+                put("multiples", individual.getMultiples());
+            }});
+            individual.setFather(null);
+            individual.setMother(null);
+            individual.setMultiples(null);
             openCGAClient.getIndividualClient().create(IndividualCreateParams.of(individual), params);
+        }
+
+        // Update parents and siblings for each individual
+        for (Individual individual : study.getIndividuals()) {
+            IndividualUpdateParams updateParams = new IndividualUpdateParams();
+            Individual father = (Individual) relatives.get(individual.getId()).get("father");
+            updateParams.setFather(father.getId());
+            Individual mother = (Individual) relatives.get(individual.getId()).get("mother");
+            updateParams.setMother(mother.getId());
+            updateParams.setMultiples((Multiples) relatives.get(individual.getId()).get("multiples"));
+            openCGAClient.getIndividualClient().update(individual.getId(), updateParams, params);
         }
     }
 
