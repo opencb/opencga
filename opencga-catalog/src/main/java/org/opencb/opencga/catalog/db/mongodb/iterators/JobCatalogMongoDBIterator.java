@@ -1,10 +1,10 @@
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.MongoCursor;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.FileMongoDBAdaptor;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.NATIVE_QUERY;
 
-public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
+public class JobCatalogMongoDBIterator extends BatchedCatalogMongoDBIterator<Job> {
 
     private final long studyUid;
     private final String user;
@@ -35,15 +35,16 @@ public class JobMongoDBIterator extends BatchedMongoDBIterator<Job> {
     private final FileMongoDBAdaptor fileDBAdaptor;
     private final QueryOptions fileQueryOptions = FileManager.INCLUDE_FILE_URI_PATH;
 
-    private Logger logger = LoggerFactory.getLogger(JobMongoDBIterator.class);
+    private Logger logger = LoggerFactory.getLogger(JobCatalogMongoDBIterator.class);
 
-    public JobMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, JobConverter converter, JobMongoDBAdaptor jobDBAdaptor,
-                              FileMongoDBAdaptor fileDBAdaptor, QueryOptions options) {
+    public JobCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession, JobConverter converter,
+                                     JobMongoDBAdaptor jobDBAdaptor, FileMongoDBAdaptor fileDBAdaptor, QueryOptions options) {
         this(mongoCursor, clientSession, converter, jobDBAdaptor, fileDBAdaptor, options, 0, null);
     }
 
-    public JobMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, JobConverter converter, JobMongoDBAdaptor jobDBAdaptor,
-                              FileMongoDBAdaptor fileDBAdaptor, QueryOptions options, long studyUid, String user) {
+    public JobCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession, JobConverter converter,
+                                     JobMongoDBAdaptor jobDBAdaptor, FileMongoDBAdaptor fileDBAdaptor, QueryOptions options, long studyUid,
+                                     String user) {
         super(mongoCursor, clientSession, converter, null, options);
         this.fileDBAdaptor = fileDBAdaptor;
         this.jobDBAdaptor = jobDBAdaptor;

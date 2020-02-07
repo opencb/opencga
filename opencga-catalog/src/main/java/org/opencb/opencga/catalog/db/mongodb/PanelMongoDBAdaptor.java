@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import org.apache.commons.lang3.StringUtils;
@@ -26,10 +25,11 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.PanelDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.PanelConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -574,8 +574,8 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
     DBIterator<Panel> iterator(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, options);
-        return new MongoDBIterator<>(mongoCursor, panelConverter);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options);
+        return new CatalogMongoDBIterator<>(mongoCursor, panelConverter);
     }
 
     @Override
@@ -589,8 +589,8 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
-        return new MongoDBIterator(mongoCursor);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
+        return new CatalogMongoDBIterator(mongoCursor);
     }
 
     @Override
@@ -602,8 +602,8 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     DBIterator<Panel> iterator(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         query.put(PRIVATE_STUDY_UID, studyUid);
-        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, options, user);
-        return new MongoDBIterator<>(mongoCursor, panelConverter);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options, user);
+        return new CatalogMongoDBIterator<>(mongoCursor, panelConverter);
     }
 
     @Override
@@ -613,17 +613,17 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         queryOptions.put(NATIVE_QUERY, true);
 
         query.put(PRIVATE_STUDY_UID, studyUid);
-        MongoCursor<Document> mongoCursor = getMongoCursor(null, query, queryOptions, user);
-        return new MongoDBIterator<>(mongoCursor);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, queryOptions, user);
+        return new CatalogMongoDBIterator<>(mongoCursor);
     }
 
 
-    private MongoCursor<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
+    private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return getMongoCursor(clientSession, query, options, null);
     }
 
-    private MongoCursor<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)
+    private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Query finalQuery = new Query(query);
         QueryOptions qOptions;
@@ -636,9 +636,9 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         Bson bson = parseQuery(finalQuery, user);
         logger.debug("Panel query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return panelCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+            return panelCollection.nativeQuery().find(clientSession, bson, qOptions);
         } else {
-            return deletedPanelCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+            return deletedPanelCollection.nativeQuery().find(clientSession, bson, qOptions);
         }
     }
 

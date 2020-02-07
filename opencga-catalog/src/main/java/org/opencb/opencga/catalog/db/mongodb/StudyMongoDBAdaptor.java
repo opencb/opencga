@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
@@ -29,11 +28,12 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.StudyMongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.StudyCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
@@ -1604,8 +1604,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     private DBIterator<Study> iterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, options);
-        return new StudyMongoDBIterator<>(mongoCursor, options, studyConverter);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options);
+        return new StudyCatalogMongoDBIterator<>(mongoCursor, options, studyConverter);
     }
 
     @Override
@@ -1616,16 +1616,16 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     DBIterator nativeIterator(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
-        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
-        return new StudyMongoDBIterator<>(mongoCursor, options);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
+        return new StudyCatalogMongoDBIterator<>(mongoCursor, options);
     }
 
     @Override
     public DBIterator<Study> iterator(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(null, query, options);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, options);
         Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(d, user);
-        return new StudyMongoDBIterator<>(mongoCursor, options, studyConverter, iteratorFilter);
+        return new StudyCatalogMongoDBIterator<>(mongoCursor, options, studyConverter, iteratorFilter);
     }
 
     @Override
@@ -1639,12 +1639,13 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             throws CatalogDBException, CatalogAuthorizationException {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
-        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
         Function<Document, Boolean> iteratorFilter = (d) -> checkCanViewStudy(d, user);
-        return new StudyMongoDBIterator<Document>(mongoCursor, options, iteratorFilter);
+        return new StudyCatalogMongoDBIterator<Document>(mongoCursor, options, iteratorFilter);
     }
 
-    private MongoCursor<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
+    private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
+            throws CatalogDBException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         QueryOptions qOptions = new QueryOptions(options);
         if (qOptions.containsKey(QueryOptions.INCLUDE)) {
@@ -1660,9 +1661,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         logger.debug("Study native get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return studyCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+            return studyCollection.nativeQuery().find(clientSession, bson, qOptions);
         } else {
-            return deletedStudyCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+            return deletedStudyCollection.nativeQuery().find(clientSession, bson, qOptions);
         }
     }
 

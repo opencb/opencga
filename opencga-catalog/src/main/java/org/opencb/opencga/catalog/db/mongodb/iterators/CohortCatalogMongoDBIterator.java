@@ -1,10 +1,10 @@
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.MongoCursor;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.SampleMongoDBAdaptor;
@@ -22,7 +22,7 @@ import java.util.function.Function;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.NATIVE_QUERY;
 
-public class CohortMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
+public class CohortCatalogMongoDBIterator<E> extends AnnotableCatalogMongoDBIterator<E> {
 
     private long studyUid;
     private String user;
@@ -36,14 +36,15 @@ public class CohortMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
 
     private static final int BUFFER_SIZE = 100;
 
-    public CohortMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, AnnotableConverter<? extends Annotable> converter,
-                                 Function<Document, Document> filter, SampleMongoDBAdaptor sampleMongoDBAdaptor,  QueryOptions options) {
+    public CohortCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
+                                        AnnotableConverter<? extends Annotable> converter, Function<Document, Document> filter,
+                                        SampleMongoDBAdaptor sampleMongoDBAdaptor, QueryOptions options) {
         this(mongoCursor, clientSession, converter, filter, sampleMongoDBAdaptor, 0, null, options);
     }
 
-    public CohortMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, AnnotableConverter<? extends Annotable> converter,
-                                 Function<Document, Document> filter, SampleMongoDBAdaptor sampleMongoDBAdaptor, long studyUid, String user,
-                                 QueryOptions options) {
+    public CohortCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
+                                        AnnotableConverter<? extends Annotable> converter, Function<Document, Document> filter,
+                                        SampleMongoDBAdaptor sampleMongoDBAdaptor, long studyUid, String user, QueryOptions options) {
         super(mongoCursor, clientSession, converter, filter, options);
 
         this.user = user;
@@ -53,7 +54,7 @@ public class CohortMongoDBIterator<E> extends AnnotableMongoDBIterator<E> {
         this.sampleQueryOptions = createSampleQueryOptions();
 
         this.cohortListBuffer = new LinkedList<>();
-        this.logger = LoggerFactory.getLogger(CohortMongoDBIterator.class);
+        this.logger = LoggerFactory.getLogger(CohortCatalogMongoDBIterator.class);
     }
 
     @Override
