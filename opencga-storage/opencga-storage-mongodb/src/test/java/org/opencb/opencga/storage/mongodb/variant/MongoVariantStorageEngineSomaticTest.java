@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngineSomaticTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
@@ -32,7 +33,9 @@ public class MongoVariantStorageEngineSomaticTest extends VariantStorageEngineSo
         try (VariantMongoDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor()) {
             MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
 
-            for (Document document : variantsCollection.nativeQuery().find(new Document(), new QueryOptions())) {
+            MongoDBIterator<Document> it = variantsCollection.nativeQuery().find(new Document(), new QueryOptions());
+            while (it.hasNext()) {
+                Document document = it.next();
                 assertFalse(((Document) document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class).get(0))
                         .containsKey(GENOTYPES_FIELD));
                 System.out.println("dbObject = " + document);
