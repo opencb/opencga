@@ -127,7 +127,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         Query query = new Query(Constants.ANNOTATION, variableSetId + ":family=GB84");
         QueryOptions options = new QueryOptions()
                 .append(QueryOptions.LIMIT, 0)
-                .append("count", true);
+                .append(QueryOptions.COUNT, true);
 
         DataResult<Sample> allSamples = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, allSamples.getNumMatches());

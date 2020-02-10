@@ -68,7 +68,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -1245,18 +1245,7 @@ public class FileManager extends AnnotationSetManager<File> {
             fixQueryObject(study, finalQuery, userId);
             finalQuery.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            Future<OpenCGAResult<Long>> countFuture = null;
-            if (options.getBoolean(QueryOptions.COUNT)) {
-                ExecutorService executor = Executors.newSingleThreadExecutor();
-                countFuture = executor.submit(() -> fileDBAdaptor.count(finalQuery, userId));
-            }
-            OpenCGAResult<File> queryResult = OpenCGAResult.empty();
-            if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
-                queryResult = fileDBAdaptor.get(study.getUid(), finalQuery, options, userId);
-            }
-            if (countFuture != null) {
-                mergeCount(queryResult, countFuture);
-            }
+            OpenCGAResult<File> queryResult = fileDBAdaptor.get(study.getUid(), finalQuery, options, userId);
             auditManager.auditSearch(userId, Enums.Resource.FILE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -1265,10 +1254,6 @@ public class FileManager extends AnnotationSetManager<File> {
             auditManager.auditSearch(userId, Enums.Resource.FILE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
-        } catch (InterruptedException | ExecutionException e) {
-            auditManager.auditSearch(userId, Enums.Resource.FILE, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(-1, "", e.getMessage())));
-            throw new CatalogException("Unexpected error", e);
         }
     }
 

@@ -74,7 +74,6 @@ public class MongoDBAdaptor extends AbstractDBAdaptor {
     static final String SET = "SET";
 
     protected MongoDBAdaptorFactory dbAdaptorFactory;
-    protected Map<Long, String> variableUidIdMap;
 
     public MongoDBAdaptor(Logger logger) {
         super(logger);

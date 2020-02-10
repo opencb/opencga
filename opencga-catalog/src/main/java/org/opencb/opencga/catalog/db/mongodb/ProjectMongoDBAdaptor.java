@@ -533,7 +533,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     public OpenCGAResult<Project> get(String userId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         Query query = new Query(QueryParams.USER_ID.key(), userId);
-        return endQuery(startTime, get(query, options).getResults());
+        return endQuery(startTime, get(query, options));
     }
 
     @Override
@@ -551,14 +551,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     @Override
     public OpenCGAResult<Project> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        List<Project> documentList = new ArrayList<>();
         OpenCGAResult<Project> queryResult;
         try (DBIterator<Project> dbIterator = iterator(query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            queryResult = endQuery(startTime, dbIterator);
         }
-        queryResult = endQuery(startTime, documentList);
 
         if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
                 || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
@@ -581,14 +577,10 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     public OpenCGAResult<Project> get(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
-        List<Project> documentList = new ArrayList<>();
         OpenCGAResult<Project> queryResult;
         try (DBIterator<Project> dbIterator = iterator(query, options, user)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            queryResult = endQuery(startTime, dbIterator);
         }
-        queryResult = endQuery(startTime, documentList);
 
         if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
                 || (!options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")
@@ -610,26 +602,18 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
     @Override
     public OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
     public OpenCGAResult nativeGet(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(query, options, user)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override

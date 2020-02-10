@@ -144,13 +144,9 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     @Override
     public OpenCGAResult<Interpretation> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        List<Interpretation> documentList = new ArrayList<>();
         try (DBIterator<Interpretation> dbIterator = iterator(query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -162,14 +158,9 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
     @Override
     public OpenCGAResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
-        OpenCGAResult<Document> queryResult;
         try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
