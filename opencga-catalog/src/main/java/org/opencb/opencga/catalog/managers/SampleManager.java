@@ -59,10 +59,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -291,20 +287,7 @@ public class SampleManager extends AnnotationSetManager<Sample> {
 
             query.append(SampleDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            Future<OpenCGAResult<Long>> countFuture = null;
-            if (options.getBoolean(QueryOptions.COUNT)) {
-                ExecutorService executor = Executors.newSingleThreadExecutor();
-                Query finalQuery = query;
-                countFuture = executor.submit(() -> sampleDBAdaptor.count(finalQuery, userId));
-            }
-            OpenCGAResult<Sample> queryResult = OpenCGAResult.empty();
-            if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
-                queryResult = sampleDBAdaptor.get(study.getUid(), query, options, userId);
-            }
-
-            if (countFuture != null) {
-                mergeCount(queryResult, countFuture);
-            }
+            OpenCGAResult<Sample> queryResult = sampleDBAdaptor.get(study.getUid(), query, options, userId);
 
             auditManager.auditSearch(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -314,10 +297,6 @@ public class SampleManager extends AnnotationSetManager<Sample> {
             auditManager.auditSearch(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
-        } catch (InterruptedException | ExecutionException e) {
-            auditManager.auditSearch(userId, Enums.Resource.SAMPLE, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(-1, "", e.getMessage())));
-            throw new CatalogException("Unexpected error", e);
         }
     }
 

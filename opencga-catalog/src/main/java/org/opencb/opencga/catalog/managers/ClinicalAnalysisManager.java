@@ -56,10 +56,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -886,26 +882,7 @@ public class ClinicalAnalysisManager extends ResourceManager<ClinicalAnalysis> {
         fixQueryObject(study, query, userId);
         query.append(ClinicalAnalysisDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-        Future<OpenCGAResult<Long>> countFuture = null;
-        if (options.getBoolean(QueryOptions.COUNT)) {
-            ExecutorService executor = Executors.newSingleThreadExecutor();
-            Query finalQuery = query;
-            countFuture = executor.submit(() -> clinicalDBAdaptor.count(finalQuery, userId));
-        }
-        OpenCGAResult<ClinicalAnalysis> queryResult = OpenCGAResult.empty();
-        if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
-            queryResult = clinicalDBAdaptor.get(study.getUid(), query, options, userId);
-        }
-
-        if (countFuture != null) {
-            try {
-                mergeCount(queryResult, countFuture);
-            } catch (InterruptedException | ExecutionException e) {
-                throw new CatalogException("Unexpected error", e);
-            }
-        }
-
-        return queryResult;
+        return clinicalDBAdaptor.get(study.getUid(), query, options, userId);
     }
 
     private void fixQueryObject(Study study, Query query, String userId) throws CatalogException {
