@@ -193,6 +193,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         List<Panel> panels = study.getPanels();
         study.setPanels(Collections.emptyList());
 
+        List<Family> families = study.getFamilies();
+        study.setFamilies(Collections.emptyList());
+
         study.setFqn(project.getFqn() + ":" + study.getId());
 
         //Create DBObject
@@ -226,6 +229,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         for (Panel panel : panels) {
             dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(clientSession, study.getUid(), panel);
+        }
+
+        for (Family family : families) {
+            dbAdaptorFactory.getCatalogFamilyDBAdaptor().insert(clientSession, study.getUid(), family, Collections.emptyList());
         }
 
         return study;

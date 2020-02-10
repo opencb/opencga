@@ -311,7 +311,7 @@ public class StudyManager extends AbstractManager {
 
             Study study = new Study(id, name, alias, type, creationDate, description, status,
                     0, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)),
-                    new Group(ADMINS, Collections.emptyList())), files, null, null, null, null, null, null, null, null,
+                    new Group(ADMINS, Collections.emptyList())), files, null, null, new LinkedList<>(), null, null, null, null, null, null,
                     datastores, project.getCurrentRelease(), stats, attributes);
 
             /* CreateStudy */
