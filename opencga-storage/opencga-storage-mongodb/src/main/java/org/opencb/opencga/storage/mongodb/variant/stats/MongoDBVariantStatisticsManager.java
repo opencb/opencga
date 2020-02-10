@@ -14,7 +14,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.json.JsonSerializerTask;
 import org.opencb.opencga.storage.core.io.managers.IOConnectorProvider;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
-import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -95,14 +94,16 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
 
             // tasks
             List<Integer> cohortIds = variantDBAdaptor.getMetadataManager().getCohortIds(studyMetadata.getId(), cohorts.keySet());
-            List<CohortMetadata> cohortsMetadata = new ArrayList<>(cohortIds.size());
-            for (Integer cohortId : cohortIds) {
-                cohortsMetadata.add(variantDBAdaptor.getMetadataManager().getCohortMetadata(studyMetadata.getId(), cohortId));
-            }
+
             List<Task<Document, String>> tasks = new ArrayList<>(numTasks);
             ProgressLogger progressLogger = buildCreateStatsProgressLogger(variantDBAdaptor, readerQuery, options);
+            MongoDBVariantStatsCalculator statsCalculatorTask = new MongoDBVariantStatsCalculator(
+                    variantDBAdaptor.getMetadataManager(),
+                    studyMetadata,
+                    cohortIds.toArray(new Integer[0]),
+                    getUnknownGenotype(options));
             for (int i = 0; i < numTasks; i++) {
-                tasks.add(new MongoDBVariantStatsCalculator(studyMetadata, cohortsMetadata, getUnknownGenotype(options))
+                tasks.add(statsCalculatorTask
                         .then((Task<VariantStatsWrapper, VariantStatsWrapper>) batch -> {
                             progressLogger.increment(batch.size(), () -> ", up to position "
                                     + batch.get(batch.size() - 1).getChromosome()
