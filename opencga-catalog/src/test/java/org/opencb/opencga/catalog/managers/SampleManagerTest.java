@@ -330,7 +330,7 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         query = new Query(Constants.ANNOTATION, "a3.b.c.z=z2;a2.b.c.z=z");
         OpenCGAResult<Sample> result = catalogManager.getSampleManager().search(studyFqn, query, null, token);
-        assertEquals(1, result.getNumMatches());
+        assertEquals(1, result.getNumResults());
         assertEquals(s_1, result.first().getId());
     }
 

@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.client.model.Filters;
 import org.bson.Document;
@@ -92,9 +91,8 @@ public class AuditMongoDBAdaptor extends MongoDBAdaptor implements AuditDBAdapto
                 throw new CatalogDBException(e);
             }
         }
-        DataResult<Document> result = auditCollection.find(new BasicDBObject("$and", mongoQueryList), queryOptions);
-        List<AuditRecord> individuals = MongoDBUtils.parseObjects(result, AuditRecord.class);
-        return endQuery(startTime, individuals);
+        DataResult<AuditRecord> result = auditCollection.find(new Document("$and", mongoQueryList), null, AuditRecord.class, queryOptions);
+        return endQuery(startTime, result);
     }
 
     @Override

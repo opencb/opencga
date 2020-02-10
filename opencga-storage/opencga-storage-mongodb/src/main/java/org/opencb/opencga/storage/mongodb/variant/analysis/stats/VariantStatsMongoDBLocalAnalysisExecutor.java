@@ -78,7 +78,7 @@ public class VariantStatsMongoDBLocalAnalysisExecutor extends VariantStatsAnalys
                 return documents;
             };
 
-            MongoDBVariantStatsCalculator calculator = new MongoDBVariantStatsCalculator(studyMetadata, cohorts, "0/0");
+            MongoDBVariantStatsCalculator calculator = new MongoDBVariantStatsCalculator(metadataManager, studyMetadata, cohorts, "0/0");
 
             ProgressLogger progressLogger = new ProgressLogger("Variants processed:");
             Task<Document, Variant> task = calculator.then((Task<VariantStatsWrapper, Variant>) batch -> {

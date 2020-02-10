@@ -1024,10 +1024,11 @@ public class FileManagerTest extends AbstractManagerTest {
         assertEquals(2, result.getNumResults());
         assertEquals(8, result.getNumMatches());
 
-        options = new QueryOptions(QueryOptions.LIMIT, 2);
+        options = new QueryOptions(QueryOptions.LIMIT, 2)
+                .append(QueryOptions.COUNT, true);
         result = fileManager.search(studyFqn, new Query(), options, token);
         assertEquals(2, result.getNumResults());
-        assertEquals(2, result.getNumMatches());
+        assertEquals(8, result.getNumMatches());
 
     }
 

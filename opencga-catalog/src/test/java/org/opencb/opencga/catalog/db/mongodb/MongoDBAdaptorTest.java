@@ -187,7 +187,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                         new File.FileStatus(File.FileStatus.READY), 1000, 1),
                                 new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", null, "",
                                         new File.FileStatus(File.FileStatus.READY), 1000, 1)
-                        ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                        ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                         Collections.emptyList(), new LinkedList<>(), null, null, null, 1, Collections.emptyMap(),
                         Collections.emptyMap()
                 ), null);
@@ -212,7 +212,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                         new File("alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
                                 "data/alignment.bam", null, "Tophat alignment file",
                                 new File.FileStatus(File.FileStatus.READY), 5000, 1)
-                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
+                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                         new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null, 1,
                         Collections.emptyMap(), Collections.emptyMap()
                 ), null);
@@ -228,7 +228,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                 new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
                                         "data/alignment.bam", null, "Tophat alignment file",
                                         new File.FileStatus(File.FileStatus.READY), 5000, 1)
-                        ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
+                        ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                         new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null, 1,
                         Collections.emptyMap(), Collections.emptyMap()), null);
 

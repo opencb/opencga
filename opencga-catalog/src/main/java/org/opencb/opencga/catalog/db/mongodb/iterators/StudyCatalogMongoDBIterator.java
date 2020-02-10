@@ -33,7 +33,7 @@ public class StudyCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> {
 
     public StudyCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, QueryOptions options,
                                        GenericDocumentComplexConverter<E> converter, Function<Document, Boolean> studyFilter) {
-        super(mongoCursor, converter, null);
+        super(mongoCursor, null, converter, null);
         this.mongoCursor = mongoCursor;
         this.converter = converter;
         this.studyFilter = studyFilter;
