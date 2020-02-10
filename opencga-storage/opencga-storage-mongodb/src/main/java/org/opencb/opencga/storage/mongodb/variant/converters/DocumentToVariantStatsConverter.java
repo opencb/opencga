@@ -50,6 +50,9 @@ public class DocumentToVariantStatsConverter {
     public static final String MISSALLELE_FIELD = "missAl";
     public static final String MISSGENOTYPE_FIELD = "missGt";
     public static final String NUMGT_FIELD = "numGt";
+    public static final String FILTER_COUNT_FIELD = "fc";
+    public static final String FILTER_FREQ_FIELD = "ff";
+    public static final String QUAL_AVG_FIELD = "qualAvg";
 
     protected static Logger logger = LoggerFactory.getLogger(DocumentToVariantStatsConverter.class);
 
@@ -162,6 +165,20 @@ public class DocumentToVariantStatsConverter {
                 stats.setAltAlleleFreq(alleleCounts[1] / ((float) alleleNumber));
             }
         }
+
+        if (object.containsKey(FILTER_COUNT_FIELD)) {
+            for (Map.Entry<String, Object> entry : object.get(FILTER_COUNT_FIELD, Document.class).entrySet()) {
+                stats.getFilterCount().put(entry.getKey(), ((Number)entry.getValue()).intValue());
+            }
+            for (Map.Entry<String, Object> entry : object.get(FILTER_FREQ_FIELD, Document.class).entrySet()) {
+                stats.getFilterFreq().put(entry.getKey(), ((Number)entry.getValue()).floatValue());
+            }
+        }
+        if (object.containsKey(QUAL_AVG_FIELD)) {
+            stats.setQualityAvg(object.getDouble(QUAL_AVG_FIELD).floatValue());
+        }
+
+
         return stats;
     }
 
@@ -184,6 +201,9 @@ public class DocumentToVariantStatsConverter {
         mongoStats.append(MGFGENOTYPE_FIELD, vs.getMgfGenotype());
         mongoStats.append(MISSALLELE_FIELD, vs.getMissingAlleleCount());
         mongoStats.append(MISSGENOTYPE_FIELD, vs.getMissingGenotypeCount());
+        mongoStats.append(FILTER_COUNT_FIELD, vs.getFilterCount());
+        mongoStats.append(FILTER_FREQ_FIELD, vs.getFilterFreq());
+        mongoStats.append(QUAL_AVG_FIELD, vs.getQualityAvg());
 
         // Genotype counts
         Document genotypes = new Document();
