@@ -51,7 +51,7 @@ public class CatalogCohortToSolrCohortConverter implements ComplexTypeConverter<
     public CohortSolrModel convertToStorageType(Cohort cohort) {
         CohortSolrModel cohortSolrModel = new CohortSolrModel();
 
-        cohortSolrModel.setId(cohort.getId());
+        cohortSolrModel.setId(cohort.getUuid());
         cohortSolrModel.setUid(cohort.getUid());
         cohortSolrModel.setStudyId(study.getFqn().replace(":", "__"));
         cohortSolrModel.setType(cohort.getType().name());

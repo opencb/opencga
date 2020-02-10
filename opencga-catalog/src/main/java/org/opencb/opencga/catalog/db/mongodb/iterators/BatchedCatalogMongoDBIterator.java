@@ -1,26 +1,31 @@
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.MongoCursor;
 import org.bson.Document;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.function.Function;
 
-public abstract class BatchedMongoDBIterator<T> extends MongoDBIterator<T> {
+public abstract class BatchedCatalogMongoDBIterator<T> extends CatalogMongoDBIterator<T> {
 
     private Queue<Document> buffer = new LinkedList<>();
 
-    public BatchedMongoDBIterator(MongoCursor mongoCursor, GenericDocumentComplexConverter<T> converter) {
-        super(mongoCursor, converter);
+    protected final QueryOptions options;
+
+    public BatchedCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, GenericDocumentComplexConverter<T> converter) {
+        this(mongoCursor, null, converter, null, null);
     }
 
-    public BatchedMongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, GenericDocumentComplexConverter<T> converter,
-                                  Function<Document, Document> filter) {
+    public BatchedCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
+                                         GenericDocumentComplexConverter<T> converter, Function<Document, Document> filter,
+                                         QueryOptions options) {
         super(mongoCursor, clientSession, converter, filter);
+        this.options = options == null ? QueryOptions.empty() : options;
     }
 
 
@@ -41,6 +46,7 @@ public abstract class BatchedMongoDBIterator<T> extends MongoDBIterator<T> {
         }
 
         Document next = buffer.remove();
+        addAclInformation(next, options);
 
         if (filter != null) {
             next = filter.apply(next);

@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.stats.solr.converters;
 
 import org.apache.commons.collections.map.HashedMap;
+import org.opencb.biodata.models.commons.Disorder;
 import org.opencb.biodata.models.commons.Phenotype;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.opencga.core.models.common.AnnotationSet;
@@ -29,14 +30,25 @@ public class SolrConverterUtil {
     }
 
     public static List<String> populatePhenotypes(List<Phenotype> phenotypes) {
-        List<String> phenotypesIds = new ArrayList<>();
+        Set<String> phenotypesIds = new HashSet<>();
         if (phenotypes != null) {
             for (Phenotype phenotype : phenotypes) {
                 phenotypesIds.add(phenotype.getId());
                 phenotypesIds.add(phenotype.getName());
             }
         }
-        return phenotypesIds;
+        return new ArrayList(phenotypesIds);
+    }
+
+    public static List<String> populateDisorders(List<Disorder> disorders) {
+        Set<String> disorderIds = new HashSet<>();
+        if (disorders != null) {
+            for (Disorder disorder : disorders) {
+                disorderIds.add(disorder.getId());
+                disorderIds.add(disorder.getName());
+            }
+        }
+        return new ArrayList(disorderIds);
     }
 
     public static String type(QueryParam.Type type) {

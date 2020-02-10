@@ -55,7 +55,7 @@ public class CatalogFileToSolrFileConverterTest {
         assert (fileSolrModel.getStatus().equals(file.getStatus().getName()));
         assert (fileSolrModel.isExternal() == file.isExternal());
         assert (fileSolrModel.getSize() == file.getSize());
-        assert (fileSolrModel.getSoftware().equals(file.getSoftware().getName()));
+        assert (fileSolrModel.getSoftwareName().equals(file.getSoftware().getName()));
         assert (fileSolrModel.getNumSamples() == file.getSamples().size());
 
         assertEquals(Arrays.asList(1, 2, 3, 4, 11, 12, 13, 14, 21), fileSolrModel.getAnnotations().get("annotations__im__vsId.a.ab2.ab2c1.ab2c1d1"));

@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import org.apache.commons.lang3.NotImplementedException;
@@ -27,12 +26,13 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FamilyDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.FamilyConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.FamilyMongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.FamilyCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -605,13 +605,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     public OpenCGAResult<Family> get(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
-        List<Family> documentList = new ArrayList<>();
         try (DBIterator<Family> dbIterator = iterator(clientSession, query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -623,13 +619,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     OpenCGAResult nativeGet(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -641,13 +633,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     OpenCGAResult nativeGet(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, studyUid, query, options, user)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -668,13 +656,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     public OpenCGAResult<Family> get(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
-        List<Family> documentList = new ArrayList<>();
         try (DBIterator<Family> dbIterator = iterator(clientSession, studyUid, query, options, user)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -685,8 +669,8 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
     DBIterator<Family> iterator(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, options);
-        return new FamilyMongoDBIterator<>(mongoCursor, clientSession, familyConverter, null,
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options);
+        return new FamilyCatalogMongoDBIterator<>(mongoCursor, clientSession, familyConverter, null,
                 dbAdaptorFactory.getCatalogIndividualDBAdaptor(), options);
     }
 
@@ -701,8 +685,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
-        return new FamilyMongoDBIterator(mongoCursor, clientSession, null, null, dbAdaptorFactory.getCatalogIndividualDBAdaptor(), options);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions);
+        return new FamilyCatalogMongoDBIterator(mongoCursor, clientSession, null, null, dbAdaptorFactory.getCatalogIndividualDBAdaptor(),
+                options);
     }
 
     @Override
@@ -714,12 +699,12 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
     public DBIterator<Family> iterator(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         query.put(PRIVATE_STUDY_UID, studyUid);
-        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, options, user);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
 
-        return new FamilyMongoDBIterator<>(mongoCursor, null, familyConverter, iteratorFilter,
+        return new FamilyCatalogMongoDBIterator<>(mongoCursor, null, familyConverter, iteratorFilter,
                 dbAdaptorFactory.getCatalogIndividualDBAdaptor(), studyUid, user, options);
     }
 
@@ -735,21 +720,21 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         queryOptions.put(NATIVE_QUERY, true);
 
         query.put(PRIVATE_STUDY_UID, studyUid);
-        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, queryOptions, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_FAMILY_ANNOTATIONS.name(), FamilyAclEntry.FamilyPermissions.VIEW_ANNOTATIONS.name());
 
-        return new FamilyMongoDBIterator(mongoCursor, clientSession, null, iteratorFilter, dbAdaptorFactory.getCatalogIndividualDBAdaptor(),
-                studyUid, user, options);
+        return new FamilyCatalogMongoDBIterator(mongoCursor, clientSession, null, iteratorFilter,
+                dbAdaptorFactory.getCatalogIndividualDBAdaptor(), studyUid, user, options);
     }
 
-    private MongoCursor<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
+    private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return getMongoCursor(clientSession, query, options, null);
     }
 
-    private MongoCursor<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)
+    private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
         QueryOptions qOptions;
@@ -763,9 +748,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         logger.debug("Family query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return familyCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+            return familyCollection.nativeQuery().find(clientSession, bson, qOptions);
         } else {
-            return deletedFamilyCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+            return deletedFamilyCollection.nativeQuery().find(clientSession, bson, qOptions);
         }
     }
 

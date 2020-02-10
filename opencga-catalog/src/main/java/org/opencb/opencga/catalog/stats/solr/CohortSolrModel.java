@@ -10,49 +10,24 @@ import java.util.Map;
 /**
  * Created by wasim on 27/06/18.
  */
-public class CohortSolrModel {
-
-    @Field
-    private String id;
-
-    @Field
-    private long uid;
-
-    @Field
-    private String studyId;
+public class CohortSolrModel extends CatalogSolrModel {
 
     @Field
     private String type;
 
     @Field
-    private int creationYear;
-
-    @Field
-    private String creationMonth;
-
-    @Field
-    private int creationDay;
-
-    @Field
-    private String creationDayOfWeek;
-
-    @Field
-    private String status;
-
-    @Field
-    private int release;
-
-    @Field
     private int numSamples;
-
-    @Field
-    private List<String> acl;
 
     @Field
     private List<String> annotationSets;
 
     @Field("annotations__*")
     private Map<String, Object> annotations;
+
+    public CohortSolrModel() {
+        this.annotationSets = new ArrayList<>();
+        this.annotations = new HashMap<>();
+    }
 
     @Override
     public String toString() {
@@ -75,38 +50,6 @@ public class CohortSolrModel {
         return sb.toString();
     }
 
-    public CohortSolrModel() {
-        this.annotationSets = new ArrayList<>();
-        this.annotations = new HashMap<>();
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public CohortSolrModel setId(String id) {
-        this.id = id;
-        return this;
-    }
-
-    public long getUid() {
-        return uid;
-    }
-
-    public CohortSolrModel setUid(long uid) {
-        this.uid = uid;
-        return this;
-    }
-
-    public String getStudyId() {
-        return studyId;
-    }
-
-    public CohortSolrModel setStudyId(String studyId) {
-        this.studyId = studyId;
-        return this;
-    }
-
     public String getType() {
         return type;
     }
@@ -116,75 +59,12 @@ public class CohortSolrModel {
         return this;
     }
 
-    public int getCreationYear() {
-        return creationYear;
-    }
-
-    public CohortSolrModel setCreationYear(int creationYear) {
-        this.creationYear = creationYear;
-        return this;
-    }
-
-    public String getCreationMonth() {
-        return creationMonth;
-    }
-
-    public CohortSolrModel setCreationMonth(String creationMonth) {
-        this.creationMonth = creationMonth;
-        return this;
-    }
-
-    public int getCreationDay() {
-        return creationDay;
-    }
-
-    public CohortSolrModel setCreationDay(int creationDay) {
-        this.creationDay = creationDay;
-        return this;
-    }
-
-    public String getCreationDayOfWeek() {
-        return creationDayOfWeek;
-    }
-
-    public CohortSolrModel setCreationDayOfWeek(String creationDayOfWeek) {
-        this.creationDayOfWeek = creationDayOfWeek;
-        return this;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public CohortSolrModel setStatus(String status) {
-        this.status = status;
-        return this;
-    }
-
-    public int getRelease() {
-        return release;
-    }
-
-    public CohortSolrModel setRelease(int release) {
-        this.release = release;
-        return this;
-    }
-
     public int getNumSamples() {
         return numSamples;
     }
 
     public CohortSolrModel setNumSamples(int numSamples) {
         this.numSamples = numSamples;
-        return this;
-    }
-
-    public List<String> getAcl() {
-        return acl;
-    }
-
-    public CohortSolrModel setAcl(List<String> acl) {
-        this.acl = acl;
         return this;
     }
 

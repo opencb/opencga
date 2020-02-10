@@ -60,7 +60,6 @@ public class CatalogIndividualToSolrIndividualConverterTest {
         assertEquals(individualSolrModel.getVersion(), individual.getVersion());
         assertEquals(individualSolrModel.getStatus(), individual.getStatus().getName());
         assertEquals(individualSolrModel.getLifeStatus(), individual.getLifeStatus().name());
-        assertEquals(individualSolrModel.getAffectationStatus(), individual.getAffectationStatus().name());
         assertEquals(individualSolrModel.getPhenotypes().size(), 0);
         assertEquals(individualSolrModel.isParentalConsanguinity(), individual.isParentalConsanguinity());
 

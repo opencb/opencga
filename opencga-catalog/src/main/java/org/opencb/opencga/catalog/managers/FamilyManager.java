@@ -63,10 +63,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -191,7 +187,15 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
     @Override
     public DBIterator<Family> iterator(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
+        ParamUtils.checkObj(sessionId, "sessionId");
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        String userId = userManager.getUserId(sessionId);
+        Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
+        query.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
+
+        return familyDBAdaptor.iterator(study.getUid(), query, options, userId);
     }
 
     @Override
@@ -284,20 +288,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
 
             finalQuery.append(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            Future<OpenCGAResult<Long>> countFuture = null;
-            if (options.getBoolean(QueryOptions.COUNT)) {
-                ExecutorService executor = Executors.newSingleThreadExecutor();
-                Query myQuery = finalQuery;
-                countFuture = executor.submit(() -> familyDBAdaptor.count(myQuery, userId));
-            }
-            OpenCGAResult<Family> queryResult = OpenCGAResult.empty();
-            if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
-                queryResult = familyDBAdaptor.get(study.getUid(), finalQuery, options, userId);
-            }
-
-            if (countFuture != null) {
-                mergeCount(queryResult, countFuture);
-            }
+            OpenCGAResult<Family> queryResult = familyDBAdaptor.get(study.getUid(), finalQuery, options, userId);
 
             auditManager.auditSearch(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -307,10 +298,6 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             auditManager.auditSearch(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
-        } catch (InterruptedException | ExecutionException e) {
-            auditManager.auditSearch(userId, Enums.Resource.FAMILY, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(-1, "", e.getMessage())));
-            throw new CatalogException("Unexpected error", e);
         }
     }
 

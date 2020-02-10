@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
@@ -26,11 +25,12 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.JobMongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.JobCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -493,59 +493,43 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     public OpenCGAResult<Job> get(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
-        List<Job> documentList = new ArrayList<>();
         try (DBIterator<Job> dbIterator = iterator(studyUid, query, options, user)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
     public OpenCGAResult<Job> get(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
-        List<Job> documentList = new ArrayList<>();
         try (DBIterator<Job> dbIterator = iterator(query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
     public OpenCGAResult nativeGet(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
     public OpenCGAResult nativeGet(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(studyUid, query, options, user)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
     public DBIterator<Job> iterator(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new JobMongoDBIterator(mongoCursor, null, jobConverter, this, dbAdaptorFactory.getCatalogFileDBAdaptor(), options);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, options);
+        return new JobCatalogMongoDBIterator(mongoCursor, null, jobConverter, this, dbAdaptorFactory.getCatalogFileDBAdaptor(), options);
     }
 
     @Override
@@ -554,17 +538,17 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new JobMongoDBIterator(mongoCursor, null, null, this, dbAdaptorFactory.getCatalogFileDBAdaptor(), options);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, queryOptions);
+        return new JobCatalogMongoDBIterator(mongoCursor, null, null, this, dbAdaptorFactory.getCatalogFileDBAdaptor(), options);
     }
 
     @Override
     public DBIterator<Job> iterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         query.put(PRIVATE_STUDY_UID, studyUid);
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, user);
-        return new JobMongoDBIterator(mongoCursor, null, jobConverter, this, dbAdaptorFactory.getCatalogFileDBAdaptor(), options, studyUid,
-                user);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, options, user);
+        return new JobCatalogMongoDBIterator(mongoCursor, null, jobConverter, this, dbAdaptorFactory.getCatalogFileDBAdaptor(), options,
+                studyUid, user);
     }
 
     @Override
@@ -574,16 +558,17 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         queryOptions.put(NATIVE_QUERY, true);
 
         query.put(PRIVATE_STUDY_UID, studyUid);
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, user);
-        return new JobMongoDBIterator(mongoCursor, null, null, this, dbAdaptorFactory.getCatalogFileDBAdaptor(), options, studyUid, user);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, queryOptions, user);
+        return new JobCatalogMongoDBIterator(mongoCursor, null, null, this, dbAdaptorFactory.getCatalogFileDBAdaptor(), options, studyUid,
+                user);
     }
 
-    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options)
+    private MongoDBIterator<Document> getMongoCursor(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return getMongoCursor(query, options, null);
     }
 
-    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options, String user)
+    private MongoDBIterator<Document> getMongoCursor(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
         QueryOptions qOptions;
@@ -596,9 +581,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         logger.debug("Job get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return jobCollection.nativeQuery().find(bson, qOptions).iterator();
+            return jobCollection.nativeQuery().find(bson, qOptions);
         } else {
-            return deletedJobCollection.nativeQuery().find(bson, qOptions).iterator();
+            return deletedJobCollection.nativeQuery().find(bson, qOptions);
         }
     }
 

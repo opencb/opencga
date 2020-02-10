@@ -12,10 +12,7 @@ import org.opencb.opencga.catalog.db.mongodb.CohortMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.FileMongoDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.stats.solr.converters.CatalogCohortToSolrCohortConverter;
-import org.opencb.opencga.catalog.stats.solr.converters.CatalogFileToSolrFileConverter;
-import org.opencb.opencga.catalog.stats.solr.converters.CatalogSampleToSolrSampleConverter;
-import org.opencb.opencga.catalog.stats.solr.converters.SolrConverterUtil;
+import org.opencb.opencga.catalog.stats.solr.converters.*;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.file.File;
@@ -114,11 +111,11 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
     }
 
     @Test
-    public void testIndividusalIterator() throws CatalogException, SolrServerException, IOException {
+    public void testIndividualIterator() throws CatalogException, SolrServerException, IOException {
 
         QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, "true");
 //        queryOptions.add("limit", 2);
-        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
+        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.UUID.key(),
                 IndividualDBAdaptor.QueryParams.STUDY_UID.key(), IndividualDBAdaptor.QueryParams.MULTIPLES.key(),
                 IndividualDBAdaptor.QueryParams.SEX.key(), IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(),
                 IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
@@ -154,8 +151,7 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
         study.getAttributes().put("OPENCGA_ACL", studyAcls);
 
         QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, true);
-        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.ID.key(),
-
+        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(SampleDBAdaptor.QueryParams.UUID.key(),
                 SampleDBAdaptor.QueryParams.STUDY_UID.key(), SampleDBAdaptor.QueryParams.SOURCE.key(),
                 SampleDBAdaptor.QueryParams.INDIVIDUAL.key(), SampleDBAdaptor.QueryParams.RELEASE.key(),
                 SampleDBAdaptor.QueryParams.VERSION.key(), SampleDBAdaptor.QueryParams.CREATION_DATE.key(),
@@ -198,10 +194,14 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
 
     @Test
     public void testInsertFiles() throws CatalogException, SolrServerException, IOException {
+        Map<String, Set<String>> studyAcls =
+                SolrConverterUtil.parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
+        // We replace the current studyAcls for the parsed one
+        study.getAttributes().put("OPENCGA_ACL", studyAcls);
 
         QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, "true");
         //queryOptions.put("nativeQuery", true);
-        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
+        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.UUID.key(),
                 FileDBAdaptor.QueryParams.NAME.key(), FileDBAdaptor.QueryParams.STUDY_UID.key(),
                 FileDBAdaptor.QueryParams.TYPE.key(), FileDBAdaptor.QueryParams.FORMAT.key(),
                 FileDBAdaptor.QueryParams.CREATION_DATE.key(), FileDBAdaptor.QueryParams.BIOFORMAT.key(),
@@ -209,18 +209,24 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 FileDBAdaptor.QueryParams.EXTERNAL.key(), FileDBAdaptor.QueryParams.SIZE.key(),
                 FileDBAdaptor.QueryParams.SOFTWARE.key(), FileDBAdaptor.QueryParams.EXPERIMENT.key(),
                 FileDBAdaptor.QueryParams.RELATED_FILES.key(), FileDBAdaptor.QueryParams.SAMPLE_UIDS.key()));
+        queryOptions.append(DBAdaptor.INCLUDE_ACLS, true);
 
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
         FileDBAdaptor fileDBAdaptor = factory.getCatalogFileDBAdaptor();
         DBIterator<File> fileDBIterator = fileDBAdaptor.iterator(new Query(), queryOptions);
-//        catalogSolrManager.insertCatalogCollection(fileDBIterator, new CatalogFileToSolrFileConverter(), CatalogSolrManager.FILE_SOLR_COLLECTION);
+        catalogSolrManager.insertCatalogCollection(fileDBIterator, new CatalogFileToSolrFileConverter(study),
+                CatalogSolrManager.FILE_SOLR_COLLECTION);
     }
 
     @Test
     public void testInsertIndividuals() throws CatalogException, SolrServerException, IOException {
+        Map<String, Set<String>> studyAcls =
+                SolrConverterUtil.parseInternalOpenCGAAcls((List<Map<String, Object>>) study.getAttributes().get("OPENCGA_ACL"));
+        // We replace the current studyAcls for the parsed one
+        study.getAttributes().put("OPENCGA_ACL", studyAcls);
 
         QueryOptions queryOptions = new QueryOptions(FLATTENED_ANNOTATIONS, "true");
-        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.ID.key(),
+        queryOptions.put(QueryOptions.INCLUDE, Arrays.asList(IndividualDBAdaptor.QueryParams.UUID.key(),
                 IndividualDBAdaptor.QueryParams.STUDY_UID.key(), IndividualDBAdaptor.QueryParams.MULTIPLES.key(),
                 IndividualDBAdaptor.QueryParams.SEX.key(), IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(),
                 IndividualDBAdaptor.QueryParams.ETHNICITY.key(), IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
@@ -229,11 +235,13 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
                 IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), IndividualDBAdaptor.QueryParams.PHENOTYPES.key(),
                 IndividualDBAdaptor.QueryParams.SAMPLE_UIDS.key(), IndividualDBAdaptor.QueryParams.PARENTAL_CONSANGUINITY.key(),
                 IndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()));
+        queryOptions.append(DBAdaptor.INCLUDE_ACLS, true);
+
         MongoDBAdaptorFactory factory = new MongoDBAdaptorFactory(catalogManager.getConfiguration());
         IndividualDBAdaptor individualDBAdaptor = factory.getCatalogIndividualDBAdaptor();
         DBIterator<Individual> individualDBIterator = individualDBAdaptor.iterator(new Query(), queryOptions);
-//        catalogSolrManager.insertCatalogCollection(individualDBIterator, new CatalogIndividualToSolrIndividualConverter(),
-//                CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
+        catalogSolrManager.insertCatalogCollection(individualDBIterator, new CatalogIndividualToSolrIndividualConverter(study),
+                CatalogSolrManager.INDIVIDUAL_SOLR_COLLECTION);
     }
 
     @Test
@@ -246,7 +254,7 @@ public class CatalogSolrManagerTest extends AbstractSolrManagerTest {
         study.getAttributes().put("OPENCGA_ACL", studyAcls);
 
         QueryOptions queryOptions = new QueryOptions()
-                .append(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.ID.key(), CohortDBAdaptor.QueryParams.NAME.key(),
+                .append(QueryOptions.INCLUDE, Arrays.asList(CohortDBAdaptor.QueryParams.UUID.key(), CohortDBAdaptor.QueryParams.NAME.key(),
                         CohortDBAdaptor.QueryParams.CREATION_DATE.key(), CohortDBAdaptor.QueryParams.STATUS.key(),
                         CohortDBAdaptor.QueryParams.RELEASE.key(), CohortDBAdaptor.QueryParams.ANNOTATION_SETS.key(),
                         CohortDBAdaptor.QueryParams.SAMPLE_UIDS.key(), CohortDBAdaptor.QueryParams.TYPE.key()))

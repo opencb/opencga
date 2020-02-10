@@ -3,6 +3,7 @@ package org.opencb.opencga.analysis.variant.mutationalSignature;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.tools.OpenCgaTool;
+import org.opencb.opencga.analysis.wrappers.OpenCgaWrapperAnalysis;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.models.common.Enums;
@@ -24,7 +25,6 @@ public class MutationalSignatureAnalysis extends OpenCgaTool {
     private String study;
     private String sampleName;
 
-//    private List<String> checkedSamplesList;
     private Path outputFile;
 
     /**
@@ -64,11 +64,6 @@ public class MutationalSignatureAnalysis extends OpenCgaTool {
                     throw new ToolException("Unable to compute mutational signature analysis. Sample '" + sampleName + "' not found");
                 }
             }
-
-//            // Remove non-indexed samples
-//            Set<String> indexedSamples = variantStorageManager.getIndexedSamples(study, token);
-//            allSamples.removeIf(s -> !indexedSamples.contains(s));
-
         } catch (CatalogException e) {
             throw new ToolException(e);
         }

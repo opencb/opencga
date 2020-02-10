@@ -1,9 +1,12 @@
 package org.opencb.opencga.catalog.stats.solr;
 
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 
@@ -35,6 +38,7 @@ public class SolrExternalResource extends CatalogManagerExternalResource {
         copyConfiguration("file-managed-schema", CatalogSolrManager.FILE_CONF_SET);
         copyConfiguration("individual-managed-schema", CatalogSolrManager.INDIVIDUAL_CONF_SET);
         copyConfiguration("sample-managed-schema", CatalogSolrManager.SAMPLE_CONF_SET);
+        copyConfiguration("job-managed-schema", CatalogSolrManager.JOB_CONF_SET);
 
         String solrHome = rootDir.resolve("solr").toString();
 
@@ -59,6 +63,10 @@ public class SolrExternalResource extends CatalogManagerExternalResource {
 
         request.setCoreName(getConfiguration().getDatabasePrefix() + "_" + CatalogSolrManager.FAMILY_SOLR_COLLECTION);
         request.setConfigSet(CatalogSolrManager.FAMILY_CONF_SET);
+        request.process(solrClient);
+
+        request.setCoreName(getConfiguration().getDatabasePrefix() + "_" + CatalogSolrManager.JOB_SOLR_COLLECTION);
+        request.setConfigSet(CatalogSolrManager.JOB_CONF_SET);
         request.process(solrClient);
     }
 
@@ -114,8 +122,7 @@ public class SolrExternalResource extends CatalogManagerExternalResource {
      * @return an EmbeddedSolrServer with a core created for the given coreName
      * @throws IOException
      */
-    private SolrClient create(final String solrHome, final String configSetHome)
-            throws IOException {
+    private SolrClient create(final String solrHome, final String configSetHome) {
 
         final File solrHomeDir = new File(solrHome);
         if (!solrHomeDir.exists()) {

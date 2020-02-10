@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.mongodb.variant.analysis.stats;
 
-import com.mongodb.client.MongoCursor;
 import org.apache.commons.io.FileUtils;
 import org.bson.Document;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -9,13 +8,14 @@ import org.opencb.biodata.tools.variant.stats.writer.VariantStatsTsvExporter;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.core.tools.variant.VariantStatsAnalysisExecutor;
-import org.opencb.opencga.core.tools.annotations.ToolExecutor;
 import org.opencb.opencga.core.exceptions.ToolException;
 import org.opencb.opencga.core.exceptions.ToolExecutorException;
+import org.opencb.opencga.core.tools.annotations.ToolExecutor;
+import org.opencb.opencga.core.tools.variant.VariantStatsAnalysisExecutor;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.CohortMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -67,18 +67,18 @@ public class VariantStatsMongoDBLocalAnalysisExecutor extends VariantStatsAnalys
 
         QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE,
                 Arrays.asList(VariantField.STUDIES_STATS, VariantField.ANNOTATION));
-        try (MongoCursor<Document> cursor = engine.getDBAdaptor().nativeIterator(query, queryOptions, true);
+        try (MongoDBIterator<Document> it = engine.getDBAdaptor().nativeIterator(query, queryOptions, true);
              OutputStream os = new BufferedOutputStream(FileUtils.openOutputStream(getOutputFile().toFile()))) {
             // reader
             DataReader<Document> reader = i -> {
                 List<Document> documents = new ArrayList<>(i);
-                while (cursor.hasNext() && i-- > 0) {
-                    documents.add(cursor.next());
+                while (it.hasNext() && i-- > 0) {
+                    documents.add(it.next());
                 }
                 return documents;
             };
 
-            MongoDBVariantStatsCalculator calculator = new MongoDBVariantStatsCalculator(studyMetadata, cohorts, "0/0");
+            MongoDBVariantStatsCalculator calculator = new MongoDBVariantStatsCalculator(metadataManager, studyMetadata, cohorts, "0/0");
 
             ProgressLogger progressLogger = new ProgressLogger("Variants processed:");
             Task<Document, Variant> task = calculator.then((Task<VariantStatsWrapper, Variant>) batch -> {

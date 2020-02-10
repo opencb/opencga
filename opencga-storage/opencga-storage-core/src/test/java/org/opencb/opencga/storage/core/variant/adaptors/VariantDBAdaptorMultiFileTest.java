@@ -108,6 +108,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     }
 
     protected VariantQueryResult<Variant> query(Query query, QueryOptions options) {
+        options = options == null ? QueryOptions.empty() : options;
         query = variantStorageEngine.preProcessQuery(query, options);
         return dbAdaptor.get(query, options);
     }

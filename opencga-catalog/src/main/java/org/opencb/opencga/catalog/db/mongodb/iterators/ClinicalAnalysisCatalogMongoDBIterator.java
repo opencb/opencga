@@ -1,10 +1,10 @@
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
-import com.mongodb.client.MongoCursor;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
@@ -20,7 +20,7 @@ import java.util.*;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.NATIVE_QUERY;
 
-public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
+public class ClinicalAnalysisCatalogMongoDBIterator<E> extends CatalogMongoDBIterator<E> {
 
     private long studyUid;
     private String user;
@@ -39,13 +39,13 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
     private static final String UID = ClinicalAnalysisDBAdaptor.QueryParams.UID.key();
     private static final String VERSION = FamilyDBAdaptor.QueryParams.VERSION.key();
 
-    public ClinicalAnalysisMongoDBIterator(MongoCursor mongoCursor, GenericDocumentComplexConverter<E> converter,
-                                           DBAdaptorFactory dbAdaptorFactory, QueryOptions options) {
+    public ClinicalAnalysisCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, GenericDocumentComplexConverter<E> converter,
+                                                  DBAdaptorFactory dbAdaptorFactory, QueryOptions options) {
         this(mongoCursor, converter, dbAdaptorFactory, 0, null, options);
     }
 
-    public ClinicalAnalysisMongoDBIterator(MongoCursor mongoCursor, GenericDocumentComplexConverter<E> converter,
-                                           DBAdaptorFactory dbAdaptorFactory, long studyUid, String user, QueryOptions options) {
+    public ClinicalAnalysisCatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, GenericDocumentComplexConverter<E> converter,
+                                                  DBAdaptorFactory dbAdaptorFactory, long studyUid, String user, QueryOptions options) {
         super(mongoCursor, converter);
 
         this.user = user;
@@ -57,7 +57,7 @@ public class ClinicalAnalysisMongoDBIterator<E> extends MongoDBIterator<E>  {
         this.interpretationQueryOptions = createInnerQueryOptions(ClinicalAnalysisDBAdaptor.QueryParams.INTERPRETATIONS.key(), false);
 
         this.clinicalAnalysisListBuffer= new LinkedList<>();
-        this.logger = LoggerFactory.getLogger(ClinicalAnalysisMongoDBIterator.class);
+        this.logger = LoggerFactory.getLogger(ClinicalAnalysisCatalogMongoDBIterator.class);
     }
 
     @Override

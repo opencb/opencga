@@ -90,7 +90,7 @@ public class AbstractMongoDBAdaptor<T> {
 
     protected Iterator<T> iterator(Bson query, QueryOptions options) {
         return Iterators.transform(
-                collection.nativeQuery().find(query, options).iterator(),
+                collection.nativeQuery().find(query, options),
                 converter::convertToDataModelType);
     }
 
