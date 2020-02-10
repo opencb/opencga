@@ -17,7 +17,6 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import org.apache.commons.lang3.NotImplementedException;
@@ -29,11 +28,12 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.ClinicalAnalysisDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ClinicalAnalysisConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.ClinicalAnalysisMongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.ClinicalAnalysisCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -291,8 +291,8 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
     @Override
     public DBIterator<ClinicalAnalysis> iterator(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options);
-        return new ClinicalAnalysisMongoDBIterator<>(mongoCursor, clinicalConverter, dbAdaptorFactory, options);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, options);
+        return new ClinicalAnalysisCatalogMongoDBIterator<>(mongoCursor, clinicalConverter, dbAdaptorFactory, options);
     }
 
     @Override
@@ -301,16 +301,16 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions);
-        return new ClinicalAnalysisMongoDBIterator(mongoCursor, null, dbAdaptorFactory, options);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, queryOptions);
+        return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, null, dbAdaptorFactory, options);
     }
 
     @Override
     public DBIterator<ClinicalAnalysis> iterator(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         query.put(PRIVATE_STUDY_UID, studyUid);
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, options, user);
-        return new ClinicalAnalysisMongoDBIterator(mongoCursor, clinicalConverter, dbAdaptorFactory, studyUid, user, options);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, options, user);
+        return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, clinicalConverter, dbAdaptorFactory, studyUid, user, options);
     }
 
     @Override
@@ -320,16 +320,16 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         queryOptions.put(NATIVE_QUERY, true);
 
         query.put(PRIVATE_STUDY_UID, studyUid);
-        MongoCursor<Document> mongoCursor = getMongoCursor(query, queryOptions, user);
-        return new ClinicalAnalysisMongoDBIterator(mongoCursor, null, dbAdaptorFactory, studyUid, user, options);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(query, queryOptions, user);
+        return new ClinicalAnalysisCatalogMongoDBIterator(mongoCursor, null, dbAdaptorFactory, studyUid, user, options);
     }
 
-    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options)
+    private MongoDBIterator<Document> getMongoCursor(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return getMongoCursor(query, options, null);
     }
 
-    private MongoCursor<Document> getMongoCursor(Query query, QueryOptions options, String user)
+    private MongoDBIterator<Document> getMongoCursor(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
         QueryOptions qOptions;
@@ -341,7 +341,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         qOptions = removeInnerProjections(qOptions, QueryParams.INTERPRETATIONS.key());
 
         logger.debug("Clinical analysis query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return clinicalCollection.nativeQuery().find(bson, qOptions).iterator();
+        return clinicalCollection.nativeQuery().find(bson, qOptions);
     }
 
     @Override

@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
@@ -30,6 +29,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.utils.CollectionUtils;
 import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationDBAdaptor;
@@ -40,9 +40,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.study.PermissionRule;
 import org.opencb.opencga.core.models.study.Study;
-import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
 
@@ -669,7 +669,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key(), PERMISSION_RULES_APPLIED, PRIVATE_UID));
-        MongoCursor<Document> iterator = collection.nativeQuery().find(query, options).iterator();
+        MongoDBIterator<Document> iterator = collection.nativeQuery().find(query, options);
         while (iterator.hasNext()) {
             Document myDocument = iterator.next();
             Set<String> effectivePermissions = new HashSet<>();
@@ -757,7 +757,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key(), PERMISSION_RULES_APPLIED, PRIVATE_UID));
-        MongoCursor<Document> iterator = collection.nativeQuery().find(query, options).iterator();
+        MongoDBIterator<Document> iterator = collection.nativeQuery().find(query, options);
         while (iterator.hasNext()) {
             Document myDocument = iterator.next();
             Set<String> effectivePermissions = new HashSet<>();

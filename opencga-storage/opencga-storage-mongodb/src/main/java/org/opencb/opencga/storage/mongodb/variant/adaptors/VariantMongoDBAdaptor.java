@@ -18,8 +18,6 @@ package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
 import com.mongodb.BasicDBList;
 import com.mongodb.MongoClient;
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import htsjdk.variant.vcf.VCFConstants;
@@ -35,13 +33,10 @@ import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.commons.datastore.mongodb.MongoDataStore;
-import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.commons.datastore.mongodb.MongoPersistentCursor;
+import org.opencb.commons.datastore.mongodb.*;
 import org.opencb.opencga.core.response.VariantQueryResult;
-import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.ProjectMetadata;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
@@ -233,15 +228,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private void removeFilesFromStageCollection(Bson studiesToRemoveQuery, Integer studyId, List<Integer> fileIds) {
         int batchSize = 500;
-        FindIterable<Document> findIterable = getVariantsCollection()
-                .nativeQuery()
-                .find(studiesToRemoveQuery, Projections.include("_id"), new QueryOptions())
-                .batchSize(batchSize);
 
         logger.info("Remove files from stage collection - step 1/3"); // Remove study if only contains removed files
         MongoDBCollection stageCollection = getStageCollection(studyId);
         int updatedStageDocuments = 0;
-        try (MongoCursor<Document> cursor = findIterable.iterator()) {
+        try (MongoDBIterator<Document> cursor = getVariantsCollection()
+                .nativeQuery()
+                .find(studiesToRemoveQuery, Projections.include("_id"), new QueryOptions(MongoDBCollection.BATCH_SIZE, batchSize))) {
             List<String> ids = new ArrayList<>(batchSize);
             int i = 0;
             while (cursor.hasNext()) {
@@ -456,7 +449,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public long cleanTrash(long timeStamp) {
         MongoDBCollection collection = getTrashCollection();
         // Try to get one variant beyond the ts. If exists, remove by query. Otherwise, remove the whole collection.
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.LIMIT, 1).append(QueryOptions.SKIP_COUNT, true);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.LIMIT, 1);
         int results = collection.find(gt(DocumentToTrashVariantConverter.TIMESTAMP_FIELD, timeStamp), queryOptions).getNumResults();
 
         if (results > 0) {
@@ -488,17 +481,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             DataResult<Variant> result = new DataResult<>(0, Collections.emptyList(), 0, Collections.emptyList(), -1);
             return addSamplesMetadataIfRequested(result, query, options, getMetadataManager());
         }
-        options.put(QueryOptions.SKIP_COUNT, !options.getBoolean(QueryOptions.COUNT));
 
         VariantQueryFields selectVariantElements = VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager);
         Document mongoQuery = queryParser.parseQuery(query);
         Document projection = queryParser.createProjection(query, options, selectVariantElements);
 
         if (options.getBoolean("explain", false)) {
-            Document explain = variantsCollection.nativeQuery()
-                    .find(mongoQuery, projection, options)
-                    .modifiers(new Document("$explain", true))
-                    .first();
+            Document explain = variantsCollection.nativeQuery().explain(mongoQuery, projection, options);
             logger.debug("MongoDB Explain = {}", explain.toJson(new JsonWriterSettings(JsonMode.SHELL, true)));
         }
 
@@ -644,7 +633,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (options == null) {
             options = new QueryOptions();
         }
+        return iteratorFinal(query, options);
+    }
 
+    private VariantDBIterator iteratorFinal(final Query query, final QueryOptions options) {
         VariantQueryFields selectVariantElements = VariantQueryUtils.parseVariantQueryFields(query, options, metadataManager);
         Document mongoQuery = queryParser.parseQuery(query);
         Document projection = queryParser.createProjection(query, options, selectVariantElements);
@@ -656,8 +648,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 || options.containsKey(QueryOptions.LIMIT)
                 || !options.getBoolean(QueryOptions.SORT, false)) {
             StopWatch stopWatch = StopWatch.createStarted();
-            FindIterable<Document> dbCursor = variantsCollection.nativeQuery().find(mongoQuery, projection, options);
-            VariantMongoDBIterator dbIterator = new VariantMongoDBIterator(dbCursor, converter);
+            VariantMongoDBIterator dbIterator = new VariantMongoDBIterator(
+                    () -> variantsCollection.nativeQuery().find(mongoQuery, projection, options), converter);
             dbIterator.setTimeFetching(dbIterator.getTimeFetching() + stopWatch.getNanoTime());
             return dbIterator;
         } else {
@@ -666,7 +658,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
     }
 
-    public MongoCursor<Document> nativeIterator(Query query, QueryOptions options, boolean persistent) {
+    public MongoDBIterator<Document> nativeIterator(Query query, QueryOptions options, boolean persistent) {
         if (query == null) {
             query = new Query();
         }
@@ -681,10 +673,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         if (persistent) {
             logger.debug("Using mongodb persistent iterator");
-            return new MongoPersistentCursor(variantsCollection, mongoQuery, projection, options);
+            return new MongoDBIterator<>(new MongoPersistentCursor(variantsCollection, mongoQuery, projection, options), -1);
         } else {
-            FindIterable<Document> dbCursor = variantsCollection.nativeQuery().find(mongoQuery, projection, options);
-            return dbCursor.iterator();
+            return variantsCollection.nativeQuery().find(mongoQuery, projection, options);
         }
     }
 

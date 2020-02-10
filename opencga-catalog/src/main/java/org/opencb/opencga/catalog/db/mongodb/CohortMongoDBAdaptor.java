@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
@@ -27,12 +26,13 @@ import org.bson.conversions.Bson;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.mongodb.converters.AnnotableConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.CohortConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.CohortMongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.CohortCatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -591,9 +591,9 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
     DBIterator<Cohort> iterator(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
-        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, options);
-        return new CohortMongoDBIterator(mongoCursor, clientSession, cohortConverter, null, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
-                options);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options);
+        return new CohortCatalogMongoDBIterator(mongoCursor, clientSession, cohortConverter, null,
+                dbAdaptorFactory.getCatalogSampleDBAdaptor(), options);
     }
 
     @Override
@@ -602,8 +602,8 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         queryOptions.put(NATIVE_QUERY, true);
 
-        MongoCursor<Document> mongoCursor = getMongoCursor(null, query, queryOptions);
-        return new CohortMongoDBIterator(mongoCursor, null, null, null, dbAdaptorFactory.getCatalogSampleDBAdaptor(), options);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, queryOptions);
+        return new CohortCatalogMongoDBIterator(mongoCursor, null, null, null, dbAdaptorFactory.getCatalogSampleDBAdaptor(), options);
     }
 
     @Override
@@ -615,12 +615,12 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
     DBIterator<Cohort> iterator(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         query.put(PRIVATE_STUDY_UID, studyUid);
-        MongoCursor<Document> mongoCursor = getMongoCursor(clientSession, query, options, user);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(clientSession, query, options, user);
         Document studyDocument = getStudyDocument(clientSession, studyUid);
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.name(), CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name());
 
-        return new CohortMongoDBIterator<>(mongoCursor, clientSession, cohortConverter, iteratorFilter,
+        return new CohortCatalogMongoDBIterator<>(mongoCursor, clientSession, cohortConverter, iteratorFilter,
                 dbAdaptorFactory.getCatalogSampleDBAdaptor(), studyUid, user, options);
     }
 
@@ -631,21 +631,21 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
         queryOptions.put(NATIVE_QUERY, true);
 
         query.put(PRIVATE_STUDY_UID, studyUid);
-        MongoCursor<Document> mongoCursor = getMongoCursor(null, query, queryOptions, user);
+        MongoDBIterator<Document> mongoCursor = getMongoCursor(null, query, queryOptions, user);
         Document studyDocument = getStudyDocument(null, studyUid);
         Function<Document, Document> iteratorFilter = (d) -> filterAnnotationSets(studyDocument, d, user,
                 StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS.name(), CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name());
 
-        return new CohortMongoDBIterator(mongoCursor, null, null, iteratorFilter, dbAdaptorFactory.getCatalogSampleDBAdaptor(), studyUid,
-                user, options);
+        return new CohortCatalogMongoDBIterator(mongoCursor, null, null, iteratorFilter, dbAdaptorFactory.getCatalogSampleDBAdaptor(),
+                studyUid, user, options);
     }
 
-    private MongoCursor<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
+    private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         return getMongoCursor(clientSession, query, options, null);
     }
 
-    private MongoCursor<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)
+    private MongoDBIterator<Document> getMongoCursor(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Bson bson = parseQuery(query, user);
 
@@ -661,9 +661,9 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
         logger.debug("Cohort query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return cohortCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+            return cohortCollection.nativeQuery().find(clientSession, bson, qOptions);
         } else {
-            return deletedCohortCollection.nativeQuery().find(clientSession, bson, qOptions).iterator();
+            return deletedCohortCollection.nativeQuery().find(clientSession, bson, qOptions);
         }
     }
 

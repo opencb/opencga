@@ -1038,7 +1038,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
     }
 
     public DataResult<Long> count(Query query) throws StorageEngineException {
-        query = preProcessQuery(query, null);
+        query = preProcessQuery(query, QueryOptions.empty());
         VariantQueryExecutor variantQueryExecutor = getVariantQueryExecutor(query, new QueryOptions(QueryOptions.COUNT, true));
         return variantQueryExecutor.count(query);
     }

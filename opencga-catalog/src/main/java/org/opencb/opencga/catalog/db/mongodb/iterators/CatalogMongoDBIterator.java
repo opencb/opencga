@@ -17,11 +17,11 @@
 package org.opencb.opencga.catalog.db.mongodb.iterators;
 
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.MongoCursor;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor;
 
@@ -34,9 +34,9 @@ import java.util.function.Function;
 /**
  * Created by imedina on 27/01/16.
  */
-public class MongoDBIterator<E> implements DBIterator<E> {
+public class CatalogMongoDBIterator<E> implements DBIterator<E> {
 
-    protected MongoCursor mongoCursor;
+    protected MongoDBIterator<Document> mongoCursor;
     protected ClientSession clientSession;
     protected GenericDocumentComplexConverter<E> converter;
     protected Function<Document, Document> filter;
@@ -45,21 +45,22 @@ public class MongoDBIterator<E> implements DBIterator<E> {
 
     private static final String SEPARATOR = "__";
 
-    public MongoDBIterator(MongoCursor mongoCursor) { //Package protected
+    public CatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor) { //Package protected
         this(mongoCursor, null, null, null);
     }
 
-    public MongoDBIterator(MongoCursor mongoCursor, GenericDocumentComplexConverter<E> converter) { //Package protected
+    public CatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, GenericDocumentComplexConverter<E> converter) { //Package protected
         this(mongoCursor, null, converter, null);
     }
 
     @Deprecated
-    public MongoDBIterator(MongoCursor mongoCursor, GenericDocumentComplexConverter<E> converter, Function<Document, Document> filter) {
+    public CatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, GenericDocumentComplexConverter<E> converter,
+                                  Function<Document, Document> filter) {
         this(mongoCursor, null, converter, filter);
     }
 
-    public MongoDBIterator(MongoCursor mongoCursor, ClientSession clientSession, GenericDocumentComplexConverter<E> converter,
-                           Function<Document, Document> filter) {
+    public CatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
+                                  GenericDocumentComplexConverter<E> converter, Function<Document, Document> filter) {
         //Package protected
         this.mongoCursor = mongoCursor;
         this.clientSession = clientSession;
@@ -74,7 +75,7 @@ public class MongoDBIterator<E> implements DBIterator<E> {
 
     @Override
     public E next() {
-        Document next = (Document) mongoCursor.next();
+        Document next = mongoCursor.next();
 
         if (filter != null) {
             next = filter.apply(next);

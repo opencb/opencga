@@ -18,7 +18,6 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.ClientSession;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import org.apache.commons.lang3.NotImplementedException;
@@ -29,17 +28,18 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.UserConverter;
-import org.opencb.opencga.catalog.db.mongodb.iterators.MongoDBIterator;
+import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.user.User;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -531,15 +531,15 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     @Override
     public DBIterator<User> iterator(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        MongoCursor<Document> iterator = userCollection.nativeQuery().find(bson, options).iterator();
-        return new MongoDBIterator<>(iterator, userConverter);
+        MongoDBIterator<Document> iterator = userCollection.nativeQuery().find(bson, options);
+        return new CatalogMongoDBIterator<>(iterator, userConverter);
     }
 
     @Override
     public DBIterator<Document> nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        MongoCursor<Document> iterator = userCollection.nativeQuery().find(bson, options).iterator();
-        return new MongoDBIterator<>(iterator);
+        MongoDBIterator<Document> iterator = userCollection.nativeQuery().find(bson, options);
+        return new CatalogMongoDBIterator<>(iterator);
     }
 
     @Override

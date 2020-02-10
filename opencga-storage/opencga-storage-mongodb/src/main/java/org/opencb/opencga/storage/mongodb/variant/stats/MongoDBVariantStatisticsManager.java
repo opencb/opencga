@@ -1,12 +1,12 @@
 package org.opencb.opencga.storage.mongodb.variant.stats;
 
-import com.mongodb.client.MongoCursor;
 import org.bson.Document;
 import org.opencb.biodata.models.variant.metadata.Aggregation;
 import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.ProgressLogger;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.mongodb.MongoDBIterator;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
@@ -83,12 +83,12 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
         QueryOptions readerOptions = VariantStatisticsManager.buildIncludeExclude().append(QueryOptions.SORT, true);
         logger.info("ReaderQueryOptions: " + readerOptions.toJson());
 
-        try (MongoCursor<Document> cursor = ((VariantMongoDBAdaptor) variantDBAdaptor).nativeIterator(readerQuery, readerOptions, true)) {
+        try (MongoDBIterator<Document> it = ((VariantMongoDBAdaptor) variantDBAdaptor).nativeIterator(readerQuery, readerOptions, true)) {
             // reader
             DataReader<Document> reader = i -> {
                 List<Document> documents = new ArrayList<>(i);
-                while (cursor.hasNext() && i-- > 0) {
-                    documents.add(cursor.next());
+                while (it.hasNext() && i-- > 0) {
+                    documents.add(it.next());
                 }
                 return documents;
             };
