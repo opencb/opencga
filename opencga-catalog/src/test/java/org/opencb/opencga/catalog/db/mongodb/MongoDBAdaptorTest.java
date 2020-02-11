@@ -180,17 +180,17 @@ public class MongoDBAdaptorTest extends GenericTest {
         catalogProjectDBAdaptor.insert(new Project("pr1", "90 GigaGenomes", null, "very long description", "Spain", null, new Status(), "",
                 0, Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), 1), "imedina", null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr1"), null).first(),
-                new Study("name", "Study name", "ph1", Study.Type.CONTROL_SET, "", "", new Status(),
-                        0, Arrays.asList(new Group("@members", Collections.emptyList())),
-                        Arrays.asList(
+                new Study("name", "Study name", "ph1", Study.Type.CONTROL_SET, "", "", null,
+                        new Status(), 0,
+                        Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
                                 new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/", null, "",
                                         new File.FileStatus(File.FileStatus.READY), 1000, 1),
                                 new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", null, "",
                                         new File.FileStatus(File.FileStatus.READY), 1000, 1)
-                        ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                        Collections.emptyList(), new LinkedList<>(), null, null, null, 1, Collections.emptyMap(),
-                        Collections.emptyMap()
-                ), null);
+                        ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
+                        new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null, 1,
+                        Collections.emptyMap(),
+                        Collections.emptyMap()), null);
 
         user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", null, User.UserStatus.READY, "", 0, 50000,
                 Collections.emptyList(), new HashMap<>(), new HashMap<>());
@@ -199,8 +199,8 @@ public class MongoDBAdaptorTest extends GenericTest {
         catalogProjectDBAdaptor.insert(new Project("pr", "lncRNAs", null, "My description", "My org", null, new Status(), "", 0,
                 Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap(), 1), "pfurio", null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
-                new Study("spongeScan", "spongeScan", "sponges", Study.Type.COLLECTION, "", "", new Status(), 0,
-                        Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
+                new Study("spongeScan", "spongeScan", "sponges", Study.Type.COLLECTION, "", "", null, new Status(),
+                        0, Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
                         new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
                                 null, "Description", new File.FileStatus(File.FileStatus.READY), 10, 1),
                         new File("file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
@@ -212,14 +212,14 @@ public class MongoDBAdaptorTest extends GenericTest {
                         new File("alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
                                 "data/alignment.bam", null, "Tophat alignment file",
                                 new File.FileStatus(File.FileStatus.READY), 5000, 1)
-                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                        new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null, 1,
-                        Collections.emptyMap(), Collections.emptyMap()
-                ), null);
+                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
+                        new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null,
+                        1, Collections.emptyMap(),
+                        Collections.emptyMap()), null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
-                new Study("mineco", "MINECO", "mineco", Study.Type.COLLECTION, "", "", new Status(), 0,
-                        Arrays.asList(new Group("@members", Collections.emptyList())),
-                        Arrays.asList(
+                new Study("mineco", "MINECO", "mineco", Study.Type.COLLECTION, "", "", null, new Status(),
+                        0,
+                        Arrays.asList(new Group("@members", Collections.emptyList())), Arrays.asList(
                                 new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
                                         null, "Description", new File.FileStatus(File.FileStatus.READY), 10, 1),
                                 new File("m_file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
@@ -228,9 +228,9 @@ public class MongoDBAdaptorTest extends GenericTest {
                                 new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
                                         "data/alignment.bam", null, "Tophat alignment file",
                                         new File.FileStatus(File.FileStatus.READY), 5000, 1)
-                        ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                        new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null, 1,
-                        Collections.emptyMap(), Collections.emptyMap()), null);
+                        ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
+                        new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null,
+                        1, Collections.emptyMap(), Collections.emptyMap()), null);
 
         QueryOptions options = new QueryOptions("includeStudies", true);
         options.put("includeFiles", true);

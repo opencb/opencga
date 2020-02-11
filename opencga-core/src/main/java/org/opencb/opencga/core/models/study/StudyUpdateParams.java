@@ -8,6 +8,7 @@ public class StudyUpdateParams {
     private String alias;
     private Study.Type type;
     private String description;
+    private String webhook;
 
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
@@ -15,12 +16,13 @@ public class StudyUpdateParams {
     public StudyUpdateParams() {
     }
 
-    public StudyUpdateParams(String name, String alias, Study.Type type, String description, Map<String, Object> stats,
+    public StudyUpdateParams(String name, String alias, Study.Type type, String description, String webhook, Map<String, Object> stats,
                              Map<String, Object> attributes) {
         this.name = name;
         this.alias = alias;
         this.type = type;
         this.description = description;
+        this.webhook = webhook;
         this.stats = stats;
         this.attributes = attributes;
     }
@@ -32,6 +34,7 @@ public class StudyUpdateParams {
         sb.append(", alias='").append(alias).append('\'');
         sb.append(", type=").append(type);
         sb.append(", description='").append(description).append('\'');
+        sb.append(", webhook=").append(webhook);
         sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -71,6 +74,15 @@ public class StudyUpdateParams {
 
     public StudyUpdateParams setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getWebhook() {
+        return webhook;
+    }
+
+    public StudyUpdateParams setWebhook(String webhook) {
+        this.webhook = webhook;
         return this;
     }
 

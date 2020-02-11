@@ -76,7 +76,8 @@ public class StudyWSServer extends OpenCGAWSServer {
 
             String studyId = StringUtils.isEmpty(study.getId()) ? study.getAlias() : study.getId();
             return createOkResponse(catalogManager.getStudyManager().create(project, studyId, study.getAlias(), study.getName(), study.getType(),
-                    null, study.getDescription(), null, null, null, null, null, study.getStats(), study.getAttributes(), queryOptions, token));
+                    null, study.getDescription(), study.getWebhook(), null, null, null, null, null, study.getStats(), study.getAttributes(),
+                    queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -135,8 +136,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                  @ApiParam(value = "JSON containing the params to be updated.", required = true) StudyUpdateParams updateParams) {
         try {
             ObjectUtils.defaultIfNull(updateParams, new StudyUpdateParams());
-            DataResult queryResult = catalogManager.getStudyManager().update(studyStr,
-                    new ObjectMap(getUpdateObjectMapper().writeValueAsString(updateParams)), null, token);
+            DataResult queryResult = catalogManager.getStudyManager().update(studyStr, updateParams, null, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
