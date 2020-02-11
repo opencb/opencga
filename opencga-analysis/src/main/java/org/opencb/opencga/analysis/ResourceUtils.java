@@ -11,7 +11,7 @@ import java.util.List;
 
 public class ResourceUtils {
 
-    public static final String URL = "http://bioinfo.hpc.cam.ac.uk/opencb/opencga/analysis/";
+    public static final String URL = "http://resources.opencb.org/opencb/opencga/analysis/";
 
     public enum Authority {
         Ensembl, NCBI
