@@ -110,6 +110,14 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
 //                assert builder.getGenotypeFreqCount() == stats.getGenotypeFreq().size();
             }
 
+            if (stats.getFilterCount() != null) {
+                builder.putAllFilterCount(stats.getFilterCount());
+                builder.putAllFilterFreq(stats.getFilterFreq());
+            }
+            if (stats.getQualityAvg() != null) {
+                builder.setQualityAvg(stats.getQualityAvg());
+            }
+
             add(put, statsColumn, builder.build().toByteArray());
         }
         return put;

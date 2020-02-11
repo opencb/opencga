@@ -30,11 +30,8 @@ public class VariantStatsFromVariantRowTsvMapper extends VariantRowMapper<NullWr
         cohorts = VariantStatsMapper.getCohorts(context.getConfiguration());
         calculators = new LinkedHashMap<>(cohorts.size());
 
-        VariantTableHelper helper = getHelper();
-
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         StudyMetadata studyMetadata = getStudyMetadata();
-
 
         String unknownGenotype = context.getConfiguration().get(
                 VariantStorageOptions.STATS_DEFAULT_GENOTYPE.key(),
