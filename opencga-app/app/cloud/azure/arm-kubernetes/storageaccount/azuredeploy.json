@@ -1,0 +1,109 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources."
+      }
+    }
+  },
+  "variables": {
+    "storageAccountName": "[concat('storage',uniquestring(resourceGroup().id))]",
+  },
+  "resources": [
+    {
+      "name": "[variables('storageAccountName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2019-06-01",
+      "location": "[parameters('location')]",
+      "properties": {
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "virtualNetworkRules": [
+          ],
+          "ipRules": [
+          ],
+          "defaultAction": "Allow"
+        },
+        "supportsHttpsTrafficOnly": true,
+        "encryption": {
+          "services": {
+            "file": {
+              "enabled": true
+            },
+            "blob": {
+              "enabled": true
+            }
+          },
+          "keySource": "Microsoft.Storage"
+        }
+      },
+      "dependsOn": [
+      ],
+      "sku": {
+        "name": "Premium_LRS",
+        "tier": "Premium"
+      },
+      "kind": "FileStorage",
+      "tags": {
+      }
+    },
+    {
+      "name": "[concat(variables('storageAccountName'), '/default/variants')]",
+      "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+      "apiVersion": "2019-04-01",
+      "properties": {
+        "metadata": {
+        },
+        "shareQuota": 100
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts',variables('storageAccountName'))]"
+
+      ]
+    },
+    {
+      "name": "[concat(variables('storageAccountName'), '/default/conf')]",
+      "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+      "apiVersion": "2019-04-01",
+      "properties": {
+        "metadata": {
+        },
+        "shareQuota": 100
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts',variables('storageAccountName'))]"
+
+      ]
+    },
+    {
+      "name": "[concat(variables('storageAccountName'), '/default/sessions')]",
+      "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+      "apiVersion": "2019-04-01",
+      "properties": {
+        "metadata": {
+        },
+        "shareQuota": 100
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts',variables('storageAccountName'))]"
+
+      ]
+    }
+  ],
+  "outputs": {
+    "accountName": {
+      "type": "string",
+      "value": "[variables('storageAccountName')]"
+    },
+    "accountKey": {
+      "type": "string",
+      "value": "[listKeys(variables('storageAccountName'),'2017-10-01').keys[0].value]"
+    },
+
+  }
+}

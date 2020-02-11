@@ -1,0 +1,188 @@
+# Default values for opencga.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+deploySolr: false
+deployMongo: false
+
+openCGApassword: 
+
+catalog:
+  secretKey:  
+
+hadoop:
+  sshDns: 
+  sshUsername: 
+  sshPassword: 
+
+init:
+  name: init
+  image:
+    # TODO: Currently building from @marrobi's development image. Update once release available.
+    repository: marrobi/opencga-next-init:latest
+
+    pullPolicy: Always
+
+  imagePullSecrets: []
+
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name:
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  resources: 
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+
+rest:
+  name: rest
+  replicaCount: 3
+
+  image:
+    # TODO: Currently building from @j-coll's development image. Update once release available.
+    repository: jcoll/opencga-next:2.0.0-hdp3.1-dev
+    pullPolicy: IfNotPresent
+
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: ""
+
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name:
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  service:
+    # type: ClusterIP
+    type: LoadBalancer
+    port: 80
+
+  ingress:
+    enabled: true
+    annotations:
+      # kubernetes.io/tls-acme: "true"
+    hosts:
+      - host: opencga.local
+        paths: 
+        - /
+    tls: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+
+  resources: 
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    limits:
+      cpu: 1000m
+      memory: 2048Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  nodeSelector: 
+    agentpool: default
+    beta.kubernetes.io/os: linux
+    kubernetes.io/role: agent
+
+  tolerations: []
+
+  affinity: {}
+
+
+
+grpc:
+  name: grpc
+
+master:
+  name: master
+  replicaCount: 1
+
+  image:
+    repository: jcoll/opencga-next:2.0.0-hdp3.1-dev
+    pullPolicy: Always
+
+  imagePullSecrets: []
+
+
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name:
+
+  podSecurityContext: {}
+    # fsGroup: 2000
+
+  securityContext: {}
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    # runAsNonRoot: true
+    # runAsUser: 1000
+
+  resources: 
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+
+  nodeSelector: 
+    agentpool: default
+    beta.kubernetes.io/os: linux
+    kubernetes.io/role: agent
+
+
+  tolerations: []
+
+  affinity: {}
