@@ -44,7 +44,7 @@ public class Job extends PrivateStudyUid {
     private String modificationDate;
 
     private Enums.Priority priority;
-    private Enums.ExecutionStatus status;
+    private JobInternal internal;
 
     private File outDir;
     private List<File> input;    // input files to this job
@@ -69,7 +69,7 @@ public class Job extends PrivateStudyUid {
     }
 
     public Job(String id, String uuid, String description, ToolInfo tool, String userId, String commandLine, Map<String, Object> params,
-               String creationDate, String modificationDate, Enums.Priority priority, Enums.ExecutionStatus status, File outDir,
+               String creationDate, String modificationDate, Enums.Priority priority, JobInternal internal, File outDir,
                List<File> input, List<File> output, List<Job> dependsOn, List<String> tags, ExecutionResult execution, boolean visited,
                File stdout, File stderr, int release, String studyUuid, Map<String, Object> attributes) {
         this.id = id;
@@ -82,7 +82,7 @@ public class Job extends PrivateStudyUid {
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.priority = priority;
-        this.status = status;
+        this.internal = internal != null ? internal : new JobInternal();
         this.outDir = outDir;
         this.input = input;
         this.output = output;
@@ -110,7 +110,7 @@ public class Job extends PrivateStudyUid {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", priority='").append(priority).append('\'');
-        sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", outDir=").append(outDir);
         sb.append(", input=").append(input);
         sb.append(", output=").append(output);
@@ -232,12 +232,12 @@ public class Job extends PrivateStudyUid {
         return this;
     }
 
-    public Enums.ExecutionStatus getStatus() {
-        return status;
+    public JobInternal getInternal() {
+        return internal;
     }
 
-    public Job setStatus(Enums.ExecutionStatus status) {
-        this.status = status;
+    public Job setInternal(JobInternal internal) {
+        this.internal = internal;
         return this;
     }
 

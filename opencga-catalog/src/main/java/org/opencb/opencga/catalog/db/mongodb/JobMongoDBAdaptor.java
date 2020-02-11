@@ -343,7 +343,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         logger.debug("Deleting job {} ({})", jobId, jobUid);
 
         // Add status DELETED
-        jobDocument.put(QueryParams.STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"));
+        jobDocument.put(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"));
 
         // Upsert the document into the DELETED collection
         Bson query = new Document()
@@ -380,9 +380,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         String[] acceptedStringListParams = {QueryParams.TAGS.key()};
         filterStringListParams(parameters, jobParameters, acceptedStringListParams);
 
-        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            jobParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
-            jobParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
+            jobParameters.put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+            jobParameters.put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         if (parameters.containsKey(QueryParams.TOOL.key())) {
@@ -394,11 +394,12 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             }
         }
 
-        if (parameters.containsKey(QueryParams.STATUS.key())) {
-            if (parameters.get(QueryParams.STATUS.key()) instanceof Enums.ExecutionStatus) {
-                jobParameters.put(QueryParams.STATUS.key(), getMongoDBDocument(parameters.get(QueryParams.STATUS.key()), "Job.JobStatus"));
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS.key())) {
+            if (parameters.get(QueryParams.INTERNAL_STATUS.key()) instanceof Enums.ExecutionStatus) {
+                jobParameters.put(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(parameters.get(QueryParams.INTERNAL_STATUS.key()),
+                        "Job.JobStatus"));
             } else {
-                jobParameters.put(QueryParams.STATUS.key(), parameters.get(QueryParams.STATUS.key()));
+                jobParameters.put(QueryParams.INTERNAL_STATUS.key(), parameters.get(QueryParams.INTERNAL_STATUS.key()));
             }
         }
 
@@ -792,7 +793,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
-                    case STATUS_NAME:
+                    case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         queryCopy.put(queryParam.key(),
                                 Status.getPositiveStatus(Enums.ExecutionStatus.STATUS_LIST, queryCopy.getString(queryParam.key())));
@@ -811,9 +812,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case COMMAND_LINE:
                     case VISITED:
                     case RELEASE:
-                    case STATUS:
-                    case STATUS_MSG:
-                    case STATUS_DATE:
+                    case INTERNAL_STATUS:
+                    case INTERNAL_STATUS_MSG:
+                    case INTERNAL_STATUS_DATE:
                     case SIZE:
                     case OUT_DIR_UID:
                     case TMP_OUT_DIR_URI:

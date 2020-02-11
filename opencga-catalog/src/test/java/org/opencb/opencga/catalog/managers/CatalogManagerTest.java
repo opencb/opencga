@@ -42,6 +42,7 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.models.job.JobUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
@@ -712,14 +713,14 @@ public class CatalogManagerTest extends AbstractManagerTest {
         catalogManager.getJobManager().submit(studyId, "command-subcommand", null, Collections.emptyMap(), token);
         catalogManager.getJobManager().submit(studyId, "command-subcommand2", null, Collections.emptyMap(), token);
 
-        catalogManager.getJobManager().create(studyId, new Job().setId("job1").setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE)),
+        catalogManager.getJobManager().create(studyId, new Job().setId("job1").setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE))),
                 QueryOptions.empty(), token);
-        catalogManager.getJobManager().create(studyId, new Job().setId("job2").setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR)),
+        catalogManager.getJobManager().create(studyId, new Job().setId("job2").setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR))),
                 QueryOptions.empty(), token);
-        catalogManager.getJobManager().create(studyId, new Job().setId("job3").setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.UNREGISTERED)),
+        catalogManager.getJobManager().create(studyId, new Job().setId("job3").setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.UNREGISTERED))),
                 QueryOptions.empty(), token);
 
-        query = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.PENDING);
+        query = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.PENDING);
         DataResult<Job> unfinishedJobs = catalogManager.getJobManager().search(String.valueOf(studyId), query, null, token);
         assertEquals(2, unfinishedJobs.getNumResults());
 
@@ -728,7 +729,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         thrown.expectMessage("status different");
         thrown.expect(CatalogException.class);
-        catalogManager.getJobManager().create(studyId, new Job().setId("job5").setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.PENDING)),
+        catalogManager.getJobManager().create(studyId, new Job().setId("job5").setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.PENDING))),
                 QueryOptions.empty(), token);
     }
 
@@ -752,7 +753,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 token);
 
         assertEquals(1, job.getNumResults());
-        assertEquals(Enums.ExecutionStatus.PENDING, job.first().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.PENDING, job.first().getInternal().getStatus().getName());
     }
 
     @Test
@@ -784,13 +785,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 token);
 
         assertEquals(1, job.getNumResults());
-        assertEquals(Enums.ExecutionStatus.PENDING, job.first().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.PENDING, job.first().getInternal().getStatus().getName());
     }
 
     @Test
     public void submitJobWithoutPermissions() throws CatalogException {
         // Check there are no ABORTED jobs
-        Query query = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.ABORTED);
+        Query query = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.ABORTED);
         assertEquals(0, catalogManager.getJobManager().count(studyFqn, query, token).getNumMatches());
 
         // Grant view permissions, but no EXECUTION permission
@@ -813,7 +814,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     @Test
     public void submitJobWithPermissions() throws CatalogException {
         // Check there are no ABORTED jobs
-        Query query = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.ABORTED);
+        Query query = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.ABORTED);
         assertEquals(0, catalogManager.getJobManager().count(studyFqn, query, token).getNumMatches());
 
         // Grant view permissions, but no EXECUTION permission
@@ -823,7 +824,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         OpenCGAResult<Job> search = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, new ObjectMap(),
                 sessionIdUser3);
         assertEquals(1, search.getNumResults());
-        assertEquals(Enums.ExecutionStatus.PENDING, search.first().getStatus().getName());
+        assertEquals(Enums.ExecutionStatus.PENDING, search.first().getInternal().getStatus().getName());
     }
 
     @Test

@@ -179,9 +179,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         this.defaultJobDir = Paths.get(catalogManager.getConfiguration().getJobDir());
 
-        pendingJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.PENDING);
-        queuedJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED);
-        runningJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING);
+        pendingJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.PENDING);
+        queuedJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED);
+        runningJobsQuery = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING);
         // Sort jobs by priority and creation date
         queryOptions = new QueryOptions()
                 .append(QueryOptions.SORT, Arrays.asList(JobDBAdaptor.QueryParams.PRIORITY.key(),
@@ -566,9 +566,9 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
             for (Job tmpJob : job.getDependsOn()) {
-                if (!Enums.ExecutionStatus.DONE.equals(tmpJob.getStatus().getName())) {
-                    if (Enums.ExecutionStatus.ABORTED.equals(tmpJob.getStatus().getName())
-                            || Enums.ExecutionStatus.ERROR.equals(tmpJob.getStatus().getName())) {
+                if (!Enums.ExecutionStatus.DONE.equals(tmpJob.getInternal().getStatus().getName())) {
+                    if (Enums.ExecutionStatus.ABORTED.equals(tmpJob.getInternal().getStatus().getName())
+                            || Enums.ExecutionStatus.ERROR.equals(tmpJob.getInternal().getStatus().getName())) {
                         abortJob(job, "Job '" + tmpJob.getId() + "' it depended on did not finish successfully");
                     }
                     return false;
@@ -581,7 +581,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
     private boolean canBeQueued(String toolId, int maxJobs) {
         Query query = new Query()
-                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED + "," + Enums.ExecutionStatus.RUNNING)
+                .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED + ","
+                        + Enums.ExecutionStatus.RUNNING)
                 .append(JobDBAdaptor.QueryParams.TOOL_ID.key(), toolId);
         long currentJobs = jobsCountByType.computeIfAbsent(toolId, k -> {
             try {
