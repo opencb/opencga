@@ -13,12 +13,12 @@ import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.metadata.VariantStorageMetadataManager;
 import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
-import org.opencb.opencga.storage.core.variant.adaptors.GenotypeClass;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryFields;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.converters.study.HBaseToStudyEntryConverter;
+import org.opencb.opencga.storage.hadoop.variant.gaps.VariantOverlappingStatus;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -101,28 +101,35 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
         private final Set<Integer> sampleIdsSet;
         private final Set<Integer> fileIds;
         private final Map<Integer, Collection<Integer>> samplesInFile;
+        private final boolean statsMultiAllelic;
         private String defaultGenotype;
 
         private HBaseToGenotypeCountConverter(VariantStorageMetadataManager metadataManager,
                                               boolean statsMultiAllelic, String unknownGenotype) {
             super(metadataManager, null);
             sampleIdsSet = new HashSet<>(sampleIds);
-            if (excludeFiles(statsMultiAllelic, unknownGenotype, Aggregation.NONE)) {
+            this.statsMultiAllelic = statsMultiAllelic;
+            if (excludeFiles(this.statsMultiAllelic, unknownGenotype, Aggregation.NONE)) {
                 fileIds = Collections.emptySet();
                 samplesInFile = Collections.emptyMap();
             } else {
-                fileIds = new HashSet<>(sampleIds.size());
-                samplesInFile = new HashMap<>(sampleIds.size());
 
-                metadataManager.sampleMetadataIterator(sm.getId()).forEachRemaining(sampleMetadata -> {
-                    int sampleId = sampleMetadata.getId();
-                    if (sampleIds.contains(sampleId)) {
-                        fileIds.addAll(sampleMetadata.getFiles());
-                        for (Integer file : sampleMetadata.getFiles()) {
-                            samplesInFile.computeIfAbsent(file, f -> new HashSet<>()).add(sampleId);
+                if (this.statsMultiAllelic) {
+                    fileIds = new HashSet<>(sampleIds.size());
+                    samplesInFile = new HashMap<>(sampleIds.size());
+                    metadataManager.sampleMetadataIterator(sm.getId()).forEachRemaining(sampleMetadata -> {
+                        int sampleId = sampleMetadata.getId();
+                        if (sampleIdsSet.contains(sampleId)) {
+                            fileIds.addAll(sampleMetadata.getFiles());
+                            for (Integer file : sampleMetadata.getFiles()) {
+                                samplesInFile.computeIfAbsent(file, f -> new HashSet<>()).add(sampleId);
+                            }
                         }
-                    }
-                });
+                    });
+                } else {
+                    fileIds = metadataManager.getFileIdsFromSampleIds(sm.getId(), sampleIds);
+                    samplesInFile = Collections.emptyMap();
+                }
             }
 
             super.setSelectVariantElements(new VariantQueryFields(sm, sampleIds, Collections.emptyList()));
@@ -136,8 +143,6 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
             AtomicInteger fillMissingColumnValue = new AtomicInteger(-1);
             Map<Integer, String> sampleToGT = new HashMap<>();
             Map<String, List<Integer>> alternateFileMap = new HashMap<>();
-            Map<Integer, String> filterMap = new HashMap<>();
-            Map<Integer, Double> qualityMap = new HashMap<>();
 
             result.walker()
                     .onSample(sample -> {
@@ -165,13 +170,20 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                             if (StringUtils.isNotEmpty(secAlt)) {
                                 alternateFileMap.computeIfAbsent(secAlt, (key) -> new ArrayList<>()).add(fileId);
                             }
-                            String filter = file.getFilter();
-                            if (filter != null) {
-                                filterMap.put(fileId, filter);
-                            }
-                            Double qual = file.getQual();
-                            if (qual != null) {
-                                qualityMap.put(fileId, qual);
+                            if (file.getOverlappingStatus().equals(VariantOverlappingStatus.NONE)) {
+                                String filter = file.getFilter();
+                                // Ensure missing filters are counted
+                                if (StringUtils.isEmpty(filter)) {
+                                    filter = ".";
+                                }
+                                VariantStatsCalculator.addFileFilter(filter, partial.filterCount);
+                                partial.numFileFilterWithVariant++;
+
+                                Double qual = file.getQual();
+                                if (qual != null) {
+                                    partial.qualitySum += qual;
+                                    partial.numFileQualWithVariant++;
+                                }
                             }
                         }
                     })
@@ -179,7 +191,7 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                     .walk();
 
             // If there are multiple different alternates, rearrange genotype
-            if (alternateFileMap.size() > 1) {
+            if (statsMultiAllelic && alternateFileMap.size() > 1) {
                 rearrangeGenotypes(variant, sampleToGT, alternateFileMap);
             }
 
@@ -220,25 +232,6 @@ public class HBaseVariantStatsCalculator extends AbstractPhoenixConverter implem
                     }
                     addGt(gtStrCount, HOM_REF, reference);
                     addGt(gtStrCount, defaultGenotype, unknown);
-                }
-            }
-
-            for (Integer fileId : filesInThisVariant) {
-                for (Integer sampleId : samplesInFile.get(fileId)) {
-                    String gt = sampleToGT.get(sampleId);
-                    if (gt == null && GenotypeClass.MAIN_ALT.test(gt)) {
-                        String filter = filterMap.get(fileId);
-                        if (filter != null) {
-                            VariantStatsCalculator.addFileFilter(filter, partial.filterCount);
-                            partial.numFileFilterWithVariant += 1;
-                        }
-                        Double qual = qualityMap.get(fileId);
-                        if (qual != null) {
-                            partial.qualitySum += qual;
-                            partial.numFileQualWithVariant += 1;
-                        }
-                        break;
-                    }
                 }
             }
 

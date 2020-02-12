@@ -33,44 +33,40 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
 
     private final Map<Integer, CohortMetadata> cohorts;
     private final Map<Integer, Set<Integer>> filesInCohortMap;
-    private final Map<Integer, Set<Integer>> samplesInFileMap;
     private String unknownGenotype;
     private String defaultGenotype;
     private final DocumentToVariantConverter variantConverter;
+    private final boolean multiAllelic;
 
-    public MongoDBVariantStatsCalculator(VariantStorageMetadataManager metadataManager, StudyMetadata studyMetadata,
-                                         Collection<CohortMetadata> cohorts, String unknownGenotype) {
+    public MongoDBVariantStatsCalculator(StudyMetadata studyMetadata, Collection<CohortMetadata> cohorts, String unknownGenotype,
+                                         boolean multiAllelic) {
         this.studyMetadata = studyMetadata;
         this.cohorts = cohorts.stream().collect(Collectors.toMap(CohortMetadata::getId, c -> c));
         this.unknownGenotype = unknownGenotype;
         this.filesInCohortMap = new HashMap<>();
-        this.samplesInFileMap = new HashMap<>();
         variantConverter = new DocumentToVariantConverter();
-        init(metadataManager, studyMetadata);
+        this.multiAllelic = multiAllelic;
+        init(studyMetadata);
     }
 
     public MongoDBVariantStatsCalculator(VariantStorageMetadataManager metadataManager, StudyMetadata studyMetadata,
-                                         Integer[] cohorts, String unknownGenotype) {
+                                         List<Integer> cohorts, String unknownGenotype, boolean multiAllelic) {
         this.studyMetadata = studyMetadata;
         this.cohorts = new HashMap<>();
         this.filesInCohortMap = new HashMap<>();
-        this.samplesInFileMap = new HashMap<>();
         this.variantConverter = new DocumentToVariantConverter();
         for (Object cohort : cohorts) {
             CohortMetadata cohortMetadata = metadataManager.getCohortMetadata(studyMetadata.getId(), cohort);
             this.cohorts.put(cohortMetadata.getId(), cohortMetadata);
         }
+        this.multiAllelic = multiAllelic;
         this.unknownGenotype = unknownGenotype;
-        init(metadataManager, studyMetadata);
+        init(studyMetadata);
     }
 
-    public void init(VariantStorageMetadataManager metadataManager, StudyMetadata studyMetadata) {
+    public void init(StudyMetadata studyMetadata) {
         for (CohortMetadata cohortMetadata : this.cohorts.values()) {
-            Set<Integer> filesInCohort = metadataManager.getFileIdsFromSampleIds(studyMetadata.getId(), cohortMetadata.getSamples());
-            this.filesInCohortMap.put(cohortMetadata.getId(), filesInCohort);
-            for (Integer file : filesInCohort) {
-                samplesInFileMap.put(file, metadataManager.getSampleIdsFromFileId(studyMetadata.getId(), file));
-            }
+            this.filesInCohortMap.put(cohortMetadata.getId(), new HashSet<>(cohortMetadata.getFiles()));
         }
         List<String> defaultGenotypes = studyMetadata.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
 
@@ -110,7 +106,6 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
 
         List<Document> files = study.getList(DocumentToStudyVariantEntryConverter.FILES_FIELD, Document.class);
         Document gt = study.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, Document.class);
-        Set<Integer> samplesWithVariant = new HashSet<>();
 
         // Make a Set from the lists of genotypes for fast indexOf
         Map<String, Set<Integer>> gtsMap = new HashMap<>(gt.size());
@@ -121,7 +116,6 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
         for (CohortMetadata cohort : cohorts.values()) {
             Set<Integer> filesInCohort = this.filesInCohortMap.get(cohort.getId());
             Map<String, Integer> gtStrCount = new HashMap<>();
-            samplesWithVariant.clear();
 
             int unknownGenotypes = cohort.getSamples().size();
             for (Integer sampleId : cohort.getSamples()) {
@@ -133,9 +127,6 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
                     }
                     if ((entry.getValue()).contains(sampleId)) {
                         addGt(gtStrCount, gtStr, 1);
-                        if (GenotypeClass.MAIN_ALT.test(gtStr)) {
-                            samplesWithVariant.add(sampleId);
-                        }
                         unknownGenotypes--;
                         break;
                     }
@@ -149,7 +140,7 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
             gtStrCount.forEach((str, count) -> gtCountMap.compute(new Genotype(str),
                     (key, value) -> value == null ? count : value + count));
 
-            VariantStats stats = VariantStatsCalculator.calculate(variant, gtCountMap);
+            VariantStats stats = VariantStatsCalculator.calculate(variant, gtCountMap, multiAllelic);
 
             int numFilterFiles = 0;
             int numQualFiles = 0;
@@ -157,19 +148,19 @@ public class MongoDBVariantStatsCalculator extends AbstractDocumentConverter imp
             for (Document file : files) {
                 Integer fileId = file.getInteger(DocumentToStudyVariantEntryConverter.FILEID_FIELD);
                 if (filesInCohort.contains(fileId)) {
-                    Set<Integer> samplesInFile = samplesInFileMap.get(fileId);
-                    if (!Collections.disjoint(samplesInFile, samplesWithVariant)) {
-                        Document attributes = file.get(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, Document.class);
-                        String filter = attributes.getString(StudyEntry.FILTER);
-                        if (StringUtils.isNotEmpty(filter)) {
-                            VariantStatsCalculator.addFileFilter(filter, stats.getFilterCount());
-                            numFilterFiles++;
-                        }
-                        Object qual = attributes.get(StudyEntry.QUAL);
-                        if (qual instanceof Double) {
-                            qualitySum += ((Double) qual);
-                            numQualFiles++;
-                        }
+                    Document attributes = file.get(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD, Document.class);
+                    String filter = attributes.getString(StudyEntry.FILTER);
+                    // Ensure missing filters are counted
+                    if (StringUtils.isEmpty(filter)) {
+                        filter = ".";
+                    }
+                    VariantStatsCalculator.addFileFilter(filter, stats.getFilterCount());
+                    numFilterFiles++;
+
+                    Object qual = attributes.get(StudyEntry.QUAL);
+                    if (qual instanceof Double) {
+                        qualitySum += ((Double) qual);
+                        numQualFiles++;
                     }
                 }
             }

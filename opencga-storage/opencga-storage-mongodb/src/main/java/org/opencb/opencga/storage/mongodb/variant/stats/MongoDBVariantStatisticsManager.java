@@ -63,6 +63,9 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
         int numTasks = options.getInt(
                 VariantStorageOptions.STATS_CALCULATE_THREADS.key(),
                 VariantStorageOptions.STATS_CALCULATE_THREADS.defaultValue());
+        boolean statsMultiAllelic = options.getBoolean(
+                VariantStorageOptions.STATS_MULTI_ALLELIC.key(),
+                VariantStorageOptions.STATS_MULTI_ALLELIC.defaultValue());
         boolean overwrite = options.getBoolean(VariantStorageOptions.STATS_OVERWRITE.key(), false);
         boolean updateStats = options.getBoolean(VariantStorageOptions.STATS_UPDATE.key(), false);
 
@@ -100,8 +103,8 @@ public class MongoDBVariantStatisticsManager extends DefaultVariantStatisticsMan
             MongoDBVariantStatsCalculator statsCalculatorTask = new MongoDBVariantStatsCalculator(
                     variantDBAdaptor.getMetadataManager(),
                     studyMetadata,
-                    cohortIds.toArray(new Integer[0]),
-                    getUnknownGenotype(options));
+                    cohortIds,
+                    getUnknownGenotype(options), statsMultiAllelic);
             for (int i = 0; i < numTasks; i++) {
                 tasks.add(statsCalculatorTask
                         .then((Task<VariantStatsWrapper, VariantStatsWrapper>) batch -> {

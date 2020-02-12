@@ -58,7 +58,9 @@ public class VariantStatsMongoDBLocalAnalysisExecutor extends VariantStatsAnalys
                 }
                 sampleIds.add(sampleId);
             }
-            cohorts.add(new CohortMetadata(studyMetadata.getId(), -(cohorts.size() + 1), entry.getKey(), sampleIds));
+            List<Integer> files = new ArrayList<>(metadataManager.getFileIdsFromSampleIds(studyMetadata.getId(), sampleIds));
+
+            cohorts.add(new CohortMetadata(studyMetadata.getId(), -(cohorts.size() + 1), entry.getKey(), sampleIds, files));
         }
 
         Query query = new Query(getVariantsQuery())
@@ -78,7 +80,7 @@ public class VariantStatsMongoDBLocalAnalysisExecutor extends VariantStatsAnalys
                 return documents;
             };
 
-            MongoDBVariantStatsCalculator calculator = new MongoDBVariantStatsCalculator(metadataManager, studyMetadata, cohorts, "0/0");
+            MongoDBVariantStatsCalculator calculator = new MongoDBVariantStatsCalculator(studyMetadata, cohorts, "0/0", false);
 
             ProgressLogger progressLogger = new ProgressLogger("Variants processed:");
             Task<Document, Variant> task = calculator.then((Task<VariantStatsWrapper, Variant>) batch -> {

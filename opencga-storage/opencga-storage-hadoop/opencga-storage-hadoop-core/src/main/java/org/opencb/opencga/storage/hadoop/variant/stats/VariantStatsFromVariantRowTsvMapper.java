@@ -13,7 +13,6 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantRowMapper;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 
 import java.io.IOException;
 import java.util.*;

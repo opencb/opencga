@@ -174,6 +174,12 @@ public class DocumentToVariantStatsConverter {
             for (Map.Entry<String, Object> entry : object.get(FILTER_FREQ_FIELD, Document.class).entrySet()) {
                 stats.getFilterFreq().put(entry.getKey(), ((Number)entry.getValue()).floatValue());
             }
+            if (stats.getFilterFreq().size() == 1) {
+                Float freq = stats.getFilterFreq().get(VCFConstants.PASSES_FILTERS_v4);
+                if (freq != null && freq == 0) {
+                    stats.getFilterFreq().remove(VCFConstants.PASSES_FILTERS_v4);
+                }
+            }
         }
         if (object.containsKey(QUAL_AVG_FIELD)) {
             stats.setQualityAvg(object.getDouble(QUAL_AVG_FIELD).floatValue());
