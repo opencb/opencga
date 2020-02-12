@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -67,7 +68,9 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import javax.naming.NamingException;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
@@ -76,6 +79,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -239,7 +243,7 @@ public class StudyManager extends AbstractManager {
     }
 
     public OpenCGAResult<Study> create(String projectStr, String id, String alias, String name, Study.Type type, String creationDate,
-                                       String description, Status status, String cipher, String uriScheme, URI uri,
+                                       String description, String webhook, Status status, String cipher, String uriScheme, URI uri,
                                        Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
                                        QueryOptions options, String token) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
@@ -284,6 +288,7 @@ public class StudyManager extends AbstractManager {
                 .append("type", type)
                 .append("creationDate", creationDate)
                 .append("description", description)
+                .append("webhook", webhook)
                 .append("status", status)
                 .append("cipher", cipher)
                 .append("uriScheme", uriScheme)
@@ -300,6 +305,15 @@ public class StudyManager extends AbstractManager {
                 throw new CatalogException("Permission denied: Only the owner of the project can create studies.");
             }
 
+            URL urlWebhook = null;
+            if (StringUtils.isNotEmpty(webhook)) {
+                try {
+                    urlWebhook = new URL(webhook);
+                } catch (MalformedURLException e) {
+                    throw new CatalogException("Invalid URL format '" + webhook + "': " + e.getMessage(), e);
+                }
+            }
+
             LinkedList<File> files = new LinkedList<>();
             File rootFile = new File(".", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "", null, "study root folder",
                     new File.FileStatus(File.FileStatus.READY), 0, project.getCurrentRelease());
@@ -309,10 +323,10 @@ public class StudyManager extends AbstractManager {
             files.add(rootFile);
             files.add(jobsFile);
 
-            Study study = new Study(id, name, alias, type, creationDate, description, status,
-                    0, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)),
-                    new Group(ADMINS, Collections.emptyList())), files, null, null, null, null, null, null, null, null,
-                    datastores, project.getCurrentRelease(), stats, attributes);
+            Study study = new Study(id, name, alias, type, creationDate, description, urlWebhook,
+                    status, 0, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)),
+                    new Group(ADMINS, Collections.emptyList())), files, null, null, new LinkedList<>(), null, null, null, null, null,
+                    null, datastores, project.getCurrentRelease(), stats, attributes);
 
             /* CreateStudy */
             study.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.STUDY));
@@ -560,7 +574,8 @@ public class StudyManager extends AbstractManager {
      * @return The modified entry.
      * @throws CatalogException CatalogException
      */
-    public OpenCGAResult<Study> update(String studyId, ObjectMap parameters, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Study> update(String studyId, StudyUpdateParams parameters, QueryOptions options, String token)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
 
         ObjectMap auditParams = new ObjectMap()
@@ -582,22 +597,28 @@ public class StudyManager extends AbstractManager {
 
             authorizationManager.checkCanEditStudy(study.getUid(), userId);
 
-            for (String s : parameters.keySet()) {
-                if (!s.matches("id|alias|name|type|description|attributes|stats")) {
-                    throw new CatalogDBException("Parameter '" + s + "' can't be changed");
-                }
+            if (StringUtils.isNotEmpty(parameters.getAlias())) {
+                ParamUtils.checkAlias(parameters.getAlias(), "alias");
             }
 
-            if (parameters.containsKey("id")) {
-                ParamUtils.checkAlias(parameters.getString("id"), "id");
+            ObjectMap update;
+            try {
+                update = new ObjectMap(getUpdateObjectMapper().writeValueAsString(parameters));
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Jackson casting error: " + e.getMessage(), e);
             }
-            if (parameters.containsKey("alias")) {
-                ParamUtils.checkAlias(parameters.getString("alias"), "alias");
+
+            if (StringUtils.isNotEmpty(parameters.getWebhook())) {
+                try {
+                    new URL(parameters.getWebhook());
+                } catch (MalformedURLException e) {
+                    throw new CatalogException("Invalid URL format '" + parameters.getWebhook() + "': " + e.getMessage(), e);
+                }
             }
 
             String ownerId = getOwner(study);
             userDBAdaptor.updateUserLastModified(ownerId);
-            OpenCGAResult result = studyDBAdaptor.update(study.getUid(), parameters, options);
+            OpenCGAResult result = studyDBAdaptor.update(study.getUid(), update, options);
             auditManager.auditUpdate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 

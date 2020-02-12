@@ -635,6 +635,7 @@
     -->
     <field name="other" type="string" indexed="false" stored="true" multiValued="true"/>
 
+    <dynamicField name="passStats_*" type="float" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="altStats_*" type="float" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="popFreq_*" type="float" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="score_*" type="float" indexed="true" stored="true" multiValued="false"/>

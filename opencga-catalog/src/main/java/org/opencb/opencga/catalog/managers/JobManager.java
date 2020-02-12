@@ -40,10 +40,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.core.models.job.JobAclEntry;
-import org.opencb.opencga.core.models.job.JobUpdateParams;
-import org.opencb.opencga.core.models.job.ToolInfo;
+import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
 import org.opencb.opencga.core.response.OpenCGAResult;
@@ -232,7 +229,8 @@ public class JobManager extends ResourceManager<Job> {
             job.setDescription(ParamUtils.defaultString(job.getDescription(), ""));
             job.setCommandLine(ParamUtils.defaultString(job.getCommandLine(), ""));
             job.setCreationDate(ParamUtils.defaultString(job.getCreationDate(), TimeUtils.getTime()));
-            job.setStatus(ParamUtils.defaultObject(job.getStatus(), new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE)));
+            job.setInternal(ParamUtils.defaultObject(job.getInternal(),
+                    new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE))));
             job.setPriority(ParamUtils.defaultObject(job.getPriority(), Enums.Priority.MEDIUM));
             job.setInput(ParamUtils.defaultObject(job.getInput(), Collections.emptyList()));
             job.setOutput(ParamUtils.defaultObject(job.getOutput(), Collections.emptyList()));
@@ -244,7 +242,7 @@ public class JobManager extends ResourceManager<Job> {
             job.setStudyUuid(study.getUuid());
 
             if (!Arrays.asList(Enums.ExecutionStatus.ABORTED, Enums.ExecutionStatus.DONE, Enums.ExecutionStatus.UNREGISTERED,
-                    Enums.ExecutionStatus.ERROR).contains(job.getStatus().getName())) {
+                    Enums.ExecutionStatus.ERROR).contains(job.getInternal().getStatus().getName())) {
                 throw new CatalogException("Cannot create a job in a status different from one of the final ones.");
             }
 
@@ -301,9 +299,11 @@ public class JobManager extends ResourceManager<Job> {
         job.setCreationDate(ParamUtils.defaultString(job.getCreationDate(), TimeUtils.getTime()));
         job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
 
-        if (job.getStatus() == null || StringUtils.isEmpty(job.getStatus().getName())) {
-            job.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.PENDING));
+        // Set default status and webhook
+        if (job.getInternal() == null || job.getInternal().getStatus() == null) {
+            job.setInternal(new JobInternal());
         }
+        job.getInternal().getWebhook().setWebhook(study.getWebhook());
 
         // Look for input files
         String fileParamSuffix = "file";
@@ -425,7 +425,7 @@ public class JobManager extends ResourceManager<Job> {
             auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), "", study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
 
-            job.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED));
+            job.setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.ABORTED)));
             jobDBAdaptor.insert(study.getUid(), job, new QueryOptions());
 
             throw e;
@@ -698,13 +698,13 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     private void checkJobCanBeDeleted(Job job) throws CatalogException {
-        switch (job.getStatus().getName()) {
+        switch (job.getInternal().getStatus().getName()) {
             case Enums.ExecutionStatus.DELETED:
                 throw new CatalogException("Job already deleted.");
             case Enums.ExecutionStatus.PENDING:
             case Enums.ExecutionStatus.RUNNING:
             case Enums.ExecutionStatus.QUEUED:
-                throw new CatalogException("The status of the job is " + job.getStatus().getName()
+                throw new CatalogException("The status of the job is " + job.getInternal().getStatus().getName()
                         + ". Please, stop the job before deleting it.");
             default:
                 break;

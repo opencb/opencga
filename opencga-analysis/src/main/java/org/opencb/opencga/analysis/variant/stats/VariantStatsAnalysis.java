@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.models.study.StudyUpdateParams;
 import org.opencb.opencga.core.tools.annotations.Tool;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
@@ -423,10 +424,10 @@ public class VariantStatsAnalysis extends OpenCgaTool {
             // If studyAggregation is not define, update study aggregation
             if (studyAggregation == null) {
                 //update study aggregation
-                Map<String, Aggregation> attributes = Collections.singletonMap(STATS_AGGREGATION_CATALOG,
-                        argsAggregation);
-                ObjectMap parameters = new ObjectMap("attributes", attributes);
-                catalogManager.getStudyManager().update(studyId, parameters, null, sessionId);
+                Map<String, Object> attributes = Collections.singletonMap(STATS_AGGREGATION_CATALOG, argsAggregation);
+                StudyUpdateParams updateParams = new StudyUpdateParams()
+                        .setAttributes(attributes);
+                catalogManager.getStudyManager().update(studyId, updateParams, null, sessionId);
             }
         } else {
             if (studyAggregation == null) {

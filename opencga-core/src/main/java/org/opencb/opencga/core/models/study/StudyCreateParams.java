@@ -9,6 +9,7 @@ public class StudyCreateParams {
     private String alias;
     private Study.Type type;
     private String description;
+    private String webhook;
 
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
@@ -16,20 +17,21 @@ public class StudyCreateParams {
     public StudyCreateParams() {
     }
 
-    public StudyCreateParams(String id, String name, String alias, Study.Type type, String description, Map<String, Object> stats,
-                             Map<String, Object> attributes) {
+    public StudyCreateParams(String id, String name, String alias, Study.Type type, String description, String webhook,
+                             Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
         this.type = type;
         this.description = description;
+        this.webhook = webhook;
         this.stats = stats;
         this.attributes = attributes;
     }
 
     public static StudyCreateParams of(Study study) {
         return new StudyCreateParams(study.getId(), study.getName(), study.getAlias(), study.getType(), study.getDescription(),
-                study.getStats(), study.getAttributes());
+                study.getWebhook() != null ? study.getWebhook().toString() : null, study.getStats(), study.getAttributes());
     }
 
     @Override
@@ -40,6 +42,7 @@ public class StudyCreateParams {
         sb.append(", alias='").append(alias).append('\'');
         sb.append(", type=").append(type);
         sb.append(", description='").append(description).append('\'');
+        sb.append(", webhook=").append(webhook);
         sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -88,6 +91,15 @@ public class StudyCreateParams {
 
     public StudyCreateParams setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public String getWebhook() {
+        return webhook;
+    }
+
+    public StudyCreateParams setWebhook(String webhook) {
+        this.webhook = webhook;
         return this;
     }
 

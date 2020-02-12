@@ -24,6 +24,7 @@ import org.opencb.opencga.core.models.PrivateFields;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
@@ -32,6 +33,7 @@ import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.sample.Sample;
 
 import java.net.URI;
+import java.net.URL;
 import java.util.*;
 
 /**
@@ -51,11 +53,14 @@ public class Study extends PrivateFields {
     private long size;
     private String fqn;
 
+    private URL webhook;
+
     private List<Group> groups;
 
     private List<File> files;
     private List<Job> jobs;
     private List<Individual> individuals;
+    private List<Family> families;
     private List<Sample> samples;
 
     private List<Cohort> cohorts;
@@ -80,15 +85,15 @@ public class Study extends PrivateFields {
     }
 
     public Study(String name, String alias, Type type, String description, Status status, URI uri, int release) {
-        this(alias, name, alias, type, TimeUtils.getTime(), description, status, 0,
-                new ArrayList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), new HashMap<>(),
-                uri, new HashMap<>(), release, new HashMap<>(), new HashMap<>());
+        this(alias, name, alias, type, TimeUtils.getTime(), description, null, status,
+                0, new ArrayList<>(), new LinkedList<>(), new LinkedList<>(),
+                new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(),
+                new HashMap<>(), uri, new HashMap<>(), release, new HashMap<>(), new HashMap<>());
     }
 
-    public Study(String id, String name, String alias, Type type, String creationDate, String description, Status status, long size,
-                 List<Group> groups, List<File> files, List<Job> jobs, List<Individual> individuals, List<Sample> samples,
-                 List<Cohort> cohorts, List<Panel> panels, List<VariableSet> variableSets,
+    public Study(String id, String name, String alias, Type type, String creationDate, String description, URL webhook, Status status,
+                 long size, List<Group> groups, List<File> files, List<Job> jobs, List<Individual> individuals, List<Family> families,
+                 List<Sample> samples, List<Cohort> cohorts, List<Panel> panels, List<VariableSet> variableSets,
                  Map<Entity, List<PermissionRule>> permissionRules, URI uri, Map<File.Bioformat, DataStore> dataStores, int release,
                  Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
@@ -97,10 +102,12 @@ public class Study extends PrivateFields {
         this.type = type;
         this.creationDate = creationDate;
         this.description = description;
+        this.webhook = webhook;
         this.status = status;
         this.size = size;
         this.groups = ObjectUtils.defaultIfNull(groups, new ArrayList<>());
         this.files = ObjectUtils.defaultIfNull(files, new ArrayList<>());
+        this.families = ObjectUtils.defaultIfNull(families, new ArrayList<>());
         this.jobs = ObjectUtils.defaultIfNull(jobs, new ArrayList<>());
         this.individuals = ObjectUtils.defaultIfNull(individuals, new ArrayList<>());
         this.samples = ObjectUtils.defaultIfNull(samples, new ArrayList<>());
@@ -163,10 +170,12 @@ public class Study extends PrivateFields {
         sb.append(", status=").append(status);
         sb.append(", size=").append(size);
         sb.append(", fqn='").append(fqn).append('\'');
+        sb.append(", webhook=").append(webhook);
         sb.append(", groups=").append(groups);
         sb.append(", files=").append(files);
         sb.append(", jobs=").append(jobs);
         sb.append(", individuals=").append(individuals);
+        sb.append(", families=").append(families);
         sb.append(", samples=").append(samples);
         sb.append(", cohorts=").append(cohorts);
         sb.append(", panels=").append(panels);
@@ -259,6 +268,15 @@ public class Study extends PrivateFields {
         return this;
     }
 
+    public URL getWebhook() {
+        return webhook;
+    }
+
+    public Study setWebhook(URL webhook) {
+        this.webhook = webhook;
+        return this;
+    }
+
     public Status getStatus() {
         return status;
     }
@@ -310,6 +328,15 @@ public class Study extends PrivateFields {
 
     public Study setIndividuals(List<Individual> individuals) {
         this.individuals = individuals;
+        return this;
+    }
+
+    public List<Family> getFamilies() {
+        return families;
+    }
+
+    public Study setFamilies(List<Family> families) {
+        this.families = families;
         return this;
     }
 

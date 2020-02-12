@@ -91,7 +91,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
         Study study = catalogManager.getStudyManager().create(projectId, "s1", null, "s1", Study.Type.CASE_CONTROL, null, "Study " +
-                        "1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null,
+                        "1", null, null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null,
                 null, null, sessionId).first();
         studyId = study.getFqn();
         studyUid = study.getUid();
