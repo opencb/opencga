@@ -823,9 +823,8 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
                 }
 
                 // Restore default cohort with indexed samples
-                Integer cohortId = metadataManager.getCohortId(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT);
-                metadataManager.updateCohortMetadata(studyMetadata.getId(), cohortId,
-                        defaultCohort -> defaultCohort.setSamples(metadataManager.getIndexedSamples(studyMetadata.getId())));
+                metadataManager.setSamplesToCohort(studyMetadata.getId(), StudyEntry.DEFAULT_COHORT,
+                        metadataManager.getIndexedSamples(studyMetadata.getId()));
 
 
                 for (Integer fileId : fileIds) {
