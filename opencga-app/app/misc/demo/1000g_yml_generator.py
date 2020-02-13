@@ -14,10 +14,32 @@ _KAR_SEX = {
     '1': 'XY',
     '2': 'XX'
 }
+_VARIABLE_FIELDS = ['Relationship', 'Siblings', 'Second Order', 'Third Order', 'Other Comments']
 
 FNAME_TEMPLATE = 'ALL.chr{}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz'
 
-def create_individuals(ind_info, yml_fhand):
+
+def to_camel_case(text):
+    components = text.lower().replace('_', ' ').split(' ')
+    return components[0].lower() + ''.join(x.title() for x in components[1:])
+
+def create_variable_sets(header):
+    text = []
+    text.append('variableSets:')
+    text.append('{}- id: relation'.format(' '*2))
+    text.append('{}name: relation'.format(' '*4))
+    text.append('{}entities:'.format(' '*4))
+    text.append('{}- INDIVIDUAL'.format(' '*6))
+    text.append('{}variables:'.format(' '*4))
+    for field in header:
+        if field not in _VARIABLE_FIELDS:
+            continue
+        text.append('{}- id: {}'.format(' '*6, to_camel_case(field)))
+        text.append('{}name: {}'.format(' '*8, to_camel_case(field)))
+        text.append('{}type: STRING'.format(' '*8))
+    return '\n'.join(text)
+
+def create_individuals(ind_info):
     text = []
     text.append('individuals:')
     for ind in ind_info:
@@ -31,13 +53,23 @@ def create_individuals(ind_info, yml_fhand):
             text.append('{}- id: {}'.format(' '*6, ind['Maternal ID']))
         text.append('{}sex: {}'.format(' '*4, _SEX[ind['Gender']]))
         text.append('{}karyotypicSex: {}'.format(' '*4, _KAR_SEX[ind['Gender']]))
-        text.append('{}population:'.format(' '*4, ind['Population']))
+        text.append('{}population:'.format(' '*4))
         text.append('{}- name: {}'.format(' '*6, ind['Population']))
+
+        text.append('{}annotationSets:'.format(' '*4))
+        text.append('{}- id: relation'.format(' '*6))
+        text.append('{}name: relation'.format(' '*8))
+        text.append('{}variableSetId: relation'.format(' '*8, ind['Population']))
+        text.append('{}annotations:'.format(' '*8))
+        for field in ind.keys():
+            if field not in _VARIABLE_FIELDS:
+                continue
+            text.append('{}{}: {}'.format(' '*10, to_camel_case(field), ind[field]))
         text.append('{}samples:'.format(' '*4))
         text.append('{}- id: {}'.format(' '*6, ind['Individual ID']))
     return '\n'.join(text)
 
-def create_samples(ind_info, yml_fhand):
+def create_samples(ind_info):
     text = []
     text.append('samples:')
     for ind in ind_info:
@@ -45,12 +77,28 @@ def create_samples(ind_info, yml_fhand):
         text.append('{}individualId: {}'.format(' '*4, ind['Individual ID']))
     return '\n'.join(text)
 
-def create_files(yml_fhand):
+def create_families(ind_info):
+    families = {}
+    for ind in ind_info:
+        if ind['Family ID'] != ind['Individual ID']:
+            families.setdefault(ind['Family ID'], []).append(ind['Individual ID'])
+
+    text = []
+    text.append('families:')
+    for family in families:
+        text.append('{}- id: {}'.format(' '*2, family))
+        text.append('{}name: {}'.format(' '*4, family))
+        text.append('{}members:'.format(' '*4))
+        for member in families[family]:
+            text.append('{}- id: {}'.format(' '*6, member))
+    return '\n'.join(text)
+
+def create_files():
     text = []
     text.append('files:')
     for chrom in range(1, 23) + ['X', 'Y', 'MT']:
         text.append('{}- id: {}'.format(' '*2, FNAME_TEMPLATE.format(chrom)))
-        text.append('{}path: {}'.format(' '*4, '/data'))
+        text.append('{}path: {}'.format(' '*4, 'data'))
     return '\n'.join(text)
 
 def main():
@@ -68,8 +116,10 @@ def main():
     yml_fhand.write('id: 1000g\n')
     yml_fhand.write('name: 1000 Genomes phase 3\n')
     yml_fhand.write('description: The 1000 Genomes Project\n')
-    yml_fhand.write(create_individuals(ind_info, yml_fhand) + '\n')
-    yml_fhand.write(create_files(yml_fhand) + '\n')
+    yml_fhand.write(create_variable_sets(header) + '\n')
+    yml_fhand.write(create_individuals(ind_info) + '\n')
+    yml_fhand.write(create_families(ind_info) + '\n')
+    yml_fhand.write(create_files() + '\n')
 
     ped_fhand.close()
     yml_fhand.close()

@@ -20,11 +20,14 @@ import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.demo.config.DemoConfiguration;
+import org.opencb.opencga.app.demo.config.StudyConfiguration;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
+import org.opencb.opencga.core.models.family.Family;
+import org.opencb.opencga.core.models.family.FamilyCreateParams;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualCreateParams;
@@ -35,8 +38,6 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleCreateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyCreateParams;
-import org.opencb.opencga.core.models.user.User;
-import org.opencb.opencga.core.models.user.UserCreateParams;
 
 import java.util.*;
 
@@ -55,31 +56,26 @@ public class DemoManager {
     }
 
     public void execute() throws ClientException {
-        User mainUser = null;
-        String password = demoConfiguration.getConfiguration().getPassword();
-        openCGAClient.login("opencga", password);
-        for (User user : demoConfiguration.getUsers()) {
-            if (CollectionUtils.isNotEmpty(user.getProjects())) {
-                mainUser = user;
-            }
-            openCGAClient.getUserClient().create(UserCreateParams.of(user));
-        }
-        openCGAClient.logout();
-
-        openCGAClient.login(mainUser.getId(), mainUser.getPassword());
-        for (Project project : mainUser.getProjects()) {
+        for (Project project : demoConfiguration.getProjects()) {
             openCGAClient.getProjectClient().create(ProjectCreateParams.of(project));
             for (Study study : project.getStudies()) {
                 ObjectMap params = new ObjectMap("project", project.getId());
                 openCGAClient.getStudyClient().create(StudyCreateParams.of(study), params);
                 if (CollectionUtils.isNotEmpty(study.getIndividuals())) {
-                    this.createIndividuals(study);
+                    createIndividuals(study);
                 }
                 if (CollectionUtils.isNotEmpty(study.getSamples())) {
-                    this.createSamples(study);
+                    createSamples(study);
                 }
                 if (CollectionUtils.isNotEmpty(study.getCohorts())) {
-                    this.createCohorts(study);
+                    createCohorts(study);
+                }
+                if (CollectionUtils.isNotEmpty(study.getFamilies())) {
+                    createFamilies(study);
+                }
+                if (CollectionUtils.isNotEmpty(study.getFiles())) {
+                    List<String> fetchJobIds = fetchFiles(study);
+                    List<String> indexJobIds = index(study, fetchJobIds);
                 }
             }
         }
@@ -128,12 +124,44 @@ public class DemoManager {
         }
     }
 
-    private void fetchFiles(Study study) throws ClientException {
+    private void createFamilies(Study study) throws ClientException {
         ObjectMap params = new ObjectMap("study", study.getId());
-        for (File file : study.getFiles()) {
-            params.put("url", file.getUri());
-            openCGAClient.getFileClient().fetch(params);
+        for (Family family : study.getFamilies()) {
+            openCGAClient.getFamilyClient().create(FamilyCreateParams.of(family), params);
         }
+    }
+
+    private List<String> fetchFiles(Study study) throws ClientException {
+        ObjectMap params = new ObjectMap("study", study.getId());
+        String urlBase = null;
+        for (StudyConfiguration studyConfiguration : demoConfiguration.getConfiguration().getStudies()) {
+            if (studyConfiguration.getId().equals(study.getId())) {
+                urlBase = studyConfiguration.getUrlBase();
+            }
+        }
+
+        if (urlBase == null) {
+            throw new java.lang.NullPointerException();
+        } else if (!urlBase.endsWith("/")) {
+            urlBase = urlBase + "/";
+        }
+
+        List<String> fetchJobIds = new ArrayList<>();
+        for (File file : study.getFiles()) {
+            params.put("url", urlBase + "/" + file.getId());
+            fetchJobIds.add(openCGAClient.getFileClient().fetch(params).getResponses().get(0).getResults().get(0).getId());
+        }
+        return fetchJobIds;
+    }
+
+    private List<String> index(Study study, List<String> fetchJobIds) throws ClientException {
+        ObjectMap params = new ObjectMap("study", study.getId());
+        List<String> indexJobIds = new ArrayList<>();
+        for (String jobId : fetchJobIds) {
+            params.put("jobDependsOn", jobId);
+            indexJobIds.add(openCGAClient.getVariantClient().index(null, params).getResponses().get(0).getResults().get(0).getId());
+        }
+        return indexJobIds;
     }
 
 }

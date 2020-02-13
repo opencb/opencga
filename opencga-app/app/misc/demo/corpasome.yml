@@ -1,25 +1,16 @@
 ---
-##
-## Link https://figshare.com/articles/New_draft_item/4595839
-## Father: ISDBM322016
-## Mother: ISDBM322018
-## Son: ISDBM322015
-## Daughter: ISDBM322017
+## Corpasome study
+## Paper: https://www.biorxiv.org/content/10.1101/000216v1
+## Data: https://figshare.com/articles/Corpasome/693052
+## Pedigree:
+##   Father: ISDBM322016
+##   Mother: ISDBM322018
+##   Son: ISDBM322015
+##   Daughter: ISDBM322017
 
 id: corpasome
 name: Corpas Family
 description: This study simulates two disorders and some phenotypes in the Corpas family for training purposes
-#groups:
-#  - id: demo
-#    userIds: [demo1, demo2]
-#variableSets:
-#  - id:
-#    name:
-#    variables:
-#      - id:
-#        name:
-#        category:
-#        type: STRING
 
 individuals:
   - id: ISDBM322015
@@ -31,9 +22,6 @@ individuals:
     sex: MALE
     karyotypicSex: XY
     lifeStatus: ALIVE
-#    annotations:
-#      - variableSet: tumor
-#        values:
     phenotypes:
       - id: HP:0000519
         name: Developmental cataract
@@ -125,12 +113,20 @@ families:
       - id: ISDBM322017
       - id: ISDBM322018
 
-#clinicalAnalysis:
-#  - id: recesive
-#    proband.id: ISDBM322015
-#    family.id: corpasome
-#    disorder.id: XXX
+clinicalAnalysis:
+  - id: cataract
+    type: FAMILY
+    proband:
+      - id: ISDBM322015
+    roleToProband:
+      ISDBM322016: FATHER
+      ISDBM322017: FULL_SIBLING_F
+      ISDBM322018: MOTHER
+    family:
+      - id: corpasome
+    disorder:
+      - id: OMIM:611597
 
 files:
   - id: quartet.variants.annotated.vcf.gz
-    path: data/
+    path: data

@@ -13,18 +13,35 @@ configuration:
   #          - population.name: ACB
       acl:
         - userId: demo
-          permission: [SAMPLE_VIEW]
-        - userId: demo2
-          permission: [SAMPLE_VIEW]
+          permission: [VIEW_FILE_HEADERS, VIEW_FILE_CONTENTS, VIEW_FILES, VIEW_FILE_ANNOTATIONS, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS, VIEW_INDIVIDUALS, VIEW_INDIVIDUALS_ANNOTATIONS, VIEW_FAMILIES, VIEW_FAMILIES_ANNOTATIONS, VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_CLINICAL_ANALYSIS]
     - id: corpasome
       index: true
       urlBase: http://bioinfo.hpc.cam.ac.uk/downloads/datasets/corpasome/data/
       active: true
       acl:
         - userId: demo
-          permission: [SAMPLE_VIEW]
-        - userId: demo2
-          permission: [SAMPLE_VIEW]
+          permission: [VIEW_FILE_HEADERS, VIEW_FILE_CONTENTS, VIEW_FILES, VIEW_FILE_ANNOTATIONS, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS, VIEW_INDIVIDUALS, VIEW_INDIVIDUALS_ANNOTATIONS, VIEW_FAMILIES, VIEW_FAMILIES_ANNOTATIONS, VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_CLINICAL_ANALYSIS]
+    - id: rams_cml
+      index: true
+      urlBase: http://bioinfo.hpc.cam.ac.uk/downloads/datasets/rams_cml/data/
+      active: true
+      acl:
+        - userId: demo
+          permission: [VIEW_FILE_HEADERS, VIEW_FILE_CONTENTS, VIEW_FILES, VIEW_FILE_ANNOTATIONS, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS, VIEW_INDIVIDUALS, VIEW_INDIVIDUALS_ANNOTATIONS, VIEW_FAMILIES, VIEW_FAMILIES_ANNOTATIONS, VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_CLINICAL_ANALYSIS]
+    - id: uk10k
+      index: true
+      urlBase: http://bioinfo.hpc.cam.ac.uk/downloads/datasets/uk10k/data/
+      active: true
+      acl:
+        - userId: demo
+          permission: [VIEW_FILE_HEADERS, VIEW_FILE_CONTENTS, VIEW_FILES, VIEW_FILE_ANNOTATIONS, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS, VIEW_INDIVIDUALS, VIEW_INDIVIDUALS_ANNOTATIONS, VIEW_FAMILIES, VIEW_FAMILIES_ANNOTATIONS, VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_CLINICAL_ANALYSIS]
+    - id: platinum
+      index: true
+      urlBase: http://bioinfo.hpc.cam.ac.uk/downloads/datasets/platinum/data/
+      active: true
+      acl:
+        - userId: demo
+          permission: [VIEW_FILE_HEADERS, VIEW_FILE_CONTENTS, VIEW_FILES, VIEW_FILE_ANNOTATIONS, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS, VIEW_INDIVIDUALS, VIEW_INDIVIDUALS_ANNOTATIONS, VIEW_FAMILIES, VIEW_FAMILIES_ANNOTATIONS, VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_CLINICAL_ANALYSIS]
 
 projects:
   - id: population
