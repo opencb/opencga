@@ -123,6 +123,6 @@ public class AnnotationSetMigration {
             queryDocument.append("_lastOfVersion", true);
         }
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("annotationSets", "id", "_studyId"));
-        return sampleCollection.nativeQuery().find(queryDocument, options);
+        return sampleCollection.iterator(queryDocument, options);
     }
 }

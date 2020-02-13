@@ -69,7 +69,10 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
     public void deleteJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getUid();
 
-        catalogJobDBAdaptor.insert(studyId, new Job().setInternal(new JobInternal()).setId("name").setUserId(user3.getId())
+        catalogJobDBAdaptor.insert(studyId, new Job()
+                .setId("name")
+                .setUserId(user3.getId())
+                .setInternal(new JobInternal(new Enums.ExecutionStatus()))
                 .setOutDir(new File().setUid(4)), null);
         Job job = getJob(studyId, "name");
         assertEquals(Enums.ExecutionStatus.PENDING, job.getInternal().getStatus().getName());

@@ -68,9 +68,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import javax.naming.NamingException;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
@@ -204,14 +202,16 @@ public class StudyManager extends AbstractManager {
             queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                     StudyDBAdaptor.QueryParams.UUID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key(),
                     StudyDBAdaptor.QueryParams.ALIAS.key(), StudyDBAdaptor.QueryParams.CREATION_DATE.key(),
-                    StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.URI.key()
+                    StudyDBAdaptor.QueryParams.NOTIFICATION.key(), StudyDBAdaptor.QueryParams.FQN.key(),
+                    StudyDBAdaptor.QueryParams.URI.key()
             ));
         } else {
             List<String> includeList = new ArrayList<>(queryOptions.getAsStringList(QueryOptions.INCLUDE));
             includeList.addAll(Arrays.asList(
                     StudyDBAdaptor.QueryParams.UUID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key(),
                     StudyDBAdaptor.QueryParams.ALIAS.key(), StudyDBAdaptor.QueryParams.CREATION_DATE.key(),
-                    StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.URI.key()));
+                    StudyDBAdaptor.QueryParams.NOTIFICATION.key(), StudyDBAdaptor.QueryParams.FQN.key(),
+                    StudyDBAdaptor.QueryParams.URI.key()));
             // We create a new object in case there was an exclude or any other field. We only want to include fields in this case
             queryOptions = new QueryOptions(QueryOptions.INCLUDE, includeList);
         }
@@ -243,9 +243,9 @@ public class StudyManager extends AbstractManager {
     }
 
     public OpenCGAResult<Study> create(String projectStr, String id, String alias, String name, Study.Type type, String creationDate,
-                                       String description, String webhook, Status status, String cipher, String uriScheme, URI uri,
-                                       Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
-                                       QueryOptions options, String token) throws CatalogException {
+                                       String description, StudyNotification notification, Status status, String cipher, String uriScheme,
+                                       URI uri, Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats,
+                                       Map<String, Object> attributes, QueryOptions options, String token) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkObj(type, "type");
@@ -288,7 +288,7 @@ public class StudyManager extends AbstractManager {
                 .append("type", type)
                 .append("creationDate", creationDate)
                 .append("description", description)
-                .append("webhook", webhook)
+                .append("notification", notification)
                 .append("status", status)
                 .append("cipher", cipher)
                 .append("uriScheme", uriScheme)
@@ -305,15 +305,6 @@ public class StudyManager extends AbstractManager {
                 throw new CatalogException("Permission denied: Only the owner of the project can create studies.");
             }
 
-            URL urlWebhook = null;
-            if (StringUtils.isNotEmpty(webhook)) {
-                try {
-                    urlWebhook = new URL(webhook);
-                } catch (MalformedURLException e) {
-                    throw new CatalogException("Invalid URL format '" + webhook + "': " + e.getMessage(), e);
-                }
-            }
-
             LinkedList<File> files = new LinkedList<>();
             File rootFile = new File(".", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.UNKNOWN, "", null, "study root folder",
                     new File.FileStatus(File.FileStatus.READY), 0, project.getCurrentRelease());
@@ -323,10 +314,12 @@ public class StudyManager extends AbstractManager {
             files.add(rootFile);
             files.add(jobsFile);
 
-            Study study = new Study(id, name, alias, type, creationDate, description, urlWebhook,
+            Study study = new Study(id, name, alias, type, creationDate, description, notification,
                     status, 0, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)),
                     new Group(ADMINS, Collections.emptyList())), files, null, null, new LinkedList<>(), null, null, null, null, null,
                     null, datastores, project.getCurrentRelease(), stats, attributes);
+
+            study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
 
             /* CreateStudy */
             study.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.STUDY));
@@ -606,14 +599,6 @@ public class StudyManager extends AbstractManager {
                 update = new ObjectMap(getUpdateObjectMapper().writeValueAsString(parameters));
             } catch (JsonProcessingException e) {
                 throw new CatalogException("Jackson casting error: " + e.getMessage(), e);
-            }
-
-            if (StringUtils.isNotEmpty(parameters.getWebhook())) {
-                try {
-                    new URL(parameters.getWebhook());
-                } catch (MalformedURLException e) {
-                    throw new CatalogException("Invalid URL format '" + parameters.getWebhook() + "': " + e.getMessage(), e);
-                }
             }
 
             String ownerId = getOwner(study);

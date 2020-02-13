@@ -892,9 +892,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor<Sample> imple
         logger.debug("Sample query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
 
         if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return sampleCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return sampleCollection.iterator(clientSession, bson, null, null, qOptions);
         } else {
-            return deletedSampleCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return deletedSampleCollection.iterator(clientSession, bson, null, null, qOptions);
         }
     }
 

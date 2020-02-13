@@ -7,8 +7,13 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.common.JacksonUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobInternal;
+import org.opencb.opencga.core.models.job.JobInternalWebhook;
+import org.opencb.opencga.core.models.study.StudyNotification;
+import org.opencb.opencga.core.models.study.StudyUpdateParams;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
@@ -19,6 +24,7 @@ import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -91,6 +97,24 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testWebhookNotification() throws Exception {
+        catalogManager.getStudyManager().update(studyFqn, new StudyUpdateParams()
+                .setNotification(new StudyNotification(new URL("https://ptsv2.com/t/dgogf-1581523512/post"))), null, token);
+
+        HashMap<String, Object> params = new HashMap<>();
+        String jobId = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, token).first().getId();
+
+        daemon.checkPendingJobs();
+        // We sleep because there must be a thread sending notifying to the webhook url.
+        Thread.sleep(1500);
+
+        Job job = getJob(jobId);
+        assertEquals(1, job.getInternal().getEvents().size());
+        assertTrue(job.getInternal().getWebhook().getStatus().containsKey("QUEUED"));
+        assertEquals(JobInternalWebhook.Status.ERROR, job.getInternal().getWebhook().getStatus().get("QUEUED"));
+    }
+
+    @Test
     public void testCreateOutDir() throws Exception {
         HashMap<String, Object> params = new HashMap<>();
         params.put("outdir", "outputDir/");
@@ -155,7 +179,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         // Set the status of job1 to ERROR
         catalogManager.getJobManager().update(studyFqn, job1, new PrivateJobUpdateParams()
-                .setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR)), QueryOptions.empty(), token);
+                .setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR))), QueryOptions.empty(), token);
 
         // The job that depended on job1 should be ABORTED because job1 execution "failed"
         daemon.checkPendingJobs();
@@ -166,7 +190,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         // Set status of job1 to DONE to simulate it finished successfully
         catalogManager.getJobManager().update(studyFqn, job1, new PrivateJobUpdateParams()
-                .setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE)), QueryOptions.empty(), token);
+                .setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE))), QueryOptions.empty(), token);
 
         // And create a new job to simulate a normal successfully dependency
         String job3 = catalogManager.getJobManager().submit(studyFqn, "files-delete", Enums.Priority.MEDIUM, params, null, null,
@@ -191,7 +215,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         String[] cli = getJob(jobId).getCommandLine().split(" ");
         int i = Arrays.asList(cli).indexOf("--my-file");
-        assertEquals(inputFile.getPath(), cli[i + 1]);
+        assertEquals("'" + inputFile.getPath() + "'", cli[i + 1]);
         assertEquals(1, getJob(jobId).getInput().size());
         assertEquals(inputFile.getPath(), getJob(jobId).getInput().get(0).getPath());
         assertEquals(Enums.ExecutionStatus.QUEUED, getJob(jobId).getInternal().getStatus().getName());
@@ -200,7 +224,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         daemon.checkJobs();
 
         assertEquals(Enums.ExecutionStatus.RUNNING, getJob(jobId).getInternal().getStatus().getName());
-        createAnalysisResult(jobId, "myTest", ar -> ar.setStatus(new Status(Status.Type.DONE, null, null)));
+        createAnalysisResult(jobId, "myTest", ar -> ar.setStatus(new Status(Status.Type.DONE, null, TimeUtils.getDate())));
         executor.jobStatus.put(jobId, Enums.ExecutionStatus.READY);
 
         daemon.checkJobs();
@@ -221,7 +245,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
 
         String[] cli = getJob(jobId).getCommandLine().split(" ");
         int i = Arrays.asList(cli).indexOf("--my-file");
-        assertEquals(inputFile.getPath(), cli[i + 1]);
+        assertEquals("'" + inputFile.getPath() + "'", cli[i + 1]);
         assertEquals(1, getJob(jobId).getInput().size());
         assertEquals(inputFile.getPath(), getJob(jobId).getInput().get(0).getPath());
         assertEquals(Enums.ExecutionStatus.QUEUED, getJob(jobId).getInternal().getStatus().getName());
@@ -230,7 +254,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         daemon.checkJobs();
 
         assertEquals(Enums.ExecutionStatus.RUNNING, getJob(jobId).getInternal().getStatus().getName());
-        createAnalysisResult(jobId, "myTest", ar -> ar.setStatus(new Status(Status.Type.DONE, null, null)));
+        createAnalysisResult(jobId, "myTest", ar -> ar.setStatus(new Status(Status.Type.DONE, null, TimeUtils.getDate())));
         executor.jobStatus.put(jobId, Enums.ExecutionStatus.READY);
 
         job = catalogManager.getJobManager().get(studyFqn, job.getId(), QueryOptions.empty(), token).first();
@@ -274,7 +298,7 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         daemon.checkJobs();
 
         assertEquals(Enums.ExecutionStatus.RUNNING, getJob(jobId).getInternal().getStatus().getName());
-        createAnalysisResult(jobId, "myTest", ar -> ar.setStatus(new Status(Status.Type.ERROR, null, null)));
+        createAnalysisResult(jobId, "myTest", ar -> ar.setStatus(new Status(Status.Type.ERROR, null, TimeUtils.getDate())));
         executor.jobStatus.put(jobId, Enums.ExecutionStatus.ERROR);
 
         daemon.checkJobs();

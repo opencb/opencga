@@ -18,6 +18,9 @@ package org.opencb.opencga.master.monitor.daemons;
 
 import com.google.common.base.CaseFormat;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpStatus;
+import org.glassfish.jersey.client.ClientProperties;
+import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -56,29 +59,42 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.AclParams;
-import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileAclEntry;
+import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.job.JobInternal;
+import org.opencb.opencga.core.models.job.JobInternalWebhook;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.opencb.opencga.core.tools.result.ExecutionResult;
 import org.opencb.opencga.core.tools.result.ExecutionResultManager;
 import org.opencb.opencga.core.tools.result.Status;
 import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
 
+import javax.ws.rs.ProcessingException;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -112,6 +128,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     private final Query queuedJobsQuery;
     private final Query runningJobsQuery;
     private final QueryOptions queryOptions;
+
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     static {
         TOOL_CLI_MAP = new HashMap<String, String>(){{
@@ -205,6 +223,20 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             } catch (Exception e) {
                 logger.error("Catch exception " + e.getMessage(), e);
             }
+        }
+
+        try {
+            logger.info("Attempt to shutdown webhook executor");
+            executor.shutdown();
+            executor.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            logger.error("Webhook tasks interrupted");
+        } finally {
+            if (!executor.isTerminated()) {
+                logger.error("Cancel non-finished webhook tasks");
+            }
+            executor.shutdownNow();
+            logger.info("Webhook tasks finished");
         }
     }
 
@@ -416,7 +448,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         updateParams.setCommandLine(shadedCommandLine);
 
         logger.info("Updating job {} from {} to {}", job.getId(), Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED);
-        updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED));
+        updateParams.setInternal(new JobInternal(new Enums.ExecutionStatus(Enums.ExecutionStatus.QUEUED)));
         try {
             jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
         } catch (CatalogException e) {
@@ -430,6 +462,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             logger.error("Error executing job {}.", job.getId(), e);
             return abortJob(job, "Error executing job. " + e.getMessage());
         }
+
+        job.getInternal().setStatus(updateParams.getInternal().getStatus());
+        notifyStatusChange(job);
+
         return 1;
     }
 
@@ -615,15 +651,18 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private int setStatus(Job job, Enums.ExecutionStatus status) {
-        PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setStatus(status);
+        PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams().setInternal(new JobInternal(status));
 
         try {
             jobManager.update(job.getStudyUuid(), job.getId(), updateParams, QueryOptions.empty(), token);
         } catch (CatalogException e) {
-            logger.error("Unexpected error. Cannot update job '{}' to status '{}'. {}", job.getId(), updateParams.getStatus().getName(),
-                    e.getMessage(), e);
+            logger.error("Unexpected error. Cannot update job '{}' to status '{}'. {}", job.getId(),
+                    updateParams.getInternal().getStatus().getName(), e.getMessage(), e);
             return 0;
         }
+
+        job.getInternal().setStatus(status);
+        notifyStatusChange(job);
 
         return 1;
     }
@@ -806,24 +845,27 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         updateParams.setOutput(outputFiles);
 
 
+        updateParams.setInternal(new JobInternal());
         // Check status of analysis result or if there are files that could not be moved to outdir to decide the final result
         if (execution == null) {
-            updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR,
+            updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR,
                     "Job could not finish successfully. Missing execution result"));
         } else if (execution.getStatus().getName().equals(Status.Type.ERROR)) {
-            updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job could not finish successfully"));
+            updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR,
+                    "Job could not finish successfully"));
         } else {
             switch (status.getName()) {
                 case Enums.ExecutionStatus.DONE:
                 case Enums.ExecutionStatus.READY:
-                    updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE));
+                    updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.DONE));
                     break;
                 case Enums.ExecutionStatus.ABORTED:
-                    updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job aborted!"));
+                    updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job aborted!"));
                     break;
                 case Enums.ExecutionStatus.ERROR:
                 default:
-                    updateParams.setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR, "Job could not finish successfully"));
+                    updateParams.getInternal().setStatus(new Enums.ExecutionStatus(Enums.ExecutionStatus.ERROR,
+                            "Job could not finish successfully"));
                     break;
             }
         }
@@ -838,7 +880,60 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             return 0;
         }
 
+        job.getInternal().setStatus(updateParams.getInternal().getStatus());
+        notifyStatusChange(job);
+
         return 1;
+    }
+
+    private void notifyStatusChange(Job job) {
+        if (job.getInternal().getWebhook().getUrl() != null) {
+            executor.submit(() -> {
+                try {
+                    sendWebhookNotification(job, job.getInternal().getWebhook().getUrl());
+                } catch (URISyntaxException | CatalogException | CloneNotSupportedException e) {
+                    logger.warn("Could not store notification status: {}", e.getMessage(), e);
+                }
+            });
+        }
+    }
+
+    private void sendWebhookNotification(Job job, URL url) throws URISyntaxException, CatalogException, CloneNotSupportedException {
+        JobInternal jobInternal = new JobInternal(null, job.getInternal().getWebhook().clone(), null);
+        PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams()
+                .setInternal(jobInternal);
+
+        Map<String, Object> actionMap = new HashMap<>();
+        actionMap.put(JobDBAdaptor.QueryParams.INTERNAL_EVENTS.key(), ParamUtils.UpdateAction.ADD.name());
+        QueryOptions options = new QueryOptions(Constants.ACTIONS, actionMap);
+
+        Client client = ClientBuilder.newClient();
+        Response post;
+        try {
+            post = client
+                    .target(url.toURI())
+                    .request(MediaType.APPLICATION_JSON)
+                    .property(ClientProperties.CONNECT_TIMEOUT, 1000)
+                    .property(ClientProperties.READ_TIMEOUT, 5000)
+                    .post(Entity.json(job));
+        } catch (ProcessingException e) {
+            jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getName(), JobInternalWebhook.Status.ERROR);
+            jobInternal.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, "Could not notify through webhook. "
+                    + e.getMessage())));
+
+            jobManager.update(job.getStudyUuid(), job.getId(), updateParams, options, token);
+
+            return;
+        }
+        if (post.getStatus() == HttpStatus.SC_OK) {
+            jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getName(), JobInternalWebhook.Status.SUCCESS);
+        } else {
+            jobInternal.getWebhook().getStatus().put(job.getInternal().getStatus().getName(), JobInternalWebhook.Status.ERROR);
+            jobInternal.setEvents(Collections.singletonList(new Event(Event.Type.ERROR, "Could not notify through webhook. HTTP response "
+                    + "code: " + post.getStatus())));
+        }
+
+        jobManager.update(job.getStudyUuid(), job.getId(), updateParams, options, token);
     }
 
     private String getErrorLogFileName(Job job) {

@@ -88,8 +88,8 @@ public class JobCreateParams {
         sb.append(", output=").append(output);
         sb.append(", tags=").append(tags);
         sb.append(", result=").append(result);
-        sb.append(", log=").append(stdout);
-        sb.append(", errorLog=").append(stderr);
+        sb.append(", stdout=").append(stdout);
+        sb.append(", stderr=").append(stderr);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();

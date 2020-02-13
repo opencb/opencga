@@ -6,24 +6,23 @@ import org.opencb.opencga.core.models.common.Enums;
 import java.util.LinkedList;
 import java.util.List;
 
-public class JobInternal {
+public class JobInternal implements Cloneable {
 
     private Enums.ExecutionStatus status;
     private JobInternalWebhook webhook;
     private List<Event> events;
 
     public JobInternal() {
-        this(new Enums.ExecutionStatus(), new JobInternalWebhook(), new LinkedList<>());
     }
 
     public JobInternal(Enums.ExecutionStatus status) {
-        this(status, new JobInternalWebhook(), new LinkedList<>());
+        this(status, null, null);
     }
 
     public JobInternal(Enums.ExecutionStatus status, JobInternalWebhook webhook, List<Event> events) {
-        this.status = status != null ? status : new Enums.ExecutionStatus();
-        this.webhook = webhook != null ? webhook : new JobInternalWebhook();
-        this.events = events != null ? events : new LinkedList<>();
+        this.status = status;
+        this.webhook = webhook;
+        this.events = events;
     }
 
     @Override
@@ -34,6 +33,11 @@ public class JobInternal {
         sb.append(", events=").append(events);
         sb.append('}');
         return sb.toString();
+    }
+
+    @Override
+    public JobInternal clone() throws CloneNotSupportedException {
+        return new JobInternal(status, webhook.clone(), new LinkedList<>(events));
     }
 
     public Enums.ExecutionStatus getStatus() {

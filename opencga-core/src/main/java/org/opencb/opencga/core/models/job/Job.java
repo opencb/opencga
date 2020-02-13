@@ -103,7 +103,7 @@ public class Job extends PrivateStudyUid {
         sb.append("id='").append(id).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", tool='").append(tool).append('\'');
+        sb.append(", tool=").append(tool);
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", commandLine='").append(commandLine).append('\'');
         sb.append(", params=").append(params);
@@ -114,14 +114,14 @@ public class Job extends PrivateStudyUid {
         sb.append(", outDir=").append(outDir);
         sb.append(", input=").append(input);
         sb.append(", output=").append(output);
-        sb.append(", dependsOn=").append(dependsOn);
         sb.append(", tags=").append(tags);
+        sb.append(", dependsOn=").append(dependsOn);
         sb.append(", execution=").append(execution);
-        sb.append(", visited=").append(visited);
         sb.append(", stdout=").append(stdout);
         sb.append(", stderr=").append(stderr);
+        sb.append(", visited=").append(visited);
         sb.append(", release=").append(release);
-        sb.append(", studyUuid=").append(studyUuid);
+        sb.append(", studyUuid='").append(studyUuid).append('\'');
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();

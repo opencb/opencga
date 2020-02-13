@@ -531,14 +531,14 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     @Override
     public DBIterator<User> iterator(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        MongoDBIterator<Document> iterator = userCollection.nativeQuery().find(bson, options);
+        MongoDBIterator<Document> iterator = userCollection.iterator(bson, options);
         return new CatalogMongoDBIterator<>(iterator, userConverter);
     }
 
     @Override
     public DBIterator<Document> nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        MongoDBIterator<Document> iterator = userCollection.nativeQuery().find(bson, options);
+        MongoDBIterator<Document> iterator = userCollection.iterator(bson, options);
         return new CatalogMongoDBIterator<>(iterator);
     }
 
