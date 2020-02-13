@@ -22,7 +22,7 @@ public class FileUpdateParams {
     private File.Format format;
     private File.Bioformat bioformat;
     private Software software;
-    private Experiment experiment;
+    private FileExperiment experiment;
     private List<String> tags;
     private File.FileStatus status;
 
@@ -36,7 +36,7 @@ public class FileUpdateParams {
     }
 
     public FileUpdateParams(String name, String description, List<String> samples, String checksum, File.Format format,
-                            File.Bioformat bioformat, Software software, Experiment experiment, List<String> tags, File.FileStatus status,
+                            File.Bioformat bioformat, Software software, FileExperiment experiment, List<String> tags, File.FileStatus status,
                             List<SmallRelatedFileParams> relatedFiles, List<AnnotationSet> annotationSets, Map<String, Object> stats,
                             Map<String, Object> attributes) {
         this.name = name;
@@ -173,11 +173,11 @@ public class FileUpdateParams {
         return this;
     }
 
-    public Experiment getExperiment() {
+    public FileExperiment getExperiment() {
         return experiment;
     }
 
-    public FileUpdateParams setExperiment(Experiment experiment) {
+    public FileUpdateParams setExperiment(FileExperiment experiment) {
         this.experiment = experiment;
         return this;
     }
