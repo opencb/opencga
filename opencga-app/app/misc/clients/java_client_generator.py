@@ -17,25 +17,6 @@ class JavaClientGenerator(RestClientGenerator):
         self.ignore_types = [
             'Integer', 'String', 'boolean', 'int', 'Boolean'
         ]
-        self.categories = {
-            'Users': 'User',
-            'Projects': 'Project',
-            'Studies': 'Study',
-            'Files': 'File',
-            'Jobs': 'Job',
-            'Samples': 'Sample',
-            'Individuals': 'Individual',
-            'Families': 'Family',
-            'Cohorts': 'Cohort',
-            'Disease Panels': 'Panel',
-            'Analysis - Alignment': 'Alignment',
-            'Analysis - Variant': 'Variant',
-            'Analysis - Clinical Interpretation': 'Clinical',
-            'Operations - Variant Storage': 'Operation',
-            'Meta': 'Meta',
-            'GA4GH': 'GA4GH',
-            'Admin': 'Admin'
-        }
         self.param_types = {
             'string': 'String',
             'integer': 'int',
@@ -44,7 +25,6 @@ class JavaClientGenerator(RestClientGenerator):
             'boolean': 'boolean',
             'enum': 'String'
         }
-
 
     def get_imports(self):
         headers = []

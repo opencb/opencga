@@ -29,6 +29,25 @@ class RestClientGenerator(ABC):
             'analysis/clinical/{clinicalAnalysis}/interpretations/{interpretation}/update': {'method_name': 'update_interpretation'},
             'ga4gh/reads/{study}/{file}': {'method_name': 'fetch_reads'}
         }
+        self.categories = {
+            'Users': 'User',
+            'Projects': 'Project',
+            'Studies': 'Study',
+            'Files': 'File',
+            'Jobs': 'Job',
+            'Samples': 'Sample',
+            'Individuals': 'Individual',
+            'Families': 'Family',
+            'Cohorts': 'Cohort',
+            'Disease Panels': 'DiseasePanel',
+            'Analysis - Alignment': 'Alignment',
+            'Analysis - Variant': 'Variant',
+            'Analysis - Clinical Interpretation': 'Clinical',
+            'Operations - Variant Storage': 'VariantOperation',
+            'Meta': 'Meta',
+            'GA4GH': 'GA4GH',
+            'Admin': 'Admin'
+        }
 
     @staticmethod
     def get_category_name(category):
