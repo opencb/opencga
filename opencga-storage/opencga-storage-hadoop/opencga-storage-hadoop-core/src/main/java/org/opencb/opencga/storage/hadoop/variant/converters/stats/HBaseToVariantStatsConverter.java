@@ -141,6 +141,9 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
         stats.setAltAlleleFreq(protoStats.getAltAlleleFreq());
         stats.setRefAlleleCount(protoStats.getRefAlleleCount());
         stats.setRefAlleleFreq(protoStats.getRefAlleleFreq());
+        stats.setMissingAlleleCount(protoStats.getMissingAlleleCount());
+        stats.setMissingGenotypeCount(protoStats.getMissingGenotypeCount());
+        stats.setQualityAvg(protoStats.getQualityAvg());
 
         Map<Genotype, Float> genotypesFreq = new HashMap<>();
         for (Map.Entry<String, Integer> entry : protoStats.getGenotypeCountMap().entrySet()) {
@@ -152,8 +155,9 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
             }
         }
         stats.setGenotypeFreq(genotypesFreq);
-        stats.setMissingAlleleCount(protoStats.getMissingAlleleCount());
-        stats.setMissingGenotypeCount(protoStats.getMissingGenotypeCount());
+
+        stats.setFilterCount(protoStats.getFilterCountMap());
+        stats.setFilterFreq(protoStats.getFilterFreqMap());
 
         return stats;
     }
