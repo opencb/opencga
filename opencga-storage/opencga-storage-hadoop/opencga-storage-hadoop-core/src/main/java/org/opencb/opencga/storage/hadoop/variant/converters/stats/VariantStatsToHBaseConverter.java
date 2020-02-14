@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.variant.converters.stats;
 
+import htsjdk.variant.vcf.VCFConstants;
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
@@ -69,6 +70,7 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
             }
             Column mafColumn = VariantPhoenixHelper.getStatsMafColumn(studyId, cohortId);
             Column mgfColumn = VariantPhoenixHelper.getStatsMgfColumn(studyId, cohortId);
+            Column passFreqColumn = VariantPhoenixHelper.getStatsPassFreqColumn(studyId, cohortId);
             Column cohortColumn = VariantPhoenixHelper.getStatsFreqColumn(studyId, cohortId);
             Column statsColumn = VariantPhoenixHelper.getStatsColumn(studyId, cohortId);
 
@@ -76,6 +78,7 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
             add(put, mafColumn, stats.getMaf());
             add(put, mgfColumn, stats.getMgf());
             add(put, cohortColumn, Arrays.asList(stats.getRefAlleleFreq(), stats.getAltAlleleFreq()));
+            add(put, passFreqColumn, stats.getFilterFreq().getOrDefault(VCFConstants.PASSES_FILTERS_v4, 0F));
 
             VariantProto.VariantStats.Builder builder = VariantProto.VariantStats.newBuilder()
                     .setAltAlleleFreq(stats.getAltAlleleFreq())
@@ -108,6 +111,14 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
                     builder.putGenotypeFreq(e.getKey().toString(), e.getValue());
                 }
 //                assert builder.getGenotypeFreqCount() == stats.getGenotypeFreq().size();
+            }
+
+            if (stats.getFilterCount() != null) {
+                builder.putAllFilterCount(stats.getFilterCount());
+                builder.putAllFilterFreq(stats.getFilterFreq());
+            }
+            if (stats.getQualityAvg() != null) {
+                builder.setQualityAvg(stats.getQualityAvg());
             }
 
             add(put, statsColumn, builder.build().toByteArray());

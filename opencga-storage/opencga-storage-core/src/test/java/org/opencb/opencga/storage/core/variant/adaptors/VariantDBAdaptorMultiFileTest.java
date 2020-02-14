@@ -1092,6 +1092,16 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     }
 
     @Test
+    public void testGetByFilterFreq() {
+        queryResult = query(new Query(STATS_PASS_FREQ.key(), "ALL>0.6").append(STUDY.key(), study1), new QueryOptions());
+        VariantQueryResult<Variant> allVariants = query(new Query(STUDY.key(), study1), new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study1, withStats("ALL", with("PASS freq", s -> s.getFilterFreq().getOrDefault("PASS", 0F), gt(0.6))))));
+
+        queryResult = query(new Query(STATS_PASS_FREQ.key(), "ALL<0.6").append(STUDY.key(), study1), new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study1, withStats("ALL", with("PASS freq", s -> s.getFilterFreq().getOrDefault("PASS", 0F), lt(0.6))))));
+    }
+
+    @Test
     public void testGetByRelease() {
         query = new Query().append(VariantQueryParam.RELEASE.key(), 1);
         queryResult = query(query, options);

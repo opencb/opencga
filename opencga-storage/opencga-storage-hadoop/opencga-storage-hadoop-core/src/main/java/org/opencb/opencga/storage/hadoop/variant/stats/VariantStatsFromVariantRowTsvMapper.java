@@ -13,7 +13,6 @@ import org.opencb.opencga.storage.core.metadata.models.StudyMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
 import org.opencb.opencga.storage.hadoop.variant.converters.VariantRow;
 import org.opencb.opencga.storage.hadoop.variant.mr.VariantRowMapper;
-import org.opencb.opencga.storage.hadoop.variant.mr.VariantTableHelper;
 
 import java.io.IOException;
 import java.util.*;
@@ -30,11 +29,8 @@ public class VariantStatsFromVariantRowTsvMapper extends VariantRowMapper<NullWr
         cohorts = VariantStatsMapper.getCohorts(context.getConfiguration());
         calculators = new LinkedHashMap<>(cohorts.size());
 
-        VariantTableHelper helper = getHelper();
-
         VariantStorageMetadataManager metadataManager = getMetadataManager();
         StudyMetadata studyMetadata = getStudyMetadata();
-
 
         String unknownGenotype = context.getConfiguration().get(
                 VariantStorageOptions.STATS_DEFAULT_GENOTYPE.key(),

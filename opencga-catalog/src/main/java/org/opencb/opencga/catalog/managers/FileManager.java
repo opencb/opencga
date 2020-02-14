@@ -2954,7 +2954,7 @@ public class FileManager extends AnnotationSetManager<File> {
         // Create the folder in catalog
         File folder = new File(path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
                 stringPath, null, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY), false, 0, null,
-                new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), null,
+                new FileExperiment(), Collections.emptyList(), new Job(), Collections.emptyList(), null,
                 studyManager.getCurrentRelease(study), Collections.emptyList(), null, null);
         folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
         checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
@@ -3132,7 +3132,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         File folder = new File(dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
                                 File.Bioformat.NONE, dir.toUri(), destinyPath, null, TimeUtils.getTime(),
                                 TimeUtils.getTime(), description, new File.FileStatus(File.FileStatus.READY), true, 0, null,
-                                new Experiment(), Collections.emptyList(), new Job(), relatedFiles,
+                                new FileExperiment(), Collections.emptyList(), new Job(), relatedFiles,
                                 null, studyManager.getCurrentRelease(study), Collections.emptyList(),
                                 Collections.emptyMap(), Collections.emptyMap());
                         folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
@@ -3183,7 +3183,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         File subfile = new File(filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                                 File.Bioformat.NONE, filePath.toUri(), destinyPath, null, TimeUtils.getTime(),
                                 TimeUtils.getTime(), description, new File.FileStatus(File.FileStatus.READY), true, size, null,
-                                new Experiment(), Collections.emptyList(), new Job(), relatedFiles,
+                                new FileExperiment(), Collections.emptyList(), new Job(), relatedFiles,
                                 null, studyManager.getCurrentRelease(study), Collections.emptyList(),
                                 Collections.emptyMap(), Collections.emptyMap());
                         subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
@@ -3262,7 +3262,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
         File subfile = new File(Paths.get(filePath).getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                 File.Bioformat.NONE, fileUri, filePath, "", TimeUtils.getTime(), TimeUtils.getTime(),
-                "", new File.FileStatus(File.FileStatus.READY), isExternal(study, filePath, fileUri), size, null, new Experiment(),
+                "", new File.FileStatus(File.FileStatus.READY), isExternal(study, filePath, fileUri), size, null, new FileExperiment(),
                 Collections.emptyList(), new Job(), Collections.emptyList(), null, studyManager.getCurrentRelease(study),
                 Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
         subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));

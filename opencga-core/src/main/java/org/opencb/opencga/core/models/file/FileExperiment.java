@@ -21,7 +21,7 @@ import java.util.Map;
 /**
  * Created by imedina on 11/09/14.
  */
-public class Experiment {
+public class FileExperiment {
 
     private Technology technology;
     private Method method;
@@ -56,12 +56,12 @@ public class Experiment {
         RNA
     }
 
-    public Experiment() {
+    public FileExperiment() {
     }
 
-    public Experiment(Technology technology, Method method, NucleicAcidType nucleicAcidType, String manufacturer, String platform,
-                      String library, String date, String center, String lab, String responsible, String description,
-                      Map<String, Object> attributes) {
+    public FileExperiment(Technology technology, Method method, NucleicAcidType nucleicAcidType, String manufacturer, String platform,
+                          String library, String date, String center, String lab, String responsible, String description,
+                          Map<String, Object> attributes) {
         this.technology = technology;
         this.method = method;
         this.nucleicAcidType = nucleicAcidType;
@@ -99,7 +99,7 @@ public class Experiment {
         return technology;
     }
 
-    public Experiment setTechnology(Technology technology) {
+    public FileExperiment setTechnology(Technology technology) {
         this.technology = technology;
         return this;
     }
@@ -108,7 +108,7 @@ public class Experiment {
         return method;
     }
 
-    public Experiment setMethod(Method method) {
+    public FileExperiment setMethod(Method method) {
         this.method = method;
         return this;
     }
@@ -117,7 +117,7 @@ public class Experiment {
         return nucleicAcidType;
     }
 
-    public Experiment setNucleicAcidType(NucleicAcidType nucleicAcidType) {
+    public FileExperiment setNucleicAcidType(NucleicAcidType nucleicAcidType) {
         this.nucleicAcidType = nucleicAcidType;
         return this;
     }
@@ -126,7 +126,7 @@ public class Experiment {
         return manufacturer;
     }
 
-    public Experiment setManufacturer(String manufacturer) {
+    public FileExperiment setManufacturer(String manufacturer) {
         this.manufacturer = manufacturer;
         return this;
     }
@@ -135,7 +135,7 @@ public class Experiment {
         return platform;
     }
 
-    public Experiment setPlatform(String platform) {
+    public FileExperiment setPlatform(String platform) {
         this.platform = platform;
         return this;
     }
@@ -144,7 +144,7 @@ public class Experiment {
         return library;
     }
 
-    public Experiment setLibrary(String library) {
+    public FileExperiment setLibrary(String library) {
         this.library = library;
         return this;
     }
@@ -153,7 +153,7 @@ public class Experiment {
         return date;
     }
 
-    public Experiment setDate(String date) {
+    public FileExperiment setDate(String date) {
         this.date = date;
         return this;
     }
@@ -162,7 +162,7 @@ public class Experiment {
         return center;
     }
 
-    public Experiment setCenter(String center) {
+    public FileExperiment setCenter(String center) {
         this.center = center;
         return this;
     }
@@ -171,7 +171,7 @@ public class Experiment {
         return lab;
     }
 
-    public Experiment setLab(String lab) {
+    public FileExperiment setLab(String lab) {
         this.lab = lab;
         return this;
     }
@@ -180,7 +180,7 @@ public class Experiment {
         return responsible;
     }
 
-    public Experiment setResponsible(String responsible) {
+    public FileExperiment setResponsible(String responsible) {
         this.responsible = responsible;
         return this;
     }
@@ -189,7 +189,7 @@ public class Experiment {
         return description;
     }
 
-    public Experiment setDescription(String description) {
+    public FileExperiment setDescription(String description) {
         this.description = description;
         return this;
     }
@@ -198,7 +198,7 @@ public class Experiment {
         return attributes;
     }
 
-    public Experiment setAttributes(Map<String, Object> attributes) {
+    public FileExperiment setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
     }

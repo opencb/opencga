@@ -190,8 +190,8 @@ public class CatalogManager implements AutoCloseable {
 
         String token = userManager.login(OPENCGA, password);
         projectManager.create("admin", "admin", "Default project", "", "", "", "", "", null, token);
-        studyManager.create("admin", "admin", "admin", "admin", Study.Type.CASE_CONTROL, "", "Default study", new Status(), "", "", null,
-                Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), null, token);
+        studyManager.create("admin", "admin", "admin", "admin", Study.Type.CASE_CONTROL, "", "Default study", null, new Status(), "", "",
+                null, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), null, token);
     }
 
     public void installIndexes(String token) throws CatalogException {

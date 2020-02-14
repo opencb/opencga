@@ -430,7 +430,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 sb.append(String.format("%s\t%s\t%s\t%s\t%s\t%s\n",
                         StringUtils.defaultIfEmpty(job.getId(), "-"),
                         StringUtils.defaultIfEmpty(job.getCreationDate(), "-"),
-                        job.getStatus() != null ? StringUtils.defaultIfEmpty(job.getStatus().getName(), "-") : "-",
+                        job.getInternal().getStatus() != null
+                                ? StringUtils.defaultIfEmpty(job.getInternal().getStatus().getName(), "-")
+                                : "-",
                         StringUtils.join(job.getInput(), ", "),
                         StringUtils.join(job.getOutput(), ", "),
                         job.getOutDir() != null ? StringUtils.defaultIfEmpty(job.getOutDir().getId(), "-") : "-"));

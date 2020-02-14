@@ -906,9 +906,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         logger.debug("File query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return fileCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return fileCollection.iterator(clientSession, bson, null, null, qOptions);
         } else {
-            return deletedFileCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return deletedFileCollection.iterator(clientSession, bson, null, null, qOptions);
         }
     }
 

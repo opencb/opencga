@@ -95,5 +95,11 @@ migrateCollection("study", {"variableSets" : { $exists: true, $ne: [] } }, {"var
     }
 });
 
+// Ticket #1487
+db.getCollection("study").update({"notification": { $exists: false }}, {
+    "$set": {
+        "notification": {
+            "webhook": null
+        }}}, {"multi": true})
 
 // TODO: Add indexes for new "deleted" collections

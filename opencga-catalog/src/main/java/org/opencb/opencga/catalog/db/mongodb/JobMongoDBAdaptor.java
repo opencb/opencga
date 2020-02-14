@@ -36,6 +36,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.utils.UUIDUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -43,6 +44,7 @@ import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobAclEntry;
+import org.opencb.opencga.core.models.job.JobInternalWebhook;
 import org.opencb.opencga.core.models.job.ToolInfo;
 import org.opencb.opencga.core.response.OpenCGAResult;
 import org.slf4j.LoggerFactory;
@@ -226,7 +228,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         }
 
         try {
-            return runTransaction(session -> privateUpdate(session, dataResult.first(), parameters));
+            return runTransaction(session -> privateUpdate(session, dataResult.first(), parameters, queryOptions));
         } catch (CatalogDBException e) {
             logger.error("Could not update job {}: {}", dataResult.first().getId(), e.getMessage(), e);
             throw new CatalogDBException("Could not update job " + dataResult.first().getId() + ": " + e.getMessage(), e.getCause());
@@ -252,7 +254,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         while (iterator.hasNext()) {
             Job job = iterator.next();
             try {
-                result.append(runTransaction(session -> privateUpdate(session, job, parameters)));
+                result.append(runTransaction(session -> privateUpdate(session, job, parameters, queryOptions)));
             } catch (CatalogDBException | CatalogParameterException | CatalogAuthorizationException e) {
                 logger.error("Could not update job {}: {}", job.getId(), e.getMessage(), e);
                 result.getEvents().add(new Event(Event.Type.ERROR, job.getId(), e.getMessage()));
@@ -262,11 +264,11 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         return result;
     }
 
-    OpenCGAResult<Object> privateUpdate(ClientSession clientSession, Job job, ObjectMap parameters)
+    OpenCGAResult<Object> privateUpdate(ClientSession clientSession, Job job, ObjectMap parameters, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long tmpStartTime = startQuery();
 
-        Document jobParameters = getValidatedUpdateParams(parameters);
+        Document jobParameters = parseAndValidateUpdateParams(parameters, options).toFinalUpdateDocument();
         if (jobParameters.isEmpty()) {
             if (!parameters.isEmpty()) {
                 logger.error("Non-processed update parameters: {}", parameters.keySet());
@@ -279,10 +281,11 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 .append(QueryParams.UID.key(), job.getUid());
         Bson finalQuery = parseQuery(tmpQuery);
 
-        logger.debug("Job update: query : {}, update: {}",
+        logger.info("Job update: query : {}, update: {}",
                 finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 jobParameters.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        DataResult result = jobCollection.update(clientSession, finalQuery, new Document("$set", jobParameters), null);
+        DataResult result = jobCollection.update(clientSession, finalQuery, jobParameters, null);
+        System.out.println(result.getNumUpdated());
 
         if (result.getNumMatches() == 0) {
             throw new CatalogDBException("Job " + job.getId() + " not found");
@@ -343,7 +346,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         logger.debug("Deleting job {} ({})", jobId, jobUid);
 
         // Add status DELETED
-        jobDocument.put(QueryParams.STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"));
+        documentPut(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(new Status(Status.DELETED), "status"), jobDocument);
 
         // Upsert the document into the DELETED collection
         Bson query = new Document()
@@ -368,78 +371,103 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         return endWrite(tmpStartTime, 1, 0, 0, 1, null);
     }
 
-    private Document getValidatedUpdateParams(ObjectMap parameters) throws CatalogDBException {
-        Document jobParameters = new Document();
+    private UpdateDocument parseAndValidateUpdateParams(ObjectMap parameters, QueryOptions options) throws CatalogDBException {
+        UpdateDocument document = new UpdateDocument();
 
         String[] acceptedParams = {QueryParams.USER_ID.key(), QueryParams.DESCRIPTION.key(), QueryParams.COMMAND_LINE.key()};
-        filterStringParams(parameters, jobParameters, acceptedParams);
+        filterStringParams(parameters, document.getSet(), acceptedParams);
 
         String[] acceptedBooleanParams = {QueryParams.VISITED.key()};
-        filterBooleanParams(parameters, jobParameters, acceptedBooleanParams);
+        filterBooleanParams(parameters, document.getSet(), acceptedBooleanParams);
 
         String[] acceptedStringListParams = {QueryParams.TAGS.key()};
-        filterStringListParams(parameters, jobParameters, acceptedStringListParams);
-
-        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            jobParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
-            jobParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
-        }
+        filterStringListParams(parameters, document.getSet(), acceptedStringListParams);
 
         if (parameters.containsKey(QueryParams.TOOL.key())) {
             if (parameters.get(QueryParams.TOOL.key()) instanceof ToolInfo) {
-                jobParameters.put(QueryParams.TOOL.key(), getMongoDBDocument(parameters.get(QueryParams.TOOL.key()),
+                document.getSet().put(QueryParams.TOOL.key(), getMongoDBDocument(parameters.get(QueryParams.TOOL.key()),
                         ToolInfo.class.getName()));
             } else {
-                jobParameters.put(QueryParams.TOOL.key(), parameters.get(QueryParams.TOOL.key()));
+                document.getSet().put(QueryParams.TOOL.key(), parameters.get(QueryParams.TOOL.key()));
             }
         }
 
-        if (parameters.containsKey(QueryParams.STATUS.key())) {
-            if (parameters.get(QueryParams.STATUS.key()) instanceof Enums.ExecutionStatus) {
-                jobParameters.put(QueryParams.STATUS.key(), getMongoDBDocument(parameters.get(QueryParams.STATUS.key()), "Job.JobStatus"));
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS.key())) {
+            Object value = parameters.get(QueryParams.INTERNAL_STATUS.key());
+            if (value instanceof Enums.ExecutionStatus) {
+                document.getSet().put(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(value, "Job.JobStatus"));
             } else {
-                jobParameters.put(QueryParams.STATUS.key(), parameters.get(QueryParams.STATUS.key()));
+                document.getSet().put(QueryParams.INTERNAL_STATUS.key(), value);
+            }
+        }
+
+        if (parameters.containsKey(QueryParams.INTERNAL_WEBHOOK.key())) {
+            Object value = parameters.get(QueryParams.INTERNAL_WEBHOOK.key());
+            if (value instanceof JobInternalWebhook) {
+                document.getSet().put(QueryParams.INTERNAL_WEBHOOK.key(), getMongoDBDocument(value, "JobInternalWebhook"));
+            } else {
+                document.getSet().put(QueryParams.INTERNAL_WEBHOOK.key(), value);
+            }
+        }
+
+        if (parameters.containsKey(QueryParams.INTERNAL_EVENTS.key())) {
+            Map<String, Object> actionMap = options.getMap(Constants.ACTIONS, new HashMap<>());
+            String operation = (String) actionMap.getOrDefault(QueryParams.INTERNAL_EVENTS.key(), ParamUtils.UpdateAction.ADD.name());
+
+            String[] acceptedObjectParams = new String[]{QueryParams.INTERNAL_EVENTS.key()};
+            switch (operation) {
+                case "SET":
+                    filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
+                    break;
+                case "REMOVE":
+                    filterObjectParams(parameters, document.getPullAll(), acceptedObjectParams);
+                    break;
+                case "ADD":
+                default:
+                    filterObjectParams(parameters, document.getAddToSet(), acceptedObjectParams);
+                    break;
             }
         }
 
         if (parameters.containsKey(QueryParams.INPUT.key())) {
             List<Object> fileList = parameters.getList(QueryParams.INPUT.key());
-            jobParameters.put(QueryParams.INPUT.key(), jobConverter.convertFilesToDocument(fileList));
+            document.getSet().put(QueryParams.INPUT.key(), jobConverter.convertFilesToDocument(fileList));
         }
         if (parameters.containsKey(QueryParams.OUTPUT.key())) {
             List<Object> fileList = parameters.getList(QueryParams.OUTPUT.key());
-            jobParameters.put(QueryParams.OUTPUT.key(), jobConverter.convertFilesToDocument(fileList));
+            document.getSet().put(QueryParams.OUTPUT.key(), jobConverter.convertFilesToDocument(fileList));
         }
         if (parameters.containsKey(QueryParams.OUT_DIR.key())) {
-            jobParameters.put(QueryParams.OUT_DIR.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.OUT_DIR.key())));
+            document.getSet().put(QueryParams.OUT_DIR.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.OUT_DIR.key())));
         }
         if (parameters.containsKey(QueryParams.STDOUT.key())) {
-            jobParameters.put(QueryParams.STDOUT.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.STDOUT.key())));
+            document.getSet().put(QueryParams.STDOUT.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.STDOUT.key())));
         }
         if (parameters.containsKey(QueryParams.STDERR.key())) {
-            jobParameters.put(QueryParams.STDERR.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.STDERR.key())));
+            document.getSet().put(QueryParams.STDERR.key(), jobConverter.convertFileToDocument(parameters.get(QueryParams.STDERR.key())));
         }
 
         if (parameters.containsKey(QueryParams.PRIORITY.key())) {
-            jobParameters.put(QueryParams.PRIORITY.key(), parameters.getString(QueryParams.PRIORITY.key()));
-            jobParameters.put(PRIVATE_PRIORITY, Enums.Priority.getPriority(parameters.getString(QueryParams.PRIORITY.key())).getValue());
+            document.getSet().put(QueryParams.PRIORITY.key(), parameters.getString(QueryParams.PRIORITY.key()));
+            document.getSet().put(PRIVATE_PRIORITY,
+                    Enums.Priority.getPriority(parameters.getString(QueryParams.PRIORITY.key())).getValue());
         }
 
         String[] acceptedObjectParams = {QueryParams.EXECUTION.key()};
-        filterObjectParams(parameters, jobParameters, acceptedObjectParams);
+        filterObjectParams(parameters, document.getSet(), acceptedObjectParams);
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key()};
-        filterMapParams(parameters, jobParameters, acceptedMapParams);
+        filterMapParams(parameters, document.getSet(), acceptedMapParams);
 
-        if (!jobParameters.isEmpty()) {
+        if (!document.toFinalUpdateDocument().isEmpty()) {
             // Update modificationDate param
             String time = TimeUtils.getTime();
             Date date = TimeUtils.toDate(time);
-            jobParameters.put(QueryParams.MODIFICATION_DATE.key(), time);
-            jobParameters.put(PRIVATE_MODIFICATION_DATE, date);
+            document.getSet().put(QueryParams.MODIFICATION_DATE.key(), time);
+            document.getSet().put(PRIVATE_MODIFICATION_DATE, date);
         }
 
-        return jobParameters;
+        return document;
     }
 
     public OpenCGAResult clean(int id) throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
@@ -581,9 +609,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         logger.debug("Job get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return jobCollection.nativeQuery().find(bson, qOptions);
+            return jobCollection.iterator(bson, qOptions);
         } else {
-            return deletedJobCollection.nativeQuery().find(bson, qOptions);
+            return deletedJobCollection.iterator(bson, qOptions);
         }
     }
 
@@ -792,7 +820,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case MODIFICATION_DATE:
                         addAutoOrQuery(PRIVATE_MODIFICATION_DATE, queryParam.key(), queryCopy, queryParam.type(), andBsonList);
                         break;
-                    case STATUS_NAME:
+                    case INTERNAL_STATUS_NAME:
                         // Convert the status to a positive status
                         queryCopy.put(queryParam.key(),
                                 Status.getPositiveStatus(Enums.ExecutionStatus.STATUS_LIST, queryCopy.getString(queryParam.key())));
@@ -811,9 +839,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case COMMAND_LINE:
                     case VISITED:
                     case RELEASE:
-                    case STATUS:
-                    case STATUS_MSG:
-                    case STATUS_DATE:
+                    case INTERNAL_STATUS:
+                    case INTERNAL_STATUS_MSG:
+                    case INTERNAL_STATUS_DATE:
                     case SIZE:
                     case OUT_DIR_UID:
                     case TMP_OUT_DIR_URI:

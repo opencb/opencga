@@ -37,9 +37,8 @@ public class VariantQueryParams extends BasicVariantQueryParams {
     private String familySegregation;
 
     private String cohort;
+    private String cohortStatsPass;
     private String cohortStatsMgf;
-    private String maf;
-    private String mgf;
     private String missingAlleles;
     private String missingGenotypes;
     private Boolean annotationExists;
@@ -311,21 +310,12 @@ public class VariantQueryParams extends BasicVariantQueryParams {
         return this;
     }
 
-    public String getMaf() {
-        return maf;
+    public String getCohortStatsPass() {
+        return cohortStatsPass;
     }
 
-    public VariantQueryParams setMaf(String maf) {
-        this.maf = maf;
-        return this;
-    }
-
-    public String getMgf() {
-        return mgf;
-    }
-
-    public VariantQueryParams setMgf(String mgf) {
-        this.mgf = mgf;
+    public VariantQueryParams setCohortStatsPass(String cohortStatsPass) {
+        this.cohortStatsPass = cohortStatsPass;
         return this;
     }
 

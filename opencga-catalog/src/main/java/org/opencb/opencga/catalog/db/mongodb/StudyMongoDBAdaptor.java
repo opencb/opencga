@@ -1323,6 +1323,11 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             studyParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
+        if (parameters.containsKey(QueryParams.NOTIFICATION_WEBHOOK.key())) {
+            Object value = parameters.get(QueryParams.NOTIFICATION_WEBHOOK.key());
+            studyParameters.put(QueryParams.NOTIFICATION_WEBHOOK.key(), value);
+        }
+
         if (!studyParameters.isEmpty()) {
             // Update modificationDate param
             String time = TimeUtils.getTime();
@@ -1652,9 +1657,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         logger.debug("Study native get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return studyCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return studyCollection.iterator(clientSession, bson, null, null, qOptions);
         } else {
-            return deletedStudyCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return deletedStudyCollection.iterator(clientSession, bson, null, null, qOptions);
         }
     }
 

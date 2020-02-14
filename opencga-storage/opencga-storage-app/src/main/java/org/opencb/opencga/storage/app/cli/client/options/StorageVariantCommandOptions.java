@@ -348,6 +348,9 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--mgf", "--cohort-stats-mgf"}, description = STATS_MGF_DESCR)
         public String mgf;
 
+        @Parameter(names = {"--cohort-stats-pass"}, description = STATS_PASS_FREQ_DESCR)
+        public String cohortStatsPass;
+
         @Parameter(names = {"--stats-missing-allele"}, description = MISSING_ALLELES_DESCR)
         public String missingAlleleCount;
 

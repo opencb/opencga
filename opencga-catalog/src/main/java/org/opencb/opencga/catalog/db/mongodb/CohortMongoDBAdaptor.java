@@ -644,9 +644,9 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor<Cohort> imple
 
         logger.debug("Cohort query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return cohortCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return cohortCollection.iterator(clientSession, bson, null, null, qOptions);
         } else {
-            return deletedCohortCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return deletedCohortCollection.iterator(clientSession, bson, null, null, qOptions);
         }
     }
 

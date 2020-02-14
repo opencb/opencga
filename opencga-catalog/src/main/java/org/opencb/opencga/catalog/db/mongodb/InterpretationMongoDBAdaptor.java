@@ -372,7 +372,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         }
 
         logger.debug("Interpretation query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return interpretationCollection.nativeQuery().find(bson, qOptions);
+        return interpretationCollection.iterator(bson, qOptions);
     }
 
     @Override

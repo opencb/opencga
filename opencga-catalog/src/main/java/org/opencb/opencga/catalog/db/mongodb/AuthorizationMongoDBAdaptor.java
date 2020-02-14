@@ -669,7 +669,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key(), PERMISSION_RULES_APPLIED, PRIVATE_UID));
-        MongoDBIterator<Document> iterator = collection.nativeQuery().find(query, options);
+        MongoDBIterator<Document> iterator = collection.iterator(query, options);
         while (iterator.hasNext()) {
             Document myDocument = iterator.next();
             Set<String> effectivePermissions = new HashSet<>();
@@ -757,7 +757,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
                 .append(PERMISSION_RULES_APPLIED, permissionRuleId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
                 Arrays.asList(QueryParams.ACL.key(), QueryParams.USER_DEFINED_ACLS.key(), PERMISSION_RULES_APPLIED, PRIVATE_UID));
-        MongoDBIterator<Document> iterator = collection.nativeQuery().find(query, options);
+        MongoDBIterator<Document> iterator = collection.iterator(query, options);
         while (iterator.hasNext()) {
             Document myDocument = iterator.next();
             Set<String> effectivePermissions = new HashSet<>();

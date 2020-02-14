@@ -38,6 +38,7 @@ import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyUpdateParams;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageOptions;
@@ -95,8 +96,9 @@ public class StatsVariantStorageTest extends AbstractVariantOperationManagerTest
         } else {
             attributes = Collections.emptyMap();
         }
-        ObjectMap parameters = new ObjectMap(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
-        catalogManager.getStudyManager().update(studyId, parameters, null, sessionId);
+        StudyUpdateParams updateParams = new StudyUpdateParams()
+                .setAttributes(attributes);
+        catalogManager.getStudyManager().update(studyId, updateParams, null, sessionId);
 
         File file1 = opencga.createFile(studyId, fileName, sessionId);
 

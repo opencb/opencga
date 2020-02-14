@@ -21,7 +21,6 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.FacetField;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -42,8 +41,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 
 @Path("/{apiVersion}/studies")
@@ -76,7 +73,8 @@ public class StudyWSServer extends OpenCGAWSServer {
 
             String studyId = StringUtils.isEmpty(study.getId()) ? study.getAlias() : study.getId();
             return createOkResponse(catalogManager.getStudyManager().create(project, studyId, study.getAlias(), study.getName(), study.getType(),
-                    null, study.getDescription(), null, null, null, null, null, study.getStats(), study.getAttributes(), queryOptions, token));
+                    null, study.getDescription(), study.getNotification(), null, null, null, null, null, study.getStats(), study.getAttributes(),
+                    queryOptions, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -135,8 +133,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                  @ApiParam(value = "JSON containing the params to be updated.", required = true) StudyUpdateParams updateParams) {
         try {
             ObjectUtils.defaultIfNull(updateParams, new StudyUpdateParams());
-            DataResult queryResult = catalogManager.getStudyManager().update(studyStr,
-                    new ObjectMap(getUpdateObjectMapper().writeValueAsString(updateParams)), null, token);
+            DataResult queryResult = catalogManager.getStudyManager().update(studyStr, updateParams, null, token);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

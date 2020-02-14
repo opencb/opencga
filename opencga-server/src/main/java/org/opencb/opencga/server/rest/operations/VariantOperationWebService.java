@@ -7,11 +7,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.operations.*;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.exceptions.VersionException;
 import org.opencb.opencga.core.models.job.Job;
-import org.opencb.opencga.server.rest.OpenCGAWSServer;
+import org.opencb.opencga.core.models.operations.variant.*;
 import org.opencb.opencga.core.tools.ToolParams;
+import org.opencb.opencga.server.rest.OpenCGAWSServer;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -231,13 +231,13 @@ public class VariantOperationWebService extends OpenCGAWSServer {
         }
     }
 
-    public Response submitOperationToProject(String toolId, String project, Map<String, Object> paramsMap,
-                                             String jobName, String jobDescription, String jobDependsOn, String jobTags) {
+    public Response submitOperationToProject(String toolId, String project, Map<String, Object> paramsMap, String jobName,
+                                             String jobDescription, String jobDependsOn, String jobTags) {
         return submitOperation(toolId, project, null, paramsMap, jobName, jobDescription, jobDependsOn, jobTags);
     }
 
-    public Response submitOperation(String toolId, Map<String, Object> paramsMap,
-                                    String jobName, String jobDescription, String jobDependsOn, String jobTags) {
+    public Response submitOperation(String toolId, Map<String, Object> paramsMap, String jobName, String jobDescription,
+                                    String jobDependsOn, String jobTags) {
         String project = (String) paramsMap.get(ParamConstants.PROJECT_PARAM);
         String study = (String) paramsMap.get(ParamConstants.STUDY_PARAM);
         return submitOperation(toolId, project, study, paramsMap, jobName, jobDescription, jobDependsOn, jobTags);

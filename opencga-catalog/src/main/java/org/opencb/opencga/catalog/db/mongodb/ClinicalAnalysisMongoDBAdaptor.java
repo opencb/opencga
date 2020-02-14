@@ -329,7 +329,7 @@ public class ClinicalAnalysisMongoDBAdaptor extends MongoDBAdaptor implements Cl
         qOptions = removeInnerProjections(qOptions, QueryParams.INTERPRETATIONS.key());
 
         logger.debug("Clinical analysis query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        return clinicalCollection.nativeQuery().find(bson, qOptions);
+        return clinicalCollection.iterator(bson, qOptions);
     }
 
     @Override
