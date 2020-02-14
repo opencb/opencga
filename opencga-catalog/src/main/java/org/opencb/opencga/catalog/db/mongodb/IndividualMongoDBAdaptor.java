@@ -985,9 +985,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         logger.debug("Individual get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return individualCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return individualCollection.iterator(clientSession, bson, null, null, qOptions);
         } else {
-            return deletedIndividualCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return deletedIndividualCollection.iterator(clientSession, bson, null, null, qOptions);
         }
     }
 

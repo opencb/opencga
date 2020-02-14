@@ -73,7 +73,7 @@ public class File extends Annotable {
 
     private long size;
     private Software software;
-    private Experiment experiment;
+    private FileExperiment experiment;
     private List<Sample> samples;
 
     private List<String> tags;
@@ -97,20 +97,20 @@ public class File extends Annotable {
     public File(String name, Type type, Format format, Bioformat bioformat, String path, URI uri, String description, FileStatus status,
                 long size, int release) {
         this(name, type, format, bioformat, uri, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description, status,
-                false, size, null, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(),
+                false, size, null, new FileExperiment(), Collections.emptyList(), new Job(), Collections.emptyList(),
                 new FileIndex(), release, Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
     }
 
     public File(Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status, long size,
                 List<Sample> samples, long jobId, Software software, Map<String, Object> stats, Map<String, Object> attributes) {
         this("", type, format, bioformat, null, path, null, TimeUtils.getTime(), TimeUtils.getTime(), description, status,
-                false, size, software, new Experiment(), samples, new Job().setUid(jobId), Collections.emptyList(), new FileIndex(), -1,
+                false, size, software, new FileExperiment(), samples, new Job().setUid(jobId), Collections.emptyList(), new FileIndex(), -1,
                 Collections.emptyList(), stats, attributes);
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String checksum,
                 String creationDate, String modificationDate, String description, FileStatus status, boolean external, long size,
-                Software software, Experiment experiment, List<Sample> samples, Job job, List<RelatedFile> relatedFiles, FileIndex index,
+                Software software, FileExperiment experiment, List<Sample> samples, Job job, List<RelatedFile> relatedFiles, FileIndex index,
                 int release, List<AnnotationSet> annotationSets, Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = StringUtils.isNotEmpty(path) ? StringUtils.replace(path, "/", ":") : path;
         this.name = name;
@@ -557,11 +557,11 @@ public class File extends Annotable {
         return this;
     }
 
-    public Experiment getExperiment() {
+    public FileExperiment getExperiment() {
         return experiment;
     }
 
-    public File setExperiment(Experiment experiment) {
+    public File setExperiment(FileExperiment experiment) {
         this.experiment = experiment;
         return this;
     }

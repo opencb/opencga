@@ -116,7 +116,7 @@ public class ProjectManagerTest extends GenericTest {
         assertEquals("s2", queryResult.first().getStudies().get(0).getId());
 
         // Add permissions to a group were user belongs
-        catalogManager.getStudyManager().createGroup(studyId3, "@member", "@member", Collections.singletonList("user"), sessionIdUser2);
+        catalogManager.getStudyManager().createGroup(studyId3, "@member", Collections.singletonList("user"), sessionIdUser2);
 
         queryResult = catalogManager.getProjectManager().getSharedProjects("user", null, sessionIdUser);
         assertEquals(1, queryResult.getNumResults());

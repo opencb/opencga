@@ -80,7 +80,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study)
                 .append(ParamConstants.PROJECT_PARAM, cliOptions.project);
 
-        return openCGAClient.getOperationClient().secondaryIndexVariant(
+        return openCGAClient.getVariantOperationClient().secondaryIndexVariant(
                 new VariantSecondaryIndexParams(
                         cliOptions.region,
                         cliOptions.sample,
@@ -94,7 +94,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study)
                 .append("sample", cliOptions.sample);
 
-        return openCGAClient.getOperationClient().deleteVariantSecondaryIndex(params);
+        return openCGAClient.getVariantOperationClient().deleteVariantSecondaryIndex(params);
     }
 
     private RestResponse<Job> variantAnnotationIndex() throws ClientException {
@@ -116,7 +116,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 cliOptions.genericVariantAnnotateOptions.load,
                 cliOptions.genericVariantAnnotateOptions.customName
         );
-        return openCGAClient.getOperationClient().indexVariantAnnotation(body, params);
+        return openCGAClient.getVariantOperationClient().indexVariantAnnotation(body, params);
     }
 
     private RestResponse variantAnnotationSave() throws ClientException {
@@ -125,7 +125,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.PROJECT_PARAM, cliOptions.project);
 
-        return openCGAClient.getOperationClient().saveVariantAnnotation(new VariantAnnotationSaveParams(cliOptions.annotationId), params);
+        return openCGAClient.getVariantOperationClient().saveVariantAnnotation(new VariantAnnotationSaveParams(cliOptions.annotationId), params);
     }
 
     private RestResponse variantAnnotationDelete() throws ClientException {
@@ -135,7 +135,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                 .append(ParamConstants.PROJECT_PARAM, cliOptions.project)
                 .appendAll(new VariantAnnotationDeleteParams(cliOptions.annotationId).toObjectMap());
 
-        return openCGAClient.getOperationClient().deleteVariantAnnotation(params);
+        return openCGAClient.getVariantOperationClient().deleteVariantAnnotation(params);
     }
 
     private RestResponse variantScoreIndex() throws ClientException {
@@ -144,7 +144,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        return openCGAClient.getOperationClient().indexVariantScore(
+        return openCGAClient.getVariantOperationClient().indexVariantScore(
                 new VariantScoreIndexParams(
                         cliOptions.scoreName,
                         cliOptions.cohort1,
@@ -165,7 +165,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
                         cliOptions.resume,
                         cliOptions.force).toObjectMap());
 
-        return openCGAClient.getOperationClient().deleteVariantScore(params);
+        return openCGAClient.getVariantOperationClient().deleteVariantScore(params);
     }
 
     private RestResponse<Job> variantFamilyIndex() throws ClientException {
@@ -174,7 +174,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        return openCGAClient.getOperationClient().indexFamilyGenotype(
+        return openCGAClient.getVariantOperationClient().indexFamilyGenotype(
                 new VariantFamilyIndexParams(
                         cliOptions.family,
                         cliOptions.overwrite,
@@ -188,7 +188,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        return openCGAClient.getOperationClient().indexSampleGenotype(
+        return openCGAClient.getVariantOperationClient().indexSampleGenotype(
                 new VariantSampleIndexParams(
                         cliOptions.sample,
                         cliOptions.buildIndex,
@@ -202,7 +202,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        return openCGAClient.getOperationClient().aggregateVariant(
+        return openCGAClient.getVariantOperationClient().aggregateVariant(
                 new VariantAggregateParams(
                         cliOptions.aggregateCommandOptions.overwrite,
                         cliOptions.aggregateCommandOptions.resume
@@ -215,7 +215,7 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap params = new ObjectMap(cliOptions.commonOptions.params)
                 .append(ParamConstants.STUDY_PARAM, cliOptions.study);
 
-        return openCGAClient.getOperationClient().aggregateVariantFamily(
+        return openCGAClient.getVariantOperationClient().aggregateVariantFamily(
                 new VariantAggregateFamilyParams(
                         cliOptions.genericAggregateFamilyOptions.samples, cliOptions.genericAggregateFamilyOptions.resume
                 ), params);

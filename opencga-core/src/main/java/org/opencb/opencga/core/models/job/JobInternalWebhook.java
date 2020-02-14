@@ -1,23 +1,20 @@
 package org.opencb.opencga.core.models.job;
 
-import org.opencb.opencga.core.models.common.Enums;
-
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-public class JobInternalWebhook {
+public class JobInternalWebhook implements Cloneable {
 
-    private URL webhook;
-    private Map<Enums.ExecutionStatus, Status> status;
+    private URL url;
+    private Map<String, Status> status;
 
     public JobInternalWebhook() {
-        this(null, new HashMap<>());
     }
 
-    public JobInternalWebhook(URL webhook, Map<Enums.ExecutionStatus, Status> status) {
-        this.webhook = webhook;
-        this.status = status != null ? status : new HashMap<>();
+    public JobInternalWebhook(URL url, Map<String, Status> status) {
+        this.url = url;
+        this.status = status;
     }
 
     public enum Status {
@@ -28,26 +25,33 @@ public class JobInternalWebhook {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("JobInternalWebhook{");
-        sb.append("webhook=").append(webhook);
+        sb.append("webhook=").append(url);
         sb.append(", status=").append(status);
         sb.append('}');
         return sb.toString();
     }
 
-    public URL getWebhook() {
-        return webhook;
+    @Override
+    public JobInternalWebhook clone() throws CloneNotSupportedException {
+        JobInternalWebhook jobInternalWebhook = (JobInternalWebhook) super.clone();
+        jobInternalWebhook.setStatus(new HashMap<>(status));
+        return jobInternalWebhook;
     }
 
-    public JobInternalWebhook setWebhook(URL webhook) {
-        this.webhook = webhook;
+    public URL getUrl() {
+        return url;
+    }
+
+    public JobInternalWebhook setUrl(URL url) {
+        this.url = url;
         return this;
     }
 
-    public Map<Enums.ExecutionStatus, Status> getStatus() {
+    public Map<String, Status> getStatus() {
         return status;
     }
 
-    public JobInternalWebhook setStatus(Map<Enums.ExecutionStatus, Status> status) {
+    public JobInternalWebhook setStatus(Map<String, Status> status) {
         this.status = status;
         return this;
     }

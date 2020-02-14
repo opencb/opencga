@@ -33,7 +33,6 @@ import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.sample.Sample;
 
 import java.net.URI;
-import java.net.URL;
 import java.util.*;
 
 /**
@@ -53,7 +52,7 @@ public class Study extends PrivateFields {
     private long size;
     private String fqn;
 
-    private URL webhook;
+    private StudyNotification notification;
 
     private List<Group> groups;
 
@@ -62,9 +61,7 @@ public class Study extends PrivateFields {
     private List<Individual> individuals;
     private List<Family> families;
     private List<Sample> samples;
-
     private List<Cohort> cohorts;
-
     private List<Panel> panels;
 
     private List<VariableSet> variableSets;
@@ -91,9 +88,9 @@ public class Study extends PrivateFields {
                 new HashMap<>(), uri, new HashMap<>(), release, new HashMap<>(), new HashMap<>());
     }
 
-    public Study(String id, String name, String alias, Type type, String creationDate, String description, URL webhook, Status status,
-                 long size, List<Group> groups, List<File> files, List<Job> jobs, List<Individual> individuals, List<Family> families,
-                 List<Sample> samples, List<Cohort> cohorts, List<Panel> panels, List<VariableSet> variableSets,
+    public Study(String id, String name, String alias, Type type, String creationDate, String description, StudyNotification notification,
+                 Status status, long size, List<Group> groups, List<File> files, List<Job> jobs, List<Individual> individuals,
+                 List<Family> families, List<Sample> samples, List<Cohort> cohorts, List<Panel> panels, List<VariableSet> variableSets,
                  Map<Entity, List<PermissionRule>> permissionRules, URI uri, Map<File.Bioformat, DataStore> dataStores, int release,
                  Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
@@ -102,7 +99,7 @@ public class Study extends PrivateFields {
         this.type = type;
         this.creationDate = creationDate;
         this.description = description;
-        this.webhook = webhook;
+        this.notification = notification;
         this.status = status;
         this.size = size;
         this.groups = ObjectUtils.defaultIfNull(groups, new ArrayList<>());
@@ -170,7 +167,7 @@ public class Study extends PrivateFields {
         sb.append(", status=").append(status);
         sb.append(", size=").append(size);
         sb.append(", fqn='").append(fqn).append('\'');
-        sb.append(", webhook=").append(webhook);
+        sb.append(", notification=").append(notification);
         sb.append(", groups=").append(groups);
         sb.append(", files=").append(files);
         sb.append(", jobs=").append(jobs);
@@ -268,12 +265,12 @@ public class Study extends PrivateFields {
         return this;
     }
 
-    public URL getWebhook() {
-        return webhook;
+    public StudyNotification getNotification() {
+        return notification;
     }
 
-    public Study setWebhook(URL webhook) {
-        this.webhook = webhook;
+    public Study setNotification(StudyNotification notification) {
+        this.notification = notification;
         return this;
     }
 

@@ -115,6 +115,8 @@ public interface JobDBAdaptor extends DBAdaptor<Job> {
         PRIORITY("priority", TEXT, ""),
 
         INTERNAL_STATUS("internal.status", OBJECT, ""),
+        INTERNAL_WEBHOOK("internal.webhook", OBJECT, ""),
+        INTERNAL_EVENTS("internal.events", OBJECT, ""),
         OUT_DIR("outDir", OBJECT, ""),
 
         INPUT("input", OBJECT, ""),

@@ -8,27 +8,24 @@ public class GroupCreateParams {
 
     @JsonProperty(required = true)
     private String id;
-    private String name;
     private List<String> users;
 
     public GroupCreateParams() {
     }
 
-    public GroupCreateParams(String id, String name, List<String> users) {
+    public GroupCreateParams(String id, List<String> users) {
         this.id = id;
-        this.name = name;
         this.users = users;
     }
 
     public static GroupCreateParams of(Group group) {
-        return new GroupCreateParams(group.getId(), group.getName(), group.getUserIds());
+        return new GroupCreateParams(group.getId(), group.getUserIds());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("GroupCreateParams{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
         sb.append(", users='").append(users).append('\'');
         sb.append('}');
         return sb.toString();
@@ -40,15 +37,6 @@ public class GroupCreateParams {
 
     public GroupCreateParams setId(String id) {
         this.id = id;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public GroupCreateParams setName(String name) {
-        this.name = name;
         return this;
     }
 
