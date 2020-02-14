@@ -76,6 +76,7 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_STATS;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -514,7 +515,13 @@ public class FileManager extends AnnotationSetManager<File> {
                 index.setRelease(release);
             }
         }
-        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
+        ObjectMap params = null;
+        try {
+            params = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), new ObjectMap(getUpdateObjectMapper()
+                    .writeValueAsString(index)));
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Cannot parse index object: " + e.getMessage(), e);
+        }
         OpenCGAResult update = fileDBAdaptor.update(file.getUid(), params, QueryOptions.empty());
         auditManager.auditUpdate(userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
                 auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));

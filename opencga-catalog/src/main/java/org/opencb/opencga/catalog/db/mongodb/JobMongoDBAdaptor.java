@@ -392,13 +392,13 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             }
         }
 
-        if (parameters.containsKey(QueryParams.INTERNAL_STATUS.key())) {
-            Object value = parameters.get(QueryParams.INTERNAL_STATUS.key());
-            if (value instanceof Enums.ExecutionStatus) {
-                document.getSet().put(QueryParams.INTERNAL_STATUS.key(), getMongoDBDocument(value, "Job.JobStatus"));
-            } else {
-                document.getSet().put(QueryParams.INTERNAL_STATUS.key(), value);
-            }
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_NAME.key())) {
+            document.getSet().put(QueryParams.INTERNAL_STATUS_NAME.key(), parameters.get(QueryParams.INTERNAL_STATUS_NAME.key()));
+            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
+        }
+        if (parameters.containsKey(QueryParams.INTERNAL_STATUS_MSG.key())) {
+            document.getSet().put(QueryParams.INTERNAL_STATUS_MSG.key(), parameters.get(QueryParams.INTERNAL_STATUS_MSG.key()));
+            document.getSet().put(QueryParams.INTERNAL_STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         if (parameters.containsKey(QueryParams.INTERNAL_WEBHOOK.key())) {
