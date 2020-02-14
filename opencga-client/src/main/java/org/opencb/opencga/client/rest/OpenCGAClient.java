@@ -100,8 +100,8 @@ public class OpenCGAClient {
         return getClient(ClinicalClient.class, () -> new ClinicalClient(token, clientConfiguration));
     }
 
-    public PanelClient getPanelClient() {
-        return getClient(PanelClient.class, () -> new PanelClient(token, clientConfiguration));
+    public DiseasePanelClient getDiseasePanelClient() {
+        return getClient(DiseasePanelClient.class, () -> new DiseasePanelClient(token, clientConfiguration));
     }
 
     public FamilyClient getFamilyClient() {
@@ -116,8 +116,8 @@ public class OpenCGAClient {
         return getClient(VariantClient.class, () -> new VariantClient(token, clientConfiguration));
     }
 
-    public OperationClient getOperationClient() {
-        return getClient(OperationClient.class, () -> new OperationClient(token, clientConfiguration));
+    public VariantOperationClient getVariantOperationClient() {
+        return getClient(VariantOperationClient.class, () -> new VariantOperationClient(token, clientConfiguration));
     }
 
     @SuppressWarnings("unchecked")
