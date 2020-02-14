@@ -60,10 +60,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
@@ -174,8 +171,7 @@ public abstract class HadoopVariantStoragePipeline extends VariantStoragePipelin
         super.preLoad(input, output);
 
         try {
-            ArchiveTableHelper.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), getArchiveTable(),
-                    dbAdaptor.getConnection());
+            ArchiveTableHelper.createArchiveTableIfNeeded(getOptions(), getArchiveTable(), dbAdaptor.getConnection());
         } catch (IOException e) {
             throw new StorageHadoopException("Issue creating table " + getArchiveTable(), e);
         }
