@@ -429,8 +429,13 @@ public class FileCommandOptions {
         @Parameter(names = {"--folder"}, description = "Folder id, name or path.", required = false, arity = 1)
         public String folderId = ".";
 
-        @Parameter(names = {"--max-Depth"}, description = "Maximum depth to get files from. Default: 5", required = false, arity = 1)
+        @Parameter(names = {"-L", "--level"}, description = "Descend only 'level' directories deep. Default: 5", arity = 1)
         public Integer maxDepth = 5;
+
+        @Parameter(names = {"--max-Depth"}, hidden = true)
+        public void setMaxDepth(int maxDepth) {
+            this.maxDepth = maxDepth;
+        }
 
         @Parameter(names = {"--limit"}, description = "[TO BE IMPLEMENTED] Number of results to be returned in the queries", arity = 1)
         public String limit;

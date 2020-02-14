@@ -672,8 +672,12 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(ParamConstants.STUDY_PARAM, study);
         params.putIfNotEmpty(ParamConstants.JOB_ID, variantCommandOptions.commonJobOptions.jobId);
         params.putIfNotEmpty(ParamConstants.JOB_DESCRIPTION, variantCommandOptions.commonJobOptions.jobDescription);
-        params.putIfNotNull(ParamConstants.JOB_DEPENDS_ON, variantCommandOptions.commonJobOptions.jobDependsOn);
-        params.putIfNotNull(ParamConstants.JOB_TAGS, variantCommandOptions.commonJobOptions.jobTags);
+        if (variantCommandOptions.commonJobOptions.jobDependsOn != null) {
+            params.put(ParamConstants.JOB_DEPENDS_ON, String.join(",", variantCommandOptions.commonJobOptions.jobDependsOn));
+        }
+        if (variantCommandOptions.commonJobOptions.jobTags != null) {
+            params.put(ParamConstants.JOB_TAGS, String.join(",", variantCommandOptions.commonJobOptions.jobTags));
+        }
         if (variantCommandOptions.commonNumericOptions.limit > 0) {
             params.put(QueryOptions.LIMIT, variantCommandOptions.commonNumericOptions.limit);
         }

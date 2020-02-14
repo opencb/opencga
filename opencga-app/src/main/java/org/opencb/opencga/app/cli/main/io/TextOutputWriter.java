@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.AbstractAclEntry;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.Annotable;
 import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileTree;
@@ -309,7 +310,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (DataResult<Sample> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("#ID\tNAME\tSOURCE\tDESCRIPTION\tSTATUS\tINDIVIDUAL_ID\tINDIVIDUAL_NAME\n");
+                sb.append("#ID\tSOURCE\tDESCRIPTION\tSTATUS\tINDIVIDUAL_ID\tINDIVIDUAL_NAME\n");
             }
 
             printSamples(queryResult.getResults(), sb, "");
@@ -322,8 +323,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
         // # name	id	source	description	status	individualName	individualID
         for (Sample sample : samples) {
             String individualId = StringUtils.defaultIfEmpty(sample.getIndividualId(), "-");
-            sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\n", format, StringUtils.defaultIfEmpty(sample.getId(), "-"),
-                    StringUtils.defaultIfEmpty(sample.getId(), "-"), StringUtils.defaultIfEmpty(sample.getSource(), "-"),
+            sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\n", format,
+                    getId(sample),
+                    StringUtils.defaultIfEmpty(sample.getSource(), "-"),
                     StringUtils.defaultIfEmpty(sample.getDescription(), "-"),
                     sample.getStatus() != null ? StringUtils.defaultIfEmpty(sample.getStatus().getName(), "-") : "-", individualId));
         }
@@ -422,7 +424,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (DataResult<Job> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("#ID\tNAME\tCREATION_DATE\tSTATUS\tINPUT")
+                sb.append("#ID\tCREATION_DATE\tSTATUS\tINPUT")
                         .append("\tOUTPUT\tOUTPUT_DIRECTORY\n");
             }
 
@@ -433,9 +435,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
                         job.getInternal().getStatus() != null
                                 ? StringUtils.defaultIfEmpty(job.getInternal().getStatus().getName(), "-")
                                 : "-",
-                        StringUtils.join(job.getInput(), ", "),
-                        StringUtils.join(job.getOutput(), ", "),
-                        job.getOutDir() != null ? StringUtils.defaultIfEmpty(job.getOutDir().getId(), "-") : "-"));
+                        job.getInput().stream().map(this::getId).collect(Collectors.joining(",")),
+                        job.getOutput().stream().map(this::getId).collect(Collectors.joining(",")),
+                        getId(job.getOutDir())));
             }
         }
 
@@ -509,4 +511,12 @@ public class TextOutputWriter extends AbstractOutputWriter {
         }
     }
 
+
+    private String getId(Annotable annotable) {
+        return getId(annotable, "-");
+    }
+
+    private String getId(Annotable annotable, String defaultStr) {
+        return annotable != null ? StringUtils.defaultIfEmpty(annotable.getId(), defaultStr) : defaultStr;
+    }
 }

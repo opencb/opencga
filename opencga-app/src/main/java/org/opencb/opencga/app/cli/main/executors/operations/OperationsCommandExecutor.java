@@ -220,8 +220,12 @@ public class OperationsCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(ParamConstants.STUDY_PARAM, study);
         params.putIfNotEmpty(ParamConstants.JOB_ID, operationsCommandOptions.commonJobOptions.jobId);
         params.putIfNotEmpty(ParamConstants.JOB_DESCRIPTION, operationsCommandOptions.commonJobOptions.jobDescription);
-        params.putIfNotNull(ParamConstants.JOB_DEPENDS_ON, operationsCommandOptions.commonJobOptions.jobDependsOn);
-        params.putIfNotNull(ParamConstants.JOB_TAGS, operationsCommandOptions.commonJobOptions.jobTags);
+        if (operationsCommandOptions.commonJobOptions.jobDependsOn != null) {
+            params.put(ParamConstants.JOB_DEPENDS_ON, String.join(",", operationsCommandOptions.commonJobOptions.jobDependsOn));
+        }
+        if (operationsCommandOptions.commonJobOptions.jobTags != null) {
+            params.put(ParamConstants.JOB_TAGS, String.join(",", operationsCommandOptions.commonJobOptions.jobTags));
+        }
 
         return params;
     }
