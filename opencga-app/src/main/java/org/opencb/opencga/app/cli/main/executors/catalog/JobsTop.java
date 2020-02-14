@@ -41,7 +41,7 @@ public class JobsTop {
     private final long delay;
     private final ByteArrayOutputStream buffer;
     private final QueryOptions queryOptions = new QueryOptions()
-            .append(QueryOptions.INCLUDE, "id,name,status,execution,creationDate")
+            .append(QueryOptions.INCLUDE, "id,name,internal.status,execution,creationDate")
             .append(QueryOptions.COUNT, true)
             .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
     private final QueryOptions countOptions = new QueryOptions()
