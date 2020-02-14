@@ -814,12 +814,10 @@ public class StudyManager extends AbstractManager {
         return results;
     }
 
-    public OpenCGAResult<Group> createGroup(String studyStr, String groupId, String groupName, List<String> users, String sessionId)
+    public OpenCGAResult<Group> createGroup(String studyStr, String groupId, List<String> users, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(groupId, "group id");
-        String name = StringUtils.isEmpty(groupName) ? groupId : groupName;
-
-        return createGroup(studyStr, new Group(groupId, name, users, null), sessionId);
+        return createGroup(studyStr, new Group(groupId, users, null), sessionId);
     }
 
     public OpenCGAResult<Group> createGroup(String studyId, Group group, String token) throws CatalogException {
@@ -1051,7 +1049,7 @@ public class StudyManager extends AbstractManager {
             studyDBAdaptor.syncGroup(study.getUid(), catalogGroup, new Group.Sync(authenticationOriginId, externalGroup));
         } else {
             // We need to create a new group
-            Group newGroup = new Group(catalogGroup, catalogGroup, Collections.emptyList(), new Group.Sync(authenticationOriginId,
+            Group newGroup = new Group(catalogGroup, Collections.emptyList(), new Group.Sync(authenticationOriginId,
                     externalGroup));
             studyDBAdaptor.createGroup(study.getUid(), newGroup);
         }

@@ -260,7 +260,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testAssignPermissions() throws CatalogException {
         catalogManager.getUserManager().create("test", "test", "test@mail.com", "test", null, 100L, Account.Type.GUEST, null);
 
-        catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else", "group_cancer_some_thing_else",
+        catalogManager.getStudyManager().createGroup("user@1000G:phase1", "group_cancer_some_thing_else",
                 Collections.singletonList("test"), token);
         DataResult<Map<String, List<String>>> permissions = catalogManager.getStudyManager().updateAcl(
                 Collections.singletonList("user@1000G:phase1"), "@group_cancer_some_thing_else",
@@ -531,8 +531,8 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testUpdateGroupInfo() throws CatalogException {
         StudyManager studyManager = catalogManager.getStudyManager();
 
-        studyManager.createGroup(studyFqn, "group1", "group1", null, token);
-        studyManager.createGroup(studyFqn, "group2", "group2", null, token);
+        studyManager.createGroup(studyFqn, "group1", null, token);
+        studyManager.createGroup(studyFqn, "group2", null, token);
 
         Group.Sync syncFrom = new Group.Sync("auth", "aaa");
         studyManager.syncGroupWith(studyFqn, "group2", syncFrom, token);
