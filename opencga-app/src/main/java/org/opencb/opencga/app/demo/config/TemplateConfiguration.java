@@ -31,18 +31,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class DemoConfiguration {
+public class TemplateConfiguration {
 
     private Configuration configuration;
     private List<Project> projects;
 
 
-    public static DemoConfiguration load(Path mainConfigurationPath) throws IOException {
+    public static TemplateConfiguration load(Path mainConfigurationPath) throws IOException {
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
         InputStream inputStream = FileUtils.newInputStream(mainConfigurationPath);
-        DemoConfiguration demoConfiguration = objectMapper.readValue(inputStream, DemoConfiguration.class);
+        TemplateConfiguration templateConfiguration = objectMapper.readValue(inputStream, TemplateConfiguration.class);
         Map<String, List<Study>> studies = new HashMap<>();
-        for (Project project : demoConfiguration.getProjects()) {
+        for (Project project : templateConfiguration.getProjects()) {
             studies.put(project.getId(), new ArrayList<>());
             for (Study study : project.getStudies()) {
                 File file = mainConfigurationPath.getParent().resolve(study.getId() + ".yml").toFile();
@@ -51,10 +51,10 @@ public class DemoConfiguration {
         }
 
         // Set studies read from files
-        for (Project project : demoConfiguration.getProjects()) {
+        for (Project project : templateConfiguration.getProjects()) {
             project.setStudies(studies.get(project.getId()));
         }
-        return demoConfiguration;
+        return templateConfiguration;
     }
 
     public void serialize(Path configurationPath) throws IOException {

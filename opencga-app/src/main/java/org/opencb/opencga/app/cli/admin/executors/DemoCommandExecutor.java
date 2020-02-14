@@ -20,7 +20,7 @@ package org.opencb.opencga.app.cli.admin.executors;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.app.demo.DemoManager;
-import org.opencb.opencga.app.demo.config.DemoConfiguration;
+import org.opencb.opencga.app.demo.config.TemplateConfiguration;
 
 import java.nio.file.Paths;
 
@@ -29,18 +29,18 @@ import java.nio.file.Paths;
  */
 public class DemoCommandExecutor extends CommandExecutor {
 
-    private AdminCliOptionsParser.DemoCommandOptions demoCommandOptions;
+    private AdminCliOptionsParser.TemplateCommandOptions templateCommandOptions;
 
-    public DemoCommandExecutor(AdminCliOptionsParser.DemoCommandOptions demoCommandOptions) {
-        super(demoCommandOptions.commonOptions);
-        this.demoCommandOptions = demoCommandOptions;
+    public DemoCommandExecutor(AdminCliOptionsParser.TemplateCommandOptions templateCommandOptions) {
+        super(templateCommandOptions.commonOptions);
+        this.templateCommandOptions = templateCommandOptions;
     }
 
     @Override
     public void execute() throws Exception {
         logger.debug("Executing variant command line");
 
-        String subCommandString = demoCommandOptions.getParsedSubCommand();
+        String subCommandString = templateCommandOptions.getParsedSubCommand();
         switch (subCommandString) {
             case "load":
                 load();
@@ -61,10 +61,10 @@ public class DemoCommandExecutor extends CommandExecutor {
     private void load() throws Exception {
         System.out.println("Load!!");
 
-        AdminCliOptionsParser.LoadDemoCommandOptions loadDemoCommandOptions = demoCommandOptions.loadDemoCommandOptions;
+        AdminCliOptionsParser.LoadDemoCommandOptions loadDemoCommandOptions = templateCommandOptions.loadDemoCommandOptions;
 
-        DemoConfiguration demoConfiguration = DemoConfiguration.load(Paths.get("build/conf/main.yml"));
-        DemoManager demoManager = new DemoManager(demoConfiguration, clientConfiguration);
+        TemplateConfiguration templateConfiguration = TemplateConfiguration.load(Paths.get(loadDemoCommandOptions.mainFile));
+        DemoManager demoManager = new DemoManager(templateConfiguration, clientConfiguration);
 
     }
 

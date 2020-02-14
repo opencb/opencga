@@ -3,7 +3,7 @@ configuration:
   studies:
     - id: 1000g
       index: true
-      urlBase: http://bioinfo.hpc.cam.ac.uk/downloads/datasets/1000g/data/
+      urlBase: http://resources.opencb.org/datasets/1000g/data/
       active: true
   #    cohorts:
   #      - id: ACB
@@ -16,28 +16,28 @@ configuration:
           permission: [VIEW_FILE_HEADERS, VIEW_FILE_CONTENTS, VIEW_FILES, VIEW_FILE_ANNOTATIONS, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS, VIEW_INDIVIDUALS, VIEW_INDIVIDUALS_ANNOTATIONS, VIEW_FAMILIES, VIEW_FAMILIES_ANNOTATIONS, VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_CLINICAL_ANALYSIS]
     - id: corpasome
       index: true
-      urlBase: http://bioinfo.hpc.cam.ac.uk/downloads/datasets/corpasome/data/
+      urlBase: http://resources.opencb.org/datasets/corpasome/data/
       active: true
       acl:
         - userId: demo
           permission: [VIEW_FILE_HEADERS, VIEW_FILE_CONTENTS, VIEW_FILES, VIEW_FILE_ANNOTATIONS, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS, VIEW_INDIVIDUALS, VIEW_INDIVIDUALS_ANNOTATIONS, VIEW_FAMILIES, VIEW_FAMILIES_ANNOTATIONS, VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_CLINICAL_ANALYSIS]
     - id: rams_cml
       index: true
-      urlBase: http://bioinfo.hpc.cam.ac.uk/downloads/datasets/rams_cml/data/
+      urlBase: http://resources.opencb.org/datasets/rams_cml/data/
       active: true
       acl:
         - userId: demo
           permission: [VIEW_FILE_HEADERS, VIEW_FILE_CONTENTS, VIEW_FILES, VIEW_FILE_ANNOTATIONS, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS, VIEW_INDIVIDUALS, VIEW_INDIVIDUALS_ANNOTATIONS, VIEW_FAMILIES, VIEW_FAMILIES_ANNOTATIONS, VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_CLINICAL_ANALYSIS]
     - id: uk10k
       index: true
-      urlBase: http://bioinfo.hpc.cam.ac.uk/downloads/datasets/uk10k/data/
+      urlBase: http://resources.opencb.org/datasets/uk10k/data/
       active: true
       acl:
         - userId: demo
           permission: [VIEW_FILE_HEADERS, VIEW_FILE_CONTENTS, VIEW_FILES, VIEW_FILE_ANNOTATIONS, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS, VIEW_INDIVIDUALS, VIEW_INDIVIDUALS_ANNOTATIONS, VIEW_FAMILIES, VIEW_FAMILIES_ANNOTATIONS, VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_CLINICAL_ANALYSIS]
     - id: platinum
       index: true
-      urlBase: http://bioinfo.hpc.cam.ac.uk/downloads/datasets/platinum/data/
+      urlBase: http://resources.opencb.org/datasets/platinum/data/
       active: true
       acl:
         - userId: demo
@@ -47,7 +47,7 @@ projects:
   - id: population
     name: Population Studies GRCh38
     organism:
-      scientificName: hsapiens
+      scientificName: Homo sapiens
       assembly: GRCh38
     studies:
       - id: 1000g
@@ -55,9 +55,16 @@ projects:
   - id: family
     name: Family Studies GRCh37
     organism:
-      scientificName: hsapiens
+      scientificName: Homo sapiens
       assembly: GRCh37
     studies:
       - id: platinum
       - id: corpasome
       - id: ceph_trio
+  - id: cancer
+    name: Cancer Studies GRCh37
+    organism:
+      scientificName: Homo sapiens
+      assembly: GRCh37
+    studies:
+      - id: rams_cml

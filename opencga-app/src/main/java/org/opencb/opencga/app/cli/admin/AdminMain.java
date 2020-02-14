@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.admin;
 
 import com.beust.jcommander.ParameterException;
-import com.sun.research.ws.wadl.Param;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.executors.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -113,7 +112,7 @@ public class AdminMain {
                             commandExecutor = new MigrationCommandExecutor(cliOptionsParser.getMigrationCommandOptions());
                             break;
                         case "demo":
-                            commandExecutor = new DemoCommandExecutor(cliOptionsParser.getDemoCommandOptions());
+                            commandExecutor = new DemoCommandExecutor(cliOptionsParser.getTemplateCommandOptions());
                             break;
                         default:
                             System.out.printf(String.format("ERROR: not valid command passed: '%s'", parsedCommand));

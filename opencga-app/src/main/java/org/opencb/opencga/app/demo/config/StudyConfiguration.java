@@ -5,12 +5,12 @@ public class StudyConfiguration {
     private String id;
     private String index;
     private String urlBase;
-    private String active;
+    private boolean active;
 
     public StudyConfiguration() {
     }
 
-    public StudyConfiguration(String id, String index, String urlBase, String active) {
+    public StudyConfiguration(String id, String index, String urlBase, boolean active) {
         this.id = id;
         this.index = index;
         this.urlBase = urlBase;
@@ -55,11 +55,11 @@ public class StudyConfiguration {
         return this;
     }
 
-    public String getActive() {
+    public boolean getActive() {
         return active;
     }
 
-    public StudyConfiguration setActive(String active) {
+    public StudyConfiguration setActive(boolean active) {
         this.active = active;
         return this;
     }
