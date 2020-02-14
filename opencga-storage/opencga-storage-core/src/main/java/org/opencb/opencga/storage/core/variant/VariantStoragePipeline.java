@@ -562,6 +562,11 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
             studyMetadata.getAttributes().put(VariantStorageOptions.EXTRA_FORMAT_FIELDS_TYPE.key(), extraFieldsType);
         }
+
+        if (studyMetadata.getVariantHeaderLine("INFO", StudyEntry.VCF_ID) == null) {
+            studyMetadata.getVariantHeader().getComplexLines().add(new VariantFileHeaderComplexLine("INFO", StudyEntry.VCF_ID, "", "1",
+                    VCFHeaderLineType.String.toString(), Collections.emptyMap()));
+        }
     }
 
     @Override
