@@ -89,7 +89,7 @@ public class ArchiveDriver extends Configured implements Tool {
         GenomeHelper genomeHelper = new GenomeHelper(conf);
 
 /*  SERVER details  */
-        if (ArchiveTableHelper.createArchiveTableIfNeeded(genomeHelper, tableName)) {
+        if (ArchiveTableHelper.createArchiveTableIfNeeded(genomeHelper.getConf(), tableName)) {
             LOGGER.info("Create table '{}' in hbase!", tableName);
         } else {
             LOGGER.info("Table '{}' exists in hbase!", tableName);

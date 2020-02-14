@@ -6,7 +6,7 @@ import java.util.List;
 
 public class KnockoutVariant {
 
-    private String variant;
+    private String id;
     private String genotype;
     private String filter;
     private String qual;
@@ -16,16 +16,16 @@ public class KnockoutVariant {
     public enum KnockoutType {
         HOM_ALT,
         COMP_HET,
-        MULTI_ALLELIC,
+        HET_ALT,
         DELETION_OVERLAP
     }
 
     public KnockoutVariant() {
     }
 
-    public KnockoutVariant(String variant, String genotype, String filter, String qual, KnockoutType knockoutType,
+    public KnockoutVariant(String id, String genotype, String filter, String qual, KnockoutType knockoutType,
                            List<SequenceOntologyTerm> sequenceOntologyTerms) {
-        this.variant = variant;
+        this.id = id;
         this.genotype = genotype;
         this.filter = filter;
         this.qual = qual;
@@ -33,12 +33,12 @@ public class KnockoutVariant {
         this.sequenceOntologyTerms = sequenceOntologyTerms;
     }
 
-    public String getVariant() {
-        return variant;
+    public String getId() {
+        return id;
     }
 
-    public KnockoutVariant setVariant(String variant) {
-        this.variant = variant;
+    public KnockoutVariant setId(String id) {
+        this.id = id;
         return this;
     }
 

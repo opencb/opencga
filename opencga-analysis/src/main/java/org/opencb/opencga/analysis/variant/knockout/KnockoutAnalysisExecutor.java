@@ -6,7 +6,6 @@ import org.opencb.opencga.analysis.variant.knockout.result.KnockoutBySample;
 import org.opencb.opencga.analysis.variant.knockout.result.KnockoutBySample.KnockoutGene;
 import org.opencb.opencga.analysis.variant.knockout.result.KnockoutVariant;
 import org.opencb.opencga.core.common.JacksonUtils;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.tools.OpenCgaToolExecutor;
 import org.opencb.opencga.storage.core.metadata.models.Trio;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -161,24 +160,20 @@ public abstract class KnockoutAnalysisExecutor extends OpenCgaToolExecutor {
         return Paths.get(geneFileNamePattern.replace("{gene}", gene));
     }
 
-    protected KnockoutBySample buildGeneKnockoutBySample(String sample, Map<String, KnockoutGene> knockoutGenes) {
+    protected KnockoutBySample.GeneKnockoutBySampleStats getGeneKnockoutBySampleStats(Collection<KnockoutGene> knockoutGenes) {
         KnockoutBySample.GeneKnockoutBySampleStats stats = new KnockoutBySample.GeneKnockoutBySampleStats()
                 .setNumGenes(knockoutGenes.size())
-                .setNumTranscripts(knockoutGenes.values().stream().mapToInt(g -> g.getTranscripts().size()).sum());
+                .setNumTranscripts(knockoutGenes.stream().mapToInt(g -> g.getTranscripts().size()).sum());
         for (KnockoutVariant.KnockoutType type : KnockoutVariant.KnockoutType.values()) {
-            long count = knockoutGenes.values().stream().flatMap(g -> g.getTranscripts().stream())
+            long count = knockoutGenes.stream().flatMap(g -> g.getTranscripts().stream())
                     .flatMap(t -> t.getVariants().stream())
                     .filter(v -> v.getKnockoutType().equals(type))
-                    .map(KnockoutVariant::getVariant)
+                    .map(KnockoutVariant::getId)
                     .collect(Collectors.toSet())
                     .size();
             stats.getByType().put(type, count);
         }
-
-        return new KnockoutBySample()
-                .setSample(new Sample().setId(sample))
-                .setStats(stats)
-                .setGenes(knockoutGenes.values());
+        return stats;
     }
 
     protected void writeSampleFile(KnockoutBySample knockoutBySample) throws IOException {
