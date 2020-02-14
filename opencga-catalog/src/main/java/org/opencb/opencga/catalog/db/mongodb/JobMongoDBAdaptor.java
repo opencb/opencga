@@ -281,11 +281,10 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                 .append(QueryParams.UID.key(), job.getUid());
         Bson finalQuery = parseQuery(tmpQuery);
 
-        logger.info("Job update: query : {}, update: {}",
+        logger.debug("Job update: query : {}, update: {}",
                 finalQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
                 jobParameters.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         DataResult result = jobCollection.update(clientSession, finalQuery, jobParameters, null);
-        System.out.println(result.getNumUpdated());
 
         if (result.getNumMatches() == 0) {
             throw new CatalogDBException("Job " + job.getId() + " not found");
