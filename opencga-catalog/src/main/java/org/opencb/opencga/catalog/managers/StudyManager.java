@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -76,6 +77,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -200,14 +202,16 @@ public class StudyManager extends AbstractManager {
             queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                     StudyDBAdaptor.QueryParams.UUID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key(),
                     StudyDBAdaptor.QueryParams.ALIAS.key(), StudyDBAdaptor.QueryParams.CREATION_DATE.key(),
-                    StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.URI.key()
+                    StudyDBAdaptor.QueryParams.NOTIFICATION.key(), StudyDBAdaptor.QueryParams.FQN.key(),
+                    StudyDBAdaptor.QueryParams.URI.key()
             ));
         } else {
             List<String> includeList = new ArrayList<>(queryOptions.getAsStringList(QueryOptions.INCLUDE));
             includeList.addAll(Arrays.asList(
                     StudyDBAdaptor.QueryParams.UUID.key(), StudyDBAdaptor.QueryParams.ID.key(), StudyDBAdaptor.QueryParams.UID.key(),
                     StudyDBAdaptor.QueryParams.ALIAS.key(), StudyDBAdaptor.QueryParams.CREATION_DATE.key(),
-                    StudyDBAdaptor.QueryParams.FQN.key(), StudyDBAdaptor.QueryParams.URI.key()));
+                    StudyDBAdaptor.QueryParams.NOTIFICATION.key(), StudyDBAdaptor.QueryParams.FQN.key(),
+                    StudyDBAdaptor.QueryParams.URI.key()));
             // We create a new object in case there was an exclude or any other field. We only want to include fields in this case
             queryOptions = new QueryOptions(QueryOptions.INCLUDE, includeList);
         }
@@ -239,9 +243,9 @@ public class StudyManager extends AbstractManager {
     }
 
     public OpenCGAResult<Study> create(String projectStr, String id, String alias, String name, Study.Type type, String creationDate,
-                                       String description, Status status, String cipher, String uriScheme, URI uri,
-                                       Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
-                                       QueryOptions options, String token) throws CatalogException {
+                                       String description, StudyNotification notification, Status status, String cipher, String uriScheme,
+                                       URI uri, Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats,
+                                       Map<String, Object> attributes, QueryOptions options, String token) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkObj(type, "type");
@@ -284,6 +288,7 @@ public class StudyManager extends AbstractManager {
                 .append("type", type)
                 .append("creationDate", creationDate)
                 .append("description", description)
+                .append("notification", notification)
                 .append("status", status)
                 .append("cipher", cipher)
                 .append("uriScheme", uriScheme)
@@ -309,10 +314,12 @@ public class StudyManager extends AbstractManager {
             files.add(rootFile);
             files.add(jobsFile);
 
-            Study study = new Study(id, name, alias, type, creationDate, description, status,
-                    0, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)),
-                    new Group(ADMINS, Collections.emptyList())), files, null, null, new LinkedList<>(), null, null, null, null, null, null,
-                    datastores, project.getCurrentRelease(), stats, attributes);
+            Study study = new Study(id, name, alias, type, creationDate, description, notification,
+                    status, 0, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)),
+                    new Group(ADMINS, Collections.emptyList())), files, null, null, new LinkedList<>(), null, null, null, null, null,
+                    null, datastores, project.getCurrentRelease(), stats, attributes);
+
+            study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
 
             /* CreateStudy */
             study.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.STUDY));
@@ -560,7 +567,8 @@ public class StudyManager extends AbstractManager {
      * @return The modified entry.
      * @throws CatalogException CatalogException
      */
-    public OpenCGAResult<Study> update(String studyId, ObjectMap parameters, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<Study> update(String studyId, StudyUpdateParams parameters, QueryOptions options, String token)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
 
         ObjectMap auditParams = new ObjectMap()
@@ -582,22 +590,20 @@ public class StudyManager extends AbstractManager {
 
             authorizationManager.checkCanEditStudy(study.getUid(), userId);
 
-            for (String s : parameters.keySet()) {
-                if (!s.matches("id|alias|name|type|description|attributes|stats")) {
-                    throw new CatalogDBException("Parameter '" + s + "' can't be changed");
-                }
+            if (StringUtils.isNotEmpty(parameters.getAlias())) {
+                ParamUtils.checkAlias(parameters.getAlias(), "alias");
             }
 
-            if (parameters.containsKey("id")) {
-                ParamUtils.checkAlias(parameters.getString("id"), "id");
-            }
-            if (parameters.containsKey("alias")) {
-                ParamUtils.checkAlias(parameters.getString("alias"), "alias");
+            ObjectMap update;
+            try {
+                update = new ObjectMap(getUpdateObjectMapper().writeValueAsString(parameters));
+            } catch (JsonProcessingException e) {
+                throw new CatalogException("Jackson casting error: " + e.getMessage(), e);
             }
 
             String ownerId = getOwner(study);
             userDBAdaptor.updateUserLastModified(ownerId);
-            OpenCGAResult result = studyDBAdaptor.update(study.getUid(), parameters, options);
+            OpenCGAResult result = studyDBAdaptor.update(study.getUid(), update, options);
             auditManager.auditUpdate(userId, Enums.Resource.STUDY, study.getId(), study.getUuid(), study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -808,12 +814,10 @@ public class StudyManager extends AbstractManager {
         return results;
     }
 
-    public OpenCGAResult<Group> createGroup(String studyStr, String groupId, String groupName, List<String> users, String sessionId)
+    public OpenCGAResult<Group> createGroup(String studyStr, String groupId, List<String> users, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(groupId, "group id");
-        String name = StringUtils.isEmpty(groupName) ? groupId : groupName;
-
-        return createGroup(studyStr, new Group(groupId, name, users, null), sessionId);
+        return createGroup(studyStr, new Group(groupId, users, null), sessionId);
     }
 
     public OpenCGAResult<Group> createGroup(String studyId, Group group, String token) throws CatalogException {
@@ -1045,7 +1049,7 @@ public class StudyManager extends AbstractManager {
             studyDBAdaptor.syncGroup(study.getUid(), catalogGroup, new Group.Sync(authenticationOriginId, externalGroup));
         } else {
             // We need to create a new group
-            Group newGroup = new Group(catalogGroup, catalogGroup, Collections.emptyList(), new Group.Sync(authenticationOriginId,
+            Group newGroup = new Group(catalogGroup, Collections.emptyList(), new Group.Sync(authenticationOriginId,
                     externalGroup));
             studyDBAdaptor.createGroup(study.getUid(), newGroup);
         }

@@ -1,7 +1,5 @@
 package org.opencb.opencga.core.api;
 
-import com.beust.jcommander.Parameter;
-
 public class ParamConstants {
     private static final String UP_TO_100 = " up to a maximum of 100";
 

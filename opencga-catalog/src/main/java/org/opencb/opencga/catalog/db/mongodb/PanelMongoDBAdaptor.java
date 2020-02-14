@@ -620,9 +620,9 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         Bson bson = parseQuery(finalQuery, user);
         logger.debug("Panel query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return panelCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return panelCollection.iterator(clientSession, bson, null, null, qOptions);
         } else {
-            return deletedPanelCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return deletedPanelCollection.iterator(clientSession, bson, null, null, qOptions);
         }
     }
 

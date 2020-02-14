@@ -31,7 +31,7 @@ public class JobCatalogMongoDBIterator extends BatchedCatalogMongoDBIterator<Job
     private final JobMongoDBAdaptor jobDBAdaptor;
     private final QueryOptions jobQueryOptions = new QueryOptions(QueryOptions.INCLUDE,
             Arrays.asList(JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.UUID.key(),
-                    JobDBAdaptor.QueryParams.STUDY_UID.key(), JobDBAdaptor.QueryParams.STATUS.key()));
+                    JobDBAdaptor.QueryParams.STUDY_UID.key(), JobDBAdaptor.QueryParams.INTERNAL_STATUS.key()));
     private final FileMongoDBAdaptor fileDBAdaptor;
     private final QueryOptions fileQueryOptions = FileManager.INCLUDE_FILE_URI_PATH;
 

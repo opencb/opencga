@@ -198,6 +198,9 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
             filesWithSamplesData = new HashSet<>();
             for (Document fileObject : fileObjects) {
                 int fileId = fileObject.get(DocumentToStudyVariantEntryConverter.FILEID_FIELD, Number.class).intValue();
+                if (fileId < 0) {
+                    fileId = -fileId;
+                }
                 if (includeFiles.get(studyId).contains(fileId)) {
                     includeFileIds.add(fileId);
                 }
@@ -208,7 +211,7 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                 if (!Collections.disjoint(samplesInFile, sampleIds.values())) {
                     filesWithSamplesData.add(fileId);
                 }
-                if (files.containsKey(fileId) || files.containsKey(-fileId)) {
+                if (files.containsKey(fileId)) {
                     loadedSamples.addAll(samplesInFile);
                 }
             }
@@ -283,9 +286,6 @@ public class DocumentToSamplesConverter extends AbstractDocumentConverter {
                 Document samplesDataDocument = null;
                 if (files.containsKey(fid) && files.get(fid).containsKey(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD)) {
                     samplesDataDocument = files.get(fid)
-                            .get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD, Document.class);
-                } else if (files.containsKey(-fid) && files.get(-fid).containsKey(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD)) {
-                    samplesDataDocument = files.get(-fid)
                             .get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD, Document.class);
                 }
                 if (samplesDataDocument != null) {

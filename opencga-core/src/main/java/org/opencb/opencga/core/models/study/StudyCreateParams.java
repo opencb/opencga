@@ -9,6 +9,7 @@ public class StudyCreateParams {
     private String alias;
     private Study.Type type;
     private String description;
+    private StudyNotification notification;
 
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
@@ -16,20 +17,21 @@ public class StudyCreateParams {
     public StudyCreateParams() {
     }
 
-    public StudyCreateParams(String id, String name, String alias, Study.Type type, String description, Map<String, Object> stats,
-                             Map<String, Object> attributes) {
+    public StudyCreateParams(String id, String name, String alias, Study.Type type, String description, StudyNotification notification,
+                             Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
         this.type = type;
         this.description = description;
+        this.notification = notification;
         this.stats = stats;
         this.attributes = attributes;
     }
 
     public static StudyCreateParams of(Study study) {
         return new StudyCreateParams(study.getId(), study.getName(), study.getAlias(), study.getType(), study.getDescription(),
-                study.getStats(), study.getAttributes());
+                study.getNotification(), study.getStats(), study.getAttributes());
     }
 
     @Override
@@ -40,6 +42,7 @@ public class StudyCreateParams {
         sb.append(", alias='").append(alias).append('\'');
         sb.append(", type=").append(type);
         sb.append(", description='").append(description).append('\'');
+        sb.append(", notifications=").append(notification);
         sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -88,6 +91,15 @@ public class StudyCreateParams {
 
     public StudyCreateParams setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public StudyNotification getNotification() {
+        return notification;
+    }
+
+    public StudyCreateParams setNotification(StudyNotification notification) {
+        this.notification = notification;
         return this;
     }
 

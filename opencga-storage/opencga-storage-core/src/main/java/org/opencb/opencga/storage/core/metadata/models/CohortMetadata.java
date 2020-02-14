@@ -14,15 +14,17 @@ public class CohortMetadata extends StudyResourceMetadata<CohortMetadata> {
 //    private String name;
 
     private List<Integer> samples;
+    private List<Integer> files;
 
 //    private TaskMetadata.Status status = TaskMetadata.Status.NONE;
 
     public CohortMetadata() {
     }
 
-    public CohortMetadata(int studyId, int id, String name, List<Integer> samples) {
+    public CohortMetadata(int studyId, int id, String name, List<Integer> samples, List<Integer> files) {
         super(studyId, id, name);
         this.samples = samples;
+        this.files = files;
     }
 
     public List<Integer> getSamples() {
@@ -31,6 +33,15 @@ public class CohortMetadata extends StudyResourceMetadata<CohortMetadata> {
 
     public CohortMetadata setSamples(List<Integer> samples) {
         this.samples = samples;
+        return this;
+    }
+
+    public List<Integer> getFiles() {
+        return files;
+    }
+
+    public CohortMetadata setFiles(List<Integer> files) {
+        this.files = files;
         return this;
     }
 

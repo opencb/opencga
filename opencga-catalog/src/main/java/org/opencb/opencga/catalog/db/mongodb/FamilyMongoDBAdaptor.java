@@ -748,9 +748,9 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
 
         logger.debug("Family query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return familyCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return familyCollection.iterator(clientSession, bson, null, null, qOptions);
         } else {
-            return deletedFamilyCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return deletedFamilyCollection.iterator(clientSession, bson, null, null, qOptions);
         }
     }
 

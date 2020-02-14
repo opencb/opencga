@@ -22,6 +22,7 @@ import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.stats.VariantStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -198,8 +199,8 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         for (VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantQueryParam.UNKNOWN_GENOTYPE.key(), "0/0"), null);
              iterator.hasNext(); ) {
             Variant variant = iterator.next();
-            for (StudyEntry sourceEntry : variant.getStudies()) {
-                Map<String, VariantStats> cohortsStats = sourceEntry.getStats();
+            for (StudyEntry studyEntry : variant.getStudies()) {
+                Map<String, VariantStats> cohortsStats = studyEntry.getStats();
                 String calculatedCohorts = cohortsStats.keySet().toString();
                 for (Map.Entry<String, CohortMetadata> entry : cohorts.entrySet()) {
                     CohortMetadata cohort = entry.getValue();
@@ -220,11 +221,21 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
                     HashMap<Genotype, Integer> genotypeCount = new HashMap<>();
                     for (Integer sampleId : cohort.getSamples()) {
                         String sampleName = dbAdaptor.getMetadataManager().getSampleName(studyMetadata.getId(), sampleId);
-                        String gt = sourceEntry.getSampleData(sampleName, "GT");
+                        String gt = studyEntry.getSampleData(sampleName, "GT");
                         genotypeCount.merge(new Genotype(gt), 1, Integer::sum);
                     }
 
                     VariantStats stats = VariantStatsCalculator.calculate(variant, genotypeCount, false);
+                    int numFiles = 0;
+                    for (Integer file : cohort.getFiles()) {
+                        String fileName = dbAdaptor.getMetadataManager().getFileName(studyMetadata.getId(), file);
+                        FileEntry fileEntry = studyEntry.getFile(fileName);
+                        if (fileEntry != null) {
+                            VariantStatsCalculator.addFileFilter(fileEntry.getAttributes().get(StudyEntry.FILTER), stats.getFilterCount());
+                            numFiles++;
+                        }
+                    }
+                    VariantStatsCalculator.calculateFilterFreq(stats, numFiles);
 
                     stats.getGenotypeCount().entrySet().removeIf(e -> e.getValue() == 0);
                     stats.getGenotypeFreq().entrySet().removeIf(e -> e.getValue() == 0);
@@ -240,6 +251,9 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
 //                    assertEquals(variant.toString(), stats.getMgf(), cohortStats.getMgf());
                     assertEquals(variant.toString() + "-- " + cohortStats.getImpl(), stats.getRefAlleleFreq(), cohortStats.getRefAlleleFreq());
                     assertEquals(variant.toString() + "-- " + cohortStats.getImpl(), stats.getAltAlleleFreq(), cohortStats.getAltAlleleFreq());
+
+                    assertEquals(variant.toString(), stats.getFilterCount(), cohortStats.getFilterCount());
+                    assertEquals(variant.toString(), stats.getFilterFreq(), cohortStats.getFilterFreq());
                 }
             }
         }
