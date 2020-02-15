@@ -46,7 +46,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     private final ServerCommandOptions serverCommandOptions;
     private final AdminCliOptionsParser.MetaCommandOptions metaCommandOptions;
     private final MigrationCommandOptions migrationCommandOptions;
-    private final DemoCommandOptions demoCommandOptions;
+    private final TemplateCommandOptions templateCommandOptions;
 
     protected static final String DEPRECATED = "[DEPRECATED] ";
 
@@ -113,12 +113,12 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         migrationSubCommands.addCommand("v1.4.0", this.migrationCommandOptions.getMigrateV140CommandOptions());
         migrationSubCommands.addCommand("v2.0.0", this.migrationCommandOptions.getMigrateV200CommandOptions());
 
-        this.demoCommandOptions = new DemoCommandOptions();
-        this.jCommander.addCommand("demo", this.demoCommandOptions);
+        this.templateCommandOptions = new TemplateCommandOptions();
+        this.jCommander.addCommand("template", this.templateCommandOptions);
         JCommander demoSubCommands = this.jCommander.getCommands().get("demo");
-        demoSubCommands.addCommand("load", this.demoCommandOptions.loadDemoCommandOptions);
-        demoSubCommands.addCommand("add", this.demoCommandOptions.addDemoCommandOptions);
-        demoSubCommands.addCommand("delete", this.demoCommandOptions.deleteDemoCommandOptions);
+        demoSubCommands.addCommand("load", this.templateCommandOptions.loadDemoCommandOptions);
+        demoSubCommands.addCommand("add", this.templateCommandOptions.addDemoCommandOptions);
+        demoSubCommands.addCommand("delete", this.templateCommandOptions.deleteDemoCommandOptions);
     }
 
     @Override
@@ -298,8 +298,8 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         }
     }
 
-    @Parameters(commandNames = {"demo"}, commandDescription = "Implements different tools work with the demo")
-    public class DemoCommandOptions extends CommandOptions {
+    @Parameters(commandNames = {"template"}, commandDescription = "Implements different tools work with the demo")
+    public class TemplateCommandOptions extends CommandOptions {
 
         public LoadDemoCommandOptions loadDemoCommandOptions;
         public AddDemoCommandOptions addDemoCommandOptions;
@@ -307,7 +307,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        public DemoCommandOptions() {
+        public TemplateCommandOptions() {
             this.loadDemoCommandOptions = new LoadDemoCommandOptions();
             this.addDemoCommandOptions = new AddDemoCommandOptions();
             this.deleteDemoCommandOptions = new DeleteDemoCommandOptions();
@@ -769,11 +769,12 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         @ParametersDelegate
         public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"-s", "--study"}, arity = 1, description = "Define the studies from configuration to be loaded")
-        public String study;
+        @Parameter(names = {"-f", "--file"}, arity = 1, description = "Define the studies from configuration to be loaded")
+        public String mainFile;
 
-        @Parameter(names = {"--force"}, description = "If this parameters is set, it will override the database installation.")
-        public boolean force;
+//        @Parameter(names = {"-s", "--only-study"}, arity = 1, description = "Define the studies from configuration to be loaded")
+//        public String study;
+
     }
 
     @Parameters(commandNames = {"add"}, commandDescription = "Add")
@@ -873,7 +874,7 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         return migrationCommandOptions;
     }
 
-    public DemoCommandOptions getDemoCommandOptions() {
-        return demoCommandOptions;
+    public TemplateCommandOptions getTemplateCommandOptions() {
+        return templateCommandOptions;
     }
 }

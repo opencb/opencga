@@ -19,7 +19,7 @@ package org.opencb.opencga.app.demo;
 import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.app.demo.config.DemoConfiguration;
+import org.opencb.opencga.app.demo.config.TemplateConfiguration;
 import org.opencb.opencga.app.demo.config.StudyConfiguration;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
@@ -44,38 +44,45 @@ import java.util.*;
 
 public class DemoManager {
 
-    private DemoConfiguration demoConfiguration;
+    private TemplateConfiguration templateConfiguration;
     private OpenCGAClient openCGAClient;
 
     public DemoManager() {
     }
 
-    public DemoManager(DemoConfiguration demoConfiguration, ClientConfiguration clientConfiguration) {
-        this.demoConfiguration = demoConfiguration;
+    public DemoManager(TemplateConfiguration templateConfiguration, ClientConfiguration clientConfiguration) {
+        this.templateConfiguration = templateConfiguration;
         this.openCGAClient = new OpenCGAClient(clientConfiguration);
     }
 
     public void execute() throws ClientException {
-        for (Project project : demoConfiguration.getProjects()) {
+        // Store all StudyConfigurations in a Map
+        Map<String, StudyConfiguration> studyConfigurationMap = new HashMap<>();
+        this.templateConfiguration.getConfiguration().getStudies()
+                .forEach(studyConfiguration -> studyConfigurationMap.put(studyConfiguration.getId(), studyConfiguration));
+
+        for (Project project : templateConfiguration.getProjects()) {
             openCGAClient.getProjectClient().create(ProjectCreateParams.of(project));
             for (Study study : project.getStudies()) {
-                ObjectMap params = new ObjectMap("project", project.getId());
-                openCGAClient.getStudyClient().create(StudyCreateParams.of(study), params);
-                if (CollectionUtils.isNotEmpty(study.getIndividuals())) {
-                    createIndividuals(study);
-                }
-                if (CollectionUtils.isNotEmpty(study.getSamples())) {
-                    createSamples(study);
-                }
-                if (CollectionUtils.isNotEmpty(study.getCohorts())) {
-                    createCohorts(study);
-                }
-                if (CollectionUtils.isNotEmpty(study.getFamilies())) {
-                    createFamilies(study);
-                }
-                if (CollectionUtils.isNotEmpty(study.getFiles())) {
-                    List<String> fetchJobIds = fetchFiles(study);
-                    List<String> indexJobIds = index(study, fetchJobIds);
+                if (studyConfigurationMap.get(study.getId()).getActive()) {
+                    ObjectMap params = new ObjectMap("project", project.getId());
+                    openCGAClient.getStudyClient().create(StudyCreateParams.of(study), params);
+                    if (CollectionUtils.isNotEmpty(study.getIndividuals())) {
+                        createIndividuals(study);
+                    }
+                    if (CollectionUtils.isNotEmpty(study.getSamples())) {
+                        createSamples(study);
+                    }
+                    if (CollectionUtils.isNotEmpty(study.getCohorts())) {
+                        createCohorts(study);
+                    }
+                    if (CollectionUtils.isNotEmpty(study.getFamilies())) {
+                        createFamilies(study);
+                    }
+                    if (CollectionUtils.isNotEmpty(study.getFiles())) {
+                        List<String> fetchJobIds = fetchFiles(study);
+                        List<String> indexJobIds = index(study, fetchJobIds);
+                    }
                 }
             }
         }
@@ -134,7 +141,7 @@ public class DemoManager {
     private List<String> fetchFiles(Study study) throws ClientException {
         ObjectMap params = new ObjectMap("study", study.getId());
         String urlBase = null;
-        for (StudyConfiguration studyConfiguration : demoConfiguration.getConfiguration().getStudies()) {
+        for (StudyConfiguration studyConfiguration : templateConfiguration.getConfiguration().getStudies()) {
             if (studyConfiguration.getId().equals(study.getId())) {
                 urlBase = studyConfiguration.getUrlBase();
             }

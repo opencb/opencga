@@ -102,4 +102,21 @@ db.getCollection("study").update({"notification": { $exists: false }}, {
             "webhook": null
         }}}, {"multi": true})
 
+// Ticket #1513 - Remove 'name' field from groups
+migrateCollection("study", {}, {groups: 1}, function(bulk, doc) {
+    if (isEmptyArray(doc.groups) || isUndefinedOrNull(doc.groups[0].name)) {
+        return;
+    }
+
+    for (var i = 0; i < doc.groups.length; i++) {
+        delete doc.groups[i]['name'];
+    }
+
+    var params = {
+        groups: doc.groups
+    };
+
+    bulk.find({"_id": doc._id}).updateOne({"$set": params});
+});
+
 // TODO: Add indexes for new "deleted" collections

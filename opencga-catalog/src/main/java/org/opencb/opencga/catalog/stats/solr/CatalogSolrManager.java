@@ -225,7 +225,7 @@ public class CatalogSolrManager {
             List<String> groups = new ArrayList<>();
             study.getGroups().forEach(group -> {
                 if (group.getUserIds().contains(userId)) {
-                    groups.add(group.getName());
+                    groups.add(group.getId());
                 }
             });
 
