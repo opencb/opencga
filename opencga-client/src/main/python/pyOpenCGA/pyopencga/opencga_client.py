@@ -69,25 +69,25 @@ class OpencgaClient(object):
         self.projects = Project(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.studies = Study(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.files = File(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
-        self.samples = Sample(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
-        self.cohorts = Cohort(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
-        self.families = Family(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.jobs = Job(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
+        self.samples = Sample(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.individuals = Individual(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
+        self.families = Family(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
+        self.cohorts = Cohort(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
+        self.disease_panels = DiseasePanel(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.alignments = Alignment(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.variants = Variant(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.clinical = Clinical(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
-        self.ga4gh = GA4GH(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
-        self.meta = Meta(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
-        self.admin = Admin(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
-        self.disease_panels = DiseasePanel(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
         self.variant_operations = VariantOperation(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
+        self.meta = Meta(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
+        self.ga4gh = GA4GH(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
+        self.admin = Admin(self.configuration, self.token, self._login_handler, auto_refresh=self.auto_refresh)
 
         self.clients = [
-            self.users, self.projects, self.studies, self.files, self.samples,
-            self.cohorts, self.families, self.jobs, self.individuals,
-            self.alignments, self.variants, self.clinical, self.ga4gh,
-            self.meta, self.admin, self.disease_panels, self.variant_operations
+            self.users, self.projects, self.studies, self.files, self.jobs,
+            self.samples, self.individuals, self.families, self.cohorts,
+            self.disease_panels, self.alignments, self.variants, self.clinical,
+            self.variant_operations, self.meta, self.ga4gh, self.admin
         ]
 
         for client in self.clients:
@@ -152,25 +152,86 @@ class OpencgaClient(object):
                 break
             time.sleep(retry_seconds)
 
-    def help(self, category_name=None, parameters=False):
+    def _get_help_info(self, method=None, parameters=False):
+        info = []
+        for client in self.clients:
+            # Name
+            class_name = type(client).__name__
+            if class_name == 'GA4GH':
+                class_name = class_name.lower()
+            name = re.sub(r'(?<!^)(?=[A-Z])', '_', class_name).lower()
+            name = 'get_' + name + '_client'
+
+            if method is not None and method != name:
+                continue
+
+            # Description and path
+            class_docstring = client.__doc__
+            cls_desc = re.findall('(.+)\n +Client version', class_docstring)[0]
+            cls_desc = cls_desc.strip().replace('This class contains methods',
+                                                'Get client')
+            cls_path = re.findall('PATH: (.+)\n', class_docstring)[0]
+
+            # Methods
+            methods = []
+            method_names = [method_name for method_name in dir(client)
+                            if callable(getattr(client, method_name))
+                            and not method_name.startswith('_')]
+            for method_name in method_names:
+                method_docstring = getattr(client, method_name).__doc__
+                desc = re.findall('(.+)\n +PATH', method_docstring, re.DOTALL)
+                desc = re.sub(' +', ' ', desc[0].replace('\n', ' ').strip())
+                path = re.findall('PATH: (.+)\n', method_docstring)[0]
+
+                args = []
+                arguments = re.findall(
+                    ' +:param (.+)', method_docstring, re.DOTALL
+                )
+                if arguments and parameters:
+                    arguments = arguments[0].replace('\n', ' ').strip()
+                    arguments = re.sub(' +', ' ', arguments)
+                    arguments = arguments.split(' :param ')
+                    for parameter in arguments:
+                        param_info = parameter.split(' ', 2)
+                        args.append({
+                            'name': param_info[1].rstrip(':'),
+                            'type': param_info[0],
+                            'desc': param_info[2]
+                        })
+                methods.append({
+                    'name': method_name,
+                    'desc': desc,
+                    'path': path,
+                    'params': args
+                })
+
+            info.append(
+                {'name': name, 'desc': cls_desc, 'path': cls_path,
+                 'methods': methods}
+            )
+        return info
+
+    def help(self, method_name=None, show_parameters=False):
         help_text = []
-        help_json = self.meta.api().get_result(0)
-        if category_name is None:
-            help_text.append('Available categories:')
-            help_text += ['{}- {}'.format(' '*4, category['name']) for category in help_json]
+
+        info = self._get_help_info(method_name, show_parameters)
+        if method_name is None:
+            for client_method in info:
+                help_text += ['{}:'.format(client_method['name'])]
+                help_text += ['{}- Description:'.format(' '*4)]
+                help_text += ['{}{}'.format(' '*8, client_method['desc'])]
+                help_text += ['{}- REST path:'.format(' '*4)]
+                help_text += ['{}{}'.format(' '*8, client_method['path'])]
+                help_text += ['{}- Usage:'.format(' '*4)]
+                help_text += ['{}opencga_client.{}()\n'.format(' '*8, client_method['name'])]
         else:
-            for category in help_json:
-                if category_name == category['name']:
-                    help_text.append('{} endpoints:'.format(category['name']))
-                    for endpoint in category['endpoints']:
-                        help_text.append('{}- {} ({}): {}'.format(
-                            ' '*4, endpoint['path'], endpoint['method'], endpoint['description'])
-                        )
-                        if parameters:
-                            help_text += ['{}- {} ({}): {}'.format(
-                                ' '*8, param['name'], param['type'], param['description']
-                            ) for param in endpoint['parameters']]
+            for client_method in info:
+                if method_name == client_method['name']:
+                    help_text.append(client_method['name'] + '\n')
+                    help_text += [m['name'] for method in info for m in method['methods']]
+
         sys.stdout.write('\n'.join(help_text) + '\n')
+
 
     def get_user_client(self):
         return self.users
