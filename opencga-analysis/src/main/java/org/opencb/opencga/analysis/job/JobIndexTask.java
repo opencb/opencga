@@ -63,12 +63,12 @@ public class JobIndexTask extends OpenCgaTool {
     private void indexJob(CatalogSolrManager catalogSolrManager, Study study) throws CatalogException {
         logger.info("Indexing jobs of study {}", study.getFqn());
 
-        Query query = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Arrays.asList(
+        Query query = new Query(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Arrays.asList(
                 Enums.ExecutionStatus.ERROR, Enums.ExecutionStatus.DONE, Enums.ExecutionStatus.ABORTED));
         QueryOptions jobQueryOptions = new QueryOptions()
                 .append(QueryOptions.INCLUDE, Arrays.asList(JobDBAdaptor.QueryParams.UID.key(), JobDBAdaptor.QueryParams.UUID.key(),
                         JobDBAdaptor.QueryParams.STUDY_UID.key(), JobDBAdaptor.QueryParams.CREATION_DATE.key(),
-                        JobDBAdaptor.QueryParams.RELEASE.key(), JobDBAdaptor.QueryParams.STATUS.key(), JobDBAdaptor.QueryParams.TOOL.key(),
+                        JobDBAdaptor.QueryParams.RELEASE.key(), JobDBAdaptor.QueryParams.INTERNAL_STATUS.key(), JobDBAdaptor.QueryParams.TOOL.key(),
                         JobDBAdaptor.QueryParams.USER_ID.key(), JobDBAdaptor.QueryParams.PRIORITY.key(),
                         JobDBAdaptor.QueryParams.TAGS.key(), JobDBAdaptor.QueryParams.EXECUTION.key()))
                 .append(DBAdaptor.INCLUDE_ACLS, true);

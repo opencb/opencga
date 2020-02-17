@@ -193,6 +193,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         List<Panel> panels = study.getPanels();
         study.setPanels(Collections.emptyList());
 
+        List<Family> families = study.getFamilies();
+        study.setFamilies(Collections.emptyList());
+
         study.setFqn(project.getFqn() + ":" + study.getId());
 
         //Create DBObject
@@ -226,6 +229,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         for (Panel panel : panels) {
             dbAdaptorFactory.getCatalogPanelDBAdaptor().insert(clientSession, study.getUid(), panel);
+        }
+
+        for (Family family : families) {
+            dbAdaptorFactory.getCatalogFamilyDBAdaptor().insert(clientSession, study.getUid(), family, Collections.emptyList());
         }
 
         return study;
@@ -1316,6 +1323,11 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             studyParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
+        if (parameters.containsKey(QueryParams.NOTIFICATION_WEBHOOK.key())) {
+            Object value = parameters.get(QueryParams.NOTIFICATION_WEBHOOK.key());
+            studyParameters.put(QueryParams.NOTIFICATION_WEBHOOK.key(), value);
+        }
+
         if (!studyParameters.isEmpty()) {
             // Update modificationDate param
             String time = TimeUtils.getTime();
@@ -1531,14 +1543,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     private OpenCGAResult<Study> get(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        List<Study> documentList = new ArrayList<>();
         OpenCGAResult<Study> studyDataResult;
         try (DBIterator<Study> dbIterator = iterator(clientSession, query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            studyDataResult = endQuery(startTime, dbIterator);
         }
-        studyDataResult = endQuery(startTime, documentList);
         for (Study study : studyDataResult.getResults()) {
             joinFields(study, options);
         }
@@ -1550,14 +1558,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     public OpenCGAResult<Study> get(Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
-        List<Study> documentList = new ArrayList<>();
         OpenCGAResult<Study> studyDataResult;
         try (DBIterator<Study> dbIterator = iterator(query, options, user)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            studyDataResult = endQuery(startTime, dbIterator);
         }
-        studyDataResult = endQuery(startTime, documentList);
         for (Study study : studyDataResult.getResults()) {
             joinFields(study, options, user);
         }
@@ -1571,13 +1575,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
     OpenCGAResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -1589,13 +1589,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     OpenCGAResult nativeGet(ClientSession clientSession, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options, user)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -1661,9 +1657,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
 
         logger.debug("Study native get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return studyCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return studyCollection.iterator(clientSession, bson, null, null, qOptions);
         } else {
-            return deletedStudyCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return deletedStudyCollection.iterator(clientSession, bson, null, null, qOptions);
         }
     }
 

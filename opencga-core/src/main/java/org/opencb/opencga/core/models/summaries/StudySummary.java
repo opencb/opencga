@@ -17,7 +17,7 @@
 package org.opencb.opencga.core.models.summaries;
 
 import org.opencb.opencga.core.models.common.Status;
-import org.opencb.opencga.core.models.file.Experiment;
+import org.opencb.opencga.core.models.file.FileExperiment;
 import org.opencb.opencga.core.models.study.Group;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.VariableSet;
@@ -42,7 +42,7 @@ public class StudySummary {
 
     private List<Group> groups;
 
-    private List<Experiment> experiments;
+    private List<FileExperiment> experiments;
 
     private long files;
     private long jobs;
@@ -148,11 +148,11 @@ public class StudySummary {
         return this;
     }
 
-    public List<Experiment> getExperiments() {
+    public List<FileExperiment> getExperiments() {
         return experiments;
     }
 
-    public StudySummary setExperiments(List<Experiment> experiments) {
+    public StudySummary setExperiments(List<FileExperiment> experiments) {
         this.experiments = experiments;
         return this;
     }

@@ -44,7 +44,7 @@ public class Job extends PrivateStudyUid {
     private String modificationDate;
 
     private Enums.Priority priority;
-    private Enums.ExecutionStatus status;
+    private JobInternal internal;
 
     private File outDir;
     private List<File> input;    // input files to this job
@@ -69,7 +69,7 @@ public class Job extends PrivateStudyUid {
     }
 
     public Job(String id, String uuid, String description, ToolInfo tool, String userId, String commandLine, Map<String, Object> params,
-               String creationDate, String modificationDate, Enums.Priority priority, Enums.ExecutionStatus status, File outDir,
+               String creationDate, String modificationDate, Enums.Priority priority, JobInternal internal, File outDir,
                List<File> input, List<File> output, List<Job> dependsOn, List<String> tags, ExecutionResult execution, boolean visited,
                File stdout, File stderr, int release, String studyUuid, Map<String, Object> attributes) {
         this.id = id;
@@ -82,7 +82,7 @@ public class Job extends PrivateStudyUid {
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.priority = priority;
-        this.status = status;
+        this.internal = internal != null ? internal : new JobInternal();
         this.outDir = outDir;
         this.input = input;
         this.output = output;
@@ -103,25 +103,25 @@ public class Job extends PrivateStudyUid {
         sb.append("id='").append(id).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
         sb.append(", description='").append(description).append('\'');
-        sb.append(", tool='").append(tool).append('\'');
+        sb.append(", tool=").append(tool);
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", commandLine='").append(commandLine).append('\'');
         sb.append(", params=").append(params);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", priority='").append(priority).append('\'');
-        sb.append(", status=").append(status);
+        sb.append(", internal=").append(internal);
         sb.append(", outDir=").append(outDir);
         sb.append(", input=").append(input);
         sb.append(", output=").append(output);
-        sb.append(", dependsOn=").append(dependsOn);
         sb.append(", tags=").append(tags);
+        sb.append(", dependsOn=").append(dependsOn);
         sb.append(", execution=").append(execution);
-        sb.append(", visited=").append(visited);
         sb.append(", stdout=").append(stdout);
         sb.append(", stderr=").append(stderr);
+        sb.append(", visited=").append(visited);
         sb.append(", release=").append(release);
-        sb.append(", studyUuid=").append(studyUuid);
+        sb.append(", studyUuid='").append(studyUuid).append('\'');
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -232,12 +232,12 @@ public class Job extends PrivateStudyUid {
         return this;
     }
 
-    public Enums.ExecutionStatus getStatus() {
-        return status;
+    public JobInternal getInternal() {
+        return internal;
     }
 
-    public Job setStatus(Enums.ExecutionStatus status) {
-        this.status = status;
+    public Job setInternal(JobInternal internal) {
+        this.internal = internal;
         return this;
     }
 

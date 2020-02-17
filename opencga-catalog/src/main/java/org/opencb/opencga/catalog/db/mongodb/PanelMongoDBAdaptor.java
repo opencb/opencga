@@ -181,13 +181,9 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     OpenCGAResult<Panel> get(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
-        List<Panel> documentList = new ArrayList<>();
         try (DBIterator<Panel> dbIterator = iterator(clientSession, studyUid, query, options, user)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -199,13 +195,9 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     OpenCGAResult<Panel> get(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
-        List<Panel> documentList = new ArrayList<>();
         try (DBIterator<Panel> dbIterator = iterator(clientSession, query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -217,26 +209,18 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     OpenCGAResult<Document> nativeGet(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
     public OpenCGAResult nativeGet(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(studyUid, query, options, user)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -395,7 +379,9 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         Document panelParameters = new Document();
 
-        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.AUTHOR.key()};
+        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.DESCRIPTION.key(), QueryParams.SOURCE_AUTHOR.key(),
+                QueryParams.SOURCE_ID.key(), QueryParams.SOURCE_NAME.key(), QueryParams.SOURCE_VERSION.key(),
+                QueryParams.SOURCE_PROJECT.key()};
         filterStringParams(parameters, panelParameters, acceptedParams);
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
@@ -405,7 +391,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         filterStringListParams(parameters, panelParameters, acceptedParamsList);
 
         final String[] acceptedObjectParams = {QueryParams.VARIANTS.key(), QueryParams.PHENOTYPES.key(), QueryParams.REGIONS.key(),
-                QueryParams.GENES.key(), QueryParams.SOURCE.key(), QueryParams.CATEGORIES.key()};
+                QueryParams.GENES.key(), QueryParams.CATEGORIES.key()};
         filterObjectParams(parameters, panelParameters, acceptedObjectParams);
 
         if (parameters.containsKey(QueryParams.ID.key())) {
@@ -636,9 +622,9 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         Bson bson = parseQuery(finalQuery, user);
         logger.debug("Panel query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return panelCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return panelCollection.iterator(clientSession, bson, null, null, qOptions);
         } else {
-            return deletedPanelCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return deletedPanelCollection.iterator(clientSession, bson, null, null, qOptions);
         }
     }
 
@@ -807,7 +793,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
                     case RELEASE:
                     case VERSION:
                     case DESCRIPTION:
-                    case AUTHOR:
+                    case SOURCE_AUTHOR:
                     case TAGS:
                     case CATEGORIES_NAME:
                     case VARIANTS_ID:

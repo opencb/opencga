@@ -427,6 +427,8 @@ public interface StudyDBAdaptor extends Iterable<Study> {
         DATASTORES("dataStores", TEXT_ARRAY, ""),
         SIZE("size", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
+        NOTIFICATION("notification", OBJECT, ""),
+        NOTIFICATION_WEBHOOK("notification.webhook", TEXT, ""),
         PROJECT_ID("projectId", TEXT, ""),
         PROJECT_UID("projectUid", INTEGER, ""),
         PROJECT_UUID("projectUuid", TEXT, ""),

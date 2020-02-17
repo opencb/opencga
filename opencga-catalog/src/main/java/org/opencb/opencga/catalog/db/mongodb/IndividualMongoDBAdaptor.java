@@ -847,13 +847,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     OpenCGAResult<Individual> get(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
-        List<Individual> documentList = new ArrayList<>();
         try (DBIterator<Individual> dbIterator = iterator(clientSession, studyUid, query, options, user)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -865,13 +861,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     public OpenCGAResult<Individual> get(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
-        List<Individual> documentList = new ArrayList<>();
         try (DBIterator<Individual> dbIterator = iterator(clientSession, query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -883,13 +875,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     public OpenCGAResult nativeGet(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -901,13 +889,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
     public OpenCGAResult nativeGet(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, studyUid, query, options, user)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -1001,9 +985,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor<Individua
 
         logger.debug("Individual get: query : {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return individualCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return individualCollection.iterator(clientSession, bson, null, null, qOptions);
         } else {
-            return deletedIndividualCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return deletedIndividualCollection.iterator(clientSession, bson, null, null, qOptions);
         }
     }
 

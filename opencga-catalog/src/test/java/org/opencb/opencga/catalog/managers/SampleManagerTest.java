@@ -330,14 +330,14 @@ public class SampleManagerTest extends AbstractManagerTest {
 
         query = new Query(Constants.ANNOTATION, "a3.b.c.z=z2;a2.b.c.z=z");
         OpenCGAResult<Sample> result = catalogManager.getSampleManager().search(studyFqn, query, null, token);
-        assertEquals(1, result.getNumMatches());
+        assertEquals(1, result.getNumResults());
         assertEquals(s_1, result.first().getId());
     }
 
     @Test
     public void searchSamples() throws CatalogException {
-        catalogManager.getStudyManager().createGroup(studyFqn, "myGroup", "myGroup", Arrays.asList("user2", "user3"), token);
-        catalogManager.getStudyManager().createGroup(studyFqn, "myGroup2", "myGroup2", Arrays.asList("user2", "user3"), token);
+        catalogManager.getStudyManager().createGroup(studyFqn, "myGroup", Arrays.asList("user2", "user3"), token);
+        catalogManager.getStudyManager().createGroup(studyFqn, "myGroup2", Arrays.asList("user2", "user3"), token);
         catalogManager.getStudyManager().updateAcl(Arrays.asList(studyFqn), "@myGroup",
                 new Study.StudyAclParams("", AclParams.Action.SET, null), token);
 

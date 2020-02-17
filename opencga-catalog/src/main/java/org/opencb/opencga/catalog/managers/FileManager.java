@@ -68,7 +68,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -76,6 +76,7 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager.checkPermissions;
 import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_FILE_STATS;
 import static org.opencb.opencga.core.common.JacksonUtils.getDefaultObjectMapper;
+import static org.opencb.opencga.core.common.JacksonUtils.getUpdateObjectMapper;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -514,7 +515,13 @@ public class FileManager extends AnnotationSetManager<File> {
                 index.setRelease(release);
             }
         }
-        ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
+        ObjectMap params = null;
+        try {
+            params = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), new ObjectMap(getUpdateObjectMapper()
+                    .writeValueAsString(index)));
+        } catch (JsonProcessingException e) {
+            throw new CatalogException("Cannot parse index object: " + e.getMessage(), e);
+        }
         OpenCGAResult update = fileDBAdaptor.update(file.getUid(), params, QueryOptions.empty());
         auditManager.auditUpdate(userId, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(), study.getUuid(),
                 auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
@@ -1245,18 +1252,7 @@ public class FileManager extends AnnotationSetManager<File> {
             fixQueryObject(study, finalQuery, userId);
             finalQuery.append(FileDBAdaptor.QueryParams.STUDY_UID.key(), study.getUid());
 
-            Future<OpenCGAResult<Long>> countFuture = null;
-            if (options.getBoolean(QueryOptions.COUNT)) {
-                ExecutorService executor = Executors.newSingleThreadExecutor();
-                countFuture = executor.submit(() -> fileDBAdaptor.count(finalQuery, userId));
-            }
-            OpenCGAResult<File> queryResult = OpenCGAResult.empty();
-            if (options.getInt(QueryOptions.LIMIT, DEFAULT_LIMIT) > 0) {
-                queryResult = fileDBAdaptor.get(study.getUid(), finalQuery, options, userId);
-            }
-            if (countFuture != null) {
-                mergeCount(queryResult, countFuture);
-            }
+            OpenCGAResult<File> queryResult = fileDBAdaptor.get(study.getUid(), finalQuery, options, userId);
             auditManager.auditSearch(userId, Enums.Resource.FILE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
@@ -1265,10 +1261,6 @@ public class FileManager extends AnnotationSetManager<File> {
             auditManager.auditSearch(userId, Enums.Resource.FILE, study.getId(), study.getUuid(), auditParams,
                     new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
             throw e;
-        } catch (InterruptedException | ExecutionException e) {
-            auditManager.auditSearch(userId, Enums.Resource.FILE, study.getId(), study.getUuid(), auditParams,
-                    new AuditRecord.Status(AuditRecord.Status.Result.ERROR, new Error(-1, "", e.getMessage())));
-            throw new CatalogException("Unexpected error", e);
         }
     }
 
@@ -2969,7 +2961,7 @@ public class FileManager extends AnnotationSetManager<File> {
         // Create the folder in catalog
         File folder = new File(path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
                 stringPath, null, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY), false, 0, null,
-                new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), null,
+                new FileExperiment(), Collections.emptyList(), new Job(), Collections.emptyList(), null,
                 studyManager.getCurrentRelease(study), Collections.emptyList(), null, null);
         folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
         checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
@@ -3147,7 +3139,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         File folder = new File(dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
                                 File.Bioformat.NONE, dir.toUri(), destinyPath, null, TimeUtils.getTime(),
                                 TimeUtils.getTime(), description, new File.FileStatus(File.FileStatus.READY), true, 0, null,
-                                new Experiment(), Collections.emptyList(), new Job(), relatedFiles,
+                                new FileExperiment(), Collections.emptyList(), new Job(), relatedFiles,
                                 null, studyManager.getCurrentRelease(study), Collections.emptyList(),
                                 Collections.emptyMap(), Collections.emptyMap());
                         folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
@@ -3198,7 +3190,7 @@ public class FileManager extends AnnotationSetManager<File> {
                         File subfile = new File(filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                                 File.Bioformat.NONE, filePath.toUri(), destinyPath, null, TimeUtils.getTime(),
                                 TimeUtils.getTime(), description, new File.FileStatus(File.FileStatus.READY), true, size, null,
-                                new Experiment(), Collections.emptyList(), new Job(), relatedFiles,
+                                new FileExperiment(), Collections.emptyList(), new Job(), relatedFiles,
                                 null, studyManager.getCurrentRelease(study), Collections.emptyList(),
                                 Collections.emptyMap(), Collections.emptyMap());
                         subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
@@ -3277,7 +3269,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
         File subfile = new File(Paths.get(filePath).getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                 File.Bioformat.NONE, fileUri, filePath, "", TimeUtils.getTime(), TimeUtils.getTime(),
-                "", new File.FileStatus(File.FileStatus.READY), isExternal(study, filePath, fileUri), size, null, new Experiment(),
+                "", new File.FileStatus(File.FileStatus.READY), isExternal(study, filePath, fileUri), size, null, new FileExperiment(),
                 Collections.emptyList(), new Job(), Collections.emptyList(), null, studyManager.getCurrentRelease(study),
                 Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
         subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));

@@ -181,7 +181,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         Query query = new Query(QueryParams.STUDY_UID.key(), studyId).append(QueryParams.PATH.key(), path);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, PRIVATE_UID);
         OpenCGAResult<File> fileDataResult = get(query, options);
-        return fileDataResult.getNumMatches() == 1 ? fileDataResult.getResults().get(0).getUid() : -1;
+        return fileDataResult.getNumResults() == 1 ? fileDataResult.first().getUid() : -1;
     }
 
     @Override
@@ -196,7 +196,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     public OpenCGAResult<File> getAllFilesInFolder(long studyId, String path, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         Bson query = Filters.and(Filters.eq(PRIVATE_STUDY_UID, studyId), Filters.regex("path", "^" + path + "[^/]+/?$"));
-        List<File> fileResults = fileCollection.find(query, fileConverter, null).getResults();
+        DataResult<File> fileResults = fileCollection.find(query, fileConverter, null);
         return endQuery(startTime, fileResults);
     }
 
@@ -399,14 +399,6 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
             document.getSet().put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             document.getSet().put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
-        }
-        if (parameters.containsKey(QueryParams.STATUS.key())) {
-            if (parameters.get(QueryParams.STATUS.key()) instanceof Enums.ExecutionStatus) {
-                document.getSet().put(QueryParams.STATUS.key(), getMongoDBDocument(parameters.get(QueryParams.STATUS.key()),
-                        "File.FileStatus"));
-            } else {
-                document.getSet().put(QueryParams.STATUS.key(), parameters.get(QueryParams.STATUS.key()));
-            }
         }
 
         if (parameters.containsKey(QueryParams.RELATED_FILES.key())) {
@@ -772,13 +764,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     public OpenCGAResult<File> get(Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
-        List<File> documentList = new ArrayList<>();
         try (DBIterator<File> dbIterator = iterator(query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -795,13 +783,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     public OpenCGAResult<File> get(long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
-        List<File> documentList = new ArrayList<>();
         try (DBIterator<File> dbIterator = iterator(studyUid, query, options, user)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -813,13 +797,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     public OpenCGAResult nativeGet(ClientSession clientSession, Query query, QueryOptions options)
             throws CatalogDBException, CatalogParameterException, CatalogAuthorizationException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, query, options)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -831,13 +811,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
     public OpenCGAResult nativeGet(ClientSession clientSession, long studyUid, Query query, QueryOptions options, String user)
             throws CatalogDBException, CatalogAuthorizationException, CatalogParameterException {
         long startTime = startQuery();
-        List<Document> documentList = new ArrayList<>();
         try (DBIterator<Document> dbIterator = nativeIterator(clientSession, studyUid, query, options, user)) {
-            while (dbIterator.hasNext()) {
-                documentList.add(dbIterator.next());
-            }
+            return endQuery(startTime, dbIterator);
         }
-        return endQuery(startTime, documentList);
     }
 
     @Override
@@ -922,9 +898,9 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
 
         logger.debug("File query: {}", bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         if (!query.getBoolean(QueryParams.DELETED.key())) {
-            return fileCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return fileCollection.iterator(clientSession, bson, null, null, qOptions);
         } else {
-            return deletedFileCollection.nativeQuery().find(clientSession, bson, qOptions);
+            return deletedFileCollection.iterator(clientSession, bson, null, null, qOptions);
         }
     }
 

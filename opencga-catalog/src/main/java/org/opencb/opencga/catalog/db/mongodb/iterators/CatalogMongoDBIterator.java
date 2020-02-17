@@ -53,12 +53,6 @@ public class CatalogMongoDBIterator<E> implements DBIterator<E> {
         this(mongoCursor, null, converter, null);
     }
 
-    @Deprecated
-    public CatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, GenericDocumentComplexConverter<E> converter,
-                                  Function<Document, Document> filter) {
-        this(mongoCursor, null, converter, filter);
-    }
-
     public CatalogMongoDBIterator(MongoDBIterator<Document> mongoCursor, ClientSession clientSession,
                                   GenericDocumentComplexConverter<E> converter, Function<Document, Document> filter) {
         //Package protected
@@ -91,6 +85,11 @@ public class CatalogMongoDBIterator<E> implements DBIterator<E> {
     @Override
     public void close() {
         mongoCursor.close();
+    }
+
+    @Override
+    public long getNumMatches() {
+        return mongoCursor.getNumMatches();
     }
 
     void addAclInformation(Document document, QueryOptions options) {

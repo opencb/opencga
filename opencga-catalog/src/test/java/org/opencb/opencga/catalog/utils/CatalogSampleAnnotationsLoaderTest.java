@@ -78,7 +78,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         sessionId = catalogManager.getUserManager().login(userId, userId);
         Project project = catalogManager.getProjectManager().create("def", "default", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).getResults().get(0);
-        Study study = catalogManager.getStudyManager().create(project.getFqn(), "def", null, "default", Study.Type.FAMILY, null, "", null, null, null, null, null, null, null, null, sessionId).getResults().get(0);
+        Study study = catalogManager.getStudyManager().create(project.getFqn(), "def", null, "default", Study.Type.FAMILY, null, "", null, null, null, null, null, null, null, null, null, sessionId).getResults().get(0);
         studyId = study.getFqn();
         pedFile = catalogManager.getFileManager().upload(studyId, new FileInputStream(new java.io.File(pedFileURL.toURI())),
                 new File().setPath("data/" + pedFileName), false, true, false, sessionId).first();
@@ -127,7 +127,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         Query query = new Query(Constants.ANNOTATION, variableSetId + ":family=GB84");
         QueryOptions options = new QueryOptions()
                 .append(QueryOptions.LIMIT, 0)
-                .append("count", true);
+                .append(QueryOptions.COUNT, true);
 
         DataResult<Sample> allSamples = catalogManager.getSampleManager().search(studyId, query, options, sessionId);
         Assert.assertNotEquals(0, allSamples.getNumMatches());

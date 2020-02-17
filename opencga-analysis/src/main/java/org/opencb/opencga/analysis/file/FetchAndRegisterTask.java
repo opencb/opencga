@@ -61,6 +61,10 @@ public class FetchAndRegisterTask extends OpenCgaTool {
         String[] split = urlStr.split("/");
         fileName = split[split.length - 1];
 
+        if (!path.endsWith("/")) {
+            path = path + "/";
+        }
+
         try {
             String userId = catalogManager.getUserManager().getUserId(token);
             Study study = catalogManager.getStudyManager().resolveId(studyFqn, userId);

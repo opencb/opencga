@@ -41,7 +41,7 @@ public class JobsTop {
     private final long delay;
     private final ByteArrayOutputStream buffer;
     private final QueryOptions queryOptions = new QueryOptions()
-            .append(QueryOptions.INCLUDE, "id,name,status,execution,creationDate")
+            .append(QueryOptions.INCLUDE, "id,name,internal.status,execution,creationDate")
             .append(QueryOptions.COUNT, true)
             .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
     private final QueryOptions countOptions = new QueryOptions()
@@ -77,7 +77,7 @@ public class JobsTop {
         OpenCGAResult<Job> running = openCGAClient.getJobClient().search(
                 new ObjectMap(baseQuery)
                         .appendAll(queryOptions)
-                        .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING)
+                        .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.RUNNING)
                         .append(QueryOptions.LIMIT, jobsLimit)
                         .append(QueryOptions.SORT, "execution.start")
         ).getResponses().get(0);
@@ -86,7 +86,7 @@ public class JobsTop {
         OpenCGAResult<Job> queued = openCGAClient.getJobClient().search(
                 new ObjectMap(baseQuery)
                         .appendAll(queryOptions)
-                        .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED)
+                        .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.QUEUED)
                         .append(QueryOptions.LIMIT, jobsLimit)
                         .append(QueryOptions.SORT, "creationDate")
         ).getResponses().get(0);
@@ -95,7 +95,7 @@ public class JobsTop {
         OpenCGAResult<Job> pending = openCGAClient.getJobClient().search(
                 new ObjectMap(baseQuery)
                         .appendAll(queryOptions)
-                        .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.PENDING)
+                        .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.PENDING)
                         .append(QueryOptions.LIMIT, jobsLimit)
                         .append(QueryOptions.SORT, "creationDate")
         ).getResponses().get(0);
@@ -104,14 +104,14 @@ public class JobsTop {
         boolean truncatedJobs = jobsLimit <= 0;
 
         long doneCount = openCGAClient.getJobClient().search(new ObjectMap(baseQuery).appendAll(countOptions)
-                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.DONE)).getResponses().get(0).getNumMatches();
+                .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.DONE)).getResponses().get(0).getNumMatches();
         long errorCount = openCGAClient.getJobClient().search(new ObjectMap(baseQuery).appendAll(countOptions)
-                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.ERROR)).getResponses().get(0).getNumMatches();
+                .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.ERROR)).getResponses().get(0).getNumMatches();
 
         List<Job> finishedJobs = openCGAClient.getJobClient().search(
                 new ObjectMap(baseQuery)
                         .appendAll(queryOptions)
-                        .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Enums.ExecutionStatus.DONE + "," + Enums.ExecutionStatus.ERROR)
+                        .append(JobDBAdaptor.QueryParams.INTERNAL_STATUS_NAME.key(), Enums.ExecutionStatus.DONE + "," + Enums.ExecutionStatus.ERROR)
                         .append(QueryOptions.LIMIT, Math.max(1, jobsLimit))
                         .append(QueryOptions.SORT, "execution.end")
                         .append(QueryOptions.ORDER, QueryOptions.DESCENDING) // Get last n elements
@@ -179,7 +179,7 @@ public class JobsTop {
             out.print(SEP);
 
             // COLUMN 2 - Job Status
-            out.print(StringUtils.rightPad(job.getStatus().getName(), STATUS_PAD));
+            out.print(StringUtils.rightPad(job.getInternal().getStatus().getName(), STATUS_PAD));
             out.print(SEP);
 
             // COLUMN 3 - Creation Date

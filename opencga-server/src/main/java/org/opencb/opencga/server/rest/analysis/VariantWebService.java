@@ -28,15 +28,14 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
-import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
+import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils;
 import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
 import org.opencb.opencga.analysis.variant.operations.VariantFileDeleteOperationTool;
 import org.opencb.opencga.analysis.variant.operations.VariantIndexOperationTool;
 import org.opencb.opencga.analysis.variant.samples.SampleEligibilityAnalysis;
-import org.opencb.opencga.core.models.variant.SampleEligibilityAnalysisParams;
 import org.opencb.opencga.analysis.variant.samples.SampleVariantFilterAnalysis;
 import org.opencb.opencga.analysis.variant.stats.CohortVariantStatsAnalysis;
 import org.opencb.opencga.analysis.variant.stats.SampleVariantStatsAnalysis;
@@ -47,16 +46,15 @@ import org.opencb.opencga.analysis.wrappers.RvtestsWrapperAnalysis;
 import org.opencb.opencga.catalog.utils.AvroToAnnotationConverter;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.api.ParamConstants;
-import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
-import org.opencb.opencga.core.models.variant.VariantFileDeleteParams;
-import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.exceptions.VersionException;
-import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.AnnotationSet;
 import org.opencb.opencga.core.models.job.Job;
+import org.opencb.opencga.core.models.operations.variant.VariantStatsExportParams;
 import org.opencb.opencga.core.models.sample.Sample;
-import org.opencb.opencga.core.response.RestResponse;
+import org.opencb.opencga.core.models.variant.*;
 import org.opencb.opencga.core.response.OpenCGAResult;
+import org.opencb.opencga.core.response.RestResponse;
 import org.opencb.opencga.server.WebServiceException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryUtils;
@@ -215,6 +213,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "cohortStatsAlt", value = STATS_ALT_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "cohortStatsMaf", value = STATS_MAF_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "cohortStatsMgf", value = STATS_MGF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsPass", value = STATS_PASS_FREQ_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingAlleles", value = MISSING_ALLELES_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingGenotypes", value = MISSING_GENOTYPES_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "score", value = SCORE_DESCR, dataType = "string", paramType = "query"),
@@ -707,6 +706,7 @@ public class VariantWebService extends AnalysisWebService {
             @ApiImplicitParam(name = "cohortStatsAlt", value = STATS_ALT_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "cohortStatsMaf", value = STATS_MAF_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "cohortStatsMgf", value = STATS_MGF_DESCR, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "cohortStatsPass", value = STATS_PASS_FREQ_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingAlleles", value = MISSING_ALLELES_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "missingGenotypes", value = MISSING_GENOTYPES_DESCR, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "score", value = SCORE_DESCR, dataType = "string", paramType = "query"),

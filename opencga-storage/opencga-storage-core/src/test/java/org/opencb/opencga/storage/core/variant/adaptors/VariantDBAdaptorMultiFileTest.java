@@ -108,6 +108,7 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
     }
 
     protected VariantQueryResult<Variant> query(Query query, QueryOptions options) {
+        options = options == null ? QueryOptions.empty() : options;
         query = variantStorageEngine.preProcessQuery(query, options);
         return dbAdaptor.get(query, options);
     }
@@ -1088,6 +1089,16 @@ public abstract class VariantDBAdaptorMultiFileTest extends VariantStorageBaseTe
                                                 with("af", VariantStats::getAltAlleleFreq, lt(0.3))))
                         )
                 ))));
+    }
+
+    @Test
+    public void testGetByFilterFreq() {
+        queryResult = query(new Query(STATS_PASS_FREQ.key(), "ALL>0.6").append(STUDY.key(), study1), new QueryOptions());
+        VariantQueryResult<Variant> allVariants = query(new Query(STUDY.key(), study1), new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study1, withStats("ALL", with("PASS freq", s -> s.getFilterFreq().getOrDefault("PASS", 0F), gt(0.6))))));
+
+        queryResult = query(new Query(STATS_PASS_FREQ.key(), "ALL<0.6").append(STUDY.key(), study1), new QueryOptions());
+        assertThat(queryResult, everyResult(allVariants, withStudy(study1, withStats("ALL", with("PASS freq", s -> s.getFilterFreq().getOrDefault("PASS", 0F), lt(0.6))))));
     }
 
     @Test
