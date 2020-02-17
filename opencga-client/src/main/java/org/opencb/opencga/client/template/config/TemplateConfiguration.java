@@ -34,6 +34,7 @@ import java.util.Map;
 
 public class TemplateConfiguration {
 
+    private String version;
     private String baseUrl;
     private boolean index;
     private List<StudyAclEntry> acl;
@@ -71,12 +72,21 @@ public class TemplateConfiguration {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("TemplateConfiguration{");
-        sb.append("baseUrl='").append(baseUrl).append('\'');
+        sb.append("version='").append(version).append('\'');
+        sb.append(", baseUrl='").append(baseUrl).append('\'');
         sb.append(", index=").append(index);
         sb.append(", acl=").append(acl);
         sb.append(", projects=").append(projects);
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
     }
 
     public String getBaseUrl() {
