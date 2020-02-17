@@ -1,28 +1,43 @@
 package org.opencb.opencga.analysis.variant.knockout.result;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.opencb.biodata.models.core.Gene;
+
 import java.util.*;
 
 public class KnockoutByGene {
 
-    private String id;
-    private String name;
+    private Gene gene = new Gene();
     private List<KnockoutSample> samples = new LinkedList<>();
 
-    public String getId() {
-        return id;
+    public Gene getGene() {
+        return gene;
     }
 
-    public KnockoutByGene setId(String id) {
-        this.id = id;
+    public KnockoutByGene setGene(Gene gene) {
+        this.gene = gene;
         return this;
     }
 
-    public String getName() {
-        return name;
+    @JsonIgnore
+    public String getId() {
+        return getGene().getId();
     }
 
+    @JsonIgnore
+    public KnockoutByGene setId(String id) {
+        this.getGene().setId(id);
+        return this;
+    }
+
+    @JsonIgnore
+    public String getName() {
+        return getGene().getName();
+    }
+
+    @JsonIgnore
     public KnockoutByGene setName(String name) {
-        this.name = name;
+        this.getGene().setName(name);
         return this;
     }
 

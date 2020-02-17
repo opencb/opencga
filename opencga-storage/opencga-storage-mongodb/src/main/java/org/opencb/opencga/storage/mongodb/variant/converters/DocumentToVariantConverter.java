@@ -229,17 +229,12 @@ public class DocumentToVariantConverter extends AbstractDocumentConverter implem
         String reference = (String) object.get(REFERENCE_FIELD);
         String alternate = (String) object.get(ALTERNATE_FIELD);
         Variant variant = new Variant(chromosome, start, end, reference, alternate);
+        if (addDefaultId) {
+            variant.setId(variant.toString());
+        }
         if (object.containsKey(IDS_FIELD)) {
-            LinkedList<String> ids = new LinkedList<>(object.get(IDS_FIELD, Collection.class));
-            if (ids.isEmpty()) {
-                if (addDefaultId) {
-                    variant.setId(variant.toString());
-                }
-                variant.setNames(emptyList());
-            } else {
-                variant.setId(ids.get(0));
-                variant.setNames(ids.subList(1, ids.size()));
-            }
+            LinkedList<String> names = new LinkedList<>(object.get(IDS_FIELD, Collection.class));
+            variant.setNames(names);
         }
         if (object.containsKey(TYPE_FIELD)) {
             variant.setType(VariantType.valueOf(object.get(TYPE_FIELD).toString()));

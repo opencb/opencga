@@ -426,8 +426,8 @@ public class FileCommandOptions {
         @ParametersDelegate
         public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--folder"}, description = "Folder id, name or path.", required = true, arity = 1)
-        public String folderId;
+        @Parameter(names = {"--folder"}, description = "Folder id, name or path.", required = false, arity = 1)
+        public String folderId = ".";
 
         @Parameter(names = {"--max-Depth"}, description = "Maximum depth to get files from. Default: 5", required = false, arity = 1)
         public Integer maxDepth = 5;
