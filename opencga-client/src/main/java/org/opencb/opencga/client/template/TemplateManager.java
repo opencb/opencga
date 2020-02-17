@@ -28,6 +28,7 @@ import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.family.FamilyCreateParams;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileFetch;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualCreateParams;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
@@ -38,32 +39,42 @@ import org.opencb.opencga.core.models.sample.SampleCreateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyCreateParams;
 import org.opencb.opencga.core.response.RestResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public class TemplateManager {
 
     private TemplateConfiguration templateConfiguration;
     private OpenCGAClient openCGAClient;
+    private String user;
 
-    // TODO Add logger.
+    private Logger logger;
 
     public TemplateManager() {
     }
 
-    public TemplateManager(TemplateConfiguration templateConfiguration, ClientConfiguration clientConfiguration) {
+    public TemplateManager(TemplateConfiguration templateConfiguration, ClientConfiguration clientConfiguration, String user) {
         this.templateConfiguration = templateConfiguration;
         this.openCGAClient = new OpenCGAClient(clientConfiguration);
+        this.user = user;
+
+        this.logger = LoggerFactory.getLogger(TemplateManager.class);
     }
 
     public void execute() throws ClientException {
         // Check if any study exists before we start, if a study exists we should fail. Projects are allowed to exist.
         for (Project project : templateConfiguration.getProjects()) {
             for (Study study : project.getStudies()) {
-                RestResponse<Study> info = this.openCGAClient.getStudyClient().info(project.getId() + ":" + study.getId(), new ObjectMap());
+                RestResponse<Study> info = this.openCGAClient.getStudyClient().info(user + "@" + project.getId() + ":" + study.getId(),
+                        new ObjectMap());
                 if (info.getResponses().size() > 0) {
-                    System.out.println("Study already exists");
+                    logger.error("Study already exists");
                     return;
                 }
             }
@@ -71,8 +82,12 @@ public class TemplateManager {
 
         // Create and load data
         for (Project project : templateConfiguration.getProjects()) {
-            // TODO Check if Project exists before creating it.
-            openCGAClient.getProjectClient().create(ProjectCreateParams.of(project));
+            if (openCGAClient.getProjectClient().info(user + "@" + project.getId(), new ObjectMap()).first().getNumResults() == 0) {
+                logger.info("Creating project '{}'", project.getId());
+                openCGAClient.getProjectClient().create(ProjectCreateParams.of(project));
+            } else {
+                logger.warn("Project '{}' already exists.", project.getId());
+            }
             for (Study study : project.getStudies()) {
                 ObjectMap params = new ObjectMap("project", project.getId());
                 openCGAClient.getStudyClient().create(StudyCreateParams.of(study), params);
@@ -159,10 +174,8 @@ public class TemplateManager {
         ObjectMap params = new ObjectMap("study", study.getId());
         List<String> fetchJobIds = new ArrayList<>();
         for (File file : study.getFiles()) {
-            // TODO move to Java bean for the body.
-            params.put("url", baseUrl + "/" + file.getId());
-            params.put("path", file.getPath());
-            fetchJobIds.add(openCGAClient.getFileClient().fetch(params).getResponses().get(0).getResults().get(0).getId());
+            FileFetch fileFetch = new FileFetch(file.getPath(), baseUrl + "/" + file.getId());
+            fetchJobIds.add(openCGAClient.getFileClient().fetch(fileFetch, params).getResponses().get(0).getResults().get(0).getId());
             // TODO check file extension, if VCF and index=true then index with dependsOn
         }
         return fetchJobIds;

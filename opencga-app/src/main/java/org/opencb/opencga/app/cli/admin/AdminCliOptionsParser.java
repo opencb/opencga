@@ -46,7 +46,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
     private final ServerCommandOptions serverCommandOptions;
     private final AdminCliOptionsParser.MetaCommandOptions metaCommandOptions;
     private final MigrationCommandOptions migrationCommandOptions;
-    private final TemplateCommandOptions templateCommandOptions;
 
     protected static final String DEPRECATED = "[DEPRECATED] ";
 
@@ -112,13 +111,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         migrationSubCommands.addCommand("v1.3.0", this.migrationCommandOptions.getMigrateV130CommandOptions());
         migrationSubCommands.addCommand("v1.4.0", this.migrationCommandOptions.getMigrateV140CommandOptions());
         migrationSubCommands.addCommand("v2.0.0", this.migrationCommandOptions.getMigrateV200CommandOptions());
-
-        this.templateCommandOptions = new TemplateCommandOptions();
-        this.jCommander.addCommand("template", this.templateCommandOptions);
-        JCommander demoSubCommands = this.jCommander.getCommands().get("demo");
-        demoSubCommands.addCommand("load", this.templateCommandOptions.loadDemoCommandOptions);
-        demoSubCommands.addCommand("add", this.templateCommandOptions.addDemoCommandOptions);
-        demoSubCommands.addCommand("delete", this.templateCommandOptions.deleteDemoCommandOptions);
     }
 
     @Override
@@ -295,22 +287,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
 
         public MetaCommandOptions() {
             this.metaKeyCommandOptions = new MetaKeyCommandOptions();
-        }
-    }
-
-    @Parameters(commandNames = {"template"}, commandDescription = "Implements different tools work with the demo")
-    public class TemplateCommandOptions extends CommandOptions {
-
-        public LoadDemoCommandOptions loadDemoCommandOptions;
-        public AddDemoCommandOptions addDemoCommandOptions;
-        public DeleteDemoCommandOptions deleteDemoCommandOptions;
-
-        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
-
-        public TemplateCommandOptions() {
-            this.loadDemoCommandOptions = new LoadDemoCommandOptions();
-            this.addDemoCommandOptions = new AddDemoCommandOptions();
-            this.deleteDemoCommandOptions = new DeleteDemoCommandOptions();
         }
     }
 
@@ -760,52 +736,6 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         public String algorithm;
     }
 
-    /*
-     * DEMO SUB-COMMANDS
-     */
-    @Parameters(commandNames = {"load"}, commandDescription = "Load")
-    public class LoadDemoCommandOptions {
-
-        @ParametersDelegate
-        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
-
-        @Parameter(names = {"-f", "--file"}, arity = 1, description = "Define the studies from configuration to be loaded")
-        public String mainFile;
-
-//        @Parameter(names = {"-s", "--only-study"}, arity = 1, description = "Define the studies from configuration to be loaded")
-//        public String study;
-
-    }
-
-    @Parameters(commandNames = {"add"}, commandDescription = "Add")
-    public class AddDemoCommandOptions {
-
-        @ParametersDelegate
-        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
-
-        @Parameter(names = {"--database-prefix"}, description = "Prefix name for the catalog demo database. If not present, it will be "
-                + "set to 'demo'.")
-        public String prefix;
-
-        @Parameter(names = {"--force"}, description = "If this parameters is set, it will override the database installation.")
-        public boolean force;
-    }
-
-    @Parameters(commandNames = {"delete"}, commandDescription = "Delete")
-    public class DeleteDemoCommandOptions {
-
-        @ParametersDelegate
-        public AdminCliOptionsParser.AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
-
-        @Parameter(names = {"--database-prefix"}, description = "Prefix name for the catalog demo database. If not present, it will be "
-                + "set to 'demo'.")
-        public String prefix;
-
-        @Parameter(names = {"--force"}, description = "If this parameters is set, it will override the database installation.")
-        public boolean force;
-    }
-
-
     @Override
     public void printUsage() {
         String parsedCommand = getCommand();
@@ -874,7 +804,4 @@ public class AdminCliOptionsParser extends CliOptionsParser {
         return migrationCommandOptions;
     }
 
-    public TemplateCommandOptions getTemplateCommandOptions() {
-        return templateCommandOptions;
-    }
 }

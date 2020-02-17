@@ -111,9 +111,6 @@ public class AdminMain {
                         case "migration":
                             commandExecutor = new MigrationCommandExecutor(cliOptionsParser.getMigrationCommandOptions());
                             break;
-                        case "demo":
-                            commandExecutor = new DemoCommandExecutor(cliOptionsParser.getTemplateCommandOptions());
-                            break;
                         default:
                             System.out.printf(String.format("ERROR: not valid command passed: '%s'", parsedCommand));
                             break;
