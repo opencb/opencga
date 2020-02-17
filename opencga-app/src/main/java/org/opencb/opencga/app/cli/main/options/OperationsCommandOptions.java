@@ -60,8 +60,9 @@ public class OperationsCommandOptions {
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
-    public GeneralCliOptions.DataModelOptions commonDataModelOptions;
-    public GeneralCliOptions.NumericOptions commonNumericOptions;
+//    public GeneralCliOptions.DataModelOptions commonDataModelOptions;
+//    public GeneralCliOptions.NumericOptions commonNumericOptions;
+    public GeneralCliOptions.JobOptions commonJobOptions;
 
     public OperationsCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions,
                                     GeneralCliOptions.DataModelOptions dataModelOptions,
@@ -69,9 +70,10 @@ public class OperationsCommandOptions {
                                     JCommander jCommander) {
 
         this.commonCommandOptions = commonCommandOptions;
-        this.commonDataModelOptions = dataModelOptions;
-        this.commonNumericOptions = numericOptions;
+//        this.commonDataModelOptions = dataModelOptions;
+//        this.commonNumericOptions = numericOptions;
         this.jCommander = jCommander;
+        commonJobOptions = new GeneralCliOptions.JobOptions();
 
         variantSecondaryIndex = new VariantSecondaryIndexCommandOptions();
         variantSecondaryIndexDelete = new VariantSecondaryIndexDeleteCommandOptions();
@@ -84,11 +86,13 @@ public class OperationsCommandOptions {
         variantFamilyIndex = new VariantFamilyGenotypeIndexCommandOptions();
         variantAggregateFamily = new VariantFamilyAggregateCommandOptions();
         variantAggregate = new VariantAggregateCommandOptions();
-
     }
 
     @Parameters(commandNames = {VARIANT_SECONDARY_INDEX}, commandDescription = "Creates a secondary index using a search engine")
     public class VariantSecondaryIndexCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -111,6 +115,9 @@ public class OperationsCommandOptions {
     public class VariantSecondaryIndexDeleteCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
+
+        @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--sample"}, description = "Samples to remove. Needs to provide all the samples in the secondary index.",
@@ -121,6 +128,9 @@ public class OperationsCommandOptions {
 
     @Parameters(commandNames = {VARIANT_ANNOTATION_INDEX}, commandDescription = GenericVariantAnnotateOptions.ANNOTATE_DESCRIPTION)
     public class VariantAnnotationIndexCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
 
         @ParametersDelegate
         public GenericVariantAnnotateOptions genericVariantAnnotateOptions = new GenericVariantAnnotateOptions();
@@ -139,6 +149,9 @@ public class OperationsCommandOptions {
     public class VariantAnnotationSaveCommandOptions extends StorageVariantCommandOptions.GenericAnnotationSaveCommandOptions {
 
         @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
+
+        @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-p", "--project"}, description = PROJECT_DESC, arity = 1)
@@ -147,6 +160,9 @@ public class OperationsCommandOptions {
 
     @Parameters(commandNames = {VARIANT_ANNOTATION_DELETE}, commandDescription = ANNOTATION_DELETE_COMMAND_DESCRIPTION)
     public class VariantAnnotationDeleteCommandOptions extends StorageVariantCommandOptions.GenericAnnotationDeleteCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -158,6 +174,10 @@ public class OperationsCommandOptions {
 
     @Parameters(commandNames = {VARIANT_SCORE_INDEX}, commandDescription = GenericVariantScoreIndexCommandOptions.SCORE_INDEX_COMMAND_DESCRIPTION)
     public class VariantScoreIndexCommandOptions extends GenericVariantScoreIndexCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
+
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
@@ -167,6 +187,10 @@ public class OperationsCommandOptions {
 
     @Parameters(commandNames = {VARIANT_SCORE_DELETE}, commandDescription = GenericVariantScoreDeleteCommandOptions.SCORE_DELETE_COMMAND_DESCRIPTION)
     public class VariantScoreDeleteCommandOptions extends GenericVariantScoreDeleteCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
+
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
@@ -176,6 +200,9 @@ public class OperationsCommandOptions {
 
     @Parameters(commandNames = {VARIANT_SAMPLE_GENOTYPE_INDEX}, commandDescription = SAMPLE_INDEX_COMMAND_DESCRIPTION)
     public class VariantSampleGenotypeIndexCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -198,6 +225,9 @@ public class OperationsCommandOptions {
     public class VariantFamilyGenotypeIndexCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
+
+        @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--family"}, required = true, description = "Families to index. " +
@@ -216,6 +246,9 @@ public class OperationsCommandOptions {
     public class VariantFamilyAggregateCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
+
+        @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @ParametersDelegate
@@ -224,6 +257,9 @@ public class OperationsCommandOptions {
 
     @Parameters(commandNames = {VARIANT_AGGREGATE}, commandDescription = AGGREGATE_COMMAND_DESCRIPTION)
     public class VariantAggregateCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public GeneralCliOptions.JobOptions jobOptions = commonJobOptions;
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
