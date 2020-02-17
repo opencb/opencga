@@ -18,11 +18,14 @@ package org.opencb.opencga.client.template;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.pedigree.Multiples;
+import org.opencb.biodata.models.variant.metadata.Aggregation;
+import org.opencb.biodata.tools.variant.stats.AggregationUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.client.template.config.TemplateConfiguration;
+import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.family.Family;
@@ -32,20 +35,22 @@ import org.opencb.opencga.core.models.file.FileFetch;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.individual.IndividualCreateParams;
 import org.opencb.opencga.core.models.individual.IndividualUpdateParams;
+import org.opencb.opencga.core.models.operations.variant.VariantAnnotationIndexParams;
+import org.opencb.opencga.core.models.operations.variant.VariantSecondaryIndexParams;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.project.ProjectCreateParams;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleCreateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyCreateParams;
+import org.opencb.opencga.core.models.variant.VariantIndexParams;
+import org.opencb.opencga.core.models.variant.VariantStatsAnalysisParams;
 import org.opencb.opencga.core.response.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 public class TemplateManager {
@@ -88,8 +93,9 @@ public class TemplateManager {
             } else {
                 logger.warn("Project '{}' already exists.", project.getId());
             }
+            ArrayList<String> indexVcfJobIds = new ArrayList<>();
             for (Study study : project.getStudies()) {
-                ObjectMap params = new ObjectMap("project", project.getId());
+                ObjectMap params = new ObjectMap(ParamConstants.PROJECT_PARAM, project.getId());
                 openCGAClient.getStudyClient().create(StudyCreateParams.of(study), params);
                 // NOTE: Do not change the order of the following resource creation.
                 if (CollectionUtils.isNotEmpty(study.getIndividuals())) {
@@ -105,17 +111,17 @@ public class TemplateManager {
                     createFamilies(study);
                 }
                 if (CollectionUtils.isNotEmpty(study.getFiles())) {
-                    List<String> fetchJobIds = fetchFiles(study);
-                    if (this.templateConfiguration.isIndex()) {
-                        List<String> indexJobIds = index(study, fetchJobIds);
-                    }
+                    fetchFiles(study, indexVcfJobIds);
                 }
+            }
+            if (!indexVcfJobIds.isEmpty()) {
+                postIndex(project, indexVcfJobIds);
             }
         }
     }
 
     private void createIndividuals(Study study) throws ClientException {
-        ObjectMap params = new ObjectMap("study", study.getId());
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
         Map<String, Map<String, Object>> relatives = new HashMap<>();
 
         // Create individuals without parents and siblings
@@ -144,50 +150,128 @@ public class TemplateManager {
     }
 
     private void createSamples(Study study) throws ClientException {
-        ObjectMap params = new ObjectMap("study", study.getId());
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
         for (Sample sample : study.getSamples()) {
             openCGAClient.getSampleClient().create(SampleCreateParams.of(sample), params);
         }
     }
 
     private void createCohorts(Study study) throws ClientException {
-        ObjectMap params = new ObjectMap("study", study.getId());
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
         for (Cohort cohort : study.getCohorts()) {
             openCGAClient.getCohortClient().create(CohortCreateParams.of(cohort), params);
         }
     }
 
     private void createFamilies(Study study) throws ClientException {
-        ObjectMap params = new ObjectMap("study", study.getId());
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
         for (Family family : study.getFamilies()) {
             openCGAClient.getFamilyClient().create(FamilyCreateParams.of(family), params);
         }
     }
 
-    private List<String> fetchFiles(Study study) throws ClientException {
+    private List<String> fetchFiles(Study study, List<String> indexVcfJobIds) throws ClientException {
         String baseUrl = this.templateConfiguration.getBaseUrl();
         baseUrl = baseUrl.replaceAll("STUDY_ID", study.getId());
         if (!baseUrl.endsWith("/")) {
             baseUrl = baseUrl + "/";
         }
 
-        ObjectMap params = new ObjectMap("study", study.getId());
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
         List<String> fetchJobIds = new ArrayList<>();
         for (File file : study.getFiles()) {
             FileFetch fileFetch = new FileFetch(file.getPath(), baseUrl + "/" + file.getId());
-            fetchJobIds.add(openCGAClient.getFileClient().fetch(fileFetch, params).getResponses().get(0).getResults().get(0).getId());
-            // TODO check file extension, if VCF and index=true then index with dependsOn
+            String fetchJobId = openCGAClient.getFileClient().fetch(fileFetch, params).getResponses().get(0).getResults().get(0).getId();
+            fetchJobIds.add(fetchJobId);
+            if (templateConfiguration.isIndex()) {
+                if (isVcf(file)) {
+                    indexVcfJobIds.add(indexVcf(study, file.getId(), Collections.singletonList(fetchJobId)));
+                }
+            }
         }
         return fetchJobIds;
     }
 
-    private List<String> index(Study study, List<String> fetchJobIds) throws ClientException {
-        ObjectMap params = new ObjectMap("study", study.getId());
-        List<String> indexJobIds = new ArrayList<>();
-        for (String jobId : fetchJobIds) {
-            params.put("jobDependsOn", jobId);
-            indexJobIds.add(openCGAClient.getVariantClient().index(null, params).getResponses().get(0).getResults().get(0).getId());
-        }
-        return indexJobIds;
+    private boolean isVcf(File file) {
+        return file.getId().endsWith(".vcf.gz") || file.getId().endsWith(".vcf");
     }
+
+    private String indexVcf(Study study, String file, List<String> jobDependsOn) throws ClientException {
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
+        params.put("jobDependsOn", jobDependsOn);
+        return openCGAClient.getVariantClient()
+                .index(new VariantIndexParams().setFile(file), params)
+                .getResponses().get(0).getResults().get(0).getId();
+    }
+
+    private void postIndex(Project project, List<String> indexVcfJobIds) throws ClientException {
+        List<String> jobs = new ArrayList<>();
+        jobs.add(variantAnnot(project, indexVcfJobIds));
+        for (Study study : project.getStudies()) {
+            if (study.getFiles().stream().anyMatch(this::isVcf)) {
+                jobs.add(variantStats(study, indexVcfJobIds));
+            }
+        }
+        variantSecondaryIndex(project, jobs);
+    }
+
+    private String variantAnnot(Project project, List<String> indexVcfJobIds) throws ClientException {
+        List<String> studies = project.getStudies().stream()
+                .filter(study -> study.getFiles()
+                        .stream()
+                        .anyMatch(this::isVcf))
+                .map(Study::getFqn)
+                .collect(Collectors.toList());
+
+        ObjectMap params = new ObjectMap()
+                .append(ParamConstants.PROJECT_PARAM, project.getId())
+                .append(ParamConstants.STUDY_PARAM, studies)
+                .append("jobDependsOn", indexVcfJobIds);
+        return openCGAClient.getVariantOperationClient()
+                .indexVariantAnnotation(new VariantAnnotationIndexParams(), params)
+                .getResponses().get(0).getResults().get(0).getId();
+    }
+
+    private String variantStats(Study study, List<String> indexVcfJobIds) throws ClientException {
+        ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId())
+                .append("jobDependsOn", indexVcfJobIds);
+        VariantStatsAnalysisParams data = new VariantStatsAnalysisParams();
+
+        data.setAggregated(Aggregation.NONE);
+        for (File file : study.getFiles()) {
+            if (file.getId().endsWith(".properties")
+                    && file.getAttributes() != null
+                    && Boolean.parseBoolean(String.valueOf(file.getAttributes().get("aggregationMappingFile")))) {
+                data.setAggregationMappingFile(file.getId());
+                data.setAggregated(Aggregation.BASIC);
+            }
+        }
+
+        if (study.getAttributes() != null) {
+            Object aggregationObj = study.getAttributes().get("aggregation");
+            if (aggregationObj != null) {
+                data.setAggregated(AggregationUtils.valueOf(aggregationObj.toString()));
+            }
+        }
+
+        return openCGAClient.getVariantClient()
+                .runStats(data, params)
+                .getResponses().get(0).getResults().get(0).getId();
+    }
+
+    private void variantSecondaryIndex(Project project, List<String> jobs) throws ClientException {
+        List<String> studies = project.getStudies().stream()
+                .filter(study -> study.getFiles()
+                        .stream()
+                        .anyMatch(this::isVcf))
+                .map(Study::getFqn)
+                .collect(Collectors.toList());
+        ObjectMap params = new ObjectMap()
+                .append(ParamConstants.PROJECT_PARAM, project.getId())
+                .append(ParamConstants.STUDY_PARAM, studies)
+                .append("jobDependsOn", jobs);
+        openCGAClient.getVariantOperationClient()
+                .secondaryIndexVariant(new VariantSecondaryIndexParams().setOverwrite(true), params);
+    }
+
 }
