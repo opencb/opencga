@@ -110,13 +110,12 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Download an external file to catalog and register it", response = Job.class)
     public Response downloadAndRegister(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Folder path where the file will be downloaded") @QueryParam(ParamConstants.FILE_PATH_PARAM) String path,
-            @ApiParam(value = "External url where the file to be registered can be downloaded from") @QueryParam("url") String url) {
+            @ApiParam(name = "params", value = "Fetch parameters", required = true) FileFetch fetchParams) {
         try {
             Map<String, Object> params = new HashMap<>();
             params.put(ParamConstants.STUDY_PARAM, studyStr);
-            params.put(ParamConstants.FILE_PATH_PARAM, path);
-            params.put("url", url);
+            params.put(ParamConstants.FILE_PATH_PARAM, fetchParams.getPath());
+            params.put("url", fetchParams.getUrl());
 
             OpenCGAResult<Job> result = catalogManager.getJobManager().submit(studyStr, FetchAndRegisterTask.ID, Enums.Priority.MEDIUM,
                     params, token);

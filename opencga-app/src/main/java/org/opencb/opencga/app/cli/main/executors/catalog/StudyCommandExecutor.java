@@ -245,7 +245,6 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
         GroupCreateParams createParams = new GroupCreateParams()
                 .setId(c.groupId)
-                .setName(c.groupName)
                 .setUsers(c.users);
 
         ObjectMap params = new ObjectMap("action", ParamUtils.BasicUpdateAction.ADD);

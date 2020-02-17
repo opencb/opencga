@@ -81,7 +81,11 @@ public interface PanelDBAdaptor extends DBAdaptor<Panel> {
         REGIONS_LOCATION("regions.location", TEXT, ""),
         REGIONS_SCORE("regions.score", DOUBLE, ""),
 
-        AUTHOR("source.author", TEXT, ""),
+        SOURCE_ID("source.id", TEXT, ""),
+        SOURCE_NAME("source.name", TEXT, ""),
+        SOURCE_VERSION("source.version", TEXT, ""),
+        SOURCE_AUTHOR("source.author", TEXT, ""),
+        SOURCE_PROJECT("source.project", TEXT, ""),
 
         DELETED("deleted", BOOLEAN, ""),
 

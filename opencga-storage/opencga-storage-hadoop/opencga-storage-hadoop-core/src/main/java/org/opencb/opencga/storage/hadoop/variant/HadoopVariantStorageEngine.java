@@ -568,7 +568,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 //            getStudyConfigurationManager().getProjectMetadata(getMergedOptions(options)).first();
 //        }
         VariantHadoopDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
-        Configuration hadoopConfiguration = null == dbAdaptor ? null : dbAdaptor.getConfiguration();
+        Configuration hadoopConfiguration = dbAdaptor == null ? null : dbAdaptor.getConfiguration();
         hadoopConfiguration = hadoopConfiguration == null ? getHadoopConfiguration(options) : hadoopConfiguration;
         hadoopConfiguration.setIfUnset(ARCHIVE_TABLE_COMPRESSION.key(), ARCHIVE_TABLE_COMPRESSION.key());
         for (String key : options.keySet()) {
@@ -933,7 +933,7 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine implements 
 
     @Override
     public DataResult<Variant> getSampleData(String variant, String study, QueryOptions options) throws StorageEngineException {
-        return new HBaseVariantSampleDataManager(getDBAdaptor()).getSampleData(variant, study, options);
+        return new HBaseVariantSampleDataManager(getDBAdaptor(), getCellBaseUtils()).getSampleData(variant, study, options);
     }
 
     @Override

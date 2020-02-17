@@ -210,12 +210,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             }
             OpenCGAResult<Group> group;
             if (action == ParamUtils.BasicUpdateAction.ADD) {
-                // TODO: Remove if condition in v2.0
-                if (StringUtils.isEmpty(params.getId())) {
-                    params.setId(params.getName());
-                }
-
-                group = catalogManager.getStudyManager().createGroup(studyStr, params.getId(), params.getName(), params.getUsers(), token);
+                group = catalogManager.getStudyManager().createGroup(studyStr, params.getId(), params.getUsers(), token);
             } else {
                 group = catalogManager.getStudyManager().deleteGroup(studyStr, params.getId(), token);
             }

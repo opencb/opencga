@@ -871,7 +871,7 @@ public class ClinicalInterpretationManager extends StorageManager {
                 } else {
                     for (Study study : studyQueryResult.getResults()) {
                         for (Group group : study.getGroups()) {
-                            if (group.getName().equalsIgnoreCase("admins") && group.getUserIds().contains(userId)) {
+                            if (group.getId().equalsIgnoreCase("@admins") && group.getUserIds().contains(userId)) {
                                 studyAliases.add(study.getAlias());
                                 break;
                             }

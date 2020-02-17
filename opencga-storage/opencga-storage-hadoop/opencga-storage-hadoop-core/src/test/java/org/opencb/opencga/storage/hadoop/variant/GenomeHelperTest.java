@@ -71,6 +71,16 @@ public class GenomeHelperTest {
     }
 
     @Test
+    public void testGenerateSplitVariant() throws Exception {
+        int expectedSize = 10;
+        List<byte[]> bytes = GenomeHelper.generateBootPreSplitsHuman(expectedSize, VariantPhoenixKeyFactory::generateVariantRowKey);
+        for (byte[] aByte : bytes) {
+            System.out.println(Bytes.toStringBinary(aByte));
+        }
+        assertOrder(bytes, expectedSize);
+    }
+
+    @Test
     public void testGenerateSplitArchiveMultipleBatches() throws Exception {
         Configuration conf = new Configuration();
         conf.setInt(HadoopVariantStorageOptions.ARCHIVE_TABLE_PRESPLIT_SIZE.key(), 10);
