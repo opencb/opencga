@@ -159,8 +159,11 @@ public class TemplateManager {
         ObjectMap params = new ObjectMap("study", study.getId());
         List<String> fetchJobIds = new ArrayList<>();
         for (File file : study.getFiles()) {
+            // TODO move to Java bean for the body.
             params.put("url", baseUrl + "/" + file.getId());
+            params.put("path", file.getPath());
             fetchJobIds.add(openCGAClient.getFileClient().fetch(params).getResponses().get(0).getResults().get(0).getId());
+            // TODO check file extension, if VCF and index=true then index with dependsOn
         }
         return fetchJobIds;
     }
