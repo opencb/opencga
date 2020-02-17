@@ -73,12 +73,15 @@ public class TemplateManager {
     }
 
     public void execute() throws ClientException {
+        // TODO Check version
+
+
         // Check if any study exists before we start, if a study exists we should fail. Projects are allowed to exist.
         for (Project project : templateConfiguration.getProjects()) {
             for (Study study : project.getStudies()) {
-                RestResponse<Study> info = this.openCGAClient.getStudyClient().info(user + "@" + project.getId() + ":" + study.getId(),
-                        new ObjectMap());
-                if (info.getResponses().size() > 0) {
+                RestResponse<Study> infoResponse = this.openCGAClient.getStudyClient()
+                        .info(this.user + "@" + project.getId() + ":" + study.getId(), new ObjectMap());
+                if (infoResponse.getResponses().size() > 0) {
                     logger.error("Study already exists");
                     return;
                 }
