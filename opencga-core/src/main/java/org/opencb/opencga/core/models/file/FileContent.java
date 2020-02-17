@@ -23,11 +23,6 @@ public class FileContent {
     private int bytes;
 
     /**
-     * Number of lines skipped before starting reading.
-     */
-    private int skippedLines;
-
-    /**
      * Number of lines read.
      */
     private int lines;
@@ -40,12 +35,19 @@ public class FileContent {
     public FileContent() {
     }
 
-    public FileContent(String fileId, boolean eof, long offset, int bytes, int skippedLines, int lines, String content) {
+    public FileContent(String fileId, boolean eof, long offset, int bytes, String content) {
         this.fileId = fileId;
         this.eof = eof;
         this.offset = offset;
         this.bytes = bytes;
-        this.skippedLines = skippedLines;
+        this.content = content;
+    }
+
+    public FileContent(String fileId, boolean eof, long offset, int bytes, int lines, String content) {
+        this.fileId = fileId;
+        this.eof = eof;
+        this.offset = offset;
+        this.bytes = bytes;
         this.lines = lines;
         this.content = content;
     }
@@ -57,7 +59,6 @@ public class FileContent {
         sb.append(", eof=").append(eof);
         sb.append(", offset=").append(offset);
         sb.append(", bytes=").append(bytes);
-        sb.append(", skippedLines=").append(skippedLines);
         sb.append(", lines=").append(lines);
         sb.append(", content='").append(content).append('\'');
         sb.append('}');
@@ -97,15 +98,6 @@ public class FileContent {
 
     public FileContent setBytes(int bytes) {
         this.bytes = bytes;
-        return this;
-    }
-
-    public int getSkippedLines() {
-        return skippedLines;
-    }
-
-    public FileContent setSkippedLines(int skippedLines) {
-        this.skippedLines = skippedLines;
         return this;
     }
 
