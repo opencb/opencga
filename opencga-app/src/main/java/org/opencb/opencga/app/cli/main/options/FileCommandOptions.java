@@ -429,7 +429,7 @@ public class FileCommandOptions {
         @Parameter(names = {"--folder"}, description = "Folder id, name or path.", required = false, arity = 1)
         public String folderId = ".";
 
-        @Parameter(names = {"-L", "--level"}, description = "Descend only 'level' directories deep. Default: 5", arity = 1)
+        @Parameter(names = {"-n", "--max-depth"}, description = "Descend only 'level' directories deep. Default: 5", arity = 1)
         public Integer maxDepth = 5;
 
         @Parameter(names = {"--max-Depth"}, hidden = true)
