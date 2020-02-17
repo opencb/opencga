@@ -35,6 +35,8 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
 
     public static final String VARIANT_B = "1:734964:T:C";
     public static final String VARIANT_A = "1:819320:A:C";
+    public static final String RS = "rs182637865";
+    public static final String RS_VARIANT = "1:947562:C:T";
 
     @Test
     public void indexWithOtherFieldsNoGTSingleFile() throws Exception {
@@ -70,6 +72,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
         assertThat(iterator.getCount(), gt(0));
 
         checkSampleData(engine, VARIANT_A);
+        checkSampleData(engine, RS);
     }
 
     @Test
@@ -112,6 +115,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
 
         checkSampleData(engine, VARIANT_A);
         checkSampleData(engine, VARIANT_B);
+        checkSampleData(engine, RS);
     }
 
     @Test
@@ -200,6 +204,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
 
         checkSampleData(engine, VARIANT_A);
         checkSampleData(engine, VARIANT_B);
+        checkSampleData(engine, RS);
 
     }
 
@@ -222,6 +227,7 @@ public abstract class VariantStorageEngineSomaticTest extends VariantStorageBase
                 break;
 
             case VARIANT_B:
+            case RS_VARIANT:
                 assertEquals(STUDY_NAME, studyEntry.getStudyId());
                 assertEquals(Arrays.asList("SAMPLE_1", "SAMPLE_2"),
                         studyEntry.getSamplesData().stream().map(l -> l.get(l.size() - 2)).collect(Collectors.toList()));
