@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.demo;
+package org.opencb.opencga.client.template;
 
 import org.junit.Test;
 import org.opencb.opencga.client.exceptions.ClientException;
 
-import static org.junit.Assert.*;
-
-public class DemoManagerTest {
+public class TemplateManagerTest {
 
     @Test
     public void execute() throws ClientException {
 
-        DemoManager demoManager = new DemoManager();
-        demoManager.execute();
+        TemplateManager templateManager = new TemplateManager();
+        templateManager.execute();
 
     }
 }

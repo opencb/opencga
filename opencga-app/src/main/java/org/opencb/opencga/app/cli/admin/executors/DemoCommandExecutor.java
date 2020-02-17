@@ -19,8 +19,8 @@ package org.opencb.opencga.app.cli.admin.executors;
 
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
-import org.opencb.opencga.app.demo.DemoManager;
-import org.opencb.opencga.app.demo.config.TemplateConfiguration;
+import org.opencb.opencga.client.template.TemplateManager;
+import org.opencb.opencga.client.template.config.TemplateConfiguration;
 
 import java.nio.file.Paths;
 
@@ -64,7 +64,7 @@ public class DemoCommandExecutor extends CommandExecutor {
         AdminCliOptionsParser.LoadDemoCommandOptions loadDemoCommandOptions = templateCommandOptions.loadDemoCommandOptions;
 
         TemplateConfiguration templateConfiguration = TemplateConfiguration.load(Paths.get(loadDemoCommandOptions.mainFile));
-        DemoManager demoManager = new DemoManager(templateConfiguration, clientConfiguration);
+        TemplateManager templateManager = new TemplateManager(templateConfiguration, clientConfiguration);
 
     }
 

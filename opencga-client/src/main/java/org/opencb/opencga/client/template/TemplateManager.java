@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.demo;
+package org.opencb.opencga.client.template;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.opencb.biodata.models.pedigree.Multiples;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.app.demo.config.TemplateConfiguration;
-import org.opencb.opencga.app.demo.config.StudyConfiguration;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.exceptions.ClientException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.client.template.config.TemplateConfiguration;
 import org.opencb.opencga.core.models.cohort.Cohort;
 import org.opencb.opencga.core.models.cohort.CohortCreateParams;
 import org.opencb.opencga.core.models.family.Family;
@@ -38,49 +37,61 @@ import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.sample.SampleCreateParams;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyCreateParams;
+import org.opencb.opencga.core.response.RestResponse;
 
 import java.util.*;
 
 
-public class DemoManager {
+public class TemplateManager {
 
     private TemplateConfiguration templateConfiguration;
     private OpenCGAClient openCGAClient;
 
-    public DemoManager() {
+    // TODO Add logger.
+
+    public TemplateManager() {
     }
 
-    public DemoManager(TemplateConfiguration templateConfiguration, ClientConfiguration clientConfiguration) {
+    public TemplateManager(TemplateConfiguration templateConfiguration, ClientConfiguration clientConfiguration) {
         this.templateConfiguration = templateConfiguration;
         this.openCGAClient = new OpenCGAClient(clientConfiguration);
     }
 
     public void execute() throws ClientException {
-        // Store all StudyConfigurations in a Map
-        Map<String, StudyConfiguration> studyConfigurationMap = new HashMap<>();
-        this.templateConfiguration.getConfiguration().getStudies()
-                .forEach(studyConfiguration -> studyConfigurationMap.put(studyConfiguration.getId(), studyConfiguration));
-
+        // Check if any study exists before we start, if a study exists we should fail. Projects are allowed to exist.
         for (Project project : templateConfiguration.getProjects()) {
+            for (Study study : project.getStudies()) {
+                RestResponse<Study> info = this.openCGAClient.getStudyClient().info(project.getId() + ":" + study.getId(), new ObjectMap());
+                if (info.getResponses().size() > 0) {
+                    System.out.println("Study already exists");
+                    return;
+                }
+            }
+        }
+
+        // Create and load data
+        for (Project project : templateConfiguration.getProjects()) {
+            // TODO Check if Project exists before creating it.
             openCGAClient.getProjectClient().create(ProjectCreateParams.of(project));
             for (Study study : project.getStudies()) {
-                if (studyConfigurationMap.get(study.getId()).getActive()) {
-                    ObjectMap params = new ObjectMap("project", project.getId());
-                    openCGAClient.getStudyClient().create(StudyCreateParams.of(study), params);
-                    if (CollectionUtils.isNotEmpty(study.getIndividuals())) {
-                        createIndividuals(study);
-                    }
-                    if (CollectionUtils.isNotEmpty(study.getSamples())) {
-                        createSamples(study);
-                    }
-                    if (CollectionUtils.isNotEmpty(study.getCohorts())) {
-                        createCohorts(study);
-                    }
-                    if (CollectionUtils.isNotEmpty(study.getFamilies())) {
-                        createFamilies(study);
-                    }
-                    if (CollectionUtils.isNotEmpty(study.getFiles())) {
-                        List<String> fetchJobIds = fetchFiles(study);
+                ObjectMap params = new ObjectMap("project", project.getId());
+                openCGAClient.getStudyClient().create(StudyCreateParams.of(study), params);
+                // NOTE: Do not change the order of the following resource creation.
+                if (CollectionUtils.isNotEmpty(study.getIndividuals())) {
+                    createIndividuals(study);
+                }
+                if (CollectionUtils.isNotEmpty(study.getSamples())) {
+                    createSamples(study);
+                }
+                if (CollectionUtils.isNotEmpty(study.getCohorts())) {
+                    createCohorts(study);
+                }
+                if (CollectionUtils.isNotEmpty(study.getFamilies())) {
+                    createFamilies(study);
+                }
+                if (CollectionUtils.isNotEmpty(study.getFiles())) {
+                    List<String> fetchJobIds = fetchFiles(study);
+                    if (this.templateConfiguration.isIndex()) {
                         List<String> indexJobIds = index(study, fetchJobIds);
                     }
                 }
@@ -139,23 +150,16 @@ public class DemoManager {
     }
 
     private List<String> fetchFiles(Study study) throws ClientException {
+        String baseUrl = this.templateConfiguration.getBaseUrl();
+        baseUrl = baseUrl.replaceAll("STUDY_ID", study.getId());
+        if (!baseUrl.endsWith("/")) {
+            baseUrl = baseUrl + "/";
+        }
+
         ObjectMap params = new ObjectMap("study", study.getId());
-        String urlBase = null;
-        for (StudyConfiguration studyConfiguration : templateConfiguration.getConfiguration().getStudies()) {
-            if (studyConfiguration.getId().equals(study.getId())) {
-                urlBase = studyConfiguration.getUrlBase();
-            }
-        }
-
-        if (urlBase == null) {
-            throw new java.lang.NullPointerException();
-        } else if (!urlBase.endsWith("/")) {
-            urlBase = urlBase + "/";
-        }
-
         List<String> fetchJobIds = new ArrayList<>();
         for (File file : study.getFiles()) {
-            params.put("url", urlBase + "/" + file.getId());
+            params.put("url", baseUrl + "/" + file.getId());
             fetchJobIds.add(openCGAClient.getFileClient().fetch(params).getResponses().get(0).getResults().get(0).getId());
         }
         return fetchJobIds;
@@ -170,5 +174,4 @@ public class DemoManager {
         }
         return indexJobIds;
     }
-
 }

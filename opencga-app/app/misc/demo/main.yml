@@ -1,51 +1,20 @@
 ---
-configuration:
-  studies:
-    - id: 1000g
-      index: true
-      urlBase: http://resources.opencb.org/datasets/1000g/data/
-      active: true
-  #    cohorts:
-  #      - id: ACB
-  #        sample:
-  #          -
-  #        individual:
-  #          - population.name: ACB
-      acl:
-        - userId: demo
-          permission: [VIEW_FILE_HEADERS, VIEW_FILE_CONTENTS, VIEW_FILES, VIEW_FILE_ANNOTATIONS, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS, VIEW_INDIVIDUALS, VIEW_INDIVIDUALS_ANNOTATIONS, VIEW_FAMILIES, VIEW_FAMILIES_ANNOTATIONS, VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_CLINICAL_ANALYSIS]
-    - id: corpasome
-      index: true
-      urlBase: http://resources.opencb.org/datasets/corpasome/data/
-      active: true
-      acl:
-        - userId: demo
-          permission: [VIEW_FILE_HEADERS, VIEW_FILE_CONTENTS, VIEW_FILES, VIEW_FILE_ANNOTATIONS, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS, VIEW_INDIVIDUALS, VIEW_INDIVIDUALS_ANNOTATIONS, VIEW_FAMILIES, VIEW_FAMILIES_ANNOTATIONS, VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_CLINICAL_ANALYSIS]
-    - id: rams_cml
-      index: true
-      urlBase: http://resources.opencb.org/datasets/rams_cml/data/
-      active: true
-      acl:
-        - userId: demo
-          permission: [VIEW_FILE_HEADERS, VIEW_FILE_CONTENTS, VIEW_FILES, VIEW_FILE_ANNOTATIONS, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS, VIEW_INDIVIDUALS, VIEW_INDIVIDUALS_ANNOTATIONS, VIEW_FAMILIES, VIEW_FAMILIES_ANNOTATIONS, VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_CLINICAL_ANALYSIS]
-    - id: uk10k
-      index: true
-      urlBase: http://resources.opencb.org/datasets/uk10k/data/
-      active: true
-      acl:
-        - userId: demo
-          permission: [VIEW_FILE_HEADERS, VIEW_FILE_CONTENTS, VIEW_FILES, VIEW_FILE_ANNOTATIONS, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS, VIEW_INDIVIDUALS, VIEW_INDIVIDUALS_ANNOTATIONS, VIEW_FAMILIES, VIEW_FAMILIES_ANNOTATIONS, VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_CLINICAL_ANALYSIS]
-    - id: platinum
-      index: true
-      urlBase: http://resources.opencb.org/datasets/platinum/data/
-      active: true
-      acl:
-        - userId: demo
-          permission: [VIEW_FILE_HEADERS, VIEW_FILE_CONTENTS, VIEW_FILES, VIEW_FILE_ANNOTATIONS, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS, VIEW_INDIVIDUALS, VIEW_INDIVIDUALS_ANNOTATIONS, VIEW_FAMILIES, VIEW_FAMILIES_ANNOTATIONS, VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_CLINICAL_ANALYSIS]
+## URL to fetch data from. STUDY_ID will be replaced with the study.id
+baseUrl: http://resources.opencb.org/datasets/STUDY_ID/data/
 
+## True to index VCF files
+index: true
+
+## User and permissions for each study
+acl:
+  - member: demo
+    permissions: [VIEW_FILE_HEADERS, VIEW_FILE_CONTENTS, VIEW_FILES, VIEW_FILE_ANNOTATIONS, VIEW_JOBS, VIEW_SAMPLES, VIEW_SAMPLE_ANNOTATIONS, VIEW_INDIVIDUALS, VIEW_INDIVIDUALS_ANNOTATIONS, VIEW_FAMILIES, VIEW_FAMILIES_ANNOTATIONS, VIEW_COHORTS, VIEW_COHORT_ANNOTATIONS, VIEW_PANELS, VIEW_CLINICAL_ANALYSIS]
+
+## Project and Study configuration to be created
 projects:
   - id: population
     name: Population Studies GRCh38
+    description: Some population reference studies for GRCh38
     organism:
       scientificName: Homo sapiens
       assembly: GRCh38
@@ -60,7 +29,6 @@ projects:
     studies:
       - id: platinum
       - id: corpasome
-      - id: ceph_trio
   - id: cancer
     name: Cancer Studies GRCh37
     organism:

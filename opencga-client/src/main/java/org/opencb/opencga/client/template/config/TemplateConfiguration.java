@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.demo.config;
+package org.opencb.opencga.client.template.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.study.Study;
+import org.opencb.opencga.core.models.study.StudyAclEntry;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +34,9 @@ import java.util.Map;
 
 public class TemplateConfiguration {
 
-    private Configuration configuration;
+    private String baseUrl;
+    private boolean index;
+    private List<StudyAclEntry> acl;
     private List<Project> projects;
 
 
@@ -46,7 +49,11 @@ public class TemplateConfiguration {
             studies.put(project.getId(), new ArrayList<>());
             for (Study study : project.getStudies()) {
                 File file = mainConfigurationPath.getParent().resolve(study.getId() + ".yml").toFile();
-                studies.get(project.getId()).add(objectMapper.readValue(file, Study.class));
+                // If file exists we load it and overwrite Study object.
+                // If a file with the study does not exist then Study must be defined in the main.yml file.
+                if (file.exists()) {
+                    studies.get(project.getId()).add(objectMapper.readValue(file, Study.class));
+                }
             }
         }
 
@@ -63,18 +70,37 @@ public class TemplateConfiguration {
 
     @Override
     public String toString() {
-        return "DemoConfiguration{" +
-                "configuration=" + configuration +
-                ", projects=" + projects +
-                '}';
+        final StringBuilder sb = new StringBuilder("TemplateConfiguration{");
+        sb.append("baseUrl='").append(baseUrl).append('\'');
+        sb.append(", index=").append(index);
+        sb.append(", acl=").append(acl);
+        sb.append(", projects=").append(projects);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public Configuration getConfiguration() {
-        return configuration;
+    public String getBaseUrl() {
+        return baseUrl;
     }
 
-    public void setConfiguration(Configuration configuration) {
-        this.configuration = configuration;
+    public void setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
+    }
+
+    public boolean isIndex() {
+        return index;
+    }
+
+    public void setIndex(boolean index) {
+        this.index = index;
+    }
+
+    public List<StudyAclEntry> getAcl() {
+        return acl;
+    }
+
+    public void setAcl(List<StudyAclEntry> acl) {
+        this.acl = acl;
     }
 
     public List<Project> getProjects() {
