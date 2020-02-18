@@ -29,7 +29,6 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.individual.Individual;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.panel.Panel;
-import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.sample.Sample;
 
 import java.net.URI;
@@ -71,8 +70,6 @@ public class Study extends PrivateFields {
     private URI uri;
 
     private int release;
-    @Deprecated
-    private Map<File.Bioformat, DataStore> dataStores;
 
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
@@ -85,14 +82,14 @@ public class Study extends PrivateFields {
         this(alias, name, alias, type, TimeUtils.getTime(), description, null, status,
                 0, new ArrayList<>(), new LinkedList<>(), new LinkedList<>(),
                 new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(),
-                new HashMap<>(), uri, new HashMap<>(), release, new HashMap<>(), new HashMap<>());
+                new HashMap<>(), uri, release, new HashMap<>(), new HashMap<>());
     }
 
     public Study(String id, String name, String alias, Type type, String creationDate, String description, StudyNotification notification,
                  Status status, long size, List<Group> groups, List<File> files, List<Job> jobs, List<Individual> individuals,
                  List<Family> families, List<Sample> samples, List<Cohort> cohorts, List<Panel> panels, List<VariableSet> variableSets,
-                 Map<Entity, List<PermissionRule>> permissionRules, URI uri, Map<File.Bioformat, DataStore> dataStores, int release,
-                 Map<String, Object> stats, Map<String, Object> attributes) {
+                 Map<Entity, List<PermissionRule>> permissionRules, URI uri, int release, Map<String, Object> stats,
+                 Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
@@ -115,7 +112,6 @@ public class Study extends PrivateFields {
         this.uri = uri;
         this.stats = ObjectUtils.defaultIfNull(stats, new HashMap<>());
         this.release = release;
-        this.dataStores = ObjectUtils.defaultIfNull(dataStores, new HashMap<>());
         this.attributes = ObjectUtils.defaultIfNull(attributes, new HashMap<>());
     }
 
@@ -180,7 +176,6 @@ public class Study extends PrivateFields {
         sb.append(", permissionRules=").append(permissionRules);
         sb.append(", uri=").append(uri);
         sb.append(", release=").append(release);
-        sb.append(", dataStores=").append(dataStores);
         sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -406,15 +401,6 @@ public class Study extends PrivateFields {
 
     public Study setFqn(String fqn) {
         this.fqn = fqn;
-        return this;
-    }
-
-    public Map<File.Bioformat, DataStore> getDataStores() {
-        return dataStores;
-    }
-
-    public Study setDataStores(Map<File.Bioformat, DataStore> dataStores) {
-        this.dataStores = dataStores;
         return this;
     }
 

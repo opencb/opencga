@@ -72,7 +72,7 @@ public class FileScannerTest {
         sessionIdUser = catalogManager.getUserManager().login("user", PASSWORD);
         project = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first();
-        study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, null, sessionIdUser).first();
+        study = catalogManager.getStudyManager().create(project.getId(), "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, sessionIdUser).first();
         folder = catalogManager.getFileManager().createFolder(study.getId(), Paths.get("data/test/folder/").toString(),
                 null, true, null, QueryOptions.empty(), sessionIdUser).first();
 

@@ -188,7 +188,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                 new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file.vcf", null, "",
                                         new File.FileStatus(File.FileStatus.READY), 1000, 1)
                         ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                        new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null, 1,
+                        new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, 1,
                         Collections.emptyMap(),
                         Collections.emptyMap()), null);
 
@@ -213,7 +213,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                 "data/alignment.bam", null, "Tophat alignment file",
                                 new File.FileStatus(File.FileStatus.READY), 5000, 1)
                 ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
-                        new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null,
+                        new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null,
                         1, Collections.emptyMap(),
                         Collections.emptyMap()), null);
         catalogStudyDBAdaptor.insert(catalogProjectDBAdaptor.get(new Query(ProjectDBAdaptor.QueryParams.ID.key(), "pr"), null).first(),
@@ -229,7 +229,7 @@ public class MongoDBAdaptorTest extends GenericTest {
                                         "data/alignment.bam", null, "Tophat alignment file",
                                         new File.FileStatus(File.FileStatus.READY), 5000, 1)
                         ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(),
-                        new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, null,
+                        new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null,
                         1, Collections.emptyMap(), Collections.emptyMap()), null);
 
         QueryOptions options = new QueryOptions("includeStudies", true);

@@ -52,7 +52,6 @@ import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
 import org.opencb.opencga.core.models.individual.IndividualAclEntry;
 import org.opencb.opencga.core.models.job.JobAclEntry;
-import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.SampleAclEntry;
 import org.opencb.opencga.core.models.study.*;
@@ -244,8 +243,8 @@ public class StudyManager extends AbstractManager {
 
     public OpenCGAResult<Study> create(String projectStr, String id, String alias, String name, Study.Type type, String creationDate,
                                        String description, StudyNotification notification, Status status, String cipher, String uriScheme,
-                                       URI uri, Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats,
-                                       Map<String, Object> attributes, QueryOptions options, String token) throws CatalogException {
+                                       URI uri, Map<String, Object> stats, Map<String, Object> attributes, QueryOptions options,
+                                       String token) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkObj(type, "type");
@@ -275,7 +274,6 @@ public class StudyManager extends AbstractManager {
         } else {
             uriScheme = catalogIOManagerFactory.getDefaultCatalogScheme();
         }
-        datastores = ParamUtils.defaultObject(datastores, HashMap::new);
         stats = ParamUtils.defaultObject(stats, HashMap::new);
         attributes = ParamUtils.defaultObject(attributes, HashMap::new);
 
@@ -293,7 +291,6 @@ public class StudyManager extends AbstractManager {
                 .append("cipher", cipher)
                 .append("uriScheme", uriScheme)
                 .append("uri", uri)
-                .append("datastores", datastores)
                 .append("stats", stats)
                 .append("attributes", attributes)
                 .append("options", options)
@@ -317,7 +314,7 @@ public class StudyManager extends AbstractManager {
             Study study = new Study(id, name, alias, type, creationDate, description, notification,
                     status, 0, Arrays.asList(new Group(MEMBERS, Collections.singletonList(userId)),
                     new Group(ADMINS, Collections.emptyList())), files, null, null, new LinkedList<>(), null, null, null, null, null,
-                    null, datastores, project.getCurrentRelease(), stats, attributes);
+                    null, project.getCurrentRelease(), stats, attributes);
 
             study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
 

@@ -75,7 +75,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("More than one project found");
         catalogManager.getStudyManager().create(null, "phasexx", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null,
-                null, null, null, null, token);
+                null, null, null, token);
     }
 
     @Test
@@ -381,13 +381,13 @@ public class CatalogManagerTest extends AbstractManagerTest {
         Query query = new Query(ProjectDBAdaptor.QueryParams.USER_ID.key(), "user");
         String projectId = catalogManager.getProjectManager().get(query, null, token).first().getId();
         catalogManager.getStudyManager().create(projectId, "study_1", null, "study_1", Study.Type.CASE_CONTROL, "creationDate",
-                "description", null, new Status(), null, null, null, null, null, null, null, token);
+                "description", null, new Status(), null, null, null, null, null, null, token);
 
-        catalogManager.getStudyManager().create(projectId, "study_2", null, "study_2", Study.Type.CASE_CONTROL, "creationDate", "description", null, new Status(), null, null, null, null, null, null, null, token);
+        catalogManager.getStudyManager().create(projectId, "study_2", null, "study_2", Study.Type.CASE_CONTROL, "creationDate", "description", null, new Status(), null, null, null, null, null, null, token);
 
-        catalogManager.getStudyManager().create(projectId, "study_3", null, "study_3", Study.Type.CASE_CONTROL, "creationDate", "description", null, new Status(), null, null, null, null, null, null, null, token);
+        catalogManager.getStudyManager().create(projectId, "study_3", null, "study_3", Study.Type.CASE_CONTROL, "creationDate", "description", null, new Status(), null, null, null, null, null, null, token);
 
-        String study_4 = catalogManager.getStudyManager().create(projectId, "study_4", null, "study_4", Study.Type.CASE_CONTROL, "creationDate", "description", null, new Status(), null, null, null, null, null, null, null, token).first().getId();
+        String study_4 = catalogManager.getStudyManager().create(projectId, "study_4", null, "study_4", Study.Type.CASE_CONTROL, "creationDate", "description", null, new Status(), null, null, null, null, null, null, token).first().getId();
 
         assertEquals(new HashSet<>(Collections.emptyList()), catalogManager.getStudyManager().get(new Query(StudyDBAdaptor.QueryParams
                 .GROUP_USER_IDS.key(), "user2"), null, token).getResults().stream().map(Study::getId)
@@ -418,7 +418,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
     public void testGetId() throws CatalogException {
         // Create another study with alias phase3
         catalogManager.getStudyManager().create(project2, "phase3", null, "Phase 3", Study.Type.CASE_CONTROL, null, "d", null, null, null,
-                null, null, null, null, null, null, sessionIdUser2);
+                null, null, null, null, null, sessionIdUser2);
 
         String userId = catalogManager.getUserManager().getUserId(token);
         List<Long> uids = catalogManager.getStudyManager().resolveIds(Arrays.asList("*"), userId)
@@ -492,7 +492,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Create another study with alias phase3
         DataResult<Study> study = catalogManager.getStudyManager().create(String.valueOf(project2), "phase3", null, "Phase 3", Study.Type
-                .CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, null, sessionIdUser2);
+                .CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, sessionIdUser2);
         try {
             studyManager.resolveIds(Collections.emptyList(), "*");
             fail("This should throw an exception. No studies should be found for user anonymous");
@@ -518,7 +518,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         }
 
         // Create another study with alias phase3
-        DataResult<Study> study = catalogManager.getStudyManager().create(project2, "phase3", null, "Phase 3", Study.Type.CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, null, sessionIdUser2);
+        DataResult<Study> study = catalogManager.getStudyManager().create(project2, "phase3", null, "Phase 3", Study.Type.CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, sessionIdUser2);
         catalogManager.getStudyManager().updateGroup("phase3", "@members", ParamUtils.UpdateAction.ADD,
                 new GroupUpdateParams(Collections.singletonList("*")), sessionIdUser2);
 

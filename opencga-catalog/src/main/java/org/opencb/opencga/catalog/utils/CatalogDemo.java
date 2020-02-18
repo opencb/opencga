@@ -94,7 +94,7 @@ public final class CatalogDemo {
                 String name = "Name of study" + i;
                 String id = "study" + i;
                 studiesTmp.add(catalogManager.getStudyManager().create(projectId, id, id, name, Study.Type.FAMILY, null, "Description of"
-                        + " " + id, null, null, null, null, null, null, null, null, null, userSession.getValue()).first().getFqn());
+                        + " " + id, null, null, null, null, null, null, null, null, userSession.getValue()).first().getFqn());
             }
             studies.put(userSession.getKey(), studiesTmp);
         }
