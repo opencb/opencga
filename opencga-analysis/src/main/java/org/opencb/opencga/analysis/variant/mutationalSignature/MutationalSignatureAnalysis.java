@@ -93,7 +93,7 @@ public class MutationalSignatureAnalysis extends OpenCgaTool {
         step("download-ref-genomes", () -> {
             // FIXME to make URLs dependent on assembly (and Ensembl/NCBI ?)
             ResourceUtils.DownloadedRefGenome refGenome = ResourceUtils.downloadRefGenome(ResourceUtils.Species.hsapiens,
-                    ResourceUtils.Assembly.GRCh38, ResourceUtils.Authority.Ensembl, getOutDir());
+                    ResourceUtils.Assembly.GRCh38, ResourceUtils.Authority.Ensembl, getScratchDir());
 
             if (refGenome == null) {
                 throw new ToolException("Something wrong happened downloading reference genome from " + ResourceUtils.URL);
