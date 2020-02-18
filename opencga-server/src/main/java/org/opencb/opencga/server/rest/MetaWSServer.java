@@ -303,6 +303,8 @@ public class MetaWSServer extends OpenCGAWSServer {
                 endpoints.add(endpoint);
             }
         }
+
+        Collections.sort(endpoints, Comparator.comparing(endpoint -> (String) endpoint.get("path")));
         map.put("endpoints", endpoints);
         return map;
     }
