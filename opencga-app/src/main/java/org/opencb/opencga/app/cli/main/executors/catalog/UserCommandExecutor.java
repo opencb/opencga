@@ -239,7 +239,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         UserCommandOptions.TemplateCommandOptions options = usersCommandOptions.templateCommandOptions;
 
         TemplateConfiguration templateConfiguration = TemplateConfiguration.load(Paths.get(options.file));
-        TemplateManager templateManager = new TemplateManager(templateConfiguration, clientConfiguration, cliSession.getUser());
+        TemplateManager templateManager = new TemplateManager(templateConfiguration, clientConfiguration, cliSession.getToken());
         templateManager.execute();
     }
 

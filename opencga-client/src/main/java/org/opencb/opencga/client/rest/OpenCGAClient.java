@@ -57,7 +57,7 @@ public class OpenCGAClient {
     }
 
     private void init(String token, ClientConfiguration clientConfiguration) {
-        this.token = token;
+        setToken(token);
         this.clientConfiguration = clientConfiguration;
 
         clients = new HashMap<>(20);

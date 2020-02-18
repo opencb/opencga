@@ -57,17 +57,15 @@ public class TemplateManager {
 
     private TemplateConfiguration templateConfiguration;
     private OpenCGAClient openCGAClient;
-    private String user;
 
     private Logger logger;
 
     public TemplateManager() {
     }
 
-    public TemplateManager(TemplateConfiguration templateConfiguration, ClientConfiguration clientConfiguration, String user) {
+    public TemplateManager(TemplateConfiguration templateConfiguration, ClientConfiguration clientConfiguration, String token) {
         this.templateConfiguration = templateConfiguration;
-        this.openCGAClient = new OpenCGAClient(clientConfiguration);
-        this.user = user;
+        this.openCGAClient = new OpenCGAClient(token, clientConfiguration);
 
         this.logger = LoggerFactory.getLogger(TemplateManager.class);
     }
@@ -75,12 +73,11 @@ public class TemplateManager {
     public void execute() throws ClientException {
         // TODO Check version
 
-
         // Check if any study exists before we start, if a study exists we should fail. Projects are allowed to exist.
         for (Project project : templateConfiguration.getProjects()) {
             for (Study study : project.getStudies()) {
-                RestResponse<Study> infoResponse = this.openCGAClient.getStudyClient()
-                        .info(this.user + "@" + project.getId() + ":" + study.getId(), new ObjectMap());
+                RestResponse<Study> infoResponse = openCGAClient.getStudyClient()
+                        .info(project.getId() + ":" + study.getId(), new ObjectMap());
                 if (infoResponse.getResponses().size() > 0) {
                     logger.error("Study already exists");
                     return;
@@ -90,13 +87,14 @@ public class TemplateManager {
 
         // Create and load data
         for (Project project : templateConfiguration.getProjects()) {
-            if (openCGAClient.getProjectClient().info(user + "@" + project.getId(), new ObjectMap()).first().getNumResults() == 0) {
+            if (openCGAClient.getProjectClient().info(project.getId(), new ObjectMap()).first().getNumResults() == 0) {
                 logger.info("Creating project '{}'", project.getId());
                 openCGAClient.getProjectClient().create(ProjectCreateParams.of(project));
             } else {
                 logger.warn("Project '{}' already exists.", project.getId());
             }
-            ArrayList<String> indexVcfJobIds = new ArrayList<>();
+
+            List<String> indexVcfJobIds = null;
             for (Study study : project.getStudies()) {
                 ObjectMap params = new ObjectMap(ParamConstants.PROJECT_PARAM, project.getId());
                 openCGAClient.getStudyClient().create(StudyCreateParams.of(study), params);
@@ -114,10 +112,10 @@ public class TemplateManager {
                     createFamilies(study);
                 }
                 if (CollectionUtils.isNotEmpty(study.getFiles())) {
-                    fetchFiles(study, indexVcfJobIds);
+                    indexVcfJobIds = fetchFiles(study);
                 }
             }
-            if (!indexVcfJobIds.isEmpty()) {
+            if (CollectionUtils.isNotEmpty(indexVcfJobIds)) {
                 postIndex(project, indexVcfJobIds);
             }
         }
@@ -173,7 +171,7 @@ public class TemplateManager {
         }
     }
 
-    private List<String> fetchFiles(Study study, List<String> indexVcfJobIds) throws ClientException {
+    private List<String> fetchFiles(Study study) throws ClientException {
         String baseUrl = this.templateConfiguration.getBaseUrl();
         baseUrl = baseUrl.replaceAll("STUDY_ID", study.getId());
         if (!baseUrl.endsWith("/")) {
@@ -181,18 +179,17 @@ public class TemplateManager {
         }
 
         ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId());
-        List<String> fetchJobIds = new ArrayList<>();
+        List<String> indexVcfJobIds = new ArrayList<>();
         for (File file : study.getFiles()) {
-            FileFetch fileFetch = new FileFetch(file.getPath(), baseUrl + "/" + file.getId());
+            FileFetch fileFetch = new FileFetch(baseUrl + file.getName(), file.getPath());
             String fetchJobId = openCGAClient.getFileClient().fetch(fileFetch, params).getResponses().get(0).getResults().get(0).getId();
-            fetchJobIds.add(fetchJobId);
             if (templateConfiguration.isIndex()) {
                 if (isVcf(file)) {
                     indexVcfJobIds.add(indexVcf(study, file.getId(), Collections.singletonList(fetchJobId)));
                 }
             }
         }
-        return fetchJobIds;
+        return indexVcfJobIds;
     }
 
     private boolean isVcf(File file) {
@@ -238,8 +235,8 @@ public class TemplateManager {
     private String variantStats(Study study, List<String> indexVcfJobIds) throws ClientException {
         ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId())
                 .append("jobDependsOn", indexVcfJobIds);
+        
         VariantStatsAnalysisParams data = new VariantStatsAnalysisParams();
-
         data.setAggregated(Aggregation.NONE);
         for (File file : study.getFiles()) {
             if (file.getId().endsWith(".properties")
@@ -269,6 +266,7 @@ public class TemplateManager {
                         .anyMatch(this::isVcf))
                 .map(Study::getFqn)
                 .collect(Collectors.toList());
+
         ObjectMap params = new ObjectMap()
                 .append(ParamConstants.PROJECT_PARAM, project.getId())
                 .append(ParamConstants.STUDY_PARAM, studies)
