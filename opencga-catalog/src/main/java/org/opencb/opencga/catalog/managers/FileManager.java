@@ -147,7 +147,7 @@ public class FileManager extends AnnotationSetManager<File> {
         QueryOptions queryOptions = options != null ? new QueryOptions(options) : new QueryOptions();
 
         FileDBAdaptor.QueryParams queryParam = FileDBAdaptor.QueryParams.PATH;
-        if (UUIDUtils.isOpenCGAUUID(fileName)) {
+        if (UuidUtils.isOpenCgaUuid(fileName)) {
             queryParam = FileDBAdaptor.QueryParams.UUID;
         } else {
             fileName = fileName.replace(":", "/");
@@ -218,7 +218,7 @@ public class FileManager extends AnnotationSetManager<File> {
         FileDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
             FileDBAdaptor.QueryParams param = FileDBAdaptor.QueryParams.PATH;
-            if (UUIDUtils.isOpenCGAUUID(entry)) {
+            if (UuidUtils.isOpenCgaUuid(entry)) {
                 correctedFileList.add(entry);
                 param = FileDBAdaptor.QueryParams.UUID;
                 fileStringFunction = File::getUuid;
@@ -719,7 +719,7 @@ public class FileManager extends AnnotationSetManager<File> {
 
         validateNewAnnotationSets(study.getVariableSets(), file.getAnnotationSets());
 
-        file.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+        file.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         checkHooks(file, study.getFqn(), HookConfiguration.Stage.CREATE);
     }
 
@@ -1327,7 +1327,7 @@ public class FileManager extends AnnotationSetManager<File> {
         Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
@@ -1402,7 +1402,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
         StopWatch watch = StopWatch.createStarted();
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
@@ -1731,7 +1731,7 @@ public class FileManager extends AnnotationSetManager<File> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -1796,7 +1796,7 @@ public class FileManager extends AnnotationSetManager<File> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -1868,7 +1868,7 @@ public class FileManager extends AnnotationSetManager<File> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -2399,7 +2399,7 @@ public class FileManager extends AnnotationSetManager<File> {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
                 .append("fileList", fileList)
@@ -2477,7 +2477,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("memberList", memberList)
                 .append("aclParams", aclParams)
                 .append("token", token);
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         try {
             int count = 0;
@@ -3058,7 +3058,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 stringPath, null, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY), false, 0, null,
                 new FileExperiment(), Collections.emptyList(), new Job(), Collections.emptyList(), null,
                 studyManager.getCurrentRelease(study), Collections.emptyList(), null, null);
-        folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+        folder.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
         fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(), new QueryOptions());
         OpenCGAResult<File> queryResult = getFile(study.getUid(), folder.getUuid(), QueryOptions.empty());
@@ -3237,7 +3237,7 @@ public class FileManager extends AnnotationSetManager<File> {
                                 new FileExperiment(), Collections.emptyList(), new Job(), relatedFiles,
                                 null, studyManager.getCurrentRelease(study), Collections.emptyList(),
                                 Collections.emptyMap(), Collections.emptyMap());
-                        folder.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+                        folder.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
                         checkHooks(folder, study.getFqn(), HookConfiguration.Stage.CREATE);
                         fileDBAdaptor.insert(study.getUid(), folder, Collections.emptyList(), new QueryOptions());
                         OpenCGAResult<File> queryResult = getFile(study.getUid(), folder.getUuid(), QueryOptions.empty());
@@ -3288,7 +3288,7 @@ public class FileManager extends AnnotationSetManager<File> {
                                 new FileExperiment(), Collections.emptyList(), new Job(), relatedFiles,
                                 null, studyManager.getCurrentRelease(study), Collections.emptyList(),
                                 Collections.emptyMap(), Collections.emptyMap());
-                        subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+                        subfile.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
                         checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
                         fileDBAdaptor.insert(study.getUid(), subfile, Collections.emptyList(), new QueryOptions());
                         OpenCGAResult<File> queryResult = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty());
@@ -3367,7 +3367,7 @@ public class FileManager extends AnnotationSetManager<File> {
                 "", new File.FileStatus(File.FileStatus.READY), isExternal(study, filePath, fileUri), size, null, new FileExperiment(),
                 Collections.emptyList(), new Job(), Collections.emptyList(), null, studyManager.getCurrentRelease(study),
                 Collections.emptyList(), Collections.emptyMap(), Collections.emptyMap());
-        subfile.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+        subfile.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         checkHooks(subfile, study.getFqn(), HookConfiguration.Stage.CREATE);
         fileDBAdaptor.insert(study.getUid(), subfile, Collections.emptyList(), new QueryOptions());
         OpenCGAResult<File> result = getFile(study.getUid(), subfile.getUuid(), QueryOptions.empty());

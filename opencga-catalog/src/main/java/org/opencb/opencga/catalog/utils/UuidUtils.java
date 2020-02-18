@@ -11,7 +11,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-public class UUIDUtils {
+public class UuidUtils {
 
     // OpenCGA uuid pattern: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     //                       --------           ----
@@ -48,11 +48,11 @@ public class UUIDUtils {
         }
     }
 
-    public static String generateOpenCGAUUID(Entity entity) {
-        return generateOpenCGAUUID(entity, new Date());
+    public static String generateOpenCgaUuid(Entity entity) {
+        return generateOpenCgaUuid(entity, new Date());
     }
 
-    public static String generateOpenCGAUUID(Entity entity, Date date) {
+    public static String generateOpenCgaUuid(Entity entity, Date date) {
         long mostSignificantBits = getMostSignificantBits(date, entity);
         long leastSignificantBits = getLeastSignificantBits();
 
@@ -63,7 +63,7 @@ public class UUIDUtils {
         return Base64UrlCodec.BASE64URL.encode(byteBuffer.array());
     }
 
-    public static boolean isOpenCGAUUID(String token) {
+    public static boolean isOpenCgaUuid(String token) {
         if (token.length() == 22) {
             ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES * 2);
             buffer.put(Base64UrlCodec.BASE64URL.decode(token));

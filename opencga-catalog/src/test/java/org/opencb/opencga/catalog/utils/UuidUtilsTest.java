@@ -13,14 +13,14 @@ import java.util.UUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class UUIDUtilsTest {
+public class UuidUtilsTest {
 	
 	@Test
 	public void checkSingleCGAUUID() throws ParseException {		
 		SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy zzz");
 		Date date = formatter.parse("28/02/1953 GMT");    	
-	    UUIDUtils.Entity entity = UUIDUtils.Entity.INDIVIDUAL;
-	    String uuid = UUIDUtils.generateOpenCGAUUID(entity, date);
+	    UuidUtils.Entity entity = UuidUtils.Entity.INDIVIDUAL;
+	    String uuid = UuidUtils.generateOpenCgaUuid(entity, date);
 	    String uuidStr = decodeOpenCGAUUIDtoUUID(uuid);
 	    String uuidStrToCompare = "43537c00-ff84-0006-0001-";
 	    assertEquals(uuidStr.substring(0, uuidStrToCompare.length()), uuidStrToCompare);
@@ -32,13 +32,13 @@ public class UUIDUtilsTest {
         final int NUM_TRIALS = 10000;
         for (int i=0; i<NUM_TRIALS; ++i) {
             Date randomDate = new Date(random.nextInt());
-            UUIDUtils.Entity entity = UUIDUtils.Entity.SAMPLE;
+            UuidUtils.Entity entity = UuidUtils.Entity.SAMPLE;
             String timeStr = Long.toHexString(randomDate.getTime());
             timeStr = String.format("%1$16s", timeStr).replace(' ', '0');            
             String timeStrLow = timeStr.substring(timeStr.length()-8);
             String timeStrMid = timeStr.substring(timeStr.length()-12, timeStr.length()-8);
             String uuidStrToCompare = timeStrLow + "-" + timeStrMid + "-" + "0004-0001-";
-            String uuid = UUIDUtils.generateOpenCGAUUID(entity, randomDate);
+            String uuid = UuidUtils.generateOpenCgaUuid(entity, randomDate);
             String uuidStr = decodeOpenCGAUUIDtoUUID(uuid);
             assertEquals(uuidStr.substring(0, 24), uuidStrToCompare);
         }
@@ -57,38 +57,38 @@ public class UUIDUtilsTest {
     @Test
     public void generateOpenCGAUUID() {
 
-        String s = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE);
-        assertTrue(UUIDUtils.isOpenCGAUUID(s));
+        String s = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE);
+        assertTrue(UuidUtils.isOpenCgaUuid(s));
         System.out.println("s = " + s);
-        s = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE);
-        assertTrue(UUIDUtils.isOpenCGAUUID(s));
+        s = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE);
+        assertTrue(UuidUtils.isOpenCgaUuid(s));
         System.out.println("s = " + s);
-        s = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE);
-        assertTrue(UUIDUtils.isOpenCGAUUID(s));
+        s = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE);
+        assertTrue(UuidUtils.isOpenCgaUuid(s));
         System.out.println("s = " + s);
-        s = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE);
-        assertTrue(UUIDUtils.isOpenCGAUUID(s));
+        s = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE);
+        assertTrue(UuidUtils.isOpenCgaUuid(s));
         System.out.println("s = " + s);
-        s = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE);
-        assertTrue(UUIDUtils.isOpenCGAUUID(s));
+        s = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE);
+        assertTrue(UuidUtils.isOpenCgaUuid(s));
         System.out.println("s = " + s);
-        s = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE);
-        assertTrue(UUIDUtils.isOpenCGAUUID(s));
+        s = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE);
+        assertTrue(UuidUtils.isOpenCgaUuid(s));
         System.out.println("s = " + s);
-        s = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE);
-        assertTrue(UUIDUtils.isOpenCGAUUID(s));
+        s = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE);
+        assertTrue(UuidUtils.isOpenCgaUuid(s));
         System.out.println("s = " + s);
-        s = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE);
-        assertTrue(UUIDUtils.isOpenCGAUUID(s));
+        s = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE);
+        assertTrue(UuidUtils.isOpenCgaUuid(s));
         System.out.println("s = " + s);
-        s = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE);
-        assertTrue(UUIDUtils.isOpenCGAUUID(s));
+        s = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE);
+        assertTrue(UuidUtils.isOpenCgaUuid(s));
         System.out.println("s = " + s);
-        s = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE);
-        assertTrue(UUIDUtils.isOpenCGAUUID(s));
+        s = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE);
+        assertTrue(UuidUtils.isOpenCgaUuid(s));
         System.out.println("s = " + s);
-        s = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.SAMPLE);
-        assertTrue(UUIDUtils.isOpenCGAUUID(s));
+        s = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.SAMPLE);
+        assertTrue(UuidUtils.isOpenCgaUuid(s));
         System.out.println("s = " + s);
 
     }

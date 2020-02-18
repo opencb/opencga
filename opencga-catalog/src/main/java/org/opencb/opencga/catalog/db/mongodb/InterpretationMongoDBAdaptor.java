@@ -21,7 +21,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.clinical.Interpretation;
 import org.opencb.opencga.core.models.common.Status;
@@ -77,7 +77,7 @@ public class InterpretationMongoDBAdaptor extends MongoDBAdaptor implements Inte
         interpretation.setUid(interpretationUid);
         interpretation.setStudyUid(studyId);
         if (StringUtils.isEmpty(interpretation.getUuid())) {
-            interpretation.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.INTERPRETATION));
+            interpretation.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.INTERPRETATION));
         }
 
         Document interpretationObject = interpretationConverter.convertToStorageType(interpretation);

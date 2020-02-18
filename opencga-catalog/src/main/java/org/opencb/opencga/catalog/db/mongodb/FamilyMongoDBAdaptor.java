@@ -38,7 +38,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -163,7 +163,7 @@ public class FamilyMongoDBAdaptor extends AnnotationMongoDBAdaptor<Family> imple
         family.setStudyUid(studyId);
         family.setVersion(1);
         if (StringUtils.isEmpty(family.getUuid())) {
-            family.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FAMILY));
+            family.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FAMILY));
         }
         if (StringUtils.isEmpty(family.getCreationDate())) {
             family.setCreationDate(TimeUtils.getTime());

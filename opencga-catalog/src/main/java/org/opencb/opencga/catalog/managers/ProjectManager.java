@@ -33,7 +33,7 @@ import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.cohort.Cohort;
@@ -88,7 +88,7 @@ public class ProjectManager extends AbstractManager {
         boolean isUuid = false;
 
         if (StringUtils.isNotEmpty(projectStr)) {
-            if (UUIDUtils.isOpenCGAUUID(projectStr)) {
+            if (UuidUtils.isOpenCgaUuid(projectStr)) {
                 isUuid = true;
             } else {
                 String[] split = projectStr.split("@");
@@ -282,7 +282,7 @@ public class ProjectManager extends AbstractManager {
             throw new CatalogParameterException("Missing mandatory organism information");
         }
 
-        project.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PROJECT));
+        project.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PROJECT));
 
         if (project.getStudies() != null && !project.getStudies().isEmpty()) {
             throw new CatalogParameterException("Creating project and studies in a single transaction is forbidden");

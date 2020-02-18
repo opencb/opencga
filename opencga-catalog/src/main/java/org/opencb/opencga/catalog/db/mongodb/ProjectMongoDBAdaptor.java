@@ -40,7 +40,7 @@ import org.opencb.opencga.catalog.db.mongodb.iterators.CatalogMongoDBIterator;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.project.Project;
@@ -124,7 +124,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         project.setUid(projectUid);
         project.setFqn(userId + "@" + project.getId());
         if (StringUtils.isEmpty(project.getUuid())) {
-            project.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.PROJECT));
+            project.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.PROJECT));
         }
         if (StringUtils.isEmpty(project.getCreationDate())) {
             project.setCreationDate(TimeUtils.getTime());

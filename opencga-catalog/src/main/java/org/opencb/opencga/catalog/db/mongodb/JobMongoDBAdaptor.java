@@ -37,7 +37,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
@@ -128,7 +128,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         job.setUid(jobUid);
         job.setStudyUid(studyId);
         if (StringUtils.isEmpty(job.getUuid())) {
-            job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
+            job.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.JOB));
         }
         if (StringUtils.isEmpty(job.getCreationDate())) {
             job.setCreationDate(TimeUtils.getTime());

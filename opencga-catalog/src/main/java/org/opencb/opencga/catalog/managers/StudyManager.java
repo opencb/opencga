@@ -37,7 +37,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.AuthenticationOrigin;
@@ -162,7 +162,7 @@ public class StudyManager extends AbstractManager {
         }
 
         if (StringUtils.isNotEmpty(studyStr)) {
-            if (UUIDUtils.isOpenCGAUUID(studyStr)) {
+            if (UuidUtils.isOpenCgaUuid(studyStr)) {
                 query.putIfNotEmpty(StudyDBAdaptor.QueryParams.UUID.key(), studyStr);
             } else {
                 String study;
@@ -322,7 +322,7 @@ public class StudyManager extends AbstractManager {
             study.setNotification(ParamUtils.defaultObject(study.getNotification(), new StudyNotification()));
 
             /* CreateStudy */
-            study.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.STUDY));
+            study.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.STUDY));
             studyDBAdaptor.insert(project, study, options);
             OpenCGAResult<Study> result = getStudy(projectId, study.getUuid(), options);
             study = result.getResults().get(0);
@@ -1421,7 +1421,7 @@ public class StudyManager extends AbstractManager {
                 .append("member", member)
                 .append("ignoreException", ignoreException)
                 .append("token", token);
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         OpenCGAResult<Map<String, List<String>>> studyAclList = OpenCGAResult.empty();
 
@@ -1466,7 +1466,7 @@ public class StudyManager extends AbstractManager {
                 .append("memberIds", memberIds)
                 .append("aclParams", aclParams)
                 .append("token", token);
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         try {
             if (studyIdList == null || studyIdList.isEmpty()) {
                 throw new CatalogException("Missing study parameter");

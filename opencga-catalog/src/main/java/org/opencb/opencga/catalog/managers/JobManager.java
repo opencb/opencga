@@ -34,7 +34,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.models.InternalGetDataResult;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
@@ -90,7 +90,7 @@ public class JobManager extends ResourceManager<Job> {
         Query queryCopy = query == null ? new Query() : new Query(query);
         queryCopy.put(JobDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
-        if (UUIDUtils.isOpenCGAUUID(entry)) {
+        if (UuidUtils.isOpenCgaUuid(entry)) {
             queryCopy.put(JobDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
             queryCopy.put(JobDBAdaptor.QueryParams.ID.key(), entry);
@@ -129,7 +129,7 @@ public class JobManager extends ResourceManager<Job> {
         JobDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
             JobDBAdaptor.QueryParams param = JobDBAdaptor.QueryParams.ID;
-            if (UUIDUtils.isOpenCGAUUID(entry)) {
+            if (UuidUtils.isOpenCgaUuid(entry)) {
                 param = JobDBAdaptor.QueryParams.UUID;
                 jobStringFunction = Job::getUuid;
             }
@@ -280,7 +280,7 @@ public class JobManager extends ResourceManager<Job> {
                 job.setStderr(getFile(study.getUid(), job.getStderr().getPath(), userId));
             }
 
-            job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
+            job.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.JOB));
             jobDBAdaptor.insert(study.getUid(), job, options);
             OpenCGAResult<Job> queryResult = getJob(study.getUid(), job.getUuid(), options);
             auditManager.auditCreate(userId, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(), study.getUuid(),
@@ -302,7 +302,7 @@ public class JobManager extends ResourceManager<Job> {
             job.setId(job.getTool().getId() + "." + TimeUtils.getTime() + "." + org.opencb.commons.utils.StringUtils.randomString(6));
         }
         job.setPriority(ParamUtils.defaultObject(job.getPriority(), Enums.Priority.MEDIUM));
-        job.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.JOB));
+        job.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.JOB));
         job.setCreationDate(ParamUtils.defaultString(job.getCreationDate(), TimeUtils.getTime()));
         job.setRelease(catalogManager.getStudyManager().getCurrentRelease(study));
 
@@ -581,7 +581,7 @@ public class JobManager extends ResourceManager<Job> {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
@@ -655,7 +655,7 @@ public class JobManager extends ResourceManager<Job> {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = catalogManager.getStudyManager().resolveId(studyId, userId);
 
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyId)
@@ -795,7 +795,7 @@ public class JobManager extends ResourceManager<Job> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -870,7 +870,7 @@ public class JobManager extends ResourceManager<Job> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -928,7 +928,7 @@ public class JobManager extends ResourceManager<Job> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -1060,7 +1060,7 @@ public class JobManager extends ResourceManager<Job> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyId)
@@ -1117,7 +1117,7 @@ public class JobManager extends ResourceManager<Job> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyId)
@@ -1173,7 +1173,7 @@ public class JobManager extends ResourceManager<Job> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyId)
@@ -1313,7 +1313,7 @@ public class JobManager extends ResourceManager<Job> {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
                 .append("jobList", jobList)
@@ -1389,7 +1389,7 @@ public class JobManager extends ResourceManager<Job> {
                 .append("memberList", memberList)
                 .append("aclParams", aclParams)
                 .append("token", token);
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         try {
             if (jobStrList == null || jobStrList.isEmpty()) {
