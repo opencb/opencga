@@ -22,6 +22,8 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
+import static org.opencb.opencga.analysis.clinical.interpretation.InterpretationAnalysis.PRIMARY_FINDINGS_FILENAME;
+import static org.opencb.opencga.analysis.clinical.interpretation.InterpretationAnalysis.SECONDARY_FINDINGS_FILENAME;
 import static org.opencb.opencga.analysis.variant.manager.VariantCatalogQueryUtils.FAMILY_SEGREGATION;
 
 @ToolExecutor(id = "opencga-local",
@@ -92,8 +94,7 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaToolExecutor im
         }
 
         // Write primary findings
-        ClinicalUtils.writeReportedVariants(reportedVariants, Paths.get(outDir + "/"
-                + InterpretationAnalysis.PRIMARY_FINDINGS_FILENAME));
+        ClinicalUtils.writeReportedVariants(reportedVariants, Paths.get(getOutDir() + "/" + PRIMARY_FINDINGS_FILENAME));
 
         // Get secondary findings
         try {
@@ -105,8 +106,7 @@ public class CustomInterpretationAnalysisExecutor extends OpenCgaToolExecutor im
         reportedVariants = reportedVariantCreator.create(variants);
 
         // Write secondary findings
-        ClinicalUtils.writeReportedVariants(reportedVariants, Paths.get(outDir + "/"
-                + InterpretationAnalysis.SECONDARY_FINDINGS_FILENAME));
+        ClinicalUtils.writeReportedVariants(reportedVariants, Paths.get(getOutDir() + "/" + SECONDARY_FINDINGS_FILENAME));
     }
 
     public String getClinicalAnalysisId() {
