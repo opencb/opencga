@@ -19,6 +19,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam;
 import org.opencb.opencga.storage.core.variant.adaptors.iterators.VariantDBIterator;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +32,6 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
     public final static String R_DOCKER_IMAGE = "opencb/opencga-r:2.0.0-dev";
 
     public final static String CONTEXT_FILENAME = "context.txt";
-    public final static String SIGNATURES_FILENAME = "signatures_probabilities_v2.txt";
 
     @Override
     public void run() throws ToolException {
@@ -49,16 +49,10 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
 
             VariantDBIterator iterator = storageManager.iterator(query, new QueryOptions(), getToken());
 
-            // FIXME to make URLs dependent on assembly (and Ensembl/NCBI ?)
-            ResourceUtils.DownloadedRefGenome refGenome = ResourceUtils.downloadRefGenome(ResourceUtils.Species.hsapiens,
-                    ResourceUtils.Assembly.GRCh38, ResourceUtils.Authority.Ensembl, getOutDir());
-
-            if (refGenome == null) {
-                throw new ToolExecutorException("Something wrong happened downloading reference genome from " + ResourceUtils.URL);
-            }
             // Read mutation context from reference genome (.gz, .gz.fai and .gz.gzi files)
-            BlockCompressedIndexedFastaSequenceFile indexed = new BlockCompressedIndexedFastaSequenceFile(refGenome.getGzFile().toPath(),
-                    new FastaSequenceIndex(refGenome.getFaiFile()), GZIIndex.loadIndex(refGenome.getGziFile().toPath()));
+            String base = getRefGenomePath().toAbsolutePath().toString();
+            BlockCompressedIndexedFastaSequenceFile indexed = new BlockCompressedIndexedFastaSequenceFile(getRefGenomePath(),
+                    new FastaSequenceIndex(new File(base + ".fai")), GZIIndex.loadIndex(Paths.get(base + ".gzi")));
 
             while (iterator.hasNext()) {
                 Variant variant = iterator.next();
@@ -80,12 +74,6 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             // Write context
             writeCountMap(countMap, getOutDir().resolve(CONTEXT_FILENAME).toFile());
 
-            // To compare, downloadAnalysis signatures probabilities at
-            File signatureFile = ResourceUtils.downloadAnalysis(MutationalSignatureAnalysis.ID, SIGNATURES_FILENAME, getOutDir());
-            if (signatureFile == null) {
-                throw new ToolExecutorException("Error downloading mutational signatures file from " + ResourceUtils.URL);
-            }
-
             // Execute R script in docker
             String rScriptPath = getExecutorParams().getString("opencgaHome") + "/analysis/R/" + getToolId();
             List<AbstractMap.SimpleEntry<String, String>> inputBindings = new ArrayList<>();
@@ -93,7 +81,7 @@ public class MutationalSignatureLocalAnalysisExecutor extends MutationalSignatur
             AbstractMap.SimpleEntry<String, String> outputBinding = new AbstractMap.SimpleEntry<>(getOutDir().toAbsolutePath().toString(),
                     "/data/output");
             String scriptParams = "R CMD Rscript --vanilla /data/input/mutational-signature.r /data/output/" + CONTEXT_FILENAME + " "
-                    + "/data/output/" + SIGNATURES_FILENAME + " /data/output";
+                    + "/data/output/" + MutationalSignatureAnalysis.SIGNATURES_FILENAME + " /data/output";
             String cmdline = DockerUtils.run(R_DOCKER_IMAGE, inputBindings, outputBinding, scriptParams, null);
             System.out.println("Docker command line: " + cmdline);
         } catch (Exception e) {
