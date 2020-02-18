@@ -74,20 +74,19 @@ public class ProjectCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--id"}, description = "Project id", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Project id, this must be unique for the user", required = true, arity = 1)
         public String id;
 
         @Parameter(names = {"-n", "--name"}, description = "Project name", required = true, arity = 1)
         public String name;
 
-        @Parameter(names = {"-d", "--description"}, description = "Description", arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = "A brief description of the content of this project", arity = 1)
         public String description;
 
         @Parameter(names = {"-o", "--organization"}, description = "Organization", arity = 1)
         public String organization;
 
-        @Parameter(names = {"--organism-scientific-name"}, description = "Organism scientific name. Mandatory parameter if not defined "
-                + "in the client configuration file.", arity = 1)
+        @Parameter(names = {"--organism-scientific-name"}, description = "Organism scientific name, e.g. Homo sapiens", required = true, arity = 1)
         public String scientificName;
 
         @Parameter(names = {"--organism-common-name"}, description = "Organism common name", arity = 1)
@@ -96,8 +95,7 @@ public class ProjectCommandOptions {
         @Parameter(names = {"--organism-taxonomy-code"}, description = "Organism taxonomy code", arity = 1)
         public String taxonomyCode;
 
-        @Parameter(names = {"--organism-assembly"}, description = "Organism assembly. Mandatory parameter if not defined "
-                + "in the client configuration file.", arity = 1)
+        @Parameter(names = {"--organism-assembly"}, description = "Organism assembly, e.g. GRCh38", required = true, arity = 1)
         public String assembly;
     }
 
