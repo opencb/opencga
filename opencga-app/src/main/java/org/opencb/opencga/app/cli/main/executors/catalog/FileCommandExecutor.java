@@ -267,7 +267,7 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFileClient().tree(filesCommandOptions.treeCommandOptions.folderId, params);
     }
 
-    private RestResponse<String> content() throws ClientException {
+    private RestResponse<FileContent> content() throws ClientException {
         ObjectMap objectMap = new ObjectMap();
         objectMap.putIfNotNull(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.contentCommandOptions.study);
         objectMap.put("start", filesCommandOptions.contentCommandOptions.start);

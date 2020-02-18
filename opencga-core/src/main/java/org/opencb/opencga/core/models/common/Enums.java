@@ -76,6 +76,9 @@ public final class Enums {
         COUNT,
         DELETE,
         DOWNLOAD,
+        VIEW_CONTENT,
+        HEAD_CONTENT,
+        TAIL_CONTENT,
         INDEX,
         CHANGE_PERMISSION,
 
