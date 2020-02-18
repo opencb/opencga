@@ -235,7 +235,6 @@ public class TemplateManager {
     private String variantStats(Study study, List<String> indexVcfJobIds) throws ClientException {
         ObjectMap params = new ObjectMap(ParamConstants.STUDY_PARAM, study.getId())
                 .append("jobDependsOn", indexVcfJobIds);
-        
         VariantStatsAnalysisParams data = new VariantStatsAnalysisParams();
         data.setAggregated(Aggregation.NONE);
         for (File file : study.getFiles()) {
