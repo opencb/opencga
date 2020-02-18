@@ -336,7 +336,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (DataResult<Cohort> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("#ID\tNAME\tTYPE\tDESCRIPTION\tSTATUS\tTOTAL_SAMPLES\tSAMPLES\tFAMILY\n");
+                sb.append("#ID\tNAME\tTYPE\tDESCRIPTION\tSTATUS\tTOTAL_SAMPLES\tSAMPLES\n");
             }
 
             for (Cohort cohort : queryResult.getResults()) {
@@ -344,8 +344,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                         StringUtils.defaultIfEmpty(cohort.getId(), "-"), cohort.getType(),
                         StringUtils.defaultIfEmpty(cohort.getDescription(), "-"),
                         cohort.getStatus() != null ? StringUtils.defaultIfEmpty(cohort.getStatus().getName(), "-") : "-",
-                        cohort.getSamples().size(), cohort.getSamples().size() > 0 ? StringUtils.join(cohort.getSamples(), ", ") : "NA",
-                        cohort.getFamily() != null ? StringUtils.defaultIfEmpty(cohort.getFamily().getId(), "-") : "-"));
+                        cohort.getSamples().size(), cohort.getSamples().size() > 0 ? StringUtils.join(cohort.getSamples(), ", ") : "NA"));
             }
         }
 
