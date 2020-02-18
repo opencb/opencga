@@ -32,8 +32,6 @@ public class Project extends PrivateFields {
     private String id;
     private String name;
     private String uuid;
-    @Deprecated
-    private String alias;
     /**
      * Full Qualified Name (user@projectId).
       */
@@ -180,7 +178,6 @@ public class Project extends PrivateFields {
         sb.append("id='").append(id).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", uuid='").append(uuid).append('\'');
-        sb.append(", alias='").append(alias).append('\'');
         sb.append(", fqn='").append(fqn).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
@@ -228,15 +225,6 @@ public class Project extends PrivateFields {
 
     public Project setName(String name) {
         this.name = name;
-        return this;
-    }
-
-    public String getAlias() {
-        return alias;
-    }
-
-    public Project setAlias(String alias) {
-        this.alias = alias;
         return this;
     }
 

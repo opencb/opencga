@@ -59,10 +59,8 @@ public class ProjectWSServer extends OpenCGAWSServer {
         try {
             ObjectUtils.defaultIfNull(project, new ProjectCreateParams());
 
-            String projectId = StringUtils.isEmpty(project.getId()) ? project.getAlias() : project.getId();
-
             OpenCGAResult<Project> queryResult = catalogManager.getProjectManager()
-                    .create(projectId, project.getName(), project.getDescription(), project.getOrganization(),
+                    .create(project.getId(), project.getName(), project.getDescription(), project.getOrganization(),
                             project.getOrganism() != null ? project.getOrganism().getScientificName() : null,
                             project.getOrganism() != null ? project.getOrganism().getCommonName() : null,
                             project.getOrganism() != null ? Integer.toString(project.getOrganism().getTaxonomyCode()) : null,

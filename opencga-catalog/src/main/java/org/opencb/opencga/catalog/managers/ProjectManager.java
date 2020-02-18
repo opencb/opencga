@@ -268,7 +268,6 @@ public class ProjectManager extends AbstractManager {
 
     private void validateProjectForCreation(Project project, User user) throws CatalogParameterException {
         ParamUtils.checkParameter(project.getId(), ProjectDBAdaptor.QueryParams.ID.key());
-        project.setAlias(ParamUtils.defaultString(project.getAlias(), project.getId()));
         project.setName(ParamUtils.defaultString(project.getName(), project.getId()));
         project.setDescription(ParamUtils.defaultString(project.getDescription(), ""));
         project.setOrganization(ParamUtils.defaultString(project.getOrganization(), ""));
