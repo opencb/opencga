@@ -226,8 +226,10 @@ public class ArchiveTableHelper extends GenomeHelper {
         final List<byte[]> preSplits = new ArrayList<>(nSplits * expectedNumBatches);
         for (int batch = 0; batch <= expectedNumBatches; batch++) {
             int finalBatch = batch;
-            preSplits.addAll(generateBootPreSplitsHuman(nSplits, (chr, start) ->
-                    Bytes.toBytes(rowKeyFactory.generateBlockIdFromSliceAndBatch(finalBatch, chr, start))));
+            preSplits.addAll(generateBootPreSplitsHuman(nSplits, (chr, position) -> {
+                long slice = rowKeyFactory.getSliceId(position);
+                return Bytes.toBytes(rowKeyFactory.generateBlockIdFromSliceAndBatch(finalBatch, chr, slice));
+            }));
         }
         return preSplits;
     }

@@ -39,7 +39,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantQueryParam
 public class SolrQueryParserTest {
 
     private String studyName = "platinum";
-    private String flBase = "fl=other,geneToSoAcc,traits,type,soAcc,score_*,sift,caddRaw,biotypes,polyphenDesc,studies,end,id,variantId,"
+    private String flBase = "fl=other,geneToSoAcc,traits,type,soAcc,score_*,sift,passStats_*,caddRaw,biotypes,polyphenDesc,studies,end,id,variantId,"
             + "popFreq_*,caddScaled,genes,chromosome,xrefs,start,gerp,polyphen,siftDesc,"
             + "phastCons,phylop,altStats_*,id,chromosome,start,end,type";
     private String flDefault1 = flBase + ",fileInfo__*,qual__*,filter__*,sampleFormat__*";
@@ -227,7 +227,7 @@ public class SolrQueryParserTest {
     }
 
     @Test
-    public void parseStats() throws StorageEngineException {
+    public void parsePopStats() throws StorageEngineException {
         QueryOptions queryOptions = new QueryOptions();
         Query query = new Query();
         query.put(STATS_MAF.key(), "ALL<0.1");
@@ -285,6 +285,37 @@ public class SolrQueryParserTest {
         query.put(STATS_MAF.key(), studyName + ":ALL<0.1;" + studyName + ":OTH<0.1");
         solrQuery = solrQueryParser.parse(query, queryOptions);
         assertEquals(flDefaultStudy + expectedFilter, solrQuery.toString());
+    }
+
+    @Test
+    public void parsePassStats() throws StorageEngineException {
+        QueryOptions queryOptions = new QueryOptions();
+        Query query = new Query();
+        query.put(STATS_PASS_FREQ.key(), "ALL<0.1");
+        String expectedFilter = "&q=*:*&fq=(passStats__platinum__ALL:[0+TO+0.1})";
+
+        // Without study
+        SolrQuery solrQuery = solrQueryParser.parse(query, queryOptions);
+        assertEquals(flDefault1 + expectedFilter, solrQuery.toString());
+
+        // With study
+        query.put(STUDY.key(), studyName);
+        solrQuery = solrQueryParser.parse(query, queryOptions);
+        assertEquals(flDefaultStudy + expectedFilter, solrQuery.toString());
+
+        // With study in stats
+        query.put(STATS_PASS_FREQ.key(), studyName + ":ALL<0.1");
+        solrQuery = solrQueryParser.parse(query, queryOptions);
+        assertEquals(flDefaultStudy + expectedFilter, solrQuery.toString());
+
+        // Without study : FAIL
+        scm.createStudy("secondStudy");
+        query.remove(STUDY.key());
+        query.put(STATS_PASS_FREQ.key(), "ALL<0.1");
+        thrown.expect(VariantQueryException.class);
+        thrown.expectMessage("Missing study");
+        solrQuery = solrQueryParser.parse(query, queryOptions);
+        display(query, queryOptions, solrQuery);
     }
 
     @Test

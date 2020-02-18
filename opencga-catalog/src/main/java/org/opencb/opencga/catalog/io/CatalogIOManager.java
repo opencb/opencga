@@ -18,12 +18,14 @@ package org.opencb.opencga.catalog.io;
 
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.models.file.FileContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
 import java.util.List;
@@ -344,6 +346,12 @@ public abstract class CatalogIOManager {
 
     public abstract DataInputStream getFileObject(URI fileUri, int start, int limit)
             throws CatalogIOException;
+
+    public abstract FileContent tail(Path file, int bytes, int lines) throws CatalogIOException;
+
+    public abstract FileContent head(Path file, int bytes, int lines) throws CatalogIOException;
+
+    public abstract FileContent content(Path file, long offset, int bytes, int numLines) throws CatalogIOException;
 
     public DataInputStream getGrepFileObject(URI studyUri, String objectId, String pattern,
                                              boolean ignoreCase, boolean multi)

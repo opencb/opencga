@@ -351,24 +351,49 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{file}/content")
-    @ApiOperation(value = "Show the content of a file (up to a limit)", response = String.class)
-    public Response content(@ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam("file") String fileIdStr,
-                            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-                            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-                            @ApiParam(value = "start") @QueryParam("start") @DefaultValue("-1") int start,
-                            @ApiParam(value = QueryOptions.LIMIT) @QueryParam(QueryOptions.LIMIT) int limit) {
+    @Path("/{file}/head")
+    @ApiOperation(value = "Show the first lines of a file (up to a limit)", response = FileContent.class)
+    public Response head(
+            @ApiParam(value = "File uuid, id, or name.") @PathParam("file") String fileIdStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Number of bytes to read") @QueryParam("bytes") int bytes,
+            @ApiParam(value = "Maximum number of lines to be returned") @QueryParam("lines") int lines) {
         try {
             ParamUtils.checkIsSingleID(fileIdStr);
-            String userId = catalogManager.getUserManager().getUserId(token);
-            Study study = catalogManager.getStudyManager().resolveId(studyStr, userId);
-            File file = fileManager.get(studyStr, fileIdStr, FileManager.INCLUDE_FILE_IDS, token).first();
-            catalogManager.getAuthorizationManager().checkFilePermission(study.getUid(), file.getUid(), userId,
-                    FileAclEntry.FilePermissions.VIEW_CONTENT);
+            return createOkResponse(catalogManager.getFileManager().head(studyStr, fileIdStr, bytes, lines, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
-            DataInputStream stream = catalogManager.getFileManager().download(studyStr, fileIdStr, start, limit, token);
-            return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
+    @GET
+    @Path("/{file}/tail")
+    @ApiOperation(value = "Show the last lines of a file (up to a limit)", response = FileContent.class)
+    public Response tail(
+            @ApiParam(value = "File uuid, id, or name.") @PathParam("file") String fileIdStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Number of bytes to read") @QueryParam("bytes") int bytes,
+            @ApiParam(value = "Maximum number of lines to be returned") @QueryParam("lines") int lines) {
+        try {
+            ParamUtils.checkIsSingleID(fileIdStr);
+            return createOkResponse(catalogManager.getFileManager().tail(studyStr, fileIdStr, bytes, lines, token));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
+    @GET
+    @Path("/{file}/content")
+    @ApiOperation(value = "Show the content of a file (up to a limit)", response = FileContent.class)
+    public Response content(
+            @ApiParam(value = "File uuid, id, or name.") @PathParam("file") String fileIdStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "Starting byte from which the file will be read") @QueryParam("offset") long offset,
+            @ApiParam(value = "Number of bytes to read") @QueryParam("bytes") int bytes,
+            @ApiParam(value = "Maximum number of lines to be returned") @QueryParam("lines") int lines) {
+        try {
+            ParamUtils.checkIsSingleID(fileIdStr);
+            return createOkResponse(catalogManager.getFileManager().content(studyStr, fileIdStr, offset, bytes, lines, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -602,7 +627,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Update some file attributes", response = File.class)
     public Response updatePOST(
             @ApiParam(value = "Comma separated list of file ids, names or paths. Paths must be separated by : instead of /")
-                @PathParam(value = "files") String fileIdStr,
+            @PathParam(value = "files") String fileIdStr,
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Action to be performed if the array of samples is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("samplesAction") ParamUtils.UpdateAction samplesAction,
             @ApiParam(value = "Action to be performed if the array of annotationSets is being updated.", allowableValues = "ADD,SET,REMOVE", defaultValue = "ADD") @QueryParam("annotationSetsAction") ParamUtils.UpdateAction annotationSetsAction,
@@ -941,7 +966,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Comma separated list of file ids, names or paths.") @PathParam("files") String files,
             @ApiParam(value = "Skip trash and delete the files/folders from disk directly (CANNOT BE RECOVERED)", defaultValue = "false")
-                    @QueryParam(Constants.SKIP_TRASH) boolean skipTrash) {
+            @QueryParam(Constants.SKIP_TRASH) boolean skipTrash) {
         try {
             List<String> fileIds = getIdList(files);
 
