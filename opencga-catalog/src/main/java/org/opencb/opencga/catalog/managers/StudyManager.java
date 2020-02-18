@@ -615,7 +615,7 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<PermissionRule> createPermissionRule(String studyId, Study.Entity entry, PermissionRule permissionRule,
+    public OpenCGAResult<PermissionRule> createPermissionRule(String studyId, Enums.Entity entry, PermissionRule permissionRule,
                                                               String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyId, userId);
@@ -648,7 +648,7 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public void markDeletedPermissionRule(String studyId, Study.Entity entry, String permissionRuleId,
+    public void markDeletedPermissionRule(String studyId, Enums.Entity entry, String permissionRuleId,
                                           PermissionRule.DeleteAction deleteAction, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyId, userId);
@@ -678,7 +678,7 @@ public class StudyManager extends AbstractManager {
         }
     }
 
-    public OpenCGAResult<PermissionRule> getPermissionRules(String studyId, Study.Entity entry, String token) throws CatalogException {
+    public OpenCGAResult<PermissionRule> getPermissionRules(String studyId, Enums.Entity entry, String token) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(token);
         Study study = resolveId(studyId, userId);
 
@@ -1608,7 +1608,7 @@ public class StudyManager extends AbstractManager {
         return studyDBAdaptor.count(query).getNumMatches() > 0;
     }
 
-    private void validatePermissionRules(long studyId, Study.Entity entry, PermissionRule permissionRule) throws CatalogException {
+    private void validatePermissionRules(long studyId, Enums.Entity entry, PermissionRule permissionRule) throws CatalogException {
         ParamUtils.checkIdentifier(permissionRule.getId(), "PermissionRules");
 
         if (permissionRule.getPermissions() == null || permissionRule.getPermissions().isEmpty()) {

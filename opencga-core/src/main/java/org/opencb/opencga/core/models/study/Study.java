@@ -65,7 +65,7 @@ public class Study extends PrivateFields {
 
     private List<VariableSet> variableSets;
 
-    private Map<Entity, List<PermissionRule>> permissionRules;
+    private Map<Enums.Entity, List<PermissionRule>> permissionRules;
 
     private URI uri;
 
@@ -88,7 +88,7 @@ public class Study extends PrivateFields {
     public Study(String id, String name, String alias, Type type, String creationDate, String description, StudyNotification notification,
                  Status status, long size, List<Group> groups, List<File> files, List<Job> jobs, List<Individual> individuals,
                  List<Family> families, List<Sample> samples, List<Cohort> cohorts, List<Panel> panels, List<VariableSet> variableSets,
-                 Map<Entity, List<PermissionRule>> permissionRules, URI uri, int release, Map<String, Object> stats,
+                 Map<Enums.Entity, List<PermissionRule>> permissionRules, URI uri, int release, Map<String, Object> stats,
                  Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -126,27 +126,6 @@ public class Study extends PrivateFields {
         FAMILY,
         TRIO,
         COLLECTION
-    }
-
-    public enum Entity {
-        SAMPLES(Enums.Resource.SAMPLE),
-        FILES(Enums.Resource.FILE),
-        COHORTS(Enums.Resource.COHORT),
-        INDIVIDUALS(Enums.Resource.INDIVIDUAL),
-        FAMILIES(Enums.Resource.FAMILY),
-        JOBS(Enums.Resource.JOB),
-        CLINICAL_ANALYSES(Enums.Resource.CLINICAL_ANALYSIS),
-        PANELS(Enums.Resource.DISEASE_PANEL);
-
-        private final Enums.Resource resource;
-
-        Entity(Enums.Resource resource) {
-            this.resource = resource;
-        }
-
-        public Enums.Resource getResource() {
-            return resource;
-        }
     }
 
     @Override
@@ -368,11 +347,11 @@ public class Study extends PrivateFields {
         return this;
     }
 
-    public Map<Entity, List<PermissionRule>> getPermissionRules() {
+    public Map<Enums.Entity, List<PermissionRule>> getPermissionRules() {
         return permissionRules;
     }
 
-    public Study setPermissionRules(Map<Entity, List<PermissionRule>> permissionRules) {
+    public Study setPermissionRules(Map<Enums.Entity, List<PermissionRule>> permissionRules) {
         this.permissionRules = permissionRules;
         return this;
     }

@@ -21,6 +21,27 @@ public final class Enums {
     private Enums() {
     }
 
+    public enum Entity {
+        SAMPLES(Resource.SAMPLE),
+        FILES(Resource.FILE),
+        COHORTS(Resource.COHORT),
+        INDIVIDUALS(Resource.INDIVIDUAL),
+        FAMILIES(Resource.FAMILY),
+        JOBS(Resource.JOB),
+        CLINICAL_ANALYSES(Resource.CLINICAL_ANALYSIS),
+        DISEASE_PANELS(Resource.DISEASE_PANEL);
+
+        private final Resource resource;
+
+        Entity(Resource resource) {
+            this.resource = resource;
+        }
+
+        public Resource getResource() {
+            return resource;
+        }
+    }
+
     public enum Resource {
         USER,
         PROJECT,

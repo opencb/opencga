@@ -618,7 +618,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public OpenCGAResult applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException {
+    public OpenCGAResult applyPermissionRules(long studyId, PermissionRule permissionRule, Enums.Entity entry) throws CatalogException {
         MongoDBCollection collection = dbCollectionMap.get(entry.getResource());
 
         // We will apply the permission rules to all the entries matching the query defined in the permission rules that does not have
@@ -647,7 +647,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     //TODO: Make transactional !
     @Override
-    public OpenCGAResult removePermissionRuleAndRemovePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entry)
+    public OpenCGAResult removePermissionRuleAndRemovePermissions(Study study, String permissionRuleToDeleteId, Enums.Entity entry)
             throws CatalogException {
         // Prepare the permission rule list into a map of permissionRuleId - PermissionRule to make much easier the process
         Map<String, PermissionRule> permissionRuleMap = study.getPermissionRules().get(entry).stream()
@@ -735,7 +735,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     @Override
-    public OpenCGAResult removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entry)
+    public OpenCGAResult removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Enums.Entity entry)
             throws CatalogException {
         // Prepare the permission rule list into a map of permissionRuleId - PermissionRule to make much easier the process
         Map<String, PermissionRule> permissionRuleMap = study.getPermissionRules().get(entry).stream()
@@ -820,7 +820,7 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
 
     //TODO: Make transactional !
     @Override
-    public OpenCGAResult removePermissionRule(long studyId, String permissionRuleToDelete, Study.Entity entry) throws CatalogException {
+    public OpenCGAResult removePermissionRule(long studyId, String permissionRuleToDelete, Enums.Entity entry) throws CatalogException {
         // Remove the __TODELETE tag...
         String permissionRuleId = permissionRuleToDelete.split(INTERNAL_DELIMITER)[0];
 
@@ -846,16 +846,16 @@ public class AuthorizationMongoDBAdaptor extends MongoDBAdaptor implements Autho
     }
 
     private boolean isPermissionRuleEntity(Enums.Resource resource) {
-        if (Study.Entity.CLINICAL_ANALYSES.getResource() == resource || Study.Entity.COHORTS.getResource() == resource
-                || Study.Entity.FAMILIES.getResource() == resource || Study.Entity.FILES.getResource() == resource
-                || Study.Entity.INDIVIDUALS.getResource() == resource || Study.Entity.JOBS.getResource() == resource
-                || Study.Entity.SAMPLES.getResource() == resource) {
+        if (Enums.Entity.CLINICAL_ANALYSES.getResource() == resource || Enums.Entity.COHORTS.getResource() == resource
+                || Enums.Entity.FAMILIES.getResource() == resource || Enums.Entity.FILES.getResource() == resource
+                || Enums.Entity.INDIVIDUALS.getResource() == resource || Enums.Entity.JOBS.getResource() == resource
+                || Enums.Entity.SAMPLES.getResource() == resource) {
             return true;
         }
         return false;
     }
 
-    private void removeReferenceToPermissionRuleInStudy(long studyId, String permissionRuleToDelete, Study.Entity entry)
+    private void removeReferenceToPermissionRuleInStudy(long studyId, String permissionRuleToDelete, Enums.Entity entry)
             throws CatalogException {
         Document query = new Document()
                 .append(PRIVATE_UID, studyId)

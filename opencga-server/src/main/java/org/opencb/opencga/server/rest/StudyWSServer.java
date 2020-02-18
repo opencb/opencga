@@ -247,7 +247,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response getPermissionRules(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION, required = true) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Entity where the permission rules should be applied to", required = true)
-                @QueryParam("entity") Study.Entity entity) {
+                @QueryParam("entity") Enums.Entity entity) {
         try {
             ParamUtils.checkIsSingleID(studyStr);
             return createOkResponse(catalogManager.getStudyManager().getPermissionRules(studyStr, entity, token));
@@ -262,7 +262,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updatePermissionRules(
             @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @PathParam(ParamConstants.STUDY_PARAM) String studyStr,
             @ApiParam(value = "Entity where the permission rules should be applied to", required = true) @QueryParam("entity")
-                    Study.Entity entity,
+                    Enums.Entity entity,
             @ApiParam(value = "Action to be performed: ADD to add a new permission rule; REMOVE to remove all permissions assigned by an "
                     + "existing permission rule (even if it overlaps any manual permission); REVERT to remove all permissions assigned by"
                     + " an existing permission rule (keep manual overlaps); NONE to remove an existing permission rule without removing "

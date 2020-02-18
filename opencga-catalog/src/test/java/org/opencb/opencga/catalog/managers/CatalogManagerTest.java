@@ -547,7 +547,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
         PermissionRule rules = new PermissionRule("rules1", new Query("a", "b"), Arrays.asList("user2", "user3"),
                 Arrays.asList("VIEW", "UPDATE"));
         DataResult<PermissionRule> permissionRulesDataResult = catalogManager.getStudyManager().createPermissionRule(
-                studyFqn, Study.Entity.SAMPLES, rules, token);
+                studyFqn, Enums.Entity.SAMPLES, rules, token);
         assertEquals(1, permissionRulesDataResult.getNumResults());
         assertEquals("rules1", permissionRulesDataResult.first().getId());
         assertEquals(1, permissionRulesDataResult.first().getQuery().size());
@@ -556,7 +556,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
 
         // Add new permission rules object
         rules.setId("rules2");
-        permissionRulesDataResult = catalogManager.getStudyManager().createPermissionRule(studyFqn, Study.Entity.SAMPLES, rules,
+        permissionRulesDataResult = catalogManager.getStudyManager().createPermissionRule(studyFqn, Enums.Entity.SAMPLES, rules,
                 token);
         assertEquals(1, permissionRulesDataResult.getNumResults());
         assertEquals(rules, permissionRulesDataResult.first());
@@ -568,7 +568,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 Arrays.asList("VV", "UPDATE"));
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Detected unsupported");
-        catalogManager.getStudyManager().createPermissionRule(studyFqn, Study.Entity.SAMPLES, rules, token);
+        catalogManager.getStudyManager().createPermissionRule(studyFqn, Enums.Entity.SAMPLES, rules, token);
     }
 
     @Test
@@ -577,7 +577,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 Arrays.asList("VIEW", "UPDATE"));
         thrown.expect(CatalogException.class);
         thrown.expectMessage("does not exist");
-        catalogManager.getStudyManager().createPermissionRule(studyFqn, Study.Entity.SAMPLES, rules, token);
+        catalogManager.getStudyManager().createPermissionRule(studyFqn, Enums.Entity.SAMPLES, rules, token);
     }
 
     @Test
@@ -586,7 +586,7 @@ public class CatalogManagerTest extends AbstractManagerTest {
                 Arrays.asList("VIEW", "UPDATE"));
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not found");
-        catalogManager.getStudyManager().createPermissionRule(studyFqn, Study.Entity.SAMPLES, rules, token);
+        catalogManager.getStudyManager().createPermissionRule(studyFqn, Enums.Entity.SAMPLES, rules, token);
     }
 
     @Test
