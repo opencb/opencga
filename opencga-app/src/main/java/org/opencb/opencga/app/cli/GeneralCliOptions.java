@@ -134,7 +134,7 @@ public class GeneralCliOptions {
     }
 
     public static class JobOptions {
-        @Parameter(names = {"--job-id"}, description = ParamConstants.JOB_ID_DESCRIPTION, arity = 1)
+        @Parameter(names = {"--job-id"}, description = ParamConstants.JOB_ID_CREATION_DESCRIPTION, arity = 1)
         public String jobId;
 
         @Parameter(names = {"--job-description"}, description = ParamConstants.JOB_DESCRIPTION_DESCRIPTION, arity = 1)

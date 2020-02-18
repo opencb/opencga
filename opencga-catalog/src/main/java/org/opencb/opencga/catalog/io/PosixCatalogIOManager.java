@@ -244,30 +244,34 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public FileContent tail(Path file, int bytes, int lines) {
-        FileContent fileContent = new FileContent(file.toAbsolutePath().toString(), true, -1, -1, -1, "");
+    public FileContent tail(Path file, int bytes, int lines) throws CatalogIOException {
+        if (Files.isRegularFile(file)) {
+            FileContent fileContent = new FileContent(file.toAbsolutePath().toString(), true, -1, -1, -1, "");
 
-        String cli = "tail";
-        if (lines > 0) {
-            cli += " -n " + lines + " " + file.toAbsolutePath().toString();
-            fileContent.setLines(lines);
-        } else {
-            if (bytes == 0 || bytes > MAXIMUM_BYTES) {
-                bytes = MAXIMUM_BYTES;
+            String cli = "tail";
+            if (lines > 0) {
+                cli += " -n " + lines + " " + file.toAbsolutePath().toString();
+                fileContent.setLines(lines);
+            } else {
+                if (bytes == 0 || bytes > MAXIMUM_BYTES) {
+                    bytes = MAXIMUM_BYTES;
+                }
+                cli += " -c " + bytes + " " + file.toAbsolutePath().toString();
+                fileContent.setBytes(bytes);
             }
-            cli += " -c " + bytes + " " + file.toAbsolutePath().toString();
-            fileContent.setBytes(bytes);
+            logger.debug("command line = {}", cli);
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            Command command = new Command(cli)
+                    .setOutputOutputStream(outputStream)
+                    .setPrintOutput(false);
+            command.run();
+            fileContent.setContent(outputStream.toString());
+
+            return fileContent;
+        } else {
+            throw new CatalogIOException("Not a regular file: " + file.toAbsolutePath().toString());
         }
-        logger.debug("command line = {}", cli);
-
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        Command command = new Command(cli)
-                .setOutputOutputStream(outputStream)
-                .setPrintOutput(false);
-        command.run();
-        fileContent.setContent(outputStream.toString());
-
-        return fileContent;
     }
 
     @Override

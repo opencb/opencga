@@ -1006,6 +1006,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private String getLogFileName(Job job) {
+        // WARNING: If we change the way we name log files, we will also need to change it in the "log" method from the JobManager !!
         return job.getId() + ".log";
     }
 

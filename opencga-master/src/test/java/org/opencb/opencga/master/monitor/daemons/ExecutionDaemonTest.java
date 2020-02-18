@@ -9,6 +9,7 @@ import org.opencb.opencga.catalog.managers.AbstractManagerTest;
 import org.opencb.opencga.core.common.JacksonUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Enums;
+import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.job.Job;
 import org.opencb.opencga.core.models.job.JobInternal;
 import org.opencb.opencga.core.models.job.JobInternalWebhook;
@@ -21,10 +22,13 @@ import org.opencb.opencga.core.tools.result.Status;
 import org.opencb.opencga.master.monitor.executors.BatchExecutor;
 import org.opencb.opencga.master.monitor.models.PrivateJobUpdateParams;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -230,6 +234,41 @@ public class ExecutionDaemonTest extends AbstractManagerTest {
         daemon.checkJobs();
 
         assertEquals(Enums.ExecutionStatus.DONE, getJob(jobId).getInternal().getStatus().getName());
+    }
+
+    @Test
+    public void testCheckLogs() throws Exception {
+        HashMap<String, Object> params = new HashMap<>();
+        params.put(ExecutionDaemon.OUTDIR_PARAM, "outDir");
+        org.opencb.opencga.core.models.file.File inputFile = catalogManager.getFileManager().get(studyFqn, testFile1, null, token).first();
+        params.put("myFile", inputFile.getPath());
+        Job job = catalogManager.getJobManager().submit(studyFqn, "variant-index", Enums.Priority.MEDIUM, params, token).first();
+        String jobId = job.getId();
+
+        daemon.checkJobs();
+
+        String[] cli = getJob(jobId).getCommandLine().split(" ");
+        int i = Arrays.asList(cli).indexOf("--my-file");
+        assertEquals("'" + inputFile.getPath() + "'", cli[i + 1]);
+        assertEquals(1, getJob(jobId).getInput().size());
+        assertEquals(inputFile.getPath(), getJob(jobId).getInput().get(0).getPath());
+        assertEquals(Enums.ExecutionStatus.QUEUED, getJob(jobId).getInternal().getStatus().getName());
+        executor.jobStatus.put(jobId, Enums.ExecutionStatus.RUNNING);
+
+        job = catalogManager.getJobManager().get(studyFqn, jobId, null, token).first();
+
+        daemon.checkJobs();
+        assertEquals(Enums.ExecutionStatus.RUNNING, getJob(jobId).getInternal().getStatus().getName());
+
+        InputStream inputStream = new ByteArrayInputStream("my log content\nlast line".getBytes(StandardCharsets.UTF_8));
+        catalogManager.getCatalogIOManagerFactory().getDefault().createFile(
+                Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log").toUri(), inputStream);
+
+        OpenCGAResult<FileContent> fileContentResult = catalogManager.getJobManager().log(studyFqn, jobId, 0, 0, 1, true, token);
+        assertEquals("last line", fileContentResult.first().getContent());
+
+        fileContentResult = catalogManager.getJobManager().log(studyFqn, jobId, 0, 0, 1, false, token);
+        assertEquals("my log content\n", fileContentResult.first().getContent());
     }
 
     @Test

@@ -40,6 +40,7 @@ import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
 import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileContent;
 import org.opencb.opencga.core.models.job.*;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.study.StudyAclEntry;
@@ -48,6 +49,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -726,13 +729,67 @@ public class JobManager extends ResourceManager<Job> {
         }
     }
 
+    public OpenCGAResult<FileContent> log(String studyId, String jobId, long offset, int bytes, int lines, boolean tail, String token)
+            throws CatalogException {
+        long startTime = System.currentTimeMillis();
+
+        String userId = userManager.getUserId(token);
+        Study study = studyManager.resolveId(studyId, userId);
+
+        ObjectMap auditParams = new ObjectMap()
+                .append("studyId", studyId)
+                .append("jobId", jobId)
+                .append("offset", offset)
+                .append("bytes", bytes)
+                .append("lines", lines)
+                .append("tail", tail)
+                .append("token", token);
+        try {
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                    Arrays.asList(JobDBAdaptor.QueryParams.ID.key(), JobDBAdaptor.QueryParams.UUID.key(),
+                            JobDBAdaptor.QueryParams.INTERNAL_STATUS.key(), JobDBAdaptor.QueryParams.STDOUT.key(),
+                            JobDBAdaptor.QueryParams.OUT_DIR.key()));
+            Job job = internalGet(study.getUid(), jobId, options, userId).first();
+
+            Path logFile;
+            if (job.getStdout() != null && job.getStdout().getUri() != null) {
+                logFile = Paths.get(job.getStdout().getUri());
+            } else {
+                // The log file hasn't yet been registered
+                if (!Arrays.asList(Enums.ExecutionStatus.PENDING, Enums.ExecutionStatus.QUEUED, Enums.ExecutionStatus.ABORTED)
+                        .contains(job.getInternal().getStatus().getName())) {
+                    logFile = Paths.get(job.getOutDir().getUri()).resolve(job.getId() + ".log");
+                } else {
+                    throw new CatalogException("Cannot see log file of job with status '" + job.getInternal().getStatus().getName() + "'.");
+                }
+            }
+
+            FileContent fileContent;
+            if (tail) {
+                fileContent = catalogIOManagerFactory.get(logFile.toUri()).tail(logFile, bytes, lines);
+            } else {
+                fileContent = catalogIOManagerFactory.get(logFile.toUri()).content(logFile, offset, bytes, lines);
+            }
+
+            auditManager.audit(userId, Enums.Action.VIEW_LOG, Enums.Resource.JOB, job.getId(), job.getUuid(), study.getId(),
+                    study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
+
+            return new OpenCGAResult<>((int) (System.currentTimeMillis() - startTime), Collections.emptyList(), 1,
+                    Collections.singletonList(fileContent), 1);
+        } catch (CatalogException e) {
+            auditManager.audit(userId, Enums.Action.VIEW_LOG, Enums.Resource.JOB, jobId, "", study.getId(), study.getUuid(),
+                    auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));
+            throw e;
+        }
+    }
+
     public OpenCGAResult<Job> update(String studyStr, Query query, JobUpdateParams updateParams, QueryOptions options, String token)
             throws CatalogException {
         return update(studyStr, query, updateParams, false, options, token);
     }
 
     public OpenCGAResult<Job> update(String studyStr, Query query, JobUpdateParams updateParams, boolean ignoreException,
-                                        QueryOptions options, String token) throws CatalogException {
+                                     QueryOptions options, String token) throws CatalogException {
         Query finalQuery = new Query(ParamUtils.defaultObject(query, Query::new));
 
         String userId = userManager.getUserId(token);
@@ -809,7 +866,7 @@ public class JobManager extends ResourceManager<Job> {
     }
 
     public OpenCGAResult<Job> update(String studyStr, List<String> jobIds, JobUpdateParams updateParams, boolean ignoreException,
-                                        QueryOptions options, String token) throws CatalogException {
+                                     QueryOptions options, String token) throws CatalogException {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId);
 
