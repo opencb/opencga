@@ -401,22 +401,17 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{file}/grep")
-    @ApiOperation(value = "Filter lines of the file containing a match of the pattern [NOT TESTED]", response = String.class)
+    @ApiOperation(value = "Filter lines of the file containing the pattern", response = FileContent.class)
     public Response downloadGrep(
-            @ApiParam(value = "File id, name or path. Paths must be separated by : instead of /") @PathParam("file") String fileIdStr,
-            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION)
-            @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
-            @ApiParam(value = "Pattern") @QueryParam("pattern") @DefaultValue(".*") String pattern,
-            @ApiParam(value = "Do a case insensitive search") @DefaultValue("false") @QueryParam("ignoreCase")
+            @ApiParam(value = "File uuid, id, or name.") @PathParam("file") String fileIdStr,
+            @ApiParam(value = ParamConstants.STUDY_DESCRIPTION) @QueryParam(ParamConstants.STUDY_PARAM) String studyStr,
+            @ApiParam(value = "String pattern") @QueryParam("pattern") String pattern,
+            @ApiParam(value = "Flag to perform a case insensitive search") @DefaultValue("false") @QueryParam("ignoreCase")
                     Boolean ignoreCase,
-            @ApiParam(value = "Return multiple matches") @DefaultValue("true") @QueryParam("multi") Boolean multi) {
+            @ApiParam(value = "Stop reading a file after 'n' matching lines. 0 means no limit.") @DefaultValue("10") @QueryParam("maxCount") int maxCount) {
         try {
             ParamUtils.checkIsSingleID(fileIdStr);
-            QueryOptions options = new QueryOptions("ignoreCase", ignoreCase);
-            options.put("multi", multi);
-            try (DataInputStream stream = catalogManager.getFileManager().grep(studyStr, fileIdStr, pattern, options, token)) {
-                return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
-            }
+            return createOkResponse(catalogManager.getFileManager().grep(studyStr, fileIdStr, pattern, ignoreCase, maxCount, token));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

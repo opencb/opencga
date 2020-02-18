@@ -189,14 +189,14 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"grep"}, commandDescription = "Get file information")
     public class GrepCommandOptions extends BaseFileCommand {
 
-        @Parameter(names = {"--pattern"}, description = "Pattern", required = false, arity = 1)
-        public String pattern = ".*";
+        @Parameter(names = {"--pattern"}, description = "String pattern", arity = 1)
+        public String pattern = "";
 
-        @Parameter(names = {"-i", "--ignore-case"}, description = "Do a case insensitive search", required = false, arity = 0)
+        @Parameter(names = {"-i", "--ignore-case"}, description = "Do a case insensitive search", arity = 0)
         public boolean ignoreCase;
 
-        @Parameter(names = {"-m", "--multi"}, description = "Return multiple matches. Default = true", required = false, arity = 0)
-        public boolean multi = true;
+        @Parameter(names = {"-m", "--max-count"}, description = "Stop reading a file after 'n' matching lines. 0 means no limit.", arity = 0)
+        public int maxCount;
 
     }
 

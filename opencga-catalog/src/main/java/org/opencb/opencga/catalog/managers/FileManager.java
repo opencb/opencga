@@ -2230,7 +2230,10 @@ public class FileManager extends AnnotationSetManager<File> {
         return fileDBAdaptor.get(file.getUid(), QueryOptions.empty());
     }
 
-    public DataInputStream grep(String studyId, String fileId, String pattern, QueryOptions options, String token) throws CatalogException {
+    public OpenCGAResult<FileContent> grep(String studyId, String fileId, String pattern, boolean ignoreCase, int numLines, String token)
+            throws CatalogException {
+        long startTime = System.currentTimeMillis();
+
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, userId);
 
@@ -2238,21 +2241,21 @@ public class FileManager extends AnnotationSetManager<File> {
                 .append("studyId", studyId)
                 .append("fileId", fileId)
                 .append("pattern", pattern)
-                .append("options", options)
+                .append("ignoreCase", ignoreCase)
+                .append("numLines", numLines)
                 .append("token", token);
         try {
             File file = internalGet(study.getUid(), fileId, INCLUDE_FILE_URI, userId).first();
             authorizationManager.checkFilePermission(study.getUid(), file.getUid(), userId, FileAclEntry.FilePermissions.VIEW_CONTENT);
 
             URI fileUri = getUri(file);
-            boolean ignoreCase = options.getBoolean("ignoreCase");
-            boolean multi = options.getBoolean("multi");
-            DataInputStream inputStream = catalogIOManagerFactory.get(fileUri).getGrepFileObject(fileUri, pattern, ignoreCase, multi);
+            FileContent fileContent = catalogIOManagerFactory.get(fileUri).grep(Paths.get(fileUri), pattern, numLines, ignoreCase);
 
             auditManager.audit(userId, Enums.Action.GREP, Enums.Resource.FILE, file.getId(), file.getUuid(), study.getId(),
                     study.getUuid(), auditParams, new AuditRecord.Status(AuditRecord.Status.Result.SUCCESS));
 
-            return inputStream;
+            return new OpenCGAResult<>((int) (System.currentTimeMillis() - startTime), Collections.emptyList(), 1,
+                    Collections.singletonList(fileContent), 1);
         } catch (CatalogException e) {
             auditManager.audit(userId, Enums.Action.GREP, Enums.Resource.FILE, fileId, "", study.getId(), study.getUuid(),
                     auditParams, new AuditRecord.Status(AuditRecord.Status.Result.ERROR, e.getError()));

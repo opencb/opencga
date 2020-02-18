@@ -353,15 +353,17 @@ public abstract class CatalogIOManager {
 
     public abstract FileContent content(Path file, long offset, int bytes, int numLines) throws CatalogIOException;
 
-    public DataInputStream getGrepFileObject(URI studyUri, String objectId, String pattern,
-                                             boolean ignoreCase, boolean multi)
-            throws CatalogIOException {
-        URI fileUri = getFileUri(studyUri, objectId);
-        return getGrepFileObject(fileUri, pattern, ignoreCase, multi);
-    }
-
-    public abstract DataInputStream getGrepFileObject(URI fileUri, String pattern, boolean ignoreCase, boolean multi)
-            throws CatalogIOException;
+    /**
+     * Grep the content of a file.
+     *
+     * @param file File.
+     * @param pattern String pattern.
+     * @param lines Maximum number of lines to be returned. 0 means all the lines.
+     * @param ignoreCase Case insensitive search.
+     * @return the FileContent.
+     * @throws CatalogIOException If the file is not a file or cannot be found.
+     */
+    public abstract FileContent grep(Path file, String pattern, int lines, boolean ignoreCase) throws CatalogIOException;
 
     public abstract DataOutputStream createOutputStream(URI fileUri, boolean overwrite) throws CatalogIOException;
 
