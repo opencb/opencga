@@ -77,7 +77,7 @@ public class TemplateManager {
         for (Project project : templateConfiguration.getProjects()) {
             for (Study study : project.getStudies()) {
                 RestResponse<Study> infoResponse = openCGAClient.getStudyClient()
-                        .info(project.getId() + ":" + study.getId(), new ObjectMap());
+                        .info(openCGAClient.getUserId() + "@" + project.getId() + ":" + study.getId(), new ObjectMap());
                 if (infoResponse.getResponses().size() > 0) {
                     logger.error("Study already exists");
                     return;
@@ -87,7 +87,8 @@ public class TemplateManager {
 
         // Create and load data
         for (Project project : templateConfiguration.getProjects()) {
-            if (openCGAClient.getProjectClient().info(project.getId(), new ObjectMap()).first().getNumResults() == 0) {
+            if (openCGAClient.getProjectClient().info(openCGAClient.getUserId() + "@" + project.getId(),
+                    new ObjectMap()).first().getNumResults() == 0) {
                 logger.info("Creating project '{}'", project.getId());
                 openCGAClient.getProjectClient().create(ProjectCreateParams.of(project));
             } else {

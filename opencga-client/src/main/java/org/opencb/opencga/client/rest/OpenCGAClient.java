@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.client.rest;
 
+import io.jsonwebtoken.Jwts;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
@@ -60,6 +61,7 @@ public class OpenCGAClient {
         setToken(token);
         this.clientConfiguration = clientConfiguration;
 
+        this.userId = Jwts.parser().parseClaimsJws(token).getBody().getSubject();
         clients = new HashMap<>(20);
     }
 
