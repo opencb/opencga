@@ -16,21 +16,21 @@
 
 package org.opencb.opencga.catalog.utils;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.managers.FileUtils;
-import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.file.File;
+import org.opencb.opencga.core.models.file.FileUpdateParams;
 import org.opencb.opencga.core.models.project.Project;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
@@ -122,7 +122,7 @@ public class FileMetadataReaderTest {
     @Test
     public void testGetBasicMetadata() throws CatalogException, IOException {
         File file = catalogManager.getFileManager().create(study.getFqn(), new File().setPath(folder.getPath() + "test.txt"), false,
-                StringUtils.randomString(1000), null, sessionIdUser).first();
+                RandomStringUtils.randomAlphanumeric(1000), null, sessionIdUser).first();
 
         assertEquals(1000, file.getSize());
         String creationDate = file.getCreationDate();
@@ -135,7 +135,7 @@ public class FileMetadataReaderTest {
         } catch (InterruptedException ignored) {}
 
         OutputStream outputStream = new FileOutputStream(Paths.get(fileUri).toFile(), true);
-        byte[] bytes2 = StringUtils.randomString(100).getBytes();
+        byte[] bytes2 = RandomStringUtils.randomAlphanumeric(100).getBytes();
         outputStream.write(bytes2);
         outputStream.close();
 

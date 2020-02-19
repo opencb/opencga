@@ -16,22 +16,22 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.bson.Document;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
-import org.opencb.opencga.core.models.file.File;
-import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.common.Status;
+import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileAclEntry;
+import org.opencb.opencga.core.models.sample.Sample;
 
 import java.io.IOException;
 import java.util.*;
@@ -161,7 +161,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
         long fileId = file.getUid();
 
-        Document stats = new Document("stat1", 1).append("stat2", true).append("stat3", "ok" + StringUtils.randomString(20));
+        Document stats = new Document("stat1", 1).append("stat2", true).append("stat3", "ok" + RandomStringUtils.randomAlphanumeric(20));
 
         ObjectMap parameters = new ObjectMap();
         parameters.put("status.name", File.FileStatus.READY);

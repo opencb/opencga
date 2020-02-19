@@ -17,13 +17,13 @@
 package org.opencb.opencga.catalog.managers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.DataResult;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -628,7 +628,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
         DataResult<File> queryResult = fileManager.create(studyFqn, new File().setPath("data/" + fileName), false,
-                StringUtils.randomString(200), null, token);
+                RandomStringUtils.randomAlphanumeric(200), null, token);
         assertEquals(File.FileStatus.READY, queryResult.first().getStatus().getName());
         assertEquals(200, queryResult.first().getSize());
 
@@ -742,11 +742,11 @@ public class FileManagerTest extends AbstractManagerTest {
     @Test
     public void renameFileTest() throws CatalogException {
         DataResult<File> queryResult1 = fileManager.create(studyFqn, new File().setPath("data/file.txt"), true,
-                StringUtils.randomString(200), null, token);
+                RandomStringUtils.randomAlphanumeric(200), null, token);
         assertEquals(1, queryResult1.getNumResults());
 
         DataResult<File> queryResult = fileManager.create(studyFqn, new File().setPath("data/nested/folder/file2.txt"),
-                true, StringUtils.randomString(200), null, token);
+                true, RandomStringUtils.randomAlphanumeric(200), null, token);
         assertEquals(1, queryResult.getNumResults());
 
         fileManager.rename(studyFqn, "data/nested/", "nested2", token);
@@ -1465,28 +1465,28 @@ public class FileManagerTest extends AbstractManagerTest {
         File folder = fileManager.createFolder(studyFqn, Paths.get("folder").toString(), null, false,
                 null, QueryOptions.empty(), token).first();
         folderFiles.add(
-             fileManager.create(studyFqn, new File().setPath("folder/my.txt"), false, StringUtils.randomString(200),
+             fileManager.create(studyFqn, new File().setPath("folder/my.txt"), false, RandomStringUtils.randomAlphanumeric(200),
                      null, token).first()
         );
         folderFiles.add(
-                fileManager.create(studyFqn, new File().setPath("folder/my2.txt"), false, StringUtils.randomString(200),
+                fileManager.create(studyFqn, new File().setPath("folder/my2.txt"), false, RandomStringUtils.randomAlphanumeric(200),
                         null, token).first()
         );
         folderFiles.add(
-                fileManager.create(studyFqn, new File().setPath("folder/my3.txt"), false, StringUtils.randomString(200),
+                fileManager.create(studyFqn, new File().setPath("folder/my3.txt"), false, RandomStringUtils.randomAlphanumeric(200),
                         null, token).first()
         );
         folderFiles.add(
                 fileManager.create(studyFqn, new File().setPath("folder/subfolder/my4.txt"), true,
-                        StringUtils.randomString(200), null, token).first()
+                        RandomStringUtils.randomAlphanumeric(200), null, token).first()
         );
         folderFiles.add(
                 fileManager.create(studyFqn, new File().setPath("folder/subfolder/my5.txt"), false,
-                        StringUtils.randomString(200), null, token).first()
+                        RandomStringUtils.randomAlphanumeric(200), null, token).first()
         );
         folderFiles.add(
                 fileManager.create(studyFqn, new File().setPath("folder/subfolder/subsubfolder/my6.txt"), true,
-                        StringUtils.randomString(200), null, token).first()
+                        RandomStringUtils.randomAlphanumeric(200), null, token).first()
         );
         return folder;
     }
