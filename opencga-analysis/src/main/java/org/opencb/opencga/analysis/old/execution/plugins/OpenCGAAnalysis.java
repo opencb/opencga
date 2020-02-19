@@ -18,15 +18,14 @@ package org.opencb.opencga.analysis.old.execution.plugins;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.old.models.tool.Execution;
 import org.opencb.opencga.catalog.old.models.tool.InputParam;
-import org.opencb.opencga.analysis.variant.manager.VariantStorageManager;
 import org.opencb.opencga.catalog.old.models.tool.Manifest;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.slf4j.Logger;
@@ -75,9 +74,6 @@ public abstract class OpenCGAAnalysis {
         } else if (OpenCGAAnalysis.class.getResource("/" + identifier + "/manifest.json") != null) {
             file = "/" + identifier + "/manifest.json";
             factory = new JsonFactory();
-        } else if (OpenCGAAnalysis.class.getResource("/" + identifier + "/manifest.xml") != null) {
-            file = "/" + identifier + "/manifest.xml";
-            factory = new XmlFactory();
         } else {
             return null;
         }

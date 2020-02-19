@@ -276,118 +276,118 @@
                 <artifactId>commons-datastore-solr</artifactId>
                 <version>${java-common-libs.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.opencb.hpg-bigdata</groupId>
-                <artifactId>hpg-bigdata-core</artifactId>
-                <version>${hpg-bigdata.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.mortbay.jetty</groupId>
-                        <artifactId>servlet-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.spark</groupId>
-                        <artifactId>spark-sql_2.11</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.spark</groupId>
-                        <artifactId>spark-mllib_2.11</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.databricks</groupId>
-                        <artifactId>spark-avro_2.11</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.parquet</groupId>
-                        <artifactId>parquet-avro</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.parquet</groupId>
-                        <artifactId>parquet-hadoop</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.google.protobuf</groupId>
-                        <artifactId>protobuf-java</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.hpg-bigdata</groupId>
-                <artifactId>hpg-bigdata-analysis</artifactId>
-                <version>${hpg-bigdata.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <artifactId>hadoop-bam</artifactId>
-                        <groupId>org.seqdoop</groupId>
-                    </exclusion>
+<!--            <dependency>-->
+<!--                <groupId>org.opencb.hpg-bigdata</groupId>-->
+<!--                <artifactId>hpg-bigdata-core</artifactId>-->
+<!--                <version>${hpg-bigdata.version}</version>-->
+<!--                <exclusions>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>org.mortbay.jetty</groupId>-->
+<!--                        <artifactId>servlet-api</artifactId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>org.apache.spark</groupId>-->
+<!--                        <artifactId>spark-sql_2.11</artifactId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>org.apache.spark</groupId>-->
+<!--                        <artifactId>spark-mllib_2.11</artifactId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>com.databricks</groupId>-->
+<!--                        <artifactId>spark-avro_2.11</artifactId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>org.apache.parquet</groupId>-->
+<!--                        <artifactId>parquet-avro</artifactId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>org.apache.parquet</groupId>-->
+<!--                        <artifactId>parquet-hadoop</artifactId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>com.google.protobuf</groupId>-->
+<!--                        <artifactId>protobuf-java</artifactId>-->
+<!--                    </exclusion>-->
+<!--                </exclusions>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>org.opencb.hpg-bigdata</groupId>-->
+<!--                <artifactId>hpg-bigdata-analysis</artifactId>-->
+<!--                <version>${hpg-bigdata.version}</version>-->
+<!--                <exclusions>-->
+<!--                    <exclusion>-->
+<!--                        <artifactId>hadoop-bam</artifactId>-->
+<!--                        <groupId>org.seqdoop</groupId>-->
+<!--                    </exclusion>-->
 
-                    <exclusion>
-                        <artifactId>hadoop-common</artifactId>
-                        <groupId>org.apache.hadoop</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>hadoop-client</artifactId>
-                        <groupId>org.apache.hadoop</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-annotations</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>hadoop-mapreduce-client-core</artifactId>
-                    </exclusion>
+<!--                    <exclusion>-->
+<!--                        <artifactId>hadoop-common</artifactId>-->
+<!--                        <groupId>org.apache.hadoop</groupId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <artifactId>hadoop-client</artifactId>-->
+<!--                        <groupId>org.apache.hadoop</groupId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>org.apache.hadoop</groupId>-->
+<!--                        <artifactId>hadoop-annotations</artifactId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>org.apache.hadoop</groupId>-->
+<!--                        <artifactId>hadoop-mapreduce-client-core</artifactId>-->
+<!--                    </exclusion>-->
 
-                    <exclusion>
-                        <artifactId>hbase-client</artifactId>
-                        <groupId>org.apache.hbase</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>hbase-server</artifactId>
-                        <groupId>org.apache.hbase</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.hbase</groupId>
-                        <artifactId>hbase-common</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.hbase</groupId>
-                        <artifactId>hbase-annotations</artifactId>
-                    </exclusion>
+<!--                    <exclusion>-->
+<!--                        <artifactId>hbase-client</artifactId>-->
+<!--                        <groupId>org.apache.hbase</groupId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <artifactId>hbase-server</artifactId>-->
+<!--                        <groupId>org.apache.hbase</groupId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>org.apache.hbase</groupId>-->
+<!--                        <artifactId>hbase-common</artifactId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>org.apache.hbase</groupId>-->
+<!--                        <artifactId>hbase-annotations</artifactId>-->
+<!--                    </exclusion>-->
 
-                    <exclusion>
-                        <artifactId>avro-mapred</artifactId>
-                        <groupId>org.apache.avro</groupId>
-                    </exclusion>
+<!--                    <exclusion>-->
+<!--                        <artifactId>avro-mapred</artifactId>-->
+<!--                        <groupId>org.apache.avro</groupId>-->
+<!--                    </exclusion>-->
 
-                    <exclusion>
-                        <artifactId>com.sun.jersey</artifactId>
-                        <groupId>jersey-json</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>com.sun.jersey</artifactId>
-                        <groupId>jersey-server</groupId>
-                    </exclusion>
+<!--                    <exclusion>-->
+<!--                        <artifactId>com.sun.jersey</artifactId>-->
+<!--                        <groupId>jersey-json</groupId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <artifactId>com.sun.jersey</artifactId>-->
+<!--                        <groupId>jersey-server</groupId>-->
+<!--                    </exclusion>-->
 
-                    <exclusion>
-                        <groupId>org.apache.spark</groupId>
-                        <artifactId>spark-sql_2.11</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.spark</groupId>
-                        <artifactId>spark-mllib_2.11</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.spark</groupId>
-                        <artifactId>spark-avro_2.11</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.hpg-bigdata</groupId>
-                <artifactId>hpg-bigdata-tools</artifactId>
-                <version>${hpg-bigdata.version}</version>
-            </dependency>
+<!--                    <exclusion>-->
+<!--                        <groupId>org.apache.spark</groupId>-->
+<!--                        <artifactId>spark-sql_2.11</artifactId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>org.apache.spark</groupId>-->
+<!--                        <artifactId>spark-mllib_2.11</artifactId>-->
+<!--                    </exclusion>-->
+<!--                    <exclusion>-->
+<!--                        <groupId>org.apache.spark</groupId>-->
+<!--                        <artifactId>spark-avro_2.11</artifactId>-->
+<!--                    </exclusion>-->
+<!--                </exclusions>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>org.opencb.hpg-bigdata</groupId>-->
+<!--                <artifactId>hpg-bigdata-tools</artifactId>-->
+<!--                <version>${hpg-bigdata.version}</version>-->
+<!--            </dependency>-->
             <dependency>
                 <groupId>org.opencb.bionetdb</groupId>
                 <artifactId>bionetdb-core</artifactId>
@@ -440,21 +440,21 @@
                 <artifactId>slf4j-log4j12</artifactId>
                 <version>${slf4j.version}</version>
             </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
+<!--            <dependency>-->
+<!--                <groupId>com.fasterxml.jackson.core</groupId>-->
+<!--                <artifactId>jackson-core</artifactId>-->
+<!--                <version>${jackson.version}</version>-->
+<!--            </dependency>-->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-annotations</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
+<!--            <dependency>-->
+<!--                <groupId>com.fasterxml.jackson.core</groupId>-->
+<!--                <artifactId>jackson-annotations</artifactId>-->
+<!--                <version>${jackson.version}</version>-->
+<!--            </dependency>-->
             <dependency>
                 <groupId>com.fasterxml.jackson.datatype</groupId>
                 <artifactId>jackson-datatype-joda</artifactId>
@@ -465,21 +465,21 @@
                 <artifactId>jackson-dataformat-yaml</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.dataformat</groupId>
-                <artifactId>jackson-dataformat-xml</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.dataformat</groupId>
-                <artifactId>jackson-dataformat-smile</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.dataformat</groupId>
-                <artifactId>jackson-dataformat-cbor</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
+<!--            <dependency>-->
+<!--                <groupId>com.fasterxml.jackson.dataformat</groupId>-->
+<!--                <artifactId>jackson-dataformat-xml</artifactId>-->
+<!--                <version>${jackson.version}</version>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>com.fasterxml.jackson.dataformat</groupId>-->
+<!--                <artifactId>jackson-dataformat-smile</artifactId>-->
+<!--                <version>${jackson.version}</version>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>com.fasterxml.jackson.dataformat</groupId>-->
+<!--                <artifactId>jackson-dataformat-cbor</artifactId>-->
+<!--                <version>${jackson.version}</version>-->
+<!--            </dependency>-->
             <dependency>
                 <groupId>javax.mail</groupId>
                 <artifactId>mail</artifactId>
@@ -500,21 +500,21 @@
                 <artifactId>jetty-servlet</artifactId>
                 <version>${jetty.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-http</artifactId>
-                <version>${jetty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-io</artifactId>
-                <version>${jetty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-util</artifactId>
-                <version>${jetty.version}</version>
-            </dependency>
+<!--            <dependency>-->
+<!--                <groupId>org.eclipse.jetty</groupId>-->
+<!--                <artifactId>jetty-http</artifactId>-->
+<!--                <version>${jetty.version}</version>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>org.eclipse.jetty</groupId>-->
+<!--                <artifactId>jetty-io</artifactId>-->
+<!--                <version>${jetty.version}</version>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>org.eclipse.jetty</groupId>-->
+<!--                <artifactId>jetty-util</artifactId>-->
+<!--                <version>${jetty.version}</version>-->
+<!--            </dependency>-->
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-project</artifactId>
