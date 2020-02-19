@@ -42,7 +42,7 @@ import org.opencb.opencga.catalog.stats.solr.CatalogSolrManager;
 import org.opencb.opencga.catalog.utils.AnnotationUtils;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.core.models.AclParams;
@@ -105,7 +105,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         Query queryCopy = query == null ? new Query() : new Query(query);
         queryCopy.put(FamilyDBAdaptor.QueryParams.STUDY_UID.key(), studyUid);
 
-        if (UUIDUtils.isOpenCGAUUID(entry)) {
+        if (UuidUtils.isOpenCgaUuid(entry)) {
             queryCopy.put(FamilyDBAdaptor.QueryParams.UUID.key(), entry);
         } else {
             queryCopy.put(FamilyDBAdaptor.QueryParams.ID.key(), entry);
@@ -145,7 +145,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         FamilyDBAdaptor.QueryParams idQueryParam = null;
         for (String entry : uniqueList) {
             FamilyDBAdaptor.QueryParams param = FamilyDBAdaptor.QueryParams.ID;
-            if (UUIDUtils.isOpenCGAUUID(entry)) {
+            if (UuidUtils.isOpenCgaUuid(entry)) {
                 param = FamilyDBAdaptor.QueryParams.UUID;
                 familyStringFunction = Family::getUuid;
             }
@@ -249,7 +249,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
             validateDisorders(family);
 
             options = ParamUtils.defaultObject(options, QueryOptions::new);
-            family.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FAMILY));
+            family.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FAMILY));
 
             familyDBAdaptor.insert(study.getUid(), family, study.getVariableSets(), options);
             OpenCGAResult<Family> queryResult = getFamily(study.getUid(), family.getUuid(), options);
@@ -390,7 +390,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
@@ -466,7 +466,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         Study study = studyManager.resolveId(studyStr, userId, new QueryOptions(QueryOptions.INCLUDE,
                 StudyDBAdaptor.QueryParams.VARIABLE_SET.key()));
 
-        String operationUuid = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationUuid = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap auditParams = new ObjectMap()
                 .append("study", studyStr)
@@ -642,7 +642,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -706,7 +706,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -776,7 +776,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         String userId = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyStr, userId, StudyManager.INCLUDE_VARIABLE_SET);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         ObjectMap updateMap;
         try {
@@ -1001,7 +1001,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
         String user = userManager.getUserId(token);
         Study study = studyManager.resolveId(studyId, user);
 
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
         ObjectMap auditParams = new ObjectMap()
                 .append("studyId", studyId)
                 .append("familyList", familyList)
@@ -1081,7 +1081,7 @@ public class FamilyManager extends AnnotationSetManager<Family> {
                 .append("memberList", memberList)
                 .append("aclParams", aclParams)
                 .append("token", token);
-        String operationId = UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.AUDIT);
+        String operationId = UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.AUDIT);
 
         try {
             if (familyStrList == null || familyStrList.isEmpty()) {

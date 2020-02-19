@@ -150,7 +150,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         p1 = catalogManager.getProjectManager().create("p1", "p1", null, null, "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), ownerSessionId).first().getId();
         Study study = catalogManager.getStudyManager().create(p1, "studyFqn", "studyFqn", "studyFqn", Study.Type.CASE_CONTROL, null, null,
-                null, null, null, null, null, null, null, null, null, ownerSessionId).first();
+                null, null, null, null, null, null, null, null, ownerSessionId).first();
         studyFqn = study.getFqn();
         studyUid = study.getUid();
         data_d1 = catalogManager.getFileManager().createFolder(studyFqn, Paths.get("data/d1/").toString(), null, true, null,

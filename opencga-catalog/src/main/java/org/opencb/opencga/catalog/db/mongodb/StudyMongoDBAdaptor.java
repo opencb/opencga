@@ -39,9 +39,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.cohort.Cohort;
+import org.opencb.opencga.core.models.common.Enums;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.family.Family;
 import org.opencb.opencga.core.models.file.File;
@@ -174,7 +175,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         study.setUid(studyUid);
 
         if (StringUtils.isEmpty(study.getUuid())) {
-            study.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.STUDY));
+            study.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.STUDY));
         }
         if (StringUtils.isEmpty(study.getCreationDate())) {
             study.setCreationDate(TimeUtils.getTime());
@@ -538,7 +539,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public OpenCGAResult<PermissionRule> createPermissionRule(long studyId, Study.Entity entry, PermissionRule permissionRule)
+    public OpenCGAResult<PermissionRule> createPermissionRule(long studyId, Enums.Entity entry, PermissionRule permissionRule)
             throws CatalogDBException {
         if (entry == null) {
             throw new CatalogDBException("Missing entry parameter");
@@ -573,8 +574,8 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public OpenCGAResult<PermissionRule> markDeletedPermissionRule(long studyId, Study.Entity entry, String permissionRuleId,
-                                                                PermissionRule.DeleteAction deleteAction) throws CatalogDBException {
+    public OpenCGAResult<PermissionRule> markDeletedPermissionRule(long studyId, Enums.Entity entry, String permissionRuleId,
+                                                                   PermissionRule.DeleteAction deleteAction) throws CatalogDBException {
         if (entry == null) {
             throw new CatalogDBException("Missing entry parameter");
         }
@@ -605,7 +606,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     @Override
-    public OpenCGAResult<PermissionRule> getPermissionRules(long studyId, Study.Entity entry) throws CatalogDBException {
+    public OpenCGAResult<PermissionRule> getPermissionRules(long studyId, Enums.Entity entry) throws CatalogDBException {
         // Get permission rules from study
         Query query = new Query(QueryParams.UID.key(), studyId);
         QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.PERMISSION_RULES.key());

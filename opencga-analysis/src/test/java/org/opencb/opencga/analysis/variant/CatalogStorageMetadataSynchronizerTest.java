@@ -28,7 +28,6 @@ import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.analysis.variant.metadata.CatalogStorageMetadataSynchronizer;
 import org.opencb.opencga.core.models.file.File;
 import org.opencb.opencga.core.models.file.FileIndex;
-import org.opencb.opencga.core.models.project.DataStore;
 import org.opencb.opencga.core.models.sample.Sample;
 import org.opencb.opencga.core.models.study.Study;
 import org.opencb.opencga.core.models.user.Account;
@@ -48,7 +47,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_NAME;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 /**
@@ -91,7 +89,7 @@ public class CatalogStorageMetadataSynchronizerTest {
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
         Study study = catalogManager.getStudyManager().create(projectId, "s1", null, "s1", Study.Type.CASE_CONTROL, null, "Study " +
-                        "1", null, null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null,
+                        "1", null, null, null, null, null, null,
                 null, null, sessionId).first();
         studyId = study.getFqn();
         studyUid = study.getUid();

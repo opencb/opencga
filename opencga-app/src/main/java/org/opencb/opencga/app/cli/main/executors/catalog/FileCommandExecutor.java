@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.io.TextOutputWriter;
 import org.opencb.opencga.app.cli.main.options.FileCommandOptions;
+import org.opencb.opencga.app.cli.main.options.FileCommandOptions.GrepCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -182,14 +183,14 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFileClient().download(commandOptions.file, params);
     }
 
-    private RestResponse grep() throws ClientException {
+    private RestResponse<FileContent> grep() throws ClientException {
         logger.debug("Grep command: File content");
 
-        FileCommandOptions.GrepCommandOptions commandOptions = filesCommandOptions.grepCommandOptions;
+        GrepCommandOptions commandOptions = filesCommandOptions.grepCommandOptions;
 
         ObjectMap params = new ObjectMap();
         params.put("ignoreCase", commandOptions.ignoreCase);
-        params.put("multi", commandOptions.multi);
+        params.put("maxCount", commandOptions.maxCount);
         params.putIfNotNull("pattern", commandOptions.pattern);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), resolveStudy(commandOptions.study));
         return openCGAClient.getFileClient().grep(commandOptions.file, params);

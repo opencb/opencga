@@ -84,15 +84,15 @@ public class AbstractManagerTest extends GenericTest {
         catalogManager.getProjectManager().create("p1", "project 1", "", "", "Homo sapiens", null, null, "GRCh38", new QueryOptions(),
                 sessionIdUser3).first();
 
-        Study study = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, null, token).first();
+        Study study = catalogManager.getStudyManager().create(project1, "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, token).first();
         studyUid = study.getUid();
         studyFqn = study.getFqn();
 
-        study = catalogManager.getStudyManager().create(project1, "phase3", null, "Phase 3", Study.Type.CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, null, token).first();
+        study = catalogManager.getStudyManager().create(project1, "phase3", null, "Phase 3", Study.Type.CASE_CONTROL, null, "d", null, null, null, null, null, null, null, null, token).first();
         studyUid2 = study.getUid();
         studyFqn2 = study.getFqn();
 
-        study = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", Study.Type.CONTROL_SET, null, "", null, null, null, null, null, null, null, null, null, sessionIdUser2).first();
+        study = catalogManager.getStudyManager().create(project2, "s1", null, "Study 1", Study.Type.CONTROL_SET, null, "", null, null, null, null, null, null, null, null, sessionIdUser2).first();
         studyFqn3 = study.getFqn();
 
         catalogManager.getFileManager().createFolder(studyFqn2, Paths.get("data/test/folder/").toString(), null, true,

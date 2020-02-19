@@ -110,13 +110,13 @@ public interface AuthorizationDBAdaptor {
     OpenCGAResult<Map<String, List<String>>> setAcls(List<Long> resourceIds, Map<String, List<String>> acls, Enums.Resource resource)
             throws CatalogDBException;
 
-    OpenCGAResult applyPermissionRules(long studyId, PermissionRule permissionRule, Study.Entity entry) throws CatalogException;
+    OpenCGAResult applyPermissionRules(long studyId, PermissionRule permissionRule, Enums.Entity entry) throws CatalogException;
 
-    OpenCGAResult removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Study.Entity entry)
+    OpenCGAResult removePermissionRuleAndRemovePermissions(Study study, String permissionRuleId, Enums.Entity entry)
             throws CatalogException;
 
-    OpenCGAResult removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Study.Entity entity)
+    OpenCGAResult removePermissionRuleAndRestorePermissions(Study study, String permissionRuleToDeleteId, Enums.Entity entity)
             throws CatalogException;
 
-    OpenCGAResult removePermissionRule(long studyId, String permissionRuleToDelete, Study.Entity entry) throws CatalogException;
+    OpenCGAResult removePermissionRule(long studyId, String permissionRuleToDelete, Enums.Entity entry) throws CatalogException;
 }

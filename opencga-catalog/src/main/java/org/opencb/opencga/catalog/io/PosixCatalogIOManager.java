@@ -18,7 +18,7 @@ package org.opencb.opencga.catalog.io;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.exec.Command;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
@@ -32,11 +32,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class PosixCatalogIOManager extends CatalogIOManager {
@@ -247,47 +245,33 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
     @Override
     public FileContent tail(Path file, int bytes, int lines) throws CatalogIOException {
-        String tail;
-        FileContent fileContent = new FileContent(file.toAbsolutePath().toString(), true, -1, -1, -1, "");
+        if (Files.isRegularFile(file)) {
+            FileContent fileContent = new FileContent(file.toAbsolutePath().toString(), true, -1, -1, -1, "");
 
-        try {
-            String[] command = new String[4];
-            command[0] = "tail";
+            String cli = "tail";
             if (lines > 0) {
-                command[1] = "-n";
-                command[2] = String.valueOf(lines);
-                command[3] = file.toAbsolutePath().toString();
+                cli += " -n " + lines + " " + file.toAbsolutePath().toString();
                 fileContent.setLines(lines);
             } else {
                 if (bytes == 0 || bytes > MAXIMUM_BYTES) {
                     bytes = MAXIMUM_BYTES;
                 }
-                Arrays.fill(command, "tail -c");
-                Arrays.fill(command, String.valueOf(bytes));
-                Arrays.fill(command, file.toAbsolutePath().toString());
-
+                cli += " -c " + bytes + " " + file.toAbsolutePath().toString();
                 fileContent.setBytes(bytes);
             }
-            logger.debug("command = {} {} {}", command[0], command[1], command[2]);
-            Process p = Runtime.getRuntime().exec(command);
+            logger.debug("command line = {}", cli);
 
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
-                tail = br.lines().collect(Collectors.joining(System.lineSeparator()));
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            Command command = new Command(cli)
+                    .setOutputOutputStream(outputStream)
+                    .setPrintOutput(false);
+            command.run();
+            fileContent.setContent(outputStream.toString());
 
-                if (p.waitFor() != 0) {
-                    //TODO: Handle error in tail
-                    logger.info("tail = " + tail);
-                    try (BufferedReader br2 = new BufferedReader(new InputStreamReader(p.getErrorStream()))) {
-                        throw new CatalogIOException("tail failed with exit value : " + p.exitValue() + ". ERROR: " + br2.readLine());
-                    }
-                }
-            }
-        } catch (IOException | InterruptedException e) {
-            //TODO: Handle error in checksum
-            throw new CatalogIOException("tail error in file " + file, e);
+            return fileContent;
+        } else {
+            throw new CatalogIOException("Not a regular file: " + file.toAbsolutePath().toString());
         }
-
-        return fileContent.setContent(tail);
     }
 
     @Override
@@ -331,7 +315,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     }
 
     private FileContent getContentPerLines(Path path, long offset, int numLines) throws IOException {
-        List<String> content = new LinkedList<>();
+        StringBuilder sb = new StringBuilder();
 
         RandomAccessFile file = new RandomAccessFile(path.toFile(), "r");
         file.seek(offset);
@@ -342,7 +326,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         while (numLines > readLines && MAXIMUM_BYTES > file.getFilePointer() - offset && !eof) {
             String tmpContent = file.readLine();
             if (tmpContent != null) {
-                content.add(tmpContent);
+                sb.append(tmpContent + System.lineSeparator());
                 readLines++;
             } else {
                 eof = true;
@@ -350,25 +334,33 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         }
 
         FileContent fileContent = new FileContent(path.toAbsolutePath().toString(), eof, file.getFilePointer(),
-                (int) (file.getFilePointer() - offset + 1), readLines, StringUtils.join(content, System.lineSeparator()));
+                (int) (file.getFilePointer() - offset + 1), readLines, sb.toString());
         file.close();
 
         return fileContent;
     }
 
     @Override
-    public DataInputStream getGrepFileObject(URI fileUri, String pattern,
-                                             boolean ignoreCase, boolean multi)
-            throws CatalogIOException {
-        Path path = Paths.get(fileUri);
-        if (Files.isRegularFile(path)) {
-            try {
-                return new DataInputStream(IOUtils.grepFile(path, pattern, ignoreCase, multi));
-            } catch (IOException e) {
-                throw new CatalogIOException("Error while grep file", e);
+    public FileContent grep(Path file, String pattern, int lines, boolean ignoreCase) throws CatalogIOException {
+        if (Files.isRegularFile(file)) {
+            String cli = "grep ";
+            if (ignoreCase) {
+                cli += "--ignore-case ";
             }
+            if (lines > 0) {
+                cli += "--max-count=" + lines + " ";
+            }
+            cli += pattern + " " + file.toAbsolutePath();
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            Command command = new Command(cli)
+                    .setOutputOutputStream(outputStream)
+                    .setPrintOutput(false);
+            command.run();
+
+            return new FileContent(file.toAbsolutePath().toString(), lines == 0, 0, -1, lines, outputStream.toString());
         } else {
-            throw new CatalogIOException("Not a regular file: " + path.toAbsolutePath().toString());
+            throw new CatalogIOException("Not a regular file: " + file.toAbsolutePath().toString());
         }
     }
 

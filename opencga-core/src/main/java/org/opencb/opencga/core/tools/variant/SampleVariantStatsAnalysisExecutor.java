@@ -27,8 +27,8 @@ public abstract class SampleVariantStatsAnalysisExecutor extends OpenCgaToolExec
         sb.append("sampleNames=").append(sampleNames);
         sb.append(", individualId='").append(individualId).append('\'');
         sb.append(", familyId='").append(familyId).append('\'');
-        sb.append(", executorParams=").append(executorParams);
-        sb.append(", outDir=").append(outDir);
+        sb.append(", executorParams=").append(getExecutorParams());
+        sb.append(", outDir=").append(getOutDir());
         sb.append('}');
         return sb.toString();
     }

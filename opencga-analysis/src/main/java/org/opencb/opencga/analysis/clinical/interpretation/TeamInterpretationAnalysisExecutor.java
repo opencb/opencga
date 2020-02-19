@@ -172,7 +172,7 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaToolExecutor impl
         }
 
         // Write primary findings
-        ClinicalUtils.writeReportedVariants(primaryFindings, Paths.get(outDir + "/" + PRIMARY_FINDINGS_FILENAME));
+        ClinicalUtils.writeReportedVariants(primaryFindings, Paths.get(getOutDir() + "/" + PRIMARY_FINDINGS_FILENAME));
 
         // Step 3: secondary findings, if clinical consent is TRUE
         List<ReportedVariant> secondaryFindings;
@@ -184,7 +184,7 @@ public class TeamInterpretationAnalysisExecutor extends OpenCgaToolExecutor impl
         }
 
         // Write primary findings
-        ClinicalUtils.writeReportedVariants(secondaryFindings, Paths.get(outDir + "/" + SECONDARY_FINDINGS_FILENAME));
+        ClinicalUtils.writeReportedVariants(secondaryFindings, Paths.get(getOutDir() + "/" + SECONDARY_FINDINGS_FILENAME));
     }
 
     private List<ReportedVariant> getReportedVariants(Query query, QueryOptions queryOptions, TeamReportedVariantCreator creator)

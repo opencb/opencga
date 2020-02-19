@@ -3,8 +3,6 @@ package org.opencb.opencga.core.models.project;
 public class ProjectCreateParams {
 
     private String id;
-    @Deprecated
-    private String alias;
 
     private String name;
     private String description;
@@ -14,9 +12,8 @@ public class ProjectCreateParams {
     public ProjectCreateParams() {
     }
 
-    public ProjectCreateParams(String id, String alias, String name, String description, String organization, Project.Organism organism) {
+    public ProjectCreateParams(String id, String name, String description, String organization, Project.Organism organism) {
         this.id = id;
-        this.alias = alias;
         this.name = name;
         this.description = description;
         this.organization = organization;
@@ -24,15 +21,14 @@ public class ProjectCreateParams {
     }
 
     public static ProjectCreateParams of(Project project) {
-        return new ProjectCreateParams(project.getId(), project.getAlias(), project.getName(), project.getDescription(),
-                project.getOrganization(), project.getOrganism());
+        return new ProjectCreateParams(project.getId(), project.getName(), project.getDescription(), project.getOrganization(),
+                project.getOrganism());
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ProjectCreateParams{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", alias='").append(alias).append('\'');
         sb.append(", name='").append(name).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", organization='").append(organization).append('\'');
@@ -47,15 +43,6 @@ public class ProjectCreateParams {
 
     public ProjectCreateParams setId(String id) {
         this.id = id;
-        return this;
-    }
-
-    public String getAlias() {
-        return alias;
-    }
-
-    public ProjectCreateParams setAlias(String alias) {
-        this.alias = alias;
         return this;
     }
 

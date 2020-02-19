@@ -109,7 +109,7 @@ public class InternalMainTest {
     private void createStudy(Map<File.Bioformat, DataStore> datastores, String studyName) throws CatalogException {
         Study study = catalogManager.getStudyManager().create(projectId, studyName, studyName, studyName, Study.Type.CASE_CONTROL, null,
                 "Study " +
-                        "1", null, null, null, null, null, datastores, null, Collections.singletonMap(VariantStorageOptions.STATS_AGGREGATION.key(),
+                        "1", null, null, null, null, null, null, Collections.singletonMap(VariantStorageOptions.STATS_AGGREGATION.key(),
                         Aggregation.NONE), null, sessionId).first();
         studyId = study.getId();
         outdirId = catalogManager.getFileManager().createFolder(studyId, Paths.get("data", "index").toString(), null,

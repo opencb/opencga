@@ -19,7 +19,8 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
 
     private String study;
     private String sampleName;
-    private Path outputFile;
+    private Path refGenomePath;
+    private Path mutationalSignaturePath;
 
     public MutationalSignatureAnalysisExecutor() {
     }
@@ -42,12 +43,21 @@ public abstract class MutationalSignatureAnalysisExecutor extends OpenCgaToolExe
         return this;
     }
 
-    public Path getOutputFile() {
-        return outputFile;
+    public Path getRefGenomePath() {
+        return refGenomePath;
     }
 
-    public MutationalSignatureAnalysisExecutor setOutputFile(Path outputFile) {
-        this.outputFile = outputFile;
+    public MutationalSignatureAnalysisExecutor setRefGenomePath(Path refGenomePath) {
+        this.refGenomePath = refGenomePath;
+        return this;
+    }
+
+    public Path getMutationalSignaturePath() {
+        return mutationalSignaturePath;
+    }
+
+    public MutationalSignatureAnalysisExecutor setMutationalSignaturePath(Path mutationalSignaturePath) {
+        this.mutationalSignaturePath = mutationalSignaturePath;
         return this;
     }
 

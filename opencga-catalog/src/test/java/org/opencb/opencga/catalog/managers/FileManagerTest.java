@@ -490,7 +490,7 @@ public class FileManagerTest extends AbstractManagerTest {
                 sessionIdUser2);
 
         Path myStudy = Files.createDirectory(catalogManagerResource.getOpencgaHome().resolve("myStudy"));
-        String newStudy = catalogManager.getStudyManager().create(project2, "alias", null, "name", Study.Type.CASE_CONTROL, "", "", null, null, null, null, myStudy.toUri(), null, null, null, null, sessionIdUser2).first().getFqn();
+        String newStudy = catalogManager.getStudyManager().create(project2, "alias", null, "name", Study.Type.CASE_CONTROL, "", "", null, null, null, null, myStudy.toUri(), null, null, null, sessionIdUser2).first().getFqn();
 
         folder = fileManager.createFolder(newStudy, Paths.get("WOLOLO").toString(), null, true, null,
                 QueryOptions.empty(), sessionIdUser2).first();
@@ -729,7 +729,7 @@ public class FileManagerTest extends AbstractManagerTest {
 
         // Create a new study so more than one file will be found under the root /. However, it should be able to consider the study given
         // properly
-        catalogManager.getStudyManager().create(project1, "phase2", null, "Phase 2", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, null, token).first().getUid();
+        catalogManager.getStudyManager().create(project1, "phase2", null, "Phase 2", Study.Type.TRIO, null, "Done", null, null, null, null, null, null, null, null, token).first().getUid();
 
         DataResult<FileTree> fileTree = fileManager.getTree(studyFqn, "/", new Query(), new QueryOptions(),
                 5, token);

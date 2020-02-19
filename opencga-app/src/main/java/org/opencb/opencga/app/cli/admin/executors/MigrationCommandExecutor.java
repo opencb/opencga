@@ -18,7 +18,7 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthenticationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Status;
 import org.opencb.opencga.core.models.file.FileIndex;
@@ -206,7 +206,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
             // Create default project and study for administrator #1491
             catalogManager.getProjectManager().create("admin", "admin", "Default project", "", "", "", "", "", null, token);
             catalogManager.getStudyManager().create("admin", "admin", "admin", "admin", Study.Type.CASE_CONTROL, "", "Default study",
-                    null, new Status(), "", "", null, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), null, token);
+                    null, new Status(), "", "", null, Collections.emptyMap(), Collections.emptyMap(), null, token);
 
             // Create default JOBS folder for analysis
             MongoDBAdaptorFactory dbAdaptorFactory = new MongoDBAdaptorFactory(configuration);
@@ -230,7 +230,7 @@ public class MigrationCommandExecutor extends AdminCommandExecutor {
                             new org.opencb.opencga.core.models.file.File.FileStatus(), false, 0, null, null, Collections.emptyList(), new Job(),
                             Collections.emptyList(), new FileIndex(), study.getRelease(), Collections.emptyList(), Collections.emptyMap(),
                             Collections.emptyMap());
-                    file.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+                    file.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
                     file.setTags(Collections.emptyList());
                     file.setId(file.getPath().replace("/", ":"));
 

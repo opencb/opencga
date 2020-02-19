@@ -38,7 +38,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.utils.Constants;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.catalog.utils.UUIDUtils;
+import org.opencb.opencga.catalog.utils.UuidUtils;
 import org.opencb.opencga.core.api.ParamConstants;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.models.common.Annotable;
@@ -154,7 +154,7 @@ public class FileMongoDBAdaptor extends AnnotationMongoDBAdaptor<File> implement
         file.setUid(fileUid);
         file.setStudyUid(studyId);
         if (StringUtils.isEmpty(file.getUuid())) {
-            file.setUuid(UUIDUtils.generateOpenCGAUUID(UUIDUtils.Entity.FILE));
+            file.setUuid(UuidUtils.generateOpenCgaUuid(UuidUtils.Entity.FILE));
         }
         if (StringUtils.isEmpty(file.getCreationDate())) {
             file.setCreationDate(TimeUtils.getTime());

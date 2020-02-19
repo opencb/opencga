@@ -81,7 +81,7 @@ public class FamilyManagerTest extends GenericTest {
         String projectId = catalogManager.getProjectManager().create("1000G", "Project about some genomes", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
         catalogManager.getStudyManager().create(projectId, "phase1", null, "Phase 1", Study.Type.TRIO, null, "Done", null, null, null, null, null,
-                null, null, null, null, sessionIdUser);
+                null, null, null, sessionIdUser);
     }
 
     @After

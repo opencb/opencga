@@ -408,6 +408,71 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         PrivateJobUpdateParams updateParams = new PrivateJobUpdateParams();
 
+        if (job.getDependsOn() != null && !job.getDependsOn().isEmpty()) {
+            // The job(s) it depended on finished successfully. Check if the input files are correct.
+            // Look for input files
+            String fileParamSuffix = "file";
+            List<File> inputFiles = new ArrayList<>();
+            if (job.getParams() != null) {
+                Map<String, Object> dynamicParams = null;
+                for (Map.Entry<String, Object> entry : job.getParams().entrySet()) {
+                    // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in catalog
+                    if (entry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
+                        for (String fileStr : StringUtils.split((String) entry.getValue(), ',')) {
+                            try {
+                                // Validate the user has access to the file
+                                File file = catalogManager.getFileManager().get(job.getStudyUuid(), fileStr,
+                                        FileManager.INCLUDE_FILE_URI_PATH, token).first();
+                                inputFiles.add(file);
+                            } catch (CatalogException e) {
+                                String msg = "Cannot find file '" + entry.getValue() + "' "
+                                        + "from job param '" + entry.getKey() + "'; (study = " + job.getStudyUuid() + ", token = "
+                                        + token + ") :" + e.getMessage();
+                                logger.error(msg, e);
+                                return abortJob(job, msg);
+                            }
+                        }
+                    } else if (entry.getValue() instanceof Map) {
+                        if (dynamicParams != null) {
+                            List<String> dynamicParamKeys = job.getParams()
+                                    .entrySet()
+                                    .stream()
+                                    .filter(e -> e.getValue() instanceof Map)
+                                    .map(Map.Entry::getKey)
+                                    .collect(Collectors.toList());
+
+                            String msg = "Found multiple dynamic param maps in job params: " + dynamicParamKeys;
+                            logger.error(msg);
+                            return abortJob(job, msg);
+                        }
+                        // If we have found a map for further dynamic params...
+                        dynamicParams = (Map<String, Object>) entry.getValue();
+                    }
+                }
+                if (dynamicParams != null) {
+                    // We look for files in the dynamic params
+                    for (Map.Entry<String, Object> entry : dynamicParams.entrySet()) {
+                        if (entry.getKey().toLowerCase().endsWith(fileParamSuffix)) {
+                            // We assume that every variable ending in 'file' corresponds to input files that need to be accessible in
+                            // catalog
+                            try {
+                                // Validate the user has access to the file
+                                File file = catalogManager.getFileManager().get(job.getStudyUuid(), (String) entry.getValue(),
+                                        FileManager.INCLUDE_FILE_URI_PATH, token).first();
+                                inputFiles.add(file);
+                            } catch (CatalogException e) {
+                                String msg = "Cannot find file '" + entry.getValue() + "' from variable '" + entry.getKey() + "'. ";
+                                logger.error(msg, e);
+                                return abortJob(job, msg);
+                            }
+                        }
+                    }
+                }
+            }
+            updateParams.setInput(inputFiles);
+        }
+
+
         Map<String, Object> params = job.getParams();
         String outDirPathParam = (String) params.get(OUTDIR_PARAM);
         if (!StringUtils.isEmpty(outDirPathParam)) {
@@ -941,6 +1006,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private String getLogFileName(Job job) {
+        // WARNING: If we change the way we name log files, we will also need to change it in the "log" method from the JobManager !!
         return job.getId() + ".log";
     }
 

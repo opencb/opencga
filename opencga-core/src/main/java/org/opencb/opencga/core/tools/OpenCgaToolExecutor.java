@@ -11,8 +11,9 @@ import java.nio.file.Path;
 public abstract class OpenCgaToolExecutor {
 
     public static final String EXECUTOR_ID = "executorId";
-    protected ObjectMap executorParams;
-    protected Path outDir;
+
+    private ObjectMap executorParams;
+    private Path outDir;
     private ExecutionResultManager arm;
 
     protected OpenCgaToolExecutor() {
