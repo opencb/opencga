@@ -34,6 +34,7 @@ import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOption
 import static org.opencb.opencga.app.cli.internal.options.AlignmentCommandOptions.SamtoolsCommandOptions.SAMTOOLS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.CohortVariantStatsCommandOptions.COHORT_VARIANT_STATS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GatkCommandOptions.GATK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GeneticChecksCommandOptions.GENETIC_CHECKS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.KnockoutCommandOptions.KNOCKOUT_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
@@ -272,6 +273,7 @@ public class OpencgaCliOptionsParser extends CliOptionsParser {
         variantSubCommands.addCommand(SAMPLE_ELIGIBILITY_RUN_COMMAND, variantCommandOptions.sampleEligibilityCommandOptions);
         variantSubCommands.addCommand(MUTATIONAL_SIGNATURE_RUN_COMMAND, variantCommandOptions.mutationalSignatureCommandOptions);
         variantSubCommands.addCommand(RELATEDNESS_RUN_COMMAND, variantCommandOptions.relatednessCommandOptions);
+        variantSubCommands.addCommand(GENETIC_CHECKS_RUN_COMMAND, variantCommandOptions.geneticChecksCommandOptions);
         variantSubCommands.addCommand(PLINK_RUN_COMMAND, variantCommandOptions.plinkCommandOptions);
         variantSubCommands.addCommand(RVTEST_RUN_COMMAND, variantCommandOptions.rvtestsCommandOptions);
         variantSubCommands.addCommand(GATK_RUN_COMMAND, variantCommandOptions.gatkCommandOptions);

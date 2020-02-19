@@ -38,6 +38,7 @@ import org.opencb.opencga.analysis.individual.IndividualIndexTask;
 import org.opencb.opencga.analysis.job.JobIndexTask;
 import org.opencb.opencga.analysis.sample.SampleIndexTask;
 import org.opencb.opencga.analysis.variant.VariantExportTool;
+import org.opencb.opencga.analysis.variant.geneticChecks.GeneticChecksAnalysis;
 import org.opencb.opencga.analysis.variant.gwas.GwasAnalysis;
 import org.opencb.opencga.analysis.variant.knockout.KnockoutAnalysis;
 import org.opencb.opencga.analysis.variant.mutationalSignature.MutationalSignatureAnalysis;
@@ -173,6 +174,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             put(SampleEligibilityAnalysis.ID, "variant " + SampleEligibilityAnalysis.ID + "-run");
             put(MutationalSignatureAnalysis.ID, "variant " + MutationalSignatureAnalysis.ID + "-run");
             put(RelatednessAnalysis.ID, "variant " + RelatednessAnalysis.ID + "-run");
+            put(GeneticChecksAnalysis.ID, "variant " + GeneticChecksAnalysis.ID + "-run");
 
             put(TeamInterpretationAnalysis.ID, "interpretation " + TeamInterpretationAnalysis.ID);
             put(TieringInterpretationAnalysis.ID, "interpretation " + TieringInterpretationAnalysis.ID);
