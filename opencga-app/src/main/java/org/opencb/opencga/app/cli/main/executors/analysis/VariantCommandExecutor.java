@@ -61,6 +61,7 @@ import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.GwasCommandOptions.GWAS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.MutationalSignatureCommandOptions.MUTATIONAL_SIGNATURE_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.PlinkCommandOptions.PLINK_RUN_COMMAND;
+import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RelatednessCommandOptions.RELATEDNESS_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.RvtestsCommandOptions.RVTEST_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleEligibilityCommandOptions.SAMPLE_ELIGIBILITY_RUN_COMMAND;
 import static org.opencb.opencga.app.cli.internal.options.VariantCommandOptions.SampleVariantStatsCommandOptions.SAMPLE_VARIANT_STATS_RUN_COMMAND;
@@ -153,6 +154,10 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
             case MUTATIONAL_SIGNATURE_RUN_COMMAND:
                 queryResponse = mutationalSignature();
+                break;
+
+            case RELATEDNESS_RUN_COMMAND:
+                queryResponse = relatedness();
                 break;
 
             case PLINK_RUN_COMMAND:
@@ -287,6 +292,16 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         variantCommandOptions.mutationalSignatureCommandOptions.outdir
                 ),
                 getParams(variantCommandOptions.mutationalSignatureCommandOptions.study)
+        );
+    }
+
+    private RestResponse<Job> relatedness() throws ClientException {
+        return openCGAClient.getVariantClient().runRelatedness(
+                new RelatednessAnalysisParams(
+                        variantCommandOptions.relatednessCommandOptions.samples,
+                        variantCommandOptions.relatednessCommandOptions.outdir
+                ),
+                getParams(variantCommandOptions.relatednessCommandOptions.study)
         );
     }
 
