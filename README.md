@@ -161,18 +161,19 @@ For changing particular settings during buildings you can create a profile in _~
 
 See the description of each property in https://github.com/opencb/opencga/wiki/OpenCGA-installation.
 
-Remember that **_develop_** branch dependencies are not ensured to be deployed at Maven Central, you may need to clone and install **_develop_** branches from OpenCB _biodata_, _datastore_, _cellbase_ and _hpg-bigdata_ repositories. After this you should have this file structure in **_opencga/build_**:
+Remember that **_develop_** branch dependencies are not ensured to be deployed at Maven Central, you may need to clone and install **_develop_** branches from OpenCB _biodata_, _datastore_ and _cellbase_ repositories. After this you should have this file structure in **_opencga/build_**:
 
     build/
     ├── analysis
     ├── bin
+    ├── clients
     ├── cloud
     ├── conf
     ├── libs
     ├── LICENSE
     ├── opencga-2.0.0-dev.war
     ├── README.md
-    ├── scripts
+    ├── misc
     └── test
 
 

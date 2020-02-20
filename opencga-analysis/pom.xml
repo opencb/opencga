@@ -35,10 +35,6 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-core</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.opencb.hpg-bigdata</groupId>-->
-<!--            <artifactId>hpg-bigdata-analysis</artifactId>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>org.opencb.bionetdb</groupId>
             <artifactId>bionetdb-core</artifactId>
