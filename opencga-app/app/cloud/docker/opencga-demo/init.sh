@@ -1,13 +1,15 @@
 #!/bin/bash
 
-mongod --dbpath /data/opencga/mongodb &
+mongod --dbpath /data/opencga/mongodb --replSet rs0  &
 status=$?
 if [ $status -ne 0 ]; then
   echo "Failed to start mongoDB: $status"
   exit $status
 fi
+sleep 10
 
-sleep 2
+mongo /opt/scripts/mongo-cluster-init.js
+sleep 20
 
 /opt/solr-*/bin/solr start -force &
 status=$?
@@ -19,7 +21,7 @@ fi
 sleep 2
 
 CONTAINER_ALREADY_STARTED="CONTAINER_ALREADY_STARTED"
-if [ ! -e $CONTAINER_ALREADY_STARTED ]; then
+if [ ! -e $CONTAINER_ALREADY_STARTED ] && [ "$installCatalog" != "false" ]; then
     echo "-- Installing Catalog --"
     /opt/opencga/bin/opencga-admin.sh catalog install --secret-key any_string_you_want  <<< demo
     status=$?
