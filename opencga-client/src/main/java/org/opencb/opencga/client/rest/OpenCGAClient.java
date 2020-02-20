@@ -17,6 +17,7 @@
 package org.opencb.opencga.client.rest;
 
 import io.jsonwebtoken.Jwts;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Event;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.client.config.ClientConfiguration;
@@ -36,33 +37,31 @@ public class OpenCGAClient {
 
     private String userId;
     private String token;
-    private ClientConfiguration clientConfiguration;
+    private final ClientConfiguration clientConfiguration;
 
-    private Map<String, AbstractParentClient> clients;
-
-    public OpenCGAClient() {
-        // create a default configuration to localhost
-    }
+    private final Map<String, AbstractParentClient> clients;
 
     public OpenCGAClient(ClientConfiguration clientConfiguration) {
         this(null, clientConfiguration);
     }
 
     public OpenCGAClient(String user, String password, ClientConfiguration clientConfiguration) throws ClientException {
-        init(null, clientConfiguration);
+        this(null, clientConfiguration);
         login(user, password);
     }
 
     public OpenCGAClient(String token, ClientConfiguration clientConfiguration) {
-        init(token, clientConfiguration);
-    }
-
-    private void init(String token, ClientConfiguration clientConfiguration) {
-        setToken(token);
+        this.clients = new HashMap<>(20);
         this.clientConfiguration = clientConfiguration;
 
-        this.userId = Jwts.parser().parseClaimsJws(token).getBody().getSubject();
-        clients = new HashMap<>(20);
+        init(token);
+    }
+
+    private void init(String token) {
+        if (StringUtils.isNotEmpty(token)) {
+            this.userId = Jwts.parser().parseClaimsJws(token).getBody().getSubject();
+            setToken(token);
+        }
     }
 
 
