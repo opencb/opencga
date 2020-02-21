@@ -29,6 +29,7 @@ import org.opencb.opencga.core.response.RestResponse;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
@@ -60,14 +61,21 @@ public class OpenCGAClient {
 
     private void init(String token) {
         if (StringUtils.isNotEmpty(token)) {
-            // https://github.com/jwtk/jjwt/issues/280
-            // https://github.com/jwtk/jjwt/issues/86
-            // https://stackoverflow.com/questions/34998859/android-jwt-parsing-payload-claims-when-signed
-            String withoutSignature = token.substring(0, token.lastIndexOf('.') + 1);
-            Claims claims = (Claims)  Jwts.parser().parse(withoutSignature).getBody();
-            this.userId = claims.getSubject();
+            this.userId = getUserFromToken(token);
             setToken(token);
         }
+    }
+
+    protected static String getUserFromToken(String token) {
+        // https://github.com/jwtk/jjwt/issues/280
+        // https://github.com/jwtk/jjwt/issues/86
+        // https://stackoverflow.com/questions/34998859/android-jwt-parsing-payload-claims-when-signed
+        String withoutSignature = token.substring(0, token.lastIndexOf('.') + 1);
+        Claims claims = (Claims)  Jwts.parser()
+                .setAllowedClockSkewSeconds(TimeUnit.DAYS.toSeconds(3650))
+                .parse(withoutSignature)
+                .getBody();
+        return claims.getSubject();
     }
 
 
