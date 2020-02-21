@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import argparse
 
 
 _SEX = {
@@ -47,14 +48,14 @@ def create_individuals(ind_info):
         text.append('{}name: {}'.format(' '*4, ind['Individual ID']))
         if ind['Paternal ID'] != '0':
             text.append('{}father:'.format(' '*4))
-            text.append('{}- id: {}'.format(' '*6, ind['Paternal ID']))
+            text.append('{}id: {}'.format(' '*6, ind['Paternal ID']))
         if ind['Maternal ID'] != '0':
             text.append('{}mother:'.format(' '*4))
-            text.append('{}- id: {}'.format(' '*6, ind['Maternal ID']))
+            text.append('{}id: {}'.format(' '*6, ind['Maternal ID']))
         text.append('{}sex: {}'.format(' '*4, _SEX[ind['Gender']]))
         text.append('{}karyotypicSex: {}'.format(' '*4, _KAR_SEX[ind['Gender']]))
         text.append('{}population:'.format(' '*4))
-        text.append('{}- name: {}'.format(' '*6, ind['Population']))
+        text.append('{}name: {}'.format(' '*6, ind['Population']))
 
         text.append('{}annotationSets:'.format(' '*4))
         text.append('{}- id: relation'.format(' '*6))
@@ -96,17 +97,29 @@ def create_families(ind_info):
 def create_files():
     text = []
     text.append('files:')
-    for chrom in range(1, 23) + ['X', 'Y', 'MT']:
+    for chrom in list(range(1, 23)) + ['X', 'Y', 'MT']:
         text.append('{}- id: {}'.format(' '*2, FNAME_TEMPLATE.format(chrom)))
         text.append('{}path: {}'.format(' '*4, 'data'))
     return '\n'.join(text)
 
-def main():
-    ped_fpath = sys.argv[1]
-    yml_fpath = sys.argv[2]
+def _setup_argparse():
+    desc = 'This script creates automatically all Python RestClients files'
+    parser = argparse.ArgumentParser(
+        description=desc,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
-    ped_fhand = open(ped_fpath, 'r')
-    yml_fhand = open(yml_fpath, 'w')
+    parser.add_argument('ped_file', help='Pedigree file path')
+    parser.add_argument('outfile', help='Output file path')
+    args = parser.parse_args()
+    return args
+
+def main():
+
+    args = _setup_argparse()
+
+    ped_fhand = open(args.ped_file, 'r')
+    yml_fhand = open(args.outfile, 'w')
 
     header = ped_fhand.readline().strip().split('\t')
     ind_info = [{k: v for k, v in zip(header, line.strip().split('\t'))} for line in ped_fhand]
