@@ -16,9 +16,9 @@ individuals:
   - id: ISDBM322015
     name: ISDBM322015
     father:
-      - id: ISDBM322016
+      id: ISDBM322016
     mother:
-      - id: ISDBM322018
+      id: ISDBM322018
     sex: MALE
     karyotypicSex: XY
     lifeStatus: ALIVE
@@ -38,9 +38,9 @@ individuals:
   - id: ISDBM322017
     name: ISDBM322017
     father:
-      - id: ISDBM322016
+      id: ISDBM322016
     mother:
-      - id: ISDBM322018
+      id: ISDBM322018
     sex: FEMALE
     karyotypicSex: XX
     lifeStatus: ALIVE
@@ -113,19 +113,19 @@ families:
       - id: ISDBM322017
       - id: ISDBM322018
 
-clinicalAnalysis:
-  - id: cataract
-    type: FAMILY
-    proband:
-      - id: ISDBM322015
-    roleToProband:
-      ISDBM322016: FATHER
-      ISDBM322017: FULL_SIBLING_F
-      ISDBM322018: MOTHER
-    family:
-      - id: corpasome
-    disorder:
-      - id: OMIM:611597
+#clinicalAnalysis:
+#  - id: cataract
+#    type: FAMILY
+#    proband:
+#      - id: ISDBM322015
+#    roleToProband:
+#      ISDBM322016: FATHER
+#      ISDBM322017: FULL_SIBLING_F
+#      ISDBM322018: MOTHER
+#    family:
+#      - id: corpasome
+#    disorder:
+#      - id: OMIM:611597
 
 files:
   - id: quartet.variants.annotated.vcf.gz
