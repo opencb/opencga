@@ -152,24 +152,23 @@ class OpencgaClient(object):
                 break
             time.sleep(retry_seconds)
 
-    def _get_help_info(self, method=None, parameters=False):
+    def _get_help_info(self, client_name=None, parameters=False):
         info = []
         for client in self.clients:
             # Name
-            class_name = type(client).__name__
-            if class_name == 'GA4GH':
-                class_name = class_name.lower()
-            name = re.sub(r'(?<!^)(?=[A-Z])', '_', class_name).lower()
-            name = 'get_' + name + '_client'
+            cls_name = type(client).__name__
+            client_method = re.sub(r'(?<!^)(?=[A-Z])', '_', cls_name).lower() \
+                if cls_name != 'GA4GH' else cls_name.lower()
+            client_method = 'get_' + client_method + '_client'
 
-            if method is not None and method != name:
+            if client_name is not None and client_name != cls_name:
                 continue
 
             # Description and path
             class_docstring = client.__doc__
             cls_desc = re.findall('(.+)\n +Client version', class_docstring)[0]
             cls_desc = cls_desc.strip().replace('This class contains methods',
-                                                'Get client')
+                                                'Client')
             cls_path = re.findall('PATH: (.+)\n', class_docstring)[0]
 
             # Methods
@@ -178,6 +177,8 @@ class OpencgaClient(object):
                             if callable(getattr(client, method_name))
                             and not method_name.startswith('_')]
             for method_name in method_names:
+                if client_name is None:
+                    continue
                 method_docstring = getattr(client, method_name).__doc__
                 desc = re.findall('(.+)\n +PATH', method_docstring, re.DOTALL)
                 desc = re.sub(' +', ' ', desc[0].replace('\n', ' ').strip())
@@ -206,32 +207,42 @@ class OpencgaClient(object):
                 })
 
             info.append(
-                {'name': name, 'desc': cls_desc, 'path': cls_path,
-                 'methods': methods}
+                {'class_name': cls_name, 'client_method': client_method,
+                 'desc': cls_desc, 'path': cls_path, 'methods': methods}
             )
         return info
 
-    def help(self, method_name=None, show_parameters=False):
-        help_text = []
+    def help(self, client_name=None, show_parameters=False):
+        help_txt = []
 
-        info = self._get_help_info(method_name, show_parameters)
-        if method_name is None:
-            for client_method in info:
-                help_text += ['{}:'.format(client_method['name'])]
-                help_text += ['{}- Description:'.format(' '*4)]
-                help_text += ['{}{}'.format(' '*8, client_method['desc'])]
-                help_text += ['{}- REST path:'.format(' '*4)]
-                help_text += ['{}{}'.format(' '*8, client_method['path'])]
-                help_text += ['{}- Usage:'.format(' '*4)]
-                help_text += ['{}opencga_client.{}()\n'.format(' '*8, client_method['name'])]
+        info = self._get_help_info(client_name, show_parameters)
+        if client_name is None:
+            help_txt += ['Available clients:']
+            for client in info:
+                txt = '{}- {}: {} ({}). USAGE: opencga_client.{}()'
+                help_txt += [txt.format(
+                    ' '*4, client['class_name'], client['desc'],
+                    client['path'], client['client_method']
+                )]
         else:
-            for client_method in info:
-                if method_name == client_method['name']:
-                    help_text.append(client_method['name'] + '\n')
-                    help_text += [m['name'] for method in info for m in method['methods']]
-
-        sys.stdout.write('\n'.join(help_text) + '\n')
-
+            for client in info:
+                help_txt += ['{}: {} ({}). USAGE: opencga_client.{}()'.format(
+                    client['class_name'], client['desc'], client['path'],
+                    client['client_method']
+                )]
+                help_txt += ['{}Available methods:'.format(' '*4)]
+                for method in client['methods']:
+                    help_txt += ['{}- {}: {} ({})'.format(
+                        ' '*8, method['name'], method['desc'], method['path']
+                    )]
+                    if not show_parameters:
+                        continue
+                    for param in method['params']:
+                        help_txt += ['{}* {} ({}): {}'.format(
+                            ' ' * 12, param['name'], param['type'],
+                            param['desc']
+                        )]
+        sys.stdout.write('\n'.join(help_txt) + '\n')
 
     def get_user_client(self):
         return self.users
